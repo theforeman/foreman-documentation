@@ -1,0 +1,533 @@
+[appendix]
+[[Creating_Cloud_Images]]
+== Building Cloud Images for Red Hat Satellite
+
+Use this section to build and register images to Red Hat Satellite. 
+
+You can use a preconfigured Red Hat Enterprise Linux KVM guest QCOW2 image:
+
+* https://access.redhat.com/downloads/content/69/ver=/rhel---7/7.4/x86_64/product-software[RHEL 7.4 KVM Guest Image]
+* https://access.redhat.com/downloads/content/69/ver=/rhel---6/6.9/x86_64/product-software[RHEL 6.9 KVM Guest Image]
+
+These images contain `cloud-init`. To function properly, they must use ec2-compatible metadata services for provisioning an SSH key.
+
+[NOTE]
+================
+For the KVM guest images:
+
+* The `root` account in the image is disabled, but `sudo` access is granted to a special user named `cloud-user`.
+
+* There is no `root` password set for this image.
+
+The `root` password is locked in `/etc/shadow` by placing `!!` in the second field.
+================
+
+If you want to create custom Red Hat Enterprise Linux images,
+see xref:sect-create-rhel7-image[Creating a Red Hat Enterprise Linux 7 Image] and 
+xref:sect-create-rhel6-image[Creating a Red Hat Enterprise Linux 6 Image].
+
+[[section-create-custom-images]]
+=== Creating Custom Red Hat Enterprise Linux Images
+
+*Prerequisites:*
+
+* Use a Linux host machine to create an image. In this example, we use a Red Hat Enterprise Linux 7 Workstation.
+* Use `virt-manager` on your workstation to complete this procedure. If you create the image on a remote server, connect to the server from your workstation with `virt-manager`.
+* A Red Hat Enterprise Linux 7 or 6 ISO file (see
+https://access.redhat.com/downloads/content/69/ver=/rhel---7/7.4/x86_64/product-software[Red Hat Enterprise Linux 7.4 Binary DVD] or https://access.redhat.com/downloads/content/69/ver=/rhel---6/6.9/x86_64/product-software[Red Hat Enterprise Linux 6.9 Binary DVD]).
+
+For more information about installing a Red Hat Enterprise Linux Workstation, see https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Installation_Guide/[Red Hat Enterprise Linux 7 Installation Guide].
+
+Before you can create custom images, install the following packages: 
+
+* Install `libvirt`, `qemu-kvm` and graphical tools: 
++
+-----------
+[root@host]# yum install virt-manager virt-viewer libvirt qemu-kvm
+-----------
++
+* Install the following command line tools: 
++
+-----------
+[root@host]# yum install virt-install libguestfs-tools-c
+-----------
+
+
+[NOTE]
+=============
+In the following procedures, enter all commands with the `[root@host]#` prompt on the workstation that hosts the `libvirt` environment.
+=============
+
+
+
+[[sect-create-rhel7-image]]
+=== Creating a Red Hat Enterprise Linux 7 Image
+Use this section to create an image in the QCOW2 format using a Red Hat Enterprise Linux 7 ISO file.
+
+. Using your web browser, download the Red Hat Enterprise Linux binary ISO file to a temporary location, for example, the `Downloads` directory. 
++
+. Copy the Red Hat Enterprise Linux binary ISO file to the `/var/lib/libvirt/images/` directory. 
++ 
+[options="nowrap" subs="+quotes"]
+-----------
+[root@host]# cp ~/home/_user_/Downloads/rhel-server-7.4-x86_64-dvd.iso /var/lib/libvirt/images/
+-----------
++
+. Verify that *virtbr0* is the virtual bridge: 
++
+-----------
+[root@host]# ip a 
+-----------
++
+. Start `libvirtd`: 
++ 
+-----------
+[root@host]# systemctl start libvirtd
+-----------
++
+. Navigate to the `/var/lib/libvirt/images/` directory:
++
+-----------
+[root@host]# cd /var/lib/libvirt/images/
+-----------
++
+. Prepare the QEMU image: 
++
+-----------
+[root@host]# qemu-img create -f qcow2 rhel7.qcow2 8G
+-----------
++
+. Start the installation using `virt-install`. Use the following example as a guide:
++
+-----------
+[root@host]# virt-install --virt-type qemu --name rhel7 --ram 2048 \
+--cdrom rhel-server-7.4-x86_64-dvd.iso \
+--disk rhel7.qcow2,format=qcow2 \
+--network=bridge:virbr0 --graphics vnc,listen=0.0.0.0 \
+--noautoconsole --os-type=linux --os-variant=rhel7
+-----------
++
+[NOTE]
+==============
+For GUI users, if the instance does not launch automatically, enter the `virt-manager` command to view the console:
+-----------
+[root@host]# virt-manager
+-----------
+==============
++
+. Follow the steps of the Red Hat Enterprise Linux installation wizard. 
++
+  .. For the installation source, add an HTTP link to your repository in Red Hat Satellite, for example `satellite.example.com/pub/export/RHEL7/content/dist/rhel/server/7/7Server/x86_64/os/`
+  .. For the type of devices your installation uses, select *Auto-detected installation media*.
+  .. For the type of installation destination, select *Local Standard Disks*.
+  .. For other storage options, select *Automatically configure partitioning*.
+  .. For software selection, select *Minimal Install*.
+  .. Set the network interface to *ON* to ensure the interface activates on system start.
+  .. Enter a host name, and click *Apply*.
+  .. Enter a `root` password.
+
++
+. When the installation completes, reboot the instance and log in as
+the root user.
+. Confirm that the network interface is up and that the IP address is assigned:
++
+--------------
+# ip a
+--------------
++
+. Confirm that the hostname is correct: 
++
+--------------
+# hostname
+--------------
++
+. Create a `/etc/NetworkManager/conf.d/XX-cloud-image.conf` file where _XX_ is a two-digit number that indicates order of precedence. Add the following contents to the file: 
++
+--------------
+[main]
+dns=none
+--------------
++
+. Proceed to xref:Configuring_Host_Registration[Configuring a Host for Registration]. 
+
+
+[[sect-create-rhel6-image]]
+=== Creating a Red Hat Enterprise Linux 6 Image
+Use this section to create an image in the QCOW2 format using a Red Hat Enterprise Linux 6 ISO file.
+
+.  Start the installation using `virt-install`:
++
+--------------
+[root@host]# qemu-img create -f qcow2 rhel6.qcow2 4G
+[root@host]# virt-install --connect=qemu:///system --network=bridge:virbr0 \
+--name=rhel6 --os-type linux --os-variant rhel6 \
+--disk path=rhel6.qcow2,format=qcow2,size=10,cache=none \
+--ram 4096 --vcpus=2 --check-cpu --accelerate \
+--hvm --cdrom=rhel-server-6.8-x86_64-dvd.iso
+--------------
++
+This launches an instance and starts the installation process.
++
+[NOTE]
+===============
+If the instance does not launch automatically, enter the `virt-viewer` command to view the console:
+
+------------
+[root@host]# virt-viewer rhel6
+------------
+===============
+
+.  Set up the virtual machines as follows:
+.. At the initial Installer boot menu, select the *Install or upgrade an existing system* option.
+.. Select the appropriate *Language* and *Keyboard* options.
+.. When prompted about which type of devices your installation uses, select *Basic Storage Devices*.
+.. Select a `hostname` for your device. The default host name is `localhost.localdomain`.
+.. Set a root password.
+.. Based on the space on the disk, select the type of installation.
+.. Select the *Basic Server* install, which includes an SSH server.
++
+. Reboot the instance and log in as the `root` user.
+. Update the `/etc/sysconfig/network-scripts/ifcfg-eth0` file so it only contains the following values:
++
+-----------
+TYPE=Ethernet
+DEVICE=eth0
+ONBOOT=yes
+BOOTPROTO=dhcp
+NM_CONTROLLED=no
+-----------
++
+. Restart the service network: 
++
+-----------------
+# service network restart
+-----------------
++
+. Proceed to xref:Configuring_Host_Registration[Configuring a Host for Registration]. 
+
+
+[[Configuring_Host_Registration]]
+=== Configuring a Host for Registration
+
+
+Red Hat Enterprise Linux virtual machines register to Customer Portal
+Subscription Management by default. You must update each virtual machine
+configuration so that they receive updates from the correct Satellite
+Server or Capsule Server.
+
+.Prerequisites
+
+* Hosts must be using the following Red Hat Enterprise Linux version:
+** 6.4 or later
+** 7.0 or later
+* All architectures of Red Hat Enterprise Linux are supported (i386,
+x86_64, s390x, ppc_64).
+* Ensure that a time synchronization tool is enabled and runs on the
+Satellite Servers, any Capsule Servers, and the hosts.
+** For Red Hat Enterprise Linux 6:
++
+---------------------------------------
+# chkconfig ntpd on; service ntpd start
+---------------------------------------
+** For Red Hat Enterprise Linux 7:
++
+---------------------------------------------------
+# systemctl enable chronyd; systemctl start chronyd
+---------------------------------------------------
+* Ensure that the daemon `rhsmcertd` is enabled and running on the hosts.
+** For Red Hat Enterprise Linux 6:
++
+-------------------------
+# chkconfig rhsmcertd on; service rhsmcertd start
+-------------------------
+** For Red Hat Enterprise Linux 7:
++
+---------------------------
+# systemctl start rhsmcertd
+---------------------------
+
+.To Configure a Host for Registration:
+
+. Take note of the fully qualified domain name (FQDN) of the Satellite
+Server or Capsule Server, for example _server.example.com_.
+
+. On the host, connect to a terminal on the host as the root user
+
+. Install the consumer RPM from the Satellite Server or Capsule Server to
+which the host is to be registered. The consumer RPM updates the content
+source location of the host and allows the host to download content from
+the content source specified in Red Hat Satellite.
++
+------------------------------------------------------------
+# rpm -Uvh http://server.example.com/pub/katello-ca-consumer-latest.noarch.rpm
+------------------------------------------------------------
+
+[[Registering_Host]]
+=== Registering a Host
+
+
+.Prerequisites
+
+
+* Ensure that an activation key that is associated with the appropriate content
+view and environment exists for the host. For more information, see https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/content_management_guide/managing_activation_keys[Managing Activation Keys] in the _Content Management Guide_. By default, an activation key has the `auto-attach` function
+enabled. The feature is commonly used with hosts used as hypervisors.
+* Ensure that the version of the `subscription-manager` utility is 1.10 or higher. The package is available in the standard
+Red Hat Enterprise Linux repository.
+
+. On the Red Hat Enterprise Linux Workstation, connect to a terminal as the root user. 
++
+. Register the host using Red Hat Subscription Manager:
++
+-------------------------------------------------------
+# subscription-manager register --org="My_Organization" --activationkey="MyKey"
+-------------------------------------------------------
+
+[NOTE]
+================
+
+You can use the `--environment` option to override the content view and
+life cycle environment defined by the activation key. For example, to
+register a host to the content view "MyView" in a "Development" life
+cycle environment:
+
+-----------------------------------------------------------------------------------------
+# subscription-manager register --org="My_Organization" \
+--environment=Development/MyView \
+--activationkey="MyKey"
+-----------------------------------------------------------------------------------------
+================
+
+[NOTE]
+================
+For Red Hat Enterprise Linux 6.3 hosts, the release version defaults to
+Red Hat Enterprise Linux 6 Server and must point to the 6.3
+repository.
+
+. On Red Hat Satellite, select *Hosts* > *Content Hosts*.
+
+. Select the name of the host that needs to be changed.
+
+. In the *Content Host Content* section click the edit icon to the right of
+*Release Version*.
+
+. Select "6.3" from the *Release Version* drop-down menu.
+
+. Click *Save*.
+
+================
+
+[[Installing_katello_Agent]]
+=== Installing the Katello Agent
+
+
+Use the following procedure to install the Katello agent on a host
+registered to Satellite 6. The `katello-agent` package depends on the
+gofer package that provides the `goferd service`. This service must be
+enabled so that the Red Hat Satellite Server or Capsule Server can
+provide information about errata that are applicable for content hosts.
+
+.Prerequisites
+
+The `Satellite Tools` repository must be enabled, synchronized to the Red
+Hat Satellite Server, and made available to your hosts as it provides the
+required packages. For more information about enabling Satellite Tools, see https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/managing_hosts/chap-red_hat_satellite-managing_hosts-managing_hosts#sect-Red_Hat_Satellite-Managing_Hosts-Registration-Installing_the_Katello_Agent[Installing the Katello Agent] in _Managing Hosts_.
+
+.To Install the Katello Agent
+
+
+. Install the `katello-agent` RPM package using the following command:
++
+---------------------------
+# yum install katello-agent
+---------------------------
++
+. Ensure goferd is running:
++
+---------------------------
+# systemctl start goferd
+---------------------------
+
+=== Installing the Puppet Agent
+
+
+Use this section to install and configure the Puppet agent on
+a host. When you have correctly installed and configured the Puppet
+agent, you can navigate to *Hosts* > *All hosts* to list all hosts visible to
+Red Hat Satellite Server.
+
+. Install the Puppet agent RPM package using the following command:
++
+--------------------
+# yum install puppet
+--------------------
+
+. Configure the puppet agent to start at boot:
++
+On Red Hat Enterprise Linux 6:
++
+---------------------
+# chkconfig puppet on
+---------------------
++
+On Red Hat Enterprise Linux 7:
++
+-------------------------
+# systemctl enable puppet
+-------------------------
+
+=== Completing the Red Hat Enterprise Linux 7 image
+
+. Update the system:
++
+-----------
+# yum update
+-----------
++
+. Install the `cloud-init` packages:
++
+-----------
+# yum install cloud-utils-growpart cloud-init
+-----------
++
+. Open the `/etc/cloud/cloud.cfg` configuration file:
++
+-----------
+# vi /etc/cloud/cloud.cfg
+-----------
++
+. Under the heading `cloud_init_modules`, add:
++
+-----------
+- resolv-conf
+-----------
++
+The `resolv-conf` option automatically configures the `resolv.conf` when an instance boots for the first time. This file contains information related to the instance such as `nameservers`, `domain` and other options.
++
+. Open the `/etc/sysconfig/network` file: 
++
+-----------
+# vi /etc/sysconfig/network
+-----------
+
+. Add the following line to avoid problems accessing the EC2 metadata service:
++
+-----------
+NOZEROCONF=yes
+-----------
+
+. Un-register the virtual machine so that the resulting image does not contain the same subscription details for every instance cloned based on it:
++
+------------
+# subscription-manager repos --disable=*
+# subscription-manager unregister
+------------
+
+. Power off the instance:
++
+-----------
+# poweroff
+-----------
++
+. On your Red Hat Enterprise Linux Workstation, connect to the terminal as the root user and navigate to the `/var/lib/libvirt/images/` directory:
++
+-----------
+[root@host]# cd /var/lib/libvirt/images/
+-----------
++
+. Reset and clean the image using the `virt-sysprep` command so it can be used to create instances without issues:
++
+-----------
+[root@host]# virt-sysprep -d rhel7
+-----------
+
+. Reduce image size using the `virt-sparsify` command. This command
+converts any free space within the disk image back to free space within
+the host:
++
+-----------
+[root@host]# virt-sparsify --compress rhel7.qcow2 rhel7-cloud.qcow2
+-----------
++
+This creates a new `rhel7-cloud.qcow2` file in the location where you enter the command.
+
+
+=== Completing the Red Hat Enterprise Linux 6 image 
+
+
+
+. Update the system:
++
+-----------
+# yum update
+-----------
+
+. Install the `cloud-init` packages:
++
+-----------
+# yum install cloud-utils-growpart cloud-init
+-----------
+
+. Edit the `/etc/cloud/cloud.cfg` configuration file and under `cloud_init_modules` add:
++
+-----------
+- resolv-conf
+-----------
++
+The `resolv-conf` option automatically configures the `resolv.conf` configuration file when an instance boots for the first time. This file contains information related to the instance such as `nameservers`, `domain`, and other options.
++
+. To prevent network issues, create the `/etc/udev/rules.d/75-persistent-net-generator.rules`
+file as follows:
++
+-------------
+# echo "#" > /etc/udev/rules.d/75-persistent-net-generator.rules
+-------------
++
+This prevents `/etc/udev/rules.d/70-persistent-net.rules` file from being created. If `/etc/udev/rules.d/70-persistent-net.rules` is created, networking might not function properly when booting from snapshots (the network interface is created as "eth1" rather than "eth0" and IP address is not assigned).
+
+. Add the following line to `/etc/sysconfig/network` to avoid problems accessing the EC2 metadata service:
++
+-------------
+NOZEROCONF=yes
+-------------
++
+. Un-register the virtual machine so that the resulting image does not contain the same subscription details for every instance cloned based on it:
++
+----------
+# subscription-manager repos --disable=*
+# subscription-manager unregister
+# yum clean all
+----------
++
+. Power off the instance:
++
+----------
+# poweroff
+----------
++
+. On your Red Hat Enterprise Linux Workstation, log in as root and reset and clean the image using the `virt-sysprep` command so it can be used to create instances without issues:
++
+----------
+[root@host]# virt-sysprep -d rhel6
+----------
++
+. Reduce image size using the `virt-sparsify` command. This command converts any free space within the disk image back to free space within the host:
++
+----------
+[root@host]# virt-sparsify --compress rhel6.qcow2 rhel6-cloud.qcow2
+----------
++
+This creates a new `rhel6-cloud.qcow2` file in the location where you enter the command.
++
+[NOTE]
+================
+You must manually resize the partitions of instances based on the image in accordance with the disk space in the flavor that is applied to the instance.
+================
+
+=== Next steps
+
+* Repeat the procedures for every image that you want to provision with Satellite. 
+* Move the image to the location where you want to store for future use. 
+
+
+

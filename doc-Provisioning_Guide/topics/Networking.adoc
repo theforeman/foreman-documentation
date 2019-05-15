@@ -1,0 +1,516 @@
+[[Configuring_Networking]]
+== Configuring Networking
+
+Each provisioning type requires some network configuration. Use this chapter to configure network services in Satellite Server's integrated Capsule.
+
+New hosts must have access to your Capsule Server. A Capsule Server can be either Satellite Server's integrated Capsule or an external Capsule Server. You might want to provision hosts from an external Capsule Server when the hosts are on isolated networks and cannot connect to the Satellite Server directly, or when the content is synchronized with the Capsule Server. Provisioning using the external Capsule Server can save on network bandwidth.
+
+Configuring the Capsule Server has two basic requirements:
+
+. Configuring network services. This includes:
+  * Content delivery services
+  * Network services (DHCP, DNS, and TFTP)
+  * Puppet configuration
+. Defining network resource data in Satellite Server to help configure network interfaces on new hosts.
+
+The following instructions have similar applications to configuring standalone Capsule Servers managing a specific network. To configure Satellite to use external DHCP, DNS, and TFTP services, see link:https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/installing_satellite_server_from_a_connected_network/configuring_external_services[Configuring External Services] in _Installing Satellite Server from a Connected Network_.
+
+.DHCP Ranges
+You can define the same DHCP range in Satellite Server for both Discovered and Provisioned systems, but use a separate range for each service within the same subnet.
+
+=== Prerequisites for Image Based Provisioning
+
+.Post-Boot Configuration Method
+
+Images that use the `finish` post-boot configuration scripts require a managed DHCP server, such as Satellite's integrated Capsule or an external Capsule. The host must be created with a subnet associated with a DHCP Capsule, and the IP address of the host must be a valid IP address from the DHCP range.
+
+It is possible to use an external DHCP service, but IP addresses must be entered manually. The SSH credentials corresponding to the configuration in the image must be configured in Satellite to enable the post-boot configuration to be made.
+
+Check following items when troubleshooting a virtual machine booted from an image that depends on post-configuration scripts:
+
+  * The host has a subnet assigned in Satellite Server.
+  * The subnet has a DHCP Capsule assigned in Satellite Server.
+  * The host has a valid IP address assigned in Satellite Server.
+  * The IP address acquired by the virtual machine using DHCP matches the address configured in Satellite Server.
+  * The virtual machine created from an image responds to SSH requests.
+  * The virtual machine created from an image authorizes the user and password, over SSH, which is associated with the image being deployed.
+  * Satellite Server has access to the virtual machine via SSH keys. This is required for the virtual machine to receive post-configuration scripts from Satellite Server.
+
+.Pre-Boot Initialization Configuration Method
+
+Images that use the `cloud-init` scripts require a DHCP server to avoid having to include the IP address in the image. A managed DHCP Capsule is preferred. The image must have the `cloud-init` service configured to start when the system boots and fetch a script or configuration data to use in completing the configuration.
+
+Check the following items when troubleshooting a virtual machine booted from an image that depends on initialization scripts included in the image:
+
+  * There is a DHCP server on the subnet.
+  * The virtual machine has the `cloud-init` service installed and enabled.
+
+For information about the differing levels of support for `finish` and `cloud-init` scripts in virtual-machine images, see the Red Hat Knowledgebase Solution https://access.redhat.com/solutions/2987171[What are the supported compute resources for the finish and cloud-init scripts] on the Red Hat Customer Portal.
+
+[[Configuring_Networking-Configuring_Network_Services_for_PXE_Boot]]
+=== Configuring Network Services
+
+Some provisioning methods use Capsule Server services. For example, a network might require the Capsule Server to act as a DHCP server. A network can also use PXE boot services to install the operating system on new hosts. This requires configuring the Capsule Server to use the main PXE boot services: DHCP, DNS, and TFTP.
+
+Use the `satellite-installer` script with the options to configure these services on the Satellite Server.
+
+To configure these services on an external Capsule Server, run `satellite-installer --scenario capsule`.
+
+Satellite Server uses `eth0` for external communication, such as connecting to Red Hat's CDN.
+
+.Procedure
+
+To configure network services on Satellite's integrated Capsule, complete the following steps:
+
+. Enter the `satellite-installer` command to configure the required network services:
++
+[options="nowrap" subs="+quotes"]
+----
+# satellite-installer --foreman-proxy-dhcp true \
+--foreman-proxy-dhcp-managed true \
+--foreman-proxy-dhcp-gateway "_192.168.140.1_" \
+--foreman-proxy-dhcp-interface "eth1" \
+--foreman-proxy-dhcp-nameservers "_192.168.140.2_" \
+--foreman-proxy-dhcp-range "_192.168.140.10_ _192.168.140.110_" \
+--foreman-proxy-dhcp-server "_192.168.140.2_" \
+--foreman-proxy-dns true \
+--foreman-proxy-dns-managed true \
+--foreman-proxy-dns-forwarders "_8.8.8.8_; _4.4.4.4_" \
+--foreman-proxy-dns-interface "eth1" \
+--foreman-proxy-dns-reverse "_140.168.192.in-addr.arpa_" \
+--foreman-proxy-dns-server "_192.168.140.2_" \
+--foreman-proxy-dns-zone "_example.com_" \
+--foreman-proxy-tftp true \
+--foreman-proxy-tftp-managed true
+----
++
+. Find the Capsule Server that you configure:
++
+----
+# hammer proxy list
+----
++
+. Refresh features of the Capsule Server to view the changes:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer proxy refresh-features --name "_satellite.example.com_"
+----
++
+. Verify the services configured on the Capsule Server:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer proxy info --name "_satellite.example.com_"
+----
+
+==== DHCP, DNS, and TFTP Options for Network Configuration
+
+.DHCP Options
+
+--foreman-proxy-dhcp::
+  Enables the DHCP service. You can set this option to `true` or `false`.
+
+--foreman-proxy-dhcp-managed::
+  Enables Foreman to manage the DHCP service. You can set this option to `true` or `false`.
+
+--foreman-proxy-dhcp-gateway::
+  The DHCP pool gateway. Set this to the address of the external gateway for hosts on your private network.
+
+--foreman-proxy-dhcp-interface::
+  Sets the interface for the DHCP service to listen for requests. Set this to `eth1`.
+
+--foreman-proxy-dhcp-nameservers::
+  Sets the addresses of the nameservers provided to clients through DHCP. Set this to the address for Satellite Server on `eth1`.
+
+--foreman-proxy-dhcp-range::
+  A space-separated DHCP pool range for Discovered and Unmanaged services.
+
+--foreman-proxy-dhcp-server::
+  Sets the address of the DHCP server to manage.
+
+
+.DNS Options
+
+--foreman-proxy-dns::
+  Enables DNS service. You can set this option to `true` or `false`.
+
+--foreman-proxy-dns-managed::
+  Enables Foreman to manage the DNS service. You can set this option to `true` or `false`.
+
+--foreman-proxy-dns-forwarders::
+  Sets the DNS forwarders. Set this to your DNS servers.
+
+--foreman-proxy-dns-interface::
+  Sets the interface to listen for DNS requests. Set this to `eth1`.
+
+--foreman-proxy-dns-reverse::
+  The DNS reverse zone name.
+
+--foreman-proxy-dns-server::
+  Sets the address of the DNS server to manage.
+
+--foreman-proxy-dns-zone::
+  Sets the DNS zone name.
+
+.TFTP Options
+
+--foreman-proxy-tftp::
+  Enables TFTP service. You can set this option to `true` or `false`.
+
+--foreman-proxy-tftp-managed::
+  Enables Foreman to manage the TFTP service. You can set this option to `true` or `false`.
+
+--foreman-proxy-tftp-servername::
+  Sets the TFTP server to use. Ensure that you use Capsule's IP address.
+
+
+Run `satellite-installer --scenario capsule --help` to view more options related to DHCP, DNS, TFTP, and other Satellite Capsule services
+
+[[Configuring_Networking-Using_TFTP_Services_through_NAT]]
+==== Using TFTP Services through NAT
+
+You can use Satellite TFTP services through NAT. To do this, on all NAT routers or firewalls, you must enable a TFTP service on UDP port 69 and enable the TFTP state tracking feature. For more information, see the documentation for your NAT device.
+
+If your NAT routers or firewalls use Red{nbsp}Hat Enterprise{nbsp}Linux, perform this procedure on all devices.
+
+.On Red Hat Enterprise Linux 7:
+
+Use the following command to allow TFTP service on UDP port 69, load the kernel TFTP state tracking module, and make the changes persistent:
+
+----
+# firewall-cmd --add-service=tftp && firewall-cmd --runtime-to-permanent
+----
+
+.On Red Hat Enterprise Linux 6:
+
+. Configure the firewall to allow TFTP service UDP on port 69.
++
+----
+# iptables -A OUTPUT -i eth0 -p udp --sport 69 -m state \
+--state ESTABLISHED -j ACCEPT
+# service iptables save
+----
+
+. Load the `ip_conntrack_tftp` kernel TFTP state module. In the `/etc/sysconfig/iptables-config` file, locate `IPTABLES_MODULES` and add `ip_conntrack_tftp` as follows:
++
+----
+IPTABLES_MODULES="ip_conntrack_tftp"
+----
+
+[[Configuring_Networking-Adding_a_Domain_to_the_Satellite_Server]]
+=== Adding a Domain to Satellite Server
+
+Satellite Server defines domain names for each host on the network. Satellite Server must have information about the domain and the Capsule Server responsible for domain name assignment.
+
+.Checking for Existing Domains
+Satellite Server might already have the relevant domain created as part of Satellite Server installation. Switch the context to `Any Organization` and `Any Location` then check the domain list to see if it exists.
+
+.Procedure
+
+To add a domain to Satellite, complete the following steps:
+
+. In the Satellite web UI, navigate to *Infrastructure* > *Domains* and click *Create Domain*.
+. In the *DNS Domain* field, enter the full DNS domain name.
+. In the *Fullname* field, enter the plain text name of the domain.
+. Click the *Parameters* tab and configure any domain level parameters to apply to hosts attached to this domain. For example, user defined Boolean or string parameters to use in templates.
+. Click *Add Parameter* and fill in the *Name* and *Value* fields.
+. Click the *Locations* tab, and add the location where the domain resides.
+. Click the *Organizations* tab, and add the organization that the domain belongs to.
+. Click *Submit* to save the changes.
+
+.For CLI Users
+
+Use the `hammer domain create` command to create a domain:
+
+[options="nowrap" subs="+quotes"]
+----
+# hammer domain create --name "_domain_name.com_" \
+--description "_My example domain_" --dns-id 1 \
+--locations "_My_Location_" --organizations "_My_Organization_"
+----
+
+In this example, the `--dns-id` option uses `1`, which is the ID of Satellite Server's integrated Capsule.
+
+[[Configuring_Networking-Adding_a_Subnet_to_the_Satellite_Server]]
+=== Adding a Subnet to Satellite Server
+
+You must add information for each of your subnets to Satellite Server because Satellite configures interfaces for new hosts. To configure interfaces, Satellite Server must have all the information about the network that connects these interfaces.
+
+.Procedure
+
+To add a subnet to Satellite Server, complete the following steps:
+
+. In the Satellite web UI, navigate to *Infrastructure* > *Subnets*, and in the Subnets window, click *Create Subnet*.
+. In the *Name* field, enter a name for the subnet.
+. In the *Description* field, enter a description for the subnet.
+. In the *Network address* field, enter the network address for the subnet.
+. In the *Network prefix* field, enter the network prefix for the subnet.
+. In the *Network mask* field, enter the network mask for the subnet.
+. In the *Gateway address* field, enter the external gateway for the subnet.
+. In the *Primary DNS server* field, enter a primary DNS for the subnet.
+. In the *Secondary DNS server*, enter a secondary DNS for the subnet.
+. From the *IPAM* list, select the method that you want to use for IP address management (IPAM):
++
+* *DHCP* - The subnet contains a DHCP server.
+* *Internal DB* - The subnet does not contain a DHCP server but Satellite can manage the IP address assignment and record IP addresses in its internal database.
+* *None* - No IP address management.
++
+. Enter the information for the IPAM method that you select.
+. Click the *Remote Execution* tab and select the capsule that controls the remote execution.
+. Click the *Domains* tab and select the domains that apply to this subnet.
+. Click the *Capsules* tab and select the capsule that applies to each service in the subnet, including DHCP, TFTP, and reverse DNS services.
+. Click the *Parameters* tab and configure any subnet level parameters to apply to hosts attached to this subnet. For example, user defined Boolean or string parameters to use in templates.
+. Click the *Locations* tab and select the locations that use this capsule.
+. Click the *Organizations* tab and select the organizations that use this capsule.
+. Click *Submit* to save the subnet information.
+
+.For CLI Users
+
+Create the subnet with the following command:
+
+[options="nowrap" subs="+quotes"]
+----
+# hammer subnet create --name "_My_Network_" \
+--description "_your_description_" \
+--network "192.168.140.0" --mask "255.255.255.0" \
+--gateway "192.168.140.1" --dns-primary "192.168.140.2" \
+--dns-secondary "8.8.8.8" --ipam "DHCP" \
+--from "192.168.140.111" --to "192.168.140.250" --boot-mode "DHCP" \
+--domains "_example.com_" --dhcp-id 1 --dns-id 1 --tftp-id 1 \
+--locations "_My_Location_" --organizations "_My_Organization_"
+----
+
+[NOTE]
+In this example, the `--dhcp-id`, `--dns-id`, and `--tftp-id` options use 1, which is the ID of the integrated Capsule in Satellite Server.
+
+[[Configuring_Networking-Configuring_gPXE_to_Reduce_Provisioning_Times]]
+=== Configuring iPXE to Reduce Provisioning Times
+
+In Red Hat Satellite {ProductVersion}, you can configure PXELinux to chainboot iPXE and boot using the HTTP protocol, which is faster and more reliable on high latency networks than TFTP.
+
+There are three methods of using iPXE with Red Hat Satellite {ProductVersion}:
+
+. Chainbooting virtual machines using hypervisors that use iPXE as primary firmware
+. Using PXELinux through TFTP to chainload iPXE directly on bare metal hosts
+. Using PXELinux through UNDI, which uses HTTP to transfer the kernel and the initial RAM disk on bare metal hosts
+
+.Prerequisites
+
+Before you begin, ensure that the following conditions are met:
+
+* A host exists on Red Hat Satellite to use
+* The MAC address of the provisioning interface matches the host configuration
+* The provisioning interface of the host has a valid DHCP reservation
+* The NIC is capable of PXE booting. For more information, see http://ipxe.org/appnote/hardware_drivers
+* The NIC is compatible with iPXE
+
+==== Chainbooting virtual machines
+
+Most virtualization hypervisors use iPXE as primary firmware for PXE booting. Because of this, you can chainboot without TFTP and PXELinux.
+
+.Chainbooting virtual machine workflow
+
+Using virtualization hypervisors removes the need for TFTP and PXELinux. It has the following workflow:
+
+. Virtual machine starts
+. iPXE retrieves the network credentials using DHCP
+. iPXE retrieves the HTTP address using DHCP
+. iPXE chainloads the iPXE template from the template Capsule
+. iPXE loads the kernel and initial RAM disk of the installer
+
+Ensure that the hypervisor that you want to use supports iPXE. The following virtualization hypervisors support iPXE:
+
+* libvirt
+* oVirt
+* RHEV
+
+.Configuring Red Hat Satellite Server to use iPXE
+
+You can use the default template to configure iPXE booting for hosts.
+If you want to change the default values in the template, clone the template and edit the clone.
+
+.Procedure
+
+To configure Satellite to use iPXE, complete the following steps:
+
+. In the Satellite web UI, navigate to *Hosts* > *Provisioning Templates*, enter `Kickstart default iPXE` and click *Search*.
+. Optional: If you want to change the template, click *Clone*, enter a unique name, and click *Submit*.
+. Click the name of the template you want to use.
+. If you clone the template, you can make changes you require on the *Template* tab.
+. Click the *Association* tab, and select the operating systems that your host uses.
+. Click the *Locations* tab, and add the location where the host resides.
+. Click the *Organizations* tab, and add the organization that the host belongs to.
+. Click *Submit* to save the changes.
+. Navigate to *Hosts* > *Operating systems* and select the operating system of your host.
+. Click the *Templates* tab.
+. From the *iPXE Template* list, select the template you want to use.
+. Click *Submit* to save the changes.
+. Navigate to *Hosts* > *All Hosts*.
+. In the *Hosts* page, select the host that you want to use.
+. Select the *Templates* tab.
+. From the *iPXE template* list, select *Review* and verify that the *Kickstart default iPXE* template is the correct template.
+. To prevent an endless loop of chainbooting iPXE firmware, edit the `/etc/dhcp/dhcpd.conf` file to match the following example. If you use an isolated network, use a Capsule Server URL with TCP port 8000, instead of Satellite Server's URL.
+.. Locate the following lines in the Bootfile Handoff section of the `/etc/dhcp/dhcpd.conf` file:
++
+----
+} else {
+  filename "pxelinux.0";
+}
+----
+.. Add the following extra `elsif` statement before the else statement:
++
+----
+elsif exists user-class and option user-class = "iPXE" {
+  filename "http://satellite.example.com/unattended/iPXE";
+}
+----
+.. Verify that the 'if' section matches the following example:
++
+[options="nowrap" subs="+quotes"]
+----
+if option architecture = 00:06 {
+  filename "grub2/shim.efi";
+} elsif option architecture = 00:07 {
+  filename "grub2/shim.efi";
+} elsif option architecture = 00:09 {
+  filename "grub2/shim.efi";
+} elsif exists user-class and option user-class = "iPXE" {
+  filename "http://_satellite.example.com_/unattended/iPXE";
+} else {
+  filename "pxelinux.0";
+}
+----
++
+[NOTE]
+For `http://satellite.example.com/unattended/iPXE`, you can also use a Red Hat Satellite Capsule `http://capsule.example.com:8000/unattended/iPXE`.
+You must update the `/etc/dhcp/dhcpd.conf` file after every upgrade.
+The content of the `/etc/dhcp/dhcpd.conf` file is case sensitive.
+
+
+==== Chainbooting iPXE directly
+
+Use this procedure to set up iPXE to use a built-in driver for network communication or UNDI interface. There are separate procedures to configure Satellite Server and Capsule to use iPXE.
+
+You can use this procedure only with bare metal hosts.
+
+
+.Chainbooting iPXE directly or with UNDI workflow
+
+. Host powers on
+. PXE driver retrieves the network credentials using DHCP
+. PXE driver retrieves the PXELinux firmware `pxelinux.0` using TFTP
+. PXELinux searches for the configuration file on the TFTP server
+. PXELinux chainloads iPXE `ipxe.lkrn` or `undionly-ipxe.0`
+. iPXE retrieves the network credentials using DHCP again
+. iPXE retrieves HTTP address using DHCP
+. iPXE chainloads the iPXE template from the template Capsule
+. iPXE loads the kernel and initial RAM disk of the installer
+
+.Configuring Red Hat Satellite Server to use iPXE
+
+You can use the default template to configure iPXE booting for hosts.
+If you want to change the default values in the template, clone the template and edit the clone.
+
+.Procedure
+
+To configure Satellite to use iPXE with the UNDI workflow, complete the following steps:
+
+. In the Satellite web UI, navigate to *Hosts* > *Provisioning Templates*, enter `PXELinux chain iPXE` or, for UNDI, enter `PXELinux chain iPXE UNDI`, and click *Search*.
+. Optional: If you want to change the template, click *Clone*, enter a unique name, and click *Submit*.
+. Click the name of the template you want to use.
+. If you clone the template, you can make changes you require on the *Template* tab.
+. Click the *Association* tab, and select the operating systems that your host uses.
+. Click the *Locations* tab, and add the location where the host resides.
+. Click the *Organizations* tab, and add the organization that the host belongs to.
+. Click *Submit* to save the changes.
+. In the *Provisioning Templates* page, enter `Kickstart default iPXE` into the search field and click *Search*.
+. Optional: If you want to change the template, click *Clone*, enter a unique name, and click *Submit*.
+. Click the name of the template you want to use.
+. If you clone the template, you can make changes you require on the *Template* tab.
+. Click the *Association* tab, and associate the template with the operating system that your host uses.
+. Click the *Locations* tab, and add the location where the host resides.
+. Click the *Organizations* tab, and add the organization that the host belongs to.
+. Click *Submit* to save the changes.
+. Navigate to *Hosts* > *Operating systems* and select the operating system of your host.
+. Click the *Templates* tab.
+. From the *PXELinux template* list, select the template you want to use.
+. From the *iPXE template* list, select the template you want to use.
+. Click *Submit* to save the changes.
+. Navigate to *Hosts* > *All Hosts*, and select the host you want to use.
+. Select the *Templates* tab, and from the *PXELinux template* list, select *Review* and verify the template is the correct template.
+. From the *iPXE template* list, select *Review* and verify the template is the correct template. If there is no PXELinux entry, or you cannot find the new template, navigate to *Hosts* > *All Hosts*, and on your host, click *Edit*. Click the *Operating system* tab and click the Provisioning Template *Resolve* button to refresh the list of templates.
+. To prevent an endless loop of chainbooting iPXE firmware, edit the `/etc/dhcp/dhcpd.conf` file to match the following example. If you use an isolated network, use a Capsule Server URL with TCP port 8000, instead of Satellite Server's URL.
+.. Locate the following lines in the Bootfile Handoff section of the `/etc/dhcp/dhcpd.conf` file:
++
+----
+} else {
+  filename "pxelinux.0";
+}
+----
+.. Add the following extra `elsif` statement before the else statement:
++
+----
+elsif exists user-class and option user-class = "iPXE" {
+  filename "http://satellite.example.com/unattended/iPXE";
+}
+----
+.. Verify that the 'if' section matches the following example:
++
+[options="nowrap" subs="+quotes"]
+----
+if option architecture = 00:06 {
+  filename "grub2/shim.efi";
+} elsif option architecture = 00:07 {
+  filename "grub2/shim.efi";
+} elsif option architecture = 00:09 {
+  filename "grub2/shim.efi";
+} elsif exists user-class and option user-class = "iPXE" {
+  filename "http://_satellite.example.com_/unattended/iPXE";
+} else {
+  filename "pxelinux.0";
+}
+----
++
+[NOTE]
+For `http://satellite.example.com/unattended/iPXE`, you can also use a Red Hat Satellite Capsule `http://capsule.example.comf:8000/unattended/iPXE`.
+You must update the `/etc/dhcp/dhcpd.conf` file after every upgrade.
+The content of the `/etc/dhcp/dhcpd.conf` file is case sensitive.
+
+.Configuring Red Hat Satellite Capsule to use iPXE
+
+You can use this procedure to configure Capsules to use iPXE.
+
+You must perform this procedure on all Capsules.
+
+.Procedure
+
+To configure the Capsule to chainboot iPXE, complete the following steps:
+
+. Install the `ipxe-bootimgs` RPM package:
++
+----
+# yum install ipxe-bootimgs
+----
++
+. Copy the iPXE firmware to the TFTP server's root directory. Do not use symbolic links because TFTP runs in the `chroot` environment.
++
+* For chainbooting directly, enter the following command:
++
+----
+
+# cp /usr/share/ipxe/ipxe.lkrn /var/lib/tftpboot/
+
+----
++
+* For UNDI, enter the following command:
++
+----
+# cp /usr/share/ipxe/undionly.kpxe /var/lib/tftpboot/undionly-ipxe.0
+----
++
+. Correct the file contexts:
++
+----
+# restorecon -RvF /var/lib/tftpboot/
+----

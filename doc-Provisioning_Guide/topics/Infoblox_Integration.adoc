@@ -1,0 +1,125 @@
+[[chap-Infoblox-Integration]]
+== Using Infoblox as DHCP and DNS Providers
+
+You can use Capsule Server to connect to your Infoblox application to create and manage DHCP and DNS records, and to reserve IP addresses.
+
+The supported Infoblox version is NIOS 8.0 or higher and Satellite 6.5 or higher.
+
+=== Limitations
+
+All DHCP and DNS records can be managed only in a single Network or DNS view, After you install the Infoblox modules on Capsule and set up the view using the `satellite-installer` command, you cannot edit the view.
+
+Capsule Server communicates with a single Infoblox node using the standard HTTPS web API. If you want to configure clustering and High Availability, make the configurations in Infoblox.
+
+Hosting PXE-related files using Infoblox's TFTP functionality is not supported. You must use Capsule as a TFTP server for PXE provisioning. For more information, see xref:Configuring_Networking[].
+
+=== Prerequisites
+
+You must have Infoblox account credentials to manage DHCP and DNS entries in Satellite.
+
+Ensure that you have Infoblox administration roles with the names: `DHCP Admin` and `DNS Admin`.
+
+The administration roles must have permissions or belong to an admin group that permits the accounts to perform tasks through the Infoblox API.
+
+=== Installing the Infoblox CA Certificate on Capsule Server
+
+You must install Infoblox HTTPS CA certificate on the base system for all Capsules that you want to integrate with Infoblox applications.
+
+You can download the certificate from the Infoblox web UI, or you can use the following OpenSSL commands to download the certificate:
+
+[options="nowrap" subs="+quotes"]
+----
+# update-ca-trust enable
+# openssl s_client -showcerts -connect Infoblox_hostname:443 </dev/null | \
+openssl x509 -text >/etc/pki/ca-trust/source/anchors/infoblox.crt
+# update-ca-trust extract
+----
+
+* The `Infoblox_hostname` entry must match the host name for the Infoblox application in the X509 certificate.
+
+
+To test the CA certificate, use a CURL query:
+[options="nowrap" subs="+quotes"]
+----
+# curl -u admin:infoblox https://_Infoblox_hostname_/wapi/v2.0/network
+----
+
+Example positive response:
+
+[options="nowrap" subs="+quotes"]
+----
+[
+    {
+        "_ref": "network/ZG5zLm5ldHdvcmskMTkyLjE2OC4yMDIuMC8yNC8w:__Infoblox_hostname__/24/default",
+        "network": "192.168.202.0/24",
+        "network_view": "default"
+    }
+]
+----
+
+Use the following Red{nbsp}Hat Knowledgebase article to install the certificate: https://access.redhat.com/solutions/1519813[How to install a CA certificate on Red Hat Enterprise Linux 6 / 7].
+
+[[Infoblox-Integration-Installing_the_DHCP_Infoblox_Module]]
+=== Installing the DHCP Infoblox module
+
+Use this procedure to install the DHCP Infoblox module on Capsule. Note that you cannot manage records in separate views.
+
+You can also install DHCP and DNS Infoblox modules simultaneously by combining this procedure and xref:Infoblox-Integration-Installing_the_DNS_Infoblox_Module[]
+
+.DHCP Infoblox Record Type Considerations
+
+Use only the `--foreman-proxy-plugin-dhcp-infoblox-record-type host` option to configure the DHCP and DNS modules.
+
+Configuring both DHCP and DNS Infoblox modules with the `fixedaddress` record type setting causes DNS conflicts and is not supported. If you install the Infoblox module on Capsule Server with the `--foreman-proxy-plugin-dhcp-infoblox-record-type` option set to `fixedaddress`, you must unset both DNS Capsule and Reverse DNS Capsule options because Infoblox does the DNS management itself. You cannot use the `fixedaddress` option without creating conflicts and, for example, being unable to rename hosts in Satellite.
+
+.Procedure
+
+To install the Infoblox module for DHCP, complete the following steps:
+
+. On Capsule, enter the following command:
++
+[options="nowrap" subs="+quotes"]
+----
+
+# satellite-installer --enable-foreman-proxy-plugin-dhcp-infoblox \
+--foreman-proxy-dhcp true \
+--foreman-proxy-dhcp-managed false \
+--foreman-proxy-dhcp-provider infoblox \
+--foreman-proxy-plugin-dhcp-infoblox-record-type host \
+--foreman-proxy-dhcp-server _Infoblox_hostname_ \
+--foreman-proxy-plugin-dhcp-infoblox-username admin \
+--foreman-proxy-plugin-dhcp-infoblox-password infoblox \
+--foreman-proxy-plugin-dhcp-infoblox-network-view default \
+--foreman-proxy-plugin-dhcp-infoblox-dns-view default
+
+----
++
+. In the Satellite web UI, navigate to *Infrastructure* > *Capsules* and select the Capsule with the Infoblox DHCP module and click *Refresh*.
+. Ensure that the *dhcp* features are listed.
+. For all domains managed through Infoblox, ensure that the DNS Capsule is set for that domain. To verify, in the Satellite web UI, navigate to *Infrastructure* > *Domains*, and inspect the settings of each domain.
+. For all subnets managed through Infoblox, ensure that DHCP Capsule and Reverse DNS Capsule is set. To verify, in the Satellite web UI, navigate to *Infrastructure* > *Subnets*, and inspect the settings of each subnet.
+
+[[Infoblox-Integration-Installing_the_DNS_Infoblox_Module]]
+=== Installing the DNS Infoblox Module
+
+Use this procedure to install the DNS Infoblox module on Capsule. You can also install DHCP and DNS Infoblox modules simultaneously by combining this procedure and xref:Infoblox-Integration-Installing_the_DHCP_Infoblox_Module[].
+
+DNS records are managed only in the default DNS view, it's not possible to specify which DNS view to use.
+
+To install the DNS Infoblox module, complete the following steps:
+
+. On Capsule, enter the following command:
++
+[options="nowrap" subs="+quotes"]
+----
+# satellite-installer --enable-foreman-proxy-plugin-dns-infoblox \
+--foreman-proxy-dns true \
+--foreman-proxy-dns-managed false \
+--foreman-proxy-dns-provider infoblox \
+--foreman-proxy-plugin-dns-infoblox-dns-server _Infoblox_hostname_ \
+--foreman-proxy-plugin-dns-infoblox-username admin \
+--foreman-proxy-plugin-dns-infoblox-password infoblox
+----
++
+. In the Satellite web UI, navigate to *Infrastructure* > *Capsules* and select the Capsule with the Infoblox DNS module and click *Refresh*.
+. Ensure that the *dns* features are listed.

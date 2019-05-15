@@ -1,0 +1,235 @@
+[[Provisioning_Virtual_Machines_in_Red_Hat_Virtualization]]
+== Provisioning Virtual Machines in Red Hat Virtualization
+
+Red Hat Virtualization (version 4.0 and later) or Red Hat Enterprise Virtualization (version 3.6 and earlier) is an enterprise-grade server and desktop virtualization platform built on Red Hat Enterprise Linux.
+
+With Red Hat Satellite 6, you can manage virtualization functions through Red Hat Virtualization's REST API version 3. REST API version 4 is not yet supported by Satellite 6. This includes creating virtual machines and controlling their power states.
+
+Use the following procedures to add a connection to a Red Hat Virtualization environment and provision a virtual machine.
+
+[[Provisioning_Virtual_Machines_in_Red_Hat_Enterprise_Virtualization-Prerequisites_for_Red_Hat_Virtualization_Provisioning]]
+=== Prerequisites for Red Hat Virtualization Provisioning
+
+The requirements for Red Hat Virtualization provisioning include:
+
+  * Synchronized content repositories for the version of Red Hat Enterprise Linux that you want to use. For more information, see https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/content_management_guide/importing_red_hat_content#Importing_Red_Hat_Content-Synchronizing_Red_Hat_Repositories[Synchronizing Red Hat Repositories] in the _Content Management Guide_.
+  * A Capsule Server managing a logical network on the Red Hat Virtualization environment. Ensure no other DHCP services run on this network to avoid conflicts with the Capsule Server. For more information, see xref:Configuring_Networking[].
+  * An existing template, other than the `blank` template, if you want to use image-based provisioning. For more information about creating templates for virtual machines, see https://access.redhat.com/documentation/en-us/red_hat_virtualization/4.0/html/virtual_machine_management_guide/chap-templates[Templates] in the _Virtual Machine Management Guide_.
+  * An activation key for host registration. For more information, see https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/content_management_guide/managing_activation_keys#Managing_Activation_Keys-Creating_an_Activation_Key[Creating An Activation Key] in the _Content Management_ guide.
+
+[[Provisioning_Virtual_Machines_in_Red_Hat_Virtualization-Creating_a_Red_Hat_Virtualization_User]]
+=== Creating a Red Hat Virtualization User
+
+The Red Hat Virtualization server requires an administration-like user for Satellite Server communication. For security reasons, Red Hat advises against using the `admin@internal` user for such communication. Instead, create a new Red Hat Virtualization user with the following permissions:
+
+  - System
+    * Configure System
+      ** Login Permissions
+  - Network
+    * Configure vNIC Profile
+      ** Create
+      ** Edit Properties
+      ** Delete
+      ** Assign vNIC Profile to VM
+      ** Assign vNIC Profile to Template
+  - Template
+    * Provisioning Operations
+      ** Import/Export
+  - VM
+    * Provisioning Operations
+      ** Create
+      ** Delete
+      ** Import/Export
+      ** Edit Storage
+  - Disk
+    * Provisioning Operations
+      ** Create
+    * Disk Profile
+      ** Attach Disk Profile
+
+For more information about how to create a user and add permissions in Red Hat Virtualization, see https://access.redhat.com/documentation/en-us/red_hat_virtualization/4.1/html/administration_guide/sect-red_hat_enterprise_virtualization_manager_user_tasks[Administering User Tasks From the Administration Portal] in the _Red Hat Virtualization Administration Guide_.
+
+[[Provisioning_Virtual_Machines_in_Red_Hat_Virtualization-Adding_a_Red_Hat_Virtualization_Connection_to_the_Satellite_Server]]
+=== Adding a Red Hat Virtualization Connection to Satellite Server
+
+Use this procedure to add a Red Hat Virtualization connection to Satellite Server's compute resources.
+
+.Procedure
+
+To add a Red Hat Virtualization connection to Satellite, complete the following steps:
+
+. In the Satellite web UI, navigate to *Infrastructure* > *Compute Resources*, and in the Compute Resources window, click *Create Compute Resource*.
+. In the *Name* field, enter a name for the new compute resource.
+. From the *Provider* list, select *RHV*.
+. In the *Description* field, enter a description for the compute resource.
+. In the *URL* field, enter the connection URL for the Red Hat Virtualization Manager's API.
++
+For example, in RHEV 3.6 and earlier, the URL is
+of the following form: `https://rhvm.example.com/ovirt-engine/api`. In RHV 4.0 and
+later, the URL is of the following form: `https://rhvm.example.com/ovirt-engine/api/v3`.
++
+. Optionally, select the *Use APIv4 (experimental)* check box to evaluate the new engine API.
++
+[WARNING]
+The items listed in this step are provided as Technology Previews. For further information about the scope of Technology Preview status, and associated support implications, see https://access.redhat.com/support/offerings/techpreview/[Technology Preview Features Support Scope].
++
+. In the *User* field, enter the name of a user with permissions to access Red Hat Virtualization Manager's resources.
+. In the *Password* field, enter the password of the user.
+. Click *Load Datacenters* to populate the *Datacenter* list with data centers from your Red Hat Virtualization environment.
+. From the *Datacenter* list, select a data center.
+. From the *Quota ID* list, select a quota to limit resources available to Satellite.
+. In the *X509 Certification Authorities* field, enter the certificate authority for SSL/TLS access. Alternatively, if you leave the field blank, a self-signed certificate is generated on the first API request by the server.
+. Click the *Locations* tab and select the location you want to use.
+. Click the *Organizations* tab and select the organization you want to use.
+. Click *Submit* to save the compute resource.
+
+.For CLI Users
+
+To create a Red Hat Virtualization connection, enter the `hammer compute-resource create` command with `Ovirt` for `--provider` and the name of the data center you want to use for `--datacenter`.
+
+[options="nowrap" subs="+quotes"]
+----
+# hammer compute-resource create \
+--name "_My_RHV_" --provider "Ovirt" \
+--description "RHV server at _rhvm.example.com_" \
+--url "_https://rhvm.example.com/ovirt-engine/api_" \
+--use-v4 "false" --user "_Satellite_User_" \
+--password "_My_Password_" \
+--locations "New York" --organizations "_My_Organization_" \
+--datacenter "_My_Datacenter_"
+----
+
+Optionally, to evaluate the new engine API, change `false` to `true` for the `--use-v4` option.
+
+[WARNING]
+====
+The items listed in this step are provided as Technology Previews. For further information about the scope of Technology Preview status, and associated support implications, see https://access.redhat.com/support/offerings/techpreview/[Technology Preview Features Support Scope].
+====
+
+[[Provisioning_Virtual_Machines_in_Red_Hat_Virtualization-Adding_Red_Hat_Virtualization_Images_on_the_Satellite_Server]]
+=== Adding Red Hat Virtualization Images to Satellite Server
+
+Red Hat Virtualization uses templates as images for creating virtual machines. If you use image-based provisioning to create hosts, you must add Red Hat Virtualization template details to your Satellite Server. This includes access details and the template name.
+
+.Procedure
+
+To add Red Hat Virtualization images on Satellite Server, complete the following steps:
+
+. In the Satellite web UI, navigate to *Infrastructure* > *Compute Resources*, and in the Compute Resources window, click the name of your Red Hat Virtualization connection.
+. Click the *Image* tab, and then click *New Image*.
+. In the *Name* field, enter a name for the image.
+. From the *Operatingsystem* list, select the image's base operating system.
+. From the *Architecture* list, select the operating system architecture.
+. In the *Username* field, enter the SSH user name for image access. This is normally the `root` user.
+. In the *Password* field, enter the SSH password for image access.
+. From the *Image* list, select the name of the image on Red Hat Virtualization.
+. Click *Submit* to save the image details.
+
+.For CLI Users
+
+Create the image with the `hammer compute-resource image create` command. Use the `--uuid` option to store the template UUID on the Red Hat Virtualization server.
+
+[options="nowrap" subs="+quotes"]
+----
+# hammer compute-resource image create --name "_Test_RHV_Image_" \
+--operatingsystem "RedHat 7.2" --architecture "x86_64" --username root \
+--uuid "9788910c-4030-4ae0-bad7-603375dd72b1" \
+--compute-resource "_My_RHV_"
+----
+
+[[Provisioning_Virtual_Machines_in_Red_Hat_Virtualization-Adding_Red_Hat_Virtualization_Details_to_a_Compute_Profile]]
+=== Adding Red Hat Virtualization Details to a Compute Profile
+
+You can predefine certain hardware settings for virtual machines on Red Hat Virtualization. You achieve this through adding these hardware settings to a compute profile.
+
+.Procedure
+
+To add Red Hat Virtualization details to a compute profile, complete the following steps:
+
+. In the Satellite web UI, navigate to *Infrastructure* > *Compute Profiles* and in the Compute Profiles window, click the name of the Red Hat Virtualization connection.
+. From the *Cluster* list, select the target host cluster in the Red Hat Virtualization environment.
+. From the *Template* list, select the RHV template to use for the *Cores* and *Memory* settings.
+. In the *Cores* field, enter the number of CPU cores to allocate to the new host.
+. In the *Memory* field, enter the amount of memory to allocate to the new host.
+. From the *Image* list, select image to use for image-based provisioning.
+. In the *Network Interfaces* area, enter the network parameters for the host's network interface. You can create multiple network interfaces. However, at least one interface must point to a Capsule-managed network. For each network interface, enter the following details:
+.. In the *Name* field, enter the name of the network interface.
+.. From the *Network* list, select The logical network that you want to use.
+. In the *Storage* area, enter the storage parameters for the host. You can create multiple volumes for the host. For each volume, enter the following details:
+.. In the *Size (GB)* enter the size, in GB, for the new volume.
+.. From the *Storage domain* list, select the storage domain for the volume.
+.. From the *Preallocate disk*, select either thin provisioning or preallocation of the full disk.
+.. From the *Bootable* list, select whether you want a bootable or non bootable volume.
+. Click *Submit* to save the compute profile.
+
+.For CLI Users
+
+The compute profile CLI commands are not yet implemented in Red Hat Satellite {ProductVersion}. As an alternative, you can include the same settings directly during the host creation process.
+
+[[Provisioning_Virtual_Machines_in_Red_Hat_Virtualization-Creating_Hosts_on_a_Red_Hat_Virtualization_Server]]
+=== Creating Network-Based Hosts on a Red Hat Virtualization Server
+
+In Satellite, you can create Red Hat Virtualization hosts over a network connection or from an existing image.
+
+To create a host over a network, the new host must have access to either Satellite Server's integrated Capsule or an external Capsule Server on a Red Hat Virtualization virtual network, so that the host has access to PXE provisioning services. The new host entry triggers the Red Hat Virtualization server to create the virtual machine. If the virtual machine detects the defined Capsule Server through the virtual network, the virtual machine boots to PXE and begins to install the chosen operating system.
+
+.DHCP conflicts
+If you use a virtual network on the Red Hat Virtualization server for provisioning, ensure to select one that does not provide DHCP assignments. This causes DHCP conflicts with Satellite Server when booting new hosts.
+
+When you create a host with an existing image, the new host entry triggers the Red Hat Virtualization server to create the virtual machine, using the pre-existing image as a basis for the new volume.
+
+.Procedure
+
+To create a host for Red Hat Virtualization Server, complete the following steps:
+
+. In the Satellite web UI, navigate to *Hosts* > *New Host*.
+. In the *Name* field, enter the name that you want to become the provisioned system's host name.
+. Click the *Organization* and *Location* tabs to ensure that the provisioning context is automatically set to the current context.
+. From the *Host Group* list, select the host group that you want to use to populate the form.
+. From the *Deploy on* list, select the Red Hat Virtualization connection.
+. From the *Compute Profile* list, select a profile to use to automatically populate virtual machine-based settings.
+. Click the *Interface* tab and click *Edit* on the host's interface.
+. Verify that the fields are automatically populated with values. Note in particular:
++
+  * The *Name* from the *Host* tab becomes the *DNS name*.
+  * Satellite Server automatically assigns an IP address for the new host.
++
+. Ensure that the *MAC address* field is blank. The Red Hat Virtualization server assigns one to the host.
+. Verify that the *Managed*, *Primary*, and *Provision* options are automatically selected for the first interface on the host. If not, select them.
+. In the interface window, ensure that the Red Hat Virtualization-specific fields are populated with settings from the compute profile. Modify these settings to suit your needs.
+. Click the *Operating System* tab, and confirm that all fields automatically contain values.
+. For network-based provisioning, ensure that the *Provisioning Method* is set to `Network Based`. For image-based provisioning, ensure that the *Provisioning Method* is set to `Image Based`.
+. Click *Resolve* in *Provisioning templates* to check the new host can identify the right provisioning templates to use.
+. Click the *Virtual Machine* tab and confirm that these settings are populated with details from the host group and compute profile. Modify these settings to suit your needs.
+. Click the *Parameters* tab and ensure that a parameter exists that provides an activation key. If not, add an activation key.
+. Click *Submit* to save the host entry.
+
+.For CLI Users
+
+To create a host with network-based provisioning, use the `hammer host create` command and include `--provision-method build`.
+
+[options="nowrap" subs="+quotes"]
+----
+# hammer host create --name "rhv-test1" --organization "_My_Organization_" \
+--location "New York" --hostgroup "Base" \
+--compute-resource "_My_RHV_" --provision-method build \
+--build true --enabled true --managed true \
+--interface "managed=true,primary=true,provision=true,compute_name=eth0,compute_network=satnetwork" \
+--compute-attributes="cluster=Default,cores=1,memory=1073741824,start=true" \
+--volume="size_gb=20G,storage_domain=Data,bootable=true"
+----
+
+To create a host with image-based provisioning, use the `hammer host create` command and include `--provision-method image`.
+
+[options="nowrap" subs="+quotes"]
+----
+# hammer host create --name "rhv-test2" --organization "_My_Organization_" \
+--location "New York" --hostgroup "Base" \
+--compute-resource "_My_RHV_" --provision-method image \
+--image "_Test_RHV_Image_" --enabled true --managed true \
+--interface "managed=true,primary=true,provision=true,compute_name=eth0,compute_network=satnetwork" \
+--compute-attributes="cluster=Default,cores=1,memory=1073741824,start=true" \
+--volume="size_gb=20G,storage_domain=Data,bootable=true"
+----
+
+For more information about additional host creation parameters for this compute resource, see xref:CLI_Params[].
