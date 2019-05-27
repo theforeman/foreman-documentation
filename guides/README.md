@@ -8,9 +8,9 @@ Install required tools:
 
     dnf -y install ruby asciidoctor asciidoctor-pdf make
 
-If AsciiDoctor is not available in repositories, simply install it from rubygems:
+If AsciiDoctor is not available in repositories or under RVM/rbenv, simply install it from rubygems:
 
-  	gem install asciidoctor asciidoctor-pdf
+  	gem install asciidoctor asciidoctor-pdf --pre
 
 Then simply run `make` or `make html` which builds HTML artifacts. Generating PDF output is slow, therefore command `make pdf` must be used separately. To make both formats in one command, use `make html pdf`.
 
