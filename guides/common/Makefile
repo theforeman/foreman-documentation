@@ -1,3 +1,4 @@
+BUILD = foreman
 DEST_DIR = ../$(BUILD_DIR)/$(NAME)
 DEST_HTML = $(DEST_DIR)/index.html
 DEST_PDF = ../$(BUILD_DIR)/$(NAME).pdf
@@ -12,7 +13,8 @@ html: prepare $(IMAGES_TS) $(DEST_HTML)
 
 pdf: prepare $(DEST_PDF)
 
-prepare:
+prepare: ../common/build.adoc
+	echo ":build: $(BUILD)" > ../common/build.adoc
 	@mkdir -p $(DEST_DIR) $(IMAGES_DIR)
 
 $(IMAGES_TS): $(IMAGES)
