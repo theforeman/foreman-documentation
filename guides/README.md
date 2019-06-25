@@ -46,7 +46,7 @@ Variables cannot be used in shell or code examples. To use them, use "attributes
 
 Hide or show specific blocks, paragraphs, warnings or chapters via special variable called "build". Its value can be set either to "foreman" or "satellite":
 
-	ifeval::["{build}" == "upstream"]
+	ifeval::["{build}" == "foreman"]
 	NOTE: This part is only relevant for deployments with Katello plugin.
 	endif::[]
 
