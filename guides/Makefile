@@ -1,18 +1,16 @@
-BUILD_DIR = build
-
 all: html
 
-html: provisioning-html
+html: all-html
 
-pdf: provisioning-pdf
+pdf: all-pdf
 
-prepare:
-	@mkdir -p $(BUILD_DIR)
+clean: all-clean
 
-clean:
-	@rm -rf $(BUILD_DIR)
+all-html:
+	cd doc-Provisioning_Guide && $(MAKE) html
 
-provisioning-html: prepare
-	cd doc-Provisioning_Guide && $(MAKE) html BUILD_DIR=$(BUILD_DIR) NAME=Provisioning_Guide
-provisioning-pdf: prepare
-	cd doc-Provisioning_Guide && $(MAKE) pdf BUILD_DIR=$(BUILD_DIR) NAME=Provisioning_Guide
+all-pdf:
+	cd doc-Provisioning_Guide && $(MAKE) pdf
+
+all-clean:
+	cd doc-Provisioning_Guide && $(MAKE) clean
