@@ -1,7 +1,10 @@
 BUILD = foreman
-DEST_DIR = ../$(BUILD_DIR)/$(NAME)
+BUILD_DIR = ../build
+ROOTDIR = $(realpath .)
+NAME = $(notdir $(ROOTDIR))
+DEST_DIR = $(BUILD_DIR)/$(NAME)
 DEST_HTML = $(DEST_DIR)/index.html
-DEST_PDF = ../$(BUILD_DIR)/$(NAME).pdf
+DEST_PDF = $(BUILD_DIR)/$(NAME).pdf
 IMAGES_DIR = $(DEST_DIR)/images
 IMAGES_TS = $(DEST_DIR)/.timestamp-images
 SOURCES = master.adoc $(shell ls topics/*.adoc)
@@ -14,8 +17,18 @@ html: prepare $(IMAGES_TS) $(DEST_HTML)
 pdf: prepare $(DEST_PDF)
 
 prepare: ../common/build.adoc
-	echo ":build: $(BUILD)" > ../common/build.adoc
+	@mkdir -p $(BUILD_DIR)
+	@echo ":build: $(BUILD)" > ../common/build.adoc
 	@mkdir -p $(DEST_DIR) $(IMAGES_DIR)
+
+clean:
+	@rm -rf "$(DEST_DIR)" "$(DEST_PDF)"
+
+browser: html
+	$(BROWSER) "file://$(realpath $(ROOTDIR)/$(DEST_HTML))"
+
+open-pdf: pdf
+	xdg-open "$(realpath $(ROOTDIR)/$(DEST_PDF))"
 
 $(IMAGES_TS): $(IMAGES)
 	cp -l $? $(IMAGES_DIR)

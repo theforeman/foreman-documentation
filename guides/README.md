@@ -14,6 +14,15 @@ If AsciiDoctor is not available in repositories or under RVM/rbenv, simply insta
 
 Then simply run `make` or `make html` which builds HTML artifacts. Generating PDF output is slow, therefore command `make pdf` must be used separately. To make both formats in one command, use `make html pdf`. To build downstream version perform `make BUILD=satellite`.
 
+Few additional make targets are available on the guide level. To quickly build HTML version and open new tab in a browser do:
+
+    cd doc-Provisioning_Guide
+    make browser
+
+Similarly, to build and open PDF version do:
+
+    make open-pdf
+
 The final artifacts can be found in the ./build subdirectory. Note that GNU Makefile tracks changes and only builds relevant artifacts, to trigger full rebuild use `make clean` to delete build directory and start over.
 
 ## Reading or Publishing
