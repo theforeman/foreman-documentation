@@ -10,19 +10,21 @@ IMAGES_TS = $(DEST_DIR)/.timestamp-images
 SOURCES = master.adoc $(shell ls topics/*.adoc)
 IMAGES = $(shell find ./images -type f)
 
-all: html pdf
+all: html
 
 html: prepare $(IMAGES_TS) $(DEST_HTML)
 
 pdf: prepare $(DEST_PDF)
 
+../common/build.adoc:
+	@echo ":build: $(BUILD)" > ../common/build.adoc
+
 prepare: ../common/build.adoc
 	@mkdir -p $(BUILD_DIR)
-	@echo ":build: $(BUILD)" > ../common/build.adoc
 	@mkdir -p $(DEST_DIR) $(IMAGES_DIR)
 
 clean:
-	@rm -rf "$(DEST_DIR)" "$(DEST_PDF)"
+	@rm -rf "$(DEST_DIR)" "$(DEST_PDF)" ../common/build.adoc
 
 browser: html
 	$(BROWSER) "file://$(realpath $(ROOTDIR)/$(DEST_HTML))"
