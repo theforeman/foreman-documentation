@@ -45,16 +45,26 @@ Check the following items when troubleshooting a virtual machine booted from an 
   * There is a DHCP server on the subnet.
   * The virtual machine has the `cloud-init` service installed and enabled.
 
+ifeval::["{build}" == "satellite"]
 For information about the differing levels of support for `finish` and `cloud-init` scripts in virtual-machine images, see the Red Hat Knowledgebase Solution https://access.redhat.com/solutions/2987171[What are the supported compute resources for the finish and cloud-init scripts] on the Red Hat Customer Portal.
+endif::[]
 
 [[Configuring_Networking-Configuring_Network_Services_for_PXE_Boot]]
 === Configuring Network Services
 
 Some provisioning methods use {SmartProxyServer} services. For example, a network might require the {SmartProxyServer} to act as a DHCP server. A network can also use PXE boot services to install the operating system on new hosts. This requires configuring the {SmartProxyServer} to use the main PXE boot services: DHCP, DNS, and TFTP.
 
-Use the `satellite-installer` script with the options to configure these services on the {ProjectServer}.
+Use the `{foreman-installer}` script with the options to configure these services on the {ProjectServer}.
 
-To configure these services on an external {SmartProxyServer}, run `satellite-installer --scenario capsule`.
+ifeval::["{build}" == "satellite"]
+To configure these services on an external {SmartProxyServer}, run `{foreman-installer} --scenario capsule`.
+endif::[]
+
+ifeval::["{build}" == "foreman"]
+[NOTE]
+While performing a Ketello deployment, to configure these services on an external {SmartProxyServer}, run `{foreman-installer} --scenario foreman-proxy-content`.
+
+endif::[]
 
 {ProjectServer} uses `eth0` for external communication, such as connecting to Red Hat's CDN.
 
@@ -62,7 +72,7 @@ To configure these services on an external {SmartProxyServer}, run `satellite-in
 
 To configure network services on {Project}'s integrated {SmartProxy}, complete the following steps:
 
-. Enter the `satellite-installer` command to configure the required network services:
+. Enter the `{foreman-installer}` command to configure the required network services:
 +
 [options="nowrap" subs="+quotes"]
 ----
@@ -92,16 +102,16 @@ To configure network services on {Project}'s integrated {SmartProxy}, complete t
 +
 . Refresh features of the {SmartProxyServer} to view the changes:
 +
-[options="nowrap" subs="+quotes"]
+[options="nowrap" subs="+quotes,+attributes"]
 ----
-# hammer proxy refresh-features --name "_satellite.example.com_"
+# hammer proxy refresh-features --name "_{foreman.example.com}_"
 ----
 +
 . Verify the services configured on the {SmartProxyServer}:
 +
-[options="nowrap" subs="+quotes"]
+[options="nowrap" subs="+quotes,+attributes"]
 ----
-# hammer proxy info --name "_satellite.example.com_"
+# hammer proxy info --name "_{foreman.example.com}_"
 ----
 
 ==== DHCP, DNS, and TFTP Options for Network Configuration
@@ -165,16 +175,19 @@ To configure network services on {Project}'s integrated {SmartProxy}, complete t
   Sets the TFTP server to use. Ensure that you use {SmartProxy}'s IP address.
 
 
-Run `satellite-installer --scenario capsule --help` to view more options related to DHCP, DNS, TFTP, and other {Project} {SmartProxy} services
+Run `{foreman-installer} --help` to view more options related to DHCP, DNS, TFTP, and other {Project} {SmartProxy} services
 
 [[Configuring_Networking-Using_TFTP_Services_through_NAT]]
 ==== Using TFTP Services through NAT
 
 You can use {Project} TFTP services through NAT. To do this, on all NAT routers or firewalls, you must enable a TFTP service on UDP port 69 and enable the TFTP state tracking feature. For more information, see the documentation for your NAT device.
 
-If your NAT routers or firewalls use Red{nbsp}Hat Enterprise{nbsp}Linux, perform this procedure on all devices.
-
-.On Red Hat Enterprise Linux 7:
+ifeval::["{build}" == "satellite"]
+.For a NAT running on Red Hat Enterprise Linux 7:
+endif::[]
+ifeval::["{build}" == "foreman"]
+.For a NAT running on linux with firewalld service:
+endif::[]
 
 Use the following command to allow TFTP service on UDP port 69, load the kernel TFTP state tracking module, and make the changes persistent:
 
@@ -182,7 +195,12 @@ Use the following command to allow TFTP service on UDP port 69, load the kernel 
 # firewall-cmd --add-service=tftp && firewall-cmd --runtime-to-permanent
 ----
 
-.On Red Hat Enterprise Linux 6:
+ifeval::["{build}" == "satellite"]
+.For a NAT running on Red Hat Enterprise Linux 6:
+endif::[]
+ifeval::["{build}" == "foreman"]
+.For a NAT running on linux with iptables command:
+endif::[]
 
 . Configure the firewall to allow TFTP service UDP on port 69.
 +
@@ -301,7 +319,7 @@ In this example, the `--dhcp-id`, `--dns-id`, and `--tftp-id` options use 1, whi
 [[Configuring_Networking-Configuring_gPXE_to_Reduce_Provisioning_Times]]
 === Configuring iPXE to Reduce Provisioning Times
 
-In {ProjectName} {ProductVersion}, you can configure PXELinux to chainboot iPXE and boot using the HTTP protocol, which is faster and more reliable on high latency networks than TFTP.
+You can configure PXELinux to chainboot iPXE and boot using the HTTP protocol, which is faster and more reliable on high latency networks than TFTP.
 
 There are three methods of using iPXE with {ProjectName} {ProductVersion}:
 
@@ -374,14 +392,15 @@ To configure {Project} to use iPXE, complete the following steps:
 ----
 .. Add the following extra `elsif` statement before the else statement:
 +
+[options="nowrap" subs="+quotes,+attributes"]
 ----
 elsif exists user-class and option user-class = "iPXE" {
-  filename "http://satellite.example.com/unattended/iPXE";
+  filename "http://{foreman.example.com}/unattended/iPXE";
 }
 ----
 .. Verify that the 'if' section matches the following example:
 +
-[options="nowrap" subs="+quotes"]
+[options="nowrap" subs="+quotes,+attributes"]
 ----
 if option architecture = 00:06 {
   filename "grub2/shim.efi";
@@ -390,14 +409,14 @@ if option architecture = 00:06 {
 } elsif option architecture = 00:09 {
   filename "grub2/shim.efi";
 } elsif exists user-class and option user-class = "iPXE" {
-  filename "http://_satellite.example.com_/unattended/iPXE";
+  filename "http://_{foreman.example.com}_/unattended/iPXE";
 } else {
   filename "pxelinux.0";
 }
 ----
 +
 [NOTE]
-For `http://satellite.example.com/unattended/iPXE`, you can also use a {ProjectName} {SmartProxy} `http://capsule.example.com:8000/unattended/iPXE`.
+Use http://{foreman.example.com}/unattended/iPXE when {SmartProxy} HTTP endpoint is disabled (installer option --foreman-proxy-http false). Template {SmartProxy} plugin has default value 8000 when enabled and can be changed with --foreman-proxy-http-port installer option, in that case use http://{smartproxy.example.com}:8000.
 You must update the `/etc/dhcp/dhcpd.conf` file after every upgrade.
 The content of the `/etc/dhcp/dhcpd.conf` file is case sensitive.
 
@@ -464,14 +483,15 @@ To configure {Project} to use iPXE with the UNDI workflow, complete the followin
 ----
 .. Add the following extra `elsif` statement before the else statement:
 +
+[options="nowrap" subs="+quotes,+attributes"]
 ----
 elsif exists user-class and option user-class = "iPXE" {
-  filename "http://satellite.example.com/unattended/iPXE";
+  filename "http://{foreman.example.com}/unattended/iPXE";
 }
 ----
 .. Verify that the 'if' section matches the following example:
 +
-[options="nowrap" subs="+quotes"]
+[options="nowrap" subs="+quotes,+attributes"]
 ----
 if option architecture = 00:06 {
   filename "grub2/shim.efi";
@@ -480,14 +500,14 @@ if option architecture = 00:06 {
 } elsif option architecture = 00:09 {
   filename "grub2/shim.efi";
 } elsif exists user-class and option user-class = "iPXE" {
-  filename "http://_satellite.example.com_/unattended/iPXE";
+  filename "http://_{foreman.example.com}_/unattended/iPXE";
 } else {
   filename "pxelinux.0";
 }
 ----
 +
 [NOTE]
-For `http://satellite.example.com/unattended/iPXE`, you can also use a {ProjectName} {SmartProxy} `http://capsule.example.comf:8000/unattended/iPXE`.
+For `http://{foreman.example.com}/unattended/iPXE`, you can also use a {ProjectName} {SmartProxy} `http://{smartproxy.example.com}:8000/unattended/iPXE`.
 You must update the `/etc/dhcp/dhcpd.conf` file after every upgrade.
 The content of the `/etc/dhcp/dhcpd.conf` file is case sensitive.
 
@@ -507,6 +527,14 @@ To configure the {SmartProxy} to chainboot iPXE, complete the following steps:
 # yum install ipxe-bootimgs
 ----
 +
+ifeval::["{build}" == "foreman"]
+. On Debian/Ubuntu, install the `ipxe` .deb package:
++
+----
+# apt-get install ipxe
+----
++
+endif::[]
 . Copy the iPXE firmware to the TFTP server's root directory. Do not use symbolic links because TFTP runs in the `chroot` environment.
 +
 * For chainbooting directly, enter the following command:
@@ -523,6 +551,11 @@ To configure the {SmartProxy} to chainboot iPXE, complete the following steps:
 # cp /usr/share/ipxe/undionly.kpxe /var/lib/tftpboot/undionly-ipxe.0
 ----
 +
+ifeval::["{build}" == "foreman"]
+[NOTE]
+On systems with SELinux, perform the following command.
+
+endif::[]
 . Correct the file contexts:
 +
 ----

@@ -61,6 +61,8 @@ Hide or show specific blocks, paragraphs, warnings or chapters via special varia
 
 When doing review, consider checking out the topic branch and putting necessary changes on top of author's work to making many comments on github.
 
+We should avoid using phases like, "Starting from version 6.5 or 1.22" because it is not possible to easily translate these strings in both the streams.
+
 ## The process (TODO)
 
 This is what we are working on right now:

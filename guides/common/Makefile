@@ -24,7 +24,7 @@ clean:
 	@rm -rf "$(DEST_DIR)" "$(DEST_PDF)"
 
 browser: html
-	$(BROWSER) "file://$(realpath $(ROOTDIR)/$(DEST_HTML))"
+	xdg-open "file://$(realpath $(ROOTDIR)/$(DEST_HTML))"
 
 open-pdf: pdf
 	xdg-open "$(realpath $(ROOTDIR)/$(DEST_PDF))"
