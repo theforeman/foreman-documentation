@@ -3,8 +3,8 @@ BUILD_DIR = ../build
 ROOTDIR = $(realpath .)
 NAME = $(notdir $(ROOTDIR))
 DEST_DIR = $(BUILD_DIR)/$(NAME)
-DEST_HTML = $(DEST_DIR)/index.html
-DEST_PDF = $(BUILD_DIR)/$(NAME).pdf
+DEST_HTML = $(DEST_DIR)/index-$(BUILD).html
+DEST_PDF = $(BUILD_DIR)/$(NAME)-$(BUILD).pdf
 IMAGES_DIR = $(DEST_DIR)/images
 IMAGES_TS = $(DEST_DIR)/.timestamp-images
 SOURCES = master.adoc $(shell ls topics/*.adoc)
@@ -16,15 +16,12 @@ html: prepare $(IMAGES_TS) $(DEST_HTML)
 
 pdf: prepare $(DEST_PDF)
 
-../common/build.adoc:
-	@echo ":build: $(BUILD)" > ../common/build.adoc
-
-prepare: ../common/build.adoc
+prepare:
 	@mkdir -p $(BUILD_DIR)
 	@mkdir -p $(DEST_DIR) $(IMAGES_DIR)
 
 clean:
-	@rm -rf "$(DEST_DIR)" "$(DEST_PDF)" ../common/build.adoc
+	@rm -rf "$(DEST_DIR)" "$(DEST_PDF)"
 
 browser: html
 	$(BROWSER) "file://$(realpath $(ROOTDIR)/$(DEST_HTML))"
@@ -37,7 +34,7 @@ $(IMAGES_TS): $(IMAGES)
 	touch $(IMAGES_TS)
 
 $(DEST_HTML): $(SOURCES)
-	asciidoctor -b xhtml5 -d book -o $@ $<
+	asciidoctor -a build=$(BUILD) -b xhtml5 -d book -o $@ $<
 
 $(DEST_PDF): $(SOURCES) $(IMAGES)
-	asciidoctor-pdf -d book -o $@ $<
+	asciidoctor-pdf -a build=$(BUILD) -d book -o $@ $<
