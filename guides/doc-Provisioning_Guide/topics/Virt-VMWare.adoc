@@ -219,6 +219,161 @@ Create the host from an image with the `hammer host create` command and include 
 
 For more information about additional host creation parameters for this compute resource, see xref:CLI_Params[].
 
+[[Provisioning_Virtual_Machines_in_VMware_vSphere-Provisioning_with_cloudinit_and_userdata_templates]]
+=== Using the VMware vSphere Cloud-init and Userdata Templates for Provisioning
+
+You can use VMware with the `Cloud-init` and `Userdata` templates to insert user data into the new virtual machine, to make further VMware customization, and to enable the VMware-hosted virtual machine to call back to {Project}.
+
+You can use the same procedures to set up a VMware compute resource within {Project}, with a few modifications to the work flow.
+
+.VMware cloud-init Provisioning Overview
+
+When you set up the compute resource and images for VMware provisioning in {Project}, the following sequence of provisioning events occur:
+
+* The user provisions one or more virtual machines using the {Project} web UI, API, or hammer
+* {Project} calls the VMware vCenter to clone the virtual machine template
+* {Project} `userdata` provisioning template adds customized identity information
+* When provisioning completes, the `Cloud-init` provisioning template instructs the virtual machine to call back to {SmartProxy} when `cloud-init` runs
+* VMware vCenter clones the template to the virtual machine
+* VMware vCenter applies customization for the virtual machine's identity, including the host name, IP, and DNS
+* The virtual machine builds, `cloud-init` is invoked and calls back {Project} on port `80`, which then redirects to `443`
+
+.Port and Firewall Requirements
+
+Because of the `cloud-init` service, the virtual machine always calls back to {Project} even if you register the virtual machine to {SmartProxy}. Ensure that you configure port and firewall settings to open any necessary connections.
+
+
+For more information about port and firewall requirements, see https://access.redhat.com/documentation/en-us/red_hat_satellite/6.4/html/installing_satellite_server_from_a_connected_network/preparing_your_environment_for_installation#ports_prerequisites[Port and Firewall Requirements] in the _Installation Guide_.
+
+
+.Associating the `userdata` and `Cloud-init` Templates with the Operating System
+
+. In the {Project} web UI, navigate to *Hosts* > *Operating Systems*, and select the operating system that you want to use for provisioning.
+. Click the *Template* tab.
+. From the *Cloud-init template* list, select *Cloudinit default*.
+. From the *User data template* list, select *UserData open-vm-tools*.
+. Click *Submit* to save the changes.
+
+.Preparing an Image to use the cloud-init Template
+
+To prepare an image, you must first configure the settings that you require on a virtual machine that you can then save as an image to use in {Project}.
+
+To use the `cloud-init` template for provisioning, you must configure a virtual machine so that `cloud-init` is installed, enabled, and configured to call back to {ProjectServer}.
+
+For security purposes, you must install a CA certificate to use HTTPs for all communication. This procedure includes steps to clean the virtual machine so that no unwanted information transfers to the image you use for provisioning.
+
+If you have an image with `cloud-init`, you must still follow this procedure to enable `cloud-init` to communicate with {Project} because `cloud-init` is disabled by default.
+
+ifeval::["{build}" == "foreman"]
+These instructions are for Red Hat Enterprise Linux or Fedora OS, follow similar steps for other Linux distributions.
+endif::[]
+
+. On the virtual machine that you use to create the image, install `cloud-init`, `open-vm-tools`, and `perl`:
++
+----
+# yum -y install cloud-init open-vm-tools perl
+----
++
+. Create a configuration file for `cloud-init`:
++
+[options="nowrap" subs="+quotes"]
+----
+# vi /etc/cloud/cloud.cfg.d/_example_cloud-init_config_.cfg
+----
++
+. Add the following information to the `_example_cloud_init_config_.cfg` file:
++
+----
+datasource_list: [NoCloud]
+datasource:
+  NoCloud:
+    seedfrom: https://{foreman.example.com}/userdata/
+EOF
+----
++
+. Enable the CA certificates for the image:
++
+----
+# update-ca-trust enable
+----
++
+. Download the `katello-server-ca.crt` file from {ProjectServer}:
++
+ifeval::["{build}" == "foreman"]
+You must have the Katello plugin installed to complete this step. For {ProjectServer} deployments, copy the CA certificate from the Apache configuration.
+endif::[]
++
+[options="nowrap" subs="+quotes"]
+----
+# wget -O /etc/pki/ca-trust/source/anchors/cloud-init-ca.crt http://_{foreman.example.com}_/pub/katello-server-ca.crt
+----
++
+. To update the record of certificates, enter the following command:
++
+----
+# update-ca-trust extract
+----
+. Use the following commands to clean the image:
++
+----
+# systemctl stop rsyslog
+# systemctl stop auditd
+# package-cleanup -oldkernels -count=1
+# yum clean all
+----
++
+. Use the following commands to reduce logspace, remove old logs, and truncate logs:
++
+----
+# logrotate -f /etc/logrotate.conf
+# rm -f /var/log/*-???????? /var/log/*.gz
+# rm -f /var/log/dmesg.old
+# rm -rf /var/log/anaconda
+# cat /dev/null > /var/log/audit/audit.log
+# cat /dev/null > /var/log/wtmp
+# cat /dev/null > /var/log/lastlog
+# cat /dev/null > /var/log/grubby
+----
++
+. Remove `udev` hardware rules:
++
+----
+# rm -f /etc/udev/rules.d/70*
+----
++
+. Remove the `uuid` from `ifcfg` scripts:
++
+----
+# cat > /etc/sysconfig/network-scripts/ifcfg-ens192 <<EOM
+DEVICE=ens192
+ONBOOT=yes
+EOM
+----
++
+. Remove the SSH host keys:
++
+[options="nowrap" subs="+quotes"]
+----
+# rm -f /etc/ssh/_SSH_keys_
+----
++
+. Remove root user's shell history:
++
+----
+# rm -f ~root/.bash_history
+# unset HISTFILE
+----
++
+. Remove root user's SSH history:
++
+----
+# rm -rf ~root/.ssh/known_hosts
+----
+
+You can now create an image from this virtual machine.
+
+You can use the xref:Provisioning_Virtual_Machines_in_VMware_vSphere-Adding_VMware_vSphere_Images_on_the_Satellite_Server[] section to add the image to Satellite.
+
 
 [[Provisioning_Virtual_Machines_in_VMware_vSphere-Caching_of_Compute_resources]]
 === Caching of Compute Resources
