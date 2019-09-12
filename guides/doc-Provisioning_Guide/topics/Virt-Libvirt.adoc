@@ -21,9 +21,9 @@ The requirements for KVM provisioning include:
 	endif::[]
 	ifeval::["{build}" == "foreman"]
   * A server running KVM virtualization tools (libvirt daemon).
-  * Virtual network running on the libvirt server.
+  * Virtual network running on the libvirt server. Only NAT and isolated virtual networks can be managed through {ProjectX}.
 	endif::[]
-  * An existing virtual machine image if you want to use image-based provisioning. Ensure that this image exists in a storage pool on the KVM host. The `default` storage pool is usually located in `/var/lib/libvirt/images`. Only directory pool storage types can be managed via {ProjectX}.
+  * An existing virtual machine image if you want to use image-based provisioning. Ensure that this image exists in a storage pool on the KVM host. The `default` storage pool is usually located in `/var/lib/libvirt/images`. Only directory pool storage types can be managed through {ProjectX}.
 
 .User Roles and Permissions to Provision Libvirt Compute Resources
 
@@ -54,7 +54,7 @@ Before adding the KVM connection, {ProjectServer} requires some configuration to
 
 .Non-root users
 
-These examples use the root user for KVM. However, if you want to use a non-root user on the KVM server, add the user to the `libvirt` group on the kvm server:
+These examples use the root user for KVM. However, if you want to use a non-root user on the KVM server, add the user to the `libvirt` group on the KVM server:
 [options="nowrap" subs="+quotes"]
 ----
 useradd -a -G libvirt _non_root_user_
@@ -129,7 +129,7 @@ To add a KVM connection to {Project}, complete the following steps:
  qemu+ssh://_root@kvm.example.com_/system
 ----
 . From the *Display type* list, select either *VNC* or *Spice*.
-. Optional: To secure console access for new hosts with a randomly generated password, select the *Set a randomly generated password on the display connection* check box. You can retrieve the password for the VNC console to access guest virtual machine console from the output of the following command executed on the kvm server:
+. Optional: To secure console access for new hosts with a randomly generated password, select the *Set a randomly generated password on the display connection* check box. You can retrieve the password for the VNC console to access the guest virtual machine console from the output of the following command executed on the KVM server:
 +
 [options="nowrap" subs="+quotes"]
 ----
@@ -160,6 +160,9 @@ Create the connection with the `hammer compute-resource create` command:
 === Adding KVM Images to {ProjectServer}
 
 If you want to use image-based provisioning to create hosts, you must add information about the image to your {ProjectServer}. This includes access details and the image location.
+
+.Supported Storage Types
+Note that you can manage only directory pool storage types through {ProjectX}.
 
 .Procedure
 
@@ -220,7 +223,7 @@ The compute profile CLI commands are not yet implemented in {ProjectName} {Produ
 
 In {Project}, you can use KVM provisioning to create hosts over a network connection and from an existing image.
 
-If you create a host using an image provisioning method, the new host entry triggers the KVM server to create the virtual machine, using the selected pre-existing image as a basis for the new volume. Alternatively, if a Finish template is associated to the host operating system, {Project} connects to the VM using SSH protocol and executes the script. This can only work if DHCP server is under {Project} control, or IP address of the provisioning interface was manually set to the IP address of the virtual host.
+If you want to create a host over a network connection, the new host must have access either to {ProjectServer}'s integrated {SmartProxy} or an external {SmartProxyServer} on a KVM virtual network, so that the host has access to PXE provisioning services. This new host entry triggers the KVM server to create and start a virtual machine. If the virtual machine detects the defined {SmartProxyServer} through the virtual network, the virtual machine boots to PXE and begins to install the chosen operating system.
 
 If you create a host with an existing image, the new host entry triggers the KVM server to create the virtual machine, using the pre-existing image as a basis for the new volume.
 
