@@ -9,6 +9,14 @@ IMAGES_DIR = $(DEST_DIR)/images
 IMAGES_TS = $(DEST_DIR)/.timestamp-images
 SOURCES = master.adoc $(shell ls topics/*.adoc)
 IMAGES = $(shell find ./images -type f)
+UNAME = $(shell uname)
+
+ifeq ($(UNAME), Linux)
+BROWSER_OPEN = xdg-open
+endif
+ifeq ($(UNAME), Darwin)
+BROWSER_OPEN = open
+endif
 
 all: html
 
@@ -24,13 +32,13 @@ clean:
 	@rm -rf "$(DEST_DIR)" "$(DEST_PDF)"
 
 browser: html
-	xdg-open "file://$(realpath $(ROOTDIR)/$(DEST_HTML))"
+	${BROWSER_OPEN} "file://$(realpath $(ROOTDIR)/$(DEST_HTML))"
 
 open-pdf: pdf
-	xdg-open "$(realpath $(ROOTDIR)/$(DEST_PDF))"
+	${BROWSER_OPEN} "$(realpath $(ROOTDIR)/$(DEST_PDF))"
 
 $(IMAGES_TS): $(IMAGES)
-	cp -l $? $(IMAGES_DIR)
+	cp $? $(IMAGES_DIR)
 	touch $(IMAGES_TS)
 
 $(DEST_HTML): $(SOURCES)
