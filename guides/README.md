@@ -4,9 +4,17 @@ This is upstream source code of [Red Hat Satellite 6](https://access.redhat.com/
 
 ## Building
 
-Install required tools:
+Install required tools. In Fedora perform:
 
     dnf -y install ruby asciidoctor asciidoctor-pdf make
+
+In MacOS required tools can be installed via brew but instead "make" call "gmake":
+
+    brew install asciidoctor make
+
+Alternatively, XCode development environment can be installed to have make utility available on PATH, however this takes about an hour to download and install and requires several gigabytes of HDD space:
+
+	xcode-select --install
 
 If AsciiDoctor is not available in repositories or under RVM/rbenv, simply install it from rubygems:
 
