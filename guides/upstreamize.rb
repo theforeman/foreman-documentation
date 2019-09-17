@@ -38,6 +38,7 @@ report.write("# Upstreamization report from #{Time.now.utc}\n")
             line.gsub!(/Satellite( |\u{00A0}|{nbsp})Server/, '{ProjectServer}')
             line.gsub!(/Satellite/, '{Project}')
             line.gsub!(/Capsule( |\u{00A0}|{nbsp})Server/, '{SmartProxyServer}')
+            line.gsub!(/Capsules/, '{SmartProxies}')
             line.gsub!(/Capsule/, '{SmartProxy}')
           end
           if line != orig_line
