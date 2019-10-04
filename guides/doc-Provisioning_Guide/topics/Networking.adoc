@@ -18,6 +18,45 @@ The following instructions have similar applications to configuring standalone {
 .DHCP Ranges
 You can define the same DHCP range in {ProjectServer} for both Discovered and Provisioned systems, but use a separate range for each service within the same subnet.
 
+=== {Project} and DHCP Options
+
+{Project} manages DHCP reservations through a DHCP {SmartProxy}. {Project} also sets the `next-server` and `filename` DHCP options.
+
+.The next-server option
+The `next-server` option provides the IP address of the TFTP server to boot from. This option is not set by default and must be set for each TFTP {SmartProxy}. You can use the {foreman-installer} command with the `--foreman-proxy-tftp-servername` option to set the TFTP server in the `/etc/foreman-proxy/settings.d/tftp.yml` file:
+
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foreman-installer} --foreman-proxy-dhcp true
+----
+
+Each TFTP {SmartProxy} then reports this setting through the API and {Project} can retrieve the configuration information when it creates the DHCP record.
+
+When the PXE loader is set to `none`, {Project} does not populate the `next-server` option into the DHCP record.
+
+If the `next-server` option remains undefined, {Project} uses reverse DNS search to find a TFTP server address to assign, but you might encounter the following problems:
+
+* DNS timeouts during provisioning
+* Querying of incorrect DNS server. For example, authoritative rather than caching
+* Errors about incorrect IP address for the TFTP server. For example, `PTR record was invalid`
+
+If you encounter these problems, check the DNS setup on both {ProjectServer} and {SmartProxy}, specifically the PTR record resolution.
+
+.The filename option
+
+The `filename` option contains the full path to the file that downloads and executes during provisioning. The PXE loader that you select for the host or host group defines which `filename` option to use. When the PXE loader is set to `none`, {Project} does not populate the `filename`  option into the DHCP record. Depending on the PXE loader option, the `filename` changes as follows:
+
+|=======
+|PXE loader option | filename entry| Notes
+
+|PXELinux BIOS |  `pxelinux.0`|
+|PXELinux UEFI | `pxelinux.efi`|
+|iPXE Chain BIOS | `undionly.kpxe`|
+|PXEGrub2 UEFI | `grub2/grubx64.efi`|  x64 can differ depending on architecture
+|iPXE UEFI HTTP | `http://_{smartproxy-example-com}_:8000/httpboot/ipxe-x64.efi` | Requires the `httpboot` feature and renders the `filename` as a full URL where _{smartproxy-example-com}_ is a known host name of {SmartProxy} in {Project}.
+|Grub2 UEFI HTTP | `http://_{smartproxy-example-com}_:8000/httpboot/grub2/grubx64.efi` | Requires the `httpboot` feature and renders the `filename` as a full URL where _{smartproxy-example-com}_ is a known host name of {SmartProxy} in {Project}.
+|=======
+
 === Prerequisites for Image Based Provisioning
 
 .Post-Boot Configuration Method
@@ -74,9 +113,9 @@ To configure network services on {Project}'s integrated {SmartProxy}, complete t
 
 . Enter the `{foreman-installer}` command to configure the required network services:
 +
-[options="nowrap" subs="+quotes"]
+[options="nowrap" subs="+quotes,attributes"]
 ----
-# satellite-installer --foreman-proxy-dhcp true \
+# {foreman-installer} --foreman-proxy-dhcp true \
 --foreman-proxy-dhcp-managed true \
 --foreman-proxy-dhcp-gateway "_192.168.140.1_" \
 --foreman-proxy-dhcp-interface "eth1" \

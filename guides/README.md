@@ -56,7 +56,7 @@ Never write "Foreman" or "Satellite" words directly but use the following variab
 
 Variables cannot be used in shell or code examples. To use them, use "attributes" keyword:
 
-	[options="nowrap" subs="+quotes,+attributes"]
+	[options="nowrap" subs="+quotes,attributes"]
 	----
 	# ls {VariableName}
 	----
