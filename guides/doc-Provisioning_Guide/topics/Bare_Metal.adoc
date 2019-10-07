@@ -64,16 +64,13 @@ For information about the security token for unattended and PXE-less provisionin
 [[Provisioning_Bare_Metal_Hosts-Security_Token_in_the_Boot_Process]]
 === Configuring the Security Token Validity Duration
 
-When performing unattended and PXE-less provisioning, as a security measure, {Project} automatically generates a unique token and adds this token to the installation recipe URL in the PXE configuration file (PXELinux, Grub2).
-ifeval::["{build}" == "satellite"]
-For {RHELServer} installation recipe is also known as kickstart.
-endif::[]
+When performing unattended and PXE-less provisioning, as a security measure, {Project} automatically generates a unique token and adds this token to the {provision-script} URL in the PXE configuration file (PXELinux, Grub2).
 
 By default, the token is valid for 360 minutes. When you provision a host, ensure that you reboot the host within this time frame. If the token expires, it is no longer valid and you receive a 404 error and the operating system installer download fails.
 
 To adjust the token's duration of validity, in the {Project} web UI, navigate to *Administer* > *Settings*, and click the *Provisioning* tab. Find the *Token duration* option, and click the edit icon and edit the duration, or enter `0` to disable token generation.
 
-If token generation is disabled, an attacker can spoof client IP address and download installation recipes from {ProjectServer}, including the encrypted root password.
+If token generation is disabled, an attacker can spoof client IP address and download {provision-script} from {ProjectServer}, including the encrypted root password.
 
 [[Provisioning_Bare_Metal_Hosts-Creating_New_Hosts_with_Unattended_Provisioning]]
 === Creating Hosts with Unattended Provisioning
@@ -96,7 +93,7 @@ To create a host with unattended provisioning, complete the following steps:
 * The *Name* from the *Host* tab becomes the *DNS name*.
 * {ProjectServer} automatically assigns an IP address for the new host.
 +
-. Note that {ProjectServer} automatically selects the *Managed*, *Primary*, and *Provision* options for the first interface on the host.
+. Ensure that {ProjectServer} automatically selects the *Managed*, *Primary*, and *Provision* options for the first interface on the host. If not, select them.
 . In the *MAC address* field, enter a MAC address of the host's provisioning interface. This ensures the identification of the host during the PXE boot process.
 . Click *OK* to save. To add another interface, click *Add Interface*. You can select only one interface for *Provision* and *Primary*.
 . Click the *Operating System* tab, and verify that all fields contain values. Confirm each aspect of the operating system.
@@ -105,12 +102,10 @@ To create a host with unattended provisioning, complete the following steps:
 For more information about associating provisioning templates, see xref:Configuring_Provisioning_Resources-Creating_Provisioning_Templates[].
 . Click the *Parameters* tab, and ensure that a parameter exists that provides an activation key. If not, add an activation key.
 . Click *Submit* to save the host details.
++
+For more information about network interfaces, see https://access.redhat.com/documentation/en-us/red_hat_satellite/6.5/html-single/managing_hosts/index#Adding_Network_Interfaces[Adding network interfaces].
 
 This creates the host entry and the relevant provisioning settings. This also includes creating the necessary directories and files for PXE booting the bare metal host. If you start the physical host and set its boot mode to PXE, the host detects the DHCP service of {ProjectServer}'s integrated {SmartProxy} and starts installing the operating system from its Kickstart tree. When the installation completes, the host also registers to {ProjectServer} using the activation key and installs the necessary configuration and management tools from the {ProjectName} Tools repository.
-
-ifeval::["{build}" == "satellite"]
-NOTE: Older versions of {Project} required a VLAN ID to be added to the PXELinux or PXEGrub2 template (`vlanid=123`). This is no longer required.
-endif::[]
 
 .For CLI Users
 
@@ -141,10 +136,10 @@ image::PXE-mode.png[]
 To use {ProjectServer} to provide the Discovery image, install the following RPM packages:
 
 ifeval::["{build}" == "foreman"]
-. `tfm-rubygem-foreman_discovery`
+* `tfm-rubygem-foreman_discovery`
 endif::[]
-. `foreman-discovery-image`
-. `rubygem-smart_proxy_discovery`
+* `foreman-discovery-image`
+* `rubygem-smart_proxy_discovery`
 
 The `tfm-rubygem-foreman_discovery` package contains the {Project} plugin to handle discovered nodes, connections, and necessary database structures, and API.
 
@@ -234,7 +229,7 @@ For katello scenario deployment, use port 9090.
 endif::[]
 
 .Rendering the {SmartProxy}'s Host Name
-{ProjectX} deploys the same template to all TFTP {SmartProxy}s and there is no variable or macro available to render the {SmartProxy}'s host name. The hard-coded `proxy.url` does not not work with two or more TFTP {SmartProxy}s. As a workaround, every time you click *Build PXE Defaults*, edit the configuration file in the TFTP directory using SSH, or use a common DNS alias for appropriate subnets.
+{ProjectX} deploys the same template to all TFTP {SmartProxies} and there is no variable or macro available to render the {SmartProxy}'s host name. The hard-coded `proxy.url` does not not work with two or more TFTP {SmartProxy}s. As a workaround, every time you click *Build PXE Defaults*, edit the configuration file in the TFTP directory using SSH, or use a common DNS alias for appropriate subnets.
 
 .Setting Discovery Service as Default
 
@@ -334,7 +329,7 @@ This removes the host from the discovered host listing and creates a host entry 
 As a method of automating the provisioning process for discovered hosts, {ProjectNameX} provides a feature to create discovery rules. These rules define how discovered hosts automatically provision themselves, based on the assigned host group. For example, you can automatically provision hosts with a high CPU count as hypervisors. Likewise, you can provision hosts with large hard disks as storage servers.
 
 .NIC Considerations
-Auto provisioning does not currently allow configuring NICs; all systems are being provisioned with the NIC configuration that was detected during discovery. However, you can set the NIC via OS installation hook (scriplet), via script, or using configuration management later on.
+Auto provisioning does not currently allow configuring NICs; all systems are being provisioned with the NIC configuration that was detected during discovery. However, you can set the NIC in {provision-script} (scriplet), via script, or using configuration management later on.
 
 .Procedure
 
