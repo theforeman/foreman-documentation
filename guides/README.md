@@ -6,7 +6,7 @@ This is upstream source code of [Red Hat Satellite 6](https://access.redhat.com/
 
 Install required tools. In Fedora perform:
 
-    dnf -y install ruby asciidoctor asciidoctor-pdf make
+    dnf -y install ruby asciidoctor asciidoctor-pdf make linkchecker
 
 In MacOS required tools can be installed via brew but instead "make" call "gmake":
 
@@ -32,6 +32,10 @@ Similarly, to build and open PDF version do:
     make open-pdf
 
 The final artifacts can be found in the ./build subdirectory. Note that GNU Makefile tracks changes and only builds relevant artifacts, to trigger full rebuild use `make clean` to delete build directory and start over.
+
+It's also possible to check links, the following command will check all links except example.com domain:
+
+	make linkchecker
 
 ## Reading or Publishing
 
