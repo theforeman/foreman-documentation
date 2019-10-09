@@ -365,7 +365,7 @@ In this example, the `--dhcp-id`, `--dns-id`, and `--tftp-id` options use 1, whi
 
 You can configure PXELinux to chainboot iPXE and boot using the HTTP protocol, which is faster and more reliable on high latency networks than TFTP.
 
-There are three methods of using iPXE with {ProjectName} {ProductVersion}:
+There are three methods of using iPXE with {Project}:
 
 . Chainbooting virtual machines using hypervisors that use iPXE as primary firmware
 . Using PXELinux through TFTP to chainload iPXE directly on bare metal hosts
@@ -380,6 +380,85 @@ Before you begin, ensure that the following conditions are met:
 * The provisioning interface of the host has a valid DHCP reservation
 * The NIC is capable of PXE booting. For more information, see http://ipxe.org/appnote/hardware_drivers
 * The NIC is compatible with iPXE
+
+==== Example WIP of Lzap's Blogpost
+
+Using {Project} you can set up and use iPXE if you have the following restrictions that prevent you from using PXE:
+
+* On networks with unmanaged DHCP servers,
+* If the PXE service is blacklisted on your network or restricted by a firewall
+* When the TFTP UDP-based protocol is not reliable, for example, on low-bandwidth networks
+
+With {Project}, you can set up PXE over TFTP to download the `ipxe.efi` file. When the file downloads, all communication continues using HTTP. {Project} uses the iPXE provisioning script either to load an operating system installer or the next entry in the boot order.
+
+When an EFI host boots from PXE, the `ipxe.efi` file changes the process to iPXE. BIOS systems use the `undionly.kpxe` file.
+
+You can use this workflow with or without discovery phase. If you use discovery, use the HTTPBoot  {SmartProxy} module to host the {Project} Discovery image to keep the {Project} discovery image close to the managed nodes.
+
+.Security Information
+
+The iPXE binary in {RHEL} is built without security features, for this reason, you can use HTTP, and cannot use HTTPs. All security-related features of iPXE in {RHEL} are not supported. For more information, see https://access.redhat.com/solutions/3483601[Red Hat Enterprise Linux HTTPS support in iPXE].
+
+.Prerequisite
+
+Ensure that the hardware that you use is compatible with iPXE.
+
+.Procedure
+
+. Copy the `ipxe.efi` file to the TFTP directory. For BIOS systems, copy the `undionly.kpxe` file.
++
+----
+# cp /usr/share/ipxe/undionly.kpxe /var/lib/tftpboot/undionly.0
+# cp /usr/share/ipxe/ipxe.efi /var/lib/tftpboot/
+----
++
+. Because the feature cannot be enabled using the foreman-installer command, you must edit the `settings.d/httpboot.yml` configuration file to enable:
++
+----
+# vi /etc/foreman-proxy/settings.d/httpboot.yml
+:enabled: true
+----
++
+. Restart *foreman-proxy* service and refresh features to get the HTTPBoot feature to appear in the list of features.
++
+----
+# systemctl restart foreman-proxy
+----
++
+Repeat for each {SmartProxy} that you want to use.
++
+. In the {Project} web UI, navigate to *Hosts* > *Provisioning Templates*, enter `Kickstart default iPXE` and click *Search*.
+. Optional: If you want to change the template, click *Clone*, enter a unique name, and click *Submit*.
+. Click the name of the template you want to use.
+. If you clone the template, you can make changes you require on the *Template* tab.
+. Click the *Association* tab, and select the operating systems that your host uses.
+. Click the *Locations* tab, and add the location where the host resides.
+. Click the *Organizations* tab, and add the organization that the host belongs to.
+. Click *Submit* to save the changes.
+. Navigate to *Hosts* > *Operating systems* and select the operating system of your host.
+. Click the *Templates* tab.
+. From the *iPXE Template* list, select the template you want to use.
+. Click *Submit* to save the changes.
+. Navigate to *Hosts* > *All Hosts*.
+. In the *Hosts* page, select the host that you want to use.
+. Select the *Templates* tab.
+. From the *iPXE template* list, select *Review* and verify that the *Kickstart default iPXE* template is the correct template.
+. To use the iPXE bootstrapping feature for {Project}, configure the `dhcpd.conf` file as follows:
++
+----
+if exists user-class and option user-class = "iPXE" {
+  filename "http://foreman.nat.lan/unattended/iPXE?bootstrap=1";
+} elsif option architecture = 00:06 {
+  filename "ipxe.efi";
+} elsif option architecture = 00:07 {
+  filename "ipxe.efi";
+} elsif option architecture = 00:09 {
+  filename "ipxe.efi";
+} else {
+  filename "undionly.0";
+}
+----
+
 
 ==== Chainbooting virtual machines
 
