@@ -34,6 +34,9 @@ clean:
 browser: html
 	${BROWSER_OPEN} "file://$(realpath $(ROOTDIR)/$(DEST_HTML))"
 
+linkchecker: html
+	linkchecker -vr1 --check-extern --ignore-url=example.com "file://$(realpath $(ROOTDIR)/$(DEST_HTML))"
+
 open-pdf: pdf
 	${BROWSER_OPEN} "$(realpath $(ROOTDIR)/$(DEST_PDF))"
 
