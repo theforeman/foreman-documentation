@@ -24,19 +24,19 @@ Virtualization Infrastructure::
 
 The provisioning process follows a basic PXE workflow:
 
-. You create a host and select a domain and subnet. {Project} requests an available IP address from the DHCP {SmartProxyServer} that is associated with the subnet or from a database. {Project} loads this IP address into the *IP address* field in the Create Host window. When you complete all the options for the new host, submit the new host request.
-. Depending on the configuration specifications of the host, the its domain and subnet, {Project} configures the following settings:
-* A DHCP record is created on the {SmartProxyServer} that is associated with the subnet.
-* A forward DNS record is created on the {SmartProxyServer} that is associated with the domain.
-* A reverse DNS record is created on the DNS {SmartProxyServer} that is associated with the subnet.
-* PXELinux, Grub, Grub2, and iPXE configuration files are created for the host in the TFTP {SmartProxyServer} that is associated with the subnet.
-* A Puppet certificate is generated on the associated Puppet server.
-* A realm is created on the associated identity server.
+. You create a host and select a domain and subnet. {Project} requests an available IP address from the DHCP {SmartProxyServer} that is associated with the subnet or from the PostgreSQL database in Satellite. {Project} loads this IP address into the *IP address* field in the Create Host window. When you complete all the options for the new host, submit the new host request.
+. Depending on the configuration specifications of the host and its domain and subnet, {Project} creates the following settings:
+* A DHCP record on the {SmartProxyServer} that is associated with the subnet.
+* A forward DNS record on the {SmartProxyServer} that is associated with the domain.
+* A reverse DNS record on the DNS {SmartProxyServer} that is associated with the subnet.
+* PXELinux, Grub, Grub2, and iPXE configuration files for the host in the TFTP {SmartProxyServer} that is associated with the subnet.
+* A Puppet certificate on the associated Puppet server.
+* A realm on the associated identity server.
 . The new host requests a DHCP reservation from the DHCP server.
 . The DHCP server responds to the reservation request and returns TFTP `next-server` and `filename` options.
 . The host requests the boot loader and menu from the TFTP server according to the PXELoader setting.
 . A boot loader is returned over TFTP.
-. The boot loader fetches configuration for the host through its provision interface MAC address.
+. The boot loader fetches configuration for the host through its provisioning interface MAC address.
 . The boot loader fetches the operating system installer kernel, init RAM disk, and boot parameters.
 . The installer requests the provisioning template from {Project}.
 . {Project} renders the provision template and returns the result to the host.
@@ -62,14 +62,11 @@ endif::[]
 
 This workflow differs depending on custom options. For example:
 
-*Discovery*
+Discovery::
+If you use the discovery service, {Project} automatically detects the MAC address of the new host and restarts the host after you submit a request. Note that TCP port 8443 must be reachable by the {SmartProxy} to which the host is attached for {Project} to restart the host.
 
-If you use the Discovery service, {Project} automatically detects the MAC address of the new host and restarts the host after you submit a request. Note that TCP port 8443 must be reachable by the {SmartProxy} to which the host is attached for {Project} to restart the host.
+PXE-less Provisioning::
+After you submit a new host request, you must boot the specific host with the boot disk that you download from {Project} and transfer using a USB port of the host.
 
-*PXE-less Provisioning*
-
-After you submit a new host request, you must boot the specific host with a boot disk that you download from {Project} and transfer and attach to a USB port of the host.
-
-*Compute Resources*
-
-The {Project} creates the virtual machine for the host and returns the MAC address to {Project}. If you use image-based provisioning, the host does not follow the standard PXE boot and operating system installation: the compute resource creates a copy of the image for the new host to use. Depending on image settings in {Project}, seed data can be passed in for initial configuration (e.g. via cloud-init) or {Project} can perform SSH connection to the server and execute a template to finish off customization.
+Compute Resources::
+{Project} creates the virtual machine and retrieves the MAC address and stores the MAC address in {Project}. If you use image-based provisioning, the host does not follow the standard PXE boot and operating system installation. The compute resource creates a copy of the image for the host to use. Depending on image settings in {Project}, seed data can be passed in for initial configuration, for example using `cloud-init`. {Project} can connect using SSH to the host and execute a template to finish the customization.
