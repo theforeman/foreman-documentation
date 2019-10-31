@@ -1,3 +1,6 @@
+SHELL=/bin/bash
+GUIDES=doc-Provisioning_Guide doc-Monitoring_Guide
+
 all: html
 
 html: all-html
@@ -9,13 +12,29 @@ linkchecker: all-linkchecker
 clean: all-clean
 
 all-html:
-	cd doc-Provisioning_Guide && $(MAKE) html
+	for DIR in $(GUIDES) ; do \
+		pushd "$$DIR" ; \
+		$(MAKE) html ; \
+		popd ; \
+	done
 
 all-pdf:
-	cd doc-Provisioning_Guide && $(MAKE) pdf
+	for DIR in $(GUIDES) ; do \
+		pushd "$$DIR" ; \
+		$(MAKE) pdf ; \
+		popd ; \
+	done
 
 all-linkchecker:
-	cd doc-Provisioning_Guide && $(MAKE) linkchecker
+	for DIR in $(GUIDES) ; do \
+		pushd "$$DIR" ; \
+		$(MAKE) linkchecker ; \
+		popd ; \
+	done
 
 all-clean:
-	cd doc-Provisioning_Guide && $(MAKE) clean
+	for DIR in $(GUIDES) ; do \
+		pushd "$$DIR" ; \
+		$(MAKE) clean ; \
+		popd ; \
+	done
