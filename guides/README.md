@@ -58,6 +58,8 @@ Never write "Foreman" or "Satellite" words directly but use the following variab
 | {SmartProxyServer} | Smart Proxy server | Capsule Server |
 | {SmartProxy} | Smart Proxy | Capsule |
 
+The table only covers the most frequent terms, the rest is defined in the [included file](common/attributes.adoc).
+
 Variables cannot be used in shell or code examples. To use them, use "attributes" keyword:
 
 	[options="nowrap" subs="+quotes,attributes"]
