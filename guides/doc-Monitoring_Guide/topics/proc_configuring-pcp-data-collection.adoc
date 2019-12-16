@@ -1,122 +1,14 @@
 [id='configure-pcp-data-collection_{context}']
 = Configuring PCP Data Collection
 
-This procedure describes how to configure PCP to collect metrics about processes, {Project}, Apache HTTP Server, and PostgreSQL.
+This procedure describes how to configure PCP to collect more detailed data about specific processes that are relevant for {Project} Server:
+
+* PostgreSQL
+* {Project} Rails application (WebUI/API)
 
 .Procedure
 
-. To configure PCP to collect data about {Project} processes, create the `/var/lib/pcp/pmdas/proc/hotproc.conf` file and include the following content:
-+
-----
-#pmdahotproc
-Version 1.0
-
-# processes with load 0.9 or 1GB RSS memory
-(cpuburn > 0.9 || residentsize > 1000000) &&
-(
-  fname == "java" ||
-  fname == "qdrouterd" ||
-  fname == "qpidd" ||
-  (fname == "postgres" && psargs ~ /-D/) ||
-  fname == "mongod" ||
-  fname == "dynflow_executor" ||
-  fname == "dynflow_executor_monitor" ||
-  fname ~ /smart_proxy_dynflow_core/ ||
-  psargs ~ /Passenger RackApp/ ||
-  psargs ~ /celery beat/ ||
-  psargs ~ /celery worker/ ||
-  psargs ~ /pulp/ ||
-  psargs ~ /smart-proxy/ ||
-  psargs ~ /squid.conf/
-)
-----
-+
-By default, PCP collects basic system metrics. This step enables detailed metrics about the following {Project} processes:
-+
-* Java
-* PostgreSQL
-* MongoDB
-* Dynflow
-* Passenger
-* Pulp
-* Qpid
-
-. Configure PCP to log the process metrics being collected.
-+
-----
-# mkdir -p /var/lib/pcp/config/pmlogconf/foreman-hotproc
-# cat >/var/lib/pcp/config/pmlogconf/foreman-hotproc/summary << EOF
-#pmlogconf-setup 2.0
-ident   foreman hotproc metrics
-probe   hotproc.control.config != "" ? include : exclude
-        hotproc.psinfo.psargs
-        hotproc.psinfo.cnswap
-        hotproc.psinfo.nswap
-        hotproc.psinfo.rss
-        hotproc.psinfo.vsize
-        hotproc.psinfo.cstime
-        hotproc.psinfo.cutime
-        hotproc.psinfo.stime
-        hotproc.psinfo.utime
-        hotproc.io.write_bytes
-        hotproc.io.read_bytes
-        hotproc.schedstat.cpu_time
-        hotproc.fd.count
-EOF
-----
-
-. Install the process monitoring PMDA.
-+
-----
-# cd /var/lib/pcp/pmdas/proc
-# ./Install
-----
-
-. Configure PCP to collect metrics from Apache HTTP Server.
-+
-.. Enable the Apache HTTP Server extended status module.
-+
-----
-#cat >/etc/httpd/conf.d/01-status.conf <<EOF
-ExtendedStatus On
-LoadModule status_module modules/mod_status.so
-
-<Location "/server-status">
-PassengerEnabled off
-SetHandler server-status
-Order deny,allow
-Deny from all
-Allow from localhost
-</Location>
-EOF
-----
-.. Enable the Apache HTTP Server PMDA.
-+
-----
-# cd /var/lib/pcp/pmdas/apache
-# ./Install
-----
-.. Prevent the {Project} installer overwriting the extended status module’s configuration file.
-+
-Add the following line to the  `/etc/foreman-installer/custom-hiera.yaml` configuration file.
-+
-----
-apache::purge_configs: false
-----
-
 . Configure PCP to collect metrics from PostgreSQL.
-
-.. Change to the `/var/lib/pcp/pmdas/postgresql` directory.
-+
------
-# cd /var/lib/pcp/pmdas/postgresql
------
-
-.. Run the installer.
-+
-----
-# ./Install
-----
 
 .. Configure the PCP database interface to permit access to the PostgreSQL database.
 +
@@ -137,6 +29,18 @@ $os_user = "foreman";
 ----
 # semanage permissive -a pcp_pmcd_t
 ----
+.. Change to the `/var/lib/pcp/pmdas/postgresql` directory.
++
+-----
+# cd /var/lib/pcp/pmdas/postgresql
+-----
+
+.. Run the installer.
++
+----
+# ./Install
+----
+
 
 .. Verify the PostgreSQL PMDA is able to connect to PostgreSQL.
 +
@@ -146,60 +50,198 @@ Examine the `/var/log/pcp/pmcd/postgresql.log` file to confirm the connection is
 [Tue Aug 14 09:21:06] pmdapostgresql(25056) Info: PostgreSQL connection established
 ----
 +
-If you find errors in `/var/log/pcp/pmcd/postgresql.log`, restart the *pmcd* service.
+If you find errors in `/var/log/pcp/pmcd/postgresql.log`, check username, password, SELinux and restart the *pmcd* service.
 +
 ----
 # systemctl restart pmcd
 ----
 
-. Enable telemetry functionality in {Project}.
-+
-To enable collection of metrics from {Project}, you must send metrics via the `statsd` protocol into the `pcp-mmvstatsd` daemon. The metrics are aggregated and available via the PCP MMV API.
+New metrics will appear under the "prometheus" tree which can be verified with the command:
 
-.. Install the Foreman Telemetry and `pcp-mmvstatsd` packages.
+----
+# pminfo postgresql
+postgresql.recovery.xlog_replay_location_offset
+postgresql.recovery.xlog_replay_location_log_id
+postgresql.recovery.xlog_receive_location_offset
+postgresql.recovery.xlog_receive_location_log_id
+...
+postgresql.stat.activity.current_query
+postgresql.stat.activity.query_start
+postgresql.stat.activity.xact_start
+postgresql.stat.activity.backend_start
+postgresql.stat.activity.client_port
+postgresql.stat.activity.client_hostname
+postgresql.stat.activity.client_addr
+postgresql.stat.activity.application_name
+postgresql.stat.activity.usename
+postgresql.stat.activity.usesysid
+postgresql.stat.activity.datname
+postgresql.stat.activity.datid
+----
+
+. Configure Rails telemetry
+
+Foreman Rails application is the key component which handles web requests for Web UI and REST API. It can be configured to expose telemetry data via Prometheus protocol.
+
+.. Install the Foreman Telemetry meta package.
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
-# {foreman-maintain} packages install foreman-telemetry pcp-mmvstatsd
-----
-
-.. Enable and start the `pcp-mmvstatsd` service.
-+
-----
-# systemctl enable pcp-mmvstatsd
-# systemctl start pcp-mmvstatsd
+# {foreman-maintain} packages install foreman-telemetry
 ----
 
 .. Enable the {Project} telemetry functionality.
 +
-Add the following lines to `/etc/foreman/settings.yaml` configuration file:
+Execute the following command to enable telemetry collecting in the Rails application:
 +
+[options="nowrap" subs="verbatim,quotes,attributes"]
 ----
-:telemetry:
-  :prefix: 'fm_rails'
-  :statsd:
-    :enabled: true
-    :host: '127.0.0.1:8125'
-    :protocol: 'statsd'
-  :prometheus:
-    :enabled: false
-  :logger:
-    :enabled: false
-    :level: 'INFO'
+# {foreman-installer} -v --foreman-telemetry-prometheus-enabled true
 ----
 
-. Schedule daily storage of metrics in archive files:
+.. Enable and condigure Prometheus PCP agent to fetch telemetry data from Rails application:
 +
 ----
-# cat >/etc/cron.daily/refresh_mmv <<EOF
-#!/bin/bash
-echo "log mandatory on 1 minute mmv" | /usr/bin/pmlc -P
+# cd /var/lib/pcp/pmdas/prometheus
+# cat <<EOF >config.d/foreman.url
+http://$(hostname -f)/metrics
 EOF
-# chmod +x /etc/cron.daily/refresh_mmv
+# ./Install
 ----
 
-. Restart the Apache HTTP Server and PCP to begin data collection:
+.. Check the agent's log file to find out if it started successfully:
 +
 ----
-# systemctl restart httpd pmcd pmlogger
+# cat /var/log/pcp/pmcd/prometheus.log
+Log for pmdaprometheus started Thu Dec 19 13:36:44 2019
+[Thu Dec 19 13:36:44] pmdaprometheus(28089) Info: Initializing ... currently in notready state.
+[Thu Dec 19 13:36:44] pmdaprometheus(28089) Info: Config change detected, traversed 1 config entries in 0.0001s, rescanning ...
+[Thu Dec 19 13:36:44] pmdaprometheus(28089) Info: Found source foreman cluster 1
+[Thu Dec 19 13:36:44] pmdaprometheus(28089) Info: Ready to process requests
+----
+
+.. Rails applications have very long cold start up time, by default Prometheus agent timeouts after two seconds and disables the metric collection until next `pmcd` daemon restart. To prevent this behavior, increate timeout to more reasonable value by setting the timeout to 12 seconds. During initial startup, the agent waits ten times of the timeout value which is 120 seconds which should be just enough for the Rails application to initialize. To do this, edit file `/etc/pcp/pmcd/pmcd.conf` and add `-t 12` to the end.
++
+----
+prometheus      144     pipe    binary notready         python /var/lib/pcp/pmdas/prometheus/pmdaprometheus.python -t 12
+----
+
+.. Finally, restart the `pmcd` daemon
++
+----
+# systemctl restart pmcd
+----
+
+New metrics will appear under the "prometheus" tree which can be verified with the command:
+
+----
+# pminfo -T prometheus
+
+prometheus.foreman.fm_rails_importer_facts_count_processed
+Help:
+Number of facts processed (added, updated, deleted) per importer type
+
+prometheus.foreman.fm_rails_http_request_view_duration_sum
+Help:
+Time spent in view for a request
+
+prometheus.foreman.fm_rails_http_request_total_duration_sum
+Help:
+Total duration of controller action
+
+prometheus.foreman.fm_rails_ruby_gc_count
+Help:
+Ruby GC statistics per request (count)
+
+prometheus.foreman.fm_rails_ruby_gc_freed_objects
+Help:
+Ruby GC statistics per request (total_freed_objects)
+
+prometheus.foreman.fm_rails_audit_records_logged
+Help:
+Number of audit records sent into logger
+
+prometheus.foreman.fm_rails_audit_records_created
+Help:
+Number of audit records created in the DB
+
+prometheus.foreman.fm_rails_importer_facts_count_interfaces
+Help:
+Number of changed interfaces per importer type
+
+prometheus.foreman.fm_rails_ruby_gc_allocated_objects
+Help:
+Ruby GC statistics per request (total_allocated_objects)
+
+prometheus.foreman.fm_rails_importer_facts_import_duration_count
+Help:
+Duration of fact import (ms) per importer type
+
+prometheus.foreman.fm_rails_importer_facts_import_duration_sum
+Help:
+Duration of fact import (ms) per importer type
+
+prometheus.foreman.fm_rails_importer_facts_import_duration_bucket
+Help:
+Duration of fact import (ms) per importer type
+
+prometheus.foreman.fm_rails_activerecord_instances
+Help:
+Number of instances of ActiveRecord models
+
+prometheus.foreman.fm_rails_http_request_view_duration_count
+Help:
+Time spent in view for a request
+
+prometheus.foreman.fm_rails_ruby_gc_minor_count
+Help:
+Ruby GC statistics per request (minor_gc_count)
+
+prometheus.foreman.fm_rails_http_request_view_duration_bucket
+Help:
+Time spent in view for a request
+
+prometheus.foreman.fm_rails_http_request_db_duration_count
+Help:
+Time spent in database for a request
+
+prometheus.foreman.fm_rails_http_request_db_duration_sum
+Help:
+Time spent in database for a request
+
+prometheus.foreman.fm_rails_http_request_db_duration_bucket
+Help:
+Time spent in database for a request
+
+prometheus.foreman.fm_rails_http_request_total_duration_count
+Help:
+Total duration of controller action
+
+prometheus.foreman.fm_rails_ruby_gc_major_count
+Help:
+Ruby GC statistics per request (major_gc_count)
+
+prometheus.foreman.fm_rails_http_request_total_duration_bucket
+Help:
+Total duration of controller action
+
+prometheus.foreman.fm_rails_http_requests
+Help:
+A counter of HTTP requests made
+
+prometheus.control.debug
+Help:
+debug flag to enable verbose log messages, to enable: pmstore prometheus.control.debug 1
+
+prometheus.control.parse_time
+Help:
+per-end-point source parse time counter, excluding fetch time
+
+prometheus.control.fetch_time
+Help:
+per-end-point source fetch time counter, excluding parse time
+
+prometheus.control.calls
+Help:
+per-end-point source call counter
 ----

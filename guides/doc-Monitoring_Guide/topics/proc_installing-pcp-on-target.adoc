@@ -1,0 +1,111 @@
+[id='installing-pcp-on-target_{context}']
+= Installing PCP on monitoring server
+
+This procedure describes how to install the PCP packages on monitoring server.
+
+.Prerequisites
+
+* Ensure you have a minimum of 20 GB space available in the `/var/log/pcp` directory.
++
+The default PCP data retention policy is to retain only that data collected during the past 14 days. Data storage per day is estimated to use usually between 100 MB and 500 MB of disk space when sampling interval is kept on the default value (every 60 seconds), but when increased the size of a storage per day can increase up to several gigabytes.
++
+* Ensure that the base system on which {ProjectServer} is running Red{nbsp}Hat Enterprise Linux 8.2 or later. The minimum supported version for the PCP packages is PCP version 5.0.2 or later.
+
+.Procedure
+
+. On the monitoring server, install the PCP packages:
++
+----
+# yum -y install pcp \
+  pcp-doc pcp-system-tools \
+  grafana grafana-pcp redis
+----
++
+. Create file _/etc/pcp/pmlogger/control.d/foreman_ with the following contents to configure pmlogger daemon to fetch metrics from {Project} Server _{foreman.example.com}_ and storing it in _/var/log/pcp/pmlogger/{foreman.example.com}_. Archives are split into the maximum size of 200 MB and compressed after 2 days. The sampling interval is set to 60 seconds and it can be increased up to one second.
++
+[options="nowrap" subs="verbatim,quotes,attributes"]
+----
+$version=1.1
+$PCP_COMPRESSAFTER=2
+{foreman.example.com} n n PCP_LOG_DIR/pmlogger/{foreman.example.com} -r -T24h10m -c config.default -v 500Mb -t 60
+----
++
+Grafana web application is exposed via TCP port 3000, enable the port in firewall.
++
+----
+# firewall-cmd --add-port=3000/tcp --add-port=44322/tcp --add-port=8125/udp  --add-port=8125/tcp
+# firewall-cmd --add-port=3000/tcp --add-port=44322/tcp --add-port=8125/udp  --add-port=8125/tcp --permanent
+----
++
+. Configure additional metrics to be collected.
++
+----
+# mkdir -p /var/lib/pcp/config/pmlogconf/foreman
+# cat >/var/lib/pcp/config/pmlogconf/foreman/summary << EOF
+#pmlogconf-setup 2.0
+ident   foreman postgresql metrics
+probe   postgresql.stat.database.blks_read != "" ? include : exclude
+        postgresql.stat.database.tup_deleted [ foreman candlepin ]
+        postgresql.stat.database.tup_updated [ foreman candlepin ]
+        postgresql.stat.database.tup_inserted [ foreman candlepin ]
+        postgresql.stat.database.tup_fetched [ foreman candlepin ]
+        postgresql.stat.database.tup_returned [ foreman candlepin ]
+
+ident   foreman rails metrics
+probe   prometheus.control.calls != "" ? include : exclude
+        prometheus.control.debug
+        prometheus.control.parse_time
+        prometheus.control.fetch_time
+        prometheus.control.calls
+        prometheus.foreman.fm_rails_http_request_total_duration_sum
+        prometheus.foreman.fm_rails_http_requests
+        prometheus.foreman.fm_rails_ruby_gc_freed_objects
+        prometheus.foreman.fm_rails_http_request_view_duration_bucket
+        prometheus.foreman.fm_rails_http_request_view_duration_count
+        prometheus.foreman.fm_rails_activerecord_instances
+        prometheus.foreman.fm_rails_ruby_gc_allocated_objects
+        prometheus.foreman.fm_rails_http_request_view_duration_sum
+        prometheus.foreman.fm_rails_http_request_total_duration_count
+        prometheus.foreman.fm_rails_http_request_db_duration_count
+        prometheus.foreman.fm_rails_http_request_db_duration_sum
+        prometheus.foreman.fm_rails_http_request_db_duration_bucket
+        prometheus.foreman.fm_rails_ruby_gc_minor_count
+        prometheus.foreman.fm_rails_ruby_gc_count
+        prometheus.foreman.fm_rails_http_request_total_duration_bucket
+EOF
+----
+
+
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+. Rails telemetry is reported via MMV API dynamically, schedule hourly reconfiguration of pmlogger to archive all metrics under MMV tree as they start to appear.
++
+----
+cd /var/lib/pcp/pmdas/statsd
+
+
+# yum install cronie
+# cat >/etc/cron.hourly/refresh_mmv <<'EOF'
+#!/bin/bash
+PID=$(pgrep -f "pmlogger -h")
+cat << EOCOMMANDS | /usr/bin/pmlc -P &>/dev/null
+connect $PID
+status
+log mandatory on 1 minute mmv.fm_rails_activerecord_instances
+log mandatory on 1 minute mmv.fm_rails_failed_ui_logins
+log mandatory on 1 minute mmv.fm_rails_http_request_total_duration
+log mandatory on 1 minute mmv.fm_rails_http_requests
+query mmv
+EOCOMMANDS
+EOF
+# chmod +x /etc/cron.hourly/refresh_mmv
+systemctl enable --now crond.service
+----
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXx
+
+
+
+. Enable and start the Performance Metrics Collector daemon, and the Performance Metrics Logger daemon:
++
+----
+# systemctl enable --now pmcd pmlogger redis grafana-server pmproxy
+----
