@@ -22,35 +22,51 @@ Virtualization Infrastructure::
 [[Introduction-Defining_the_Provisioning_Workflow]]
 === Provisioning Workflow Overview
 
-The provisioning process follows a basic workflow:
+The provisioning process follows a basic PXE workflow:
 
-. You create a host. {Project} requests an unused IP address from the DHCP {SmartProxyServer} that is associated with the subnet. {Project} loads this IP address into the *IP address* field in the Create Host window. When you complete all the options for the new host, submit the new host request.
-. The DHCP {SmartProxyServer} that is associated with the subnet reserves an entry for the host.
-. {Project} configures the DNS records:
-* A forward DNS record is created on the {SmartProxyServer} that is associated with the domain.
-* A reverse DNS record is created on the DNS {SmartProxyServer} that is associated with the subnet.
-. A PXELinux menu is created for the host in the TFTP {SmartProxyServer} that is associated with the subnet.
-. The new host requests a DHCP lease from the DHCP server.
-. The DHCP server responds to the lease request and returns TFTP `next-server` and `filename` options.
-. The host requests the bootloader and menu from the TFTP server.
-. The PXELinux menu and OS installer for the host is returned over TFTP.
-. The installer requests the provisioning template or script from {Project}.
-. {Project} renders the template and returns the resulting kickstart file to the host.
-. The host enters a build process that installs the operating system, registers the host to {Project}, and installs management tools such as `katello-agent` and `puppet`.
-. The installer notifies {Project} of a successful build in the `postinstall` script.
-. The PXELinux menu reverts to a local boot template.
-. The host starts its operating system. If you configured the host to use any Puppet classes, the host configures itself using the modules stored on {Project}.
+. You create a host and select a domain and subnet. {Project} requests an available IP address from the DHCP {SmartProxyServer} that is associated with the subnet or from the PostgreSQL database in Satellite. {Project} loads this IP address into the *IP address* field in the Create Host window. When you complete all the options for the new host, submit the new host request.
+. Depending on the configuration specifications of the host and its domain and subnet, {Project} creates the following settings:
+* A DHCP record on the {SmartProxyServer} that is associated with the subnet.
+* A forward DNS record on the {SmartProxyServer} that is associated with the domain.
+* A reverse DNS record on the DNS {SmartProxyServer} that is associated with the subnet.
+* PXELinux, Grub, Grub2, and iPXE configuration files for the host in the TFTP {SmartProxyServer} that is associated with the subnet.
+* A Puppet certificate on the associated Puppet server.
+* A realm on the associated identity server.
+. The new host requests a DHCP reservation from the DHCP server.
+. The DHCP server responds to the reservation request and returns TFTP `next-server` and `filename` options.
+. The host requests the boot loader and menu from the TFTP server according to the PXELoader setting.
+. A boot loader is returned over TFTP.
+. The boot loader fetches configuration for the host through its provisioning interface MAC address.
+. The boot loader fetches the operating system installer kernel, init RAM disk, and boot parameters.
+. The installer requests the provisioning template from {Project}.
+. {Project} renders the provision template and returns the result to the host.
+. The installer performs installation of the operating system.
+ifeval::["{build}" == "foreman"]
+* When Katello plugin is installed, the installer registers the host to {Project} using Red Hat Subscription Manager.
+* When Katello plugin is installed, management tools such as `katello-agent` and `puppet` are installed.
+endif::[]
+ifeval::["{build}" == "satellite"]
+* The installer registers the host to {Project} using Red Hat Subscription Manager.
+* The installer installs management tools such as `katello-agent` and `puppet`.
+endif::[]
+* The installer notifies {Project} of a successful build in the `postinstall` script.
+. The PXE configuration files revert to a local boot template.
+. The host reboots.
+. The new host requests a DHCP reservation from the DHCP server.
+. The DHCP server responds to the reservation request and returns TFTP `next-server` and `filename` options.
+. The host requests the bootloader and menu from the TFTP server according to the PXELoader setting.
+. A boot loader is returned over TFTP.
+. The boot loader fetches the configuration for the host through its provision interface MAC address.
+. The boot loader initiates boot from the local drive.
+. If you configured the host to use any Puppet classes, the host configures itself using the modules.
 
 This workflow differs depending on custom options. For example:
 
-*Discovery*
+Discovery::
+If you use the discovery service, {Project} automatically detects the MAC address of the new host and restarts the host after you submit a request. Note that TCP port 8443 must be reachable by the {SmartProxy} to which the host is attached for {Project} to restart the host.
 
-If you use the Discovery service, {Project} automatically detects the MAC address of the new host and restarts the host after you submit a request. Note that TCP port 8443 must be reachable by the {SmartProxy} to which the host is attached for {Project} to restart the host.
+PXE-less Provisioning::
+After you submit a new host request, you must boot the specific host with the boot disk that you download from {Project} and transfer using a USB port of the host.
 
-*PXE-less Provisioning*
-
-After you submit a new host request, you must boot the specific host with a boot disk that you download from {Project}.
-
-*Compute Resources*
-
-The compute resource creates the virtual machine for the host and returns the MAC address to {Project}. If you use image-based provisioning, the host does not follow the standard PXE boot and operating system installation: the compute resource creates a copy of the image for the new host to use.
+Compute Resources::
+{Project} creates the virtual machine and retrieves the MAC address and stores the MAC address in {Project}. If you use image-based provisioning, the host does not follow the standard PXE boot and operating system installation. The compute resource creates a copy of the image for the host to use. Depending on image settings in {Project}, seed data can be passed in for initial configuration, for example using `cloud-init`. {Project} can connect using SSH to the host and execute a template to finish the customization.

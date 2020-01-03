@@ -1,11 +1,11 @@
 [[Configuring_Networking]]
 == Configuring Networking
 
-Each provisioning type requires some network configuration. Use this chapter to configure network services in {ProjectServer}'s integrated {SmartProxy}.
+Each provisioning type requires some network configuration. Use this chapter to configure network services in your integrated {SmartProxy} on {ProjectServer}.
 
-New hosts must have access to your {SmartProxyServer}. A {SmartProxyServer} can be either {ProjectServer}'s integrated {SmartProxy} or an external {SmartProxyServer}. You might want to provision hosts from an external {SmartProxyServer} when the hosts are on isolated networks and cannot connect to the {ProjectServer} directly, or when the content is synchronized with the {SmartProxyServer}. Provisioning using the external {SmartProxyServer} can save on network bandwidth.
+New hosts must have access to your {SmartProxyServer}. {SmartProxyServer} can be either your integrated {SmartProxy} on {ProjectServer} or an external {SmartProxyServer}. You might want to provision hosts from an external {SmartProxyServer} when the hosts are on isolated networks and cannot connect to {ProjectServer} directly, or when the content is synchronized with the {SmartProxyServer}. Provisioning using the external {SmartProxyServer} can save on network bandwidth.
 
-Configuring the {SmartProxyServer} has two basic requirements:
+Configuring {SmartProxyServer} has two basic requirements:
 
 . Configuring network services. This includes:
   * Content delivery services
@@ -13,21 +13,39 @@ Configuring the {SmartProxyServer} has two basic requirements:
   * Puppet configuration
 . Defining network resource data in {ProjectServer} to help configure network interfaces on new hosts.
 
-The following instructions have similar applications to configuring standalone {SmartProxyServer}s managing a specific network. To configure {Project} to use external DHCP, DNS, and TFTP services, see link:{BaseURL}installing_satellite_server_from_a_connected_network/configuring_external_services[Configuring External Services] in _Installing {ProjectServer} from a Connected Network_.
+The following instructions have similar applications to configuring standalone {SmartProxies} managing a specific network. To configure {Project} to use external DHCP, DNS, and TFTP services, see link:{BaseURL}installing_satellite_server_from_a_connected_network/configuring_external_services[Configuring External Services] in _Installing {ProjectServer} from a Connected Network_.
 
-.DHCP Ranges
-You can define the same DHCP range in {ProjectServer} for both Discovered and Provisioned systems, but use a separate range for each service within the same subnet.
+[[networking_resources]]
+=== Network Resources
+
+{Project} contains networking resources that you must set up and configure to create a host. {Project} includes the following networking resources:
+
+Domain::
+You must assign every host that is managed by {Project} to a domain. Using the domain, {Project} can manage A, AAAA, and PTR records. Even if you do not want {Project} to manage your DNS servers, you still must create and associate at least one domain. Domains are included in the naming conventions {Project} hosts, for example, a host with the name `test123` in the `example.com` domain has the fully qualified domain name `test123.example.com`.
+
+Subnet::
+You must assign every host managed by {Project} to a subnet. Using subnets, {Project} can then manage IPv4 reservations. If there are no reservation integrations, you still must create and associate at least one subnet. When you manage a subnet in {Project}, you cannot create DHCP records for that subnet outside of {Project}. In {Project}, you can use IP Address Management (IPAM) to manage IP addresses with one of the following options:
++
+* *DHCP*: the DHCP {SmartProxy} manages the assignment of IP addresses by finding the next available IP address starting from the first. Before assigning an IP address, {SmartProxy} sends an ICMP and TCP ping to verify whether the IP address is in use.
+* *Internal DB*: {Project} manages a list of available IP addresses in the PostgreSQL database. {Project} assigns the IP addresses automatically.
+* *Random DB*: {Project} manages a list of available IP addresses in the PostgreSQL database, but randomizes the results to avoid IPv4 race conditions.
+* *None*: IP address for each host must be entered manually.
++
+For more information about adding a subnet, see xref:Configuring_Networking-Adding_a_Subnet_to_the_Satellite_Server[].
+
+DHCP Ranges::
+You can define the same DHCP range in {ProjectServer} for both discovered and provisioned systems, but use a separate range for each service within the same subnet.
 
 === {Project} and DHCP Options
 
 {Project} manages DHCP reservations through a DHCP {SmartProxy}. {Project} also sets the `next-server` and `filename` DHCP options.
 
 .The next-server option
-The `next-server` option provides the IP address of the TFTP server to boot from. This option is not set by default and must be set for each TFTP {SmartProxy}. You can use the {foreman-installer} command with the `--foreman-proxy-tftp-servername` option to set the TFTP server in the `/etc/foreman-proxy/settings.d/tftp.yml` file:
+The `next-server` option provides the IP address of the TFTP server to boot from. This option is not set by default and must be set for each TFTP {SmartProxy}. You can use the `{foreman-installer}` command with the `--foreman-proxy-tftp-servername` option to set the TFTP server in the `/etc/foreman-proxy/settings.d/tftp.yml` file:
 
 [options="nowrap" subs="+quotes,attributes"]
 ----
-# {foreman-installer} --foreman-proxy-dhcp true
+# {foreman-installer} --foreman-proxy-tftp-servername _1.2.3.4_
 ----
 
 Each TFTP {SmartProxy} then reports this setting through the API and {Project} can retrieve the configuration information when it creates the DHCP record.
@@ -40,7 +58,7 @@ If the `next-server` option remains undefined, {Project} uses reverse DNS search
 * Querying of incorrect DNS server. For example, authoritative rather than caching
 * Errors about incorrect IP address for the TFTP server. For example, `PTR record was invalid`
 
-If you encounter these problems, check the DNS setup on both {ProjectServer} and {SmartProxy}, specifically the PTR record resolution.
+If you encounter these problems, check the DNS setup on both {Project} and {SmartProxy}, specifically the PTR record resolution.
 
 .The filename option
 
@@ -56,6 +74,40 @@ The `filename` option contains the full path to the file that downloads and exec
 |iPXE UEFI HTTP | `http://_{smartproxy-example-com}_:8000/httpboot/ipxe-x64.efi` | Requires the `httpboot` feature and renders the `filename` as a full URL where _{smartproxy-example-com}_ is a known host name of {SmartProxy} in {Project}.
 |Grub2 UEFI HTTP | `http://_{smartproxy-example-com}_:8000/httpboot/grub2/grubx64.efi` | Requires the `httpboot` feature and renders the `filename` as a full URL where _{smartproxy-example-com}_ is a known host name of {SmartProxy} in {Project}.
 |=======
+
+=== Troubleshooting DHCP Problems in {Project}
+
+{Project} can manage an ISC DHCP server on internal or external DHCP {SmartProxy}. {Project} can list, create, and delete DHCP reservations and leases. However, there are a number of problems that you might encounter on occasions.
+
+.PXE loader option change
+
+When the PXE loader option is changed for an existing host, this causes a DHCP conflict. The only workaround is to overwrite the DHCP entry.
+
+ifeval::["{build}" == "foreman"]
+This is a known issue. Until https://projects.theforeman.org/issues/27877[Issue 27877] is fixed, the only workaround is to overwrite the DHCP entry.
+endif::[]
+
+.Incorrect permissions on DHCP files
+
+An operating system update can update the `dhcpd` package. This causes the permissions of important directories and files to reset so that the DHCP {SmartProxy} cannot read the required information.
+
+ifeval::["{build}" == "satellite"]
+For more information, see https://access.redhat.com/solutions/2952061[DHCP error while provisioning host from Satellite server Error ERF12-6899 ProxyAPI::ProxyException: Unable to set DHCP entry RestClient::ResourceNotFound 404 Resource Not Found] on Red{nbsp}Hat Knowledgebase.
+endif::[]
+
+ifeval::["{build}" == "foreman"]
+For more information, see https://projects.theforeman.org/projects/foreman/wiki/ERF12-6899[ERF12-6899 - Unable to set DHCP entry].
+endif::[]
+
+.Changing the DHCP {SmartProxy} entry
+
+{Project} manages DHCP records only for hosts that are assigned to subnets with a DHCP {SmartProxy} set. If you create a host and then clear or change the DHCP {SmartProxy}, when you attempt to delete the host, the action fails.
+
+If you create a host without setting the DHCP {SmartProxy} and then try to set the DHCP {SmartProxy}, this causes DHCP conflicts.
+
+.Deleted hosts entries in the dhcpd.leases file
+
+Any changes to a DHCP lease are appended to the end of the `dhcpd.leases` file. Because entries are appended to the file, it is possible that two or more entries of the same lease can exist in the `dhcpd.leases` file at the same time. When there are two or more entries of the same lease, the last entry in the file takes precedence. Group, subgroup and host declarations in the lease file are processed in the same manner. If a lease is deleted, `{ deleted; }` is appended to the declaration.
 
 === Prerequisites for Image Based Provisioning
 
@@ -93,7 +145,7 @@ endif::[]
 
 Some provisioning methods use {SmartProxyServer} services. For example, a network might require the {SmartProxyServer} to act as a DHCP server. A network can also use PXE boot services to install the operating system on new hosts. This requires configuring the {SmartProxyServer} to use the main PXE boot services: DHCP, DNS, and TFTP.
 
-Use the `{foreman-installer}` script with the options to configure these services on the {ProjectServer}.
+Use the `{foreman-installer}` command with the options to configure these services on the {ProjectServer}.
 
 ifeval::["{build}" == "satellite"]
 To configure these services on an external {SmartProxyServer}, run `{foreman-installer} --scenario capsule`.
@@ -222,10 +274,10 @@ Run `{foreman-installer} --help` to view more options related to DHCP, DNS, TFTP
 You can use {Project} TFTP services through NAT. To do this, on all NAT routers or firewalls, you must enable a TFTP service on UDP port 69 and enable the TFTP state tracking feature. For more information, see the documentation for your NAT device.
 
 ifeval::["{build}" == "satellite"]
-.For a NAT running on Red Hat Enterprise Linux 7:
+.Using NAT on Red Hat Enterprise Linux 7:
 endif::[]
 ifeval::["{build}" == "foreman"]
-.For a NAT running on linux with firewalld service:
+.Using NAT on Linux with `firewalld`:
 endif::[]
 
 Use the following command to allow TFTP service on UDP port 69, load the kernel TFTP state tracking module, and make the changes persistent:
@@ -301,7 +353,7 @@ Use the `hammer domain create` command to create a domain:
 --locations "_My_Location_" --organizations "_My_Organization_"
 ----
 
-In this example, the `--dns-id` option uses `1`, which is the ID of {ProjectServer}'s integrated {SmartProxy}.
+In this example, the `--dns-id` option uses `1`, which is the ID of your integrated {SmartProxy} on {ProjectServer}.
 
 [[Configuring_Networking-Adding_a_Subnet_to_the_Satellite_Server]]
 === Adding a Subnet to {ProjectServer}
@@ -321,11 +373,7 @@ To add a subnet to {ProjectServer}, complete the following steps:
 . In the *Gateway address* field, enter the external gateway for the subnet.
 . In the *Primary DNS server* field, enter a primary DNS for the subnet.
 . In the *Secondary DNS server*, enter a secondary DNS for the subnet.
-. From the *IPAM* list, select the method that you want to use for IP address management (IPAM):
-+
-* *DHCP* - The subnet contains a DHCP server.
-* *Internal DB* - The subnet does not contain a DHCP server but {Project} can manage the IP address assignment and record IP addresses in its internal database.
-* *None* - No IP address management.
+. From the *IPAM* list, select the method that you want to use for IP address management (IPAM). For more information about IPAM, see xref:networking_resources[].
 +
 . Enter the information for the IPAM method that you select.
 ifeval::["{build}" == "satellite"]
