@@ -1,0 +1,348 @@
+[[Configuring_Networking-Configuring_gPXE_to_Reduce_Provisioning_Times]]
+== Configuring iPXE to Reduce Provisioning Times
+
+You can configure PXELinux to chainboot iPXE and boot using the HTTP protocol, which is faster and more reliable on high latency networks than TFTP.
+
+.iPXE Workflow Overview
+
+The provisioning process using iPXE follows this workflow:
+
+* A discovered host boots over PXE.
+* The host loads either `ipxe.efi` or `undionly.0`.
+* The host initializes again on the network using DHCP.
+* The DHCP server detects the iPXE firmware and returns the iPXE template URL with the bootstrap flag.
+* The host requests iPXE template. {Project} does not recognize the host and since bootstrap flag was set. The host receives the iPXE intermediate script template that ships with {Project}.
+* The host runs the intermediate iPXE script and downloads the discovery image.
+* The host starts the discovery operating system and performs a discovery request.
+* The host is scheduled for provisioning and restarts.
+* The host boots over PXE.
+* The previous workflow repeats, but {Project} recognizes the host's remote IP address and instead of the intermediate template, the host receives a regular iPXE template.
+* The host reads the iPXE configuration and boots the installer.
+* From this point, the installation follows a regular PXE installation workflow.
+
+Note that the workflow uses the discovery process, which is optional. To set up the discovery service, see xref:setting_up_the_discovery_service_for_iPXE[].
+
+There are three methods of using iPXE with {ProjectName} {ProductVersion}:
+
+. Chainbooting virtual machines using hypervisors that use iPXE as primary firmware
+. Using PXELinux through TFTP to chainload iPXE directly on bare metal hosts
+. Using PXELinux through UNDI, which uses HTTP to transfer the kernel and the initial RAM disk on bare metal hosts
+
+.Prerequisites
+
+Before you begin, ensure that the following conditions are met:
+
+* A host exists on {ProjectName} to use
+* The MAC address of the provisioning interface matches the host configuration
+* The provisioning interface of the host has a valid DHCP reservation
+* The NIC is capable of PXE booting. For more information, see http://ipxe.org/appnote/hardware_drivers
+* The NIC is compatible with iPXE
+
+[[setting_up_the_discovery_service_for_iPXE]]
+=== Setting up the Discovery Service for iPXE
+
+If you want to use iPXE with the discovery service, complete the following steps:
+
+. On {SmartProxyServer}, install the Foreman discovery service:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# yum install foreman-discovery-image
+----
++
+. On {SmartProxyServer}, enable the *httpboot* service:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foreman-installer} --foreman-proxy-httpboot true
+----
++
+. In the {Project} web UI, navigate to *Administer* > *Settings*, and click the *Provisioning* tab.
+. Locate the *Default PXE global template entry* row and in the *Value* column, change the value to *discovery*.
+
+=== Example WIP of Lzap's Blogpost
+
+Using {Project} you can set up and use iPXE if you have the following restrictions that prevent you from using PXE:
+
+* On networks with unmanaged DHCP servers,
+* If the PXE service is blacklisted on your network or restricted by a firewall
+* When the TFTP UDP-based protocol is not reliable, for example, on low-bandwidth networks
+
+With {Project}, you can set up hosts to download either the `ipxe.efi` or `undionly.kpxe` over TFTP. When the file downloads, all communication continues using HTTP. {Project} uses the iPXE provisioning script either to load an operating system installer or the next entry in the boot order.
+
+You can use this workflow with or without discovery phase. If you want to use discovery, see xref:setting_up_the_discovery_service_for_iPXE[].
+
+.Security Information
+
+The iPXE binary in {RHEL} is built without some security features, for this reason, you can use HTTP, and cannot use HTTPs. All security-related features of iPXE in {RHEL} are not supported. For more information, see https://access.redhat.com/solutions/3483601[Red Hat Enterprise Linux HTTPS support in iPXE].
+
+.Prerequisite
+
+Ensure that the hardware that you use is compatible with iPXE.
+
+.Procedure
+
+. Copy the `ipxe.efi` file to the TFTP directory. For BIOS systems, copy the `undionly.kpxe` file.
++
+----
+# cp /usr/share/ipxe/undionly.kpxe /var/lib/tftpboot/undionly.0
+# cp /usr/share/ipxe/ipxe.efi /var/lib/tftpboot/
+----
++
+. In the {Project} web UI, navigate to *Hosts* > *Provisioning Templates*, enter `Kickstart default iPXE` and click *Search*.
+. Optional: If you want to change the template, click *Clone*, enter a unique name, and click *Submit*.
+. Click the name of the template you want to use.
+. If you clone the template, you can make changes you require on the *Template* tab.
+. Click the *Association* tab, and select the operating systems that your host uses.
+. Click the *Locations* tab, and add the location where the host resides.
+. Click the *Organizations* tab, and add the organization that the host belongs to.
+. Click *Submit* to save the changes.
+. Navigate to *Hosts* > *Operating systems* and select the operating system of your host.
+. Click the *Templates* tab.
+. From the *iPXE Template* list, select the template you want to use.
+. Click *Submit* to save the changes.
+. Navigate to *Hosts* > *All Hosts*.
+. In the *Hosts* page, select the host that you want to use.
+. Select the *Templates* tab.
+. From the *iPXE template* list, select *Review* and verify that the *Kickstart default iPXE* template is the correct template.
+. To use the iPXE bootstrapping feature for {Project}, configure the `dhcpd.conf` file as follows:
++
+----
+if exists user-class and option user-class = "iPXE" {
+  filename "http://foreman.nat.lan/unattended/iPXE?bootstrap=1";
+} elsif option architecture = 00:06 {
+  filename "ipxe.efi";
+} elsif option architecture = 00:07 {
+  filename "ipxe.efi";
+} elsif option architecture = 00:09 {
+  filename "ipxe.efi";
+} else {
+  filename "undionly.0";
+}
+----
+
+
+==== Chainbooting virtual machines
+
+Most virtualization hypervisors use iPXE as primary firmware for PXE booting. Because of this, you can chainboot without TFTP and PXELinux.
+
+.Chainbooting virtual machine workflow
+
+Using virtualization hypervisors removes the need for TFTP and PXELinux. It has the following workflow:
+
+. Virtual machine starts
+. iPXE retrieves the network credentials using DHCP
+. iPXE retrieves the HTTP address using DHCP
+. iPXE chainloads the iPXE template from the template {SmartProxy}
+. iPXE loads the kernel and initial RAM disk of the installer
+
+Ensure that the hypervisor that you want to use supports iPXE. The following virtualization hypervisors support iPXE:
+
+* libvirt
+* oVirt
+* RHEV
+
+.Configuring {ProjectName} Server to use iPXE
+
+You can use the default template to configure iPXE booting for hosts.
+If you want to change the default values in the template, clone the template and edit the clone.
+
+.Procedure
+
+To configure {Project} to use iPXE, complete the following steps:
+
+. In the {Project} web UI, navigate to *Hosts* > *Provisioning Templates*, enter `Kickstart default iPXE` and click *Search*.
+. Optional: If you want to change the template, click *Clone*, enter a unique name, and click *Submit*.
+. Click the name of the template you want to use.
+. If you clone the template, you can make changes you require on the *Template* tab.
+. Click the *Association* tab, and select the operating systems that your host uses.
+. Click the *Locations* tab, and add the location where the host resides.
+. Click the *Organizations* tab, and add the organization that the host belongs to.
+. Click *Submit* to save the changes.
+. Navigate to *Hosts* > *Operating systems* and select the operating system of your host.
+. Click the *Templates* tab.
+. From the *iPXE Template* list, select the template you want to use.
+. Click *Submit* to save the changes.
+. Navigate to *Hosts* > *All Hosts*.
+. In the *Hosts* page, select the host that you want to use.
+. Select the *Templates* tab.
+. From the *iPXE template* list, select *Review* and verify that the *Kickstart default iPXE* template is the correct template.
+. To prevent an endless loop of chainbooting iPXE firmware, edit the `/etc/dhcp/dhcpd.conf` file to match the following example. If you use an isolated network, use a {SmartProxyServer} URL with TCP port 8000, instead of {ProjectServer}'s URL.
+.. Locate the following lines in the Bootfile Handoff section of the `/etc/dhcp/dhcpd.conf` file:
++
+----
+} else {
+  filename "pxelinux.0";
+}
+----
+.. Add the following extra `elsif` statement before the else statement:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+elsif exists user-class and option user-class = "iPXE" {
+  filename "http://{foreman-example-com}/unattended/iPXE";
+}
+----
+.. Verify that the 'if' section matches the following example:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+if option architecture = 00:06 {
+  filename "grub2/shim.efi";
+} elsif option architecture = 00:07 {
+  filename "grub2/shim.efi";
+} elsif option architecture = 00:09 {
+  filename "grub2/shim.efi";
+} elsif exists user-class and option user-class = "iPXE" {
+  filename "http://_{foreman-example-com}_/unattended/iPXE";
+} else {
+  filename "pxelinux.0";
+}
+----
++
+[NOTE]
+Use http://{foreman-example-com}/unattended/iPXE when {SmartProxy} HTTP endpoint is disabled (installer option --foreman-proxy-http false). Template {SmartProxy} plugin has default value 8000 when enabled and can be changed with --foreman-proxy-http-port installer option, in that case use http://{smartproxy-example-com}:8000.
+You must update the `/etc/dhcp/dhcpd.conf` file after every upgrade.
+The content of the `/etc/dhcp/dhcpd.conf` file is case sensitive.
+
+
+==== Chainbooting iPXE directly
+
+Use this procedure to set up iPXE to use a built-in driver for network communication or UNDI interface. There are separate procedures to configure {ProjectServer} and {SmartProxy} to use iPXE.
+
+You can use this procedure only with bare metal hosts.
+
+
+.Chainbooting iPXE directly or with UNDI workflow
+
+. Host powers on
+. PXE driver retrieves the network credentials using DHCP
+. PXE driver retrieves the PXELinux firmware `pxelinux.0` using TFTP
+. PXELinux searches for the configuration file on the TFTP server
+. PXELinux chainloads iPXE `ipxe.lkrn` or `undionly-ipxe.0`
+. iPXE retrieves the network credentials using DHCP again
+. iPXE retrieves HTTP address using DHCP
+. iPXE chainloads the iPXE template from the template {SmartProxy}
+. iPXE loads the kernel and initial RAM disk of the installer
+
+.Configuring {ProjectName} Server to use iPXE
+
+You can use the default template to configure iPXE booting for hosts.
+If you want to change the default values in the template, clone the template and edit the clone.
+
+.Procedure
+
+To configure {Project} to use iPXE with the UNDI workflow, complete the following steps:
+
+. In the {Project} web UI, navigate to *Hosts* > *Provisioning Templates*, enter `PXELinux chain iPXE` or, for UNDI, enter `PXELinux chain iPXE UNDI`, and click *Search*.
+. Optional: If you want to change the template, click *Clone*, enter a unique name, and click *Submit*.
+. Click the name of the template you want to use.
+. If you clone the template, you can make changes you require on the *Template* tab.
+. Click the *Association* tab, and select the operating systems that your host uses.
+. Click the *Locations* tab, and add the location where the host resides.
+. Click the *Organizations* tab, and add the organization that the host belongs to.
+. Click *Submit* to save the changes.
+. In the *Provisioning Templates* page, enter `Kickstart default iPXE` into the search field and click *Search*.
+. Optional: If you want to change the template, click *Clone*, enter a unique name, and click *Submit*.
+. Click the name of the template you want to use.
+. If you clone the template, you can make changes you require on the *Template* tab.
+. Click the *Association* tab, and associate the template with the operating system that your host uses.
+. Click the *Locations* tab, and add the location where the host resides.
+. Click the *Organizations* tab, and add the organization that the host belongs to.
+. Click *Submit* to save the changes.
+. Navigate to *Hosts* > *Operating systems* and select the operating system of your host.
+. Click the *Templates* tab.
+. From the *PXELinux template* list, select the template you want to use.
+. From the *iPXE template* list, select the template you want to use.
+. Click *Submit* to save the changes.
+. Navigate to *Hosts* > *All Hosts*, and select the host you want to use.
+. Select the *Templates* tab, and from the *PXELinux template* list, select *Review* and verify the template is the correct template.
+. From the *iPXE template* list, select *Review* and verify the template is the correct template. If there is no PXELinux entry, or you cannot find the new template, navigate to *Hosts* > *All Hosts*, and on your host, click *Edit*. Click the *Operating system* tab and click the Provisioning Template *Resolve* button to refresh the list of templates.
+. To prevent an endless loop of chainbooting iPXE firmware, edit the `/etc/dhcp/dhcpd.conf` file to match the following example. If you use an isolated network, use a {SmartProxyServer} URL with TCP port 8000, instead of {ProjectServer}'s URL.
+.. Locate the following lines in the Bootfile Handoff section of the `/etc/dhcp/dhcpd.conf` file:
++
+----
+} else {
+  filename "pxelinux.0";
+}
+----
+.. Add the following extra `elsif` statement before the else statement:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+elsif exists user-class and option user-class = "iPXE" {
+  filename "http://{foreman-example-com}/unattended/iPXE";
+}
+----
+.. Verify that the 'if' section matches the following example:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+if option architecture = 00:06 {
+  filename "grub2/shim.efi";
+} elsif option architecture = 00:07 {
+  filename "grub2/shim.efi";
+} elsif option architecture = 00:09 {
+  filename "grub2/shim.efi";
+} elsif exists user-class and option user-class = "iPXE" {
+  filename "http://_{foreman-example-com}_/unattended/iPXE";
+} else {
+  filename "pxelinux.0";
+}
+----
++
+[NOTE]
+For `http://{foreman-example-com}/unattended/iPXE`, you can also use a {ProjectName} {SmartProxy} `http://{smartproxy-example-com}:8000/unattended/iPXE`.
+You must update the `/etc/dhcp/dhcpd.conf` file after every upgrade.
+The content of the `/etc/dhcp/dhcpd.conf` file is case sensitive.
+
+.Configuring {ProjectName} {SmartProxy} to use iPXE
+
+You can use this procedure to configure {SmartProxies} to use iPXE.
+
+You must perform this procedure on all {SmartProxies}.
+
+.Procedure
+
+To configure the {SmartProxy} to chainboot iPXE, complete the following steps:
+
+. Install the `ipxe-bootimgs` RPM package:
++
+----
+# yum install ipxe-bootimgs
+----
++
+ifeval::["{build}" == "foreman"]
+. On Debian/Ubuntu, install the `ipxe` .deb package:
++
+----
+# apt-get install ipxe
+----
++
+endif::[]
+. Copy the iPXE firmware to the TFTP server's root directory. Do not use symbolic links because TFTP runs in the `chroot` environment.
++
+* For chainbooting directly, enter the following command:
++
+----
+
+# cp /usr/share/ipxe/ipxe.lkrn /var/lib/tftpboot/
+
+----
++
+* For UNDI, enter the following command:
++
+----
+# cp /usr/share/ipxe/undionly.kpxe /var/lib/tftpboot/undionly-ipxe.0
+----
++
+ifeval::["{build}" == "foreman"]
+[NOTE]
+On systems with SELinux, perform the following command.
+
+endif::[]
+. Correct the file contexts:
++
+----
+# restorecon -RvF /var/lib/tftpboot/
+----
