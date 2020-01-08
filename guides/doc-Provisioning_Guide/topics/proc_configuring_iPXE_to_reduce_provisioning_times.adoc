@@ -3,9 +3,9 @@
 
 You can use {Project} to configure PXELinux to chainboot iPXE and boot using the HTTP protocol if you have the following restrictions that prevent you from using PXE:
 
-* A network with unmanaged DHCP servers
-* A PXE service that is blacklisted on your network or restricted by a firewall
-* An unreliable TFTP UDP-based protocol because of, for example, a low-bandwidth network
+* A network with unmanaged DHCP servers.
+* A PXE service that is blacklisted on your network or restricted by a firewall.
+* An unreliable TFTP UDP-based protocol because of, for example, a low-bandwidth network.
 
 .iPXE Workflow Overview
 
@@ -26,11 +26,13 @@ The provisioning process using iPXE follows this workflow:
 
 Note that the workflow uses the discovery process, which is optional. To set up the discovery service, see xref:setting_up_the_discovery_service_for_iPXE[].
 
+With {Project}, you can set up hosts to download either the `ipxe.efi` or `undionly.kpxe` over TFTP. When the file downloads, all communication continues using HTTP. {Project} uses the iPXE provisioning script either to load an operating system installer or the next entry in the boot order.
+
 There are three methods of using iPXE with {ProjectName}:
 
-. Chainbooting virtual machines using hypervisors that use iPXE as primary firmware
-. Using PXELinux through TFTP to chainload iPXE directly on bare metal hosts
-. Using PXELinux through UNDI, which uses HTTP to transfer the kernel and the initial RAM disk on bare metal hosts
+. Chainbooting virtual machines using hypervisors that use iPXE as primary firmware.
+. Using PXELinux through TFTP to chainload iPXE directly on bare metal hosts.
+. Using PXELinux through UNDI, which uses HTTP to transfer the kernel and the initial RAM disk on bare-metal hosts.
 
 .Security Information
 
@@ -40,11 +42,11 @@ The iPXE binary in {RHEL} is built without some security features. For this reas
 
 Before you begin, ensure that the following conditions are met:
 
-* A host exists on {ProjectName} to use
-* The MAC address of the provisioning interface matches the host configuration
-* The provisioning interface of the host has a valid DHCP reservation
-* The NIC is capable of PXE booting. For more information, see http://ipxe.org/appnote/hardware_drivers
-* The NIC is compatible with iPXE
+* A host exists on {ProjectName} to use.
+* The MAC address of the provisioning interface matches the host configuration.
+* The provisioning interface of the host has a valid DHCP reservation.
+* The NIC is capable of PXE booting. For more information, see http://ipxe.org/appnote/hardware_drivers.
+* The NIC is compatible with iPXE.
 
 [[setting_up_the_discovery_service_for_iPXE]]
 === Setting up the Discovery Service for iPXE
@@ -65,10 +67,6 @@ Before you begin, ensure that the following conditions are met:
 +
 . In the {Project} web UI, navigate to *Administer* > *Settings*, and click the *Provisioning* tab.
 . Locate the *Default PXE global template entry* row and in the *Value* column, change the value to *discovery*.
-
-With {Project}, you can set up hosts to download either the `ipxe.efi` or `undionly.kpxe` over TFTP. When the file downloads, all communication continues using HTTP. {Project} uses the iPXE provisioning script either to load an operating system installer or the next entry in the boot order.
-
-You can use this workflow with or without discovery service. If you want to use discovery, see xref:setting_up_the_discovery_service_for_iPXE[].
 
 === Chainbooting virtual machines
 
@@ -99,11 +97,18 @@ If you want to change the default values in the template, clone the template and
 
 .Procedure
 
-. Copy the `ipxe.efi` file to the TFTP directory. For BIOS systems, copy the `undionly.kpxe` file.
+. Copy a boot file to the TFTP directory on your {ProjectServer}:
++
+* For EFI systems, copy the `ipxe.efi` file:
++
+----
+# cp /usr/share/ipxe/ipxe.efi /var/lib/tftpboot/
+----
++
+* For BIOS systems, copy the `undionly.kpxe` file:
 +
 ----
 # cp /usr/share/ipxe/undionly.kpxe /var/lib/tftpboot/undionly.0
-# cp /usr/share/ipxe/ipxe.efi /var/lib/tftpboot/
 ----
 +
 . In the {Project} web UI, navigate to *Hosts* > *Provisioning Templates*, enter `Kickstart default iPXE` and click *Search*.
@@ -172,7 +177,7 @@ If you want to change the default values in the template, clone the template and
 
 .Procedure
 
-. In the {Project} web UI, navigate to *Hosts* > *Provisioning Templates*, enter `PXELinux chain iPXE` or, for UNDI, enter `PXELinux chain iPXE UNDI`, and click *Search*.
+. In the {Project} web UI, navigate to *Hosts* > *Provisioning Templates*, enter `PXELinux chain iPXE` or, for BIOS systems, enter `PXELinux chain iPXE UNDI`, and click *Search*.
 . Optional: If you want to change the template, click *Clone*, enter a unique name, and click *Submit*.
 . Click the name of the template you want to use.
 . If you clone the template, you can make changes you require on the *Template* tab.
@@ -241,27 +246,30 @@ ifeval::["{build}" == "foreman"]
 endif::[]
 . Copy the iPXE firmware to the TFTP server's root directory. Do not use symbolic links because TFTP runs in the `chroot` environment.
 +
-* For chainbooting directly, enter the following command:
+* For EFI systems, copy the `ipxe.efi` file:
 +
 ----
-
 # cp /usr/share/ipxe/ipxe.lkrn /var/lib/tftpboot/
-
 ----
 +
-* For UNDI, enter the following command:
+* For BIOS systems, copy the `undionly.kpxe` file:
 +
 ----
 # cp /usr/share/ipxe/undionly.kpxe /var/lib/tftpboot/undionly-ipxe.0
 ----
 +
 ifeval::["{build}" == "foreman"]
-[NOTE]
-On systems with SELinux, perform the following command.
+. On systems with SELinux, correct the file contexts:
++
+----
+# restorecon -RvF /var/lib/tftpboot/
+----
 
 endif::[]
+ifeval::["{build}" == "satellite"]
 . Correct the file contexts:
 +
 ----
 # restorecon -RvF /var/lib/tftpboot/
 ----
+endif::[]
