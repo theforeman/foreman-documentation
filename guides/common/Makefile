@@ -1,5 +1,6 @@
 BUILD = foreman
 BUILD_DIR = ../build
+COMMON_DIR = ../common
 ROOTDIR = $(realpath .)
 NAME = $(notdir $(ROOTDIR))
 DEST_DIR = $(BUILD_DIR)/$(NAME)
@@ -20,7 +21,7 @@ endif
 
 all: html
 
-html: prepare $(IMAGES_TS) $(DEST_HTML)
+html: prepare $(DEST_DIR)/$(BUILD).css $(IMAGES_TS) $(DEST_HTML)
 
 pdf: prepare $(DEST_PDF)
 
@@ -40,12 +41,15 @@ linkchecker: html
 open-pdf: pdf
 	${BROWSER_OPEN} "$(realpath $(ROOTDIR)/$(DEST_PDF))"
 
+$(DEST_DIR)/$(BUILD).css: $(COMMON_DIR)/$(BUILD).css
+	cp $< $@
+
 $(IMAGES_TS): $(IMAGES)
 	cp $? $(IMAGES_DIR)
 	touch $(IMAGES_TS)
 
 $(DEST_HTML): $(SOURCES)
-	asciidoctor -a build=$(BUILD) -b xhtml5 -d book -o $@ $<
+	asciidoctor -a build=$(BUILD) -a stylesheet=$(BUILD).css -a linkcss=true -b html5 -d book --trace -o $@ $<
 
 $(DEST_PDF): $(SOURCES) $(IMAGES)
-	asciidoctor-pdf -a build=$(BUILD) -d book -o $@ $<
+	asciidoctor-pdf -a build=$(BUILD) -d book --trace -o $@ $<

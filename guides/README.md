@@ -41,6 +41,14 @@ It's also possible to check links, the following command will check all links ex
 
 We do not publish the content yet to prevent users confusion, however this section will cover steps required to publish the content. We should make sure that only the last stable version of the HTML document is indexed by search engines, old and nightly builds should not be indexed. All PDFs should be available for download tho.
 
+## Stylying
+
+CSS styles are based on the official AsciiDoctor styles with some small modifications. To generate the stylesheet:
+
+	git clone https://github.com/lzap/asciidoctor-stylesheet-factory
+	git checkout foreman-css
+	compass compile
+
 ## Contributing
 
 Please read [Guidelines for Red Hat Documentation](https://redhat-documentation.github.io/) before opening a Pull Request. Additional rules apply:
