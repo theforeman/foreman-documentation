@@ -1,0 +1,178 @@
+[id="configuring-an-external-dhcp-server_{context}"]
+
+= Configuring an External DHCP Server to Use with {ProductName}
+
+To configure an external DHCP server to use with {ProductName}, on a Red{nbsp}Hat Enterprise Linux server, you must install the ISC DHCP Service and Berkeley Internet Name Domain (BIND) packages.
+You must also share the DHCP configuration and lease files with {ProductName}. The example in this procedure uses the distributed Network File System (NFS) protocol to share the DHCP configuration and lease files.
+
+.Procedure
+To configure an external DHCP server to use with {ProductName}, complete the following steps:
+
+. On a Red{nbsp}Hat Enterprise Linux Server server, install the ISC DHCP Service and Berkeley Internet Name Domain (BIND) packages:
++
+[options="nowrap"]
+----
+# yum install dhcp bind
+----
+
+. Generate a security token:
++
+[options="nowrap"]
+----
+# dnssec-keygen -a HMAC-MD5 -b 512 -n HOST omapi_key
+----
++
+As a result, a key pair that consists of two files is created in the current directory.
+
+. Copy the secret hash from the key:
++
+[options="nowrap"]
+----
+# cat Komapi_key.+*.private |grep ^Key|cut -d ' ' -f2
+----
+
+. Edit the `dhcpd` configuration file for all of the subnets and add the key. The following is an example:
++
+[options="nowrap" subs="+quotes"]
+----
+# cat /etc/dhcp/dhcpd.conf
+default-lease-time 604800;
+max-lease-time 2592000;
+log-facility local7;
+
+subnet _Your_Subnet_ netmask _Your_Netmask_ {
+	range _Your_Subnet_Range_;
+	option routers _Your_Router_IP_Address_;
+	option subnet-mask _Your_Subnetmask_;
+	option domain-search "virtual.lan";
+	option domain-name "virtual.lan";
+	option domain-name-servers _Your_DNS_;
+}
+
+omapi-port 7911;
+key omapi_key {
+	algorithm HMAC-MD5;
+	secret "jNSE5YI3H1A8Oj/tkV4...A2ZOHb6zv315CkNAY7DMYYCj48Umw==";
+};
+omapi-key omapi_key;
+----
+
+. Delete the two key files from the directory that they were created in.
+
+. On {ProjectServer}, define each subnet. Do not set DHCP {SmartProxy} for the defined Subnet yet.
++
+To prevent conflicts, set up the lease and reservation ranges separately.
+For example, if the lease range is 192.168.38.10 to 192.168.38.100, in the {Project} web UI define the reservation range as 192.168.38.101 to 192.168.38.250.
+
+. Configure the firewall for external access to the DHCP server:
++
+[options="nowrap"]
+----
+# firewall-cmd --add-service dhcp \
+&& firewall-cmd --runtime-to-permanent
+----
+
+. On {ProjectServer}, determine the UID and GID of the `foreman` user:
++
+[options="nowrap" subs="+quotes"]
+----
+# id -u foreman
+__993__
+# id -g foreman
+_990_
+----
+
+. On the DHCP server, create the `foreman` user and group with the same IDs as determined in a previous step:
++
+[options="nowrap" subs="+quotes"]
+----
+# groupadd -g _990_ foreman
+# useradd -u _993_ -g _990_ -s /sbin/nologin foreman
+----
+
+. To ensure that the configuration files are accessible, restore the read and execute flags:
++
+[options="nowrap"]
+----
+# chmod o+rx /etc/dhcp/
+# chmod o+r /etc/dhcp/dhcpd.conf
+# chattr +i /etc/dhcp/ /etc/dhcp/dhcpd.conf
+----
+
+. Start the DHCP service:
++
+[options="nowrap"]
+----
+# systemctl start dhcpd
+----
+
+. Export the DHCP configuration and lease files using NFS:
++
+[options="nowrap"]
+----
+# yum install nfs-utils
+# systemctl enable rpcbind nfs-server
+# systemctl start rpcbind nfs-server nfs-lock nfs-idmapd
+----
+
+. Create directories for the DHCP configuration and lease files that you want to export using NFS:
++
+[options="nowrap"]
+----
+# mkdir -p /exports/var/lib/dhcpd /exports/etc/dhcp
+----
+
+. To create mount points for the created directories, add the following line to the `/etc/fstab` file:
++
+[options="nowrap"]
+----
+/var/lib/dhcpd /exports/var/lib/dhcpd none bind,auto 0 0
+/etc/dhcp /exports/etc/dhcp none bind,auto 0 0
+----
+
+. Mount the file systems in `/etc/fstab`:
++
+[options="nowrap"]
+----
+# mount -a
+----
+
+. Ensure the following lines are present in `/etc/exports`:
++
+[options="nowrap" subs="+quotes"]
+----
+/exports _Your_Router_IP_Address_(rw,async,no_root_squash,fsid=0,no_subtree_check)
+
+/exports/etc/dhcp _Your_Router_IP_Address_(ro,async,no_root_squash,no_subtree_check,nohide)
+
+/exports/var/lib/dhcpd _Your_Router_IP_Address_(ro,async,no_root_squash,no_subtree_check,nohide)
+----
+
+. Reload the NFS server:
++
+[options="nowrap"]
+----
+# exportfs -rva
+----
+
+. Configure the firewall for the DHCP omapi port 7911:
++
+[options="nowrap"]
+----
+# firewall-cmd --add-port="7911/tcp" \
+&& firewall-cmd --runtime-to-permanent
+----
+
+. Optional: Configure the firewall for external access to NFS.
++
+Clients are configured using NFSv3.
++
+* Use the `firewalld` NFS service to configure the firewall:
++
+[options="nowrap"]
+----
+# firewall-cmd --zone public --add-service mountd \
+&& firewall-cmd --zone public --add-service rpc-bind \
+&& firewall-cmd --zone public --add-service nfs \
+&& firewall-cmd --runtime-to-permanent
+----

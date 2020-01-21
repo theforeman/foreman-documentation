@@ -1,0 +1,50 @@
+[id="deploying-a-custom-ssl-certificate-to-capsule-server_{context}"]
+
+= Deploying a Custom SSL Certificate to {SmartProxyServer}
+
+Use this procedure to configure your {SmartProxyServer} with a custom SSL certificate signed by a Certificate Authority. The `satellite-installer` command, which the `capsule-certs-generate` command returns, is unique to each {SmartProxyServer}. Do not use the same command on more than one {SmartProxyServer}.
+
+.Prerequisites
+
+Before configuring {SmartProxyServer} with a custom server certificate, ensure that your {Project} and {SmartProxyServer}s meet the following conditions:
+
+* {ProjectServer} is configured with a custom certificate. For more information, see https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/installing_satellite_server_from_a_connected_network/performing_additional_configuration_on_satellite_server#configuring-satellite-custom-server-certificate_satellite[Configuring {ProjectServer} with a Custom Server Certificate] in _Installing {ProjectServer} from a Connected Network_.
+* {SmartProxyServer} is registered to {ProjectServer}. For more information, see xref:registering-to-satellite-server_capsule[].
+* The {SmartProxyServer} packages are installed. For more information, see xref:installing-capsule-server-packages_capsule[]
+
+.Procedure
+
+To configure your {SmartProxyServer} with a custom SSL certificate, complete the following steps:
+
+. On {ProjectServer}, validate the custom SSL certificate input files:
++
+[options="nowrap", subs="+quotes"]
+----
+# katello-certs-check \
+-c __/root/capsule_cert/capsule_cert.pem__ \      <1>
+-k __/root/capsule_cert/capsule_cert_key.pem__ \  <2>
+-b __/root/capsule_cert/ca_cert_bundle.pem__      <3>
+----
+<1> Path to the {SmartProxyServer} certificate file that is signed by a Certificate Authority.
+<2> Path to the private key that was used to sign the {SmartProxyServer} certificate.
+<3> Path to the Certificate Authority bundle.
++
+If the command is successful, it returns two `capsule-certs-generate` commands, one of which you must use to generate the certificate archive file for your {SmartProxyServer}.
+
+. On {ProjectServer}, from the output of the `katello-certs-check` command, depending on your requirements, enter the `capsule-certs-generate` command that generates a certificate for a new or existing {SmartProxy}. In this command, change `$CAPSULE` to the FQDN of your {SmartProxyServer}.
+
+. Retain a copy of the `satellite-installer` command that the `capsule-certs-generate` command returns for deploying the certificate to your {SmartProxyServer}.
+
+. On {ProjectServer}, copy the certificate archive file to your {SmartProxyServer}:
++
+[options="nowrap", subs="+quotes"]
+----
+# scp /root/_capsule.example.com_-certs.tar \
+root@_capsule.example.com_:/root/_capsule.example.com_-certs.tar
+----
+
+. On {SmartProxyServer}, to deploy the certificate, enter the `satellite-installer` command that the `capsule-certs-generate` command returns.
++
+When network connections or ports to {Project} are not yet open, you can set the `--foreman-proxy-register-in-foreman` option to `false` to prevent {SmartProxy} from attempting to connect to {Project} and reporting errors. Run the installer again with this option set to `true` when the network and firewalls are correctly configured.
++
+IMPORTANT: Do not delete the certificate archive file after you deploy the certificate. It is required, for example, when upgrading {SmartProxyServer}.

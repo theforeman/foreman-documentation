@@ -1,0 +1,62 @@
+[appendix]
+[[applying_custom_configuration_to_red_hat_satellite]]
+
+= Applying Custom Configuration to {ProjectName}
+
+
+When you install and configure {Project} for the first time using `satellite-installer`, you can specify that the DNS and DHCP configuration files are not to be managed by Puppet using the installer flags `--foreman-proxy-dns-managed=false` and `--foreman-proxy-dhcp-managed=false`. If these flags are not specified during the initial installer run, rerunning of the installer overwrites all manual changes, for example, rerun for upgrade purposes. If changes are overwritten, you must run the restore procedure to restore the manual changes. For more information, see link:https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/installing_satellite_server_from_a_connected_network/applying_custom_configuration_to_red_hat_satellite#How_to_restore_manual_changes_overwritten_by_a_Puppet_run[How to Restore Manual Changes Overwritten by a Puppet Run] in _Installing {ProjectServer} from a Connected Network_.
+
+To view all installer flags available for custom  configuration, run `satellite-installer --scenario satellite --full-help`. Some Puppet classes are not exposed to the {Project} installer. To manage them manually and prevent the installer from overwriting their values, specify the configuration values by adding entries to configuration file `/etc/foreman-installer/custom-hiera.yaml`. This configuration file is in YAML format, consisting of one entry per line in the format of `<puppet class>::<parameter name>: <value>`. Configuration values specified in this file persist across installer reruns.
+
+Common examples include:
+
+* For Apache, to set the ServerTokens directive to only return the Product name:
++
+----
+apache::server_tokens: Prod
+----
++
+* To turn off the Apache server signature entirely:
++
+----
+apache::server_signature: Off
+----
++
+* For Pulp, to configure the number of pulp workers:
++
+----
+pulp::num_workers: 8
+----
+
+The Puppet modules for the {Project} installer are stored under `/usr/share/foreman-installer/modules`. Check the `.pp` files (for example: _moduleName_/manifests/_example_.pp) to look up the classes, parameters, and values. Alternatively, use the `grep` command to do keyword searches.
+
+Setting some values may have unintended consequences that affect the performance or functionality of {ProjectName}. Consider the impact of the changes before you apply them, and test the changes in a non-production environment first. If you do not have a non-production {Project} environment, run the {Project} installer with the `--noop` and `--verbose` options. If your changes cause problems, remove the offending lines from `custom-hiera.yaml` and rerun the {Project} installer. If you have any specific questions about whether a particular value is safe to alter, contact Red Hat support.
+
+[[How_to_restore_manual_changes_overwritten_by_a_Puppet_run]]
+
+== How to Restore Manual Changes Overwritten by a Puppet Run
+
+If your manual configuration has been overwritten by a Puppet run, you can restore the files to the previous state. The following example shows you how to restore a DHCP configuration file overwritten by a Puppet run.
+
+. Copy the file you intend to restore. This allows you to compare the files to check for any mandatory changes required by the upgrade. This is not common for DNS or DHCP services.
++
+----
+# cp /etc/dhcp/dhcpd.conf /etc/dhcp/dhcpd.backup
+----
+. Check the log files to note down the md5sum of the overwritten file. For example:
++
+----
+# journalctl -xe
+...
+/Stage[main]/Dhcp/File[/etc/dhcp/dhcpd.conf]: Filebucketed /etc/dhcp/dhcpd.conf to puppet with sum 622d9820b8e764ab124367c68f5fa3a1
+...
+----
++
+. Restore the overwritten file:
++
+----
+# puppet filebucket restore --local --bucket \
+/var/lib/puppet/clientbucket /etc/dhcp/dhcpd.conf \ 622d9820b8e764ab124367c68f5fa3a1
+----
++
+. Compare the backup file and the restored file, and edit the restored file to include any mandatory changes required by the upgrade.

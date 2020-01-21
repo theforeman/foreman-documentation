@@ -1,0 +1,126 @@
+[[configuring_satellite_http_proxy]]
+
+= Configuring {ProjectServer} with an HTTP Proxy
+
+If your network uses an HTTP Proxy, you can configure {ProjectServer} to use an HTTP proxy for requests to the Red{nbsp}Hat Content Delivery Network (CDN) or another content source. Use the FQDN instead of the IP address where possible to avoid losing connectivity because of network changes.
+
+The following procedure configures a proxy only for downloading content for {Project}.
+
+.Authentication Methods
+
+Only basic authentication is supported: add your user name and password information to the `--katello-proxy-url` option, or use the `--katello-proxy-username` and `--katello-proxy-password` options.
+
+.To Configure {Project} with an HTTP Proxy
+
+. Verify that the `*http_proxy*`, `*https_proxy*`, and `*no_proxy*` variables are not set.
++
+[options="nowrap"]
+----
+# unset http_proxy
+# unset https_proxy
+# unset no_proxy
+----
+
+. Run `satellite-installer` with the HTTP proxy options.
++
+[options="nowrap" subs="+quotes"]
+----
+# satellite-installer --scenario satellite \
+--katello-proxy-url=http://__myproxy.example.com__ \
+--katello-proxy-port=8080 \
+--katello-proxy-username=__proxy_username__ \
+--katello-proxy-password='__proxy_password__'
+----
+
+. Verify that {ProjectServer} can connect to the Red{nbsp}Hat CDN and can synchronize its repositories.
+
+.. On the network gateway and the HTTP Proxy, enable TCP for the following host names:
++
+[cols="2,1,1",options="header"]
+|====
+| Host name | Port | Protocol
+| subscription.rhsm.redhat.com | 443 | HTTPS
+| cdn.redhat.com |  443 | HTTPS
+| *.akamaiedge.net |  443 | HTTPS
+| cert-api.access.redhat.com (if using Red{nbsp}Hat Insights) |  443 | HTTPS
+| api.access.redhat.com (if using Red{nbsp}Hat Insights) |  443 | HTTPS
+|====
++
+{ProjectServer} communicates with the Red{nbsp}Hat CDN securely over SSL. Use of an SSL interception proxy interferes with this communication. These hosts must be whitelisted on the proxy.
++
+For a list of IP addresses used by the Red{nbsp}Hat CDN (cdn.redhat.com), see the Knowledgebase article https://access.redhat.com/articles/1525183[Public CIDR Lists for Red{nbsp}Hat] on the Red{nbsp}Hat Customer Portal.
++
+
+.. On {ProjectServer}, complete the following details in the `/etc/rhsm/rhsm.conf` file:
++
+[options="nowrap" subs="+quotes"]
+----
+# an http proxy server to use (enter server FQDN)
+proxy_hostname = _myproxy.example.com_
+
+# port for http proxy server
+proxy_port = 8080
+
+# user name for authenticating to an http proxy, if needed
+proxy_user =
+
+# password for basic http proxy auth, if needed
+proxy_password =
+----
+
+.SELinux Considerations for Custom Ports
+
+SELinux ensures access of {ProjectNameX} and Red{nbsp}Hat Subscription Manager only to specific ports. In the case of the HTTP cache, the TCP ports are 8080, 8118, 8123, and 10001 - 10010. If you use a port that does not have SELinux type `http_cache_port_t`, complete the following steps:
+
+. To verify the ports that are permitted by SELinux for the HTTP cache, enter a command as follows:
++
+[options="nowrap",subs="+quotes"]
+----
+# semanage port -l | grep http_cache
+http_cache_port_t       tcp    8080, 8118, 8123, 10001-10010
+_[output truncated]_
+----
++
+. To configure SELinux to permit a port for the HTTP cache, for example 8088, enter a command as follows:
++
+[options="nowrap",subs="+quotes"]
+----
+# semanage port -a -t http_cache_port_t -p tcp 8088
+----
+
+
+[[configuring_foreman_http_server]]
+= Using an HTTP Proxy for all {Project} HTTP Requests
+
+If your {ProjectServer} must remain behind a firewall that blocks HTTP and HTTPS, you can configure a proxy for communication with external systems, including compute resources.
+
+Note that if you are using compute resources for provisioning, and you want to use a different HTTP proxy with the compute resources, the proxy that you set for all {Project} communication takes precedence over the proxies that you set for compute resources.
+
+To set an HTTP proxy for all outgoing HTTP connections from {Project}, complete the following steps:
+
+. In the {Project} web UI, navigate to *Administer* > *Settings*.
+. In the *HTTP(S) proxy* row, select the adjacent *Value* column and enter the proxy URL.
+. Click the tick icon to save your changes.
+
+.Excluding Hosts from Receiving Proxied Requests
+
+If you use an HTTP Proxy for all {Project} HTTP or HTTPS requests, you can prevent certain hosts from communicating through the proxy.
+
+To exclude one or more hosts from communicating through the proxy, complete the following steps:
+
+. In the {Project} web UI, navigate to *Administer* > *Settings*.
+. In the *HTTP(S) proxy except hosts* row, select the adjacent *Value* column and enter the names of one or more hosts that you want to exclude from proxy requests.
+. Click the tick icon to save your changes.
+
+
+= Resetting the HTTP Proxy
+
+If you want to reset the current HTTP proxy setting, enter the following command:
+
+[options="nowrap"]
+----
+# satellite-installer --scenario satellite --reset-katello-proxy-url \
+ --reset-katello-proxy-port --reset-katello-proxy-username \
+ --reset-katello-proxy-password
+
+----
