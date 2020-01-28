@@ -1,0 +1,77 @@
+[id="configuring-capsule-server-with-external-dns_{context}"]
+
+= Configuring Capsule Server with External DNS
+
+You can configure Capsule Server with external DNS. Capsule uses the `nsupdate` utility to update DNS records on the remote server.
+
+To make any changes persistent, you must enter the `satellite-installer` command with the options appropriate for your environment.
+
+.Prerequisites
+Before you can configure Capsule Server with external DNS, ensure that the following conditions are met:
+
+* You must have a configured external DNS server.
+
+.Procedure
+
+To configure Capsule Server with external DNS, complete the following steps:
+
+. Install the `bind-utils` package:
++
+[options="nowrap"]
+----
+# yum install bind bind-utils
+----
+
+. Copy the `/etc/rndc.key` file from the external DNS server to Capsule Server:
++
+[options="nowrap" subs="+quotes"]
+----
+# scp root@_dns.example.com_:/etc/rndc.key /etc/rndc.key
+----
+
+. Configure the ownership, permissions, and SELinux context:
++
+[options="nowrap"]
+----
+# restorecon -v /etc/rndc.key
+# chown -v root:named /etc/rndc.key
+# chmod -v 640 /etc/rndc.key
+----
+
+. To test the `nsupdate` utility, add a host remotely:
++
+[options="nowrap", subs="+quotes"]
+----
+# echo -e "server _DNS_IP_Address_\n \
+update add aaa.virtual.lan 3600 IN A _Host_IP_Address_\n \
+send\n" | nsupdate -k /etc/rndc.key
+# nslookup aaa.virtual.lan _DNS_IP_Address_
+# echo -e "server _DNS_IP_Address_\n \
+update delete aaa.virtual.lan 3600 IN A _Host_IP_Address_\n \
+send\n" | nsupdate -k /etc/rndc.key
+----
+
+. Enter the `satellite-installer` command to make the following persistent changes to the `/etc/foreman-proxy/settings.d/dns.yml` file:
++
+[options="nowrap"]
+----
+# satellite-installer --foreman-proxy-dns=true \
+--foreman-proxy-dns-managed=false \
+--foreman-proxy-dns-provider=nsupdate \
+--foreman-proxy-dns-server="_DNS_IP_Address_" \
+--foreman-proxy-keyfile=/etc/rndc.key \
+--foreman-proxy-dns-ttl=86400
+----
+
+. Restart the foreman-proxy service:
++
+[options="nowrap"]
+----
+# systemctl restart foreman-proxy
+----
+
+. Log in to the Satellite Server web UI and navigate to *Infrastructure* > *Capsules*.
+
+. Locate the Capsule Server that you want to configure with external DNS and from the list in the *Actions* column, select *Refresh*.
+
+. Associate the DNS service with the appropriate subnets and domain.

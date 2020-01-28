@@ -1,0 +1,52 @@
+[[verifying_external_dns]]
+
+= Verifying and Starting the DNS Service
+
+. Validate the syntax.
++
+[options="nowrap"]
+----
+# named-checkconf -z /etc/named.conf
+----
+
+. Start the server.
++
+[options="nowrap"]
+----
+# systemctl restart named
+----
+
+. Add a new host.
++
+The following uses the example host 192.168.38.2. You should change this to suit your environment.
++
+[options="nowrap"]
+----
+# echo -e "server 192.168.38.2\n \
+update add aaa.virtual.lan 3600 IN A 192.168.38.10\n \
+send\n" | nsupdate -k /etc/rndc.key
+----
+
+. Test that the DNS service can resolve the new host.
++
+[options="nowrap"]
+----
+# nslookup aaa.virtual.lan 192.168.38.2
+----
+
+. If necessary, delete the new entry.
++
+[options="nowrap"]
+----
+# echo -e "server 192.168.38.2\n \
+update delete aaa.virtual.lan 3600 IN A 192.168.38.10\n \
+send\n" | nsupdate -k /etc/rndc.key
+----
+
+. Configure the firewall for external access to the DNS service (UDP and TCP on port 53).
++
+[options="nowrap"]
+----
+# firewall-cmd --add-port="53/udp" --add-port="53/tcp" \
+&& firewall-cmd --runtime-to-permanent
+----
