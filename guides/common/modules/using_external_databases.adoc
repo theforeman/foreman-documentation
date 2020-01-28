@@ -1,0 +1,269 @@
+[[using-external-databases]]
+= Using External Databases with Satellite
+
+As part of the installation process for Red Hat Satellite, the *satellite-installer* command installs MongoDB and PostgreSQL databases on the same server as Satellite. In certain Satellite deployments, using external databases can help with the server load. However, there are many factors that can affect Satellite Server's performance. Moving to an external database might not help your specific problem.
+
+Depending on your requirements, you can use external databases for either MongoDB or PostgreSQL database, or both.
+
+Red Hat does not provide support or tools for external database maintenance. This includes backups, upgrades, and database tuning. Customers using an external database require their own database administrator to support and maintain the database.
+
+If your Satellite deployment requires external databases, use the following information to set up and point to external databases from Satellite.
+
+.FIPS-related Restrictions
+
+Until https://bugzilla.redhat.com/show_bug.cgi?id=1743706[BZ#1743706] is resolved, you cannot use an external MongoDB with Satellite in FIPS mode.
+
+[[sec-using-external-databases-mongodb_considerations]]
+== MongoDB as an External Database Considerations
+
+Pulp uses the MongoDB database. If you want to use MongoDB as an external database, the following information can help you discern if this option is right for your Satellite configuration.
+
+.Advantages of External MongoDB
+
+ * Increase in free memory and free CPU on Satellite
+ * Flexibility to tune the MongoDB server's system without adversely affecting Satellite operations
+
+.Disadvantages of External MongoDB
+
+* Increase in deployment complexity that can make troubleshooting more difficult
+* An external MongoDB server is an additional system to patch and maintain
+* If either the Satellite or the Mongo database server suffers a hardware or storage failure, Satellite is not operational
+* If there is latency between the Satellite and the external database server, performance can suffer
+
+If you suspect that your Mongo database is slow, you can work with Red Hat Support to troubleshoot. You might be encountering a configuration problem or existing performance problems with Satellite 6 that moving to an external database server might not help. Red Hat Support can examine existing known issues and also work with the Satellite Engineering team to determine the root cause.
+
+[[sec-using-external-databases-postgresql_considerations]]
+== PostgreSQL as an External Database Considerations
+
+Foreman, Katello, and Candlepin use the PostgreSQL database. If you want to use PostgreSQL as an external database, the following information can help you discern if this option is right for your Satellite configuration.
+
+.Advantages of External PostgreSQL:
+
+* Increase in free memory and free CPU on Satellite
+* Flexibility to set `shared_buffers` on the PostgreSQL database to a high number without the risk of interfering with other services on Satellite
+* Flexibility to tune the PostgreSQL server's system without adversely affecting Satellite operations
+
+.Disadvantages of External PostgreSQL
+
+* Increase in deployment complexity that can make troubleshooting more difficult
+* The external PostgreSQL server is an additional system to patch and maintain
+* If either Satellite or the PostgreSQL database server suffers a hardware or storage failure, Satellite is not operational
+* If there is latency between the Satellite server and database server, performance can suffer
+
+If you suspect that the PostgreSQL database on your Satellite is causing performance problems, use the information in  https://access.redhat.com/solutions/2780871[Satellite 6: How to enable postgres query logging to detect slow running queries] to determine if you have slow queries. Queries that take longer than one second are typically caused by performance issues with large installations, and moving to an external database might not help. If you have slow queries, contact Red Hat Support.
+
+[[sec-using-external-databases-overview]]
+== Overview
+
+To create and use a remote database for Satellite, you must complete the following procedures:
+
+. Use xref:hardware_storage_prerequisites[] to plan the storage requirements for your external databases
+. Prepare PostgreSQL with databases for Foreman and Candlepin and dedicated users owning them
+. Prepare MongoDB with user `pulp` owning the `pulp_database`
+. Follow the initial steps to install Satellite and ensure that the databases are accessible from Satellite
+. Edit the parameters of `satellite-installer` to point to the new databases, and run `satellite-installer`
+
+.Preparing Red{nbsp}Hat Enterprise Linux Server 7 for Database Installation
+
+You require a freshly provisioned system with the latest Red{nbsp}Hat Enterprise Linux Server 7 that meets the storage requirements from xref:hardware_storage_prerequisites[].
+
+Subscriptions for Red{nbsp}Hat Software Collections and Red{nbsp}Hat Enterprise Linux do not provide the correct service level agreement for using Satellite with external databases. You must also attach a Satellite subscription to the base system that you want to use for the external database.
+
+. Use the instructions in link:https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/installing_satellite_server_from_a_connected_network/#attaching-satellite-infrastructure-subscription_satellite[Attaching the Satellite Infrastructure Subscription] to attach a Satellite subscription to your server.
+. To install MongoDB and PostgreSQL servers on Red{nbsp}Hat Enterprise Linux Server 7, you must disable all repositories and enable only the following repositories:
++
+-----
+# subscription-manager repos --disable '*'
+# subscription-manager repos --enable=rhel-server-rhscl-7-rpms \
+--enable=rhel-7-server-rpms
+-----
+
+[[proc-using-external-databases-installing_mongodb]]
+== Installing MongoDB
+
+You can install only the same version of MongoDB that is installed with the `satellite-installer` tool during an internal database installation. You can install MongoDB using Red Hat Software Collections (RHSCL) repositories or from an external source, as long as the version is supported. Satellite supports MongoDB version 3.4.
+
+. To install MongoDB, enter the following command:
++
+----
+# yum install rh-mongodb34 rh-mongodb34-syspaths
+----
++
+. Start and enable the *rh-mongodb34* service:
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+# systemctl start rh-mongodb34-mongod
+# systemctl enable rh-mongodb34-mongod
+----
++
+. Create a Pulp user on MongoDB for database *pulp_database*:
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+# mongo pulp_database \
+--eval "db.createUser({user:'pulp',pwd:'pulp_password',roles:[{role:'dbOwner', db:'pulp_database'},{ role: 'readWrite', db: 'pulp_database'}]})"
+----
++
+. In the `/etc/opt/rh/rh-mongodb34/mongod.conf` file, specify the bind IP:
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+bindIp: _your_mongodb_server_bind_IP_,::1
+----
++
+. Edit the `/etc/opt/rh/rh-mongodb34/mongod.conf` file to enable authentication in the `security` section:
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+security:
+  authorization: enabled
+----
++
+. Restart the `rh-mongodb34-mongod` service:
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+# systemctl restart rh-mongodb34-mongod
+----
++
+. Open port 27017 for MongoDB:
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+# firewall-cmd --add-port=27017/tcp
+# firewall-cmd --runtime-to-permanent
+----
++
+. From Satellite Server, test that you can access the database. If the connection succeeds, the command returns `1`.
++
+[options="nowrap" subs="quotes"]
+----
+# scl enable rh-mongodb34 " mongo --host _mongo.example.com_ \
+-u pulp -p _pulp_password_ --port 27017 --eval 'ping:1' _pulp_database_"
+----
+
+[[proc-using-external-databases-installing_postgresql]]
+== Installing PostgreSQL
+
+You can install only the same version of PostgreSQL that is installed with the `satellite-installer` tool during an internal database installation. Satellite supports only a specific version of PostgreSQL that is available through Red Hat Enterprise Linux Server 7 repositories. You can install PostgreSQL using *rhel-7-server-rpms* repositories or from an external source, as long as the version is supported.  For more information about the repository that contains the supported version of PostgreSQL, and what version is supported, see the https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/package_manifest/[Package Manifest].
+
+. To install PostgreSQL, enter the following command:
++
+----
+# yum install postgresql-server
+----
++
+. To initialize, start, and enable PostgreSQL service, enter the following commands:
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+# postgresql-setup initdb
+# systemctl start postgresql
+# systemctl enable postgresql
+----
++
+. Edit the `/var/lib/pgsql/data/postgresql.conf` file:
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+# vi /var/lib/pgsql/data/postgresql.conf
+----
++
+. Remove the `#` and edit to listen to inbound connections:
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+listen_addresses = '*'
+----
++
+. Edit the `/var/lib/pgsql/data/pg_hba.conf` file:
++
+[options="nowrap" subs="verbatim,quotes"]
+-----
+# vi /var/lib/pgsql/data/pg_hba.conf
+-----
++
+. Add the following line to the file:
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+  host  all   all   _satellite_server_ip_/24   md5
+----
++
+. Restart PostgreSQL service to update with the changes:
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+# systemctl restart postgresql
+----
+. Open the *postgresql* port on the external PostgreSQL server:
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+# firewall-cmd --add-service=postgresql
+# firewall-cmd --runtime-to-permanent
+----
++
+. Switch to the `postgres` user and start the PostgreSQL client:
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+$ su - postgres -c psql
+----
++
+. Create two databases and dedicated roles, one for Satellite and one for Candlepin:
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+CREATE USER "foreman" WITH PASSWORD '_Foreman_Password_';
+CREATE USER "candlepin" WITH PASSWORD '_Candlepin_Password_';
+CREATE DATABASE foreman OWNER foreman;
+CREATE DATABASE candlepin OWNER candlepin;
+----
++
+. Exit the `postgres` user:
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+# \q
+----
++
+. From Satellite Server, test that you can access the database. If the connection succeeds, the commands return `1`.
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+# PGPASSWORD='_Foreman_Password_' psql -h _postgres.example.com_  -p 5432 -U foreman -d foreman -c "SELECT 1 as ping"
+# PGPASSWORD='_Candlepin_Password_' psql -h _postgres.example.com_ -p 5432 -U candlepin -d candlepin -c "SELECT 1 as ping"
+----
++
+. To install and configure the remote database for Satellite, enter the following command:
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+satellite-installer --scenario satellite \
+  --foreman-db-host _postgres.example.com_ \
+  --foreman-db-password _Foreman_Password_ \
+  --foreman-db-database foreman \
+  --katello-candlepin-db-host _postgres.example.com_ \
+  --katello-candlepin-db-name candlepin \
+  --katello-candlepin-db-password _Candlepin_Password_ \
+  --katello-candlepin-manage-db false \
+  --katello-pulp-db-username pulp \
+  --katello-pulp-db-password _pulp_password_ \
+  --katello-pulp-db-seeds _mongo.example.com:27017_ \
+  --katello-pulp-db-name _pulp_database_
+----
+
+
+You can query the status of your databases. For example, enter the following command with the `--only` and add `postgresql` or `rh-mongodb34-mongod`:
+
+For PostgreSQL, enter the following command:
+----
+# satellite-maintain service status --only postgresql
+----
+
+For MongoDB, enter the following command:
+----
+# satellite-maintain service status --only rh-mongodb34-mongod
+----

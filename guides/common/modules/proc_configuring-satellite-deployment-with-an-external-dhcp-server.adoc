@@ -1,0 +1,97 @@
+[id="configuring-satellite-deployment-with-an-external-dhcp-server_{context}"]
+
+= Configuring {ProductName} with an External DHCP Server
+You can configure {ProductName} with an external DHCP server.
+
+.Prerequisite
+
+* Ensure that you have configured an external DHCP server and that you have shared the DHCP configuration and lease files with Capsule Server. For more information, see xref:configuring-an-external-dhcp-server_{context}[].
+
+.Procedure
+To configure {ProductName} with external DHCP, complete the following steps:
+
+. Install the `nfs-utils` utility:
++
+[options="nowrap"]
+----
+# yum install nfs-utils
+----
+
+. Create the DHCP directories for NFS:
++
+[options="nowrap"]
+----
+# mkdir -p /mnt/nfs/etc/dhcp /mnt/nfs/var/lib/dhcpd
+----
+
+. Change the file owner:
++
+[options="nowrap"]
+----
+# chown -R foreman-proxy /mnt/nfs
+----
+
+. Verify communication with the NFS server and the Remote Procedure Call (RPC) communication paths:
++
+[options="nowrap" subs="+quotes"]
+----
+# showmount -e _DHCP_Server_FQDN_
+# rpcinfo -p _DHCP_Server_FQDN_
+----
+
+. Add the following lines to the `/etc/fstab` file:
++
+[options="nowrap" subs="+quotes"]
+----
+_DHCP_Server_FQDN_:/exports/etc/dhcp /mnt/nfs/etc/dhcp nfs
+ro,vers=3,auto,nosharecache,context="system_u:object_r:dhcp_etc_t:s0" 0 0
+
+_DHCP_Server_FQDN_:/exports/var/lib/dhcpd /mnt/nfs/var/lib/dhcpd nfs
+ro,vers=3,auto,nosharecache,context="system_u:object_r:dhcpd_state_t:s0" 0 0
+----
+
+. Mount the file systems on `/etc/fstab`:
++
+[options="nowrap"]
+----
+# mount -a
+----
+
+. To verify that the `foreman-proxy` user can access the files that are shared over the network, display the DHCP configuration and lease files:
++
+[options="nowrap"]
+----
+# su foreman-proxy -s /bin/bash
+bash-4.2$ cat /mnt/nfs/etc/dhcp/dhcpd.conf
+bash-4.2$ cat /mnt/nfs/var/lib/dhcpd/dhcpd.leases
+bash-4.2$ exit
+----
+
+. Enter the `satellite-installer` command to make the following persistent changes to the `/etc/foreman-proxy/settings.d/dhcp.yml` file:
++
+[options="nowrap" subs="+quotes"]
+----
+# satellite-installer --foreman-proxy-dhcp=true \
+--foreman-proxy-dhcp-provider=remote_isc \
+--foreman-proxy-plugin-dhcp-remote-isc-dhcp-config /mnt/nfs/etc/dhcp/dhcpd.conf \
+--foreman-proxy-plugin-dhcp-remote-isc-dhcp-leases /mnt/nfs/var/lib/dhcpd/dhcpd.leases \
+--foreman-proxy-plugin-dhcp-remote-isc-key-name=omapi_key \
+--foreman-proxy-plugin-dhcp-remote-isc-key-secret=jNSE5YI3H1A8Oj/tkV4...A2ZOHb6zv315CkNAY7DMYYCj48Umw== \
+--foreman-proxy-plugin-dhcp-remote-isc-omapi-port=7911 \
+--enable-foreman-proxy-plugin-dhcp-remote-isc \
+--foreman-proxy-dhcp-server=_DHCP_Server_FQDN_
+----
+
+. Restart the foreman-proxy service:
++
+[options="nowrap"]
+----
+# systemctl restart foreman-proxy
+----
+[cols="40%,60%",options="header"]
+
+. Log in to the Satellite Server web UI.
+
+. Navigate to *Infrastructure* > *Capsules*. Locate the Capsule Server that you want to configure with external DHCP, and from the list in the *Actions* column, select *Refresh*.
+
+. Associate the DHCP service with the appropriate subnets and domain.
