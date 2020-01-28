@@ -8,8 +8,8 @@ DEST_HTML = $(DEST_DIR)/index-$(BUILD).html
 DEST_PDF = $(BUILD_DIR)/$(NAME)-$(BUILD).pdf
 IMAGES_DIR = $(DEST_DIR)/images
 IMAGES_TS = $(DEST_DIR)/.timestamp-images
-SOURCES = master.adoc $(shell ls topics/*.adoc)
-IMAGES = $(shell find ./images -type f)
+SOURCES = master.adoc $(shell find . -type f -name \*.adoc)
+IMAGES = $(shell find ./images ./common/images -type f 2>/dev/null || true)
 UNAME = $(shell uname)
 
 ifeq ($(UNAME), Linux)
