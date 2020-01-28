@@ -1,0 +1,428 @@
+[[configuring_satellite_external_idm_dns]]
+
+= Configuring Satellite or Capsule with External IdM DNS
+
+Red{nbsp}Hat Satellite can be configured to use a Red{nbsp}Hat Identity Management (IdM) server to provide the DNS service. Two methods are described here to achieve this, both using a transaction key. For more information on Red{nbsp}Hat Identity Management, see the https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Linux_Domain_Identity_Authentication_and_Policy_Guide/[Linux Domain Identity, Authentication, and Policy Guide].
+
+The first method is to install the IdM client which automates the process with the _generic security service algorithm for secret key transaction_ (GSS-TSIG) technology defined in https://tools.ietf.org/html/rfc3645[RFC3645]. This method requires installing the IdM client on the Satellite Server or Capsule's base system and having an account created by the IdM server administrator for use by the Satellite administrator. See xref:configuring_dynamic_dns_Update_with_gss-tsig_authentication[] to use this method.
+
+The second method, _secret key transaction authentication for DNS_ (TSIG), uses an `rndc.key` for authentication. It requires root access to the IdM server to edit the BIND configuration file, installing the `BIND` utility on the Satellite Server's base system, and coping the `rndc.key` to between the systems. This technology is defined in https://tools.ietf.org/html/rfc2845[RFC2845]. See xref:configuring_dynamic_dns_update_with_tsig_authentication[] to use this method.
+
+[NOTE]
+You are not required to use Satellite to manage DNS. If you are using the Realm enrollment feature of Satellite, where provisioned hosts are enrolled automatically to IdM, then the `ipa-client-install` script creates DNS records for the client. The following procedure and Realm enrollment are therefore mutually exclusive. For more information on configuring Realm enrollment, see https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/administering_red_hat_satellite/chap-red_hat_satellite-administering_red_hat_satellite-configuring_external_authentication#sect-Red_Hat_Satellite-Administering_Red_Hat_Satellite-Configuring_External_Authentication-External_Authentication_for_Provisioned_Hosts[External Authentication for Provisioned Hosts] in _Administering Red Hat Satellite_.
+
+.Determining where to install the IdM Client
+
+When Satellite Server wants to add a DNS record for a host, it first determines which Capsule is providing DNS for that domain. It then communicates with the Capsule and adds the record. The hosts themselves are not involved in this process. This means you should install and configure the IdM client on the Satellite or Capsule that is currently configured to provide a DNS service for the domain you want to manage using the IdM server.
+
+[[configuring_dynamic_dns_Update_with_gss-tsig_authentication]]
+== Configuring Dynamic DNS Update with GSS-TSIG Authentication
+
+In this example, Satellite Server has the following settings.
+[cols="50%,50%"]
+|====
+|Host name | `satellite.example.com`
+| Network  | `192.168.55.0/24`
+|====
+
+The IdM server has the following settings.
+[cols="50%,50%"]
+|====
+|Host name   |     `idm1.example.com`
+|Domain name |    `example.com`
+|====
+
+
+.Before you Begin.
+
+. Confirm the IdM server is deployed and the host-based firewall has been configured correctly. For more information, see https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Linux_Domain_Identity_Authentication_and_Policy_Guide/installing-ipa.html#prereq-ports[Port Requirements] in the _Linux Domain Identity, Authentication, and Policy Guide_.
+. Obtain an account on the IdM server with permissions to create zones on the IdM server.
+. Confirm if the Satellite or an external Capsule is managing DNS for a domain.
+. Confirm that the Satellite or external Capsule are currently working as expected.
+. In the case of a newly installed system, complete the installation procedures in this guide first. In particular, DNS and DHCP configuration should have been completed.
+. Make a backup of the answer file in case you have to revert the changes. See link:https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/installing_satellite_server_from_a_connected_network/#specifying_installation_options[Specifying Installation Options] for more information.
+
+.Create a Kerberos Principal on the IdM Server.
+
+. Ensure you have a Kerberos ticket.
++
+[options="nowrap" subs="+quotes"]
+----
+# kinit _idm_user_
+----
+Where _idm_user_ is the account created for you by the IdM administrator.
+
+. Create a new Kerberos principal for the Satellite or Capsule to use to authenticate to the IdM server.
++
+[options="nowrap" subs="+quotes"]
+----
+# ipa service-add capsule/_satellite.example.com_
+----
+
+.Install and Configure the IdM Client.
+
+Do this on the Satellite or Capsule Server that is managing the DNS service for a domain.
+
+. Install the `ipa-client` package on Satellite Server or Capsule Server:
++
+* On Satellite Server, enter the following command:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# satellite-maintain packages install ipa-client
+----
++
+* On Capsule Server, enter the following command:
++
+----
+# yum install ipa-client
+----
+
+. Configure the IdM client by running the installation script and following the on-screen prompts.
++
+[options="nowrap"]
+----
+# ipa-client-install
+----
+
+. Ensure you have a Kerberos ticket.
++
+[options="nowrap"]
+----
+# kinit admin
+----
+
+. Remove any preexisting keytab.
++
+[options="nowrap"]
+----
+# rm /etc/foreman-proxy/dns.keytab
+----
+
+. Get the keytab created for this system.
++
+[options="nowrap" subs="+quotes"]
+----
+# ipa-getkeytab -p capsule/_satellite.example.com@EXAMPLE.COM_ \
+-s _idm1.example.com_ -k /etc/foreman-proxy/dns.keytab
+----
+[NOTE]
+When adding a keytab to a standby system with the same host name as the original system in service, add the `r` option to prevent generating new credentials and rendering the credentials on the original system invalid.
++
+. Set the group and owner for the keytab file to `foreman-proxy` as follows.
++
+[options="nowrap"]
+----
+# chown foreman-proxy:foreman-proxy /etc/foreman-proxy/dns.keytab
+----
+
+. If required, check the keytab is valid.
++
+[options="nowrap" subs="+quotes"]
+----
+# kinit -kt /etc/foreman-proxy/dns.keytab \
+capsule/_satellite.example.com@EXAMPLE.COM_
+----
+
+.Configure DNS Zones in the IdM web UI.
+
+. Create and configure the zone to be managed:
+.. Navigate to *Network Services* > *DNS* > *DNS Zones*.
+.. Select *Add* and enter the zone name. In this example, `example.com`.
+.. Click *Add and Edit*.
+.. On the Settings tab, in the *BIND update policy* box, add an entry as follows to the semi-colon separated list.
++
+[options="nowrap" subs="+quotes"]
+----
+grant capsule\047__satellite.example.com@EXAMPLE.COM__ wildcard * ANY;
+----
+
+.. Ensure *Dynamic update* is set to *True*.
+.. Enable *Allow PTR sync*.
+.. Select *Save* to save the changes.
+
+. Create and Configure the reverse zone.
+.. Navigate to *Network Services* > *DNS* > *DNS Zones*.
+.. Select *Add*.
+.. Select *Reverse zone IP network* and add the network address in CIDR format to enable reverse lookups.
+.. Click *Add and Edit*.
+.. On the *Settings* tab, in the *BIND update policy* box, add an entry as follows to the semi-colon separated list:
++
+[options="nowrap" subs="+quotes"]
+----
+grant capsule\047__satellite.example.com@EXAMPLE.COM__ wildcard * ANY;
+----
+
+.. Ensure *Dynamic update* is set to *True*.
+.. Select *Save* to save the changes.
+
+
+.Configure the Satellite or Capsule Server Managing the DNS Service for the Domain.
+
+- On a Satellite Server's Base System.
++
+[options="nowrap" subs="+quotes"]
+----
+satellite-installer --scenario satellite \
+--foreman-proxy-dns=true \
+--foreman-proxy-dns-managed=true \
+--foreman-proxy-dns-provider=nsupdate_gss \
+--foreman-proxy-dns-server="_idm1.example.com_" \
+--foreman-proxy-dns-tsig-principal="capsule/_satellite.example.com@EXAMPLE.COM_" \
+--foreman-proxy-dns-tsig-keytab=/etc/foreman-proxy/dns.keytab \
+--foreman-proxy-dns-reverse="55.168.192.in-addr.arpa" \
+--foreman-proxy-dns-zone=_example.com_ \
+--foreman-proxy-dns-ttl=86400
+----
+
+- On a Capsule Server's Base System.
++
+[options="nowrap" subs="+quotes"]
+----
+satellite-installer --scenario capsule \
+--foreman-proxy-dns=true \
+--foreman-proxy-dns-managed=true \
+--foreman-proxy-dns-provider=nsupdate_gss \
+--foreman-proxy-dns-server="_idm1.example.com_" \
+--foreman-proxy-dns-tsig-principal="capsule/_satellite.example.com@EXAMPLE.COM_" \
+--foreman-proxy-dns-tsig-keytab=/etc/foreman-proxy/dns.keytab \
+--foreman-proxy-dns-reverse="55.168.192.in-addr.arpa" \
+--foreman-proxy-dns-zone=_example.com_ \
+--foreman-proxy-dns-ttl=86400
+----
+
+
+Restart the Satellite or Capsule's Proxy Service.
+
+[options="nowrap"]
+----
+# systemctl restart foreman-proxy
+----
+
+
+
+.Update the Configuration in Satellite web UI.
+
+After you have run the installation script to make any changes to a Capsule, instruct Satellite to scan the configuration on each affected Capsule as follows:
+
+. Navigate to *Infrastructure* > *Capsules*.
+
+. For each Capsule to be updated, from the *Actions* drop-down menu, select *Refresh*.
+
+. Configure the domain:
+
+.. Go to *Infrastructure* > *Domains* and select the domain name.
+.. On the *Domain* tab, ensure *DNS Capsule* is set to the Capsule where the subnet is connected.
+
+. Configure the subnet:
+
+.. Go to *Infrastructure* > *Subnets* and select the subnet name.
+.. On the *Subnet* tab, set *IPAM* to *None*.
+.. On the *Domains* tab, ensure the domain to be managed by the IdM server is selected.
+.. On the *Capsules* tab, ensure *Reverse DNS Capsule* is set to the Capsule where the subnet is connected.
+.. Click *Submit* to save the changes.
+
+
+[[configuring_dynamic_dns_update_with_tsig_authentication]]
+== Configuring Dynamic DNS Update with TSIG Authentication
+
+
+In this example, Satellite Server has the following settings.
+[cols="50%,50%"]
+|====
+|IP address | `192.168.25.1`
+|Host name | `satellite.example.com`
+|====
+
+The IdM server has the following settings.
+[cols="50%,50%"]
+|====
+|Host name   |     `idm1.example.com`
+|IP address | `192.168.25.2`
+|Domain name |    `example.com`
+|====
+
+.Before you Begin
+
+. Confirm the IdM Server is deployed and the host-based firewall has been configured correctly. For more information, see https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Linux_Domain_Identity_Authentication_and_Policy_Guide/installing-ipa.html#prereq-ports[Port Requirements] in the _Linux Domain Identity, Authentication, and Policy Guide_.
+. Obtain `root` user privileges on the IdM server.
+. Confirm if the Satellite or an external Capsule is managing DNS for a domain.
+. Confirm that the Satellite or external Capsule are currently working as expected.
+. In the case of a newly installed system, complete the installation procedures in this guide first. In particular, DNS and DHCP configuration should have been completed.
+. Make a backup of the answer file in case you have to revert the changes. See link:https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/installing_satellite_server_from_a_connected_network/#specifying_installation_options[Specifying Installation Options] for more information.
+
+.Enabling External Updates to the DNS Zone in the IdM Server
+
+. On the IdM Server, add the following to the top of the `/etc/named.conf` file.
++
+[options="nowrap"]
+----
+// This was added to allow Satellite Server at 192.168.25.1 to make DNS updates.
+########################################################################
+include "/etc/rndc.key";
+controls  {
+inet 192.168.25.2 port 953 allow { 192.168.25.1; } keys { "rndc-key"; };
+};
+########################################################################
+----
+
+. Reload `named` to make the changes take effect.
++
+[options="nowrap" subs="+quotes"]
+----
+# systemctl reload named
+----
+
+. In the IdM web UI, go to *Network Services* > *DNS* > *DNS Zones*. Select the name of the zone. On the *Settings* tab:
+
+.. Add the following in the `BIND update policy` box.
++
+[options="nowrap" subs="+quotes"]
+----
+grant "rndc-key" zonesub ANY;
+----
+
+.. Ensure *Dynamic update* is set to *True*.
+
+.. Click *Update* to save the changes.
+
+
+. Copy the `/etc/rndc.key` file from the IdM server to Satellite's base system as follows.
++
+[options="nowrap" subs="+quotes"]
+----
+# scp /etc/rndc.key root@_satellite.example.com_:/etc/rndc.key
+----
+
+. Ensure that the ownership, permissions, and SELinux context are correct.
++
+[options="nowrap" subs="+quotes"]
+----
+# restorecon -v /etc/rndc.key
+# chown -v root:named /etc/rndc.key
+# chmod -v 640 /etc/rndc.key
+----
+
+
+. On Satellite Server, run the installation script as follows to use the external DNS server.
++
+[options="nowrap" subs="+quotes"]
+----
+# satellite-installer --scenario satellite \
+--foreman-proxy-dns=true \
+--foreman-proxy-dns-managed=false \
+--foreman-proxy-dns-provider=nsupdate \
+--foreman-proxy-dns-server="192.168.25.2" \
+--foreman-proxy-keyfile=/etc/rndc.key \
+--foreman-proxy-dns-ttl=86400
+----
+
+.Testing External Updates to the DNS Zone in the IdM Server
+
+. Install `bind-utils` for testing with `nsupdate`.
++
+----
+# yum install bind-utils
+----
+
+. Ensure the key in the `/etc/rndc.key` file on Satellite Server is the same one as used on the IdM server.
++
+[options="nowrap" subs="+quotes"]
+----
+key "rndc-key" {
+        algorithm hmac-md5;
+        secret "_secret-key_==";
+};
+----
+
+. On Satellite Server, create a test DNS entry for a host. For example, host `_test.example.com_` with an A record of `192.168.25.20` on the IdM server at `192.168.25.1`.
++
+[options="nowrap" subs="+quotes"]
+----
+# echo -e "server 192.168.25.1\n \
+update add _test.example.com_ 3600 IN A 192.168.25.20\n \
+send\n" | nsupdate -k /etc/rndc.key
+----
+
+. On Satellite Server, test the DNS entry.
++
+[options="nowrap" subs="+quotes"]
+----
+# nslookup _test.example.com_ 192.168.25.1
+Server:		192.168.25.1
+Address:	192.168.25.1#53
+
+Name:	test.example.com
+Address: 192.168.25.20
+----
+
+. To view the entry in the IdM web UI, go to *Network Services* > *DNS* > *DNS Zones*. Select the name of the zone and search for the host by name.
+
+. If resolved successfully, remove the test DNS entry.
++
+[options="nowrap" subs="+quotes"]
+----
+# echo -e "server 192.168.25.1\n \
+update delete _test.example.com_ 3600 IN A 192.168.25.20\n \
+send\n" | nsupdate -k /etc/rndc.key
+----
+
+. Confirm that the DNS entry was removed.
++
+[options="nowrap" subs="+quotes"]
+----
+# nslookup _test.example.com_ 192.168.25.1
+----
+The above `nslookup` command fails and returns the SERVFAIL error message if the record was successfully deleted.
+
+== Reverting to Internal DNS Service
+
+To revert to using Satellite Server and Capsule Server as DNS providers, follow this procedure.
+
+.On the Satellite or Capsule Server that is to manage DNS for the domain.
+- If you backed up the answer file before the change to external DNS, restore the answer file and then run the installation script:
++
+[options="nowrap", subs="+quotes"]
+-----
+# satellite-installer
+-----
++
+ - If you do not have a suitable backup of the answer file, back up the answer file now, and then run the installation script on Satellite and Capsules as described below.
++
+See link:https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/installing_satellite_server_from_a_connected_network/#specifying_installation_options[Specifying Installation Options] for more information on the answer file.
+
+.To configure Satellite or Capsule as DNS server without using an answer file.
+[options="nowrap" subs="+quotes"]
+----
+# satellite-installer \
+--foreman-proxy-dns=true \
+--foreman-proxy-dns-managed=true \
+--foreman-proxy-dns-provider=nsupdate \
+--foreman-proxy-dns-server="127.0.0.1"  \
+--foreman-proxy-dns-tsig-principal="foremanproxy/_satellite.example.com@EXAMPLE.COM_" \
+--foreman-proxy-dns-tsig-keytab=/etc/foreman-proxy/dns.keytab
+----
+
+See link:https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/installing_capsule_server/performing-additional-configuration-on-capsule-server#configuring-dns-dhcp-and-tftp_capsule[Configuring DNS, DHCP, and TFTP on Capsule Server] for more information.
+
+
+.Update the Configuration in Satellite web UI.
+
+After you have run the installation script to make any changes to a Capsule, instruct Satellite to scan the configuration on each affected Capsule as follows:
+
+. Navigate to *Infrastructure* > *Capsules*.
+
+. For each Capsule to be updated, from the *Actions* drop-down menu, select *Refresh*.
+
+. Configure the domain:
+
+.. Go to *Infrastructure* > *Domains* and select the domain name.
+.. On the *Domain* tab, ensure *DNS Capsule* is set to the Capsule where the subnet is connected.
+
+. Configure the subnet:
+
+.. Go to *Infrastructure* > *Subnets* and select the subnet name.
+.. On the *Subnet* tab, set *IPAM* to *DHCP* or *Internal DB*.
+.. On the *Domains* tab, ensure the domain to be managed by the Satellite or Capsule is selected.
+.. On the *Capsules* tab, ensure *Reverse DNS Capsule* is set to the Capsule where the subnet is connected.
+.. Click *Submit* to save the changes.

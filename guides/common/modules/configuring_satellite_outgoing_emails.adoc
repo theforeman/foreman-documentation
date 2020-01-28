@@ -1,0 +1,86 @@
+[[configuring_satellite_outgoing_emails]]
+
+= Configuring Satellite Server for Outgoing Emails
+
+To send email messages from Satellite Server, you can use either an SMTP server, or the `sendmail` command.
+
+.Prerequisites
+
+If you have upgraded from a previous release, rename or remove the configuration file `/usr/share/foreman/config/email.yaml` and restart the `httpd` service. For example:
+[options="nowrap" subs="+quotes"]
+----
+# mv /usr/share/foreman/config/email.yaml \
+/usr/share/foreman/config/email.yaml-backup
+# systemctl restart httpd
+
+----
+
+.To Configure Satellite Server for Outgoing Emails:
+. In the Satellite web UI, navigate to *Administer* -> *Settings*.
+
+. Click the *Email* tab and set the configuration options to match your preferred delivery method. The changes have an immediate effect.
++
+.. The following example shows the configuration options for using an SMTP server:
++
+.Using an SMTP server as a delivery method
+[cols=",",options="header"]
+|====
+|Name| Example value
+|Delivery method       | SMTP
+|SMTP address          | _smtp.example.com_
+|SMTP authentication   | login
+|SMTP HELO/EHLO domain | _example.com_
+|SMTP password         | _password_
+|SMTP port             | 25
+|SMTP username         | _satellite@example.com_
+|====
++
+The `SMTP username` and `SMTP password` specify the login credentials for the SMTP server.
++
+.. The following example uses *gmail.com* as an SMTP server:
++
+.Using gmail.com as an SMTP server
+[cols=",",options="header"]
+|====
+|Name| Example value
+|Delivery method           | SMTP
+|SMTP address              | smtp.gmail.com
+|SMTP authentication       | plain
+|SMTP HELO/EHLO domain     | smtp.gmail.com
+|SMTP enable StartTLS auto | Yes
+|SMTP password             | _password_
+|SMTP port                 | 587
+|SMTP username             | _user_@gmail.com
+|====
++
+.. The following example uses the `sendmail` command as a delivery method:
++
+.Using sendmail as a delivery method
+[cols=",",options="header"]
+|====
+|Name| Example value
+|Delivery method    | Sendmail
+|Sendmail arguments | -i -t -G
+|====
++
+The `Sendmail arguments` specify the options passed to the `sendmail` command. The default value is `-i -t`. For more information see the *sendmail 1* man page.
+
+. If you decide to send email using an SMTP server which uses TLS authentication, also perform one of the following steps:
++
+* Mark the CA certificate of the SMTP server as trusted. To do so, execute the following commands on Satellite Server:
++
+[options="nowrap"]
+----
+# cp mailca.crt /etc/pki/ca-trust/source/anchors/
+# update-ca-trust enable
+# update-ca-trust
+----
++
+Where `_mailca.crt_` is the CA certificate of the SMTP server.
++
+* Alternatively, in the web UI, set the `SMTP enable StartTLS auto` option to `No`.
+
+. Click *Test email* to send a test message to the user's email address to confirm the configuration is working. If a message fails to send, the web UI displays an error. See the log at `/var/log/foreman/production.log` for further details.
+
+NOTE: For information on configuring email notifications for individual users or user groups, see https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/administering_red_hat_satellite/chap-red_hat_satellite-administering_red_hat_satellite-users_and_roles#sect-Red_Hat_Satellite-Administering_Red_Hat_Satellite-Creating_and_Managing_Users-Configuring_Email_Notifications[Configuring Email Notifications] in _Administering Red Hat Satellite_.
+
