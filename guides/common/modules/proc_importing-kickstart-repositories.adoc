@@ -1,0 +1,169 @@
+[id="importing-kickstart-repositories_{context}"]
+= Importing Kickstart Repositories
+
+Kickstart repositories are not provided by the Content ISO image. To use Kickstart repositories in your disconnected Satellite, you must download a binary DVD ISO file for the version of Red{nbsp}Hat Enterprise Linux that you want to use and copy the Kickstart files to Satellite.
+
+.Procedure
+
+. Navigate to the Red{nbsp}Hat Customer Portal at https://access.redhat.com/ and log in.
+. In the upper left of the window, click *Downloads*.
+. Locate and click the version of Red{nbsp}Hat Enterprise Linux that you want to use, for example *Red Hat Enterprise Linux 8*.
+. In the Download Red Hat Enterprise Linux window, locate the binary DVD version of the ISO image, for example, *Red Hat Enterprise Linux 8.1 Binary DVD*, and click *Download Now*.
+. When the download completes, copy the ISO image to Satellite Server.
+. On Satellite Server, create a mount point and temporarily mount the ISO image at that location:
++
+[options="nowrap" subs="+quotes"]
+----
+# mkdir /mnt/_iso_
+# mount -o loop rhel-8.1-x86_64-dvd.iso /mnt/_iso_
+----
++
+. Create Kickstart directories for AppStream and BaseOS:
++
+----
+# mkdir /var/www/html/pub/sat-import/content/dist/rhel8/8.1/x86_64/appstream/kickstart
+
+# mkdir /var/www/html/pub/sat-import/content/dist/rhel8/8.1/x86_64/baseos/kickstart
+----
++
+Note that if you use Red Hat Enterprise Linux 7, you must create and complete all the following steps in only one directory `/var/www/html/pub/sat-import/content/dist/rhel/server/7/7.7/x86_64/kickstart/`.
++
+. Add Kickstart to the listing files:
++
+----
+# echo -e -n "\nkickstart"  >> /var/www/html/pub/sat-import/content/dist/rhel8/8.1/x86_64/appstream/listing
+
+# echo -e -n "\nkickstart"  >> /var/www/html/pub/sat-import/content/dist/rhel8/8.1/x86_64/baseos/listing
+----
++
+. Copy the files from the ISO image:
++
+[options="nowrap" subs="+quotes"]
+----
+# cp -a /mnt/_iso_/AppStream/* /var/www/html/pub/sat-import/content/dist/rhel8/8.1/x86_64/appstream/kickstart
+
+# cp -a /mnt/_iso_/BaseOS/* /mnt/_iso_/images/ /var/www/html/pub/sat-import/content/dist/rhel8/8.1/x86_64/baseos/kickstart
+----
++
+Note that for BaseOS, you must also copy the contents of the `/mnt/_iso_/images/` directory.
++
+. Copy the `.treeinfo` files from the ISO image:
++
+[options="nowrap" subs="+quotes"]
+----
+# cp /mnt/_iso_/.treeinfo /var/www/html/pub/sat-import/content/dist/rhel8/8.1/x86_64/appstream/kickstart/treeinfo
+
+# cp /mnt/_iso_/.treeinfo /var/www/html/pub/sat-import/content/dist/rhel8/8.1/x86_64/baseos/kickstart/treeinfo
+----
++
+. Open the `../baseos/kickstart/treeinfo` file for editing and update the file to reflect the following changes:
++
+----
+[checksums]
+images/boot.iso = sha256:643e706cf7db9e93e706637af92d80eb58377dd0c64ac1e9ce6a72700aa04c2a
+images/efiboot.img = sha256:9ad9beee4c906cd05d227a1be7a499c8d2f20b3891c79831325844c845262bb6
+images/install.img = sha256:e246bf4aedfff3bb54ae9012f959597cdab7387aadb3a504f841bdc2c35fe75e
+images/pxeboot/initrd.img = sha256:a66e3c158f02840b19c372136a522177a2ab4bd91cb7269fb5bfdaaf7452efef
+images/pxeboot/vmlinuz = sha256:789028335b64ddad343f61f2abfdc9819ed8e9dfad4df43a2694c0a0ba780d16
+
+[general]
+; WARNING.0 = This section provides compatibility with pre-productmd treeinfos.
+; WARNING.1 = Read productmd documentation for details about new format.
+arch = x86_64
+family = Red Hat Enterprise Linux
+name = Red Hat Enterprise Linux 8.1.0
+packagedir = Packages
+platforms = x86_64,xen
+repository = .
+timestamp = 1571146127
+variant = BaseOS
+variants = BaseOS
+version = 8.1.0
+
+[header]
+type = productmd.treeinfo
+version = 1.2
+
+[images-x86_64]
+boot.iso = images/boot.iso
+efiboot.img = images/efiboot.img
+initrd = images/pxeboot/initrd.img
+kernel = images/pxeboot/vmlinuz
+
+[images-xen]
+initrd = images/pxeboot/initrd.img
+kernel = images/pxeboot/vmlinuz
+
+[release]
+name = Red Hat Enterprise Linux
+short = RHEL
+version = 8.1.0
+
+[stage2]
+mainimage = images/install.img
+
+[tree]
+arch = x86_64
+build_timestamp = 1571146127
+platforms = x86_64,xen
+variants = BaseOS
+
+[variant-BaseOS]
+id = BaseOS
+name = BaseOS
+packages = Packages
+repository = .
+type = variant
+uid = BaseOS
+----
++
+. Open the `../appstream/kickstart/treeinfo` file for editing and update the file to reflect the following changes:
++
+----
+[general]
+; WARNING.0 = This section provides compatibility with pre-productmd treeinfos.
+; WARNING.1 = Read productmd documentation for details about new format.
+arch = x86_64
+family = Red Hat Enterprise Linux
+name = Red Hat Enterprise Linux 8.1.0
+packagedir = Packages
+platforms = x86_64
+repository = .
+timestamp = 1571146113
+variant = AppStream
+variants = AppStream
+version = 8.1.0
+
+[header]
+type = productmd.treeinfo
+version = 1.2
+
+[release]
+name = Red Hat Enterprise Linux
+short = RHEL
+version = 8.1.0
+
+[tree]
+arch = x86_64
+build_timestamp = 1571146113
+platforms = x86_64
+variants = AppStream
+
+[variant-AppStream]
+id = AppStream
+name = AppStream
+packages = Packages
+repository = .
+type = variant
+uid = AppStream
+----
++
+. If you do not plan to use the mounted binary DVD ISO image, unmount and remove the directory:
++
+[options="nowrap" subs="+quotes"]
+----
+# umount /mnt/_iso_
+# rmdir /mnt/_iso_
+----
++
+. In the Satellite web UI, enable the Kickstart repositories.
