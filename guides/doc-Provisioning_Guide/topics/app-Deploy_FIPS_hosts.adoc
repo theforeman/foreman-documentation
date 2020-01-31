@@ -2,328 +2,24 @@
 [[Provision_FIPS_Hosts]]
 == Provisioning FIPS Compliant Hosts
 
-{ProjectNameX} supports provisioning hosts that comply with the National Institute of Standards and Technology's http://csrc.nist.gov/groups/STM/cmvp/standards.html#02[Security Requirements for Cryptographic Modules] standard, reference number FIPS 140-2, referred to here as FIPS.
+{Project} supports provisioning hosts that comply with the National Institute of Standards and Technology's http://csrc.nist.gov/groups/STM/cmvp/standards.html#02[Security Requirements for Cryptographic Modules] standard, reference number FIPS 140-2, referred to here as FIPS.
 
-[[NOTE]]
-====
-{ProjectNameX} is not supported on a FIPS enabled host.
-====
+To enable the provisioning of hosts that are FIPS-compliant, complete the following tasks:
 
-To enable the provisioning of hosts that are FIPS compliant, complete the following changes:
+* Change the provisioning password hashing algorithm for the operating system
+* Create a host group and set a host group parameter to enable FIPS
 
-* Identify the relevant operating systems, locations, and organizations
+For more information about creating host groups, see {BaseURL}managing_hosts/administering_hosts#creating-a-host-group[Creating a Host Group] in the _Managing Hosts_ guide.
 
-* Create and enable the FIPS provisioning templates
-
-* Change the provisioning password hashing algorithm
-
-* Change the Puppet message digest algorithm
-
-* Set the FIPS enabled parameter
-
-When these changes are complete, the new provisioning templates will be associated with those operating systems, locations, and organizations you specify. When you provision a host to those operating systems, locations, and organizations, the host will have the FIPS-compliant settings applied. To confirm that these settings have been successful, complete the steps in xref:verifying_fips_mode_enabled[].
-
-.Prerequisites
-
-* Complete the configuration steps from the {BaseURL}hammer_cli_guide/chap-cli_guide-introduction_to_hammer#sect-CLI_Guide-Authentication[Authentication] section in the _Hammer CLI Guide_. This allows you to run Hammer commands without providing your {Project} username and password each time.
-
-[[identifying_relevant_operating_systems_locations_organizations]]
-=== Identifying the Relevant Operating Systems, Locations, and Organizations
-
-Before creating the FIPS-compliant templates in {Project}, you must identify those locations, organizations and operating systems to which you want to deploy FIPS-compliant hosts. For example, if you will only deploy Red{nbsp}Hat Enterprise{nbsp}Linux 7 hosts as FIPS compliant, associate the template with only Red{nbsp}Hat Enterprise{nbsp}Linux 7.
-
-. List all locations.
-+
-.Example
-----
-$ hammer location list
----|-----------------
-ID | NAME
----|-----------------
-2  | Default Location
----|-----------------
-----
-+
-Note the value in the `NAME` column of those locations to which you want to deploy FIPS-compliant hosts.
-
-. List all organizations.
-+
-.Example
-----
-$ hammer organization list
----|----------------------|----------------------|------------
-ID | NAME                 | LABEL                | DESCRIPTION
----|----------------------|----------------------|------------
-1  | Default Organization | Default_Organization |
-2  | Sales                | Sales_Department     |
----|----------------------|----------------------|------------
-----
-+
-Note the value in the `NAME` column of those organizations to which you want to deploy FIPS-compliant hosts.
-
-. List all operating systems.
-+
-.Example
-----
-$ hammer os list
-----
-+
-Note the value in the `TITLE` column of those operating systems to which you want to deploy FIPS-compliant hosts.
-
-=== Creating and Enabling the FIPS Provisioning Templates
-
-The FIPS provisioning templates are provided in a git repository. In this procedure you import them into the {Project} environment, then associate them with the desired operating systems, locations, and organizations.
-
-. On the {ProjectServer}, clone the git repository containing the FIPS enabled templates, then change into the repository's directory.
-+
-----
-$ git clone https://github.com/RedHatSatellite/satellite6-fips-client
-$ cd satellite6-fips-client
-----
-+
-This repository contains the following Embedded RuBy (ERB) templates. These are plain text files, which you can view to see in detail the configuration settings they contain.
-+
-* `Kickstart_Default_PXELinux_FIPS.erb`
-  ** Updated PXELinux template
-* `fips_packages.erb`
-  ** Packages required by FIPS mode (for example, `dracut-fips`)
-* `Kickstart_Default_FIPS.erb`
-  ** Kickstart template with modifications to call the `fips_packages` snippet
-* `puppet.conf.erb`
-  ** Updated `puppet.conf` configuration file with updated (SHA256) message digest algorithm
-
-+
-. Add the _PXELinux FIPS_ template.
-+
-[options="nowrap" subs="+quotes"]
-----
-$ hammer template create  --name "Kickstart Default PXELinux FIPS" \
-  --file Kickstart_Default_PXELinux_FIPS.erb  \
-  --locations __LOCATIONS__ \
-  --organizations __ORGANIZATION__ \
-  --operatingsystems __OS__ \
-  --type PXELinux
-----
-+
-Replace the placeholder values `LOCATIONS`, `ORGANIZATION`, and `OS` with the values you noted in xref:identifying_relevant_operating_systems_locations_organizations[]. If any value contains non-alphabetical characters, enclose the value in quotation marks (").
-+
-The message `Config template created` indicates success.
-+
-.Example
-[options="nowrap" subs="+quotes"]
-----
-$ hammer template create  --name "Kickstart Default PXELinux FIPS" \
-  --file Kickstart_Default_PXELinux_FIPS.erb \
-  --locations "Default Location" \
-  --organizations "Default Organization","Sales" \
-  --operatingsystems "RedHat 6.6","RedHat 7.1","RedHat 7.2","RedHat 6.7" \
-  --type PXELinux
-----
-
-. Add the Kickstart Default FIPS_ template.
-+
-[options="nowrap" subs="+quotes,attributes"]
-----
-$ hammer template create  --name "Kickstart Default FIPS" \
-  --file Kickstart_Default_FIPS.erb  \
-  --locations __LOCATIONS__ \
-  --organizations __ORGANIZATION__ \
-  --operatingsystems __OS__ \
-  --type provision
-----
-+
-Replace the placeholder values `LOCATIONS`, `ORGANIZATION`, and `OS` with the values you noted in xref:identifying_relevant_operating_systems_locations_organizations[]. If any value contains non-alphabetical characters, enclose the value in quotation marks (").
-+
-The message `Config template created` indicates success.
-+
-.Example
-[options="nowrap" subs="+quotes,attributes"]
-----
-$ hammer template create  --name "Kickstart Default FIPS" \
-  --file Kickstart_Default_FIPS.erb  \
-  --locations "Default Location" \
-  --organizations "Default Organization","Sales" \
-  --operatingsystems "_OS Name_ _OS Version_7" \
-  --type provision
-----
-
-. Add the _FIPS Packages_ snippet.
-+
-[options="nowrap" subs="+quotes"]
-----
-$ hammer template create  --name "fips_packages" \
-  --file fips_packages.erb \
-  --locations __LOCATIONS__ \
-  --organizations __ORGANIZATION__ \
-  --type snippet
-----
-+
-Replace the placeholder values _LOCATIONS_ and _ORGANIZATION_ with the values you noted in xref:identifying_relevant_operating_systems_locations_organizations[]. If any value contains non-alphabetical characters, enclose the value in quotation marks (").
-+
-The message `Config template created` indicates success.
-+
-.Example
-[options="nowrap" subs="+quotes"]
-----
-$ hammer template create  --name "fips_packages" \
-  --file fips_packages.erb \
-  --locations "Default Location" \
-  --organizations "Default Organization","Sales" \
-  --type snippet
-----
-
-. Update the default Puppet configuration snippet.
-+
-----
-$ hammer template update --name puppet.conf \
-  --file puppet.conf.erb  \
-  --type snippet
-----
-+
-The message `Config template created` indicates success.
-
-. Update the Operating System Object to use the new templates.
-+
-Now that the new FIPS templates have been added to {Project}, they must be set as _default_ templates for the desired operating system.
-+
-.. Identify the IDs of the _Kickstart Default FIPS_ and _Kickstart Default PXELinux FIPS_ templates.
-+
-.Example
-----
-$ hammer template list
-----|--------------------------------------|----------
-ID  | NAME                                 | TYPE
-----|--------------------------------------|----------
-38  | Alterator default                    | provision
-26  | Alterator default finish             | finish
-10  | Alterator default PXELinux           | PXELinux
-52  | alterator_pkglist                    | snippet
-53  | ansible_provisioning_callback        | snippet
-54  | ansible_tower_callback_script        | snippet
-55  | ansible_tower_callback_service       | snippet
-39  | Atomic Kickstart default             | provision
-40  | AutoYaST default                     | provision
-33  | AutoYaST default iPXE                | iPXE
-11  | AutoYaST default PXELinux            | PXELinux
-86  | AutoYaST default user data           | user_data
-41  | AutoYaST SLES default                | provision
-56  | blacklist_kernel_modules             | snippet
-57  | bmc_nic_setup                        | snippet
-110 | Boot disk iPXE - generic host        | Bootdisk
-109 | Boot disk iPXE - host                | Bootdisk
-58  | chef_client                          | snippet
-59  | coreos_cloudconfig                   | snippet
-42  | CoreOS provision                     | provision
-12  | CoreOS PXELinux                      | PXELinux
-60  | create_users                         | snippet
-61  | csr_attributes.yaml                  | snippet
-112 | Discovery Debian kexec               | kexec
-111 | Discovery Red Hat kexec              | kexec
-62  | epel                                 | snippet
-63  | fix_hosts                            | snippet
-27  | FreeBSD (mfsBSD) finish              | finish
-43  | FreeBSD (mfsBSD) provision           | provision
-13  | FreeBSD (mfsBSD) PXELinux            | PXELinux
-64  | freeipa_register                     | snippet
-51  | Grubby default                       | script
-65  | http_proxy                           | snippet
-34  | iPXE default local boot              | iPXE
-35  | iPXE global default                  | iPXE
-44  | Jumpstart default                    | provision
-28  | Jumpstart default finish             | finish
-2   | Jumpstart default PXEGrub            | PXEGrub
-29  | Junos default finish                 | finish
-45  | Junos default SLAX                   | provision
-25  | Junos default ZTP config             | ZTP
-46  | Kickstart default                    | provision
-30  | Kickstart default finish             | finish
-36  | Kickstart default iPXE               | iPXE
-3   | Kickstart default PXEGrub            | PXEGrub
-6   | Kickstart default PXEGrub2           | PXEGrub2
-14  | Kickstart default PXELinux           | PXELinux
-87  | Kickstart default user data          | user_data
-67  | kickstart_ifcfg_bonded_interface     | snippet
-66  | kickstart_ifcfg_bond_interface       | snippet
-68  | kickstart_ifcfg_generic_interface    | snippet
-69  | kickstart_ifcfg_get_identifier_names | snippet
-70  | kickstart_networking_setup           | snippet
-47  | Kickstart oVirt-RHVH                 | provision
-15  | Kickstart oVirt-RHVH PXELinux        | PXELinux
-1   | NX-OS default POAP setup             | POAP
-48  | Preseed default                      | provision
-31  | Preseed default finish               | finish
-37  | Preseed default iPXE                 | iPXE
-7   | Preseed default PXEGrub2             | PXEGrub2
-16  | Preseed default PXELinux             | PXELinux
-88  | Preseed default user data            | user_data
-71  | preseed_networking_setup             | snippet
-72  | puppet.conf                          | snippet
-74  | puppetlabs_repo                      | snippet
-73  | puppet_setup                         | snippet
-75  | pxegrub2_chainload                   | snippet
-8   | PXEGrub2 default local boot          | PXEGrub2
-76  | pxegrub2_discovery                   | snippet
-9   | PXEGrub2 global default              | PXEGrub2
-77  | pxegrub_chainload                    | snippet
-4   | PXEGrub default local boot           | PXEGrub
-78  | pxegrub_discovery                    | snippet
-5   | PXEGrub global default               | PXEGrub
-17  | PXELinux chain iPXE                  | PXELinux
-18  | PXELinux chain iPXE UNDI             | PXELinux
-79  | pxelinux_chainload                   | snippet
-19  | PXELinux default local boot          | PXELinux
-20  | PXELinux default memdisk             | PXELinux
-80  | pxelinux_discovery                   | snippet
-21  | PXELinux global default              | PXELinux
-81  | rancheros_cloudconfig                | snippet
-49  | RancherOS provision                  | provision
-22  | RancherOS PXELinux                   | PXELinux
-82  | redhat_register                      | snippet
-83  | remote_execution_ssh_keys            | snippet
-84  | saltstack_minion                     | snippet
-85  | saltstack_setup                      | snippet
-89  | UserData default                     | user_data
-23  | WAIK default PXELinux                | PXELinux
-50  | XenServer default answerfile         | provision
-32  | XenServer default finish             | finish
-24  | XenServer default PXELinux           | PXELinux
-----|--------------------------------------|----------
-----
-+
-In this example, the IDs are 54 and 53 respectively. These IDs are installation specific.
-+
-.. Specify the FIPS templates as default.
-+
-[options="nowrap" subs="+quotes"]
-----
-$ hammer os set-default-template --config-template-id __TEMPLATE__ \
---id __OS__
-----
-+
-Replace the placeholders _TEMPLATE_ and _OS_ with the IDs of the FIPS templates, and the desired operating system, noted earlier. Repeat this command for every combination of FIPS template and operating system. It does not accept a comma-separated list of values.
-+
-In this example, the FIPS templates are set as default for Red{nbsp}Hat Enterprise{nbsp}Linux 7.2, identified in an earlier example as ID 1.
-+
-.Example
-[options="nowrap" subs="+quotes"]
-----
-$ hammer os set-default-template --config-template-id __54__ --id __1__
-$ hammer os set-default-template --config-template-id __53__ --id __1__
-----
-
+The provisioned hosts have the FIPS-compliant settings applied. To confirm that these settings are enabled, complete the steps in xref:verifying_fips_mode_enabled[].
 
 === Change the Provisioning Password Hashing Algorithm
 
-This sets the password hashing algorithm used in provisioning to SHA256. This configuration setting must be applied for each operating system you want to deploy as FIPS compliant.
-
-[NOTE]
-====
-This is required *ONLY* if {ProjectNameX} was upgraded from {ProjectXY}. {Project} {ProductVersion} uses SHA256 by default.
-====
+To provision FIPS-compliant hosts, you must first set the password hashing algorithm that you use in provisioning to SHA256. This configuration setting must be applied for each operating system you want to deploy as FIPS-compliant.
 
 . Identify the Operating System IDs.
 +
-.Example
+[options="nowrap" subs="+quotes"]
 ----
 $ hammer os list
 ----
@@ -332,42 +28,26 @@ $ hammer os list
 +
 [options="nowrap" subs="+quotes"]
 ----
-$ hammer os update --title __OS__ \
+$ hammer os update --title __Operating_System__ \
   --password-hash SHA256
 ----
 +
-Repeat this command for each of the desired operating systems, using the matching value in the `TITLE` column. It does not accept a comma-separated list of values.
+. Repeat this command for each of the operating systems, using the matching value in the `TITLE` column:
 +
-.Example
+[options="nowrap" subs="+quotes"]
 ----
-$ hammer os update --title "RedHat 7.2" \
+$ hammer os update --title "RedHat __version_number__" \
   --password-hash SHA256
 ----
-
-=== Switching to a FIPS Compliant Message Algorithm for Puppet
-
-On the {ProjectServer}, all external {SmartProxyServer}s, and *all* existing hosts, configure Puppet to use the SHA256 message digest algorithm.
-
-Edit the `/etc/puppetlabs/puppet/puppet.conf` file, adding the line `digest_algorithm = sha256` in the `[main]` stanza.
-
-[NOTE]
-====
-This change will be overwritten on every upgrade of {Project}, so needs to be reapplied afterward.
-====
-
-Because the Puppet message digest algorithm is changed on the {ProjectServer} and all {SmartProxyServer}s, it must also be changed on *all* hosts, including those that are not FIPS compliant.
-
-In the event of a message digest algorithm mismatch, the client will download its facts again. This will result in a noticeable increased load on the {ProjectServer} or external {SmartProxyServer}s.
++
+Note that you cannot use a comma-separated list of values.
 
 === Setting the FIPS Enabled Parameter
 
-To provision a FIPS compliant host, the FIPS templates require a parameter named _fips_enabled_ to be set to `true`. If this is not set to `true`, or is absent, the FIPS specific changes will not be applied. This parameter can be specified when provisioning an individual host, or set for a hostgroup. Retrospectively enabling FIPS compliance on a host is outside the scope of this guide and likely to cause problems.
+To provision a FIPS-compliant host, you must create a host group and set the host group parameter `fips_enabled` to `true`. If this is not set to `true`, or is absent, the FIPS-specific changes do not apply to the system. You can set this parameter when you provision a host or for a host group.
 
 To set this parameter when provisioning a host, append `--parameters fips_enabled=true` to the Hammer command.
 
-To set this parameter on an existing host group, use the Hammer sub-command `set-parameter`. For more information, see the output of the command `hammer hostgroup set-parameter --help`. Any host provisioned to this hostgroup will inherit the _fips_enabled_ parameter from the hostgroup.
-
-.Example
 [options="nowrap" subs="+quotes"]
 ----
 $ hammer hostgroup set-parameter --name fips_enabled \
@@ -375,11 +55,18 @@ $ hammer hostgroup set-parameter --name fips_enabled \
  --hostgroup __prod_servers__
 ----
 
+For more information, see the output of the command `hammer hostgroup set-parameter --help`.
+
 [[verifying_fips_mode_enabled]]
 === Verifying FIPS Mode is Enabled
 
 To verify these FIPS compliance changes have been successful, you must provision a host and check its configuration.
 
-. Deploy a host using the FIPS templates, ensuring that parameter named _fips_enabled_ is set to `true`.
-. Log in to the new host as a root-equivalent account.
-. Enter the command `cat /proc/sys/crypto/fips_enabled`. A value of `1` confirms that FIPS mode is enabled.
+	. Log on to the host as `root` or with an admin-level account.
+	. Enter the following command:
+		+
+	----
+	cat /proc/sys/crypto/fips_enabled
+	----
+
+	A value of `1` confirms that FIPS mode is enabled.
