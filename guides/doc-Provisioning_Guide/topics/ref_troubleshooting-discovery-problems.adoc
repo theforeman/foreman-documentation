@@ -1,0 +1,33 @@
+[[troubleshooting-discovery-problems]]
+= Troubleshooting Discovery
+
+If a machine is not listed in the {Project} web UI in *Hosts* > *Discovered Hosts*, inspect the following configuration areas to help isolate the error:
+
+* Navigate to *Hosts* > *Provisioning Templates* and redeploy the default PXELinux template using the *Build PXE Default* button.
+
+* Verify the `pxelinux.cfg/default` configuration file on the TFTP {SmartProxy}.
+
+* Ensure adequate network connectivity between hosts, {SmartProxyServer}, and {ProjectServer}.
+
+* Check the PXELinux template in use and determine the PXE discovery snippet it includes. Snippets are named as follows: `pxelinux_discovery`, `pxegrub_discovery`, or `pxegrub2_discovery`. Verify the `proxy.url` and `proxy.type` options in the PXE discovery snippet.
+
+* Ensure that DNS is working correctly for the discovered nodes, or use an IP address in the `proxy.url` option in the PXE discovery snippet included in the PXELinux template you are using.
+
+* Ensure that the DHCP server is delivering IP addresses to the booted image correctly.
+
+* Ensure the discovered host or virtual machine has at least 1200 MB of memory. Less memory can lead to various random kernel panic errors because the image is extracted in-memory.
+
+For gathering important system facts, use the `discovery-debug` command. It prints out system logs, network configuration, list of facts, and other information on the standard output. The typical use case is to redirect this output and copy it with the `scp` command for further investigation.
+
+The first virtual console on the discovered host is reserved for *systemd* logs. Particularly useful system logs are tagged as follows:
+
+* `discover-host` — initial facts upload
+* `foreman-discovery` — facts refresh, reboot remote commands
+* `nm-prepare` — boot script which pre-configures NetworkManager
+* `NetworkManager` — networking information
+
+Use TTY2 or higher to log in to a discovered host. The root account and SSH access are disabled by default, but you can enable SSH and set the root password using the following kernel command-line options in the Default PXELinux template on the APPEND line:
+[options="nowrap" subs="+quotes,verbatim"]
+----
+fdi.ssh=1 fdi.rootpw=_My_Password_
+----

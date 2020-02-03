@@ -1,0 +1,112 @@
+[[building-a-discovery-image]]
+= Building a Discovery Image
+
+The Discovery image is a minimal operating system based on {RHEL} that is PXE-booted on hosts to acquire initial hardware information and to check in to the Satellite Server. Discovered hosts keep running the Satellite Discovery image until they are rebooted into Anaconda, which then initiates the provisioning process. The `foreman-discovery-image` package contains this image. You must install the package on the {SmartProxy} that provides TFTP services. 
+
+Use this procedure to build a {Project} discovery image or rebuild an image if you change configuration files.
+
+Do not use this procedure on your production {Project} or {SmartProxy}.
+
+.Prerequisites
+
+Install the `livecd-tools` package:
+
+----
+# yum install livecd-tools
+----
+
+Because Anaconda installer cannot publish through HTTPS, you must enable publishing through HTTP for Kickstart repositories:
+
+. In the {Project} web UI, navigate to *Content* > *Products* and in the *Products* window, click the *Repositories* tab.
+. Select a Kickstart repository and for the *Publish via HTTP*, option, click the *Edit* icon, select the check box, and click *Save*.
+. Repeat the previous steps for the {Project} repository.
+
+Note that publishing via HTTP does not apply to any Red{nbsp}Hat repositories.
+
+.Procedure
+
+To build the {Project} discovery image, complete the following steps:
+
+. Open the `/usr/share/foreman-discovery-image/foreman-discovery-image.ks` file for editing:
++
+[options="nowrap" subs="+quotes"]
+----
+# vim /usr/share/foreman-discovery-image/foreman-discovery-image.ks
+----
++
+. Replace `repo --name=rhel --baseurl=http://download/00000` with with your own repos for RHEL and {Project} with your repository URLs. To find the URLs, navigate to *Content* > *Products* and click the *Repositories* tab and copy the URL for both repositories into the file:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+repo --name=rhel --baseurl=http://download/released/RHEL-7/7.4/Server/x86_64/os/
+repo --name=sat --baseurl=http://download2/nightly/Satellite/{ProductVersion}/candidate/latest-Satellite-{ProductVersion}-RHEL-7/compose/Satellite/x86_64/os/
+----
++
+. Run the `livecd-creator` tool:
++
+[options="nowrap" subs="+quotes"]
+----
+# livecd-creator --title="Discovery-Image" \
+--compression-type=xz \
+--cache=var/cache/build-fdi \
+--config /usr/share/foreman-discovery-image/foreman-discovery-image.ks \
+--fslabel fdi \
+--tmpdir /var/tmp
+----
++
+If you change `fdi` in the `--fslabel` option, you must also change the root label on the kernel command line when loading the image. `fdi` or the alternative name is appended to the `.iso` file that is created as part of this procedure. The PXE Discovery tool uses this name when converting from `.iso` to PXE.
++
+Use `/var/tmp` because this process requires close to 3GB of space and `/tmp` might have problems if the system is low on swap space.
++
+. Verify that your `fdi.iso` file is created:
++
+[options="nowrap" subs="+quotes"]
+----
+# ls *.iso -h
+----
+
+When you create the `.iso` file, you can boot the `.iso` file over a network or locally. Complete one of the following procedures.
+
+.To boot the iso file over a network:
+
+. To extract the initial ramdisk and kernel files from the `.iso` file over a network, enter the following command:
++
+[options="nowrap" subs="+quotes"]
+----
+# discovery-iso-to-pxe fdi.iso
+----
++
+. Create a directory to store your boot files:
++
+[options="nowrap" subs="+quotes"]
+----
+# mkdir /var/lib/tftpboot/boot/_myimage_
+----
++
+. Copy the `initrd0.img` and `vmlinuz0` files to your new directory.
+. Edit the `KERNEL` and `APPEND` entries in the `/var/lib/tftpboot/pxelinux.cfg` file to add the information about your own initial ramdisk and kernel files.
+
+.To boot the iso file locally:
+
+If you want to create a hybrid `.iso` file for booting locally, complete the following steps:
+
+. To convert the `.iso` file to an `.iso` hybrid file for PXE provisioning, enter the following command:
++
+[options="nowrap" subs="+quotes"]
+----
+# isohybrid --partok fdi.iso
+----
++
+If you have `grub2` packages installed, you can also use the following command to install a `grub2` bootloader:
++
+[options="nowrap" subs="+quotes"]
+----
+# isohybrid --partok --uefi fdi.iso
+----
++
+. To add `md5` checksum to the `.iso` file so it can pass installation media validation tests in {Project}, enter the following command:
++
+[options="nowrap" subs="+quotes"]
+----
+# implantisomd5 fdi.iso
+----
