@@ -1,0 +1,60 @@
+[[unattended-use-and-customization]]
+= Unattended Use and Customization
+
+You can create a customized Discovery ISO, which automates the process of configuring the image after booting. The Discovery image uses a Linux kernel for the operating system, which means you pass kernel parameters to the configure the image's operating system. These kernel parameters include:
+
+proxy.url::
+  The URL of the {SmartProxyServer} providing the Discovery service.
+
+proxy.type::
+  The proxy type. This is usually set to `proxy` to connect to {SmartProxyServer}. This parameter also supports a legacy `foreman` option, where communication goes directly to {ProjectServer} instead of a {SmartProxyServer}.
+
+fdi.pxmac::
+  The MAC address of the primary interface in the format of `AA:BB:CC:DD:EE:FF`. This is the interface you aim to use for communicating with {SmartProxyServer}. In automated mode, the first NIC (using network identifiers in alphabetical order) with a link is used. In semi-automated mode, a screen appears and requests you to select the correct interface.
+
+fdi.pxip, fdi.pxgw, fdi.pxdns::
+  Manually configures IP address (`fdi.pxip`), the gateway (`fdi.pxgw`), and the DNS (`fdi.pxdns`) for the primary network interface. If your omit these parameters, the image uses DHCP to configure the network interface.
+
+fdi.pxfactname1, fdi.pxfactname2 ... fdi.pxfactnameN::
+  Allows you to specify custom fact names.
+
+fdi.pxfactvalue1, fdi.pxfactvalue2 ... fdi.pxfactvalueN::
+  The values for each custom fact. Each value corresponds to a fact name. For example, `fdi.pxfactvalue1` sets the value for the fact named with `fdi.pxfactname1`.
+
+fdi.pxauto::
+  To set automatic or semi-automatic mode. If set to 0, the image uses semi-automatic mode, which allows you to confirm your choices through a set of dialog options. If set to 1, the image uses automatic mode and proceeds without any confirmation.
+
+{ProjectServer} also provides a tool (`discovery-remaster`) in the `foreman-discovery-image` package. This tool remasters the image to include these kernel parameters. To remaster the image, run the `discovery-remaster` tool. For example:
+
+[options="nowrap" subs="+quotes,attributes"]
+----
+# discovery-remaster ~/iso/foreman-discovery-image-3.4.4-5.iso \
+"fdi.pxip=192.168.140.20/24 fdi.pxgw=192.168.140.1 \
+fdi.pxdns=192.168.140.2 proxy.url=https://_{foreman-example-com}_:{smartproxy_port} \
+proxy.type=proxy fdi.pxfactname1=customhostname \
+fdi.pxfactvalue1=myhost fdi.pxmac=52:54:00:be:8e:8c fdi.pxauto=1"
+----
+
+The tool creates a new ISO file in the same directory as the original discovery image. In this scenario, it saves in the `/usr/share/foreman-discovery-image/` directory.
+
+Copy this media to either a CD, DVD, or a USB stick. For example, to copy to a USB stick at `/dev/sdb`:
+
+[options="nowrap" subs="+quotes"]
+----
+# dd bs=4M \
+if=/usr/share/foreman-discovery-image/foreman-discovery-image-3.4.4-5.iso \
+of=/dev/sdb
+----
+
+Insert the Discovery boot media into a bare metal host, start the host, and boot from the media.
+
+For more information about provisioning discovered hosts, see xref:creating-hosts-from-discovered-hosts[].
+
+.Final Notes
+
+The host must resolve to the following provisioning templates:
+
+  - *kexec Template:* `Discovery Red Hat kexec`
+  - *provision Template:* `{Project} Kickstart Default`
+
+For more information about associating provisioning templates, see xref:Configuring_Provisioning_Resources-Creating_Provisioning_Templates[].
