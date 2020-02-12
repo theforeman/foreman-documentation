@@ -1,7 +1,11 @@
 [[building-a-discovery-image]]
 = Building a Discovery Image
 
-The Discovery image is a minimal operating system based on {RHEL} that is PXE-booted on hosts to acquire initial hardware information and to check in to the Satellite Server. Discovered hosts keep running the Satellite Discovery image until they are rebooted into Anaconda, which then initiates the provisioning process. The `foreman-discovery-image` package contains this image. You must install the package on the {SmartProxy} that provides TFTP services.
+The Discovery image is a minimal operating system based on {RHEL} that is PXE-booted on hosts to acquire initial hardware information and to check in to the Satellite Server. Discovered hosts keep running the Satellite Discovery image until they are rebooted into Anaconda, which then initiates the provisioning process.
+
+ifeval::["{build}" == "satellite"]
+The `foreman-discovery-image` package contains this image. You must install the package on the {SmartProxy} that provides TFTP services.
+endif::[]
 
 Use this procedure to build a {Project} discovery image or rebuild an image if you change configuration files.
 
@@ -22,10 +26,17 @@ ifeval::["{build}" == "satellite"]
 ----
 endif::[]
 
+ifeval::["{build}" == "foreman"]
+The following steps are relevant only if you use the Katello plug-in to build the Discovery image from content repositories. If you do not use the content repositories to build the Discovery image, skip to the procedure section.
+endif::[]
+
 Because Anaconda installer cannot publish through HTTPS, you must enable publishing through HTTP for Kickstart repositories:
 
 . In the {Project} web UI, navigate to *Content* > *Products* and in the *Products* window, click the *Repositories* tab.
 . Select a Kickstart repository and for the *Publish via HTTP*, option, click the *Edit* icon, select the check box, and click *Save*.
+ifeval::["{build}" == "satellite"]
+. Enable and synchronize the *Red Hat Enterprise Linux 7 Server Kickstart x86_64 7.7* and "Red Hat Satellite Capsule {ProductVersion} for RHEL 7 Server RPMs x86_64* repositories. For more information about synchronizing repositories, see {baseurl}content_management_guide/importing_red_hat_content#Importing_Red_Hat_Content-Synchronizing_Red_Hat_Repositories[Synchronizing Red{nbsp}Hat Repositories] in the _Content Management Guide_.
+endif::[]
 . Repeat the previous steps for the {Project} repository.
 
 Note that publishing via HTTP does not apply to any Red{nbsp}Hat repositories.
@@ -45,8 +56,19 @@ To build the {Project} discovery image, complete the following steps:
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
-repo --name=rhel --baseurl=http://download/released/RHEL-7/7.4/Server/x86_64/os/
-repo --name=sat --baseurl=http://download2/nightly/Satellite/{ProductVersion}/candidate/latest-Satellite-{ProductVersion}-RHEL-7/compose/Satellite/x86_64/os/
+ifeval::["{build}" == "satellite"]
+repo --name=rhel --baseurl=http://{foreman_example_com}/pulp/repos/MyOrg/Library/content/dist/rhel/server/7/7.7/x86_64/kickstart/
+repo --name=sat --baseurl=http://{foreman_example_com}/pulp/repos/MyOrg/Library/content/dist/rhel/server/7/7Server/x86_64/sat-capsule/{ProductVersion}/os/
+endif::[]
+ifeval::["{build}" == "foreman"]
+repo --name=centos --mirrorlist=http://mirrorlist.centos.org/?release=7&arch=$basearch&repo=os
+repo --name=centos-updates --mirrorlist=http://mirrorlist.centos.org/?release=7&arch=$basearch&repo=updates
+repo --name=epel7 --mirrorlist=https://mirrors.fedoraproject.org/metalink?repo=epel-7&arch=$basearch
+repo --name=centos-sclo-rh --mirrorlist=http://mirrorlist.centos.org/?release=7&arch=x86_64&repo=sclo-rh
+repo --name=foreman-rails-el7 --baseurl=https://yum.theforeman.org/rails/foreman-nightly/el7/$basearch/
+repo --name=foreman-el7 --baseurl=http://yum.theforeman.org/nightly/el7/$basearch/
+repo --name=foreman-plugins-el7 --baseurl=http://yum.theforeman.org/plugins/nightly/el7/$basearch/
+endif::[]
 ----
 +
 . Run the `livecd-creator` tool:
