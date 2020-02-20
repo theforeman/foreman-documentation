@@ -1,0 +1,142 @@
+[[building-a-discovery-image]]
+= Building a Discovery Image
+
+The Discovery image is a minimal operating system based on {RHEL} that is PXE-booted on hosts to acquire initial hardware information and to check in to the {Project}. Discovered hosts keep running the Discovery image until they are rebooted into Anaconda, which then initiates the provisioning process.
+
+ifeval::["{build}" == "satellite"]
+The `foreman-discovery-image` package contains this image. You must install the package on the {SmartProxy} that provides TFTP services.
+endif::[]
+
+Use this procedure to build a {Project} discovery image or rebuild an image if you change configuration files.
+
+Do not use this procedure on your production {Project} or {SmartProxy}.
+
+.Prerequisites
+
+. Install the `livecd-tools` package:
++
+ifeval::["{build}" == "foreman"]
+----
+# yum install livecd-tools
+----
+endif::[]
+ifeval::["{build}" == "satellite"]
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foreman-maintain} packages install livecd-tools
+----
+endif::[]
+ifeval::["{build}" == "foreman"]
++
+The following steps are relevant only if you use the Katello plug-in to build the Discovery image from content repositories. If you do not use the content repositories to build the Discovery image, skip to the procedure section.
+endif::[]
++
+Because Anaconda installer cannot publish through HTTPS, you must enable publishing through HTTP for Kickstart repositories:
++
+. In the {Project} web UI, navigate to *Content* > *Products* and in the *Products* window, click the *Repositories* tab.
+. Select a Kickstart repository and for the *Publish via HTTP*, option, click the *Edit* icon, select the check box, and click *Save*.
+ifeval::["{build}" == "satellite"]
+. Enable and synchronize the *Red Hat Enterprise Linux 7 Server Kickstart x86_64 7.7* and *Red Hat Satellite Capsule {ProductVersion} for RHEL 7 Server RPMs x86_64* repositories. For more information about synchronizing repositories, see {baseurl}content_management_guide/importing_red_hat_content#Importing_Red_Hat_Content-Synchronizing_Red_Hat_Repositories[Synchronizing Red{nbsp}Hat Repositories] in the _Content Management Guide_.
+endif::[]
+. Repeat the previous steps for the {Project} repository.
+
+Note that publishing via HTTP does not apply to any Red{nbsp}Hat repositories.
+
+.Procedure
+
+To build the {Project} discovery image, complete the following steps:
+
+. Open the `/usr/share/foreman-discovery-image/foreman-discovery-image.ks` file for editing:
++
+[options="nowrap" subs="+quotes"]
+----
+# vim /usr/share/foreman-discovery-image/foreman-discovery-image.ks
+----
++
+. Replace `repo --name=rhel --baseurl=http://_{foreman-example-com}_` with with your own repository URLs. To find the URLs, navigate to *Content* > *Products* and click the *Repositories* tab and copy the URL for both repositories into the file:
++
+[options="nowrap" subs="quotes,attributes"]
+----
+ifeval::["{build}" == "satellite"]
+repo --name=rhel --baseurl=http://_{foreman-example-com}_/pulp/repos/MyOrg/Library/content/dist/rhel/server/7/7.7/x86_64/kickstart/
+repo --name=sat --baseurl=http://_{foreman-example-com}_/pulp/repos/MyOrg/Library/content/dist/rhel/server/7/7Server/x86_64/sat-capsule/{ProductVersion}/os/
+endif::[]
+ifeval::["{build}" == "foreman"]
+repo --name=centos --mirrorlist=http://mirrorlist.centos.org/?release=7&arch=$basearch&repo=os
+repo --name=centos-updates --mirrorlist=http://mirrorlist.centos.org/?release=7&arch=$basearch&repo=updates
+repo --name=epel7 --mirrorlist=https://mirrors.fedoraproject.org/metalink?repo=epel-7&arch=$basearch
+repo --name=centos-sclo-rh --mirrorlist=http://mirrorlist.centos.org/?release=7&arch=x86_64&repo=sclo-rh
+repo --name=foreman-rails-el7 --baseurl=https://yum.theforeman.org/rails/foreman-nightly/el7/$basearch/
+repo --name=foreman-el7 --baseurl=http://yum.theforeman.org/nightly/el7/$basearch/
+repo --name=foreman-plugins-el7 --baseurl=http://yum.theforeman.org/plugins/nightly/el7/$basearch/
+endif::[]
+----
++
+. Run the `livecd-creator` tool:
++
+[options="nowrap" subs="+quotes"]
+----
+# livecd-creator --title="Discovery-Image" \
+--compression-type=xz \
+--cache=var/cache/build-fdi \
+--config /usr/share/foreman-discovery-image/foreman-discovery-image.ks \
+--fslabel fdi \
+--tmpdir /var/tmp
+----
++
+If you change `fdi` in the `--fslabel` option, you must also change the root label on the kernel command line when loading the image. `fdi` or the alternative name is appended to the `.iso` file that is created as part of this procedure. The PXE Discovery tool uses this name when converting from `.iso` to PXE.
++
+Use `/var/tmp` because this process requires close to 3GB of space and `/tmp` might have problems if the system is low on swap space.
++
+. Verify that your `fdi.iso` file is created:
++
+[options="nowrap" subs="+quotes"]
+----
+# ls *.iso -h
+----
+
+When you create the `.iso` file, you can boot the `.iso` file over a network or locally. Complete one of the following procedures.
+
+.To boot the iso file over a network:
+
+. To extract the initial ramdisk and kernel files from the `.iso` file over a network, enter the following command:
++
+[options="nowrap" subs="+quotes"]
+----
+# discovery-iso-to-pxe fdi.iso
+----
++
+. Create a directory to store your boot files:
++
+[options="nowrap" subs="+quotes"]
+----
+# mkdir /var/lib/tftpboot/boot/_myimage_
+----
++
+. Copy the `initrd0.img` and `vmlinuz0` files to your new directory.
+. Edit the `KERNEL` and `APPEND` entries in the `/var/lib/tftpboot/pxelinux.cfg` file to add the information about your own initial ramdisk and kernel files.
+
+.To boot the iso file locally:
+
+If you want to create a hybrid `.iso` file for booting locally, complete the following steps:
+
+. To convert the `.iso` file to an `.iso` hybrid file for PXE provisioning, enter the following command:
++
+[options="nowrap" subs="+quotes"]
+----
+# isohybrid --partok fdi.iso
+----
++
+If you have `grub2` packages installed, you can also use the following command to install a `grub2` bootloader:
++
+[options="nowrap" subs="+quotes"]
+----
+# isohybrid --partok --uefi fdi.iso
+----
++
+. To add `md5` checksum to the `.iso` file so it can pass installation media validation tests in {Project}, enter the following command:
++
+[options="nowrap" subs="+quotes"]
+----
+# implantisomd5 fdi.iso
+----

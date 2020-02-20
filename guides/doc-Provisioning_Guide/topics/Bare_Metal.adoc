@@ -7,16 +7,16 @@ Unattended Provisioning::
 New hosts are identified by a MAC address and {ProjectServer} provisions the host using a PXE boot process.
 
 Unattended Provisioning with Discovery::
-New hosts use PXE boot to load the {Project} Discovery service. This service identifies hardware information about the host and lists it as an available host to provision.
+New hosts use PXE boot to load the {Project} Discovery service. This service identifies hardware information about the host and lists it as an available host to provision. For more information, see xref:configuring-the-discovery-service[].
 
 PXE-less Provisioning::
 New hosts are provisioned with a boot disk or PXE-less discovery image that {ProjectServer} generates.
 
 PXE-less Provisioning with Discovery::
-New hosts use an ISO boot disk that loads the {Project} Discovery service. This service identifies hardware information about the host and lists it as an available host to provision.
+New hosts use an ISO boot disk that loads the {Project} Discovery service. This service identifies hardware information about the host and lists it as an available host to provision. For more information, see xref:implementing-pxe-less-discovery[].
 
 ifeval::["{build}" == "foreman"]
-NOTE: Discovery workflows are only available when Discovery plugin is installed.
+NOTE: Discovery work flows are only available when the Discovery plug-in is installed. For more information, see xref:configuring-the-discovery-service[].
 endif::[]
 
 .BIOS and UEFI Support
@@ -42,8 +42,13 @@ If you associate both PXELinux and PXEGrub2 templates, {ProjectX} can deploy con
 
 The requirements for bare metal provisioning include:
 
-  * A {SmartProxyServer} managing the network for bare metal hosts. For unattended provisioning and discovery-based provisioning, {ProjectServer} requires PXE server settings. For more information, see xref:Configuring_Networking[].
-  * A bare metal host or a blank VM.
+* A {SmartProxyServer} managing the network for bare metal hosts. For unattended provisioning and discovery-based provisioning, {ProjectServer} requires PXE server settings.
++
+For more information about networking requirements, see xref:Configuring_Networking[].
++
+For more information about the Discovery service, xref:configuring-the-discovery-service[].
++ 
+* A bare metal host or a blank VM.
 include::Common_Compute_Resource_Prereqs.adoc[]
 
 For information about the security token for unattended and PXE-less provisioning, see xref:Provisioning_Bare_Metal_Hosts-Security_Token_in_the_Boot_Process[].
@@ -105,7 +110,7 @@ When the installation completes, the host also registers to {ProjectServer} usin
 endif::[]
 
 ifeval::["{Build}" == "foreman"]
-If you use the Katello plugin, when the installation completes, the host also registers to {ProjectServer} using the activation key and installs the necessary configuration and management tools from the {ProjectName} Tools repository.
+If you use the Katello plug-in, when the installation completes, the host also registers to {ProjectServer} using the activation key and installs the necessary configuration and management tools from the {ProjectName} Tools repository.
 endif::[]
 
 .For CLI Users
@@ -125,272 +130,30 @@ Ensure the network interface options are set using the `hammer host interface up
 --primary true --provision true
 ----
 
-[[Provisioning_Bare_Metal_Hosts-Configuring_the_Discovery_Service]]
-=== Configuring the Discovery Service
-
-{ProjectName} provides a method to automatically detect hosts on a network that are not in your {Project} inventory. These hosts boot the discovery image that performs hardware detection and relays this information back to {ProjectServer}. This method creates a list of ready-to-provision hosts in {ProjectServer} without needing to enter the MAC address of each host.
-
-The Discovery service is enabled by default on {ProjectServer}. However, the default setting of the global templates is to boot from the local hard drive. To use discovery you must change the default entry in the template to discovery.
-
-image::PXE-mode.png[]
-
-To use {ProjectServer} to provide the Discovery image, install the following RPM packages:
-
-ifeval::["{build}" == "foreman"]
-* `tfm-rubygem-foreman_discovery`
-endif::[]
-* `foreman-discovery-image`
-* `rubygem-smart_proxy_discovery`
-
-The `tfm-rubygem-foreman_discovery` package contains the {Project} plugin to handle discovered nodes, connections, and necessary database structures, and API.
-
-The `foreman-discovery-image` package installs the Discovery ISO to the `/usr/share/foreman-discovery-image/` directory and also creates a PXE boot image from this ISO using the `livecd-iso-to-pxeboot` tool. The tool saves this PXE boot image in the `/var/lib/tftpboot/boot` directory.
-
-The `rubygem-smart_proxy_discovery` package configures a {SmartProxyServer}, such as {ProjectServer}'s integrated {SmartProxy}, to act as a proxy for the Discovery service.
-
-When the installation completes, you can view the new menu option by navigating to *Hosts* > *Discovered Hosts*.
-
-==== Enabling Discovery service on a {SmartProxyServer}
-
-Complete the following procedure to enable the Discovery service on a {SmartProxyServer}.
-
-. Enter the following commands on the {SmartProxyServer}:
-+
-----
-# yum install foreman-discovery-image rubygem-smart_proxy_discovery
-----
-+
-----
-# foreman-maintain service restart
-----
-. In the {Project} web UI, navigate to *Infrastructure* > *{SmartProxy}*.
-
-. Click the {SmartProxyServer} and select *Refresh* from the *Actions* list. Locate *Discovery* in the list of features to confirm the Discovery service is now running.
-
-.Subnets
-
-All subnets with discoverable hosts require an appropriate {SmartProxyServer} selected to provide the Discovery service.
-
-To check this, navigate to *Infrastructure* > *{SmartProxies}* and verify if the {SmartProxyServer} that you want to use lists the Discovery feature. If not, click *Refresh features*.
-
-In the {Project} web UI, navigate to *Infrastructure* > *Subnets*, select a subnet, click the {SmartProxies} tab, and select the *Discovery Proxy* that you want to use. Perform this for each appropriate subnet.
-
-==== Provisioning Template PXELinux Discovery Snippet
-
-For BIOS provisioning, the `PXELinux global default` template in the *Hosts* > *Provisioning Templates* window contains the snippet `pxelinux_discovery`. The snippet has the following lines:
-
-[options="nowrap" subs="+quotes"]
-----
-LABEL discovery
-  MENU LABEL Foreman Discovery Image
-  KERNEL boot/fdi-image/vmlinuz0
-  APPEND initrd=boot/fdi-image/initrd0.img rootflags=loop root=live:/fdi.iso rootfstype=auto ro rd.live.image acpi=force rd.luks=0 rd.md=0 rd.dm=0 rd.lvm=0 rd.bootif=0 rd.neednet=0 nomodeset proxy.url=<%= foreman_server_url %> proxy.type=foreman
-  IPAPPEND 2
-----
-
-The `KERNEL` and `APPEND` options boot the Discovery image and ramdisk. The `APPEND` option contains a `proxy.url` parameter, with the `foreman_server_url` macro as its argument. This macro resolves to the full URL of {ProjectServer}.
-
-For UEFI provisioning, the `PXEgrub2 global default` template in the *Hosts* > *Provisioning Templates* window contains the snippet `pxegrub2_discovery`:
-
-[options="nowrap" subs="+quotes"]
-----
-menuentry 'Foreman Discovery Image' --id discovery {
-  linuxefi boot/fdi-image/vmlinuz0 rootflags=loop root=live:/fdi.iso rootfstype=auto ro rd.live.image acpi=force rd.luks=0 rd.md=0 rd.dm=0 rd.lvm=0 rd.bootif=0 rd.neednet=0 nomodeset proxy.url=<%= foreman_server_url %> proxy.type=foreman BOOTIF=01-$mac
-  initrdefi boot/fdi-image/initrd0.img
-}
-----
-
-To use a {SmartProxy} to proxy the discovery steps, edit `/var/lib/tftpboot/pxelinux.cfg/default` or `/var/lib/tftpboot/grub2/grub.cfg` and change the URL to the FQDN of the {SmartProxyServer} you want to use.
-
-The global template is available on {ProjectServer} and all {SmartProxies} that have the TFTP feature enabled.
-
-==== Changing Templates and Snippets
-
-To use a template, in the {Project} web UI, navigate to *Administer* > *Settings* and click the *Provisioning* tab and set the templates that you want to use.
-
-Templates and snippets are locked to prevent changes. If you want to edit a template or snippet, clone it, save it with a unique name, and then edit the clone.
-
-When you change the template or a snippet it includes, the changes must be propagated to {ProjectServer}'s default PXE template. Navigate to *Hosts* > *Provisioning Templates* and click *Build PXE Default*. This refreshes the default PXE template on {ProjectServer}.
-
-.The proxy.url argument
-During the {Project} installation process, if you use the default option `--enable-foreman-plugin-discovery`, you can edit the `proxy.url` argument in the template to set the URL of {SmartProxyServer} that provides the discovery service. You can change the `proxy.url` argument to the IP address or FQDN of another provisioning {SmartProxy} that you want to use, but ensure that you append the port number, for example, `9090`.
-If you use an alternative port number with the `--foreman-proxy-ssl-port` option during {Project} installation, you must add that port number. You can also edit the `proxy.url` argument to use a {Project} IP address or FQDN so that the discovered hosts communicate directly with {ProjectServer}.
-
-.The proxy.type argument
-If you use a {SmartProxyServer} FQDN for the `proxy.url` argument, ensure that you set the `proxy.type` argument to `proxy`. If you use a {Project} FQDN, update the `proxy.type` argument to `foreman`.
-
-[options="nowrap" subs="+quotes,attributes"]
-----
-proxy.url=https://_{smartproxy-example-com}_:{smartproxy_port} proxy.type=proxy
-----
-
-ifeval::["{build}" == "foreman"]
-[NOTE]
-For katello scenario deployment, use port 9090.
-endif::[]
-
-.Rendering the {SmartProxy}'s Host Name
-{ProjectX} deploys the same template to all TFTP {SmartProxies} and there is no variable or macro available to render the {SmartProxy}'s host name. The hard-coded `proxy.url` does not not work with two or more TFTP {SmartProxies}. As a workaround, every time you click *Build PXE Defaults*, edit the configuration file in the TFTP directory using SSH, or use a common DNS alias for appropriate subnets.
-
-.Setting Discovery Service as Default
-
-For both BIOS and UEFI, to set the Discovery service as the default service that boots for hosts that are not present in your current {Project} inventory, complete the following steps:
-
-. In the {Project} web UI, navigate to *Administer* > *Settings* and click the *Provisioning* tab.
-. For the *Default PXE global template entry*, in the *Value* column, enter `discovery`.
-
-.Tagged VLAN Provisioning
-
-If you want to use tagged VLAN provisioning, and you want the discovery service to send a discovery request, add the following information to the `KERNEL` option in the discovery template:
-
-[options="nowrap" subs="+quotes"]
-----
-fdi.vlan.primary=_example_VLAN_ID_
-----
-
-.Testing
-
-Test the Discovery service and boot a blank bare metal host on the 192.168.140.0/24 network. A boot menu has two options:
-
-  - `local`, which boots from the hard disk
-  - `discovery`, which boots to the Discovery service
-
-Select `discovery` to boot the Discovery image. After a few minutes, the Discovery image completes booting and a status screen is displayed.
-
-In the {Project} web UI, navigate to *Hosts* > *Discovered hosts* and view the newly discovered host. The discovered hosts automatically define their host name based on their MAC address. For example, {Project} sets a discovered host with a MAC address of ab:cd:ef:12:34:56 to have `macabcdef123456` as the host name. You can change this host name when provisioning the host.
-
-==== Automatic Contexts for Discovered Hosts
-
-{ProjectServer} assigns organization and location to discovered hosts according to the following sequence of rules:
-
-. If a discovered host uses a subnet defined in {Project}, the host uses the first organization and location associated with the subnet.
-. If the `discovery_organization` or `discovery_location` fact values are set, the discovered host uses these fact values as an organization and location. To set these fact values, navigate to *Administer* > *Settings* > *Discovered*, and add these facts to the *Default organization* and *Default location* fields. Ensure that the discovered host's subnet also belongs to the organization and location set by the fact, otherwise  {Project} refuses to set it for security reasons.
-. If none of the previous conditions exists, {Project} assigns the first Organization and Location ordered by name.
-
-You can change the organization or location using the bulk actions menu of the *Discovered hosts* page. Select the discovered hosts to modify and select *Assign Organization* or *Assign Location* from the *Select Action* menu.
-
-Note that the `foreman_organization` and `foreman_location` facts are no longer valid values for assigning context for discovered hosts. You still can use these facts to configure the host for Puppet runs. To do this, navigate to *Administer* > *Settings* > *Puppet* section and add the `foreman_organization` and `foreman_location` facts to the *Default organization* and *Default location* fields.
-
-[[Provisioning_Bare_Metal_Hosts-Creating_New_Hosts_from_Discovered_Hosts]]
-=== Creating Hosts from Discovered Hosts
-
-Provisioning discovered hosts follows a provisioning process that is similar to PXE provisioning. The main difference is that instead of manually entering the host's MAC address, you can select the host to provision from the list of discovered hosts.
-
-.Procedure
-
-To create a host from a discovered host, complete the following steps:
-
-. In the {Project} web UI, navigate to *Hosts* > *Discovered host*. Select the host you want to use and click *Provision* to the right of the list.
-. Select from one of the two following options:
-* To provision a host from a host group, select a host group, organization, and location, and then click *Create Host*.
-* To provision a host with further customization, click *Customize Host* and enter the additional details you want to specify for the new host.
-. Verify that the fields are populated with values. Note in particular:
-+
-* The *Name* from the *Host* tab becomes the *DNS name*.
-* {ProjectServer} automatically assigns an IP address for the new host.
-* {ProjectServer} automatically populates the MAC address from the Discovery results.
-+
-. Ensure that {ProjectServer} automatically selects the *Managed*, *Primary*, and *Provision* options for the first interface on the host. If not, select them.
-. Click the *Operating System* tab, and verify that all fields contain values. Confirm each aspect of the operating system.
-. Click *Resolve* in *Provisioning template* to check the new host can identify the right provisioning templates to use.
-+
-For more information about associating provisioning templates, see xref:Configuring_Provisioning_Resources-Creating_Provisioning_Templates[].
-. Click *Submit* to save the host details.
-
-When the host provisioning is complete, the discovered host becomes a content host. To view the host, navigate to *Hosts* > *Content Hosts*.
-
-.For CLI Users
-
-. Identify the discovered host to use for provisioning:
-+
-----
-# hammer discovery list
-----
-
-. Select a host and provision it using a host group. Set a new host name with the `--new-name` option:
-+
-[options="nowrap" subs="+quotes"]
-----
-# hammer discovery provision --name "_host_name_" \
---new-name "_new_host_name_" --organization "_My_Organization_" \
---location "_My_Location_" --hostgroup "_My_Host_Group_" --build true \
---enabled true --managed true
-----
-+
-This removes the host from the discovered host listing and creates a host entry with the provisioning settings. The Discovery image automatically resets the host so that it can boot to PXE. The host detects the DHCP service on {ProjectServer}'s integrated {SmartProxy} and starts installing the operating system. The rest of the process is identical to normal PXE workflow described in xref:Provisioning_Bare_Metal_Hosts-Creating_New_Hosts_with_Unattended_Provisioning[].
-
-[[Provisioning_Bare_Metal_Hosts-Creating_Discovery_Rules]]
-=== Creating Discovery Rules
-
-As a method of automating the provisioning process for discovered hosts, {ProjectNameX} provides a feature to create discovery rules. These rules define how discovered hosts automatically provision themselves, based on the assigned host group. For example, you can automatically provision hosts with a high CPU count as hypervisors. Likewise, you can provision hosts with large hard disks as storage servers.
-
-.NIC Considerations
-Auto provisioning does not currently allow configuring NICs; all systems are being provisioned with the NIC configuration that was detected during discovery. However, you can set the NIC in {provision-script} (scriplet), via script, or using configuration management later on.
-
-.Procedure
-
-To create a rule, complete the following steps:
-
-. In the {Project} web UI, navigate to *Configure* > *Discovery rules*. Select *Create Rule* and enter the following details:
-. In the *Name* field, enter a name for the rule.
-. In the *Search* field, enter the rules to determine whether to provision a host. This field provides suggestions for values you enter and allows operators for multiple rules. For example: `cpu_count  > 8`.
-. From the *Host Group* list, select the host group to use as a template for this host.
-. In the *Hostname* field, enter the pattern to determine host names for multiple hosts. This uses the same ERB syntax that provisioning templates use. The host name can use the `@host` attribute for host-specific values and the `rand` function for a random number.
-+
-* `myhost-<%= rand(99999) %>`
-* `abc-<%= @host.facts['bios_vendor'] %>-<%= rand(99999) %>`
-* `xyz-<%= @host.hostgroup.name %>`
-* `srv-<%= @host.discovery_rule.name %>`
-* `server-<%= @host.ip.gsub('.','-') +  '-' + @host.hostgroup.subnet.name %>`
-+
-When creating host name patterns, ensure the resulting host names are unique, do not start with numbers, and do not contain underscores or dots. A good approach is to use unique information provided by Facter, such as the MAC address, BIOS, or serial ID.
-+
-. In the *Hosts limit* field, enter the maximum hosts you can provision with the rule. Enter `0` for unlimited.
-. In the *Priority* field, enter a number to set the precedence the rule has over other rules. Rules with lower values have a higher priority.
-. From the *Enabled* list, select whether you want to enable the rule.
-. To set a different provisioning context for the rule, click the *Organizations* and *Locations* tabs and select the contexts you want to use.
-. Click *Submit* to save your rule.
-. Navigate to *Hosts* > *Discovered Host* and select one of the following two options:
-+
-* From the *Discovered hosts* list on the right, select *Auto-Provision* to automatically provisions a single host.
-* On the upper right of the window, click *Auto-Provision All* to automatically provisions all hosts.
-
-.For CLI Users
-
-Create the rule with the `hammer discovery-rule create` command:
-
-[options="nowrap" subs="+quotes"]
-----
-# hammer discovery-rule create --name "Hypervisor" \
---search "cpu_count  > 8" --hostgroup "_My_Host_Group_" \
---hostname "hypervisor-<%= rand(99999) %>" \
---hosts-limit 5 --priority 5 --enabled true
-----
-
-Automatically provision a host with the `hammer discovery auto-provision` command:
-
-----
-# hammer discovery auto-provision --name "macabcdef123456"
-----
-
 [[Provisioning_Bare_Metal_Hosts-Creating_New_Hosts_with_PXE-less_Provisioning]]
 === Creating Hosts with PXE-less Provisioning
 
-Some hardware does not provide a PXE boot interface. {ProjectNameX} provides a PXE-less discovery service that operates without PXE-based services, such as DHCP and TFTP. In {Project}, you can provision a host without PXE boot. This is also known as PXE-less provisioning and involves generating a boot ISO that hosts can use. Using this ISO, the host can connect to {ProjectServer}, boot the installation media, and install the operating system.
+Some hardware does not provide a PXE boot interface. In {Project}, you can provision a host without PXE boot. This is also known as PXE-less provisioning and involves generating a boot ISO that hosts can use. Using this ISO, the host can connect to {ProjectServer}, boot the installation media, and install the operating system.
+
+{Project} also provides a PXE-less discovery service that operates without PXE-based services, such as DHCP and TFTP. For more information, see xref:implementing-pxe-less-discovery[].
 
 .Boot ISO Types
 
 There are four types of boot ISOs:
 
-*Host image* - A boot ISO for the specific host. This image contains only the boot files that are necessary to access the installation media on {ProjectServer}. The user defines the subnet data in {Project} and the image is created with static networking.
+Host image::
+A boot ISO for the specific host. This image contains only the boot files that are necessary to access the installation media on {ProjectServer}. The user defines the subnet data in {Project} and the image is created with static networking.
 
-*Full host image* - A boot ISO that contains the kernel and initial RAM disk image for the specific host. This image is useful if the host fails to chainload correctly. The provisioning template still downloads from {ProjectServer}.
+Full host image::
+A boot ISO that contains the kernel and initial RAM disk image for the specific host. This image is useful if the host fails to chainload correctly. The provisioning template still downloads from {ProjectServer}.
 
-*Generic image* - A boot ISO that is not associated with a specific host. The ISO sends the host's MAC address to {ProjectServer}, which matches it against the host entry. The image does not store IP address details, and requires access to a DHCP server on the network to bootstrap. This image is also available from the `/bootdisk/disks/generic` URL on your {ProjectServer}, for example, `https://{foreman-example-com}/bootdisk/disks/generic`.
+Generic image::
+A boot ISO that is not associated with a specific host. The ISO sends the host's MAC address to {ProjectServer}, which matches it against the host entry. The image does not store IP address details, and requires access to a DHCP server on the network to bootstrap. This image is also available from the `/bootdisk/disks/generic` URL on your {ProjectServer}, for example, `https://{foreman-example-com}/bootdisk/disks/generic`.
 
-*Subnet image* - A boot ISO that is similar to the generic image but is configured with the address of a {SmartProxyServer}. This image is generic to all hosts with a provisioning NIC on the same subnet.
+Subnet image::
+A boot ISO that is similar to the generic image but is configured with the address of a {SmartProxyServer}. This image is generic to all hosts with a provisioning NIC on the same subnet.
 
-*Host image* and *Full host image* contain provisioning token, therefore the generated image has limited lifespan. For more information about configuring security tokens, read xref:Provisioning_Bare_Metal_Hosts-Security_Token_in_the_Boot_Process[].
+*Host image* and *Full host image* contain provisioning tokens, therefore the generated image has limited lifespan. For more information about configuring security tokens, read xref:Provisioning_Bare_Metal_Hosts-Security_Token_in_the_Boot_Process[].
 
 [NOTE]
 ifeval::["{build}" == "satellite"]
@@ -493,113 +256,6 @@ ifeval::["{build}" == "satellite"]
 When the installation completes, the host also registers to {ProjectServer} using the activation key and installs the necessary configuration and management tools from the *{ProjectName} Tools* repository.
 endif::[]
 
-[[Provisioning_Bare_Metal_Hosts-Implementing_PXE-less_Discovery]]
-=== Implementing PXE-less Discovery
-
-{ProjectNameX} provides a PXE-less Discovery service that operates without the need for PXE-based services (DHCP and TFTP). You accomplish this using {ProjectServer}'s Discovery image. Once a discovered node is scheduled for installation, it uses `kexec` command to reload Linux kernel with OS installer without rebooting the node.
-
-ifeval::["{build}" == "satellite"]
-[NOTE]
-Discovery `kexec` is a Technology Preview feature.
-endif::[]
-
-image::PXEless-mode.png[]
-
-If you have not yet installed the Discovery service or image, follow the _"Installation"_ section in xref:Provisioning_Bare_Metal_Hosts-Configuring_the_Discovery_Service[].
-
-The ISO for the Discovery service resides at `/usr/share/foreman-discovery-image/` and is installed using the `foreman-discovery-image` package.
-
-.Attended Use
-
-This ISO acts as bootable media. Copy this media to either a CD, DVD, or a USB stick. For example, to copy to a USB stick at `/dev/sdb`:
-
-[options="nowrap" subs="+quotes"]
-----
-# dd bs=4M \
-if=/usr/share/foreman-discovery-image/foreman-discovery-image-3.4.4-5.iso \
-of=/dev/sdb
-----
-
-Insert the Discovery boot media into a bare metal host, start the host, and boot from the media. The Discovery Image displays an option for either *Manual network setup* or *Discovery with DHCP*:
-
-  - If selecting *Manual network setup*, the Discovery image requests a set of network options. This includes the primary network interface that connects to {ProjectServer}. This Discovery image also asks for network interface configuration options, such as an *IPv4 Address*, *IPv4 Gateway*, and an *IPv4 DNS* server.
-
-+
-After entering these details, select *Next*.
-  - If selecting *Discovery with DHCP*, the Discovery image requests only the primary network interface that connects to {ProjectServer}. It attempts to automatically configure the network interface using a DHCP server, such as one that a {SmartProxyServer} provides.
-
-After the primary interface configuration, the Discovery image requests the *Server URL*, which is the URL of {ProjectServer} or {SmartProxyServer} offering the Discovery service. For example, to use the integrated {SmartProxy} on {ProjectServer}, use the following URL:
-
-`https://{foreman-example-com}:{smartproxy_port}`
-
-Set the *Connection type* to `Proxy`, then select *Next*.
-
-The Discovery image also provides a set of fields to input *Custom facts* for the Facter tool to relay back to {ProjectServer}. These are entered in a *name*-*value* format. Provide any custom facts you require and select *Confirm* to continue.
-
-The {Project} reports a successful communication with {ProjectServer}'s Discovery service. Navigate to *Hosts* > *Discovered Hosts* and view the newly discovered host.
-
-For more information about provisioning discovered hosts, see xref:Provisioning_Bare_Metal_Hosts-Creating_New_Hosts_from_Discovered_Hosts[].
-
-.Unattended Use and Customization
-
-It is possible to create a customized Discovery ISO, which automates the process of configuring the image after booting. The Discovery image uses a Linux kernel for the operating system, which means you pass kernel parameters to the configure the image's operating system. These kernel parameters include:
-
-proxy.url::
-  The URL of the {SmartProxyServer} providing the Discovery service.
-
-proxy.type::
-  The proxy type. This is usually set to `proxy` to connect to {SmartProxyServer}. This parameter also supports a legacy `foreman` option, where communication goes directly to {ProjectServer} instead of a {SmartProxyServer}.
-
-fdi.pxmac::
-  The MAC address of the primary interface in the format of `AA:BB:CC:DD:EE:FF`. This is the interface you aim to use for communicating with {SmartProxyServer}. In automated mode, the first NIC (using network identifiers in alphabetical order) with a link is used. In semi-automated mode, a screen appears and requests you to select the correct interface.
-
-fdi.pxip, fdi.pxgw, fdi.pxdns::
-  Manually configures IP address (`fdi.pxip`), the gateway (`fdi.pxgw`), and the DNS (`fdi.pxdns`) for the primary network interface. If your omit these parameters, the image uses DHCP to configure the network interface.
-
-fdi.pxfactname1, fdi.pxfactname2 ... fdi.pxfactnameN::
-  Allows you to specify custom fact names.
-
-fdi.pxfactvalue1, fdi.pxfactvalue2 ... fdi.pxfactvalueN::
-  The values for each custom fact. Each value corresponds to a fact name. For example, `fdi.pxfactvalue1` sets the value for the fact named with `fdi.pxfactname1`.
-
-fdi.pxauto::
-  To set automatic or semi-automatic mode. If set to 0, the image uses semi-automatic mode, which allows you to confirm your choices through a set of dialog options. If set to 1, the image uses automatic mode and proceeds without any confirmation.
-
-{ProjectServer} also provides a tool (`discovery-remaster`) in the `foreman-discovery-image` package. This tool remasters the image to include these kernel parameters. To remaster the image, run the `discovery-remaster` tool. For example:
-
-[options="nowrap" subs="+quotes,attributes"]
-----
-# discovery-remaster ~/iso/foreman-discovery-image-3.4.4-5.iso \
-"fdi.pxip=192.168.140.20/24 fdi.pxgw=192.168.140.1 \
-fdi.pxdns=192.168.140.2 proxy.url=https://_{foreman-example-com}_:{smartproxy_port} \
-proxy.type=proxy fdi.pxfactname1=customhostname \
-fdi.pxfactvalue1=myhost fdi.pxmac=52:54:00:be:8e:8c fdi.pxauto=1"
-----
-
-The tool creates a new ISO file in the same directory as the original discovery image. In this scenario, it saves in the `/usr/share/foreman-discovery-image/` directory.
-
-Copy this media to either a CD, DVD, or a USB stick. For example, to copy to a USB stick at `/dev/sdb`:
-
-[options="nowrap" subs="+quotes"]
-----
-# dd bs=4M \
-if=/usr/share/foreman-discovery-image/foreman-discovery-image-3.4.4-5.iso \
-of=/dev/sdb
-----
-
-Insert the Discovery boot media into a bare metal host, start the host, and boot from the media.
-
-For more information about provisioning discovered hosts, see xref:Provisioning_Bare_Metal_Hosts-Creating_New_Hosts_from_Discovered_Hosts[].
-
-.Final Notes
-
-The host needs to resolve to the following provisioning templates:
-
-  - *kexec Template:* `Discovery Red Hat kexec`
-  - *provision Template:* `{Project} Kickstart Default`
-
-For more information about associating provisioning templates, see xref:Configuring_Provisioning_Resources-Creating_Provisioning_Templates[].
-
 [[Configuring_Provisioning_Resources-Creating_Provisioning_Templates-Deploying_SSH_Keys_during_Provisioning]]
 === Deploying SSH Keys during Provisioning
 
@@ -625,113 +281,3 @@ To deploy SSH keys during provisioning, complete the following steps:
 . Create a host that is associated with the provisioning template or rebuild a host using the OS associated with the modified template. For more information, see {BaseURL}/managing_hosts/#sect-{Project_Link}-Managing_Hosts-Managing_Hosts-Creating_a_Host[Creating a Host] in the _Managing Hosts_ guide.
 +
 The SSH keys of the *Owned by* user are added automatically when the `create_users` snippet is executed during the provisioning process. You can set *Owned by* to an individual user or a user group. If you set *Owned by* to a user group, the SSH keys of all users in the user group are added automatically.
-
-=== Building a {Project} Discovery Image
-
-Use this procedure to build a {Project} discovery image or rebuild an image if you change configuration files.
-
-Do not use this procedure on your production {Project} or {SmartProxy}.
-
-.Prerequisites
-
-Install the `livecd-tools` package:
-
-----
-# yum install livecd-tools
-----
-
-Because Anaconda installer cannot publish through HTTPS, you must enable publishing through HTTP for Kickstart repositories:
-
-. In the {Project} web UI, navigate to *Content* > *Products* and in the *Products* window, click the *Repositories* tab.
-. Select a Kickstart repository and for the *Publish via HTTP*, option, click the *Edit* icon, select the check box, and click *Save*.
-. Repeat the previous steps for the {Project} repository.
-
-Note that publishing via HTTP does not apply to any Red{nbsp}Hat repositories.
-
-.Procedure
-
-To build the {Project} discovery image, complete the following steps:
-
-. Open the `/usr/share/foreman-discovery-image/foreman-discovery-image.ks` file for editing:
-+
-[options="nowrap" subs="+quotes"]
-----
-# vim /usr/share/foreman-discovery-image/foreman-discovery-image.ks
-----
-+
-. Replace `repo --name=rhel --baseurl=http://download/00000` with with your own repos for RHEL and {Project} with your repository URLs. To find the URLs, navigate to *Content* > *Products* and click the *Repositories* tab and copy the URL for both repositories into the file:
-+
-[options="nowrap" subs="+quotes,attributes"]
-----
-repo --name=rhel --baseurl=http://download/released/RHEL-7/7.4/Server/x86_64/os/
-repo --name=sat --baseurl=http://download2/nightly/Satellite/{ProductVersion}/candidate/latest-Satellite-{ProductVersion}-RHEL-7/compose/Satellite/x86_64/os/
-----
-+
-. Run the `livecd-creator` tool:
-+
-[options="nowrap" subs="+quotes"]
-----
-# livecd-creator --title="Discovery-Image" \
---compression-type=xz \
---cache=var/cache/build-fdi \
---config /usr/share/foreman-discovery-image/foreman-discovery-image.ks \
---fslabel fdi \
---tmpdir /var/tmp
-----
-+
-If you change `fdi` in the `--fslabel` option, you must also change the root label on the kernel command line when loading the image. `fdi` or the alternative name is appended to the `.iso` file that is created as part of this procedure. The PXE Discovery tool uses this name when converting from `.iso` to PXE.
-+
-Use `/var/tmp` because this process requires close to 3GB of space and `/tmp` might have problems if the system is low on swap space.
-+
-. Verify that your `fdi.iso` file is created:
-+
-[options="nowrap" subs="+quotes"]
-----
-# ls *.iso -h
-----
-
-When you create the `.iso` file, you can boot the `.iso` file over a network or locally. Complete one of the following procedures.
-
-.To boot the iso file over a network:
-
-. To extract the initial ramdisk and kernel files from the `.iso` file over a network, enter the following command:
-+
-[options="nowrap" subs="+quotes"]
-----
-# discovery-iso-to-pxe fdi.iso
-----
-+
-. Create a directory to store your boot files:
-+
-[options="nowrap" subs="+quotes"]
-----
-# mkdir /var/lib/tftpboot/boot/_myimage_
-----
-+
-. Copy the `initrd0.img` and `vmlinuz0` files to your new directory.
-. Edit the `KERNEL` and `APPEND` entries in the `/var/lib/tftpboot/pxelinux.cfg` file to add the information about your own initial ramdisk and kernel files.
-
-.To boot the iso file locally:
-
-If you want to create a hybrid `.iso` file for booting locally, complete the following steps:
-
-. To convert the `.iso` file to an `.iso` hybrid file for PXE provisioning, enter the following command:
-+
-[options="nowrap" subs="+quotes"]
-----
-# isohybrid --partok fdi.iso
-----
-+
-If you have `grub2` packages installed, you can also use the following command to install a `grub2` bootloader:
-+
-[options="nowrap" subs="+quotes"]
-----
-# isohybrid --partok --uefi fdi.iso
-----
-+
-. To add `md5` checksum to the `.iso` file so it can pass installation media validation tests in {Project}, enter the following command:
-+
-[options="nowrap" subs="+quotes"]
-----
-# implantisomd5 fdi.iso
-----
