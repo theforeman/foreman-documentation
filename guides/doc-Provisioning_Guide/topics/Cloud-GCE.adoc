@@ -20,8 +20,6 @@ Use this procedure to add a GCE connection to {Project} to be able to add images
 
 .Procedure
 
-To add a connection, complete the following steps:
-
 . In GCE, generate a service account key in JSON format and upload this file to the `/usr/share/foreman/` directory on {ProjectServer}.
 . On {ProjectServer}, configure permissions for the service account key to ensure that the file is readable by the `foreman` user:
 +
@@ -42,14 +40,37 @@ To add a connection, complete the following steps:
 . From the *Zone* list, select the GCE zone to use.
 . Click *Submit*.
 
+.For CLI Users
+
+. In GCE, generate a service account key in JSON format and upload this file to the `/usr/share/foreman/` directory on {ProjectServer}.
+
+. On {ProjectServer}, configure permissions for the service account key to ensure that the file is readable by the `foreman` user:
++
+[options="nowrap" subs="+quotes"]
+----
+# chown foreman /usr/share/foreman/_gce_key_.json
+# chmod 0600 /usr/share/foreman/_gce_key_.json
+# restorecon -vv /usr/share/foreman/_gce_key_.json
+----
+
+. Use the `hammer compute-resource create` command to add a GCE compute resource to {Project}.
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer compute-resource create --name '_gce_cr_' \
+--provider 'gce' \
+--project '_gce_project_id_' \
+--key-path '_gce_key_.json' \
+--zone '_us-west1-b_' \
+--email '_gce_email_'
+----
+
 [[Provisioning_Virtual_Machines_in_GCE-Adding_GCE_Images]]
 === Adding GCE Images to {ProjectServer}
 
 GCE uses image-based provisioning to create hosts. You must add image details to your {ProjectServer}.
 
 .Procedure
-
-To add an image, complete the following steps:
 
 . In the {Project} web UI, navigate to *Infrastructure* > *Compute Resources* and click the GCE connection.
 . Click the *Images* tab.
@@ -61,6 +82,20 @@ To add an image, complete the following steps:
 . From the *Image* list, select the GCE image.
 . Optional: If the selected image supports `cloud-init`, select the *User data* check box to enable user data input.
 . Click *Submit* to save the image details.
+
+.For CLI Users
+
+To add an image, enter the following command. With the `--username` option, specify a user other than `root`, because the `root` user cannot connect to a GCE instance using SSH keys. The username must begin with a letter and consist of lowercase letters and numbers.
+
+[options="nowrap" subs="+quotes"]
+----
+# hammer compute-resource image create --name '_gce_image_name_' \
+--compute-resource '_gce_cr_' \
+--operatingsystem-id 1 \
+--architecture-id 1 \
+--uuid '_378010XXXXXXXXX_' \
+--username '_admin_'
+----
 
 [[Provisioning_Virtual_Machines_in_GCE-Adding_GCE_Details_to_a_Compute_Profile]]
 === Adding GCE Details to a Compute Profile
@@ -79,6 +114,25 @@ To add details to a compute profile, complete the following steps:
 . Optional: Select the *Associate Ephemeral External IP* check box to assign a dynamic ephemeral IP address that {Project} uses to communicate with the host. This public IP address changes when you reboot the host. If you need a permanent IP address, reserve a static public IP address on GCE and attach it to the host.
 . In the *Size (GB)* field, enter the size of the storage to create on the host.
 . Click *Submit* to save the compute profile.
+
+.For CLI Users
+
+. Create a compute profile to use with the GCE compute resource:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer compute-profile create --name _gce_profile_
+----
+
+. Add GCE details to the compute profile. 
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer compute-profile values create --compute-profile _gce_profile_ \
+--compute-resource '_gce_cr_' \
+--volume "_size_gb=20_" \
+--compute-attributes "machine_type=f1-micro,associate_external_ip=true,network=default" 
+----
 
 [[Provisioning_Virtual_Machines_in_GCE-Creating_Image_Based_Hosts_on_GCE]]
 === Creating Image-Based Hosts on GCE
@@ -112,3 +166,25 @@ ifeval::["{build}" == "foreman"]
 . If you use the Katello plugin, click the *Parameters* tab and ensure that a parameter exists that provides an activation key. If not, add an activation key.
 endif::[]
 . Click *Submit* to save the host entry.
+
+.For CLI Users
+
+To create a host, enter the following command:
+
+[options="nowrap" subs="+quotes"]
+----
+# hammer host create --name "_GCE_VM_" \
+--organization "_Your_Organization_" \
+--location "_Your_Location_" \
+--compute-resource _gce_cr_name_
+--compute-profile "_gce_profile_name_" \
+--image _gce_image_name_
+--provision-method 'image' \
+--root-password _changeme_ \
+--interface "type=interface,domain_id=1,managed=true,primary=true,provision=true" \
+--puppet-environment-id _1_ \
+--puppet-ca-proxy-id _1_ \
+--puppet-proxy-id _1_ \
+--architecture _x86_64_ \
+--operatingsystem "_operating_system_name_" \
+----
