@@ -13,28 +13,28 @@ clean: all-clean
 
 all-html:
 	for DIR in $(GUIDES) ; do \
-		pushd "$$DIR" ; \
-		$(MAKE) html ; \
+		pushd "$$DIR" && \
+		$(MAKE) html && \
 		popd ; \
 	done
 
 all-pdf:
 	for DIR in $(GUIDES) ; do \
-		pushd "$$DIR" ; \
-		$(MAKE) pdf ; \
+		pushd "$$DIR" && \
+		$(MAKE) pdf && \
 		popd ; \
 	done
 
 all-linkchecker:
 	for DIR in $(GUIDES) ; do \
-		pushd "$$DIR" ; \
-		$(MAKE) linkchecker ; \
+		pushd "$$DIR" && \
+		$(MAKE) linkchecker && \
 		popd ; \
 	done
 
 all-clean:
 	for DIR in $(GUIDES) ; do \
-		pushd "$$DIR" ; \
-		$(MAKE) clean ; \
+		pushd "$$DIR" && \
+		$(MAKE) clean && \
 		popd ; \
 	done
