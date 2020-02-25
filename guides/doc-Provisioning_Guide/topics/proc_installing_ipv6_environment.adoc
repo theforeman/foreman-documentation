@@ -1,0 +1,203 @@
+= Installing IPv6 environment
+
+{Project} allows provisioning of {RHEL} 8 or newer over IPv6 provisioning networks. Although provisioning templates which ship with {Project} include IPv6 support for PXE and HTTP (iPXE) scenarios, the only tested and certified workflow is UEFI HTTP Boot with unmanaged DHCPv6 server which is described in this chapter.
+
+== Limitations
+
+DHCP server in {RHEL} (ISC DHCP) does not provide an integration API for managing IPv6 records, therefore {SmartProxy} DHCP plugin that would provide DHCP management of IPv6 subnets does not exist. In this scenario, DHCP IPv6 must be deployed as a separate (unmanaged) service to boostrap client nodes into grub2 which then configures IPv6 networking either using DHCPv6 or via static IPv6 address.
+
+== Requirements
+
+ifeval::["{build}" == "satellite"]
+{SmartProxy} must be installed on {RHEL} version 7.9 or higher.
++
+{Project} or {SmartProxy} can be only installed on IPv6-only systems, dual-stack is known to work but not supported.
+endif::[]
+
+ifeval::["{build}" != "satellite"]
+{SmartProxy} must be installed on a system with grub2 version 2.05 or higher or system with fixes for HTTP Boot, for example CentOS version 7.9 or 8.3 or higher. For other operating systems, copy newest grub build to `/var/lib/tftpboot/grub2/grubx64.efi`.
+endif::[]
+
+The workflow requires {Project} deployment with IPv6 only networking, dual-stack setup has not been tested. In the examples below, IPv6 subnet `2001:db8::/64` is subject for provisioning and {ProjectServer} has IPv6 address `2001:db8::2`.
+
+[options="nowrap" subs="+quotes,attributes"]
+----
+# nmcli c add con-name eth0 type ethernet ifname eth0 \
+        ip6 2001:db8::2/64 gw6 2001:db8::1 \
+        ipv6.dns 2001:db8::1
+----
+
+Since clients which are booting from network cannot be identified by remote IPv6 address due to unmanaged DHCPv6 service, provisioning tokens must be enabled. To check that, go to Administer - Settings - Provisioning and check that Token duration is not set to zero.
+
+It is assumed, native IPv6 internet connectivity is availble. If not, it's recommended to configure a HTTP proxy in order to download RPM packages:
+
+ifeval::["{build}" == "satellite"]
+[options="nowrap" subs="+quotes,attributes"]
+----
+# cat /etc/rhsm/rhsm.conf
+proxy_hostname = myproxy.example.com
+proxy_port = 8080
+proxy_user = optional_proxy_username
+proxy_password = optional_proxy_password
+----
+endif::[]
+
+ifeval::["{build}" != "satellite"]
+----
+echo "proxy=http://[2001:db8::1]:8888" >> /etc/yum.conf
+----
+endif::[]
+
+== Configuring {Project} for UEFI HTTP Boot IPv6 provisioning
+
+To configure {Project} for UEFI HTTP Boot IPv6 provisioning, {SmartProxy} main HTTP endpoint must be enabled (the default port is 8000), TFTP and HTTP boot modules must be enabled as well. Discovery and DNS features can be optionally enabled however DHCP management must be either disabled in the installer or not used meaning that all IPv6 Subnets created in {Project} interface must have DHCP {SmartProxy} set to blank.
+
+[options="nowrap" subs="+quotes,attributes"]
+----
+foreman-installer \
+ --foreman-proxy-http true \
+ --foreman-proxy-httpboot true \
+ --foreman-proxy-tftp true \
+ --foreman-proxy-dhcp false \
+ --foreman-proxy-dns true \
+ --foreman-proxy-dns-zone "example.com" \
+ --foreman-proxy-dns-reverse "c.c.0.0.b.b.b.b.a.a.a.a.0.0.d.f.ip6.arpa"
+ ----
+
+NOTE: The following paragraph can be a module "How to set up HTTP proxy in {Project}" that can be reused across documents.
+
+If native IPv6 connectivity is not available, define HTTP proxy in {Project} and set it as the default proxy in settings.
+
+[options="nowrap" subs="+quotes,attributes"]
+----
+hammer http-proxy create --name "Default proxy" --url http://myproxy.example.com:8888 --organizations "Default Organization" --locations "Default Location"
+hammer settings set --name content_default_http_proxy --value "Default proxy"
+----
+
+NOTE: The following can be a module/procedure. We need to drop a note that this is only relevant when Katello is installed if upstream.
+
+Import a manifest and synchronize {RHEL} 8 kickstart repository.
+
+== Creating new IPv6 Subnet
+
+To create new IPv6 Subnet, go to Infrastructure - Subnets and create new entry:
+
+Protocol: IPv6
+Network Address: valid IPv6 address
+Network Prefix: valid prefix
+Primary DNS Server: must be valid IPv6 address of a DNS server
+
+IPAM modes:
+
+EUI-64 - IPv6 address is calculated from host provisioning interface MAC address
+Internal DB - IPv6 address is selected from a sequence of all available addresses from the subnet
+None - IPv6 address must be entered manually
+
+Boot mode can be set both to DHCP or static, keep in mind that external DHCPv6 server is deployed and when this option is set to static a DHCPv6 service must be deployed on the network for the initial HTTP UEFI bootstrap.
+
+NOTE: Primary DNS server must be present because some older versions of {RHEL} 8 do not correctly interpret DNS server coming from DHCPv6 response.
+
+To create a IPv6 subnet via hammer do:
+
+[options="nowrap" subs="+quotes,attributes"]
+----
+# hammer subnet create --name ipv6_subnet --network-type IPv6 --network 2001:db8:: --prefix 64 --tftp-id 1 --discovery-id 1 --httpboot-id 1 --template-id 1 --domains example.com
+----
+
+== Configuring external DHCPv6
+
+Both DHCPv6 and Router Advertisement services must be running on all provisioning networks. It can be installed on any host in the network, or on DHCP {SmartProxy}. {Project} currently does not manage DHCPv6 records, it is only used to bootstrap clients into installer.
+
+The DHCPv6 server must be configured to return `http://{smartproxy-example-com}:8000/EFI/grub2/grubx64.efi` URL to clients with vendor class string "HTTPClients". The URL must point to either {ProjectServer} or {SmartProxy} with TFTP and HTTPBoot features turned on. Example configuration for ISC DHCP server from {RHEL}:
+
+[options="nowrap" subs="+quotes,attributes"]
+----
+# cat /etc/dhcp/dhcpd6.conf
+default-lease-time 2592000;
+preferred-lifetime 604800;
+option dhcp-renewal-time 3600;
+option dhcp-rebinding-time 7200;
+allow leasequery;
+option dhcp6.info-refresh-time 21600;
+option dhcp6.vendor-class-identifier code 16 = string;
+option dhcp6.vendor-class code 16 = {integer 32, integer 16, string};
+option dhcp6.user-class code 15 = string;
+option dhcp6.bootfile-url code 59 = string;
+option dhcp6.client-arch-type code 61 = array of unsigned integer 16;
+
+subnet6 2001:db8::/64 {
+  range6 2001:db8::aaaa 2001:db8::ffff;
+  option dhcp6.name-servers 2001:db8::2;
+
+  if exists dhcp6.user-class and
+    substring(option dhcp6.user-class, 2, 4) = "iPXE" {
+    # iPXE script file location
+    option dhcp6.bootfile-url "http://{smartproxy-example-com}:8000/unattended/iPXE";
+  } else if option dhcp6.client-arch-type = 00:06 {
+    # UEFI x86 PXE/TFTP boot via IPv6
+    option dhcp6.bootfile-url "tftp://{smartproxy-example-com}:8000/ipxe32.efi";
+  } else if option dhcp6.client-arch-type = 00:07 {
+    # UEFI x86-64 PXE/TFTP boot via IPv6
+    option dhcp6.bootfile-url "tftp://{smartproxy-example-com}:8000/grub2/grubx64.efi";
+  } else if option dhcp6.client-arch-type = 00:0f {
+    # UEFI x86 HTTP boot via IPv6
+    option dhcp6.vendor-class 0 10 "HTTPClient";
+    option dhcp6.bootfile-url "http://{smartproxy-example-com}:8000/EFI/grub2/grubx64.efi";
+  } else if option dhcp6.client-arch-type = 00:10 {
+    # UEFI x86-64 HTTP boot via IPv6
+    option dhcp6.vendor-class 0 10 "HTTPClient";
+    option dhcp6.bootfile-url "http://{smartproxy-example-com}:8000/EFI/grub2/grubx64.efi";
+  } else {
+    # Support a hypothetical BIOS system that can PXE boot over IPv6
+    option dhcp6.bootfile-url "tftp://{smartproxy-example-com}:8000/undionly.kpxe";
+  }
+}
+----
+
+Example configuration for Router Advertisment server from {RHEL}:
+
+[options="nowrap" subs="+quotes,attributes"]
+----
+# cat /etc/radvd.conf
+interface eth0
+{
+        AdvSendAdvert on;
+        AdvManagedFlag on;
+        AdvOtherConfigFlag on;
+
+        prefix 2001:db8::/64
+        {
+                AdvAutonomous off;
+        };
+
+        RDNSS 2001:db8::2 {
+        };
+};
+----
+
+NOTE: The DNS server must resolve the hostname in bootfile URL, `{smartproxy-example-com}` in the example above. It must also match DNS server set in the Subnet.
+
+== Procedure: IPv6 UEFI HTTP Boot provisioning
+
+NOTE: The procedure is exactly same as creating a host for PXE, the difference is that IPv6 Subnet is selected and the PXE loader must be Grub2 HTTP UEFI or Grub2 HTTPS UEFI. SecureBoot is known to work, but unsupported. In order to use SecureBoot PXE loader option, {ProjectProxy} CA certificate must be enrolled into EFI firmware.
+
+Demo: https://community.theforeman.org/t/foreman-community-demo-74/17201
+
+== Troubleshooting Grub2
+
+NOTE: This can be moved where appropriate. Only show in upstream.
+
+When experiencing issues with grub2, it is recommended to test against latest build from Fedora. Replace `/var/lib/tftpboot/grub2/grubx64.efi` deployed by the {foreman-installer} with a version from Fedora stable release. The file can be copied from installed Fedora EFI system or extracted from `grub2-efi` RPM package:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# wget https://download.fedoraproject.org/pub/fedora/linux/releases/31/Server/x86_64/os/Packages/g/grub2-efi-x64-2.02-100.fc31.x86_64.rpm
+# rpm2cpio grub2-efi-x64-2.02-100.fc31.x86_64.rpm | cpio -idmv
+./boot/efi/EFI/fedora/fonts
+./boot/efi/EFI/fedora/grubx64.efi
+./boot/grub2/grubenv
+./boot/loader/entries
+./etc/grub2-efi.cfg
+# cp ./boot/efi/EFI/fedora/grubx64.efi /var/lib/tftpboot/grub2/grubx64.efi
+----
+
