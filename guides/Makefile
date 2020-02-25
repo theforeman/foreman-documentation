@@ -1,5 +1,5 @@
-SHELL=/bin/bash
-GUIDES=$(shell ls -d doc-*)
+SHELL := /bin/bash
+GUIDES = $(shell ls -d doc-*)
 
 all: html
 

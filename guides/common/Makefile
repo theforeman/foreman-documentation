@@ -1,3 +1,4 @@
+SHELL := /bin/bash
 BUILD = foreman
 BUILD_DIR = ../build
 COMMON_DIR = ../common
@@ -44,8 +45,8 @@ $(DEST_DIR)/$(BUILD).css: $(COMMON_DIR)/$(BUILD).css
 	cp $< $@
 
 $(IMAGES_TS): $(IMAGES)
-	cp $? $(IMAGES_DIR)
-	pushd $(IMAGES_DIR) && for IMG in *.*; do ln -s ../../images/$$IMG ../common/images/$$IMG; done && popd
+	cp $? $(IMAGES_DIR)/
+	pushd "$(IMAGES_DIR)" && for IMG in *.*; do ln -s ../../images/$$IMG ../common/images/$$IMG; done && popd
 	touch $(IMAGES_TS)
 
 $(DEST_HTML): $(SOURCES)
