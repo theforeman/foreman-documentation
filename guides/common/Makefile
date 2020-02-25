@@ -26,8 +26,7 @@ html: prepare $(DEST_DIR)/$(BUILD).css $(IMAGES_TS) $(DEST_HTML)
 pdf: prepare $(DEST_PDF)
 
 prepare:
-	@mkdir -p $(BUILD_DIR)
-	@mkdir -p $(DEST_DIR) $(IMAGES_DIR)
+	@mkdir -p $(BUILD_DIR) $(DEST_DIR) $(IMAGES_DIR) $(IMAGES_DIR) $(DEST_DIR)/common/images
 
 clean:
 	@rm -rf "$(DEST_DIR)" "$(DEST_PDF)"
@@ -46,6 +45,7 @@ $(DEST_DIR)/$(BUILD).css: $(COMMON_DIR)/$(BUILD).css
 
 $(IMAGES_TS): $(IMAGES)
 	cp $? $(IMAGES_DIR)
+	pushd $(IMAGES_DIR) && for IMG in *.*; do ln -s ../../images/$$IMG ../common/images/$$IMG; done && popd
 	touch $(IMAGES_TS)
 
 $(DEST_HTML): $(SOURCES)
