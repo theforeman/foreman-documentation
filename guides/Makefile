@@ -1,5 +1,5 @@
 SHELL=/bin/bash
-GUIDES=doc-Provisioning_Guide doc-Installing_Capsule_Server doc-Installing_Satellite_Server_Connected doc-Installing_Satellite_Server_Disconnected
+GUIDES=$(shell ls -d doc-*)
 
 all: html
 
