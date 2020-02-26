@@ -26,10 +26,14 @@ You must assign every host that is managed by {Project} to a domain. Using the d
 Subnet::
 You must assign every host managed by {Project} to a subnet. Using subnets, {Project} can then manage IPv4 reservations. If there are no reservation integrations, you still must create and associate at least one subnet. When you manage a subnet in {Project}, you cannot create DHCP records for that subnet outside of {Project}. In {Project}, you can use IP Address Management (IPAM) to manage IP addresses with one of the following options:
 +
-* *DHCP*: the DHCP {SmartProxy} manages the assignment of IP addresses by finding the next available IP address starting from the first. Before assigning an IP address, {SmartProxy} sends an ICMP and TCP ping to verify whether the IP address is in use.
-* *Internal DB*: {Project} manages a list of available IP addresses in the PostgreSQL database. {Project} assigns the IP addresses automatically.
-* *Random DB*: {Project} manages a list of available IP addresses in the PostgreSQL database, but randomizes the results to avoid IPv4 race conditions.
+* *DHCP*: the DHCP {SmartProxy} manages the assignment of IP addresses by finding the next available IP address starting from the first address of the range skipping all addresses that are reserved. Before assigning an IP address, {SmartProxy} sends an ICMP and TCP ping to perform a brief check whether the IP address is in use. This check will not work for hosts which are turned off, so the DHCP option can be only used for subnets which are in full {Project} control without any hosts created externally. {SmartProxy} DHCP module retains offered IP addresses for short period of time to prevent collisions during concurrent access, therefore temporary "holes" in the IP range can exist.
+* *Internal DB*: {Project} finds next available IP address from the Subnet range excluding all IP addresses from the {Project} database in sequence. Primary source of data is the database, not DHCP reservations. This IPAM is not safe when multiple hosts are being created in parallel, in that case use *DHCP* or *Random DB* IPAM instead.
+* *Random DB*: {Project} finds next available IP address from the Subnet range excluding all IP addresses from the {Project} database randomly. Primary source of data is the database, not DHCP reservations. This IPAM is safe to use with concurrent host creation as IP addresses are returned in random order minimizing chance of a conflict.
+* *EUI-64*: Extended Unique Identifier (EUI) 64bit IPv6 address generation, as per RFC2373, is obtained through the 48-bit MAC address.
+* *External IPAM*: Delegate IPAM to an external system through {SmartProxy} feature. {Project} currently does not ship with any external IPAM implementations, several plugins are in development.
 * *None*: IP address for each host must be entered manually.
++
+Options DHCP, Internal DB and Random DB can lead to DHCP conflicts on subnets with records created externally. These subnets must be under exclusive {Project} control.
 +
 For more information about adding a subnet, see xref:Configuring_Networking-Adding_a_Subnet_to_the_Satellite_Server[].
 
