@@ -1,0 +1,141 @@
+[id="configuring-dynamic-dns-update-with-tsig-authentication_{context}"]
+
+= Configuring Dynamic DNS Update with TSIG Authentication
+
+You can configure an IdM server to use the secret key transaction authentication for DNS (TSIG) technology that uses the `rndc.key` key file for authentication. The TSIG protocol is defined in https://tools.ietf.org/html/rfc2845[RFC2845].
+
+
+.Prerequisites
+Before configuring dynamic DNS update with TSIG authentication, ensure that the following conditions are met:
+
+* You must ensure the IdM server is deployed and the host-based firewall is configured correctly. For more information, see https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Linux_Domain_Identity_Authentication_and_Policy_Guide/installing-ipa.html#prereq-ports[Port Requirements] in the _Linux Domain Identity, Authentication, and Policy Guide_.
+* You must obtain `root` user access on the IdM server.
+* You must confirm whether {ProjectServer} or {SmartProxyServer} is configured to provide DNS service for your deployment.
+* You must configure DNS, DHCP and TFTP services on the base operating system of either the {Project} or {SmartProxy} that is managing the DNS service for your deployment.
+* You must create a backup of the answer file. You can use the backup to restore the answer file to its original state if it becomes corrupted. For more information, see {BaseURL}installing_satellite_server_from_a_connected_network/installing_satellite_server#specifying_installation_options[Specifying Installation Options].
+
+.Procedure
+To configure dynamic DNS update with TSIG authentication, complete the following steps:
+
+.Enabling External Updates to the DNS Zone in the IdM Server
+
+. On the IdM Server, add the following to the top of the `/etc/named.conf` file:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+########################################################################
+include "/etc/rndc.key";
+controls  {
+inet _IdM_Server_IP_Address_ port 953 allow { _Satellite_IP_Address_; } keys { "rndc-key"; };
+};
+########################################################################
+----
+
+. Reload the `named` service to make the changes take effect:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# systemctl reload named
+----
+
+. In the IdM web UI, navigate to *Network Services* > *DNS* > *DNS Zones* and click the name of the zone. In the *Settings* tab, apply the following changes:
+
+.. Add the following in the `BIND update policy` box:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+grant "rndc-key" zonesub ANY;
+----
+
+.. Set *Dynamic update* to *True*.
+
+.. Click *Update* to save the changes.
+
+
+. Copy the `/etc/rndc.key` file from the IdM server to the base operating system of your {ProjectServer}. Enter the following command:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# scp /etc/rndc.key root@_satellite.example.com_:/etc/rndc.key
+----
+
+. To set the correct ownership, permissions, and SELinux context for the `rndc.key` file, enter the following command:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# restorecon -v /etc/rndc.key
+# chown -v root:named /etc/rndc.key
+# chmod -v 640 /etc/rndc.key
+----
+
+
+. On {ProjectServer}, enter the following `satellite-installer` command to configure {Project} to use the external DNS server:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {installer-scenario} \
+--foreman-proxy-dns=true \
+--foreman-proxy-dns-managed=false \
+--foreman-proxy-dns-provider=nsupdate \
+--foreman-proxy-dns-server="_IdM_Server_IP_Address_" \
+--foreman-proxy-keyfile=/etc/rndc.key \
+--foreman-proxy-dns-ttl=86400
+----
+
+.Testing External Updates to the DNS Zone in the IdM Server
+
+. Install the `bind-utils` utility:
++
+----
+# yum install bind-utils
+----
+
+. Ensure that the key in the `/etc/rndc.key` file on {ProjectServer} is the same key file that is used on the IdM server:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+key "rndc-key" {
+        algorithm hmac-md5;
+        secret "_secret-key_==";
+};
+----
+
+. On {ProjectServer}, create a test DNS entry for a host. For example, host `_test.example.com_` with an A record of `192.168.25.20` on the IdM server at `192.168.25.1`.
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# echo -e "server 192.168.25.1\n \
+update add _test.example.com_ 3600 IN A 192.168.25.20\n \
+send\n" | nsupdate -k /etc/rndc.key
+----
+
+. On {ProjectServer}, test the DNS entry:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# nslookup _test.example.com_ 192.168.25.1
+Server:		192.168.25.1
+Address:	192.168.25.1#53
+
+Name:	test.example.com
+Address: 192.168.25.20
+----
+
+. To view the entry in the IdM web UI, navigate to *Network Services* > *DNS* > *DNS Zones*. Click the name of the zone and search for the host by name.
+
+. If resolved successfully, remove the test DNS entry:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# echo -e "server 192.168.25.1\n \
+update delete _test.example.com_ 3600 IN A 192.168.25.20\n \
+send\n" | nsupdate -k /etc/rndc.key
+----
+
+. Confirm that the DNS entry was removed:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# nslookup _test.example.com_ 192.168.25.1
+----
+The above `nslookup` command fails and returns the `SERVFAIL` error message if the record was successfully deleted.
