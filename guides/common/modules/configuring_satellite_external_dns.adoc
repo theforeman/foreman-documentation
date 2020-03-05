@@ -17,9 +17,15 @@ The following example configures a domain `virtual.lan` as one subnet 192.168.38
 +
 [options="nowrap"]
 ----
-// Check for Debian
+
+ifeval::["{build}" != "foreman-deb"]
 # cat /etc/named.conf
 include "/etc/rndc.key";
+endif::[]
+ifeval::["{build}" == "foreman-deb"]
+# cat /etc/bind/named.conf
+include "/etc/bind/rndc.key";
+endif::[]
 
 controls  {
     inet 127.0.0.1 port 953 allow { 127.0.0.1; } keys { "capsule"; };
@@ -27,11 +33,22 @@ controls  {
 };
 
 options  {
+ifeval::["{build}" != "foreman-deb"]
     directory "/var/named";
     forwarders { 8.8.8.8; 8.8.4.4; };
+endif::[]
+ifeval::["{build}" == "foreman-deb"]
+directory "/var/cache/bind";
+forwarders { 8.8.8.8; 8.8.4.4; };
+endif::[]
 };
 
+ifeval::["{build}" != "foreman-deb"]
 include "/etc/named.rfc1912.zones";
+endif::[]
+ifeval::["{build}" == "foreman-deb"]
+include "/etc/bind/named.rfc1912.zones";
+endif::[]
 
 zone "38.168.192.in-addr.arpa" IN {
     type master;
@@ -61,6 +78,7 @@ The `inet` line must be entered as one line in the configuration file.
 +
 This command can take a long time to complete.
 
+ifeval::["{build}" != "foreman-deb"]
 . Copy and paste the output from the key section into a separate file called `/etc/rndc.key`.
 +
 [options="nowrap"]
@@ -71,15 +89,44 @@ key "capsule" {
         secret "GeBbgGoLedEAAwNQPtPh3zP56MJbkwM84UJDtaUS9mw=";
 };
 ----
+endif::[]
+ifeval::["{build}" != "foreman-deb"]
+. Copy and paste the output from the key section into a separate file called `/etc/rndc.key`.
++
+[options="nowrap"]
+----
+# cat /etc/rndc.key
+key "capsule" {
+        algorithm hmac-sha256;
+        secret "GeBbgGoLedEAAwNQPtPh3zP56MJbkwM84UJDtaUS9mw=";
+};
+----
+endif::[]
+ifeval::["{build}" == "foreman-deb"]
+. Copy and paste the output from the key section into a separate file called `/etc/bind/rndc.key`.
++
+[options="nowrap"]
+----
+# cat /etc/bind/rndc.key
+key "capsule" {
+        algorithm hmac-sha256;
+        secret "GeBbgGoLedEAAwNQPtPh3zP56MJbkwM84UJDtaUS9mw=";
+};
+----
+endif::[]
 +
 IMPORTANT: This is the key used to change DNS server configuration. Only the root user should read and write to it.
 
 . Create zone files.
 +
-[options="nowrap"]
+[options="nowrap" subs="+quotes,attributes"]
 ----
-//Check for Debian
+ifeval::["{build}" != "foreman-deb"]
 # cat /var/named/dynamic/virtual.lan
+endif::[]
+ifeval::["{build}" == "foreman-deb"]
+# cat /var/cache/bind/dynamic/virtual.lan
+endif::[]
 $ORIGIN .
 $TTL 10800      ; 3 hours
 virtual.lan             IN SOA  service.virtual.lan. root.virtual.lan. (
@@ -98,10 +145,14 @@ service                 A       192.168.38.2
 
 . Create the reverse zone file.
 +
-[options="nowrap"]
+[options="nowrap" subs="+quotes,attributes"]
 ----
-//Check for Debian
+ifeval::["{build}" != "foreman-deb"]
 # cat /var/named/dynamic/38.168.192-rev
+endif::[]
+ifeval::["{build}" == "foreman-deb"]
+# cat /var/cache/bind/dynamic/38.168.192-rev
+endif::[]
 $ORIGIN .
 $TTL 10800      ; 3 hours
 38.168.192.in-addr.arpa IN SOA  service.virtual.lan. root.38.168.192.in-addr.arpa. (
