@@ -20,7 +20,7 @@ If AsciiDoctor is not available in repositories or under RVM/rbenv, simply insta
 
   	gem install asciidoctor asciidoctor-pdf --pre
 
-Then simply run `make` or `make html` which builds HTML artifacts. Generating PDF output is slow, therefore command `make pdf` must be used separately. To make both formats in one command, use `make html pdf`. To build downstream version perform `make BUILD=satellite`.
+Then simply run `make` or `make html` which builds HTML artifacts. Generating PDF output is slow, therefore command `make pdf` must be used separately. To make both formats in one command, use `make html pdf`. 
 
 Few additional make targets are available on the guide level. To quickly build HTML version and open new tab in a browser do:
 
@@ -30,6 +30,18 @@ Few additional make targets are available on the guide level. To quickly build H
 Similarly, to build and open PDF version do:
 
     make open-pdf
+    
+Currently there are three different versions 
+
+
+`make BUILD=foreman` - This is the default that is generated with `make html` or `pdf`.
+
+
+`make BUILD=satellite` - This generates a downstream preview of the guide.
+
+
+`make BUILD=foreman-deb` - This generates  a version for Foreman installed on Debian.
+
 
 The final artifacts can be found in the ./build subdirectory. Note that GNU Makefile tracks changes and only builds relevant artifacts, to trigger full rebuild use `make clean` to delete build directory and start over.
 
