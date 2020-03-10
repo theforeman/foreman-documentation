@@ -30,6 +30,55 @@ To configure your {SmartProxyServer} with a custom SSL certificate, complete the
 <3> Path to the Certificate Authority bundle.
 +
 If the command is successful, it returns two `{certs-generate}` commands, one of which you must use to generate the certificate archive file for your {SmartProxyServer}.
+ifeval::["{build}" == "satellite"]
++
+.Example output of `katello-certs-check`
+[options="nowrap", subs="+quotes,attributes"]
+----
+Validation succeeded.
+
+To use them inside a NEW $CAPSULE, run this command:
+
+capsule-certs-generate --foreman-proxy-fqdn "$CAPSULE" \
+    --certs-tar  "~/$CAPSULE-certs.tar" \
+    --server-cert "_/root/{smart-proxy-context}_cert/{smart-proxy-context}_cert.pem_" \
+    --server-key "_/root/{smart-proxy-context}_cert/{smart-proxy-context}_cert_key.pem_" \
+    --server-ca-cert "_/root/{smart-proxy-context}_cert/ca_cert_bundle.pem_" \
+
+To use them inside an EXISTING $CAPSULE, run this command INSTEAD:
+
+  capsule-certs-generate --foreman-proxy-fqdn "$CAPSULE" \
+    --certs-tar  "~/$CAPSULE-certs.tar" \
+    --server-cert "_/root/{smart-proxy-context}_cert/{smart-proxy-context}_cert.pem_" \
+    --server-key "_/root/{smart-proxy-context}_cert/{smart-proxy-context}_cert_key.pem_" \
+    --server-ca-cert "_/root/{smart-proxy-context}_cert/ca_cert_bundle.pem_" \
+    --certs-update-server
+----
+endif::[]
+
+ifeval::["{build}" != "satellite"]
++
+.Example output of `katello-certs-check`
+[options="nowrap", subs="+quotes,attributes"]
+----
+Validation succeeded.
+
+To use them inside a NEW $FOREMAN_PROXY, run this command:
+  foreman-proxy-certs-generate --foreman-proxy-fqdn "$FOREMAN_PROXY" \
+    --certs-tar  "~$FOREMAN_PROXY-certs.tar" \
+    --server-cert "_/root/{smart-proxy-context}_cert/{smart-proxy-context}_cert.pem_" \
+    --server-key "_/root/{smart-proxy-context}_cert/{smart-proxy-context}_cert_key.pem_" \
+    --server-ca-cert "_/root/{smart-proxy-context}_cert/ca_cert_bundle.pem_" \
+
+To use them inside an EXISTING $FOREMAN_PROXY, run this command INSTEAD:
+  foreman-proxy-certs-generate --foreman-proxy-fqdn "\$FOREMAN_PROXY" \
+    --certs-tar  "~/$FOREMAN_PROXY-certs.tar" \
+    --server-cert "_/root/{smart-proxy-context}_cert/{smart-proxy-context}_cert.pem_" \
+    --server-key "_/root/{smart-proxy-context}_cert/{smart-proxy-context}_cert_key.pem_" \
+    --server-ca-cert "_/root/{smart-proxy-context}_cert/ca_cert_bundle.pem_" \
+    --certs-update-server
+----
+endif::[]
 
 . On {ProjectServer}, from the output of the `katello-certs-check` command, depending on your requirements, enter the `{certs-generate}` command that generates a certificate for a new or existing {SmartProxy}.
 +
@@ -41,6 +90,45 @@ In this command, change `$FOREMAN_PROXY` to the FQDN of your {SmartProxyServer}.
 endif::[]
 +
 . Retain a copy of the `{foreman-installer}` command that the `{certs-generate}` command returns for deploying the certificate to your {SmartProxyServer}.
++
+ifeval::["{build}" == "satellite"]
+.Example output of `{certs-generate}`
+[options="nowrap", subs="+quotes,attributes"]
+----
+_output omitted_
+satellite-installer \
+--scenario capsule \
+--certs-tar-file                              "_/root/capsule_certs.tar_"\
+--foreman-proxy-content-parent-fqdn           "_satellite.example.com_"\
+--foreman-proxy-register-in-foreman           "true"\
+--foreman-proxy-foreman-base-url              "https://_satellite.example.com_"\
+--foreman-proxy-trusted-hosts                 "_satellite.example.com_"\
+--foreman-proxy-trusted-hosts                 "_capsule.example.com_"\
+--foreman-proxy-oauth-consumer-key            "_s97QxvUAgFNAQZNGg4F9zLq2biDsxM7f_"\
+--foreman-proxy-oauth-consumer-secret         "_6bpzAdMpRAfYaVZtaepYetomgBVQ6ehY_"\
+--puppet-server-foreman-url                   "https://_satellite.example.com_"
+----
+endif::[]
+
+ifeval::["{build}" != "satellite"]
+.Example output of `{certs-generate}`
+[options="nowrap", subs="+quotes,attributes"]
+----
+_output omitted_
+foreman-installer \
+--scenario foreman-proxy-content \
+--certs-tar-file                              "_/root/{smart-proxy-context}_certs.tar_"\
+--foreman-proxy-content-parent-fqdn           "_{foreman-example-com}_"\
+--foreman-proxy-register-in-foreman           "true"\
+--foreman-proxy-foreman-base-url              "https://_{foreman-example-com}_"\
+--foreman-proxy-trusted-hosts                 "_{foreman-example-com}_"\
+--foreman-proxy-trusted-hosts                 "_{smartproxy-example-com}_"\
+--foreman-proxy-oauth-consumer-key            "_s97QxvUAgFNAQZNGg4F9zLq2biDsxM7f_"\
+--foreman-proxy-oauth-consumer-secret         "_6bpzAdMpRAfYaVZtaepYetomgBVQ6ehY_"\
+--puppet-server-foreman-url                   "https://_{foreman-example-com}_"
+----
+endif::[]
+
 . On {ProjectServer}, copy the certificate archive file to your {SmartProxyServer}:
 +
 [options="nowrap", subs="+quotes,attributes"]
