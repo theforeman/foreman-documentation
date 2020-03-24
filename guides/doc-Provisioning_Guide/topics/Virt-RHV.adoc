@@ -196,95 +196,37 @@ To add {OVirt} details to a compute profile, complete the following steps:
 --compute-attributes "cluster=Default,cores=1,memory=1073741824,start=true""
 ----
 
-[[Provisioning_Virtual_Machines_in_Red_Hat_Virtualization-Creating_Hosts_on_a_Red_Hat_Virtualization_Server]]
-=== Creating Network-Based Hosts on a {OVirt} Server
-
-In {Project}, you can create {OVirt} hosts over a network connection or from an existing image.
-
-To create a host over a network, the new host must have access to either {ProjectServer}'s integrated {SmartProxy} or an external {SmartProxyServer} on a {OVirt} virtual network, so that the host has access to PXE provisioning services. The new host entry triggers the {OVirt} server to create the virtual machine. If the virtual machine detects the defined {SmartProxyServer} through the virtual network, the virtual machine boots to PXE and begins to install the chosen operating system.
-
-.DHCP conflicts
-If you use a virtual network on the {OVirt} server for provisioning, ensure to select one that does not provide DHCP assignments. This causes DHCP conflicts with {ProjectServer} when booting new hosts.
-
-When you create a host with an existing image, the new host entry triggers the {OVirt} server to create the virtual machine, using the pre-existing image as a basis for the new volume.
-
-.Procedure
-
-To create a host for {OVirt} Server, complete the following steps:
-
-. In the {Project} web UI, navigate to *Hosts* > *New Host*.
-. In the *Name* field, enter the name that you want to become the provisioned system's host name.
-. Click the *Organization* and *Location* tabs to ensure that the provisioning context is automatically set to the current context.
-. From the *Host Group* list, select the host group that you want to use to populate the form.
-. From the *Deploy on* list, select the {OVirt} connection.
-. From the *Compute Profile* list, select a profile to use to automatically populate virtual machine-based settings.
-. Click the *Interface* tab and click *Edit* on the host's interface.
-. Verify that the fields are automatically populated with values. Note in particular:
-+
-  * The *Name* from the *Host* tab becomes the *DNS name*.
-  * {ProjectServer} automatically assigns an IP address for the new host.
-+
-. Ensure that the *MAC address* field is blank. The {OVirt} server assigns one to the host.
-. Verify that the *Managed*, *Primary*, and *Provision* options are automatically selected for the first interface on the host. If not, select them.
-. In the interface window, ensure that the {OVirt}-specific fields are populated with settings from the compute profile. Modify these settings to suit your needs.
-. Click the *Operating System* tab, and confirm that all fields automatically contain values.
-. For network-based provisioning, ensure that the *Provisioning Method* is set to `Network Based`. For image-based provisioning, ensure that the *Provisioning Method* is set to `Image Based`.
-. Click *Resolve* in *Provisioning templates* to check the new host can identify the right provisioning templates to use.
-. Click the *Virtual Machine* tab and confirm that these settings are populated with details from the host group and compute profile. Modify these settings to suit your needs.
-ifeval::["{build}" == "foreman"]
-. If you use the Katello plugin, click the *Parameters* tab, and ensure that a parameter exists that provides an activation key. If not, add an activation key.
-endif::[]
-ifeval::["{build}" == "satellite"]
-. Click the *Parameters* tab, and ensure that a parameter exists that provides an activation key. If not, add an activation key.
-endif::[]
-. Click *Submit* to save the host entry.
-
-.For CLI Users
-
-To create a host with network-based provisioning, use the `hammer host create` command and include `--provision-method build`.
-
-[options="nowrap" subs="+quotes,attributes"]
-----
-# hammer host create --name "{OVirtShort}-test1" --organization "_My_Organization_" \
---location "New York" --hostgroup "Base" \
---compute-resource "__My_{OVirtShort}__" --provision-method build \
---build true --enabled true --managed true \
---interface "managed=true,primary=true,provision=true,compute_name=eth0,compute_network=satnetwork" \
---compute-attributes="cluster=Default,cores=1,memory=1073741824,start=true" \
---volume="size_gb=20G,storage_domain=Data,bootable=true"
-----
-
-To create a host with image-based provisioning, use the `hammer host create` command and include `--provision-method image`.
-
-[options="nowrap" subs="+quotes,attributes"]
-----
-# hammer host create --name "{OVirtShort}-test2" --organization "_My_Organization_" \
---location "New York" --hostgroup "Base" \
---compute-resource "__My_{OVirtShort}__" --provision-method image \
---image "_Test_RHV_Image_" --enabled true --managed true \
---interface "managed=true,primary=true,provision=true,compute_name=eth0,compute_network=satnetwork" \
---compute-attributes="cluster=Default,cores=1,memory=1073741824,start=true" \
---volume="size_gb=20G,storage_domain=Data,bootable=true"
-----
-
-For more information about additional host creation parameters for this compute resource, see xref:CLI_Params[].
-
 [[Provisioning_Virtual_Machines_in_Red_Hat_Virtualization-Provisioning-Using-the-Cloud-init-Template]]
 === Provisioning Using the Cloud-init Template
 
-With the {oVirt} compute resource, you can use a `cloud-init` template to configure the provisioned virtual machine. Using the `cloud-init` template avoids having to use any special configuration on the network, such as a managed DHCP and TFTP, to finish the installation of the virtual machine. This method does not require {Project} to connect to the provisioned virtual machine using SSH to run the finish script.
+With the {oVirt} compute resource, you can use `cloud-init` to configure the virtual machines that you provision. Using `cloud-init` avoids any special configuration on the network, such as a managed DHCP and TFTP, to finish the installation of the virtual machine. This method does not require {Project} to connect to the provisioned virtual machine using SSH to run the finish script.
 
 .Prerequisites
+
+You must prepare an image with `cloud-init` installed in {oVirt}, and then import the image to {Project} to use for provisioning.
+
+. In {oVirt}, create a virtual machine to use for image-based provisioning in {Project}
+. On the virtual machine, install `cloud-init` on this virtual machine:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+{package-install} cloud-init
+----
++
+. To the `/etc/cloud/cloud.cfg` file, add the following information:
++
+----
+datasource_list: ["NoCloud", "ConfigDrive"]
+----
++
+. In {oVirt}, create an image from this virtual machine.
+. Use the following procedure to add the image in {Project}: xref:Provisioning_Virtual_Machines_in_Red_Hat_Virtualization-Adding_Red_Hat_Virtualization_Images_on_the_Satellite_Server[]. Ensure that you select the *User Data* check box.
 ifeval::["{build}" == "foreman"]
-* You must enable the remote-execution plug-in to use this template.
++
+. You must enable the remote execution plug-in to use the 'cloud-init' template.
 endif::[]
-* Use the following procedure to add an image: xref:Provisioning_Virtual_Machines_in_Red_Hat_Virtualization-Adding_Red_Hat_Virtualization_Images_on_the_Satellite_Server[]. Ensure that you select the *User Data* check box.
-// Where does the user install the cloud-init package? 
-+
-----
-{packages-install} cloud-init
-----
-+
+
+.Procedure
 
 . In the {Project} web UI, navigate to *Hosts* > *Provisioning Templates*, and click *Create Template*.
 . In the *Name* field, enter a name for the template.
@@ -358,3 +300,78 @@ phone_home:
 . Navigate to *Hosts* > *Operating Systems*, and select the operating system you want to associate with the template.
 . Click the *Templates* tab, and from the *User data template* list, select the name of the new template.
 . Click *Submit*.
+
+You can use the xref:Provisioning_Virtual_Machines_in_Red_Hat_Virtualization-Creating_Hosts_on_a_Red_Hat_Virtualization_Server[] to provision hosts using the 'cloud-init` image and template.
+
+[[Provisioning_Virtual_Machines_in_Red_Hat_Virtualization-Creating_Hosts_on_a_Red_Hat_Virtualization_Server]]
+=== Creating Hosts on a {OVirt} Server
+
+In {Project}, you can create {OVirt} hosts over a network connection or from an existing image.
+
+To create a host over a network, the new host must have access to either {ProjectServer}'s integrated {SmartProxy} or an external {SmartProxyServer} on a {OVirt} virtual network, so that the host has access to PXE provisioning services. The new host entry triggers the {OVirt} server to create the virtual machine. If the virtual machine detects the defined {SmartProxyServer} through the virtual network, the virtual machine boots to PXE and begins to install the chosen operating system.
+
+.DHCP conflicts
+If you use a virtual network on the {OVirt} server for provisioning, ensure to select one that does not provide DHCP assignments. This causes DHCP conflicts with {ProjectServer} when booting new hosts.
+
+When you create a host with an existing image, the new host entry triggers the {OVirt} server to create the virtual machine, using the pre-existing image as a basis for the new volume.
+
+.Procedure
+
+To create a host for {OVirt} Server, complete the following steps:
+
+. In the {Project} web UI, navigate to *Hosts* > *New Host*.
+. In the *Name* field, enter the name that you want to become the provisioned system's host name.
+. Click the *Organization* and *Location* tabs to ensure that the provisioning context is automatically set to the current context.
+. From the *Host Group* list, select the host group that you want to use to populate the form.
+. From the *Deploy on* list, select the {OVirt} connection.
+. From the *Compute Profile* list, select a profile to use to automatically populate virtual machine-based settings.
+. Click the *Interface* tab and click *Edit* on the host's interface.
+. Verify that the fields are automatically populated with values. Note in particular:
++
+  * The *Name* from the *Host* tab becomes the *DNS name*.
+  * {ProjectServer} automatically assigns an IP address for the new host.
++
+. Ensure that the *MAC address* field is blank. The {OVirt} server assigns one to the host.
+. Verify that the *Managed*, *Primary*, and *Provision* options are automatically selected for the first interface on the host. If not, select them.
+. In the interface window, ensure that the {OVirt}-specific fields are populated with settings from the compute profile. Modify these settings to suit your needs.
+. Click the *Operating System* tab, and confirm that all fields automatically contain values.
+. For network-based provisioning, ensure that the *Provisioning Method* is set to `Network Based`. For image-based provisioning, ensure that the *Provisioning Method* is set to `Image Based`.
+. Click *Resolve* in *Provisioning templates* to check the new host can identify the right provisioning templates to use.
+. Click the *Virtual Machine* tab and confirm that these settings are populated with details from the host group and compute profile. Modify these settings to suit your needs.
+ifeval::["{build}" == "foreman"]
+. If you use the Katello plugin, click the *Parameters* tab, and ensure that a parameter exists that provides an activation key. If not, add an activation key.
+endif::[]
+ifeval::["{build}" == "satellite"]
+. Click the *Parameters* tab, and ensure that a parameter exists that provides an activation key. If not, add an activation key.
+endif::[]
+. Click *Submit* to save the host entry.
+
+.For CLI Users
+
+To create a host with network-based provisioning, use the `hammer host create` command and include `--provision-method build`.
+
+[options="nowrap" subs="+quotes,attributes"]
+----
+# hammer host create --name "{OVirtShort}-test1" --organization "_My_Organization_" \
+--location "New York" --hostgroup "Base" \
+--compute-resource "__My_{OVirtShort}__" --provision-method build \
+--build true --enabled true --managed true \
+--interface "managed=true,primary=true,provision=true,compute_name=eth0,compute_network=satnetwork" \
+--compute-attributes="cluster=Default,cores=1,memory=1073741824,start=true" \
+--volume="size_gb=20G,storage_domain=Data,bootable=true"
+----
+
+To create a host with image-based provisioning, use the `hammer host create` command and include `--provision-method image`.
+
+[options="nowrap" subs="+quotes,attributes"]
+----
+# hammer host create --name "{OVirtShort}-test2" --organization "_My_Organization_" \
+--location "New York" --hostgroup "Base" \
+--compute-resource "__My_{OVirtShort}__" --provision-method image \
+--image "_Test_RHV_Image_" --enabled true --managed true \
+--interface "managed=true,primary=true,provision=true,compute_name=eth0,compute_network=satnetwork" \
+--compute-attributes="cluster=Default,cores=1,memory=1073741824,start=true" \
+--volume="size_gb=20G,storage_domain=Data,bootable=true"
+----
+
+For more information about additional host creation parameters for this compute resource, see xref:CLI_Params[].
