@@ -1,0 +1,227 @@
+[[Importing_Custom_Content]]
+== Importing Custom Content
+
+This chapter outlines how you can import custom content of different types to Satellite. If you want to import ISOs, Puppet modules, or different content types to Satellite, it is done with largely the same procedures in this chapter.
+
+For example, you can use the following chapters for information on specific types of custom content but the underlying procedures are the same:
+
+* xref:Managing_OSTree_Content[]
+* xref:Managing_ISO_Images[]
+* xref:Managing_Custom_File_Type_Content[]
+* xref:Managing_Custom_Puppet_Content[]
+
+[[Using_Custom_Products_in_Satellite]]
+=== Using Custom Products in Satellite
+
+Both Red Hat content and custom content in Red Hat Satellite 6 have similarities:
+
+  - The relationship between a product and its repositories is the same and the repositories still require synchronization.
+  - Custom products require a subscription for clients to access, similar to subscriptions to Red Hat Products. Red Hat Satellite 6 creates a subscription for each custom product you create.
+
+For more information about creating and packaging RPMs, see the https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html-single/rpm_packaging_guide/[RPM Packaging Guide] in the Red{nbsp}Hat Enterprise Linux documentation.
+
+[[Importing_Custom_Content-Importing_Custom_SSL_Certificates]]
+=== Importing Custom SSL Certificates
+
+Before you create custom content, ensure that you import any Custom SSL certificates that you require.
+
+If you require SSL certificates and keys to download RPMs, you can add them to Satellite.
+
+. In the Satellite web UI, navigate to *Content* > *Content Credentials*. In the Content Credentials window, click *Create Content Credential*.
+. In the *Name* field, enter a name for your SSL certificate.
+. From the *Type* list, select *SSL Certificate*.
+. In the *Content Credentials Content* field, paste your SSL certificate, or click *Browse* to upload your SSL certificate.
+. Click *Save*.
+
+
+[[Importing_Custom_Content-Importing_a_Custom_GPG_Key]]
+=== Importing a Custom GPG Key
+
+Before you create custom content, ensure that you import any GPG keys that you require.
+
+.Prerequisites
+
+. Download a copy of the version specific repository package to your client system:
++
+[options="nowrap" subs="+quotes"]
+----
+$ wget _http://www.example.com/9.5/example-9.5-2.noarch.rpm_
+----
++
+. Extract the RPM file without installing it:
++
+[options="nowrap" subs="+quotes"]
+----
+$ rpm2cpio _example-9.5-2.noarch.rpm_ | cpio -idmv
+----
+
+The GPG key is located relative to the extraction at `etc/pki/rpm-gpg/RPM-GPG-KEY-_EXAMPLE-95_`.
+
+.Procedure
+
+To import a GPG key, complete the following procedure:
+
+. In the Satellite web UI, navigate to *Content* > *Content Credentials* and in the upper-right of the window, click *Create Content Credential*.
+. Enter the name of your repository and select *GPG Key* from the *Type* list.
+. Either paste the GPG key into the *Content Credential Contents* field, or click *Browse* and select the GPG key file that you want to import.
++
+If your custom repository contains content signed by multiple GPG keys, you must enter all required GPG keys in the *Content Credential Contents* field with new lines between each key, for example:
++
+----
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mQINBFy/HE4BEADttv2TCPzVrre+aJ9f5QsR6oWZMm7N5Lwxjm5x5zA9BLiPPGFN
+4aTUR/g+K1S0aqCU+ZS3Rnxb+6fnBxD+COH9kMqXHi3M5UNzbp5WhCdUpISXjjpU
+XIFFWBPuBfyr/FKRknFH15P+9kLZLxCpVZZLsweLWCuw+JKCMmnA
+=F6VG
+-----END PGP PUBLIC KEY BLOCK-----
+
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mQINBFw467UBEACmREzDeK/kuScCmfJfHJa0Wgh/2fbJLLt3KSvsgDhORIptf+PP
+OTFDlKuLkJx99ZYG5xMnBG47C7ByoMec1j94YeXczuBbynOyyPlvduma/zf8oB9e
+Wl5GnzcLGAnUSRamfqGUWcyMMinHHIKIc1X1P4I=
+=WPpI
+-----END PGP PUBLIC KEY BLOCK-----
+----
+. Click *Save*.
+
+.For CLI Users
+
+. Copy the GPG key to your Satellite Server:
++
+[options="nowrap" subs="+quotes"]
+----
+$ scp ~/etc/pki/rpm-gpg/RPM-GPG-KEY-_EXAMPLE-95_ root@satellite.example.com:~/.
+----
++
+. Upload the GPG key to Satellite:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer gpg create \
+--key ~/RPM-GPG-KEY-_EXAMPLE-95_ \
+--name "_My_Repository_" \
+--organization "_My_Organization_"
+----
+
+[[Importing_Custom_Content-Creating_a_Custom_Product]]
+=== Creating a Custom Product
+
+Use this procedure to create a custom product that you can then add repositories to.
+
+.Procedure
+
+To create a custom product, complete the following procedure:
+
+. In the Satellite web UI, navigate to *Content* > *Products*, click *Create Product*.
+. In the *Name* field, enter a name for the product. Red Hat Satellite 6 automatically completes the *Label* field based on what you have entered for *Name*.
+. Optional: From the *GPG Key* list, select the GPG key for the product.
+. Optional: From the *SSL CA Cert* list, select the SSL CA certificate for the product.
+. Optional: From the *SSL Client Cert* list, select the SSL client certificate for the product.
+. Optional: From the *SSL Client Key* list, select the SSL client key for the product.
+. Optional: From the *Sync Plan* list, select an existing sync plan or click *Create Sync Plan* and create a sync plan for your product requirements.
+. In the *Description* field, enter a description of the product.
+. Click *Save*.
+
+.For CLI Users
+
+To create the product, enter the following command:
+
+[options="nowrap" subs="+quotes"]
+----
+# hammer product create \
+--name "_My_Product_" \
+--sync-plan "_Example Plan_" \
+--description "_Content from My Repositories_" \
+--organization "_My_Organization_"
+----
+
+[[Importing_Custom_Content-Creating_a_Custom_RPM_Repository]]
+=== Adding a Custom RPM Repository
+
+Use this procedure to add a custom RPM repository in Satellite.
+
+The Products window in the Satellite web UI also provides a *Repo Discovery* function that finds all repositories from a URL and you can select which ones to add to your custom product. For example, you can use the *Repo Discovery* to search, for example, `http://yum.postgresql.org/9.5/redhat/` and list all repositories for different Red Hat Enterprise Linux versions and architectures. This helps users save time importing multiple repositories from a single source.
+
+.Support for Custom RPMs
+Red Hat does not support the upstream RPMs directly from third-party sites. These RPMs are used to demonstrate the synchronization process. For any issues with these RPMs, contact the third-party developers.
+
+.Procedure
+
+. In the Satellite web UI, navigate to *Content* > *Products* and select the product that you want to use, and then click *Create Repository*.
+. In the *Name* field, enter a name for the repository. Red Hat Satellite 6 automatically completes the *Label* field based on what you have entered for *Name*.
+. From the *Type* list, select the type of repository. You can select either a repository for RPM files (`yum`), Puppet modules (`puppet`), or Docker images (`docker`).
+. In the *URL* field, enter the URL of the external repository to use as a source.
+. From the *Download Policy* list, select the type of synchronization Satellite Server performs.
+. Ensure that the *Mirror on Sync* check box is selected. This ensures that the content that is no longer part of the upstream repository is removed during synchronization.
+. From the *Checksum* list, select the checksum type for the repository.
+. Optional: If you want, you can clear the *Publish via HTTP* check box to disable this repository from publishing through HTTP.
+. Optional: From the *GPG Key* list, select the GPG key for the product.
+. Click *Save*.
+
+If you want to perform an immediate synchronization, in your product window, click *Sync Now*.
+
+.For CLI Users
+
+. Enter the following command to create the repository:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer repository create \
+--name "_My_Repository_" \
+--content-type "yum" \
+--publish-via-http true \
+--url _http://yum.postgresql.org/9.5/redhat/rhel-7-x86_64/_ \
+--gpg-key "_My_Repository_" \
+--product "_My_Product_" \
+--organization "_My_Organization_"
+----
++
+. Synchronize the repository:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer repository synchronize \
+--name "_My_Repository_" \
+--product "_My Product_" \
+--organization "_My_Organization_"
+----
+
+[[uploading-content-to-a-custom-rpm-repository]]
+=== Uploading Content to a Custom RPM Repository
+
+You can upload individual RPMs and source RPMs to a custom RPM repository. You can upload RPMs using the Satellite web UI or the Hammer CLI. You must use the Hammer CLI to upload source RPMs.
+
+.Procedure
+
+. In the Satellite web UI, click *Content* > *Products*.
+. Click the name of the custom Product.
+. In the *Repositories* tab, click the name of the custom RPM repository.
+. Under *Upload Package*, click *Browse...* and select the RPM you want to upload.
+. Click *Upload*.
+
+To view all RPMs in this repository, click the number next to *Packages* under *Content Counts*.
+
+.For CLI Users
+
+* Enter the following command to upload an RPM:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# hammer repository upload-content \
+--id _repo_ID_ \
+--path __/path/to/example-package.rpm__
+----
+
+* Enter the following command to upload a source RPM:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# hammer repository upload-content \
+--content-type srpm \
+--id _repo_ID_ \
+--path __/path/to/example-package.src.rpm__
+----
++
+When the upload is complete, you can view information about a source RPM by using the commands `hammer srpm list` and `hammer srpm info --id _srpm_ID_`.
