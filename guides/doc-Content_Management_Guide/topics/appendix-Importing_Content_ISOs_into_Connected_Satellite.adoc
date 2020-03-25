@@ -1,0 +1,113 @@
+[appendix]
+[[Importing_Content_ISOs_into_Connected_Satellite]]
+== Importing Content ISOs into a Connected Satellite
+
+Even if Satellite Server can connect directly to the Red{nbsp}Hat Customer Portal, you can perform the initial synchronization from locally mounted content ISOs. When the initial synchronization is completed from the content ISOs, you can switch back to downloading content through the network connection. To accomplish this, download the Content ISOs for Red{nbsp}Hat Satellite from the Red{nbsp}Hat Customer Portal and import them into Satellite Server. For locations with bandwidth limitations, using an *On Demand* or *Background* download policy might be more efficient than downloading and importing Content ISOs.
+
+Note that if you synchronize a Red{nbsp}Hat Enterprise Linux ISO, all minor versions of Red{nbsp}Hat Enterprise Linux also synchronize. You require adequate storage on your Satellite to account for this.
+
+[IMPORTANT]
+This section is not required if your Satellite Server is connected to the Internet.
+
+This example shows how to perform the first synchronization of the Red{nbsp}Hat Enterprise Linux 7 repository from content ISOs.
+
+.Downloading the content ISOs from the Red{nbsp}Hat Customer Portal
+
+. In your browser, navigate to https://access.redhat.com/[Red Hat Customer Portal] and log in.
+
+. Click *DOWNLOADS*.
+
+. Select *Red Hat Satellite*.
+
+. Select the *Content ISOs* tab.
+
+. Search for the section required, in this example *Red{nbsp}Hat Enterprise Linux 7*.
+
+. Click the link for the product name to reveal the ISO files.
+
+. Using your browser, download the required ISOs to a location accessible by your browser. For example, to your workstation's `Downloads` directory.
+
+.Importing the Content ISOs
+
+. In a terminal connected to Satellite Server, create a directory to act as a temporary store for all of the required Satellite Content ISOs. This example uses `/tmp/isos/rhel7`:
++
+----
+# mkdir -p /tmp/isos/rhel7
+----
+
+. On your workstation, copy the ISO files to Satellite Server:
++
+[subs="+quotes"]
+----
+$ scp ~/Downloads/_iso_file_ root@satellite.example.com:/tmp/isos/rhel7
+----
+
+. On Satellite Server, create a directory to serve as a mount point for the ISOs:
++
+----
+# mkdir /mnt/iso
+----
+
+. Create a working directory to hold the contents of all the ISOs:
++
+----
+# mkdir /mnt/rhel7
+----
+
+. Mount and recursively copy the contents of the first ISO to the working directory:
++
+[subs="+quotes"]
+----
+# mount -o loop /tmp/isos/_iso_file_ /mnt/iso
+# cp -ruv /mnt/iso/* /mnt/rhel7/
+# umount /mnt/iso
+----
+
+. Repeat the above step for each ISO until you have copied all the data from the Content ISOs into `/mnt/rhel7`.
+
+. If required, remove the empty directory used as the mount point:
++
+----
+# rmdir /mnt/iso
+----
+
+. If required, remove the temporary working directory and its contents to regain the space:
++
+----
+# rm -rf /tmp/isos/
+----
+
+.Performing the Initial Synchronization
+
+. Set the owner and the SELinux context for the directory and its contents to be the same as `/var/lib/pulp`:
++
+----
+# chcon -R --reference /var/lib/pulp  /mnt/rhel7/
+# chown -R apache:apache /mnt/rhel7/
+----
+
+. Create or edit the `/etc/pulp/content/sources/conf.d/local.conf` file. Insert the following text into the file:
++
+----
+[rhel-7-server]
+enabled: 1
+priority: 0
+expires: 3d
+name: Red Hat Enterprise Linux 7 Server
+type: yum
+base_url: file:///mnt/rhel7/content/dist/rhel/server/7/7Server/x86_64/os/
+----
+The `base_url` path might differ in your content ISO. The directory specified in `base_url` must contain the `repodata` directory, otherwise the synchronization fails. To synchronize multiple repositories, create a separate entry for each of them in the configuration file `/etc/pulp/content/sources/conf.d/local.conf`.
+
+. In the Satellite web UI, navigate to *Content* > *Red{nbsp}Hat Repositories* and enable the following repository: *Red{nbsp}Hat Enterprise Linux 7 Server RPMs x86_64 Server*.
+
+. Under *Content* > *Sync Status* select the repository to be synchronized and click *Synchronize Now*.
+
+Note that there is no indication in the Satellite web UI of which source is being used. In case of problems with a local source, Satellite pulls content through the network. To monitor the process, enter the following command in a terminal (limited to Red{nbsp}Hat Enterprise Linux 7 base systems):
+----
+# journalctl -f -l SYSLOG_IDENTIFIER=pulp | grep -v worker[\-,\.]heartbeat
+----
+
+The above command displays interactive logs. First, Satellite Server connects to the Red{nbsp}Hat Customer Portal to download and process repository metadata. Then, the local repository is loaded. In case of any errors, cancel the synchronization in the Satellite web UI and verify your configuration.
+
+After successful synchronization you can detach the local source by removing its entry from `/etc/pulp/content/sources/conf.d/local.conf`.
