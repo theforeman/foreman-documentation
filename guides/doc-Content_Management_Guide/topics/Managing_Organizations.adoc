@@ -1,0 +1,178 @@
+[[Managing_Organizations]]
+== Managing Organizations
+
+Organizations divide Red Hat Satellite 6 resources into logical groups based on ownership, purpose, content, security level, or other divisions. You can create and manage multiple organizations through Red Hat Satellite 6, then divide and assign your Red Hat subscriptions to each individual organization. This provides a method of managing the content of several individual organizations under one management system. Here are some examples of organization management:
+
+Single Organization::
+  A small business with a simple system administration chain. In this case, you can create a single organization for the business and assign content to it.
+
+Multiple Organizations::
+  A large company that owns several smaller business units. For example, a company with separate system administration and software development groups. In this case, you can create organizations for the company and each of the business units it owns. This keeps the system infrastructure for each separate. You can then assign content to each organization based on its needs.
+
+External Organizations::
+  A company that manages external systems for other organizations. For example, a company offering cloud computing and web hosting resources to customers. In this case, you can create an organization for the company's own system infrastructure and then an organization for each external business. You can then assign content to each organization where necessary.
+
+A default installation of Red Hat Satellite 6 has a default organization called *Default_Organization*.
+
+.New Users
+If a new user is not assigned a default organization, their access is limited. To grant systems rights to users, assign them to a default organization. The next time the user logs on to Satellite, the user's account has the correct system rights.
+
+[[Managing_Organizations-Creating_an_Organization]]
+=== Creating an Organization
+
+Use this procedure to create an organization.
+
+.Procedure
+
+To create an organization, complete the following steps:
+
+. In the Satellite web UI, navigate to *Administer* > *Organizations*.
+. Click *New Organization*.
+. In the *Name* field, enter a name for the organization.
+. In the *Label* field, enter a unique identifier for the organization. This is used for creating and mapping certain assets, such as directories for content storage. Use letters, numbers, underscores, and dashes, but no spaces.
+. Optional: in the *Description* field, enter a description for the organization.
+. Click *Submit*.
+. If you have hosts with no organization assigned, select the hosts that you want to add to the organization, then click *Proceed to Edit*.
+. In the *Edit* page, assign the infrastructure resources that you want to add to the organization. This includes networking resources, installation media, kickstart templates, and other parameters. You can return to this page at any time by navigating to *Administer* > *Organizations* and then selecting an organization to edit.
+. Click *Submit*.
+
+.For CLI Users
+
+. To create an organization, enter the following command:
++
+[subs="+quotes"]
+----
+# hammer organization create \
+--name "_your_organization_name_" \
+--label "_your_organization_label_ \
+--description "_your_organization_description_"
+----
+
+. Optional: To edit an organization, enter the `hammer organization update` command. For example, the following command assigns a compute resource to the organization:
++
+[subs="+quotes"]
+----
+# hammer organization update \
+--name "_your_organization_name_" \
+--compute-resource-ids 1
+----
+
+[[Managing_Organizations-Setting_the_Organization_Context]]
+=== Setting the Organization Context
+
+An organization context defines the organization to use for a host and its associated resources.
+
+.Procedure
+
+The organization menu is the first menu item in the menu bar, on the upper left of the Satellite web UI. If you have not selected a current organization, the menu says *Any Organization*. Click the *Any Organization* button and select the organization to use.
+
+.For CLI Users
+
+While using the CLI, include either `--organization "_your_organization_name_"` or `--organization-label "_your_organization_label_"` as an option. For example:
+
+[subs="+quotes"]
+----
+# hammer subscription list --organization "Default_Organization"
+----
+
+This command outputs subscriptions allocated for the Default_Organization.
+
+[[Managing_Organizations-Creating_an_Organization_Debug_Certificate]]
+=== Creating an Organization Debug Certificate
+
+If you require a debug certificate for your organization, use the following procedure.
+
+.Procedure
+
+To create a debug certificate for an organization, complete the following steps:
+
+. In the Satellite web UI, navigate to *Administer* > *Organizations*.
+. Select an organization that you want to generate a debug certificate for.
+. Click *Generate and Download*.
+. Save the certificate file in a secure location.
+
+.Debug Certificates for Provisioning Templates
+Debug Certificates are automatically generated for provisioning template downloads if they do not already exist in the organization for which they are being downloaded.
+
+[[Managing_Organizations-Browsing_Repository_Content_Using_an_Organization_Debug_Certificate]]
+=== Browsing Repository Content Using an Organization Debug Certificate
+
+You can view an organization's repository content using a web browser or using the API if you have a debug certificate for that organization.
+
+.Prerequisites
+
+. Create and download an organization certificate as described in xref:Managing_Organizations-Creating_an_Organization_Debug_Certificate[].
+. Open the X.509 certificate, for example, for the default organization:
++
+----
+$ vi 'Default Organization-key-cert.pem'
+----
+. Copy the contents of the file from `-----BEGIN RSA PRIVATE KEY-----` to `-----END RSA PRIVATE KEY-----`, into a `key.pem` file.
+. Copy the contents of the file from `-----BEGIN CERTIFICATE-----` to `-----END CERTIFICATE-----`, into a `cert.pem` file.
+
+.Procedure
+
+To use a browser, you must first convert the X.509 certificate to a format your browser supports and then import the certificate.
+
+.For Firefox Users
+
+To use an organization debug certificate in Firefox, complete the following steps:
+
+. To create a PKCS12 format certificate, enter the following command:
++
+[subs="+quotes"]
+----
+$ openssl pkcs12 -keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES -export -in cert.pem -inkey key.pem -out _organization_label_.pfx -name _organization_name_
+----
++
+. In the Firefox browser, navigate to *Edit* > *Preferences* > *Advanced Tab*.
+. Select *View Certificates*, and click the *Your Certificates* tab.
+. Click *Import* and select the `.pfx` file to load.
+. In the address bar, enter a URL in the following format to browse for repositories:
++
+[subs="+quotes"]
+----
+http://_satellite.example.com_/pulp/repos/_organization_label_
+----
++
+Pulp uses the organization label, therefore, you must enter the organization label into the URL.
+
+.For CURL Users
+
+To use the organization debug certificate with CURL, enter the following command:
+[subs="+quotes,attributes"]
+----
+$ curl -k --cert cert.pem --key key.pem \
+http://_satellite.example.com_/pulp/repos/Default_Organization/Library/content/dist/rhel/server/7/7Server/x86_64/sat-tools/{ProductVersion}/os/
+----
+Ensure that the paths to `cert.pem` and `key.pem` are the correct absolute paths otherwise the command fails silently.
+
+[[Managing_Organizations-Deleting_an_Organization]]
+=== Deleting an Organization
+
+You can delete an organization if the organization is not associated with any life cycle environments or host groups. If there are any life cycle environments or host groups associated with the organization you are about to delete, remove them by navigating to *Administer* > *Organizations* and clicking the relevant organization. Do not delete the default organization created during installation because the default organization is a placeholder for any unassociated hosts in the Satellite environment. There must be at least one organization in the environment at any given time.
+
+.Procedure
+
+To delete an organization, complete the following steps:
+
+. In the Satellite web UI, navigate to *Administer* > *Organizations*.
+. From the list to the right of the name of the organization you want to delete, select *Delete*.
+. Click *OK* to delete the organization.
+
+.For CLI Users
+
+. Enter the following command to retrieve the ID of the organization that you want to delete:
++
+----
+# hammer organization list
+----
++
+From the output, note the ID of the organization that you want to delete.
++
+. Enter the following command to delete an organization:
++
+[subs="+quotes"]
+----
+# hammer organization delete --id _Organization_ID_
+----

@@ -1,0 +1,192 @@
+[[Managing_Custom_Puppet_Content]]
+== Managing Custom Puppet Content
+
+In Satellite, if you want to incorporate state configuration of hosts using Puppet modules, you can create a custom product with repositories for Puppet modules to achieve this.
+
+[[Importing_Custom_Content-Creating_a_Custom_Puppet_Repository]]
+=== Creating a Custom Puppet Repository
+
+The procedure for creating a custom Puppet module repository is the same as the procedure for creating any custom content, except that when you create the repository, you select the *puppet* type. You must create a product and then add a custom repository.
+
+.Procedure
+
+. In the Satellite web UI, navigate to *Content* > *Products*, and click the product that you want to use.
+. Click *Create Repository*.
+. In the *Name* field, enter a name for the repository. Red Hat Satellite 6 automatically completes the *Label* field based on what you have entered for *Name*.
+. From the *Type* list, select *puppet*.
+. In the *URL* field, enter the URL of the external repository to use as a source. You can use a repository source to synchronize your own Puppet modules.
+. Click *Save*.
+
+.For CLI Users
+
+. Enter the following command to create a Puppet module repository:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer repository create \
+--name "PostgreSQL Puppet Modules" \
+--content-type "puppet" \
+--product "PostgreSQL" \
+--organization "_My_Organization_"
+----
+
+
+[[Importing_Custom_Content-Managing_Puppet_Modules]]
+=== Managing Individual Puppet Modules
+
+If you want to create a custom product that contains both RPM content and a Puppet module to install and configure a server using the custom RPM content, use the procedure in xref:Importing_Custom_Content-Creating_a_Custom_Puppet_Repository[] and then use the following procedure to upload Puppet modules.
+
+.Support for Custom RPMs
+Red Hat does not support the modules from Puppet Forge. For any issues with these modules, contact the module developer.
+
+.Prerequisites
+
+. From the Puppet Forge website, download the module that you want to use, for example, https://forge.puppetlabs.com/puppetlabs/postgresql.
+. In your web browser, click *download latest tar.gz* to save to your local file system.
+
+.Procedure
+
+. In the Satellite web UI, navigate to *Content* > *Products* and select the product that contains the Puppet repository that you want to manage.
+. In the repository window, click the new Puppet repository, which displays the details page for that repository.
+. Navigate to the *Upload Puppet Module* area, click *Browse*, select the newly downloaded and extracted Puppet module, and click *Upload*.
+
+To manage and remove Puppet modules from a product, complete the following steps:
+
+. In the window for your Puppet Modules repository, navigate to the upper right of the window to the *Content Counts* area. In the *Puppet Modules* row, click the numerical value that is displayed for the Puppet Modules.
+. In the *Manage Puppet Modules* for your Puppet Module repository window, select the modules that you want to manage and then click *Select Action* and perform an action, or select *Remove Puppet Modules*.
+
+.For CLI Users
+
+. Copy the Puppet module to your Satellite Server's file system:
++
+[options="nowrap" subs="+quotes"]
+----
+$ scp ~/_puppet_module_.tar.gz root@satellite.example.com:~/.
+----
++
+. Import the Puppet module to the Puppet Modules repository:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer repository upload-content \
+--path ~/_puppet_module_.tar.gz \
+--id _repo_ID_ \
+--organization "_My_Organization_"
+----
+
+[[Importing_Custom_Content-Synchronizing_Puppet_Repositories]]
+=== Synchronizing Puppet Repositories
+
+In addition to creating a repository of uploaded Puppet modules, Satellite Server can synchronize a complete Puppet module repository. In this example, Satellite Server synchronizes the entire Puppet Forge repository.
+
+.Support for Custom RPMs
+Red Hat does not support the modules from Puppet Forge. The modules are used to demonstrate the synchronization process. For any issues with these modules, contact the module developer.
+
+.Procedure
+
+. In the Satellite web UI, navigate to *Content* > *Products* and click *Create Product*.
+. In the *Name* field, enter a name for the product. Red Hat Satellite 6 automatically completes the *Label* field based on what you have entered for *Name*.
+. Optional: From the *GPG Key* list, select the GPG key for the product.
+. Optional: From the *Sync Plan* list, select a synchronization plan for the product.
+. In the *Description* field, enter a description of the product.
+. Click *Save*.
+. Click *Create Repository*, which displays a form for a new repository.
+. In the *Name* field, enter a name for the repository. Red Hat Satellite 6 automatically completes this field based on what you have entered for *Name*.
+. From the *Type* list, select *puppet*.
+. In the *URL* field, enter `http://forge.puppetlabs.com/`.
+. Click *Save*
+. Select the new Puppet repository and click *Sync Now* to import all modules from Puppet Forge into Satellite Server. This can take a long time.
+
+.For CLI Users
+
+. Create the product:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer product create \
+--name "Puppet Forge" \
+--sync-plan "Example Plan" \
+--description "All modules from Puppet Forge" \
+--organization "_My_Organization_"
+----
++
+. Create the Puppet Forge repository:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer repository create \
+--name "Puppet Forge Modules" \
+--content-type "puppet" \
+--product "Puppet Forge" \
+--organization "_My_Organization_" \
+--url http://forge.puppetlabs.com/
+----
++
+. Synchronize the repository:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer repository synchronize \
+--name "Puppet Forge Modules" \
+--product "Puppet Forge" \
+--organization "_My_Organization_"
+----
+
+The Puppet Forge repository contains several thousand modules and can take a long time to synchronize.
+
+[[Importing_Custom_Content-Synchronizing_Puppet_Modules_from_Git]]
+=== Synchronizing Puppet Modules from a Git Repository
+
+Red Hat Satellite 6 includes a utility called `pulp-puppet-module-builder`, which you can install on other systems from the `pulp-puppet-tools` RPM. This tool checks out a Git repository, builds all the modules, and publishes them in a structure that Satellite 6 can synchronize. One common method is to run the utility on Satellite Server itself, publish to a local directory, and synchronize against that directory. For example:
+
+[options="nowrap" subs="+quotes"]
+----
+# mkdir /modules
+# chmod 755 /modules
+# pulp-puppet-module-builder \
+--output-dir=/modules \
+--url=git@mygitserver.com:mymodules.git \
+--branch=develop
+----
+
+This example checks out the `develop` branch of the Git repository from `git@mygitserver.com:mymodules.git` and publishes it to `/modules`. Add this directory as the URL (`file:///modules`) for a new repository on Satellite Server.
+
+.Publishing Puppet Modules on a Remote HTTP Server
+
+The same process also applies to publishing modules on a remote HTTP server. For example, if you use `webserver.example.com` as a standard web host to publish the Puppet modules.
+
+[options="nowrap" subs="+quotes"]
+----
+# mkdir /var/www/html/modules/
+# chmod 755 /var/www/html/modules/
+# pulp-puppet-module-builder \
+--output-dir=/var/www/html/modules/ \
+--url=git@mygitserver.com:mymodules.git \
+--branch=develop
+----
+
+On Satellite Server, set the repository's URL to `http://webserver.example.com/modules/`.
+
+.Synchronizing Puppet Modules from a Git repository using the web UI
+
+Use the following procedure to synchronize Puppet modules from a Git repository.
+
+.Procedure
+
+. Create a custom product and click *Create Repository*.
+. From the *Type* list, select *puppet*.
+. In the *URL* field, enter the URL of the external Git repository to use as a source in the following format: `file:///modules`.
+
+.For CLI Users
+
+. Create the Puppet Forge repository:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer repository create \
+--name "Modules from Git" \
+--content-type "puppet" \
+--product "MyProduct" \
+--organization "_My_Organization_" \
+--url file:///modules
+----

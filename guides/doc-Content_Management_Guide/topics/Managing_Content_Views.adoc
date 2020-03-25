@@ -1,0 +1,593 @@
+[[Managing_Content_Views]]
+== Managing Content Views
+
+Red Hat Satellite 6 uses Content Views to create customized repositories from the repositories. To do this, you must define which repositories to use and then apply certain filters to the content. These filters include both package filters, package group filters, errata filters, and module stream filters. You can use Content Views to define which software versions a particular environment uses. For example, a _Production_ environment might use a Content View containing older package versions, while a _Development_ environment might use a Content View containing newer package versions.
+
+Each Content View creates a set of repositories across each environment, which Satellite Server stores and manages. When you promote a Content View from one environment to the next environment in the application life cycle, the respective repository on Satellite Server updates and publishes the packages.
+
+|===
+| | Development | Testing | Production
+
+| Content View Version and Contents | Version 2 - _example_software_-1.1-0.noarch.rpm | Version 1 - _example_software_-1.0-0.noarch.rpm | Version 1 - _example_software_-1.0-0.noarch.rpm
+|===
+
+The repositories for Testing and Production contain the `_example_software_-1.0-0.noarch.rpm` package. If you promote Version 2 of the Content View from Development to Testing, the repository for Testing regenerates and then contains the `_example_software_-1.1-0.noarch.rpm` package:
+
+|===
+| | Development | Testing | Production
+
+| Content View Version and Contents | Version 2 - _example_software_-1.1-0.noarch.rpm | *Version 2 - _example_software_-1.1-0.noarch.rpm* | Version 1 - _example_software_-1.0-0.noarch.rpm
+|===
+
+This ensures systems are designated to a specific environment but receive updates when that environment uses a new version of the Content View.
+
+The general workflow for creating Content Views for filtering and creating snapshots is as follows:
+
+ . Create a Content View.
+ . Add the repository and the Puppet modules that you want to the Content View.
+ . Optionally, create one or more filters to refine the content of the Content View.
+ . Optionally, resolve any package dependencies for a Content View.
+ . Publish the Content View.
+ . Optionally, promote the Content View to another environment.
+ . Attach the content host to the Content View.
+
+
+If a repository is not associated with the Content View, the file `/etc/yum.repos.d/redhat.repo` remains empty and systems registered to it cannot receive updates.
+
+Hosts can only be associated with a single Content View. To associate a host with multiple Content Views, create a composite Content View. For more information, see xref:Managing_Content_Views-Creating_a_Composite_Content_View[].
+
+.Package Dependency Resolution
+
+Package dependency is a complication of package management. For more information about how to manage package dependencies within Content Views, see xref:Managing_Content_Views-Resolving_Package_Dependencies[].
+
+[[Managing_Content_Views-Creating_a_Simple_Content_View]]
+=== Creating a Content View
+
+Use this procedure to create a simple Content View.
+
+.Prerequisites
+
+While you can stipulate whether you want to resolve any package dependencies on a Content View by Content View basis, you might want to change the default Satellite settings to enable or disable package resolution for all Content Views. For more information, see xref:Managing_Content_Views-Resolving_Package_Dependencies[].
+
+.Procedure
+
+To create a content view, complete the following steps:
+
+. In the Satellite web UI, navigate to *Content* > *Content Views* and click *Create New View*.
+. In the *Name* field, enter a name for the view. Satellite automatically completes the *Label* field from the name you enter.
+. In the *Description* field, enter a description of the view.
+. Optional: if you want to solve dependencies automatically every time you publish this Content View, select the *Solve Dependencies* check box. Dependency solving slows the publishing time and might ignore any Content View filters you use. This can also cause errors when resolving dependencies for errata.
+. Click *Save* to create the Content View.
+. In the *Repository Selection* area, select the repositories that you want to add to your Content View, then click *Add Repositories*.
+. Click *Publish New Version* and in the *Description* field, enter information about the version to log changes.
+. Click *Save*.
+. Optional: to force metadata regeneration on Yum repositories, from the *Actions* list for your Content View versions, select *Regenerate Repository Metadata*.
+
+
+You can view the Content View in the Content Views window. To view more information about the Content View, click the Content View name.
+
+To register a host to your content view, see https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/managing_hosts/registering_hosts[Registering Hosts] in the _Managing Hosts_ guide.
+
+[[Managing_Content_Views-Creating_a_Simple_Content_View_CLI]]
+.Creating a Content View with Hammer CLI
+
+. Obtain a list of repository IDs:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer repository list --organization "_My_Organization_"
+----
++
+. Create the Content View and add repositories:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer content-view create \
+--name "_Example_Content_View_" \
+--description "Example Content View" \
+--repository-ids 1,2 \
+--organization "_My_Organization_"
+----
++
+For the `--repository-ids` option, you can find the IDs in the output of the `hammer repository list` command.
++
+. Publish the view:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer content-view publish \
+--name "_Example_Content_View_" \
+--description "Example Content View" \
+--organization "_My_Organization_"
+----
+
+. Optional: To add a repository to an existing Content View, enter the following command:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer content-view add-repository \
+--name "_Example_Content_View_" \
+--organization "_My_Organization_" \
+--repository-id _repository_ID_
+----
+
+Satellite Server creates the new version of the view and publishes it to the Library environment.
+
+[[Managing_Content_Views-Viewing_Module_Streams]]
+=== Viewing Module Streams
+
+In Satellite, you can view the module streams of the repositories in your Content Views.
+
+.Procedure
+
+To view module streams for the repositories in your content view, complete the following steps:
+
+. In the Satellite web UI, navigate to *Content* > *Content Views*, and select the Content View that contains the modules you want to view.
+. Click the *Versions* tab and select the Content View version that you want to view.
+. Click the *Module Streams* tab to view the module streams that are available for the Content View.
+. Use the *Filter* field to refine the list of modules.
+. To view the information about the module, click the module.
+
+[[Managing_Content_Views-Creating_a_Content_View_with_a_Puppet_Module]]
+=== Creating a Content View with a Puppet Module
+
+Use this procedure to create a Content View using one repository and no filters.
+
+.Prerequisites
+
+Before you begin, upload the required Puppet module to a repository within a custom product. For more information, see https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/puppet_guide/chap-red_hat_satellite-puppet_guide-adding_puppet_modules_to_red_hat_satellite_6[Adding Puppet Modules to Red Hat Satellite 6] in the _Puppet Guide_.
+
+.Procedure
+
+To create a Content View with a Puppet module, complete the following steps:
+
+. In the Satellite web UI, navigate to *Content* > *Content Views* and click *Create New View*.
+. In the *Name* field, enter a name for the view. Red Hat Satellite 6 automatically completes the *Label* field from the name you enter.
+. In the *Description* field, enter a description of the view.
+. Click *Save* to complete.
+. In the *Repository Selection* area, select the repositories that you want to add to your Content View, then click *Add Repositories*.
+. Click the *Puppet Modules* tab, then click *Add New Module*.
+. Search for the module that you want to add and click *Select a Version*.
+. Navigate to the entry for *Use Latest* and click *Select Version* in the *Actions* column.
+. To publish, click the *Versions* tab and click *Publish New Version*. In the *Description* field, enter a description to log the changes and click *Save*.
+
+To register a host to your content view, see https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/managing_hosts/registering_hosts[Registering Hosts] in the _Managing Hosts_ guide.
+
+.For CLI Users
+
+To add a Puppet module to a Content View, enter the following command:
+
+[options="nowrap" subs="+quotes"]
+----
+# hammer content-view puppet-module add \
+--content-view _cv_name_ \
+--name _module_name_
+----
+
+[[Managing_Content_Views-Promoting_a_Content_View]]
+=== Promoting a Content View
+
+Use this procedure to promote Content Views across different lifecycle environments.
+
+.Permission Requirements for Content View Promotion
+
+Non-administrator users require two permissions to promote a Content View to an environment:
+
+. `promote_or_remove_content_views`
+. `promote_or_remove_content_views_to_environment`.
+
+The `promote_or_remove_content_views` permission restricts which Content Views a user can promote.
+
+The `promote_or_remove_content_views_to_environment` permission restricts the environments to which a user can promote Content Views.
+
+With these permissions you can assign users permissions to promote certain Content Views to certain environments, but not to other environments.
+For example, you can limit a user so that they are permitted to promote to test environments, but not to production environments.
+
+
+You must assign both permissions to a user to allow them to promote Content Views.
+
+.Procedure
+
+To promote a Content View, complete the following steps:
+
+. In the Satellite web UI, navigate to *Content* > *Content Views* and select the Content View that you want to promote.
+. Click the *Versions* tab for the Content View.
+. Select the version that you want to promote and in the *Actions* column, click *Promote*.
+. Select the environment where you want to promote the Content View, and click *Promote Version*.
+. Click the *Promote* button again. This time select the *Testing* environment and click *Promote Version*.
+. Finally click on the *Promote* button again. Select the *Production* environment and click *Promote Version*.
+
+Now the repository for the Content View appears in all environments.
+
+.For CLI Users
+
+* Promote the Content View using the `hammer content-view version promote` each time:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer content-view version promote \
+--content-view "Database" \
+--version 1 \
+--to-lifecycle-environment "Development" \
+--organization "_My_Organization_"
+# hammer content-view version promote \
+--content-view "Database" \
+--version 1 \
+--to-lifecycle-environment "Testing" \
+--organization "_My_Organization_"
+# hammer content-view version promote \
+--content-view "Database" \
+--version 1 \
+--to-lifecycle-environment "Production" \
+--organization "_My_Organization_"
+----
++
+Now the database content is available in all environments.
+
+To register a host to your content view, see https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/managing_hosts/registering_hosts[Registering Hosts] in the _Managing Hosts_ guide.
+
+[[Managing_Content_Views-Promoting_a_Content_View_Across_All_Life_Cycle_Environments_within_an_Organization]]
+=== Promoting a Content View Across All Life Cycle Environments within an Organization
+
+Use this procedure to promote Content Views across all lifecycle environments within an organization.
+
+.Procedure
+
+To promote a Content Views version across all lifecycle environments within an organization, complete the following steps:
+
+. To promote a selected Content View version from Library across all life cycle environments within an organization, run the following Bash script:
++
+[source, Bash, options="nowrap" subs="verbatim,quotes"]
+----
+ORG="_Your_Organization_"
+CVV_ID=_3_
+
+for i in $(hammer --no-headers --csv lifecycle-environment list --organization $ORG | awk -F, {'print $1'} | sort -n)
+do
+   hammer content-view version promote --organization $ORG --to-lifecycle-environment-id $i --id $CVV_ID
+done
+----
+
+. Display information about your Content View version to verify that it is promoted to the required lifecycle environments:
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+# hammer content-view version info --id _3_
+----
+
+[[Managing_Content_Views-Defining_Composite_Content_Views]]
+=== Composite Content Views Overview
+
+A Composite Content View combines the content from several Content Views. For example, you might have separate Content Views to manage an operating system and an application individually. You can use a Composite Content View to merge the contents of both Content Views into a new repository. The repositories for the original Content Views still exist but a new repository also exists for the combined content.
+
+If you want to develop an application that supports different database servers. The _example_application_ appears as:
+
+|===
+| _example_software_
+
+| Application
+| Database
+| Operating System
+|===
+
+Example of four separate Content Views:
+
+  * Red Hat Enterprise Linux (Operating System)
+  * PostgreSQL (Database)
+  * MariaDB (Database)
+  * _example_software_ (Application)
+
+From the previous Content Views, you can create two Composite Content Views.
+
+Example Composite Content View for a PostgreSQL database:
+
+|===
+| Composite Content View 1 - _example_software_ on PostgreSQL
+
+| _example_software_ (Application)
+| PostgreSQL (Database)
+| Red Hat Enterprise Linux (Operating System)
+|===
+
+Example Composite Content View for a MariaDB:
+
+|===
+| Composite Content View 2 - _example_software_ on MariaDB
+
+| _example_software_ (Application)
+| MariaDB (Database)
+| Red Hat Enterprise Linux (Operating System)
+|===
+
+Each Content View is then managed and published separately. When you create a version of the application, you publish a new version of the Composite Content Views. You can also select the *Auto Publish* option when creating a Composite Content View, and then the Composite Content View is automatically republished when a Content View it includes is republished.
+
+.Repository Restrictions
+You cannot include more than one of each repository in Composite Content Views. For example, if you attempt to include two Content Views using the same repository in a Composite Content View, Satellite Server reports an error.
+
+
+[[Managing_Content_Views-Creating_a_Composite_Content_View]]
+=== Creating a Composite Content View
+
+
+.Procedure
+
+To create a Composite Content View, complete the following steps:
+
+. In the Satellite web UI, navigate to *Content* > *Content Views* and click *Create New View*.
+. In the *Name* field, enter a name for the view. Red Hat Satellite 6 automatically completes the *Label* field from the name you enter.
+. In the *Description* field, enter a description of the view.
+. Select the *Composite View?* check box to create a Composite Content View.
+. Optional: select the *Auto Publish* check box if you want the Composite Content View to be republished automatically when a Content View is republished.
+. Click *Save*.
+. In the *Add Content Views* area, select the Content Views that you want to add to the Composite Content View, and then click *Add Content Views*.
+. Click *Publish New Version* to publish the Composite Content View. In the *Description* field, enter a description and click *Save*.
+. Click *Promote* and select the lifecycle environments to promote the Composite Content View to, enter a description, and then click *Promote Version*.
+
+
+.For CLI Users
+
+. Before you create the Composite Content Views, list the version IDs for your existing Content Views:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer content-view version list \
+--organization "_My_Organization_"
+----
++
+. Create a new Composite Content View. When the `--auto-publish` option is set to `yes`, the Composite Content View is automatically republished when a Content View it includes is republished:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer content-view create \
+--composite \
+--auto-publish yes \
+--name "_Example_Composite_Content_View_" \
+--description "Example Composite Content View" \
+--organization "_My_Organization_"
+----
++
+. Add a component Content View to the Composite Content View. You must include the Content View Version ID and use the `--latest` option.
+To include multiple component Content Views to the Composite Content View, repeat this step for every Content View you want to include:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer content-view component add \
+--component-content-view-id _Content_View_Version_ID_ \
+--latest \
+--composite-content-view "Example_Composite_Content_View"
+----
++
+. Publish the Composite Content View:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer content-view publish \
+--name "_Example_Composite_Content_View_" \
+--description "Initial version of Composite Content View" \
+--organization "_My_Organization_"
+----
++
+. Promote the Composite Content View across all environments:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer content-view version promote \
+--content-view "_Example_Composite_Content_View_" \
+--version 1 \
+--to-lifecycle-environment "Development" \
+--organization "_My_Organization_"
+# hammer content-view version promote \
+--content-view "_Example_Composite_Content_View_" \
+--version 1 \
+--to-lifecycle-environment "Testing" \
+--organization "_My_Organization_"
+# hammer content-view version promote \
+--content-view "_Example_Composite_Content_View_" \
+--version 1 \
+--to-lifecycle-environment "Production" \
+--organization "_My_Organization_"
+----
+
+[[Managing_Content_Views-Defining_Content_Filters]]
+=== Content Filter Overview
+
+Content Views also use filters to include or restrict certain RPM content. Without these filters, a Content View includes everything from the selected repositories.
+
+There are two types of content filters:
+
+.Filter Types
+|===
+| Filter Type | Description
+
+| *Include* | You start with no content, then select which content to add from the selected repositories. Use this filter to combine multiple content items.
+| *Exclude* | You start with all content from selected repositories, then select which content to remove. Use this filter when you want to use most of a particular content repository but exclude certain packages, such as blacklisted packages. The filter uses all content in the repository except for the content you select.
+|===
+
+.Include and Exclude Filter Combinations
+If using a combination of Include and Exclude filters, publishing a Content View triggers the include filters first, then the exclude filters. In this situation, select which content to include, then which content to exclude from the inclusive subset.
+
+.Content Types
+
+There are also five types of content to filter:
+
+.Content Types
+|===
+| Content Type | Description
+
+|*Package* | Filter packages based on their name and version number. The *Package* option filters non-modular RPM packages and errata.
+|*Package Group* | Filter packages based on package groups. The list of package groups is based on the repositories added to the Content View.
+| *Erratum (by ID)* | Select which specific errata to add to the filter. The list of Errata is based on the repositories added to the Content View.
+| *Erratum (by Date and Type)* | Select a issued or updated date range and errata type (Bugfix, Enhancement, or Security) to add to the filter.
+| *Module Streams*  | Select whether to include or exclude specific module streams. The *Module Streams* option filters modular RPMs and errata, but does not filter non-modular content that is associated with the selected module stream.
+|===
+
+[[Managing_Content_Views-Resolving_Package_Dependencies]]
+=== Resolving Package Dependencies
+
+In Satellite, you can use the package dependency resolution feature to ensure that any dependencies that packages have within a Content View are added to the dependent repository as part of the Content View publication process.
+
+You can select to resolve package dependencies for any Content View that you want, or you can change the default setting to enable or disable resolving package dependencies for all new Content Views.
+
+Note that resolving package dependencies can cause significant delays to Content View promotion. The package dependency resolution feature does not consider packages that are installed on your system independently of the Content View or solve dependencies across repositories.
+
+.Resolving Package Dependencies and Filters
+
+Filters do not resolve any dependencies of the packages listed in the filters. This might require some level of testing to determine what dependencies are required.
+
+If you add a filter that excludes some packages that are required and the Content View has dependency resolution enabled, Satellite ignores the rules you create in your filter in favor of resolving the package dependency.
+
+If you create a content filter for security purposes, to resolve a package dependency, Satellite can add packages that you might consider insecure.
+
+.Procedure
+
+To resolve package dependencies by default, complete the following steps:
+
+. In the Satellite web UI, navigate to *Administer* > *Settings* and click the *Content* tab.
+. Locate the *Content View Dependency Solving Default*, and select *Yes*.
+
+You can also set the default level of dependency resolution that you want. You can select between adding packages to solve dependencies only if the required package does not exist, or to add the latest packages to resolve the dependency even if the package exists in the repository.
+
+To set the default level of dependency resolution, complete the following steps:
+
+. In the Satellite web UI, navigate to *Administer* > *Settings* and click the *Content* tab.
+. Locate the *Content View Dependency Solving Algorithm* and select one of the following options:
++
+* To add the package that resolves the dependency only if it does not exist in the repository, select *Conservative*.
+* To add the package that resolves the dependency regardless of whether or not it exists in the repository, select *Greedy*.
+
+
+[[Managing_Content_Views-Content_Filter_Examples]]
+=== Content Filter Examples
+
+Use any of the following examples with the procedure that follows to build custom content filters.
+
+.Example 1
+Create a repository with the base Red Hat Enterprise Linux packages. This filter requires a Red Hat Enterprise Linux repository added to the Content View.
+
+*Filter:*
+
+  * *Inclusion Type:* Include
+  * *Content Type:* Package Group
+  * *Filter:* Select only the *Base* package group
+
+.Example 2
+Create a repository that excludes all errata, except for security updates, after a certain date. This is useful if you want to perform system updates on a regular basis with the exception of critical security updates, which must be applied immediately. This filter requires a Red Hat Enterprise Linux repository added to the Content View.
+
+*Filter:*
+
+  * *Inclusion Type:* Exclude
+  * *Content Type:* Erratum (by Date and Type)
+  * *Filter:* Select only the *Bugfix* and *Enhancement* errata types, and clear the *Security* errata type. Set the *Date Type* to *Updated On*. Set the *Start Date* to the date you want to restrict errata. Leave the *End Date* blank to ensure any new non-security errata is filtered.
+
+.Example 3
+A combination of Example 1 and Example 2 where you only require the operating system packages and want to exclude recent bug fix and enhancement errata. This requires two filters attached to the same Content View. The Content View processes the Include filter first, then the Exclude filter.
+
+*Filter 1:*
+
+  * *Inclusion Type:* Include
+  * *Content Type:* Package Group
+  * *Filter:* Select only the *Base* package group
+
+*Filter 2:*
+
+  * *Inclusion Type:* Exclude
+  * *Content Type:* Erratum (by Date and Type)
+  * *Filter:* Select only the *Bugfix* and *Enhancement* errata types, and clear the *Security* errata type. Set the *Date Type* to *Updated On*. Set the *Start Date* to the date you want to restrict errata. Leave the *End Date* blank to ensure any new non-security errata is filtered.
+
+.Example 4
+Filter a specific module stream in a Content View.
+
+*Filter 1:*
+
+* *Inclusion Type:* Include
+* *Content Type:* Module Stream
+* *Filter:* Select only the specific module stream that you want for the Content View, for example *ant*, and click *Add Module Stream*.
+
+*Filter 2:*
+
+* *Inclusion Type:* Exclude
+* *Content Type:* Package
+* *Filter:* Add a rule to filter any non-modular packages that you want to exclude from the Content View. If you do not filter the packages, the Content View filter includes all non-modular packages associated with the module stream *ant*. Add a rule to exclude all `*` packages, or specify the package names that you want to exclude.
+
+For another example of how content filters work, see the following article: https://access.redhat.com/solutions/1564953["How do content filters work in Satellite 6"]
+
+[[Managing_Content_Views-Creating_a_Content_Filter]]
+=== Creating a Content Filter
+
+Use this procedure to create a content filter. For examples of how to build a filter, see xref:Managing_Content_Views-Content_Filter_Examples[]
+
+.Procedure
+
+To create a content filter, complete the following steps:
+
+. In the Satellite web UI, navigate to *Content* > *Content Views* and select a Content View.
+. Navigate to *Yum Content* > *Filters* and click *New Filter*.
+. In the *Name* field, enter a name for your filter.
+. From the *Content Type* list, select the content type that you want to filter. Depending on what you select for the new filter's content type, different options appear.
+. From the *Inclusion Type* list, select either *Include* or *Exclude*.
+. In the *Description* field, enter a description for the filter, and click *Save*.
+. Depending on what you enter for *Content Type*, add rules to create the filter that you want.
+. Click the *Affected repositories* tab to select which specific repositories use this filter.
+. Click *Publish New Version* to publish the filtered repository. In the *Description* field, enter a description of the changes, and click *Save*.
+
+You can promote this Content View across all environments.
+
+.For CLI Users
+
+. Add a filter to the Content View. Use the `--inclusion false` option to set the filter to an Exclude filter:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer content-view filter create \
+--name "_Errata Filter_" \
+--type erratum --content-view "_Example_Content_View_" \
+--description "_My latest filter_" \
+--inclusion false \
+--organization "_My_Organization_"
+----
++
+. Add a rule to the filter:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer content-view filter rule create \
+--content-view "_Example_Content_View_" \
+--content-view-filter "_Errata Filter_" \
+--start-date "_YYYY-MM-DD_" \
+--types enhancement,bugfix \
+--date-type updated \
+--organization "_My_Organization_"
+----
++
+[options="nowrap" subs="+quotes"]
++
+. Publish the Content View:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer content-view publish \
+--name "_Example_Content_View_" \
+--description "Adding errata filter" \
+--organization "_My_Organization_"
+----
++
+. Promote the view across all environments:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer content-view version promote \
+--content-view "_Example_Content_View_" \
+--version 1 \
+--to-lifecycle-environment "Development" \
+--organization "_My_Organization_"
+# hammer content-view version promote \
+--content-view "_Example_Content_View_" \
+--version 1 \
+--to-lifecycle-environment "Testing" \
+--organization "_My_Organization_"
+# hammer content-view version promote \
+--content-view "_Example_Content_View_" \
+--version 1 \
+--to-lifecycle-environment "Production" \
+--organization "_My_Organization_"
+----
