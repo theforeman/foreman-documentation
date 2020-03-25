@@ -1,0 +1,501 @@
+[[Importing_Red_Hat_Content]]
+== Importing Red{nbsp}Hat Content
+
+This section describes how to use products and repositories in Satellite, and to create synchronization plans to ensure your Satellite content remains up to date with the content on the Red{nbsp}Hat Content delivery network (CDN).
+
+[[Importing_Red_Hat_Content-Products_in_Satellite]]
+=== Products in Red{nbsp}Hat Satellite
+In Satellite, a _Product_ is an organizational unit to group multiple repositories together. For example, Red{nbsp}Hat Enterprise Linux Server is a _Product_ in Satellite, the repositories for that product consist of different versions, different architectures, and different add-ons. Using Products ensures repositories that depend on each other are synchronized together. For Red{nbsp}Hat repositories, products are created automatically after enabling the repository.
+
+
+[[Importing_Red_Hat_Content-Synchronizing_Content]]
+=== Content Synchronization Overview
+
+Satellite Server synchronizes its own repositories with the repositories on the Red{nbsp}Hat CDN. This ensures that Satellite Server retains an exact copy of Red{nbsp}Hat's repositories. Satellite Server fetches this repository information and stores it on Satellite Server's file system. After an initial synchronization, you can create a synchronization plan that checks to ensure the repositories are up to date with the CDN's repositories.
+
+You can perform an initial synchronization using ISO images. For more information about using content ISOs, see xref:Importing_Content_ISOs_into_Connected_Satellite[].
+
+[[Importing_Red_Hat_Content-Configuring_Download_Policies]]
+=== Download Policies Overview
+
+Red{nbsp}Hat Satellite provides multiple download policies for synchronizing RPM content. For example, you might want to download only the content metadata while deferring the actual content download for later.
+
+Satellite Server has the following policies:
+
+Immediate::
+Satellite Server downloads all metadata and packages during synchronization.
+
+On Demand::
+Satellite Server downloads only the metadata during synchronization. Satellite Server only fetches and stores packages on the file system when Capsules or directly connected clients request them. This setting has no effect if you set a corresponding repository on a Capsule to *Immediate* because Satellite Server is forced to download all the packages.
+
+Background::
+Satellite Server creates a background task to download all packages after the initial synchronization.
+
+The *On Demand* and *Background* policies act as a _Lazy Synchronization_ feature because they save time synchronizing content. The lazy synchronization feature must be used only for `yum` repositories. You can add the packages to Content Views and promote to life cycle environments as normal.
+
+Capsule Server offers the following policies:
+
+Immediate::
+Capsule Server downloads all metadata and packages during synchronization. Do not use this setting if the corresponding repository on Satellite Server is set to *On Demand* as Satellite Server is forced to download all the packages.
+
+On Demand::
+Capsule Server only downloads the metadata during synchronization. Capsule Server fetches and stores packages only on the file system when directly connected clients request them. When you use an *On Demand* download policy, content is downloaded from Satellite Server if it is not available on Capsule Server.
+
+Background::
+Capsule Server creates a background task to download all packages after the initial synchronization.
+
+Inherit::
+Capsule Server inherits the download policy for the repository from the corresponding repository on Satellite Server.
+
+These policies are not available if a Capsule was installed or updated with `--enable-foreman-proxy-plugin-pulp` set to false.
+
+=== Changing the Default Download Policy
+
+You can set the default download policy that Satellite applies to repositories that you create in all organizations. Satellite uses separate settings for Red Hat and custom repositories. Changing the default value does not change existing settings.
+
+.Procedure
+
+To change the default download policy for repositories, complete the following steps:
+
+. In the Satellite web UI, navigate to *Administer* > *Settings*.
+. Click the *Content* tab.
+. Change the default download policy depending on your requirements:
++
+* To change the default download policy for Red Hat repositories, change the value of the *Default Red Hat Repository download policy* setting.
+* To change the default download policy for custom repositories, change the value of the *Default Custom Repository download policy* setting.
+
+.For CLI Users
+
+To change the default download policy for Red Hat repositories to one of `immediate`, `on_demand`, or `background`, enter the following command:
+
+[subs="+quotes"]
+----
+# hammer settings set \
+--name default_redhat_download_policy \
+--value _immediate_
+----
+
+To change the default download policy for custom repositories to one of `immediate`, `on_demand`, or `background`, enter the following command:
+
+[subs="+quotes"]
+----
+# hammer settings set \
+--name default_download_policy \
+--value _immediate_
+----
+
+=== Changing the Download Policy for a Repository
+
+You can also set the download policy for a repository.
+
+.Procedure
+
+To set the download policy for a repository, complete the following steps:
+
+. In the web UI, navigate to *Content* > *Products*, and click the required product name.
+. On the *Repositories* tab, click the required repository name, locate the *Download Policy* field, and click the edit icon.
+. From the list, select the required download policy and then click `Save`.
+
+.For CLI Users
+
+. List the repositories for an organization:
++
+[subs="+quotes"]
+----
+# hammer repository list \
+--organization-label _organization-label_
+----
+
+. Change the download policy for a repository to one of `immediate`, `on_demand`, `background`:
++
+[subs="+quotes"]
+----
+# hammer repository update \
+--organization-label _organization-label_  \
+--product "Red Hat Enterprise Linux Server" \
+--name "Red Hat Enterprise Linux 7 Server Kickstart x86_64 7.5"  \
+--download-policy immediate
+----
+
+[[Importing_Red_Hat_Content-Selecting_Red_Hat_Repositories_to_Synchronize]]
+=== Enabling Red{nbsp}Hat Repositories
+
+To select the repositories to synchronize, you must first identify the product that contains the repository, and then enable that repository based on the relevant release version and base architecture. For Red{nbsp}Hat Enterprise Linux 8, you must enable both AppStream and BaseOS repositories.
+
+.Disconnected Satellite
+If you use Disconnected Satellite Server, you must configure Satellite to synchronize content with a local CDN server before synchronizing content. For more information, see xref:configuring-satellite-to-synchronize-content-with-a-local-cdn-server_content-management[].
+
+.Repository Versioning
+The difference between associating Red{nbsp}Hat Enterprise Linux operating system with either 7 Server repositories or 7._X_ repositories is that 7 Server repositories contain all the latest updates while Red{nbsp}Hat Enterprise Linux 7._X_ repositories stop getting updates after the next minor version release. Note that Kickstart repositories only have minor versions.
+
+.For Red{nbsp}Hat Enterprise Linux 8 Clients
+
+To provision Red{nbsp}Hat Enterprise Linux 8 clients, you require the *Red{nbsp}Hat Enterprise Linux 8 for x86_64 - AppStream (RPMS)* and *Red{nbsp}Hat Enterprise Linux 8 for x86_64 - BaseOS (RPMs)* repositories.
+
+.For Red{nbsp}Hat Enterprise Linux 7 Clients
+
+To provision Red{nbsp}Hat Enterprise Linux 7 clients, you require the *Red{nbsp}Hat Enterprise Linux 7 Server (RPMs)* repository.
+
+.Procedure
+
+. In the Satellite web UI, navigate to *Content* > *Red{nbsp}Hat Repositories*.
+. To find repositories, either enter the repository name, or toggle the *Recommended Repositories* button to the on position to view a list of repositories that you require.
+. In the Available Repositories pane, click a repository to expand the repository set.
+. Click the *Enable* icon next to the base architecture and release version that you want.
+
+.For CLI Users
+
+. To search for your product, enter the following command:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer product list --organization "_My_Organization_"
+----
++
+. List the repository set for the product:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer repository-set list \
+--product "Red Hat Enterprise Linux Server" \
+--organization "_My_Organization_"
+----
++
+. Enable the repository using either the name or ID number. Include the release version, for example,`7Server` and base architecture, for example, `x86_64`. For example:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer repository-set enable \
+--name "Red Hat Enterprise Linux 7 Server (RPMs)" \
+--releasever "7Server" \
+--basearch "x86_64" \
+--product "Red Hat Enterprise Linux Server" \
+--organization "_My_Organization_"
+----
+
+[[Importing_Red_Hat_Content-Synchronizing_Red_Hat_Repositories]]
+=== Synchronizing Red{nbsp}Hat Repositories
+
+Synchronize the repositories with the Red{nbsp}Hat CDN's repositories.
+
+.For Web UI Users
+
+. In the Satellite web UI, navigate to *Content* > *Products* and select the product that contains the repositories that you want to synchronize.
+. Select the repositories that you want to synchronize and click *Sync Now*.
+
+To view the progress of the synchronization in the web UI, navigate to *Content* > *Sync Status* and expand the corresponding product or repository tree.
+
+.For CLI Users
+
+Synchronize the enabled repositories in the Red{nbsp}Hat Enterprise Linux Server product:
+
+[options="nowrap" subs="+quotes"]
+----
+# hammer product synchronize \
+--name "Red Hat Enterprise Linux Server" \
+--organization "_My_Organization_"
+----
+
+You can also synchronize each repository individually. List all repositories in the product, then synchronize using the ID number for the corresponding repositories. For example:
+
+[options="nowrap" subs="+quotes"]
+----
+# hammer repository list \
+--product "Red Hat Enterprise Linux Server" \
+--organization "_My_Organization_"
+# hammer repository synchronize \
+--name "Red Hat Enterprise Linux 7 Server RPMs x86_64 7Server" \
+--product "Red Hat Enterprise Linux Server" \
+--organization "_My_Organization_"
+----
+
+The synchronization duration depends on the size of each repository and the speed of your network connection. The following table provides estimates of how long it would take to synchronize content, depending on the available Internet bandwidth:
+
+|===
+| |Single Package (10Mb)|Minor Release (750Mb)|Major Release (6Gb)
+
+|256 Kbps|5 Mins 27 Secs|6 Hrs 49 Mins 36 Secs|2 Days 7 Hrs 55 Mins
+|512 Kbps|2 Mins 43.84 Secs|3 Hrs 24 Mins 48 Secs|1 Day 3 Hrs 57 Mins
+|T1 (1.5 Mbps)|54.33 Secs|1 Hr 7 Mins 54.78 Secs|9 Hrs 16 Mins 20.57 Secs
+|10 Mbps|8.39 Secs|10 Mins 29.15 Secs|1 Hr 25 Mins 53.96 Secs
+|100 Mbps|0.84 Secs|1 Min 2.91 Secs|8 Mins 35.4 Secs
+|1000 Mbps|0.08 Secs|6.29 Secs|51.54 Secs
+|===
+
+Create a synchronization plan to ensure updates on a regular basis.
+
+[[Importing_Red_Hat_Content-Synchronizing_All_Repositories_in_an_Organization]]
+=== Synchronizing All Repositories in an Organization
+
+Use this procedure to synchronize all repositories within an organization.
+
+.Procedure
+
+To synchronize all repositories within an organization, run the following Bash script on your Satellite Server:
+
+[source, Bash, options="nowrap" subs="+quotes"]
+----
+ORG="_Your_Organization_"
+
+for i in $(hammer --no-headers --csv repository list --organization $ORG | awk -F, {'print $1'})
+do
+  hammer repository synchronize --id ${i} --organization $ORG --async
+done
+----
+
+[[Importing_Red_Hat_Content-Recovering_a_Repository]]
+=== Recovering a Repository
+In the case of repository corruption, you can recover it by using an advanced synchronization, which has three options:
+
+Optimized Sync::
+Synchronizes the repository bypassing RPMs that have no detected differences from the upstream RPMs.
+
+Complete Sync::
+Synchronizes all RPMs regardless of detected changes. Use this option if specific RPMs could not be downloaded to the local repository even though they exist in the upstream repository.
+
+Validate Content Sync::
+Synchronizes all RPMs and then verifies the checksum of all RPMs locally. If the checksum of an RPM differs from the upstream, it re-downloads the RPM. This option is relevant only for `yum` repositories. Use this option if you have one of the following errors:
+
+* Specific RPMs cause a `404` error while synchronizing with `yum`.
+
+* `Package does not match intended download` error, which means that specific RPMs are corrupted.
+
+.Procedure
+
+To synchronize a specific repository with an advanced option, complete the following steps:
+
+. In the Satellite web UI, navigate to *Content* > *Products*.
+. Select the product containing the corrupted repository.
+. Select the name of a repository you want to synchronize.
+. From the *Select Action* menu, select *Advanced Sync*.
+. Select the option and click *Sync*.
+
+.For CLI users
+
+. Obtain a list of repository IDs:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer repository list --organization "_My_Organization_"
+----
+
+. Synchronize a corrupted repository using the necessary option:
++
+* For the optimized synchronization:
++
+[subs="+quotes"]
+----
+# hammer repository synchronize --incremental true --id _1_
+----
++
+* For the complete synchronization:
++
+[subs="+quotes"]
+----
+# hammer repository synchronize --skip-metadata-check true --id _1_
+----
++
+* For the validate content synchronization:
++
+[subs="+quotes"]
+----
+# hammer repository synchronize --validate-contents true --id _1_
+----
+
+[[Changing_the_HTTP_Proxy_Policy_for_a_Product]]
+=== Changing the HTTP Proxy Policy for a Product
+
+For granular control over network traffic, you can set an HTTP proxy policy for each Product. A Product's HTTP proxy policy applies to all repositories in the Product, unless you set a different policy for individual repositories.
+
+To set an HTTP proxy policy for individual repositories, see xref:Changing_the_HTTP_Proxy_Policy_for_a_Repository[].
+
+.Procedure
+
+. In the Satellite web UI, navigate to *Content* > *Products* and select the check box next to each of the Products that you want to change.
+. From the *Select Action* list, select *Manage HTTP Proxy*.
+. Select an *HTTP Proxy Policy* from the list:
+* *Global Default*: Use the global default proxy setting.
+* *No HTTP Proxy*: Do not use an HTTP proxy, even if a global default proxy is configured.
+* *Use specific HTTP Proxy*: Select an *HTTP Proxy* from the list. You must add HTTP proxies to Satellite before you can select a proxy from this list. For more information, see xref:Adding_a_New_HTTP_Proxy[].
+. Click *Update*.
+
+[[Changing_the_HTTP_Proxy_Policy_for_a_Repository]]
+=== Changing the HTTP Proxy Policy for a Repository
+
+For granular control over network traffic, you can set an HTTP proxy policy for each repository.
+
+To set the same HTTP proxy policy for all repositories in a Product, see xref:Changing_the_HTTP_Proxy_Policy_for_a_Product[].
+
+.Procedure
+
+. In the Satellite web UI, navigate to *Content* > *Products* and click the name of the Product that contains the repository.
+. In the *Repositories* tab, click the name of the repository.
+. Locate the *HTTP Proxy* field and click the edit icon.
+. Select an *HTTP Proxy Policy* from the list:
+* *Global Default*: Use the global default proxy setting.
+* *No HTTP Proxy*: Do not use an HTTP proxy, even if a global default proxy is configured.
+* *Use specific HTTP Proxy*: Select an *HTTP Proxy* from the list. You must add HTTP proxies to Satellite before you can select a proxy from this list. For more information, see xref:Adding_a_New_HTTP_Proxy[].
+. Click *Save*.
+
+.For CLI users
+
+* On Satellite Server, enter the following command, specifying the HTTP proxy policy you want to use:
++
+[subs="+quotes"]
+----
+# hammer repository update --id _repository-ID_ \
+--http-proxy-policy _policy_
+----
++
+Specify one of the following options for `--http-proxy-policy`:
++
+** `none`: Do not use an HTTP proxy, even if a global default proxy is configured.
+** `global_default_http_proxy`: Use the global default proxy setting.
+** `use_selected_http_proxy`: Specify an HTTP proxy using either `--http-proxy _proxy-name_` or `--http-proxy-id _proxy-ID_`. To add a new HTTP proxy to Satellite, see xref:Adding_a_New_HTTP_Proxy[].
+
+[[Adding_a_New_HTTP_Proxy]]
+=== Adding a New HTTP Proxy
+
+Use this procedure to add HTTP proxies to Satellite. You can then specify which HTTP proxy to use for Products, repositories, and supported compute resources.
+
+.Procedure
+
+. In the Satellite web UI, navigate to *Infrastructure* > *HTTP Proxies* and select *New HTTP Proxy*.
+. In the *Name* field, enter a name for the HTTP proxy.
+. In the *URL* field, enter the URL for the HTTP proxy, including the port number.
+. If your HTTP proxy requires authentication, enter a *Username* and *Password*.
+. Optional: In the *Test URL* field, enter the HTTP proxy URL, then click *Test Connection* to ensure that you can connect to the HTTP proxy from Satellite.
+. Click the *Locations* tab and add a location.
+. Click the *Organization* tab and add an organization.
+. Click *Submit*.
+
+.For CLI Users
+
+* On Satellite Server, enter the following command to add a new HTTP proxy:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# hammer http-proxy create --name _proxy-name_ \
+--url _proxy-URL:port-number_
+----
++
+If your HTTP proxy requires authentication, add the `--username _name_` and `--password _password_` options.
+
+[[Importing_Red_Hat_Content-Limiting_Synchronization_Speed]]
+=== Limiting Synchronization Speed
+
+You can control the speed of synchronization to avoid exhaustion of available bandwidth and to prevent other performance issues. This is done by configuring *PULP_CONCURRENCY* and *max_speed* parameters. Note that these settings are overwritten on an upgrade. Back up any changed files prior to an upgrade to be able to restore the configuration.
+
+. To control the number of synchronization jobs that run in parallel, configure the *PULP_CONCURRENCY* parameter in the `/etc/default/pulp_workers` file. For example, to set the number of jobs that run in parallel to 1, change `PULP_CONCURRENCY` to 1:
++
+----
+PULP_CONCURRENCY=1
+----
++
+By default, on a system with less than 8 CPUs, `PULP_CONCURRENCY` is set to the number of CPUs. On a system with more than 8 CPUs, it is set to 8.
+
+. To set the maximum network speed for synchronizing in bytes per second, configure the *max_speed* parameter. This parameter must be configured separately for each importer in the `/etc/pulp/server/plugins.conf.d/` directory. For example, to set the maximum speed for synchronizing RPM content to 10 bytes per second, set the `"max_speed"` parameter in the `/etc/pulp/server/plugins.conf.d/yum_importer.json` file to 10:
++
+----
+# cat /etc/pulp/server/plugins.conf.d/yum_importer.json
+{
+    "proxy_host": null,
+    "proxy_port": null,
+    "proxy_username": null,
+    "proxy_password": null,
+    "max_speed": 10
+}
+----
+
+. Verify the syntax of the file after editing:
++
+----
+# json_verify < /etc/pulp/server/plugins.conf.d/yum_importer.json
+JSON is valid
+----
+
+. Restart the `satellite-maintain` services to apply the changes:
++
+----
+# satellite-maintain service restart
+----
+
+
+[[Importing_Red_Hat_Content-Creating_a_Synchronization_Plan]]
+=== Creating a Synchronization Plan
+
+A synchronization plan checks and updates the content at a scheduled date and time. In Red{nbsp}Hat Satellite 6, you can create a synchronization plan and assign products to the plan.
+
+.Procedure
+
+To create a synchronization plan, complete the following steps:
+
+. In the Satellite web UI, navigate to *Content* > *Sync Plans* and click *New Sync Plan*.
+. In the *Name* field, enter a name for the plan.
+. In the *Description* field, enter a description of the plan.
+. From the *Interval* list, select the interval at which you want the plan to run.
+. From the *Start Date* and *Start Time* lists, select when to start running the synchronization plan.
+. Click *Save*.
+. Click the *Products* tab, then click *Add*. Select the *Red{nbsp}Hat Enterprise Linux Server* product and click *Add Selected*.
+
+.For CLI Users
+
+. To create the synchronization plan, enter the following command:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer sync-plan create \
+--name "Red Hat Products 2" \
+--description "Example Plan for Red Hat Products" \
+--interval daily \
+--sync-date "2016-02-01 01:00:00" \
+--enabled true \
+--organization "_My_Organization_"
+----
++
+. Assign the Red{nbsp}Hat Enterprise Linux Server product to it:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer product set-sync-plan \
+--name "Red Hat Enterprise Linux Server" \
+--sync-plan "Red Hat Products" \
+--organization "_My_Organization_"
+----
++
+. View the available synchronization plans for an organization to verify that the synchronization plan is created:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer sync-plan list --organization "_Default Organization_"
+----
+
+[[Importing_Red_Hat_Content-Assigning_a_Synchronization_Plan_to_Multiple_Products]]
+=== Assigning a Synchronization Plan to Multiple Products
+
+Use this procedure to assign a synchronization plan to the products in an organization that have been synchronized at least once and contain at least one repository
+
+.Procedure
+
+To assign a synchronization plan to the selected products, complete the following steps:
+
+. Run the following Bash script:
++
+[source, Bash, options="nowrap" subs="+quotes"]
+----
+ORG="_Your_Organization_"
+SYNC_PLAN="daily_sync_at_3_a.m"
+
+for i in $(hammer --no-headers --csv product list --organization $ORG --per-page 999 | grep -vi not_synced | awk -F, {'{ if ($5!=0) print $1}'})
+do
+  hammer sync-plan create --name $SYNC_PLAN --interval daily --sync-date "2018-06-20 03:00:00" --enabled true --organization $ORG
+  hammer product set-sync-plan --sync-plan $SYNC_PLAN --organization $ORG --id $i
+done
+----
+
+. After executing the script, view the products assigned the synchronization plan:
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+# hammer product list --organization $ORG --sync-plan $SYNC_PLAN
+----
