@@ -28,21 +28,27 @@ Kickstart repositories are not provided by the Content ISO image. To use Kicksta
 +
 Note that if you use Red Hat Enterprise Linux 7, you must create and complete all the following steps in only one directory `/var/www/html/pub/sat-import/content/dist/rhel/server/7/7.7/x86_64/kickstart/`.
 +
-. Add Kickstart to the listing files:
+. To the listing files `/var/www/html/pub/sat-import/content/dist/rhel8/8.1/x86_64/appstream/listing` and `/var/www/html/pub/sat-import/content/dist/rhel8/8.1/x86_64/baseos/listing`, append `kickstart` with a new line in the following format:
 +
 ----
-# echo -e -n "\nkickstart"  >> /var/www/html/pub/sat-import/content/dist/rhel8/8.1/x86_64/appstream/listing
-
-# echo -e -n "\nkickstart"  >> /var/www/html/pub/sat-import/content/dist/rhel8/8.1/x86_64/baseos/listing
+kickstart
 ----
 +
-. Copy the files from the ISO image:
+. To the listing file `/var/www/html/pub/sat-import/content/dist/rhel8/listing`, append the version number of the operating system ISO that you use with a new line. For example, for the RHEL 8.1 binary ISO, add `8.1` with a new line in the following format:
++
+----
+8.1
+----
++
+. Copy the `kickstart` files from the ISO image:
 +
 [options="nowrap" subs="+quotes"]
 ----
-# cp -a /mnt/_iso_/AppStream/* /var/www/html/pub/sat-import/content/dist/rhel8/8.1/x86_64/appstream/kickstart
+# cp -a /mnt/_iso_/AppStream/* \
+/var/www/html/pub/sat-import/content/dist/rhel8/8.1/x86_64/appstream/kickstart
 
-# cp -a /mnt/_iso_/BaseOS/* /mnt/_iso_/images/ /var/www/html/pub/sat-import/content/dist/rhel8/8.1/x86_64/baseos/kickstart
+# cp -a /mnt/_iso_/BaseOS/* /mnt/_iso_/images/ \
+/var/www/html/pub/sat-import/content/dist/rhel8/8.1/x86_64/baseos/kickstart
 ----
 +
 Note that for BaseOS, you must also copy the contents of the `/mnt/_iso_/images/` directory.
@@ -51,16 +57,31 @@ Note that for BaseOS, you must also copy the contents of the `/mnt/_iso_/images/
 +
 [options="nowrap" subs="+quotes"]
 ----
-# cp /mnt/_iso_/.treeinfo /var/www/html/pub/sat-import/content/dist/rhel8/8.1/x86_64/appstream/kickstart/treeinfo
+# cp /mnt/_iso_/.treeinfo \
+/var/www/html/pub/sat-import/content/dist/rhel8/8.1/x86_64/appstream/kickstart/treeinfo
 
-# cp /mnt/_iso_/.treeinfo /var/www/html/pub/sat-import/content/dist/rhel8/8.1/x86_64/baseos/kickstart/treeinfo
+# cp /mnt/_iso_/.treeinfo \
+/var/www/html/pub/sat-import/content/dist/rhel8/8.1/x86_64/baseos/kickstart/treeinfo
 ----
 +
-. Open the `../baseos/kickstart/treeinfo` file for editing and update the file to reflect the following changes:
+. Open the `/var/www/html/pub/sat-import/content/dist/rhel8/8.1/x86_64/baseos/kickstart/treeinfo` file for editing.
 +
+. In the `[general]` section, make the following changes:
+* Replace `packagedir = AppStream/Packages` by `packagedir = Packages`
+* Replace `repository = AppStream` by `repository = .`
+* Replace `variant = AppStream` by `variant = BaseOS`
+* Replace `variants = AppStream,BaseOS` by `variants = BaseOS`
+. In the `[tree]` section, replace `variants = AppStream,BaseOS` by `variants = BaseOS`.
+. In the `[variant-BaseOS]` section, make the following changes:
+* Replace `packages = BaseOS/Packages` by `packages = Packages`
+* Replace `repository = BaseOS` by `repository = .`
+. Delete the `[media]` and `[variant-AppStream]` sections.
+. Save and close the file.
+. Verify that the `/var/www/html/pub/sat-import/content/dist/rhel8/8.1/x86_64/baseos/kickstart/treeinfo` file has the following format:
++
+[options="nowrap" subs="+quotes"]
 ----
 [checksums]
-images/boot.iso = sha256:643e706cf7db9e93e706637af92d80eb58377dd0c64ac1e9ce6a72700aa04c2a
 images/efiboot.img = sha256:9ad9beee4c906cd05d227a1be7a499c8d2f20b3891c79831325844c845262bb6
 images/install.img = sha256:e246bf4aedfff3bb54ae9012f959597cdab7387aadb3a504f841bdc2c35fe75e
 images/pxeboot/initrd.img = sha256:a66e3c158f02840b19c372136a522177a2ab4bd91cb7269fb5bfdaaf7452efef
@@ -85,7 +106,6 @@ type = productmd.treeinfo
 version = 1.2
 
 [images-x86_64]
-boot.iso = images/boot.iso
 efiboot.img = images/efiboot.img
 initrd = images/pxeboot/initrd.img
 kernel = images/pxeboot/vmlinuz
@@ -117,7 +137,18 @@ type = variant
 uid = BaseOS
 ----
 +
-. Open the `../appstream/kickstart/treeinfo` file for editing and update the file to reflect the following changes:
+. Open the `/var/www/html/pub/sat-import/content/dist/rhel8/8.1/x86_64/appstream/kickstart/treeinfo` file for editing.
+. In the `[general]` section, make the following changes:
+* Replace `packagedir = AppStream/Packages` by `packagedir = Packages`
+* Replace `repository = AppStream` by `repository = .`
+* Replace `variants = AppStream,BaseOS` by `variants = AppStream`
+. In the `[tree]` section, replace `variants = AppStream,BaseOS` by `variants = AppStream`.
+. In the `[variant-AppStream]` section, make the following changes:
+* Replace `packages = AppStream/Packages` by `packages = Packages`
+* Replace `repository = AppStream` by `repository = .`
+. Delete the following sections from the file: `[checksums]`, `[images-x86_64]`, `[images-xen]`, `[media]`,  `[stage2]`, `[variant-BaseOS]`.
+. Save and close the file.
+. Verify that the `/var/www/html/pub/sat-import/content/dist/rhel8/8.1/x86_64/appstream/kickstart/treeinfo` file has the following format:
 +
 ----
 [general]
@@ -127,9 +158,9 @@ arch = x86_64
 family = Red Hat Enterprise Linux
 name = Red Hat Enterprise Linux 8.1.0
 packagedir = Packages
-platforms = x86_64
+platforms = x86_64,xen
 repository = .
-timestamp = 1571146113
+timestamp = 1571146127
 variant = AppStream
 variants = AppStream
 version = 8.1.0
@@ -145,8 +176,8 @@ version = 8.1.0
 
 [tree]
 arch = x86_64
-build_timestamp = 1571146113
-platforms = x86_64
+build_timestamp = 1571146127
+platforms = x86_64,xen
 variants = AppStream
 
 [variant-AppStream]
