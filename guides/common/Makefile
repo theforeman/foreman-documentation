@@ -36,7 +36,7 @@ browser: html
 	${BROWSER_OPEN} "file://$(realpath $(ROOTDIR)/$(DEST_HTML))"
 
 linkchecker: html
-	linkchecker -vr1 -f $(COMMON_DIR)/linkchecker.ini --check-extern --ignore-url=example.com --ignore-url=cdn.redhat.com "file://$(realpath $(ROOTDIR)/$(DEST_HTML))"
+	linkchecker -vr1 -f $(COMMON_DIR)/linkchecker.ini --check-extern --ignore-url=example.com --ignore-url=cdn.redhat.com --ignore-url=file:///modules "file://$(realpath $(ROOTDIR)/$(DEST_HTML))"
 
 open-pdf: pdf
 	${BROWSER_OPEN} "$(realpath $(ROOTDIR)/$(DEST_PDF))"
