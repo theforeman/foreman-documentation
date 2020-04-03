@@ -6,13 +6,22 @@ If your network uses an HTTP Proxy, you can configure {ProjectServer} to use an 
 
 The following procedure configures a proxy only for downloading content for {Project}.
 
-.Authentication Methods
+.Procedure
 
-Only basic authentication is supported: add your user name and password information to the `--katello-proxy-url` option, or use the `--katello-proxy-username` and `--katello-proxy-password` options.
+. In the {Project} web UI, navigate to *Infrastructure* > *HTTP Proxies*.
+. Click *New HTTP Proxy*.
+. In the *Name* field, enter the name for the HTTP proxy.
+. In the *Url* field, enter the URL of the HTTP proxy in the following format: `https://_proxy.example.com_:8080`.
+. Optional: If authentication is required, in the *Username* field, enter the username to authenticate with.
+. Optional: If authentication is required, in the *Password* field, enter the password to authenticate with.
+. To test connection to the proxy, click the *Test Connection* button.
+. Click *Submit*.
+. Navigate to *Administer* > *Settings*, and click the *Content* tab.
+. Set the *Default HTTP Proxy* setting to the created HTTP proxy.
 
-.To Configure {Project} with an HTTP Proxy
+.For the CLI Users
 
-. Verify that the `*http_proxy*`, `*https_proxy*`, and `*no_proxy*` variables are not set.
+. Verify that the `http_proxy`, `https_proxy`, and `no_proxy` variables are not set.
 +
 [options="nowrap"]
 ----
@@ -21,22 +30,32 @@ Only basic authentication is supported: add your user name and password informat
 # unset no_proxy
 ----
 
-. Run `{foreman-installer}` with the HTTP proxy options.
+. Add an HTTP proxy entry to {Project}:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer http-proxy create --name=_myproxy_ \
+--url http://_myproxy.example.com_:8080  \
+--username=_proxy_username_ \
+--password=_proxy_password_
+----
+
+. Configure {Project} to use this HTTP proxy by default:
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
-# {installer-scenario} \
---katello-proxy-url=http://__myproxy.example.com__ \
---katello-proxy-port=8080 \
---katello-proxy-username=__proxy_username__ \
---katello-proxy-password='__proxy_password__'
+# hammer settings set --name=content_default_http_proxy --value=_myproxy_
 ----
 
 ifeval::["{build}" == "satellite"]
 
-. Verify that {ProjectServer} can connect to the Red{nbsp}Hat CDN and can synchronize its repositories.
+= Configuring the HTTP Proxy to Connect to Red Hat CDN
 
-.. On the network gateway and the HTTP Proxy, enable TCP for the following host names:
+Verify that {Project} can connect to the Red{nbsp}Hat CDN and can synchronize its repositories.
+
+.Procedure
+
+. On the network gateway and the HTTP Proxy, enable TCP for the following host names:
 +
 [cols="2,1,1",options="header"]
 |====
@@ -48,11 +67,11 @@ ifeval::["{build}" == "satellite"]
 | api.access.redhat.com (if using Red{nbsp}Hat Insights) |  443 | HTTPS
 |====
 +
-{ProjectServer} communicates with the Red{nbsp}Hat CDN securely over SSL. Use of an SSL interception proxy interferes with this communication. These hosts must be whitelisted on the proxy.
+{ProjectServer} uses SSL to communicate with the Red{nbsp}Hat CDN securely. Use of an SSL interception proxy interferes with this communication. These hosts must be whitelisted on the proxy.
 +
 For a list of IP addresses used by the Red{nbsp}Hat CDN (cdn.redhat.com), see the Knowledgebase article https://access.redhat.com/articles/1525183[Public CIDR Lists for Red{nbsp}Hat] on the Red{nbsp}Hat Customer Portal.
 +
-.. On {ProjectServer}, complete the following details in the `/etc/rhsm/rhsm.conf` file:
+. On {ProjectServer}, complete the following details in the `/etc/rhsm/rhsm.conf` file:
 +
 [options="nowrap" subs="+quotes"]
 ----
@@ -70,7 +89,7 @@ proxy_password =
 ----
 endif::[]
 
-.SELinux Considerations for Custom Ports
+= Configuring SELinux to Ensure Access to {Project} on Custom Ports
 
 ifeval::["{build}" == "satellite"]
 SELinux ensures access of {ProjectNameX} and Red{nbsp}Hat Subscription Manager only to specific ports. In the case of the HTTP cache, the TCP ports are 8080, 8118, 8123, and 10001 - 10010. If you use a port that does not have SELinux type `http_cache_port_t`, complete the following steps:
@@ -80,7 +99,7 @@ ifeval::["{build}" == "foreman"]
 SELinux ensures access of {ProjectNameX} only to specific ports. In the case of the HTTP cache, the TCP ports are 8080, 8118, 8123, and 10001 - 10010. If you use a port that does not have SELinux type `http_cache_port_t`, complete the following steps:
 endif::[]
 
-. To verify the ports that are permitted by SELinux for the HTTP cache, enter a command as follows:
+. On {Project}, to verify the ports that are permitted by SELinux for the HTTP cache, enter a command as follows:
 +
 [options="nowrap",subs="+quotes"]
 ----
@@ -96,7 +115,6 @@ _[output truncated]_
 # semanage port -a -t http_cache_port_t -p tcp 8088
 ----
 
-
 [[configuring_foreman_http_server]]
 = Using an HTTP Proxy for all {Project} HTTP Requests
 
@@ -110,7 +128,16 @@ To set an HTTP proxy for all outgoing HTTP connections from {Project}, complete 
 . In the *HTTP(S) proxy* row, select the adjacent *Value* column and enter the proxy URL.
 . Click the tick icon to save your changes.
 
-.Excluding Hosts from Receiving Proxied Requests
+.For CLI Users
+
+. Enter the following command:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer settings set --name=http_proxy --value=_Proxy_URL_
+----
+
+= Excluding Hosts from Receiving Proxied Requests
 
 If you use an HTTP Proxy for all {Project} HTTP or HTTPS requests, you can prevent certain hosts from communicating through the proxy.
 
@@ -120,6 +147,14 @@ To exclude one or more hosts from communicating through the proxy, complete the 
 . In the *HTTP(S) proxy except hosts* row, select the adjacent *Value* column and enter the names of one or more hosts that you want to exclude from proxy requests.
 . Click the tick icon to save your changes.
 
+.For CLI Users
+
+. Enter the following command:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer settings set --name=http_proxy_except_list --value=_hostname1.hostname2..._
+----
 
 = Resetting the HTTP Proxy
 
@@ -130,5 +165,4 @@ If you want to reset the current HTTP proxy setting, enter the following command
 # {installer-scenario} --reset-katello-proxy-url \
  --reset-katello-proxy-port --reset-katello-proxy-username \
  --reset-katello-proxy-password
-
 ----
