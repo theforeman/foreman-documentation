@@ -78,6 +78,7 @@ cp -r $US_REPO/guides/common/* $DS_REPO/common/
 # Step 3 - Copy docs-* directories, if any
 if ls $US_REPO/guides/doc-* 1> /dev/null 2>&1; then
   cp -r $US_REPO/guides/doc-Provisioning_Guide/* $DS_REPO/doc-Provisioning_Guide/
+  cp -r $US_REPO/guides/doc-Deploying_on_AWS/* $DS_REPO/doc-Deploying_on_AWS/
   cp  $US_REPO/guides/doc-Installing_Server_on_Red_Hat/master.adoc $DS_REPO/doc-Installing_Satellite_Server_Connected/master.adoc
   cp  $US_REPO/guides/doc-Installing_Proxy_on_Red_Hat/master.adoc $DS_REPO/doc-Installing_Capsule_Server/master.adoc
   cp  $US_REPO/guides/doc-Installing_Satellite_Server_Disconnected/master.adoc $DS_REPO/doc-Installing_Satellite_Server_Disconnected/master.adoc
