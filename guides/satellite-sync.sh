@@ -84,6 +84,7 @@ if ls $US_REPO/guides/doc-* 1> /dev/null 2>&1; then
   cp  $US_REPO/guides/doc-Installing_Server_on_Red_Hat/docinfo.xml $DS_REPO/doc-Installing_Satellite_Server_Connected/docinfo.xml
   cp  $US_REPO/guides/doc-Installing_Proxy_on_Red_Hat/docinfo.xml $DS_REPO/doc-Installing_Capsule_Server/docinfo.xml
   cp  $US_REPO/guides/doc-Installing_Satellite_Server_Disconnected/docinfo.xml $DS_REPO/doc-Installing_Satellite_Server_Disconnected/docinfo.xml
+  cp -r $US_REPO/guides/doc-Content_Management_Guide/* $DS_REPO/doc-Content_Management_Guide/
 
 fi
 # Add downstream build attributes and find and replace attributes with fixed terms
