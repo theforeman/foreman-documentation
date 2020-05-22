@@ -1,0 +1,68 @@
+[id="installing-mongodb_{context}"]
+= Installing MongoDB
+
+You can install only the same version of MongoDB that is installed with the `{foreman-installer}` tool during an internal database installation. You can install MongoDB using Red Hat Software Collections (RHSCL) repositories or from an external source, as long as the version is supported. {Project} supports MongoDB version 3.4.
+
+include::snip_firewalld.adoc[]
+
+.Procedure
+
+. To install MongoDB, enter the following command:
++
+----
+# yum install rh-mongodb34 rh-mongodb34-syspaths
+----
++
+. Start and enable the *rh-mongodb34* service:
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+# systemctl start rh-mongodb34-mongod
+# systemctl enable rh-mongodb34-mongod
+----
++
+. Create a Pulp user on MongoDB for database *pulp_database*:
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+# mongo pulp_database \
+--eval "db.createUser({user:'pulp',pwd:'pulp_password',roles:[{role:'dbOwner', db:'pulp_database'},{ role: 'readWrite', db: 'pulp_database'}]})"
+----
++
+. In the `/etc/opt/rh/rh-mongodb34/mongod.conf` file, specify the bind IP:
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+bindIp: _your_mongodb_server_bind_IP_,::1
+----
++
+. Edit the `/etc/opt/rh/rh-mongodb34/mongod.conf` file to enable authentication in the `security` section:
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+security:
+  authorization: enabled
+----
++
+. Restart the `rh-mongodb34-mongod` service:
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+# systemctl restart rh-mongodb34-mongod
+----
++
+. Open port 27017 for MongoDB:
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+# firewall-cmd --add-port=27017/tcp
+# firewall-cmd --runtime-to-permanent
+----
++
+. From {ProjectServer}, test that you can access the database. If the connection succeeds, the command returns `1`.
++
+[options="nowrap" subs="quotes"]
+----
+# scl enable rh-mongodb34 " mongo --host _mongo.example.com_ \
+-u pulp -p _pulp_password_ --port 27017 --eval 'ping:1' _pulp_database_"
+----
