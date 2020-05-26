@@ -41,6 +41,7 @@ report.write("# Upstreamization report from #{Time.now.utc}\n")
             line.gsub!(/Capsule( |\u{00A0}|{nbsp})Server/, '{SmartProxyServer}')
             line.gsub!(/Capsules/, '{SmartProxies}')
             line.gsub!(/Capsule/, '{SmartProxy}')
+            line.gsub!(/satellite.example.com/, '{foreman-example-com}')
           end
           if line != orig_line
             putsv("#{line_num + 1}: #{line}")
