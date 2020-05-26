@@ -1,94 +1,94 @@
 [[Running_Jobs_on_Hosts]]
 == Running Jobs on Hosts
 
-You can run jobs on hosts remotely from Capsules using shell scripts or Ansible tasks and playbooks. This is referred to as remote execution.
+You can run jobs on hosts remotely from {SmartProxies} using shell scripts or Ansible tasks and playbooks. This is referred to as remote execution.
 
-For custom Ansible roles that you create, or roles that you download, you must install the package containing the roles on the Capsule base operating system. Before you can use Ansible roles, you must import the roles into Satellite from the Capsule where they are installed.
+For custom Ansible roles that you create, or roles that you download, you must install the package containing the roles on the {SmartProxy} base operating system. Before you can use Ansible roles, you must import the roles into {Project} from the {SmartProxy} where they are installed.
 
-Communication occurs through Capsule Server, which means that Satellite Server does not require direct access to the target host, and can scale to manage many hosts. Remote execution uses the SSH service that must be enabled and running on the target host. Ensure that the remote execution Capsule has access to port 22 on the target hosts.
+Communication occurs through {SmartProxyServer}, which means that {ProjectServer} does not require direct access to the target host, and can scale to manage many hosts. Remote execution uses the SSH service that must be enabled and running on the target host. Ensure that the remote execution {SmartProxy} has access to port 22 on the target hosts.
 
-Satellite uses ERB syntax job templates. For more information, see xref:appe-Red_Hat_Satellite-Managing_Hosts-Template_Writing_Reference[].
+{Project} uses ERB syntax job templates. For more information, see xref:appe-{Project_Link}-Managing_Hosts-Template_Writing_Reference[].
 
 Several job templates for shell scripts and Ansible are included by default. For more information, see xref:sect-Managing_Hosts-Setting_up_Job_Templates[].
 
-By default, Satellite Server is configured to use the Katello Agent rather than remote execution. To change this setting, navigate to *Administer* > *Settings*, click *Content*, and change the *Use remote execution by default* setting.
+By default, {ProjectServer} is configured to use the Katello Agent rather than remote execution. To change this setting, navigate to *Administer* > *Settings*, click *Content*, and change the *Use remote execution by default* setting.
 
 [NOTE]
 ====
-Any Capsule Server base operating system is a client of Satellite Server's internal Capsule, and therefore this section applies to any type of host connected to Satellite Server, including Capsule Servers.
+Any {SmartProxyServer} base operating system is a client of {ProjectServer}'s internal {SmartProxy}, and therefore this section applies to any type of host connected to {ProjectServer}, including {SmartProxyServer}s.
 ====
 
-You can run jobs on multiple hosts at once, and you can use variables in your commands for more granular control over the jobs you run. You can use host facts, smart class parameters, smart variables, and host parameters to populate variable values. For more information about Ansible variables, see https://access.redhat.com/documentation/en-us/red_hat_satellite/6.6/html/administering_red_hat_satellite/chap-red_hat_satellite-administering_red_hat_satellite-managing_ansible_roles#sect-Red_Hat_Satellite-Administering_Red_Hat_Satellite-Managing_Ansible_Variables_with_Satellite[Overriding Ansible Variables in Satellite]. 
+You can run jobs on multiple hosts at once, and you can use variables in your commands for more granular control over the jobs you run. You can use host facts, smart class parameters, smart variables, and host parameters to populate variable values. For more information about Ansible variables, see {BaseURL}administering_red_hat_satellite/chap-red_hat_satellite-administering_red_hat_satellite-managing_ansible_roles#sect-{Project_Link}-Administering_{Project_Link}-Managing_Ansible_Variables_with_{Project}[Overriding Ansible Variables in {Project}]. 
 In addition, you can specify custom values for templates when you run the command. For more information, see xref:sect-Managing_Hosts-Executing_Remote_Jobs[].
 
 [[sect-Managing_Hosts-Choosing_a_Satellite_Capsule_for_Remote_Execution]]
-=== How Satellite Selects Capsule for Remote Execution
-When you run a remote job on hosts, for every host, Satellite performs the following actions to find a remote execution Capsule to use. Satellite searches only for Capsules that have the remote execution feature enabled.
+=== How {Project} Selects {SmartProxy} for Remote Execution
+When you run a remote job on hosts, for every host, {Project} performs the following actions to find a remote execution {SmartProxy} to use. {Project} searches only for {SmartProxies} that have the remote execution feature enabled.
 
-. Satellite finds the host's interfaces that have the *Remote execution* check box selected.
-. Satellite finds the subnets of these interfaces.
-. Satellite finds remote execution Capsules assigned to these subnets.
-. From this set of Capsules, Satellite selects the Capsule that has the least number of running jobs. By doing this, Satellite ensures that the jobs load is balanced between remote execution Capsules.   
-. If Satellite does not find a remote execution Capsule at this stage, and if the *Fallback to Any Capsule* setting is enabled, Satellite adds another set of Capsules to select the remote execution Capsule from. Satellite selects the most lightly loaded Capsule from the following types of Capsules that are assigned to the host:
+. {Project} finds the host's interfaces that have the *Remote execution* check box selected.
+. {Project} finds the subnets of these interfaces.
+. {Project} finds remote execution {SmartProxies} assigned to these subnets.
+. From this set of {SmartProxies}, {Project} selects the {SmartProxy} that has the least number of running jobs. By doing this, {Project} ensures that the jobs load is balanced between remote execution {SmartProxies}.   
+. If {Project} does not find a remote execution {SmartProxy} at this stage, and if the *Fallback to Any {SmartProxy}* setting is enabled, {Project} adds another set of {SmartProxies} to select the remote execution {SmartProxy} from. {Project} selects the most lightly loaded {SmartProxy} from the following types of {SmartProxies} that are assigned to the host:
 +
-* DHCP, DNS and TFTP Capsules assigned to the host's subnets
-* DNS Capsule assigned to the host's domain
-* Realm Capsule assigned to the host's realm
-* Puppet Master Capsule
-* Puppet CA Capsule
-* OpenSCAP Capsule
+* DHCP, DNS and TFTP {SmartProxies} assigned to the host's subnets
+* DNS {SmartProxy} assigned to the host's domain
+* Realm {SmartProxy} assigned to the host's realm
+* Puppet Master {SmartProxy}
+* Puppet CA {SmartProxy}
+* OpenSCAP {SmartProxy}
 
 +
-. If Satellite does not find a remote execution Capsule at this stage, and if the *Enable Global Capsule* setting is enabled, Satellite selects the most lightly loaded remote execution Capsule from the set of all Capsules in the host's organization and location to execute a remote job.
+. If {Project} does not find a remote execution {SmartProxy} at this stage, and if the *Enable Global {SmartProxy}* setting is enabled, {Project} selects the most lightly loaded remote execution {SmartProxy} from the set of all {SmartProxies} in the host's organization and location to execute a remote job.
 
-==== Configuring the Fallback to Any Capsule Remote Execution Setting in Satellite
-You can enable the *Fallback to Any Capsule* setting to configure Satellite to search for remote execution Capsules from the list of Capsules that are assigned to hosts. This can be useful if you need to run remote jobs on hosts that have no subnets configured or if the hosts' subnets are assigned to Capsules that do not have the remote execution feature enabled.
+==== Configuring the Fallback to Any {SmartProxy} Remote Execution Setting in {Project}
+You can enable the *Fallback to Any {SmartProxy}* setting to configure {Project} to search for remote execution {SmartProxies} from the list of {SmartProxies} that are assigned to hosts. This can be useful if you need to run remote jobs on hosts that have no subnets configured or if the hosts' subnets are assigned to {SmartProxies} that do not have the remote execution feature enabled.
 
-If the *Fallback to Any Capsule* setting is enabled, Satellite adds another set of Capsules to select the remote execution Capsule from. Satellite also selects the most lightly loaded Capsule from the set of all Capsules assigned to the host, such as the following:
+If the *Fallback to Any {SmartProxy}* setting is enabled, {Project} adds another set of {SmartProxies} to select the remote execution {SmartProxy} from. {Project} also selects the most lightly loaded {SmartProxy} from the set of all {SmartProxies} assigned to the host, such as the following:
 
-* DHCP, DNS and TFTP Capsules assigned to the host's subnets
-* DNS Capsule assigned to the host's domain
-* Realm Capsule assigned to the host's realm
-* Puppet Master Capsule
-* Puppet CA Capsule
-* OpenSCAP Capsule
+* DHCP, DNS and TFTP {SmartProxies} assigned to the host's subnets
+* DNS {SmartProxy} assigned to the host's domain
+* Realm {SmartProxy} assigned to the host's realm
+* Puppet Master {SmartProxy}
+* Puppet CA {SmartProxy}
+* OpenSCAP {SmartProxy}
 
 .Procedure
 
-. In the Satellite web UI, navigate to *Administer* > *Settings*.
+. In the {Project} web UI, navigate to *Administer* > *Settings*.
 . Click *RemoteExecution*.
-. Configure the *Fallback to Any Capsule* setting.
+. Configure the *Fallback to Any {SmartProxy}* setting.
 
 .For CLI Users
 
-Enter the `hammer settings set` command on Satellite to configure the *Fallback to Any Capsule* setting. For example, to set the value to `true`, enter the following command:
+Enter the `hammer settings set` command on {Project} to configure the *Fallback to Any {SmartProxy}* setting. For example, to set the value to `true`, enter the following command:
 
 ----
 # hammer settings set --name=remote_execution_fallback_proxy --value=true
 ----
 
-==== Configuring the Global Capsule Remote Execution Setting in Satellite
-By default, Satellite searches for remote execution Capsules in hosts' organizations and locations regardless of whether Capsules are assigned to hosts' subnets or not. You can disable the *Enable Global Capsule* setting if you want to limit the search to the Capsules that are assigned to hosts' subnets.
+==== Configuring the Global {SmartProxy} Remote Execution Setting in {Project}
+By default, {Project} searches for remote execution {SmartProxies} in hosts' organizations and locations regardless of whether {SmartProxies} are assigned to hosts' subnets or not. You can disable the *Enable Global {SmartProxy}* setting if you want to limit the search to the {SmartProxies} that are assigned to hosts' subnets.
 
-If the *Enable Global Capsule* setting is enabled, Satellite adds another set of Capsules to select the remote execution Capsule from. Satellite also selects the most lightly loaded remote execution Capsule from the set of all Capsules in the host's organization and location to execute a remote job.
+If the *Enable Global {SmartProxy}* setting is enabled, {Project} adds another set of {SmartProxies} to select the remote execution {SmartProxy} from. {Project} also selects the most lightly loaded remote execution {SmartProxy} from the set of all {SmartProxies} in the host's organization and location to execute a remote job.
 
 .Procedure
 
-. In the Satellite web UI, navigate to *Administer* > *Settings*.
+. In the {Project} web UI, navigate to *Administer* > *Settings*.
 . Click *RemoteExection*.
-. Configure the *Enable Global Capsule* setting.
+. Configure the *Enable Global {SmartProxy}* setting.
 
 .For CLI Users
 
-Enter the `hammer settings set` command on Satellite to configure the `Enable Global Capsule` setting. For example, to set the value to `true`, enter the following command:
+Enter the `hammer settings set` command on {Project} to configure the `Enable Global {SmartProxy}` setting. For example, to set the value to `true`, enter the following command:
 
 ----
 # hammer settings set --name=remote_execution_global_proxy --value=true
 ----
 
-=== Configuring Satellite to Use an Alternative Directory to Execute Remote Jobs on Clients
+=== Configuring {Project} to Use an Alternative Directory to Execute Remote Jobs on Clients
 
-By default, Satellite uses the `/var/tmp` directory on the client system to execute the remote execution jobs. If the client system has `noexec` set for the `/var/` volume or file system, you must configure Satellite to use an alternative directory because otherwise the remote execution job fails since the script cannot be run. 
+By default, {Project} uses the `/var/tmp` directory on the client system to execute the remote execution jobs. If the client system has `noexec` set for the `/var/` volume or file system, you must configure {Project} to use an alternative directory because otherwise the remote execution job fails since the script cannot be run. 
 
 .Procedure
 
@@ -118,15 +118,15 @@ Optional: To use an alternative directory, complete this procedure.
 [[sect-Managing_Hosts-Establishing_a_Secure_Connection_for_Remote_Commands]]
 === Distributing SSH Keys for Remote Execution
 
-To use SSH keys for authenticating remote execution connections, you must distribute the public SSH key from Capsule to its attached hosts that you want to manage. Ensure that the SSH service is enabled and running on the hosts. Configure any network or host-based firewalls to enable access to port 22.
+To use SSH keys for authenticating remote execution connections, you must distribute the public SSH key from {SmartProxy} to its attached hosts that you want to manage. Ensure that the SSH service is enabled and running on the hosts. Configure any network or host-based firewalls to enable access to port 22.
 
-Use one of the following methods to distribute the public SSH key from Capsule to target hosts:
+Use one of the following methods to distribute the public SSH key from {SmartProxy} to target hosts:
 
 . xref:sect-Managing_Hosts-Distributing_SSH_Keys_for_Remote_Execution_Manually[].
 . xref:sect-Managing_Hosts-Using_API_to_Obtain_SSH_Keys_for_Remote_Execution[].
 . xref:sect-Managing_Hosts-Configuring_a_Kickstart_Template_to_Distribute_SSH_Keys_during_Provisioning[].
 
-Satellite distributes SSH keys for the remote execution feature to the hosts provisioned from Satellite by default.
+{Project} distributes SSH keys for the remote execution feature to the hosts provisioned from {Project} by default.
 
 [[sect-Managing_Hosts-Distributing_SSH_Keys_for_Remote_Execution_Manually]]
 ==== Distributing SSH Keys for Remote Execution Manually
@@ -135,14 +135,14 @@ To distribute SSH keys manually, complete the following steps:
 
 .Procedure
 
-. Enter the following command on Capsule. Repeat for each target host you want to manage:
+. Enter the following command on {SmartProxy}. Repeat for each target host you want to manage:
 +
 [options="nowrap" subs="+quotes,verbatim"]
 ----
 # ssh-copy-id -i ~foreman-proxy/.ssh/id_rsa_foreman_proxy.pub _root@target.example.com_
 ----
 
-. To confirm that the key was successfully copied to the target host, enter the following command on Capsule:
+. To confirm that the key was successfully copied to the target host, enter the following command on {SmartProxy}:
 +
 [options="nowrap" subs="+quotes,verbatim"]
 ----
@@ -150,9 +150,9 @@ To distribute SSH keys manually, complete the following steps:
 ----
 
 [[sect-Managing_Hosts-Using_API_to_Obtain_SSH_Keys_for_Remote_Execution]]
-==== Using the Satellite API to Obtain SSH Keys for Remote Execution
+==== Using the {Project} API to Obtain SSH Keys for Remote Execution
 
-To use the Satellite API to download the public key from Capsule, complete this procedure on each target host.
+To use the {Project} API to download the public key from {SmartProxy}, complete this procedure on each target host.
 
 .Procedure
 
@@ -162,7 +162,7 @@ To use the Satellite API to download the public key from Capsule, complete this 
 # mkdir ~/.ssh
 ----
 
-. Download the SSH key from Capsule:
+. Download the SSH key from {SmartProxy}:
 +
 [options="nowrap" subs="+quotes,verbatim"]
 ----
@@ -184,7 +184,7 @@ To use the Satellite API to download the public key from Capsule, complete this 
 [[sect-Managing_Hosts-Configuring_a_Kickstart_Template_to_Distribute_SSH_Keys_during_Provisioning]]
 ==== Configuring a Kickstart Template to Distribute SSH Keys during Provisioning
 
-You can add a `remote_execution_ssh_keys` snippet to your custom kickstart template to deploy SSH Keys to hosts during provisioning. Kickstart templates that Satellite ships include this snippet by default. Therefore, Satellite copies the SSH key for remote execution to the systems during provisioning.
+You can add a `remote_execution_ssh_keys` snippet to your custom kickstart template to deploy SSH Keys to hosts during provisioning. Kickstart templates that {Project} ships include this snippet by default. Therefore, {Project} copies the SSH key for remote execution to the systems during provisioning.
 
 .Procedure
 
@@ -197,11 +197,11 @@ You can add a `remote_execution_ssh_keys` snippet to your custom kickstart templ
 
 === Configuring a keytab for Kerberos Ticket Granting Tickets
 
-Use this procedure to configure Satellite to use a keytab to obtain Kerberos ticket granting tickets. If you do not set up a keytab, you must manually retrieve tickets.
+Use this procedure to configure {Project} to use a keytab to obtain Kerberos ticket granting tickets. If you do not set up a keytab, you must manually retrieve tickets.
 
 .Procedure
 
-To ensure that the `foreman-proxy` user on Satellite can obtain Kerberos ticket granting tickets, complete the following steps:
+To ensure that the `foreman-proxy` user on {Project} can obtain Kerberos ticket granting tickets, complete the following steps:
 
 . Find the ID of the `foreman-proxy` user:
 +
@@ -254,20 +254,20 @@ To ensure that the `foreman-proxy` user on Satellite can obtain Kerberos ticket 
 
 === Configuring Kerberos Authentication for Remote Execution
 
-From Satellite {ProductVersion}, you can use Kerberos authentication to establish an SSH connection for remote execution on Satellite hosts.
+From {Project} {ProductVersion}, you can use Kerberos authentication to establish an SSH connection for remote execution on {Project} hosts.
 
 .Prerequisites
 
-Before you can use Kerberos authentication for remote execution on Red{nbsp}Hat Satellite, you must set up a Kerberos server for identity management and ensure that you complete the following prerequisites:
+Before you can use Kerberos authentication for remote execution on {ProjectName}, you must set up a Kerberos server for identity management and ensure that you complete the following prerequisites:
 
-* Enroll Satellite Server on the Kerberos server
-* Enroll the Satellite target host on the Kerberos server
+* Enroll {ProjectServer} on the Kerberos server
+* Enroll the {Project} target host on the Kerberos server
 * Configure and initialize a Kerberos user account for remote execution
-* Ensure that the foreman-proxy user on Satellite has a valid Kerberos ticket granting ticket
+* Ensure that the foreman-proxy user on {Project} has a valid Kerberos ticket granting ticket
 
 .Procedure
 
-To set up Satellite to use Kerberos authentication for remote execution on hosts, complete the following steps:
+To set up {Project} to use Kerberos authentication for remote execution on hosts, complete the following steps:
 
 . To install the `tfm-rubygem-net-ssh-krb` package, enter the following command:
 +
@@ -283,7 +283,7 @@ To set up Satellite to use Kerberos authentication for remote execution on hosts
  --foreman-proxy-plugin-remote-execution-ssh-ssh-kerberos-auth true
 ----
 +
-. To edit the default user for remote execution, in the Satellite web UI, navigate to *Administer* > *Settings* and click the *RemoteExecution* tab. In the *remote_execution_ssh_user* row, edit the second column and add the user name for the Kerberos account.
+. To edit the default user for remote execution, in the {Project} web UI, navigate to *Administer* > *Settings* and click the *RemoteExecution* tab. In the *remote_execution_ssh_user* row, edit the second column and add the user name for the Kerberos account.
 . Navigate to *remote_execution_effective_user* and edit the second column to add the user name for the Kerberos account.
 
 To confirm that Kerberos authentication is ready to use, run a remote job on the host.
@@ -296,7 +296,7 @@ Any command that you want to apply to a remote host must be defined as a job tem
 [[sect-Managing_Hosts-Setting_up_Job_Templates]]
 ==== Setting up Job Templates
 
-Satellite provides default job templates that you can use for executing jobs. To view the list of job templates, navigate to *Hosts* > *Job templates*. If want to use a template without making changes, proceed to xref:sect-Managing_Hosts-Executing_Remote_Jobs[].
+{Project} provides default job templates that you can use for executing jobs. To view the list of job templates, navigate to *Hosts* > *Job templates*. If want to use a template without making changes, proceed to xref:sect-Managing_Hosts-Executing_Remote_Jobs[].
 
 You can use default templates as a base for developing your own. Default job templates are locked for editing. Clone the template and edit the clone.
 
@@ -304,14 +304,14 @@ You can use default templates as a base for developing your own. Default job tem
 
 . Enter a unique name for the clone and click *Submit* to save the changes.
 
-Job templates use the Embedded Ruby (ERB) syntax. For more information about writing templates, see the xref:appe-Red_Hat_Satellite-Managing_Hosts-Template_Writing_Reference[].
+Job templates use the Embedded Ruby (ERB) syntax. For more information about writing templates, see the xref:appe-{Project_Link}-Managing_Hosts-Template_Writing_Reference[].
 
 .Ansible Considerations
-To create an Ansible job template, use the following procedure and instead of ERB syntax, use YAML syntax. Begin the template with `---` and to the first line, you must add `- hosts: all`. You can embed an Ansible playbook YAML file into the job template body. You can also add ERB syntax to customize your YAML Ansible template. You can also import Ansible playbooks in Satellite. For more information, see xref:Synchronizing_Templates_Repositories[].
+To create an Ansible job template, use the following procedure and instead of ERB syntax, use YAML syntax. Begin the template with `---` and to the first line, you must add `- hosts: all`. You can embed an Ansible playbook YAML file into the job template body. You can also add ERB syntax to customize your YAML Ansible template. You can also import Ansible playbooks in {Project}. For more information, see xref:Synchronizing_Templates_Repositories[].
 
 .Parameter Variables
 At run time, job templates can accept parameter variables that you define for a host. Note that only the parameters visible on the *Parameters* tab at the host's edit page can be used as input parameters for job templates.
-If you do not want your Ansible job template to accept parameter variables at run time, in the Satellite web UI, navigate to *Administer* > *Settings* and click the *Ansible* tab. In the *Top level Ansible variables* row, change the *Value* parameter to *No*.
+If you do not want your Ansible job template to accept parameter variables at run time, in the {Project} web UI, navigate to *Administer* > *Settings* and click the *Ansible* tab. In the *Top level Ansible variables* row, change the *Value* parameter to *No*.
 
 [[proc-Managing_Hosts-Creating_a_Job_Template]]
 .To Create a Job Template:
@@ -364,7 +364,7 @@ To create a job template using a template-definition file, enter the following c
 |Power |Templates for performing power related actions. Restart and shutdown actions are included by default.
 |Commands |Templates for executing custom commands on remote hosts.
 |Services |Templates for performing service related actions. Start, stop, restart, and status actions are included by default.
-|Katello |Templates for performing content related actions. These templates are used mainly from different parts of the Satellite web UI (for example bulk actions UI for content hosts), but can be used separately to perform operations such as errata installation.
+|Katello |Templates for performing content related actions. These templates are used mainly from different parts of the {Project} web UI (for example bulk actions UI for content hosts), but can be used separately to perform operations such as errata installation.
 |====
 
 [[exam-Managing_Hosts-Creating_a_restorecon_Template]]
@@ -427,7 +427,7 @@ You can execute a job that is based on a job template against one or more hosts.
 
 .For CLI Users
 
-Enter the following command on Satellite:
+Enter the following command on {Project}:
 +
 ----
 # hammer settings set --name=remote_execution_global_proxy --value=false
@@ -553,7 +553,7 @@ Create a new template as described in xref:sect-Managing_Hosts-Setting_up_Job_Te
 [[exam-Managing_Hosts-Including_Power_Actions_in_Templates]]
 .Including Power Actions in Templates
 ====
-This example shows how to set up a job template for performing power actions, such as reboot. This procedure prevents Satellite from interpreting the disconnect exception upon reboot as an error, and consequently, remote execution of the job works correctly.
+This example shows how to set up a job template for performing power actions, such as reboot. This procedure prevents {Project} from interpreting the disconnect exception upon reboot as an error, and consequently, remote execution of the job works correctly.
 
 Create a new template as described in xref:sect-Managing_Hosts-Setting_up_Job_Templates[], and specify the following string in the template editor:
 [source, Ruby]
@@ -574,9 +574,9 @@ You can control which users can run which jobs within your infrastructure, inclu
 
 
 
-You can clone the Remote Execution User role and customize its filter for increased granularity. If you adjust the filter with the `view_job_templates` permission, the user can only see and trigger jobs based on matching job templates. You can use the `view_hosts` and `view_smart_proxies` permissions to limit which hosts or Capsules are visible to the role.
+You can clone the Remote Execution User role and customize its filter for increased granularity. If you adjust the filter with the `view_job_templates` permission, the user can only see and trigger jobs based on matching job templates. You can use the `view_hosts` and `view_smart_proxies` permissions to limit which hosts or {SmartProxies} are visible to the role.
 
-The `execute_template_invocation` permission is a special permission that is checked immediately before execution of a job begins. This permission defines which job template you can run on a particular host. This allows for even more granularity when specifying permissions. For more information on working with roles and permissions see link:https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/administering_red_hat_satellite/chap-red_hat_satellite-administering_red_hat_satellite-users_and_roles#sect-Red_Hat_Satellite-Administering_Red_Hat_Satellite-Users_and_Roles-Creating_and_Managing_Roles[Creating and Managing Roles] in the _Administering Red Hat Satellite_.
+The `execute_template_invocation` permission is a special permission that is checked immediately before execution of a job begins. This permission defines which job template you can run on a particular host. This allows for even more granularity when specifying permissions. For more information on working with roles and permissions see link:https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/administering_red_hat_satellite/chap-red_hat_satellite-administering_red_hat_satellite-users_and_roles#sect-{Project_Link}-Administering_{Project_Link}-Users_and_Roles-Creating_and_Managing_Roles[Creating and Managing Roles] in the _Administering {ProjectName}_.
 
 The following example shows filters for the `execute_template_invocation` permission:
 
