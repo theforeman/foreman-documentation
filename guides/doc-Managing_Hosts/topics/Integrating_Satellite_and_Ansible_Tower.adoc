@@ -1,0 +1,137 @@
+[[chap-Red_Hat_Satellite-Managing_Hosts-Integrating_Satellite_and_Ansible_Tower]]
+== Integrating Red Hat Satellite and Ansible Tower
+
+You can integrate Red{nbsp}Hat Satellite{nbsp}{ProductVersion} and Ansible Tower to use Satellite Server as a dynamic inventory source for Ansible Tower.
+
+You can also use the provisioning callback function to run playbooks on hosts managed by Satellite, from either the host or Ansible Tower. When provisioning new hosts from Satellite Server, you can use the provisioning callback function to trigger playbook runs from Ansible Tower. The playbook configures the host following Kickstart deployment.
+
+[[sect-Red_Hat_Satellite-Managing_Hosts-Integrating_Satellite_and_Ansible_Tower-Adding_Satellite_Server_to_Ansible_Tower_as_a_Dynamic_Inventory_Item]]
+=== Adding Satellite Server to Ansible Tower as a Dynamic Inventory Item
+
+To add Satellite Server to Ansible Tower as a dynamic inventory item, you must create a credential for a Satellite Server user on Ansible Tower, add an Ansible Tower user to the credential, and then configure an inventory source.
+
+.Prerequisites
+
+* If your Satellite deployment is large, for example, managing tens of thousands of hosts, using a non-admin user can negatively impact performance because of time penalties that accrue during authorization checks. For large deployments, consider using an admin user.
+* For non-admin users, you must assign the `Ansible Tower Inventory Reader` role to your Satellite Server user. For more information about managing users, roles, and permission filters, see https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/administering_red_hat_satellite/chap-Red_Hat_Satellite-Administering_Red_Hat_Satellite-Users_and_Roles#sect-Red_Hat_Satellite-Administering_Red_Hat_Satellite-Users_and_Roles-Creating_and_Managing_Roles[Creating and Managing Roles] in _Administering Red{nbsp}Hat Satellite_.
+* You must host your Satellite Server and Ansible Tower on the same network or subnet.
+
+[[proc-Red_Hat_Satellite-Managing_Hosts-Integrating_Satellite_and_Ansible_Tower-To_Add_Satellite_Server_to_Ansible_Tower_as_a_Dynamic_Inventory_Item]]
+.Procedure
+
+To add Satellite Server to Ansible Tower as a Dynamic Inventory Item, complete the following procedure:
+
+. In the Ansible Tower web UI, create a credential for your Satellite. For more information about creating credentials, see http://docs.ansible.com/ansible-tower/latest/html/userguide/credentials.html#add-a-new-credential[Add a New Credential] and http://docs.ansible.com/ansible-tower/latest/html/userguide/credentials.html#red-hat-satellite-6[Red Hat Satellite 6 Credentials] in the _Ansible Tower User Guide_.
++
+[[tabl-Red_Hat_Satellite-Managing_Hosts-Integrating_Satellite_and_Ansible_Tower-Satellite_Credentials]]
+.Satellite Credentials
+[cols="1a,2a"options="header"]
+|====
+|*Credential Type*: |*Red{nbsp}Hat Satellite{nbsp}6*
+|*Satellite 6 URL*: |https://_satellite.example.com_
+|*Username*: |The username of the Satellite user with the integration role.
+|*Password*: |The password of the Satellite user.
+|====
++
+. Add an Ansible Tower user to the new credential. For more information about adding a user to a credential, see http://docs.ansible.com/ansible-tower/latest/html/userguide/credentials.html#getting-started-with-credentials[Getting Started with Credentials] in the _Ansible Tower User Guide_.
+. Add a new inventory. For more information, see http://docs.ansible.com/ansible-tower/latest/html/userguide/inventories.html#add-a-new-inventory[Add a new inventory] in the _Ansible Tower User Guide_.
+. In the new inventory, add Satellite Server as the inventory source, specifying the following inventory source options. For more information, see https://docs.ansible.com/ansible-tower/latest/html/userguide/inventories.html#add-source[Add Source] in the _Ansible Tower User Guide_.
++
+[[tabl-Red_Hat_Satellite-Managing_Hosts-Integrating_Satellite_and_Ansible_Tower-Inventory_Source_Options]]
+.Inventory Source Options
+[cols="1a,2a"options="header"]
+|====
+|*Source* |*Red{nbsp}Hat Satellite{nbsp}6*
+|*Credential* |The credential you create for Satellite Server.
+|*Overwrite* |Select
+|*Overwrite Variables* | Select
+|*Update on Launch* |Select
+|*Cache Timeout* |_90_
+|====
++
+. Ensure that you synchronize the source that you add.
+
+[[sect-Red_Hat_Satellite-Managing_Hosts-Integrating_Satellite_and_Ansible_Tower-Configuring_Provisioning_Callback_for_a_Host]]
+=== Configuring Provisioning Callback for a Host
+
+When you create hosts in Satellite, you can use Ansible Tower to run playbooks to configure your newly created hosts. This is called _provisioning callback_ in Ansible Tower.
+
+The provisioning callback function triggers a playbook run from Ansible Tower as part of the provisioning process. The playbook configures the host after Kickstart deployment.
+
+For more information about provisioning callbacks, see http://docs.ansible.com/ansible-tower/latest/html/userguide/job_templates.html#provisioning-callbacks[Provisioning Callbacks] in the _Ansible Tower User Guide_.
+
+In Satellite Server, the `Kickstart Default` and `Kickstart Default Finish` templates include three snippets:
+
+. `ansible_provisioning_callback`
+. `ansible_tower_callback_script`
+. `ansible_tower_callback_service`
+
+You can add parameters to hosts or host groups to provide the credentials that these snippets can use to run Ansible playbooks on your newly created hosts.
+
+.Prerequisites
+
+Before you can configure provisioning callbacks, you must add Satellite as a dynamic inventory in Ansible Tower. For more information, see xref:chap-Red_Hat_Satellite-Managing_Hosts-Integrating_Satellite_and_Ansible_Tower[Integrating Satellite and Ansible Tower].
+
+In the Ansible Tower web UI, you must complete the following tasks:
+
+. Create a machine credential for your new host. Ensure that you enter the same password in the credential that you plan to assign to the host that you create in Satellite. For more information, see https://docs.ansible.com/ansible-tower/latest/html/userguide/credentials.html#add-a-new-credential[Add a New Credential] in the _Ansible Tower User Guide_.
+. Create a project. For more information, see https://docs.ansible.com/ansible-tower/latest/html/userguide/projects.html[Projects] in the _Ansible Tower User Guide_.
+. Add a job template to your project. For more information, see https://docs.ansible.com/ansible-tower/latest/html/userguide/job_templates.html#create-a-job-template[Job Templates] in the _Ansible Tower User Guide_.
+. In your job template, you must enable provisioning callbacks, generate the host configuration key, and note the _template_ID_ of your job template. For more information about job templates, see http://docs.ansible.com/ansible-tower/latest/html/userguide/job_templates.html#[Job Templates] in the _Ansible Tower User Guide_.
+
+[[proc-Red_Hat_Satellite-Managing_Hosts-Integrating_Satellite_and_Ansible_Tower-To_Configure_Provisioning_Callback_for_a_Host]]
+.Procedure
+
+To configure provisioning callback for a new host in Satellite, complete the following steps:
+
+. In the Red{nbsp}Hat Satellite web UI, navigate to *Configure* > *Host Group*.
+. Create a host group or edit an existing host group.
+. In the Host Group window, click the *Parameters* tab.
+. Click *Add Parameter*.
+. Enter the following information for each new parameter:
++
+[[tabl-Red_Hat_Satellite-Managing_Hosts-Integrating_Satellite_and_Ansible_Tower-Host_Parameters]]
+.Host Parameters
+[cols="1a,1a,2a"options="header"]
+|====
+|Name |Value |Description
+|`ansible_tower_provisioning` |true |Enables Provisioning Callback.
+|`ansible_tower_fqdn` |_tower.example.com_ |The fully qualified domain name (FQDN) of your Ansible Tower. Do not add `https` because this is appended by Ansible Tower.
+|`ansible_job_template_id` |_template_ID_ |The ID of your provisioning template that you can find in the URL of the template: `/templates/job_template/_5_`.
+|`ansible_host_config_key` |_config_KEY_ |The host configuration key that your job template generates in Ansible Tower.
+|====
++
+. Click *Submit*.
+. Create a host using the host group.
+. On the new host, enter the following command to start the `ansible-callback` service:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# systemctl start ansible-callback
+----
++
+. On the new host, enter the following command to output the status of the `ansible-callback` service:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# systemctl status ansible-callback
+----
++
+Provisioning callback is configured correctly if the command returns the following output:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+SAT_host systemd[1]: Started Provisioning callback to Ansible Tower...
+----
+
+.Manual Provisioning Callback
+You can use the provisioning callback URL and the host configuration key from a host to call Ansible Tower. For example:
+[options="nowrap" subs="+quotes"]
+----
+# curl -k -s --data curl --insecure --data host_config_key=_my_config_key_ \
+ https://_tower.example.com_/api/v2/job_templates/_8_/callback/
+----
+
+Ensure that you use `https` when you enter the provisioning callback URL.
+
+This triggers the playbook run specified in the template against the host.

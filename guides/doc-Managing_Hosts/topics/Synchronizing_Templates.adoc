@@ -1,0 +1,336 @@
+[[Synchronizing_Templates_Repositories]]
+== Synchronizing Template Repositories
+
+In Satellite, you can synchronize repositories of job templates, provisioning templates, report templates, and partition table templates between Satellite Server and a version control system or local directory. In this chapter, a Git repository is used for demonstration purposes.
+
+This section details the workflow for:
+
+* installing and configuring the TemplateSync plug-in
+* performing exporting and importing tasks
+
+=== Enabling the TemplateSync plug-in
+
+. To enable the plug-in on your Satellite Server, enter the following command:
++
+----
+# satellite-installer --enable-foreman-plugin-templates
+----
+. To verify that the plug-in is installed correctly, ensure *Administer* > *Settings* includes the *TemplateSync* menu.
+
+[[configuring-the-templatesync-plug-in]]
+=== Configuring the TemplateSync plug-in
+
+In the Satellite web UI, navigate to *Administer* > *Settings* > *TemplateSync* to configure the plug-in. The following table explains the attributes behavior. Note that some attributes are used only for importing or exporting tasks.
+
+.Synchronizing Templates Plug-in configuration
+[cols="4"]
+|===
+|Parameter |API parameter name |Meaning on importing |Meaning on exporting
+
+|Associate a|`associate`
+
+Accepted values: `always`, `new`, `never` |Associates templates with OS, Organization, and Location based on metadata. |N/A
+|Branch a|`branch` |Specifies the default branch in Git repository to read from. |Specifies the default branch in Git repository to write to.
+|Dirname a|`dirname` |Specifies  the subdirectory under the repository to read from. |Specifies the subdirectory under the repository to write to.
+|Filter a|`filter` |Imports only templates with names that match this regular expression. |Exports only templates with names that match this regular expression.
+|Force import a|`force` |Imported templates overwrite locked templates with the same name. |N/A
+|Lock templates a|`lock` a|Do not overwrite existing templates when you import a new template with the same name, unless *Force import* is enabled. |N/A
+|Metadata export mode a|`metadata_export_mode`
+
+Accepted values: `refresh`, `keep`, `remove` |N/A a|Defines how metadata is handled when exporting:
+
+* *Refresh* — remove existing metadata from the template content and generate new metadata based on current assignments and attributes.
+* *Keep* — retain the existing metadata.
+* *Remove* — export template without metadata. Useful if you want to add metadata manually.
+
+|Negate a|`negate`
+
+Accepted values: `true`, `false` |Imports templates ignoring the filter attribute. |Exports templates ignoring the filter attribute.
+|Prefix a|`prefix` |Adds specified string to the beginning of the template if the template name does not start with the prefix already. |N/A
+|Repo a|`repo` |Defines the path to the repository to synchronize from. |Defines the path to a repository to export to.
+|Verbosity a|`verbose`
+
+Accepted values: `true`, `false` |Enables writing verbose messages to the logs for this action. |N/A
+|===
+
+=== Importing and Exporting Templates
+
+You can import and export templates using the Satellite web UI, Hammer CLI, or Satellite API. Satellite API calls use the role-based access control system, which enables the tasks to be executed as any user. You can synchronize templates with a version control system, such as Git, or a local directory.
+
+==== Importing Templates
+
+You can import templates from a repository of your choice. You can use different protocols to point to your repository, for example `/tmp/dir`, `git://example.com`, `https://example.com`, and `ssh://example.com`.
+
+.Prerequisites
+
+* Each template must contain the location and organization that the template belongs to. This applies to all template types. Before you import a template, ensure that you add the following section to the template:
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+<%#
+kind: provision
+name: _My Kickstart File_
+oses:
+- RedHat 7
+- RedHat 6
+locations:
+- _First Location_
+- _Second Location_
+organizations:
+- _Default Organization_
+- _Extra Organization_
+%>
+----
+
+.Procedure
+
+. In the Satellite web UI, navigate to *Hosts* > *Sync Templates*.
+. Click *Import*.
+. Each field is populated with values configured in *Administer* > *Settings* > *TemplateSync*. Change the values as required for the templates you want to import. For more information about each field, see xref:configuring-the-templatesync-plug-in[].
+. Click *Submit*.
+
+The Satellite web UI displays the status of the import. The status is not persistent; if you leave the status page, you cannot return to it.
+
+.For CLI Users
+
+* To import a template from a repository, enter the following command:
++
+[options="nowrap" subs="+quotes"]
+----
+$ hammer import-templates \
+    --prefix '[__Custom Index__] ' \
+    --filter '.*__Template Name$__' \
+    --repo __https://github.com/examplerepo/exampledirectory__ \
+    --branch __my_branch__ \
+    --organization 'Default Organization'
+----
++
+For better indexing and management of your templates, use `--prefix` to set a category for your templates. To select certain templates from a large repository, use `--filter` to define the title of the templates that you want to import. For example `--filter '.*Ansible Default$'` imports various Ansible Default templates.
+
+==== Exporting Templates
+
+You can export templates to a version control server, such as a Git repository.
+
+.Procedure
+
+. In the Satellite web UI, navigate to *Hosts* > *Sync Templates*.
+. Click *Export*.
+. Each field is populated with values configured in *Administer* > *Settings* > *TemplateSync*. Change the values as required for the templates you want to export. For more information about each field, see xref:configuring-the-templatesync-plug-in[].
+. Click *Submit*.
+
+The Satellite web UI displays the status of the export. The status is not persistent; if you leave the status page, you cannot return to it.
+
+.For CLI Users
+
+. Clone a local copy of your Git repository:
++
+[options="nowrap" subs="+quotes"]
+----
+$ git clone https://github.com/theforeman/community-templates __/custom/templates__
+----
+. Change the owner of your local directory to the `foreman` user, and change the SELinux context with the following commands:
++
+[options="nowrap" subs="+quotes"]
+----
+# chown -R foreman:foreman __/custom/templates__
+# chcon -R -t httpd_sys_rw_content_t __/custom/templates__
+----
+. To export the templates to your local repository, enter the following command:
++
+[options="nowrap" subs="+quotes"]
+----
+hammer export-templates --organization 'Default Organization' --repo __/custom/templates__
+----
+
+==== Synchronizing Templates Using the Satellite API
+
+.Prerequisites
+
+* Each template must contain the location and organization that the template belongs to. This applies to all template types. Before you import a template, ensure that you add the following section to the template:
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+<%#
+kind: provision
+name: _My Kickstart File_
+oses:
+- RedHat 7
+- RedHat 6
+locations:
+- _First Location_
+- _Second Location_
+organizations:
+- _Default Organization_
+- _Extra Organization_
+%>
+----
+
+.Procedure
+
+. Configure a version control system that uses SSH authorization, for example gitosis, gitolite, or git daemon.
+
+. Configure the TemplateSync plug-in settings on a *TemplateSync* tab.
+.. Change the *Branch* setting to match the target branch on a Git server.
+.. Change the *Repo* setting to match the Git repository. For example, for the repository located in `git@git.example.com/templates.git` set the setting into `ssh://git@git.example.com/templates.git`.
+
+. Accept Git SSH host key as the `foreman` user:
++
+[subs="+quotes"]
+----
+# sudo -u foreman ssh _git.example.com_
+----
++
+You can see the `Permission denied, please try again.` message in the output, which is expected, because the SSH connection cannot succeed yet.
+
+. Create an SSH key pair if you do not already have it. Do not specify a passphrase.
++
+----
+# sudo -u foreman ssh-keygen
+----
+
+. Configure your version control server with the public key from your Satellite, which resides in `/usr/share/foreman/.ssh/id_rsa.pub`.
+
+. Export templates from your Satellite Server to the version control repository specified in the *TemplateSync* menu:
++
+[subs="+quotes"]
+----
+$ curl -H "Accept:application/json,version=2" \
+-H "Content-Type:application/json" \
+-u _login_:__password__ \
+-k https://_satellite.example_.com/api/v2/templates/export \
+-X POST
+
+{"message":"Success"}
+----
+
+. Import templates to Satellite Server after their content was changed:
++
+[subs="+quotes"]
+----
+$ curl -H "Accept:application/json,version=2" \
+-H "Content-Type:application/json" \
+-u _login_:__password__ \
+-k https://_satellite.example_.com/api/v2/templates/import \
+-X POST
+
+{“message”:”Success”}
+----
++
+Note that templates provided by Satellite are locked and you cannot import them by default. To overwrite this behavior, change the `Force import` setting in the *TemplateSync* menu to `yes` or add the `force` parameter `-d '{ "force": "true" }’` to the import command.
+
+==== Synchronizing Templates with a Local Directory Using the Satellite API
+
+Synchronizing templates with a local directory is useful if you have configured a version control repository in the local directory. That way, you can edit templates and track the history of edits in the directory. You can also synchronize changes to Satellite Server after editing the templates.
+
+.Prerequisites
+
+* Each template must contain the location and organization that the template belongs to. This applies to all template types. Before you import a template, ensure that you add the following section to the template:
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+<%#
+kind: provision
+name: _My Kickstart File_
+oses:
+- RedHat 7
+- RedHat 6
+locations:
+- _First Location_
+- _Second Location_
+organizations:
+- _Default Organization_
+- _Extra Organization_
+%>
+----
+
+.Procedure
+
+. Create the directory where templates are stored and apply appropriate permissions and SELinux context:
++
+[subs="+quotes"]
+----
+# mkdir -p _/usr/share/templates_dir/_
+# chown foreman _/usr/share/templates_dir/_
+# chcon -t httpd_sys_rw_content_t _/usr/share/templates_dir/_ -R
+----
+
+. Change the *Repo* setting on the *TemplateSync* tab to match the export directory `/usr/share/templates_dir/`.
+
+. Export templates from your Satellite Server to a local directory:
++
+[subs="+quotes"]
+----
+$ curl -H "Accept:application/json,version=2" \
+-H "Content-Type:application/json" \
+-u _login_:__password__ \
+-k https://_satellite.example_.com/api/v2/templates/export \
+-X POST \
+
+{"message":"Success"}
+----
+
+. Import templates to Satellite Server after their content was changed:
++
+[subs="+quotes"]
+----
+$ curl -H "Accept:application/json,version=2" \
+-H "Content-Type:application/json" \
+-u _login_:__password__ \
+-k https://_satellite.example_.com/api/v2/templates/import \
+-X POST
+
+{“message”:”Success”}
+----
++
+Note that templates provided by Satellite are locked and you cannot import them by default. To overwrite this behavior, change the `Force import` setting in the *TemplateSync* menu to `yes` or add the `force` parameter `-d '{ "force": "true" }’` to the import command.
+
+[NOTE]
+====
+You can override default API settings by specifying them in the request with the `-d` parameter. The following example exports templates to the `git.example.com/templates` repository:
+
+----
+$ curl -H "Accept:application/json,version=2" \
+-H "Content-Type:application/json" \
+-u login:password \
+-k https://satellite.example.com/api/v2/templates/export \
+-X POST \
+-d "{\"repo\":\"git.example.com/templates\"}"
+----
+====
+
+=== Advanced Git Configuration
+You can perform additional Git configuration for the TemplateSync plug-in using the command line or editing the `.gitconfig` file.
+
+.Accepting a self-signed Git certificate
+
+If you are using a self-signed certificate authentification on your Git server, validate the certificate with the `git config http.sslCAPath` command.
+
+For example, the following command verifies a self-signed certificate stored in `/cert/cert.pem`:
+
+[subs="+quotes"]
+----
+# sudo -u foreman git config --global http.sslCAPath _cert/cert.pem_
+----
+
+For a complete list of advanced options, see the `git-config` manual page.
+
+=== Uninstalling the plug-in
+To avoid errors after removing the foreman_templates plugin:
+
+. Disable the plug-in using the Satellite installer:
++
+----
+# satellite-installer --no-enable-foreman-plugin-templates
+----
+
+. Clean custom data of the plug-in. The command does not affect any templates that you created.
++
+----
+# foreman-rake templates:cleanup
+----
+
+. Uninstall the plug-in:
++
+----
+# yum remove tfm-rubygem-foreman_templates
+----

@@ -1,0 +1,174 @@
+[id="registering-a-host-to-satellite-using-the-bootstrap-script"]
+= Registering a Host to Red{nbsp}Hat Satellite Using The Bootstrap Script
+
+Use the bootstrap script to automate content registration and Puppet configuration. You can use the bootstrap script to register new hosts, or to migrate existing hosts to Red{nbsp}Hat Satellite 6 from Satellite 5, RHN, SAM, or RHSM.
+
+The `katello-client-bootstrap` package is installed by default on Satellite Server's base operating system. The `bootstrap.py` script is installed in the `/var/www/html/pub/` directory to make it available to hosts at `_satellite6.example.com_/pub/bootstrap.py`. The script includes documentation in the `/usr/share/doc/katello-client-bootstrap-_version_/README.md` file.
+
+To use the bootstrap script, you must install it on the host. As the script is only required once, and only for the `root` user, you can place it in `/root` or `/usr/local/sbin` and remove it after use. This procedure uses `/root`.
+
+
+.Prerequisites
+
+* You have a Satellite user with the permissions required to run the bootstrap script. The examples in this procedure specify the `admin` user. If this is not acceptable to your security policy, create a new role with the minimum permissions required and add it to the user that will run the script. For more information, see xref:setting-permissions-for-the-bootstrap-script[].
+* You have an activation key for your hosts with the {project-client-name} repository enabled. For information on configuring activation keys, see https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/content_management_guide/managing_activation_keys[Managing Activation Keys] in the _Content Management Guide_.
+* You have created a host group. For more information about creating host groups, see xref:creating-a-host-group[].
+
+.Puppet Considerations
+
+If a host group is associated with a Puppet environment created inside a `Production` environment, Puppet fails to retrieve the Puppet CA certificate while registering a host from that host group.
+
+To create a suitable Puppet environment to be associated with a host group, follow these steps:
+
+. Manually create a directory and change the owner:
++
+[options="nowrap" subs="+quotes"]
+----
+# mkdir /etc/puppetlabs/code/environments/_example_environment_
+# chown apache /etc/puppetlabs/code/environments/_example_environment_
+----
+. Navigate to *Configure* > *Environments* and click *Import environment from*. The button name includes the FQDN of the internal or external Capsule.
+. Choose the created directory and click *Update*.
+
+
+.Procedure
+
+. Log in to the host as the `root` user.
+
+. Download the script:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# curl -O http://_satellite6.example.com_/pub/bootstrap.py
+----
+
+. Make the script executable:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# chmod +x bootstrap.py
+----
+
+. Confirm that the script is executable by viewing the help text:
+
+* On Red{nbsp}Hat Enterprise Linux 8:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# /usr/libexec/platform-python bootstrap.py -h
+----
+
+* On other Red{nbsp}Hat Enterprise Linux versions:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# ./bootstrap.py -h
+----
+
+. Enter the bootstrap command with values suitable for your environment.
++
+For the `--server` option, specify the FQDN of Satellite Server or a Capsule Server. For the `--location`, `--organization`, and `--hostgroup` options, use quoted names, not labels, as arguments to the options. See xref:advanced-bootstrap-script-configuration[] for advanced use cases.
+
+* On Red{nbsp}Hat Enterprise Linux 8, enter the following command:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# /usr/libexec/platform-python bootstrap.py \
+--login=_admin_ \
+--server _satellite6.example.com_ \
+--location=_"Example Location"_ \
+--organization=_"Example Organization"_ \
+--hostgroup=_"Example Host Group"_ \
+--activationkey=_activation_key_
+----
+
+* On Red{nbsp}Hat Enterprise Linux 5, 6, or 7, enter the following command:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# ./bootstrap.py --login=_admin_ \
+--server _satellite6.example.com_ \
+--location=_"Example Location"_ \
+--organization=_"Example Organization"_ \
+--hostgroup=_"Example Host Group"_ \
+--activationkey=_activation_key_
+----
+
+. Enter the password of the Satellite user you specified with the `--login` option.
++
+The script sends notices of progress to *stdout*.
+
+. When prompted by the script, approve the host's Puppet certificate. In the Satellite web UI, navigate to *Infrastructure* > *Capsules* and find the Satellite or Capsule Server you specified with the `--server` option.
+. From the list in the *Actions* column, select *Certificates*.
+. In the *Actions* column, click *Sign* to approve the host's Puppet certificate.
+. Return to the host to see the remainder of the bootstrap process completing.
+
+. In the Satellite web UI, navigate to *Hosts* > *All hosts* and ensure that the host is connected to the correct host group.
+
+. Optional: After the host registration is complete, remove the script:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# rm bootstrap.py
+----
+
+
+[id="setting-permissions-for-the-bootstrap-script"]
+== Setting Permissions for the Bootstrap Script
+
+Use this procedure to configure a Satellite user with the permissions required to run the bootstrap script.
+
+.Procedure
+
+. In the Satellite web UI, navigate to *Administer* > *Users*.
+
+. Select an existing user by clicking the required *Username*. A new pane opens with tabs to modify information about the selected user. Alternatively, create a new user specifically for the purpose of running this script.
+
+. Click the *Roles* tab.
+
+. Select *Edit hosts* and *Viewer* from the *Roles* list.
++
+[IMPORTANT]
+====
+The *Edit hosts* role allows the user to edit and delete hosts as well as being able to add hosts. If this is not acceptable to your security policy, create a new role with the following permissions and assign it to the user:
+
+* `view_organizations`
+* `view_locations`
+* `view_domains`
+* `view_hostgroups`
+* `view_hosts`
+* `view_architectures`
+* `view_ptables`
+* `view_operatingsystems`
+* `create_hosts`
+====
+
+. Click *Submit*.
+
+.For CLI Users
+
+. Create a role with the minimum permissions required by the bootstrap script. This example creates a role with the name _Bootstrap_:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# ROLE='Bootstrap'
+hammer role create --name "$ROLE"
+hammer filter create --role "$ROLE" --permissions view_organizations
+hammer filter create --role "$ROLE" --permissions view_locations
+hammer filter create --role "$ROLE" --permissions view_domains
+hammer filter create --role "$ROLE" --permissions view_hostgroups
+hammer filter create --role "$ROLE" --permissions view_hosts
+hammer filter create --role "$ROLE" --permissions view_architectures
+hammer filter create --role "$ROLE" --permissions view_ptables
+hammer filter create --role "$ROLE" --permissions view_operatingsystems
+hammer filter create --role "$ROLE" --permissions create_hosts
+----
+
+. Assign the new role to an existing user:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# hammer user add-role --id _user_id_ --role _Bootstrap_
+----
++
+Alternatively, you can create a new user and assign this new role to them. For more information on creating users with Hammer, see https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/hammer_cli_guide/chap-cli_guide-managing_users_and_permissions#sect-CLI_Guide-Creating_Users[Creating Users] in the _Hammer CLI Guide_.
