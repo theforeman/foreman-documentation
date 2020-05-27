@@ -30,6 +30,7 @@ report.write("# Upstreamization report from #{Time.now.utc}\n")
           replacing = !replacing if line =~ /^----/
           if replacing
             line.gsub!(%r{https?://access.redhat.com/documentation/en-us/red_hat_satellite/\d\.\d/html/}, '{BaseURL}')
+            line.gsub!(%r{https?://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/}, '{BaseURL}')
             line.gsub!(/Red( |\u{00A0}|{nbsp}) Hat Satellite( |\u{00A0}|{nbsp})6.\d/, '{ProjectNameXY}')
             line.gsub!(/Red( |\u{00A0}|{nbsp})Hat Satellite( |\u{00A0}|{nbsp})6/, '{ProjectNameX}')
             line.gsub!(/Red( |\u{00A0}|{nbsp})Hat Satellite/, '{ProjectName}')
