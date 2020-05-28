@@ -42,7 +42,11 @@ report.write("# Upstreamization report from #{Time.now.utc}\n")
             line.gsub!(/Capsule( |\u{00A0}|{nbsp})Server/, '{SmartProxyServer}')
             line.gsub!(/Capsules/, '{SmartProxies}')
             line.gsub!(/Capsule/, '{SmartProxy}')
-            line.gsub!(/satellite.example.com/, '{foreman-example-com}')
+            line.gsub!(/satellite\.example\.com/, '{foreman-example-com}')
+            line.gsub!(/capsule\.example\.com/, '{smartproxy-example-com}')
+            line.gsub!(/satellite-installer --scenario satellite/, '{installer-scenario}')
+            line.gsub!(/satellite-installer --scenario capsule/, '{installer-scenario-smartproxy}')
+            line.gsub!(/satellite-installer/, '{foreman-installer}')
           end
           if line != orig_line
             putsv("#{line_num + 1}: #{line}")
