@@ -1,0 +1,80 @@
+[id="registering-a-host-to-satellite"]
+= Registering a Host to {ProjectName}
+
+Use the following procedure to register a host to {ProjectNameX}.
+
+.Prerequisites
+
+* {ProjectServer}, any {SmartProxyServer}s, and all hosts must be synchronized with the same NTP server, and have a time synchronization tool enabled and running.
+* The daemon *rhsmcertd* must be running on the hosts.
+* An activation key must be available for the host. For more information, see {BaseURL}content_management_guide/managing_activation_keys[Managing Activation Keys] in the _Content Management Guide_.
+* Subscription Manager must be version 1.10 or later. The package is available in the standard Red{nbsp}Hat Enterprise Linux repository.
+
+.Procedure
+
+Red{nbsp}Hat Enterprise{nbsp}Linux hosts register to the Red{nbsp}Hat Content Delivery Network by default.
+
+Update each host configuration so that they receive updates from the correct {ProjectServer} or {SmartProxyServer}:
+
+. Note the fully qualified domain name (FQDN) of the {ProjectServer} or {SmartProxyServer}, for example _server.example.com_.
+. Log in to the host as the `root` user and download the `katello-ca-consumer-latest.noarch.rpm` package from {ProjectServer} or {SmartProxyServer} to which the host is to be registered. The consumer RPM configures the host to download content from the content source that is specified in {ProjectName}.
++
+[options="nowrap" subs="+quotes"]
+----
+# curl --insecure --output katello-ca-consumer-latest.noarch.rpm https://_satellite.example.com_/pub/katello-ca-consumer-latest.noarch.rpm
+----
++
+. Install the `katello-ca-consumer-latest.noarch.rpm` package:
++
+----
+# yum localinstall katello-ca-consumer-latest.noarch.rpm
+----
++
+NOTE: The RPM package is not signed. If required, you can add the `--nosignature` option to install the package. The `katello-ca-consumer-_hostname_-1.0-1.noarch.rpm` package is an additional `katello-ca-consumer` RPM that contains the server's host name. The `katello-ca-consumer-latest.noarch.rpm` package always reflects the most recent version. Both serve the same purpose.
+
+. Clear any old host data related to Red{nbsp}Hat Subscription Manager (RHSM):
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# subscription-manager clean
+----
++
+. Register the host using RHSM:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# subscription-manager register --org=_your_org_name_ \
+--activationkey=_your_activation_key_
+----
++
+.Command Output after Registration:
+====
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# subscription-manager register --org=MyOrg --activationkey=TestKey-1
+The system has been registered with id: 62edc0f8-855b-4184-b1b8-72a9dc793b96
+----
+====
+
+[NOTE]
+====
+You can use the `--environment` option to override the Content View and life cycle environment defined by the activation key. For example, to register a host to the Content View "MyView" in a "Development" life cycle environment:
+
+[options="nowrap" subs="+quotes,verbatim"]
+----
+ # subscription-manager register --org=_your_org_name_ \
+ --environment=Development/MyView \
+ --activationkey=_your_activation_key_
+----
+====
+
+[NOTE]
+====
+For Red{nbsp}Hat Enterprise Linux 6.3 hosts, the release version defaults to Red{nbsp}Hat Enterprise{nbsp}Linux{nbsp}6 Server and needs to be pointed to the 6.3 repository:
+
+. In the {Project} web UI, navigate to *Hosts* > *Content Hosts*.
+. Select the check box next to the host that needs to be changed.
+. From the *Select Action* list, select *Set Release Version*
+. From the *Release Version* list, select *6.3*.
+. Click *Done*.
+====
