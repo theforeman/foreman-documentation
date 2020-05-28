@@ -1,0 +1,496 @@
+:numbered!:
+
+[appendix]
+[[appe-Red_Hat_Satellite-Managing_Hosts-Template_Writing_Reference]]
+== Template Writing Reference
+
+Embedded Ruby (ERB) is a tool for generating text files based on templates that combine plain text with Ruby code. {ProjectName} uses ERB syntax in the following cases:
+
+Provisioning templates::
+For more information, see link:{BaseURL}provisioning_guide/configuring_provisioning_resources#Configuring_Provisioning_Resources-Creating_Provisioning_Templates[Creating Provisioning Templates] in the _Provisioning Guide_.
+
+Remote execution job templates::
+For more information, see xref:Running_Jobs_on_Hosts[].
+
+Report templates::
+For more information, see xref:using_report_templates[].
+
+Templates for partition tables::
+For more information, see link:{BaseURL}provisioning_guide/configuring_provisioning_resources#Configuring_Provisioning_Resources-Creating_Partition_Tables[Creating Partition Tables] in the _Provisioning Guide_.
+
+Smart Variables::
+For more information, see link:{BaseURL}puppet_guide/chap-red_hat_satellite-puppet_guide-adding_puppet_modules_to_red_hat_satellite_6#sect-{Project_Link}-Puppet_Guide-Adding_Puppet_Modules_to_{Project_Link}_6-Configuring_Smart_Variables[Configuring Smart Variables] in the _Puppet Guide_.
+
+Smart Class Parameters::
+For more information, see link:{BaseURL}puppet_guide/chap-red_hat_satellite-puppet_guide-adding_puppet_modules_to_red_hat_satellite_6#sect-{Project_Link}-Puppet_Guide-Adding_Puppet_Modules_to_{Project_Link}_6-Configuring_Smart_Class_Parameters[Configuring Smart Class Parameters] in the _Puppet Guide_.
+
+This section provides an overview of {Project}-specific macros and variables that can be used in ERB templates along with some usage examples. Note that the default templates provided by {ProjectName} (*Hosts* > *Provisioning templates*, *Hosts* > *Job templates*, *Monitor* > *Report Templates* ) also provide a good source of ERB syntax examples.
+
+When provisioning a host or running a remote job, the code in the ERB is executed and the variables are replaced with the host specific values. This process is referred to as *rendering*. The {ProjectServer} has the safemode rendering option enabled by default, which prevents any harmful code being executed from templates.
+[[sect-Managing_Hosts-Writing_ERB_Templates]]
+=== Writing ERB Templates
+
+The following tags are the most important and commonly used in ERB templates:
+
+.<%  %>
+
+All Ruby code is enclosed within `<%  %>` in an ERB template. The code is executed when the template is rendered. It can contain Ruby control flow structures as well as {Project}-specific macros and variables. For example:
+
+----
+<% if @host.operatingsystem.family == "Redhat" && @host.operatingsystem.major.to_i > 6 -%>
+systemctl <%= input("action") %> <%= input("service") %>
+<% else -%>
+service <%= input("service") %> <%= input("action") %>
+<% end -%>
+----
+
+Note that this template silently performs an action with a service and returns nothing at the output.
+
+.<%=  %>
+
+This provides the same functionality as `<%  %>`  but when the template is executed, the code output is inserted into the template. This is useful for variable substitution, for example:
+
+Example input:
+----
+echo <%= @host.name %>
+----
+
+Example rendering:
+
+[options="nowrap" subs="+quotes"]
+----
+_host.example.com_
+----
+
+Example input:
+
+----
+<% server_name = @host.fqdn %>
+<%= server_name %>
+----
+
+Example rendering:
+
+[options="nowrap" subs="+quotes"]
+----
+_host.example.com_
+----
+
+Note that if you enter an incorrect variable, no output is returned. However, if you try to call a method on an incorrect variable, the following error message returns:
+
+Example input:
+[options="nowrap" subs="+quotes"]
+----
+<%= @_example_incorrect_variable_.fqdn -%>
+----
+
+Example rendering:
+----
+undefined method `fqdn' for nil:NilClass
+----
+
+.<%  -%>, <%=  -%>
+
+By default, a newline character is inserted after a Ruby block if it is closed at the end of a line:
+
+Example input:
+----
+<%= "line1" %>
+<%= "line2" %>
+----
+
+Example rendering:
+----
+line1
+line2
+----
+
+To change the default behavior, modify the enclosing mark with `-%>`:
+
+Example input:
+----
+<%= "line1" -%>
+<%= "line2" %>
+----
+
+Example rendering:
+----
+line1line2
+----
+
+This is used to reduce the number of lines, where Ruby syntax permits, in rendered templates. White spaces in ERB tags are ignored.
+
+An example of how this would be used in a report template to remove unnecessary newlines between a FQDN and IP address:
+
+Example input:
+----
+<%= @host.fqdn -%>
+<%= @host.ip -%>
+----
+
+Example rendering:
+
+[options="nowrap" subs="+quotes"]
+----
+_host.example.com10.10.181.216_
+----
+
+.<%#  %>
+
+Encloses a comment that is ignored during template rendering:
+
+Example input:
+----
+<%# A comment %>
+----
+
+This generates no output.
+
+.Indentation in ERB templates
+
+Because of the varying lengths of the ERB tags, indenting the ERB syntax might seem messy. ERB syntax ignore white space. One method of handling the indentation is to declare the ERB tag at the beginning of each new line and then use white space within the ERB tag to outline the relationships within the syntax, for example:
+
+----
+<%- load_hosts.each do |host| -%>
+<%-   if host.build? %>
+<%=     host.name %> build is in progress
+<%-   end %>
+<%- end %>
+----
+
+[[sect-Managing_Hosts-Troubleshooting_ERB_Templates]]
+=== Troubleshooting ERB Templates
+
+The {Project} web UI provides two ways to verify the template rendering for a specific host:
+
+* *Directly in the template editor* – when editing a template (under *Hosts* > *Partition tables*, *Hosts* > *Provisioning templates*, or *Hosts* > *Job templates*), on the *Template* tab click *Preview* and select a host from the list. The template then renders in the text field using the selected host's parameters. Preview failures can help to identify issues in your template.
+
+* *At the host's details page* – select a host at *Hosts* > *All hosts* and click the *Templates* tab to list templates associated with the host. Select *Review* from the list next to the selected template to view it's rendered version.
+
+[[sect-Managing_Hosts-Satellite_Specific_macros_and_Variables]]
+=== Generic {Project}-Specific Macros
+
+This section lists {Project}-specific macros for ERB templates.
+
+You can use the macros listed in the following table across all kinds of templates.
+
+[[tabl-Red_Hat_Satellite-Managing_Hosts-Generic_Macros]]
+
+.Generic Macros
+[options="header"]
+|====
+|Name |Description
+|indent(n) |Indents the block of code by n spaces, useful when using a snippet template that is not indented.
+|foreman_url(kind) |Returns the full URL to host-rendered templates of the given kind. For example, templates of the "provision" type usually reside at *http://HOST/unattended/provision*.
+|snippet(name) |Renders the specified snippet template. Useful for nesting provisioning templates.
+|snippets(file) |Renders the specified snippet found in the Foreman database, attempts to load it from the *unattended/snippets/* directory if it is not found in the database.
+|snippet_if_exists(name) |Renders the specified snippet, skips if no snippet with the specified name is found.
+|====
+
+include::ref_template_macros.adoc[leveloffset=+2]
+
+[[ref_host_specific_variables_for_templates]]
+=== Host-Specific Variables
+
+The following variables enable using host data within templates. Note that job templates accept only `@host` variables.
+
+[[tabl-Red_Hat_Satellite-Managing_Hosts-Variables]]
+
+.Host Specific Variables and Macros
+[options="header"]
+|====
+|Name |Description
+|@host.architecture |The architecture of the host.
+|@host.bond_interfaces |Returns an array of all bonded interfaces. See xref:ref_working_with_arrays[].
+|@host.capabilities |The method of system provisioning, can be either build (for example kickstart) or image.
+|@host.certname |The SSL certificate name of the host.
+|@host.diskLayout |The disk layout of the host. Can be inherited from the operating system.
+|@host.domain |The domain of the host.
+|@host.environment |The Puppet environment of the host.
+|@host.facts |Returns a Ruby hash of facts from Facter. For example to access the 'ipaddress' fact from the output, specify @host.facts['ipaddress'].
+|@host.grub_pass |Returns the host's GRUB password.
+|@host.hostgroup |The host group of the host.
+|host_enc['parameters'] |Returns a Ruby hash containing information on host parameters. For example, use host_enc['parameters']['lifecycle_environment'] to get the life cycle environment of a host.
+|@host.image_build? |Returns `true` if the host is provisioned using an image.
+|@host.interfaces |Contains an array of all available host interfaces including the primary interface.  See xref:ref_working_with_arrays[].
+|@host.interfaces_with_identifier('IDs') |Returns array of interfaces with given identifier. You can pass an array of multiple identifiers as an input, for example @host.interfaces_with_identifier(['eth0', 'eth1']). See xref:ref_working_with_arrays[].
+|@host.ip |The IP address of the host.
+|@host.location |The location of the host.
+|@host.mac |The MAC address of the host.
+|@host.managed_interfaces |Returns an array of managed interfaces (excluding BMC and bonded interfaces). See xref:ref_working_with_arrays[].
+|@host.medium |The assigned operating system installation medium.
+|@host.name |The full name of the host.
+|@host.operatingsystem.family  |The operating system family.
+|@host.operatingsystem.major |The major version number of the assigned operating system.
+|@host.operatingsystem.minor |The minor version number of the assigned operating system.
+|@host.operatingsystem.name |The assigned operating system name.
+|@host.operatingsystem.boot_files_uri(medium_provider) |Full path to the kernel and initrd, returns an array.
+|@host.os.medium_uri(@host)  |The URI used for provisioning (path configured in installation media).
+|host_param('parameter_name') |Returns the value of the specified host parameter.
+|host_param_false?('parameter_name') |Returns `false` if the specified host parameter evaluates to false.
+|host_param_true?('parameter_name')  |Returns `true` if the specified host parameter evaluates to true.
+|@host.primary_interface |Returns the primary interface of the host.
+|@host.provider |The compute resource provider.
+|@host.provision_interface |Returns the provisioning interface of the host. Returns an interface object.
+|@host.ptable |The partition table name.
+|@host.puppet_ca_server |The Puppet CA server the host must use.
+|@host.puppetmaster |The Puppet master the host must use.
+|@host.pxe_build? |Returns `true` if the host is provisioned using the network or PXE.
+|@host.shortname |The short name of the host.
+|@host.sp_ip |The IP address of the BMC interface.
+|@host.sp_mac |The MAC address of the BMC interface.
+|@host.sp_name |The name of the BMC interface.
+|@host.sp_subnet |The subnet of the BMC network.
+|@host.subnet.dhcp |Returns `true` if a DHCP proxy is configured for this host.
+|@host.subnet.dns_primary |The primary DNS server of the host.
+|@host.subnet.dns_secondary |The secondary DNS server of the host.
+|@host.subnet.gateway |The gateway of the host.
+|@host.subnet.mask |The subnet mask of the host.
+|@host.url_for_boot(:initrd) |Full path to the initrd image associated with this host. Not recommended, as it does not interpolate variables.
+|@host.url_for_boot(:kernel) |Full path to the kernel associated with this host. Not recommended, as it does not interpolate variables, prefer boot_files_uri.
+|@provisioning_type |Equals to 'host' or 'hostgroup' depending on type of provisioning.
+|@static |Returns `true` if the network configuration is static.
+|@template_name |Name of the template being rendered.
+|grub_pass |Returns the GRUB password wrapped in md5pass argument, that is *--md5pass=#{@host.grub_pass}*.
+|ks_console |Returns a string assembled using the port and the baud rate of the host which can be added to a kernel line. For example *console=ttyS1,9600*.
+|root_pass |Returns the root password configured for the system.
+|====
+
+The majority of common Ruby methods can be applied on host-specific variables. For example, to extract the last segment of the host's IP address, you can use:
+
+----
+<% @host.ip.split('.').last %>
+----
+
+
+[[ref_kickstart_specific_variables]]
+=== Kickstart-Specific Variables
+
+The following variables are designed to be used within kickstart provisioning templates.
+
+[[tabl-Red_Hat_Satellite-Managing_Hosts-Kickstart_Variables]]
+
+.Kickstart Specific Variables
+[options="header"]
+|====
+|Name |Description
+|@arch  |The host architecture name, same as @host.architecture.name.
+|@dynamic  |Returns `true` if the partition table being used is a %pre script (has the #Dynamic option as the first line of the table).
+|@epel |A command which will automatically install the correct version of the epel-release rpm. Use in a %post script.
+|@mediapath  |The full kickstart line to provide the URL command.
+|@osver  |The operating system major version number, same as @host.operatingsystem.major.
+|====
+
+[[ref_writing_conditional_statements]]
+=== Conditional Statements
+
+In your templates, you might perform different actions depending on which value exists. To achieve this, you can use conditional statements in your ERB syntax.
+
+In the following example, the ERB syntax searches for a specific host name and returns an output depending on the value it finds:
+
+Example input:
+[options="nowrap" subs="+quotes"]
+----
+<% load_hosts().each_record do |host| -%>
+<% if @host.name == "_host1.example.com_" -%>
+<%      result="positive" -%>
+<%  else -%>
+<%      result="negative" -%>
+<%  end -%>
+<%= result -%>
+----
+
+Example rendering:
+[options="nowrap" subs="+quotes"]
+----
+_host1.example.com_
+positive
+----
+
+[[ref_working_with_arrays]]
+=== Parsing Arrays
+
+While writing or modifying templates, you might encounter variables that return arrays. For example, host variables related to network interfaces, such as `@host.interfaces` or `@host.bond_interfaces`, return interface data grouped in an array. To extract a parameter value of a specific interface, use Ruby methods to parse the array.
+
+.Finding the Correct Method to Parse an Array
+
+The following procedure is an example that you can use to find the relevant methods to parse arrays in your template. In this example, a report template is used, but the steps are applicable to other templates.
+
+. To retrieve the NIC of a content host, in this example, using the `@host.interfaces` variable returns class values that you can then use to find methods to parse the array.
++
+.Example input:
++
+----
+<%= @host.interfaces -%>
+----
++
+.Example rendering:
+----
+<Nic::Base::ActiveRecord_Associations_CollectionProxy:0x00007f734036fbe0>
+----
++
+. In the Create Template window, click the *Help* tab and search for the `ActiveRecord_Associations_CollectionProxy` and `Nic::Base` classes.
++
+. For `ActiveRecord_Associations_CollectionProxy`, in the *Allowed methods or members* column, you can view the following methods to parse the array:
++
+----
+[] each find_in_batches first map size to_a
+----
++
+. For `Nic::Base`, in the *Allowed methods or members* column, you can view the following method to parse the array:
++
+----
+alias? attached_devices attached_devices_identifiers attached_to bond_options children_mac_addresses domain fqdn identifier inheriting_mac ip ip6 link mac managed? mode mtu nic_delay physical? primary provision shortname subnet subnet6 tag virtual? vlanid
+----
++
+. To iterate through an interface array, add the relevant methods to the ERB syntax:
++
+.Example input:
++
+----
+<% load_hosts().each_record do |host| -%>
+<%    host.interfaces.each do |iface| -%>
+  iface.alias?: <%= iface.alias? %>
+  iface.attached_to: <%= iface.attached_to %>
+  iface.bond_options: <%= iface.bond_options %>
+  iface.children_mac_addresses: <%= iface.children_mac_addresses %>
+  iface.domain: <%= iface.domain %>
+  iface.fqdn: <%= iface.fqdn %>
+  iface.identifier: <%= iface.identifier %>
+  iface.inheriting_mac: <%= iface.inheriting_mac %>
+  iface.ip: <%= iface.ip %>
+  iface.ip6: <%= iface.ip6 %>
+  iface.link: <%= iface.link %>
+  iface.mac: <%= iface.mac %>
+  iface.managed?: <%= iface.managed? %>
+  iface.mode: <%= iface.mode %>
+  iface.mtu: <%= iface.mtu %>
+  iface.physical?: <%= iface.physical? %>
+  iface.primary: <%= iface.primary %>
+  iface.provision: <%= iface.provision %>
+  iface.shortname: <%= iface.shortname %>
+  iface.subnet: <%= iface.subnet %>
+  iface.subnet6: <%= iface.subnet6 %>
+  iface.tag: <%= iface.tag %>
+  iface.virtual?: <%= iface.virtual? %>
+  iface.vlanid: <%= iface.vlanid %>
+<%- end -%>
+----
++
+.Example rendering:
++
+[options="nowrap" subs="+quotes"]
+----
+_host1.example.com_
+  iface.alias?: false
+  iface.attached_to:
+  iface.bond_options:
+  iface.children_mac_addresses: []
+  iface.domain:
+  iface.fqdn: _host1.example.com_
+  iface.identifier: ens192
+  iface.inheriting_mac: 00:50:56:8d:4c:cf
+  iface.ip: 10.10.181.13
+  iface.ip6:
+  iface.link: true
+  iface.mac: 00:50:56:8d:4c:cf
+  iface.managed?: true
+  iface.mode: balance-rr
+  iface.mtu:
+  iface.physical?: true
+  iface.primary: true
+  iface.provision: true
+  iface.shortname: _host1.example.com_
+  iface.subnet:
+  iface.subnet6:
+  iface.tag:
+  iface.virtual?: false
+  iface.vlanid:
+----
+
+[[ref_example_template_snippets]]
+=== Example Template Snippets
+
+.Checking if a Host Has Puppet and Puppetlabs Enabled
+
+The following example checks if the host has the Puppet and Puppetlabs repositories enabled:
+
+----
+
+<%
+pm_set = @host.puppetmaster.empty? ? false : true
+puppet_enabled = pm_set || host_param_true?('force-puppet')
+puppetlabs_enabled = host_param_true?('enable-puppetlabs-repo')
+%>
+----
+
+.Capturing Major and Minor Versions of a Host's Operating System
+
+The following example shows how to capture the minor and major version of the host's operating system, which can be used for package related decisions:
+
+----
+
+<%
+os_major = @host.operatingsystem.major.to_i
+os_minor = @host.operatingsystem.minor.to_i
+%>
+
+<% if ((os_minor < 2) && (os_major < 14)) -%>
+...
+<% end -%>
+----
+
+
+.Importing Snippets to a Template
+
+The following example imports the *subscription_manager_registration* snippet to the template and indents it by four spaces:
+
+----
+<%= indent 4 do
+snippet 'subscription_manager_registration'
+end %>
+----
+
+.Conditionally Importing a Kickstart Snippet
+
+The following example imports the `kickstart_networking_setup` snippet if the host's subnet has the DHCP boot mode enabled:
+
+----
+
+<% subnet = @host.subnet %>
+<% if subnet.respond_to?(:dhcp_boot_mode?) -%>
+<%= snippet 'kickstart_networking_setup' %>
+<% end -%>
+----
+
+.Parsing Values from Host Custom Facts
+
+You can use the `host.facts` variable to parse values from a host's facts and custom facts.
+
+In this example `luks_stat` is a custom fact that you can parse in the same manner as `dmi::system::serial_number`, which is a host fact:
+
+----
+'Serial': host.facts['dmi::system::serial_number'],
+'Encrypted': host.facts['luks_stat'],
+----
+
+In this example, you can customize the Applicable Errata report template to parse for custom information about the kernel version of each host:
+
+----
+
+<%-     report_row(
+          'Host': host.name,
+          'Operating System': host.operatingsystem,
+          'Kernel': host.facts['uname::release'],
+          'Environment': host.lifecycle_environment,
+          'Erratum': erratum.errata_id,
+          'Type': erratum.errata_type,
+          'Published': erratum.issued,
+          'Applicable since': erratum.created_at,
+          'Severity': erratum.severity,
+          'Packages': erratum.package_names,
+          'CVEs': erratum.cves,
+          'Reboot suggested': erratum.reboot_suggested,
+        ) -%>
+----
+
