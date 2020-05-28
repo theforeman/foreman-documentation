@@ -1,0 +1,66 @@
+[id="creating-a-host-in-satellite"]
+= Creating a Host in {ProjectName}
+
+Use this procedure to create a host in {ProjectName}.
+
+.Procedure
+
+. In the {Project} web UI, click *Hosts* > *Create Host*.
+. On the *Host* tab, enter the required details.
+. Click the *Ansible Roles* tab, and from the *Ansible Roles* list, select one or more roles that you want to add to the host. Use the *arrow* icon to manage the roles that you add or remove.
+. On the *Puppet Classes* tab, select the Puppet classes you want to include.
+. On the *Interfaces* tab:
+.. For each interface, click *Edit* in the *Actions* column and configure the following settings as required:
+
+* *Type* -- For a Bond or BMC interface, use the *Type* list and select the interface type.
+* *MAC address* -- Enter the MAC address.
+* *DNS name* -- Enter the DNS name that is known to the DNS server. This is used for the host part of the FQDN.
+* *Domain* -- Select the domain name of the provisioning network. This automatically updates the *Subnet* list with a selection of suitable subnets.
+* *IPv4 Subnet* -- Select an IPv4 subnet for the host from the list.
+* *IPv6 Subnet* -- Select an IPv6 subnet for the host from the list.
+* *IPv4 address* -- If IP address management (IPAM) is enabled for the subnet, the IP address is automatically suggested. Alternatively, you can enter an address. The address can be omitted if provisioning tokens are enabled, if the domain does not mange DNS, if the subnet does not manage reverse DNS, or if the subnet does not manage DHCP reservations.
+* *IPv6 address* -- If IP address management (IPAM) is enabled for the subnet, the IP address is automatically suggested. Alternatively, you can enter an address.
+* *Managed* -- Select this check box to configure the interface during provisioning to use the {SmartProxy} provided DHCP and DNS services.
+* *Primary* -- Select this check box to use the DNS name from this interface as the host portion of the FQDN.
+* *Provision* -- Select this check box to use this interface for provisioning. This means TFTP boot will take place using this interface, or in case of image based provisioning, the script to complete the provisioning will be executed through this interface. Note that many provisioning tasks, such as downloading RPMs by *anaconda*, Puppet setup in a `%post` script, will use the primary interface.
+* *Virtual NIC* -- Select this check box if this interface is not a physical device. This setting has two options:
+** *Tag* -- Optionally set a VLAN tag. If unset, the tag will be the VLAN ID of the subnet.
+** *Attached to* -- Enter the device name of the interface this virtual interface is attached to.
+.. Click *OK* to save the interface configuration.
+.. Optionally, click *Add Interface* to include an additional network interface. See xref:Adding_Network_Interfaces[] for details.
+.. Click *Submit* to apply the changes and exit.
+
+. On the *Operating System* tab, enter the required details. For Red{nbsp}Hat operating systems, select *Synced Content* for *Media Selection*. If you want to use non Red Hat operating systems, select *All Media*, then select the installation media from the *Media Selection* list. You can select a partition table from the list or enter a custom partition table in the *Custom partition table* field. You cannot specify both.
+. On the *Parameters* tab, click *Add Parameter* to add any parameter variables that you want to pass to job templates at run time. This includes all Puppet Class, Ansible playbook parameters and host parameters that you want to associate with the host. To use a parameter variable with an Ansible job template, you must add a *Host Parameter*.
+ifeval::["{build}" == "satellite"]
++
+When you create a Red{nbsp}Hat Enterprise{nbsp}Linux 8 host, you can set system purpose attributes. System purpose attributes define what subscriptions to attach automatically on host creation. In the *Host Parameters* area, enter the following parameter names with the corresponding values. For the list of values, see https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/performing_a_standard_rhel_installation/graphical-installation_graphical-installation#configuring-system-purpose-standard_configuring-system-settings[Configuring system purpose] in the _Performing a standard RHEL installation_ guide.
++
+* `syspurpose_role`
+* `syspurpose_sla`
+* `syspurpose_usage`
+* `syspurpose_addons`
+endif::[]
+
+. On the *Additional Information* tab, enter additional information about the host.
+. Click *Submit* to complete your provisioning request.
+
+.For CLI Users
+
+To create a host associated to a host group, enter the following command:
+
+[options="nowrap" subs="+quotes"]
+----
+# hammer host create \
+--name "_host_name_" \
+--hostgroup "_hostgroup_name_" \
+--interface="primary=true, \
+            provision=true, \
+            mac=_mac_address_, \
+            ip=_ip_address_" \
+--organization "_Your_Organization_" \
+--location "_Your_Location_" \
+--ask-root-password yes
+----
+
+This command prompts you to specify the root password. It is required to specify the host's IP and MAC address. Other properties of the primary network interface can be inherited from the host group or set using the `--subnet`, and `--domain` parameters. You can set additional interfaces using the `--interface` option, which accepts a list of key-value pairs. For the list of available interface settings, enter the `hammer host create --help` command.
