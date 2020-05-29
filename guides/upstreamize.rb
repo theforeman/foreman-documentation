@@ -18,7 +18,6 @@ report.write("# Upstreamization report from #{Time.now.utc}\n")
       report.write("| Line | Contents |\n")
       report.write("| --- | --- |\n")
       temp_file = Tempfile.new($PROGRAM_NAME)
-      replacing = true
       File.open(temp_file, 'w') do |output|
         putsv "#{input_file}:"
         File.foreach(input_file).with_index do |orig_line, line_num|
@@ -27,26 +26,27 @@ report.write("# Upstreamization report from #{Time.now.utc}\n")
             output.write(line)
             next
           end
-          replacing = !replacing if line =~ /^----/
-          if replacing
-            line.gsub!(%r{https?://access.redhat.com/documentation/en-us/red_hat_satellite/\d\.\d/html/}, '{BaseURL}')
-            line.gsub!(%r{https?://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/}, '{BaseURL}')
-            line.gsub!(/Red( |\u{00A0}|{nbsp}) Hat Satellite( |\u{00A0}|{nbsp})6.\d/, '{ProjectNameXY}')
-            line.gsub!(/Red( |\u{00A0}|{nbsp})Hat Satellite( |\u{00A0}|{nbsp})6/, '{ProjectNameX}')
-            line.gsub!(/Red( |\u{00A0}|{nbsp})Hat Satellite/, '{ProjectName}')
-            line.gsub!(/Red_Hat_Satellite/, '{Project_Link}')
-            line.gsub!(/Satellite( |\u{00A0}|{nbsp})6.\d/, '{ProjectXY}')
-            line.gsub!(/Satellite( |\u{00A0}|{nbsp})6/, '{ProjectX}')
-            line.gsub!(/Satellite( |\u{00A0}|{nbsp})Server/, '{ProjectServer}')
-            line.gsub!(/Satellite/, '{Project}')
-            line.gsub!(/Capsule( |\u{00A0}|{nbsp})Server/, '{SmartProxyServer}')
-            line.gsub!(/Capsules/, '{SmartProxies}')
-            line.gsub!(/Capsule/, '{SmartProxy}')
-            line.gsub!(/satellite\.example\.com/, '{foreman-example-com}')
-            line.gsub!(/capsule\.example\.com/, '{smartproxy-example-com}')
-            line.gsub!(/satellite-installer --scenario satellite/, '{installer-scenario}')
-            line.gsub!(/satellite-installer --scenario capsule/, '{installer-scenario-smartproxy}')
-            line.gsub!(/satellite-installer/, '{foreman-installer}')
+          line.gsub!(%r{https?://access.redhat.com/documentation/en-us/red_hat_satellite/\d\.\d/html/}, '{BaseURL}')
+          line.gsub!(%r{https?://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/}, '{BaseURL}')
+          line.gsub!(/Red( |\u{00A0}|{nbsp}) Hat Satellite( |\u{00A0}|{nbsp})6.\d/, '{ProjectNameXY}')
+          line.gsub!(/Red( |\u{00A0}|{nbsp})Hat Satellite( |\u{00A0}|{nbsp})6/, '{ProjectNameX}')
+          line.gsub!(/Red( |\u{00A0}|{nbsp})Hat Satellite/, '{ProjectName}')
+          line.gsub!(/Red_Hat_Satellite/, '{Project_Link}')
+          line.gsub!(/Satellite( |\u{00A0}|{nbsp})6.\d/, '{ProjectXY}')
+          line.gsub!(/Satellite( |\u{00A0}|{nbsp})6/, '{ProjectX}')
+          line.gsub!(/Satellite( |\u{00A0}|{nbsp})Server/, '{ProjectServer}')
+          line.gsub!(/Satellite/, '{Project}')
+          line.gsub!(/Capsule( |\u{00A0}|{nbsp})Server/, '{SmartProxyServer}')
+          line.gsub!(/Capsules/, '{SmartProxies}')
+          line.gsub!(/Capsule/, '{SmartProxy}')
+          line.gsub!(/satellite\.example\.com/, '{foreman-example-com}')
+          line.gsub!(/capsule\.example\.com/, '{smartproxy-example-com}')
+          line.gsub!(/satellite-installer --scenario satellite/, '{installer-scenario}')
+          line.gsub!(/satellite-installer --scenario capsule/, '{installer-scenario-smartproxy}')
+          line.gsub!(/satellite-installer/, '{foreman-installer}')
+          if match = line.match(/^\[options="(\w+)",? subs="(.*)"\]/)
+            first, second = match.captures
+            line = "[options=\"#{first}\", subs=\"#{second},attributes\"]\n" unless second =~ /attributes/
           end
           if line != orig_line
             putsv("#{line_num + 1}: #{line}")
@@ -55,7 +55,6 @@ report.write("# Upstreamization report from #{Time.now.utc}\n")
           output.write(line)
         end
       end
-      puts("Unmatched '----' in #{input_file}!") unless replacing
       FileUtils.mv(temp_file, input_file) unless DRY_RUN
     rescue StandardError => e
       puts "Error processing #{input_file}: #{e}"
