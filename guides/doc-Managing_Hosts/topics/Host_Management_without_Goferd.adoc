@@ -1,65 +1,65 @@
-:numbered!:
+[id="host-management-without-goferd-and-katello-agent_{context}"]
+== Host Management Without Goferd and Katello Agent
 
-[appendix]
-[[appe-Red_Hat_Satellite-Managing_Hosts-Host_Management_without_Goferd]]
-== Host Management Without Goferd
+The `goferd` service that is used by the Katello agent to manage packages on content hosts consumes large amount of resources. To reduce memory and CPU load on content hosts, you can manage packages through remote execution.
 
-If you manage errata and package management through remote execution, you can disable the *goferd* service to reduce memory and CPU load on content hosts.
+Note that the Katello agent is deprecated and will be removed in a future {Project} version; therefore, using remote execution will be the only way to manage packages on hosts.
 
-The {project-client-name} repository provides `katello-host-tools`, which provides communication services for managing Errata.
+.Prerequisites
 
-[[sect-Red_Hat_Satellite-Managing_Hosts-Host_Management_without_Goferd-Prerequisites]]
-=== Prerequisites
+ifeval::["{build}" == "satellite"]
+* You have enabled the {project-client-name} repository on {ProjectServer}. For more information, see {BaseURL}installing_satellite_server_from_a_connected_network/performing_additional_configuration_on_satellite_server#enabling-the-satellite-tools-repository_satellite[Enabling the {project-client-name} Repository] in _{project-installation-guide-title}_.
 
-The following must be made on all content hosts to allow host management by remote execution.
+* You have synchronized the {project-client-name} repository on {ProjectServer}. For more information, see {BaseURL}installing_satellite_server_from_a_connected_network/performing_additional_configuration_on_satellite_server#synchronizing-the-satellite-tools-repository_satellite[Synchronizing the {project-client-name} Repository] in _{project-installation-guide-title}_.
+endif::[]
 
-* Ensure that the `katello-host-tools` package is installed:
+* You have enabled the {project-client-name} repository on content hosts.
+
+.Procedure
+
+. Install  the `katello-host-tools` package on content hosts:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-# yum install katello-host-tools
+# {package-install} katello-host-tools
 ----
-+
-* Stop the goferd service:
+
+. Stop the goferd service on content hosts:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 # systemctl stop goferd.service
 ----
 
-* Disable the goferd service:
+. Disable the goferd service on content hosts:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 # systemctl disable goferd.service
 ----
 
-* Distribute the SSH keys to the content hosts by following xref:sect-Managing_Hosts-Establishing_a_Secure_Connection_for_Remote_Commands[].
+. Remove the Katello agent on content hosts:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {package-remove} katello-agent
+----
 
-[[sect-Red_Hat_Satellite-Managing_Hosts-Host_Management_without_Goferd-Making_Host_Management_without_Goferd_the_System_Default]]
-=== Configuring Host Management Without Goferd as the System Default
+. Distribute the SSH keys to the content hosts. For more information, see xref:sect-Managing_Hosts-Establishing_a_Secure_Connection_for_Remote_Commands[].
 
-These steps configure host management to use remote execution as the system default for future package deployments.
+. In the {Project} web UI, navigate to *Administer* > *Settings*.
 
-[[proc-Red_Hat_Satellite-Managing_Hosts-Host_Management_without_Goferd-To_Make_Host_Management_without_Goferd_the_System_Default]]
-.To Configure Host Management Without Goferd as the System Default:
-
-. Log in to the {Project} web UI.
-. Navigate to *Administer* > *Settings*.
 . Select the *Content* tab.
+
 . Set the *Use remote execution by default* parameter to *Yes*.
 
-
 The {Project} server now uses host management by remote execution instead of goferd.
-[[sect-Red_Hat_Satellite-Managing_Hosts-Host_Management_without_Goferd-Limitations_with_Hammer]]
-=== Limitations with Hammer
 
-The following applies if you are using the `hammer` command to push errata. The `hammer` command is dependent on goferd to manage errata on content hosts. As a workaround, use {Project}'s remote execution feature to apply errata.
+.Hammer Limitations
 
-[[proc-Red_Hat_Satellite-Managing_Hosts-Host_Management_without_Goferd-To_Use_Hammer_remote_execution_commands]]
-.To Use Hammer Remote Execution Commands:
+The following applies if you are using the `hammer` command to push errata. The `hammer` command is dependent on goferd to manage errata on content hosts. As a workaround, use the {Project} remote execution feature to apply errata.
 
-For example, perform a `yum -y update` on _host123.example.org_:
+For example, enter the following command to perform a `yum -y update` on _host123.example.org_:
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 # hammer job-invocation create \
