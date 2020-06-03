@@ -1,0 +1,86 @@
+[id='configuring-idm-authentication-on-satellite-server_{context}']
+= Configuring IdM Authentication on Satellite Server
+
+In the Satellite CLI, configure IdM authentication by first creating a host entry on the IdM server.
+
+.Procedure
+
+. On the IdM server, to authenticate, enter the following command and enter your password when prompted:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# kinit _admin_
+----
++
+. To verify that you have authenticated, enter the following command:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# klist
+----
++
+. On the IdM server, create a host entry for the Satellite Server and generate a one-time password, for example:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# ipa host-add --random _hostname_
+----
++
+[NOTE]
+====
+The generated one-time password must be used on the client to complete IdM-enrollment.
+====
++
+For more information on host configuration properties, see link:https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Linux_Domain_Identity_Authentication_and_Policy_Guide/host-attr.html[About Host Entry Configuration Properties] in the _Red{nbsp}Hat Enterprise{nbsp}Linux{nbsp}7 Linux Domain Identity, Authentication, and Policy_ guide.
+
+. Create an HTTP service for Satellite Server, for example:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# ipa service-add _servicename_/_hostname_
+----
++
+For more information on managing services, see link:https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Linux_Domain_Identity_Authentication_and_Policy_Guide/services.html[Managing Services] in the _Red{nbsp}Hat Enterprise{nbsp}Linux{nbsp}7 Linux Domain Identity, Authentication, and Policy_ guide.
+
+. On Satellite Server, install the IPA client:
++
+WARNING: This command might restart Satellite services during the installation of the package. For more information about installing and updating packages on Satellite, see xref:installing-and-updating-packages-on-satellite-server[].
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# satellite-maintain packages install ipa-client
+----
++
+. On Satellite Server, enter the following command as root to configure IdM-enrollment:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# ipa-client-install --password _OTP_
+----
++
+Replace _OTP_ with the one-time password provided by the IdM administrator.
+
+. If Satellite Server is running on Red{nbsp}Hat Enterprise{nbsp}Linux{nbsp}7, execute the following command:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# subscription-manager repos --enable rhel-7-server-optional-rpms
+----
++
+The installer is dependent on packages which, on Red{nbsp}Hat Enterprise{nbsp}Linux{nbsp}7, are in the optional repository `rhel-7-server-optional-rpms`. On Red{nbsp}Hat Enterprise{nbsp}Linux{nbsp}6 all necessary packages are in the `base` repository.
+
+. Set `foreman-ipa-authentication` to true, using the following command:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# satellite-installer --foreman-ipa-authentication=true
+----
+
+. Restart the `satellite-maintain` services:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# satellite-maintain service restart
+----
+
+External users can now log in to Satellite using their IdM credentials. They can now choose to either log in to Satellite Server directly using their username and password or take advantage of the configured Kerberos single sign-on and obtain a ticket on their client machine and be logged in automatically. The two-factor authentication with one-time password (2FA OTP) is also supported. If the user in IdM is configured for 2FA, and Satellite Server is running on Red{nbsp}Hat Enterprise{nbsp}Linux{nbsp}7, this user can also authenticate to Satellite with an OTP.

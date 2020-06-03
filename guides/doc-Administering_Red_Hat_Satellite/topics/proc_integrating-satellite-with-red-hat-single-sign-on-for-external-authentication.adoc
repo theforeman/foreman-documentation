@@ -1,0 +1,256 @@
+[[integrating-satellite-with-red-hat-single-sign-on-for-external-authentication]]
+= Integrating Satellite with Red Hat Single Sign-On for External Authentication
+
+You can configure Satellite to use Red Hat Single Sign-On as an OpenID provider for external authentication with CAC cards. You can only use CAC cards; other authentication methods are not supported.
+
+
+[IMPORTANT]
+====
+Authentication using Red Hat Single Sign-On as an OpenID provider is a Technology Preview feature only. Technology Preview features are not supported with Red Hat production service level agreements (SLAs) and might not be functionally complete. Red Hat does not recommend using them in production. These features provide early access to upcoming product features, enabling customers to test functionality and provide feedback during the development process.
+
+For more information about the support scope of Red Hat Technology Preview features, see https://access.redhat.com/support/offerings/techpreview/.
+====
+
+.Prerequisites
+
+* A working installation of Red Hat Single Sign-On server that uses HTTPS instead of HTTP.
+* If the certificates or the CA are self-signed, ensure that they are added to the end-user certificate trust store.
+
+.Procedure
+
+. Install the following packages:
++
+----
+# satellite-maintain packages install mod_auth_openidc keycloak-httpd-client-install
+----
++
+. On Satellite Server, install the Red Hat Single Sign-On httpd client:
++
+[options="nowrap" subs="+quotes"]
+----
+# keycloak-httpd-client-install --app-name foreman-openidc \
+--keycloak-server-url "_rhsso.example.com_" \
+--keycloak-admin-username "_RHSSO_User_" \
+--keycloak-realm "_RHSSO_Realm_" \
+--keycloak-admin-realm master \
+--keycloak-auth-role root-admin -t openidc -l /users/extlogin --force
+----
++
+The above command registers a client for Satellite in Red Hat Single Sign-On.
++
+. Enable Red{nbsp}Hat Single Sign-On using `satellite-installer`:
++
+[options="nowrap" subs="+quotes"]
+----
+# satellite-installer --foreman-keycloak true \
+--foreman-keycloak-app-name  "foreman-openidc" \
+--foreman-keycloak-realm "_RHSSO_Realm_"
+----
++
+. Restart the *httpd* service:
++
+----
+# systemctl restart httpd
+----
+
+. In the Red Hat Single Sign-On web UI, navigate to *Client* and click the Satellite client.
+
+. Ensure that the *Access type* setting is set to *Confidential*.
+
+. If you use Red Hat Single Sign-On version 7.3 or later, navigate to the Red Hat Single Sign-On web UI, and add an audience mapper and set the following values for the audience mapper:
++
+* Set the *Mapper Type* to *Audience*.
+* From the *Included Client Audience* list, select your Satellite Server.
++
+For more information about audience support, see https://access.redhat.com/documentation/en-us/red_hat_single_sign-on/7.3/html/server_administration_guide/clients#audience[Audience Support] in the _Red Hat Single Sign-On Server Administration Guide_.
++
+. If you use Red Hat Single Sign-On version 7.3 or later, navigate to the Red Hat Single Sign-On web UI and add a group mapper so that you can specify authorization in Satellite based on group membership. Set the following values for the group mapper:
++
+* Set the *Mapper Type* to *Group Membership*.
+* Set the *Token Claim Name* to *groups*.
+* Set the *Full group path* to *OFF*.
++
+For more information about group mappers, see https://access.redhat.com/documentation/en-us/red_hat_single_sign-on/7.3/html/server_administration_guide/user-storage-federation#ldap_mappers[Group Mapper] in the _LDAP Mappers_ section of the _Red Hat Single Sign-On Server Administration Guide_.
+
+. In the Satellite web UI, navigate to *Administer* > *Settings*, and click the *Authentication* tab.
+. Locate the *Authorize login delegation* row, and in the *Value* column, set the value to `Yes`.
+. Locate the *Authorize login delegation auth source user autocreate* row, and in the *Value* column, set the value to `External`.
++
+For the following steps, you can retrieve the values that you require by navigating to the following URL:  `_rhsso.example.com_/auth/realms/_RHSSO_REALM_/.well-known/openid-configuration`.
++
+. Locate the *OIDC Algorithm* row, and in the *Value* column, set the algorithm for encoding on Red Hat Single Sign-On, for example, `RS256`.
+. Locate the *OIDC Audience* row, and in the *Value*  column, set the value to the client ID for Red Hat Single Sign-On: `['_satellite.example.com_']`.
+. Locate the *OIDC Issuer* row, and in the *Value*  column, set the value to `_rhsso.example.com_/auth/realms/_RHSSO_Realm_`.
+. Locate the *OIDC JWKs URL* row, and in the *Value*  column, set the value to `_rhsso.example.com_/auth/realms/_RHSSO_Realm_/protocol/openid-connect/certs`.
++
+. Until https://bugzilla.redhat.com/show_bug.cgi?id=1792131[BZ#1792131] is resolved, you must use the Hammer CLI to set the organization and location. To retrieve the ID of the Red Hat Single Sign-On authentication source, enter the following command:
++
+----
+# hammer auth-source external list
+----
++
+. Set the organization and location for the authentication source:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer auth-source external update --id _Authentication Source ID_ \
+--location-ids _Location ID_ --organization-ids _Organization ID_
+----
+
+You can now authenticate using the _https://satellite.example.com/users/extlogin_ login URL.
+
+.For CLI Users
+
+. Install the following packages:
++
+----
+# satellite-maintain packages install keycloak-httpd-client-install
+----
++
+. On Satellite Server, install the Red Hat Single Sign-On httpd client:
++
+[options="nowrap" subs="+quotes"]
+----
+# keycloak-httpd-client-install --app-name foreman-openidc \
+--keycloak-server-url "_rhsso.example.com_" \
+--keycloak-admin-username "_RHSSO_User_" \
+--keycloak-realm "_RHSSO_Realm_" \
+--keycloak-admin-realm master \
+--keycloak-auth-role root-admin -t openidc -l /users/extlogin --force
+----
++
+This command creates a client for Satellite in Red Hat Single Sign-On.
++
+. Enable Red{nbsp}Hat Single Sign-On using `satellite-installer`:
++
+[options="nowrap" subs="+quotes"]
+----
+# satellite-installer --foreman-keycloak true \
+--foreman-keycloak-app-name  "foreman-openidc" \
+--foreman-keycloak-realm "_RHSSO_Realm_"
+----
++
+. Restart the *httpd* service:
++
+----
+# systemctl restart httpd
+----
+
+. In the Red Hat Single Sign-On web UI, navigate to *Client* and click the Satellite client.
+
+. Set the *Access type* setting to *Public*.
+
+. In the *Valid Redirect URL* field, enter `urn:ietf:wg:oauth:2.0:oob`.
+
+. If you use Red Hat Single Sign-On version 7.3 or later, navigate to the Red Hat Single Sign-On web UI, and add an audience mapper and set the following values for the audience mapper:
++
+* Set the *Mapper Type* to *Audience*.
+* From the *Included Client Audience* list, select your Satellite Server.
++
+For more information about audience support, see https://access.redhat.com/documentation/en-us/red_hat_single_sign-on/7.3/html/server_administration_guide/clients#audience[Audience Support] in the _Red Hat Single Sign-On Server Administration Guide_.
++
+. If you use Red Hat Single Sign-On version 7.3 or later, navigate to the Red Hat Single Sign-On web UI and add a group mapper so that you can specify authorization in Satellite based on group membership. Set the following values for the group mapper:
++
+* Set the *Mapper Type* to *Group Membership*.
+* Set the *Token Claim Name* to *groups*.
+* Set the *Full group path* to *OFF*.
++
+For more information about group mappers, see https://access.redhat.com/documentation/en-us/red_hat_single_sign-on/7.3/html/server_administration_guide/user-storage-federation#ldap_mappers[Group Mapper] in the _LDAP Mappers_ section of the _Red Hat Single Sign-On Server Administration Guide_.
+
+. On Satellite, set the login delegation to `true` so that users can authenticate using the Open IDC protocol:
++
+----
+# hammer settings set --name authorize_login_delegation --value true
+----
++
+. Set the login authorization to an external source:
++
+----
+# hammer settings set --name authorize_login_delegation_auth_source_user_autocreate --value External
+----
++
+. Set the algorithm for encoding on Red Hat Single Sign-On, for example, `RS256`:
++
+----
+# hammer settings set --name oidc_algorithm --value 'RS256'
+----
++
+. Open the `_rhsso.example.com_/auth/realms/_RHSSO_REALM_/.well-known/openid-configuration` URL and note the values to populate the options in the following steps.
++
+. Set the value for the Open IDC audience:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer settings set --name oidc_audience \
+--value "['_satellite.example.com_']"
+----
++
+. Set the value for the Open IDC issuer:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer settings set --name oidc_issuer \
+--value "_rhsso.example.com_/auth/realms/_RHSSO_Realm_"
+----
++
+. Set the value for Open IDC Java Web Token (JWT):
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer settings set --name oidc_jwks_url \
+--value "_rhsso.example.com_/auth/realms/_RHSSO_Realm_/protocol/openid-connect/certs"
+----
++
+. Until https://bugzilla.redhat.com/show_bug.cgi?id=1792131[BZ#1792131] is resolved, you must use the Hammer CLI to set the organization and location. To set the organization and location, you must first retrieve the ID of the Red Hat Single Sign-On authentication source:
++
+----
+# hammer auth-source external list
+----
++
+. Set the location and organization:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer auth-source external update --id _Authentication Source ID_ \
+--location-ids _Location ID_ --organization-ids _Organization ID_
+----
+
+ifeval::["{context}" == "foreman"]
+. You can now authenticate using password grant authentication or two factor authentication with CAC cards:
+
+. To authenticate using username and password, enter the following command:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer auth login oauth \
+--oidc-token-endpoint 'https://_rhsso.example.com_/auth/realms/ssl-realm/protocol/openid-connect/token' \
+--oidc-client-id '_satellite.example.com_-foreman-openidc' \
+--username _User Name_ --password _Password_
+----
+endif::[]
+
+. To authenticate using two-factor authentication, enter the following command:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer auth login oauth \
+--two-factor \
+--oidc-token-endpoint 'https://_rhsso.example.com_/auth/realms/ssl-realm/protocol/openid-connect/token' \
+--oidc-authorization-endpoint 'https://_rhsso.example.com_/auth' \
+--oidc-client-id '_satellite.example.com_-foreman-openidc' \
+--oidc-redirect-uri urn:ietf:wg:oauth:2.0:oob
+----
++
+The command prompts you to enter a success code. To retrieve the success code, navigate to the URL that the commands returns and provide the required information.
+
+= Disabling Red Hat Signle Sign-On Authentication
+If you want to disable Red Hat Single Sign-On authentication in Satellite, complete this procedure.
+
+.Procedure
+
+* Enter the following command to disable Red Hat Single Sign-On Authentication:
++
+[options="nowrap" subs="+quotes"]
+----
+# satellite-installer --reset-foreman-keycloak
+----

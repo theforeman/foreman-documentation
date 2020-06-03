@@ -1,0 +1,139 @@
+[id='configuring-direct-ad-integration-with-gss-proxy_{context}']
+= Configuring Direct AD Integration with GSS-proxy
+
+In the Satellite CLI, configure the direct Active Directory integration with GSS-proxy.
+
+.Prerequisite
+
+- Satellite is enrolled with the Active Directory server.
++
+For more information, see xref:enrolling-satellite-server-with-the-ad-server_{context}[].
+
+.Procedure
+. Create the `/etc/ipa/` directory and the `default.conf` file:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# mkdir /etc/ipa
+# touch /etc/ipa/default.conf
+----
++
+. To the `default.conf` file, add the following content:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+[global]
+server = unused
+realm = _EXAMPLE.ORG_
+----
++
+. Create the `/etc/net-keytab.conf` file with the following content:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+[global]
+workgroup = EXAMPLE
+realm = EXAMPLE.ORG
+kerberos method = system keytab
+security = ads
+----
++
+. Determine the effective user ID of the Apache user:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# id apache
+----
++
+Apache user must not have access to the keytab file.
+. Create the `/etc/gssproxy/00-http.conf` file with the following content:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+[service/HTTP]
+mechs = krb5
+cred_store = keytab:/etc/krb5.keytab
+cred_store = ccache:/var/lib/gssproxy/clients/krb5cc_%U
+euid = __ID_of_Apache_User__
+----
++
+. Create a keytab entry:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# KRB5_KTNAME=FILE:/etc/httpd/conf/http.keytab net ads keytab add HTTP -U administrator -d3 -s /etc/net-keytab.conf
+# chown root.apache /etc/httpd/conf/http.keytab
+# chmod 640 /etc/httpd/conf/http.keytab
+----
++
+. Enable IPA authenication in Satellite:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# satellite-installer --foreman-ipa-authentication=true
+----
++
+. Start and enable the `gssproxy` service:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# systemctl restart gssproxy.service
+# systemctl enable gssproxy.service
+----
++
+. Configure the Apache server to use the gssproxy service:
++
+.. Create the `/etc/systemd/system/httpd.service` file with the following content:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+.include /lib/systemd/system/httpd.service
+[Service]
+Environment=GSS_USE_PROXY=1
+----
++
+.. Apply changes to the service:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# systemctl daemon-reload
+----
++
+. Start and enable the `httpd` service:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# systemctl restart httpd.service
+----
+
+. Verify that SSO is working as expected.
++
+With a running Apache server, users making HTTP requests against the server are authenticated if the client has a valid Kerberos ticket.
+
+.. Retrieve the Kerberos ticket of the LDAP user, using the following command:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# kinit ldapuser
+----
+
+.. View the Kerberos ticket, using the following command:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# klist
+----
+
+.. View output from successful SSO-based authentication, using the following command:
++
+[options="nowrap" subs="+quotes"]
+----
+# curl -k -u : --negotiate https://__satellite.example.com/__users/extlogin
+----
++
+This returns the following response:
++
+[options="nowrap" subs="+quotes"]
+----
+<html><body>You are being <a href="https://__satellite.example.com/__users/4-ldapuserexample-com/edit">redirected</a>.</body></html>
+----

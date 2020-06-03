@@ -1,0 +1,69 @@
+[[sect-Red_Hat_Satellite-Administering_Red_Hat_Satellite-Renaming_a_Capsule_Server]]
+=== Renaming Capsule Server
+
+The host name of Capsule{nbsp}Server is referenced by Satellite{nbsp}Server components, and all hosts registered to it. This procedure ensures that you update all references to the new host name.
+
+.Prerequisites
+
+* Backup Capsule{nbsp}Server. The `satellite-change-hostname` script makes irreversible changes to Capsule{nbsp}Server. If the renaming process is not successful, you must restore it from a backup.
++
+Red{nbsp}Hat Satellite does not provide a native backup method for Capsule{nbsp}Server. For more information, see xref:backing-up-satellite-server-and-capsule-server[].
+
+.Procedure
+
+. On Satellite{nbsp}Server, generate a new certificates archive file for Capsule Server.
++
+* If you are using the default SSL certificate, enter the following command:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# capsule-certs-generate \
+--foreman-proxy-fqdn _new-capsule.example.com_ \
+--certs-tar /root/_new-capsule.example.com-certs.tar_
+----
++
+Ensure that you enter the full path to the `.tar` file.
++
+* If you are using a custom SSL certificate, create a new SSL certificate for Capsule Server. For more information, see https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/installing_capsule_server/installing-capsule-server#configuring-capsule-custom-server-certificate_capsule[Configuring Capsule Server with a Custom SSL Certificate] in _Installing Capsule Server_.
+
+. On Satellite{nbsp}Server, copy the certificates archive file to Capsule{nbsp}Server, providing the `root` user’s password when prompted. In this example the archive file is copied to the `root` user’s home directory, but you may prefer to copy it elsewhere.
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# scp /root/_new-capsule.example.com-certs.tar_ root@_capsule.example.com_:
+----
+
+. On Capsule{nbsp}Server, run the `satellite-change-hostname` script, providing the host's new name, Satellite credentials, and certificates archive filename.
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# satellite-change-hostname _new_capsule_ --username _admin_ \
+--password _password_ \
+--certs-tar /root/_new-capsule.example.com-certs.tar_
+----
++
+Ensure that you enter the full path to the `.tar` file.
+
+. Optional: If you have created a custom certificate for Capsule Server, on Capsule Server, to deploy the certificate, enter the `satellite-installer` command that the `capsule-certs-generate` command returns. For more information, see https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/installing_capsule_server/installing-capsule-server#deploying-a-custom-ssl-certificate-to-capsule-server_capsule[Deploying a Custom SSL Certificate to Capsule Server] in _Installing Capsule Server_.
+
+. On all Capsule clients, enter the following commands to reinstall the bootstrap RPM, reregister clients, and refresh their subscriptions.
++
+You can use remote execution feature to perform this step. For more information, see https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/managing_hosts/running_jobs_on_hosts#sect-Managing_Hosts-Configuring_and_Running_Remote_Commands[Configuring and Running Remote Jobs] in _Managing Hosts_.
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# yum remove -y katello-ca-consumer*
+
+# rpm -Uvh http://_new-capsule.example.com_/pub/katello-ca-consumer-latest.noarch.rpm
+
+# subscription-manager register --org="_Default_Organization_" \
+--environment="_Library_" \
+--force
+
+# subscription-manager refresh
+----
++
+. In the Satellite web UI, navigate to *Infrastructure* > *Capsules*.
+. Locate Capsule{nbsp}Server in the list, and click *Edit* to the right of it.
+. Edit the *Name* and *URL* fields to match the Capsule{nbsp}Server's new host name, then click *Submit*.
+. On your DNS server, add a record for the Capsule Server's new host name, and delete the record for the previous host name.
