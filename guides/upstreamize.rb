@@ -44,6 +44,8 @@ report.write("# Upstreamization report from #{Time.now.utc}\n")
           line.gsub!(/satellite-installer --scenario satellite/, '{installer-scenario}')
           line.gsub!(/satellite-installer --scenario capsule/, '{installer-scenario-smartproxy}')
           line.gsub!(/satellite-installer/, '{foreman-installer}')
+          line.gsub!(/an IdM/, 'a {FreeIPA}')
+          line.gsub!(/IdM/, '{FreeIPA}')
           if match = line.match(/^\[options="(\w+)",? subs="(.*)"\]/)
             first, second = match.captures
             line = "[options=\"#{first}\", subs=\"#{second},attributes\"]\n" unless second =~ /attributes/
