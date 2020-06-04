@@ -1,0 +1,61 @@
+[id="migrating-to-external-databases_{context}"]
+= Migrating to External Databases
+
+Back up and transfer existing data, then use the `{foreman-installer}` command to configure {Project} to connect to external MongoDB and PostgreSQL databases.
+
+.Prerequisites
+
+* You have installed and configured MongoDB and PostgreSQL databases on a {RHEL} server.
+
+.Procedure
+
+. On {ProjectServer}, stop the `{foreman-maintain}` services:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# {foreman-maintain} service stop
+----
++
+. Start the *postgreSQL* and *mongod* services:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# systemctl start postgresql
+# systemctl start mongod
+----
++
+. Back up the internal databases:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# {foreman-maintain} backup online --skip-pulp-content --preserve-directory -y _/var/migration_backup_
+----
++
+. Transfer the data to the new external databases:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+PGPASSWORD='_Foreman_Password_' pg_restore -h _postgres.example.com_ -U foreman -d foreman < _/var/migration_backup/foreman.dump_
+PGPASSWORD='_Candlepin_Password_' pg_restore -h _postgres.example.com_ -U candlepin -d candlepin < _/var/migration_backup/candlepin.dump_
+mongorestore --host _mongo.example.com_ --db _pulp_database_ --username _pulp_user_ --password _pulp_password_ _/var/migration_backup/mongo_dump/pulp_database/_
+----
++
+. Use the `{foreman-installer}` command to update {Project} to point to the new databases:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+{installer-scenario} \
+    --foreman-db-host _postgres.example.com_ \
+    --foreman-db-password _Foreman_Password_ \
+    --foreman-db-database foreman \
+    --foreman-db-manage false \
+    --katello-candlepin-db-host _postgres.example.com_ \
+    --katello-candlepin-db-name candlepin \
+    --katello-candlepin-db-password _Candlepin_Password_ \
+    --katello-candlepin-manage-db false \
+    --katello-pulp-db-username pulp \
+    --katello-pulp-db-password _pulp_password_ \
+    --katello-pulp-db-seeds _mongo.example.com:27017_ \
+    --katello-pulp-db-name _pulp_database_ \
+    --katello-pulp-manage-db false
+----
