@@ -1,0 +1,151 @@
+[[Disabling_Weak_SSL_Encryption]]
+
+== Disabling Weak Encryption
+
+You might want to change the encryption settings for {Project} depending on the security requirements of your infrastructure or to fix vulnerabilities quickly. Use the following sections to disable weak SSL encryption and 64-bit cipher suites.
+
+[[Disabling_Weak_SSL_2-0_and_3-0_Encryption]]
+=== Disabling Weak SSL 2.0 and SSL 3.0 Encryption
+
+If your {Project} fails Nessus scans because of SSL vulnerabilities, or your security infrastructure requires that you disable SSL 2.0 and SSL 3.0, you can edit the `/etc/foreman-installer/custom-hiera.yaml` file to remove weak encryption.
+
+.Disabling Weak SSL 2.0 and SSL 3.0 Encryption for {Project}
+
+To disable weak encryption for {Project}, complete the following steps:
+
+. Open the `/etc/foreman-installer/custom-hiera.yaml` file for editing:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# vi /etc/foreman-installer/custom-hiera.yaml
+----
++
+. Add the following entries:
++
+[options="nowrap"]
+----
+# Foreman Proxy
+foreman_proxy::tls_disabled_versions: [ '1.1' ]
+
+# Dynflow
+foreman_proxy::plugin::dynflow::tls_disabled_versions: [ '1.1' ]
+
+# Apache
+apache::mod::ssl::ssl_protocol: [ 'ALL' , '-SSLv3' , '-TLSv1' , '-TLSv1.1' , '+TLSv1.2' ]
+
+# Tomcat / Candlepin
+candlepin::tls_versions: [ '1.2' ]
+
+# QPID Dispatch
+foreman_proxy_content::qpid_router_ssl_protocols: [ 'TLSv1.2' ]
+foreman_proxy_content::qpid_router_ssl_ciphers: 'ALL:!aNULL:+HIGH:-SSLv3:!IDEA-CBC-SHA'
+----
++
+. Rerun the `{foreman-installer}` tool with no arguments:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foreman-installer}
+----
++
+. Restart the `{foreman-maintain}` services:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foreman-maintain} service restart
+----
+
+
+.Disabling Weak SSL 2.0 and SSL 3.0 Encryption for {SmartProxy}
+
+To disable weak encryption for {SmartProxy}, complete the following steps:
+
+. Open the `/etc/foreman-installer/custom-hiera.yaml` file for editing:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# vi /etc/foreman-installer/custom-hiera.yaml
+----
++
+. Add the following entries:
++
+[options="nowrap"]
+----
+# Foreman Proxy
+foreman_proxy::tls_disabled_versions: [ '1.1' ]
+
+# Dynflow
+foreman_proxy::plugin::dynflow::tls_disabled_versions: [ '1.1' ]
+
+# Apache
+apache::mod::ssl::ssl_protocol: [ 'ALL' , '-SSLv3' , '-TLSv1' , '-TLSv1.1' , '+TLSv1.2' ]
+
+# QPID Dispatch
+foreman_proxy_content::qpid_router_ssl_protocols: [ 'TLSv1.2' ]
+foreman_proxy_content::qpid_router_ssl_ciphers: 'ALL:!aNULL:+HIGH:-SSLv3:!IDEA-CBC-SHA'
+
+# PULP
+pulp::ssl_protocol: "ALL -SSLv3 -TLSv1 -TLSv1.1 +TLSv1.2"
+----
++
+. Rerun the `{foreman-installer}` tool with no arguments:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foreman-installer} 
+----
++
+. Restart the `{foreman-maintain}` services:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foreman-maintain} service restart
+----
+
+[[Disabling_64-bit_Block_Size_Cipher_Suites]]
+=== Disabling 64-bit Block Size Cipher Suites (SWEET32)
+
+If you want to update your cipher suites for {Project}, you can edit the ciphers and then add your changes to the `/etc/foreman-installer/custom-hiera.yaml` file to make these changes persistent.
+
+You can use the following procedure to update your cipher suite.
+
+The minimum browser requirements for the following Ciphers is Firefox 27.
+
+. Open the `/etc/httpd/conf.d/ssl.conf` Apache configuration file for editing:
++
+----
+# vi /etc/httpd/conf.d/ssl.conf
+----
++
+. Update the values of `SSLCipherSuite` parameter:
++
+----
+SSLCipherSuite ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256
+----
++
+. Restart the *httpd* service:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# systemctl restart httpd
+----
++
+. To make the change persistent across different {foreman-installer} executions, open the `/etc/foreman-installer/custom-hiera.yaml` file for editing:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# vi /etc/foreman-installer/custom-hiera.yaml
+----
++
+. Add the following entry for `apache`:
++
+----
+apache::mod::ssl::ssl_cipher: ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256
+----
++
+. Run the `{foreman-installer}` tool to add the changes to the Apache configuration:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {installer-scenario}
+----
