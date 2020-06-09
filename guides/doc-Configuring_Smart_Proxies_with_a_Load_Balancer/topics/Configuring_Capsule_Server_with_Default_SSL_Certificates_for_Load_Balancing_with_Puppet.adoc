@@ -1,22 +1,22 @@
 [id='configuring-capsule-server-with-default-ssl-certificates-for-load-balancing-with-puppet']
-= Configuring Capsule Server with Default SSL Certificates for Load Balancing with Puppet
+= Configuring {SmartProxyServer} with Default SSL Certificates for Load Balancing with Puppet
 
-The following section describes how to configure Capsule Servers that use default SSL certificates for load balancing with Puppet.
+The following section describes how to configure {SmartProxyServer}s that use default SSL certificates for load balancing with Puppet.
 
-If you use Puppet in your Satellite configuration, you must complete the following procedures:
+If you use Puppet in your {Project} configuration, you must complete the following procedures:
 
 . xref:configuring-capsule-server-to-generate-and-sign-puppet-certificates-default-certs[]
 
 . xref:configuring-remaining-capsule-servers-for-load-balancing-default-certs[]
 
 [id='configuring-capsule-server-to-generate-and-sign-puppet-certificates-default-certs']
-.Configuring Capsule Server to Generate and Sign Puppet Certificates
+.Configuring {SmartProxyServer} to Generate and Sign Puppet Certificates
 
-Complete this procedure only for the system where you want to configure Capsule Server to generate and sign Puppet certificates for all other Capsule Servers that you configure for load balancing. In the examples in this procedure, the FQDN of this Capsule Server is `capsule_ca.example.com`.
+Complete this procedure only for the system where you want to configure {SmartProxyServer} to generate and sign Puppet certificates for all other {SmartProxyServer}s that you configure for load balancing. In the examples in this procedure, the FQDN of this {SmartProxyServer} is `capsule_ca.example.com`.
 
-. On Satellite Server, generate Katello certificates for the system where you configure Capsule Server to generate and sign Puppet certificates:
+. On {ProjectServer}, generate Katello certificates for the system where you configure {SmartProxyServer} to generate and sign Puppet certificates:
 +
-[options="nowrap" subs="+quotes,verbatim"]
+[options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 # capsule-certs-generate \
 --foreman-proxy-fqdn _capsule_ca.example.com_ \
@@ -24,18 +24,18 @@ Complete this procedure only for the system where you want to configure Capsule 
 --foreman-proxy-cname _loadbalancer.example.com_
 ----
 +
-Retain a copy of the example `satellite-installer` command that is output by the `capsule-certs-generate` command for installing the Capsule Server certificate.
+Retain a copy of the example `{foreman-installer}` command that is output by the `capsule-certs-generate` command for installing the {SmartProxyServer} certificate.
 
-. Copy the certificate archive file from Satellite Server to Capsule Server:
+. Copy the certificate archive file from {ProjectServer} to {SmartProxyServer}:
 +
 ----
 # scp /root/capsule_ca.example.com-certs.tar \
 root@capsule_ca.example.com:capsule_ca.example.com-certs.tar
 ----
 
-. Append the following options to the `satellite-installer` command that you obtain from the output of the `capsule-certs-generate` command:
+. Append the following options to the `{foreman-installer}` command that you obtain from the output of the `capsule-certs-generate` command:
 +
-[options="nowrap" subs="+quotes,verbatim"]
+[options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 --certs-cname                              "_loadbalancer.example.com_" \
 --puppet-dns-alt-names                     "_loadbalancer.example.com_" \
@@ -45,20 +45,20 @@ root@capsule_ca.example.com:capsule_ca.example.com-certs.tar
 --enable-foreman-proxy-plugin-remote-execution-ssh
 ----
 
-. On Capsule Server, enter the `satellite-installer` command, for example:
+. On {SmartProxyServer}, enter the `{foreman-installer}` command, for example:
 +
-[options="nowrap" subs="+quotes,verbatim"]
+[options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-# satellite-installer --scenario capsule \
---foreman-proxy-content-parent-fqdn        "_satellite.example.com_" \
+# {installer-scenario-smartproxy} \
+--foreman-proxy-content-parent-fqdn        "_{foreman-example-com}_" \
 --foreman-proxy-register-in-foreman        "true" \
---foreman-proxy-foreman-base-url           "_https://satellite.example.com_" \
---foreman-proxy-trusted-hosts              "_satellite.example.com_" \
+--foreman-proxy-foreman-base-url           "_https://{foreman-example-com}_" \
+--foreman-proxy-trusted-hosts              "_{foreman-example-com}_" \
 --foreman-proxy-trusted-hosts              "_capsule_ca.example.com_" \
 --foreman-proxy-oauth-consumer-key         "_oauth key_" \
 --foreman-proxy-oauth-consumer-secret      "_oauth secret_" \
 --certs-tar-file          "_capsule_ca.example.com-certs.tar_" \
---puppet-server-foreman-url                "_https://satellite.example.com_" \
+--puppet-server-foreman-url                "_https://{foreman-example-com}_" \
 --certs-cname                              "_loadbalancer.example.com_" \
 --puppet-dns-alt-names                     "_loadbalancer.example.com_" \
 --puppet-ca-server                         "_capsule_ca.example.com_" \
@@ -67,86 +67,86 @@ root@capsule_ca.example.com:capsule_ca.example.com-certs.tar
 --enable-foreman-proxy-plugin-remote-execution-ssh
 ----
 
-. On Capsule Server, generate Puppet certificates for all other Capsule Servers that you configure for load balancing, except this first system where you configure Puppet certificates signing:
+. On {SmartProxyServer}, generate Puppet certificates for all other {SmartProxyServer}s that you configure for load balancing, except this first system where you configure Puppet certificates signing:
 +
-[options="nowrap" subs="+quotes,verbatim"]
+[options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-# puppet cert generate _capsule.example.com_ \
+# puppet cert generate _{smartproxy-example-com}_ \
 --dns_alt_names=_loadbalancer.example.com_
 ----
 +
-This command creates the following files on the system where you configure Capsule Server to sign Puppet certificates:
+This command creates the following files on the system where you configure {SmartProxyServer} to sign Puppet certificates:
 +
 * `/etc/puppetlabs/puppet/ssl/certs/ca.pem`
-* `/etc/puppetlabs/puppet/ssl/certs/capsule.example.com.pem`
-* `/etc/puppetlabs/puppet/ssl/private_keys/capsule.example.com.pem`
-* `/etc/puppetlabs/puppet/ssl/public_keys/capsule.example.com.pem`
+* `/etc/puppetlabs/puppet/ssl/certs/{smartproxy-example-com}.pem`
+* `/etc/puppetlabs/puppet/ssl/private_keys/{smartproxy-example-com}.pem`
+* `/etc/puppetlabs/puppet/ssl/public_keys/{smartproxy-example-com}.pem`
 
 [id='configuring-remaining-capsule-servers-for-load-balancing-default-certs']
-.Configuring Remaining Capsule Servers for Load Balancing
+.Configuring Remaining {SmartProxyServer}s for Load Balancing
 
-Complete this procedure on each Capsule Server excluding the system where you configure Capsule Server to sign Puppet certificates.
+Complete this procedure on each {SmartProxyServer} excluding the system where you configure {SmartProxyServer} to sign Puppet certificates.
 
-. On Satellite Server, generate Katello certificates for Capsule Server:
+. On {ProjectServer}, generate Katello certificates for {SmartProxyServer}:
 +
-[options="nowrap" subs="+quotes,verbatim"]
+[options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 # capsule-certs-generate \
---foreman-proxy-fqdn _capsule.example.com_ \
---certs-tar "/root/capsule.example.com-certs.tar" \
+--foreman-proxy-fqdn _{smartproxy-example-com}_ \
+--certs-tar "/root/{smartproxy-example-com}-certs.tar" \
 --foreman-proxy-cname _loadbalancer.example.com_
 ----
 +
-Retain a copy of the example `satellite-installer` command that is output by the `capsule-certs-generate` command for installing the Capsule Server certificate.
+Retain a copy of the example `{foreman-installer}` command that is output by the `capsule-certs-generate` command for installing the {SmartProxyServer} certificate.
 
-. Copy the certificate archive file from Satellite Server to Capsule Server:
+. Copy the certificate archive file from {ProjectServer} to {SmartProxyServer}:
 +
 ----
-# scp /root/capsule.example.com-certs.tar \
-root@capsule.example.com:capsule.example.com-certs.tar
+# scp /root/{smartproxy-example-com}-certs.tar \
+root@{smartproxy-example-com}:{smartproxy-example-com}-certs.tar
 ----
 
-. On Capsule Server, install the `puppetserver` package:
+. On {SmartProxyServer}, install the `puppetserver` package:
 +
-[options="nowrap" subs="+quotes,verbatim"]
+[options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 # yum install puppetserver
 ----
 
-. On Capsule Server, create directories for puppet certificates:
+. On {SmartProxyServer}, create directories for puppet certificates:
 +
-[options="nowrap" subs="+quotes,verbatim"]
+[options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 # mkdir -p /etc/puppetlabs/puppet/ssl/certs/ \
 /etc/puppetlabs/puppet/ssl/private_keys/ \
 /etc/puppetlabs/puppet/ssl/public_keys/
 ----
 
-. On Capsule Server, copy the Puppet certificates for this Capsule Server from the system where you configure Capsule Server to sign Puppet certificates:
+. On {SmartProxyServer}, copy the Puppet certificates for this {SmartProxyServer} from the system where you configure {SmartProxyServer} to sign Puppet certificates:
 +
-[options="nowrap" subs="+quotes,verbatim"]
+[options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 # scp root@_capsule_ca.example.com_:/etc/puppetlabs/puppet/ssl/certs/ca.pem \
 /etc/puppetlabs/puppet/ssl/certs/ca.pem
-# scp root@_capsule_ca.example.com_:/etc/puppetlabs/puppet/ssl/certs/_capsule.example.com_.pem \
-/etc/puppetlabs/puppet/ssl/certs/_capsule.example.com_.pem
-# scp root@_capsule_ca.example.com_:/etc/puppetlabs/puppet/ssl/private_keys/_capsule.example.com_.pem \
-/etc/puppetlabs/puppet/ssl/private_keys/_capsule.example.com_.pem
-# scp root@_capsule_ca.example.com_:/etc/puppetlabs/puppet/ssl/public_keys/_capsule.example.com_.pem \
-/etc/puppetlabs/puppet/ssl/public_keys/_capsule.example.com_.pem
+# scp root@_capsule_ca.example.com_:/etc/puppetlabs/puppet/ssl/certs/_{smartproxy-example-com}_.pem \
+/etc/puppetlabs/puppet/ssl/certs/_{smartproxy-example-com}_.pem
+# scp root@_capsule_ca.example.com_:/etc/puppetlabs/puppet/ssl/private_keys/_{smartproxy-example-com}_.pem \
+/etc/puppetlabs/puppet/ssl/private_keys/_{smartproxy-example-com}_.pem
+# scp root@_capsule_ca.example.com_:/etc/puppetlabs/puppet/ssl/public_keys/_{smartproxy-example-com}_.pem \
+/etc/puppetlabs/puppet/ssl/public_keys/_{smartproxy-example-com}_.pem
 ----
 
-. On Capsule Server, change the directory ownership to user `puppet`, group `puppet` and set the SELinux contexts:
+. On {SmartProxyServer}, change the directory ownership to user `puppet`, group `puppet` and set the SELinux contexts:
 +
-[options="nowrap" subs="+quotes,verbatim"]
+[options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 # chown -R puppet:puppet /etc/puppetlabs/puppet/ssl/
 # restorecon -Rv /etc/puppetlabs/puppet/ssl/
 ----
 
-. Append the following options to the `satellite-installer` command that you obtain from the output of the `capsule-certs-generate` command:
+. Append the following options to the `{foreman-installer}` command that you obtain from the output of the `capsule-certs-generate` command:
 +
-[options="nowrap" subs="+quotes,verbatim"]
+[options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 --certs-cname                              "_loadbalancer.example.com_" \
 --puppet-dns-alt-names                     "_loadbalancer.example.com_" \
@@ -155,20 +155,20 @@ root@capsule.example.com:capsule.example.com-certs.tar
 --puppet-server-ca                         "false" \
 --enable-foreman-proxy-plugin-remote-execution-ssh
 ----
-. On Capsule Server, enter the `satellite-installer` command, for example:
+. On {SmartProxyServer}, enter the `{foreman-installer}` command, for example:
 +
-[options="nowrap" subs="+quotes,verbatim"]
+[options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-# satellite-installer --scenario capsule \
---foreman-proxy-content-parent-fqdn        "_satellite.example.com_" \
+# {installer-scenario-smartproxy} \
+--foreman-proxy-content-parent-fqdn        "_{foreman-example-com}_" \
 --foreman-proxy-register-in-foreman        "true" \
---foreman-proxy-foreman-base-url           "_https://satellite.example.com_" \
---foreman-proxy-trusted-hosts              "_satellite.example.com_" \
---foreman-proxy-trusted-hosts              "_capsule.example.com_" \
+--foreman-proxy-foreman-base-url           "_https://{foreman-example-com}_" \
+--foreman-proxy-trusted-hosts              "_{foreman-example-com}_" \
+--foreman-proxy-trusted-hosts              "_{smartproxy-example-com}_" \
 --foreman-proxy-oauth-consumer-key         "_oauth key_" \
 --foreman-proxy-oauth-consumer-secret      "_oauth secret_" \
---certs-tar-file                           "_capsule.example.com-certs.tar_" \
---puppet-server-foreman-url                "_https://satellite.example.com_" \
+--certs-tar-file                           "_{smartproxy-example-com}-certs.tar_" \
+--puppet-server-foreman-url                "_https://{foreman-example-com}_" \
 --certs-cname                              "_loadbalancer.example.com_" \
 --puppet-dns-alt-names                     "_loadbalancer.example.com_" \
 --puppet-ca-server                         "_capsule_ca.example.com_" \
