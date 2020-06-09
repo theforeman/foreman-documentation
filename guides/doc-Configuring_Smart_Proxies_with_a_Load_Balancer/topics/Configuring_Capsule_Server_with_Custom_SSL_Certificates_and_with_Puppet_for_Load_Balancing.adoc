@@ -14,8 +14,8 @@ This procedure outlines how to create a configuration file for the Certificate S
 +
 [options="nowrap", subs="+quotes,attributes"]
 ----
-# mkdir `/root/capsule_cert`
-# cd `/root/capsule_cert`
+# mkdir /root/{smart-proxy-context}_cert
+# cd /root/{smart-proxy-context}_cert
 ----
 
 . Create a private key with which to sign the Certificate Signing Request (CSR).
@@ -26,7 +26,7 @@ If you already have a private key for this {SmartProxyServer}, skip this step.
 +
 [options="nowrap", subs="+quotes,attributes"]
 ----
-# openssl genrsa -out `/root/capsule_cert/capsule.pem` 4096
+# openssl genrsa -out /root/{smart-proxy-context}_cert/{smart-proxy-context}.pem 4096
 ----
 
 . Create the certificate request configuration file with the following content:
@@ -58,7 +58,7 @@ subjectAltName = @alt_names
 DNS.1 = _loadbalancer.example.com_
 DNS.2 = _{smartproxy-example-com}_
 ----
-<1> The certificate's common name must match the FQDN of {SmartProxyServer}. Ensure to change this when running the command on each {SmartProxyServer}. You can also set a wildcard value `*`. If you set a wildcard value, you must add the `-t capsule` option when you use the `katello-certs-check` command.
+<1> The certificate's common name must match the FQDN of {SmartProxyServer}. Ensure to change this when running the command on each {SmartProxyServer}. You can also set a wildcard value `*`. If you set a wildcard value, you must add the `-t {certs-proxy-context}` option when you use the `katello-certs-check` command.
 <2> Under `[alt_names]`, include the FQDN of the load balancer as `DNS.1` and the FQDN of {SmartProxyServer} as `DNS.2`.
 
 . Create a Certificate Signing Request (CSR) for the SAN certificate:
@@ -66,9 +66,9 @@ DNS.2 = _{smartproxy-example-com}_
 [options="nowrap", subs="+quotes,attributes"]
 ----
 # openssl req -new \
--key /root/capsule_cert/capsule.pem \ <1>
+-key /root/{smart-proxy-context}_cert/{smart-proxy-context}.pem \ <1>
 -config SAN_config.cfg \          <2>
--out /root/capsule_cert/capsule.pem   <3>
+-out /root/{smart-proxy-context}_cert/{smart-proxy-context}.pem   <3>
 ----
 <1> {SmartProxyServer}’s private key, used to sign the certificate
 <2> The certificate request configuration file
@@ -82,18 +82,19 @@ When you submit the request, specify the lifespan of the certificate. The method
 
 . On {ProjectServer}, validate the {SmartProxyServer} certificate input files:
 +
+[options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 # katello-certs-check \
--c /root/capsule_cert/capsule.pem \      <1>
--k /root/capsule_cert/capsule.pem \      <2>
--b /root/capsule_cert/ca_cert_bundle.pem <3>
+-c /root/{smart-proxy-context}_cert/{smart-proxy-context}.pem \      <1>
+-k /root/{smart-proxy-context}_cert/{smart-proxy-context}.pem \      <2>
+-b /root/{smart-proxy-context}_cert/ca_cert_bundle.pem <3>
 ----
 <1> {SmartProxyServer} certificate file, provided by your Certificate Authority
 <2> {SmartProxyServer}’s private key that you used to sign the certificate
 <3> Certificate Authority bundle, provided by your Certificate Authority
 +
 +
-If you set the `commonName=` to a wildcard value `*`, you must add the `-t capsule` option to the `katello-certs-check` command.
+If you set the `commonName=` to a wildcard value `*`, you must add the `-t {certs-proxy-context}` option to the `katello-certs-check` command.
 +
 Retain a copy of the example `{certs-generate}` command that is output by the `katello-certs-check` command for creating the Certificate Archive File for this {SmartProxyServer}.
 
@@ -109,7 +110,7 @@ If you use Puppet in your {Project} configuration, then you must complete the fo
 .Configuring {SmartProxyServer} to Generate and Sign Puppet Certificates
 
 
-Complete this procedure only for the system where you want to configure {SmartProxyServer} to generate Puppet certificates for all other {SmartProxyServer}s that you configure for load balancing. In the examples in this procedure, the FQDN of this {SmartProxyServer} is `capsule_ca.example.com`.
+Complete this procedure only for the system where you want to configure {SmartProxyServer} to generate Puppet certificates for all other {SmartProxyServer}s that you configure for load balancing. In the examples in this procedure, the FQDN of this {SmartProxyServer} is `{smart-proxy-context}_ca.example.com`.
 
 . Append the following option to the `{certs-generate}` command that you obtain from the output of the `katello-certs-check` command:
 +
@@ -123,11 +124,11 @@ Complete this procedure only for the system where you want to configure {SmartPr
 [options="nowrap", subs="+quotes,attributes"]
 ----
 # {certs-generate} \
---foreman-proxy-fqdn _capsule_ca.example.com_ \
---certs-tar /root/capsule_cert/capsule_ca.tar \
---server-cert /root/capsule_cert/capsule_ca.pem \
---server-key /root/capsule_cert/capsule_ca.pem \
---server-ca-cert /root/capsule_cert/ca_cert_bundle.pem \
+--foreman-proxy-fqdn _{smart-proxy-context}_ca.example.com_ \
+--certs-tar /root/{smart-proxy-context}_cert/{smart-proxy-context}_ca.tar \
+--server-cert /root/{smart-proxy-context}_cert/{smart-proxy-context}_ca.pem \
+--server-key /root/{smart-proxy-context}_cert/{smart-proxy-context}_ca.pem \
+--server-ca-cert /root/{smart-proxy-context}_cert/ca_cert_bundle.pem \
 --foreman-proxy-cname _loadbalancer.example.com_
 ----
 +
@@ -140,7 +141,7 @@ Retain a copy of the example `{foreman-installer}` command from the output for i
 [options="nowrap", subs="+quotes,attributes"]
 ----
 --puppet-dns-alt-names                     "_loadbalancer.example.com_" \
---puppet-ca-server                         "_capsule_ca.example.com_" \
+--puppet-ca-server                         "_{smart-proxy-context}_ca.example.com_" \
 --foreman-proxy-puppetca                   "true" \
 --puppet-server-ca                         "true" \
 --enable-foreman-proxy-plugin-remote-execution-ssh
@@ -155,14 +156,14 @@ Retain a copy of the example `{foreman-installer}` command from the output for i
 --foreman-proxy-register-in-foreman        "true" \
 --foreman-proxy-foreman-base-url           "_https://{foreman-example-com}_" \
 --foreman-proxy-trusted-hosts              "_{foreman-example-com}_" \
---foreman-proxy-trusted-hosts              "_capsule_ca.example.com_" \
+--foreman-proxy-trusted-hosts              "_{smart-proxy-context}_ca.example.com_" \
 --foreman-proxy-oauth-consumer-key         "oauth key" \
 --foreman-proxy-oauth-consumer-secret      "oauth secret" \
 --certs-tar-file                           "_certs.tgz_" \
 --puppet-server-foreman-url                "_https://{foreman-example-com}_" \
 --certs-cname                              "_loadbalancer.example.com_" \
 --puppet-dns-alt-names                     "_loadbalancer.example.com_" \
---puppet-ca-server                         "_capsule_ca.example.com_" \
+--puppet-ca-server                         "_{smart-proxy-context}_ca.example.com_" \
 --foreman-proxy-puppetca                   "true" \
 --puppet-server-ca                         "true" \
 --enable-foreman-proxy-plugin-remote-execution-ssh
@@ -201,10 +202,10 @@ Complete this procedure for each {SmartProxyServer} excluding the system where y
 ----
 # {certs-generate} \
 --foreman-proxy-fqdn _{smartproxy-example-com}_ \
---certs-tar /root/capsule_cert/capsule.tar \
---server-cert /root/capsule_cert/capsule.pem \
---server-key /root/capsule_cert/capsule.pem \
---server-ca-cert /root/capsule_cert/ca_cert_bundle.pem \
+--certs-tar /root/{smart-proxy-context}_cert/{smart-proxy-context}.tar \
+--server-cert /root/{smart-proxy-context}_cert/{smart-proxy-context}.pem \
+--server-key /root/{smart-proxy-context}_cert/{smart-proxy-context}.pem \
+--server-ca-cert /root/{smart-proxy-context}_cert/ca_cert_bundle.pem \
 --foreman-proxy-cname _loadbalancer.example.com_
 ----
 +
@@ -212,9 +213,10 @@ Retain a copy of the example `{foreman-installer}` command from the output for i
 
 . Copy the certificate archive file from {ProjectServer} to {SmartProxyServer}.
 +
+[options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-# scp /root/{smartproxy-example-com}-certs.tar \
-root@{smartproxy-example-com}:{smartproxy-example-com}-certs.tar
+# scp /root/_{smartproxy-example-com}_-certs.tar \
+root@_{smartproxy-example-com}_:__{smartproxy-example-com}__-certs.tar
 ----
 
 . On {SmartProxyServer}, install the `puppetserver` package:
@@ -237,13 +239,13 @@ root@{smartproxy-example-com}:{smartproxy-example-com}-certs.tar
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-# scp root@_capsule_ca.example.com_:/etc/puppetlabs/puppet/ssl/certs/ca.pem \
+# scp root@_{smart-proxy-context}_ca.example.com_:/etc/puppetlabs/puppet/ssl/certs/ca.pem \
 /etc/puppetlabs/puppet/ssl/certs/ca.pem
-# scp root@_capsule_ca.example.com_:/etc/puppetlabs/puppet/ssl/certs/_{smartproxy-example-com}_.pem \
+# scp root@_{smart-proxy-context}_ca.example.com_:/etc/puppetlabs/puppet/ssl/certs/_{smartproxy-example-com}_.pem \
 /etc/puppetlabs/puppet/ssl/certs/_{smartproxy-example-com}_.pem
-# scp root@_capsule_ca.example.com_:/etc/puppetlabs/puppet/ssl/private_keys/_{smartproxy-example-com}_.pem \
+# scp root@_{smart-proxy-context}_ca.example.com_:/etc/puppetlabs/puppet/ssl/private_keys/_{smartproxy-example-com}_.pem \
 /etc/puppetlabs/puppet/ssl/private_keys/_{smartproxy-example-com}_.pem
-# scp root@_capsule_ca.example.com_:/etc/puppetlabs/puppet/ssl/public_keys/_{smartproxy-example-com}_.pem \
+# scp root@_{smart-proxy-context}_ca.example.com_:/etc/puppetlabs/puppet/ssl/public_keys/_{smartproxy-example-com}_.pem \
 /etc/puppetlabs/puppet/ssl/public_keys/_{smartproxy-example-com}_.pem
 ----
 
@@ -261,7 +263,7 @@ root@{smartproxy-example-com}:{smartproxy-example-com}-certs.tar
 ----
 --certs-cname                              "_loadbalancer.example.com_" \
 --puppet-dns-alt-names                     "_loadbalancer.example.com_" \
---puppet-ca-server                         "_capsule_ca.example.com_" \
+--puppet-ca-server                         "_{smart-proxy-context}_ca.example.com_" \
 --foreman-proxy-puppetca                   "false" \
 --puppet-server-ca                         "false" \
 --enable-foreman-proxy-plugin-remote-execution-ssh
@@ -283,7 +285,7 @@ root@{smartproxy-example-com}:{smartproxy-example-com}-certs.tar
 --puppet-server-foreman-url                "_https://{foreman-example-com}_" \
 --certs-cname                              "_loadbalancer.example.com_" \
 --puppet-dns-alt-names                     "_loadbalancer.example.com_" \
---puppet-ca-server                         "_capsule_ca.example.com_" \
+--puppet-ca-server                         "_{smart-proxy-context}_ca.example.com_" \
 --foreman-proxy-puppetca                   "false" \
 --puppet-server-ca                         "false" \
 --enable-foreman-proxy-plugin-remote-execution-ssh
