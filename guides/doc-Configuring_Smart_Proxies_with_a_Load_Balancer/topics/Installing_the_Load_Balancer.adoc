@@ -1,0 +1,235 @@
+[id='installing-the-load-balancer']
+= Installing the Load Balancer
+
+The following example provides general guidance for configuring an HAProxy load balancer. You can install any suitable load balancing software solution that supports TCP forwarding and sticky sessions.
+
+. On a Red{nbsp}Hat Enterprise Linux 7 host, install HAProxy:
++
+----
+# yum install haproxy
+----
+
+. Install the following package that includes the `semanage` tool:
++
+----
+# yum install policycoreutils-python
+----
+
+. Configure SELinux to allow HAProxy to bind any port:
++
+----
+# semanage boolean --modify --on haproxy_connect_any
+----
+
+. Configure the load balancer to balance the network load for the ports as described in xref:ports-configuration-for-the-load-balancer[]. For example, to configure ports for HAProxy, edit the `/etc/haproxy/haproxy.cfg` file to correspond with the table.
++
+You must configure sticky session on TCP port 443 to request yum metadata for RPM repositories from different Capsule Servers that you configure for load balancing.
++
+[id='ports-configuration-for-the-load-balancer']
+.Ports Configuration for the Load Balancer
+[cols="18%,16%,16%,20%,30%",options="header"]
+|====
+| Service | Port | Mode | Balance Mode | Destination
+| HTTP | 80 | TCP | roundrobin | port 80 on all Capsule Servers
+//| Anaconda | 8000 | TCP | roundrobin | port 8000 on all Capsules
+| HTTPS | 443 | TCP | source | port 443 on all Capsule Servers
+| RHSM | 8443 | TCP | roundrobin | port 8443 on all Capsule Servers
+| AMQP | 5647 | TCP | roundrobin | port 5647 on all Capsule Servers
+| Puppet (_Optional_)| 8140 | TCP | roundrobin | port 8140 on all Capsule Servers
+| PuppetCA (_Optional_)| 8141 | TCP | roundrobin | port 8140 only on the system where you configure Capsule Server to sign Puppet certificates
+| SmartProxy (_Optional for OpenScap_)| 9090 | TCP | roundrobin | port 9090 on all Capsule Servers
+| Docker (_Optional_)| 5000 | TCP | roundrobin | port 5000 on all Capsule Servers
+|====
+
+. Configure the load balancer to disable SSL offloading and allow client-side SSL certificates to pass through to back end servers. This is required because communication from clients to Capsule Servers depends on client-side SSL certificates.
+
+. Start and enable the HAProxy service:
++
+----
+# systemctl start haproxy
+# systemctl enable haproxy
+----
+
+////
+The following is an example of a `haproxy.cfg` file:
++
+----
+#---------------------------------------------------------------------
+# Example configuration for a possible web application.  See the
+# full configuration options online.
+#
+#   http://haproxy.1wt.eu/download/1.4/doc/configuration.txt
+#
+#---------------------------------------------------------------------
+
+#---------------------------------------------------------------------
+# Global settings
+#---------------------------------------------------------------------
+global
+    # to have these messages end up in /var/log/haproxy.log you will
+    # need to:
+    #
+    # 1) configure syslog to accept network log events.  This is done
+    #    by adding the '-r' option to the SYSLOGD_OPTIONS in
+    #    /etc/sysconfig/syslog
+    #
+    # 2) configure local2 events to go to the /var/log/haproxy.log
+    #   file. A line like the following can be added to
+    #   /etc/sysconfig/syslog
+    #
+    #    local2.*                       /var/log/haproxy.log
+    #
+    log         127.0.0.1 local2
+
+    chroot      /var/lib/haproxy
+    pidfile     /var/run/haproxy.pid
+    maxconn     4000
+    user        haproxy
+    group       haproxy
+    daemon
+
+    # turn on stats unix socket
+    stats socket /var/lib/haproxy/stats
+
+#---------------------------------------------------------------------
+# common defaults that all the 'listen' and 'backend' sections will
+# use if not designated in their block
+#---------------------------------------------------------------------
+defaults
+	log                 	global
+	retries             	3
+	timeout http-request	10s
+	timeout queue       	1m
+	timeout connect     	10s
+	timeout client      	1m
+	timeout server      	1m
+	timeout http-keep-alive 10s
+	timeout check       	10s
+	maxconn             	3000
+
+#https
+frontend https
+   bind *:443
+   mode tcp
+   option              	tcplog
+   default_backend f-proxy-https
+
+backend f-proxy-https
+   option tcp-check
+   balance source
+   server f-proxy-https-1 <ip of capsule1>:443 check
+   server f-proxy-https-2 <ip of capsule2>:443 check
+
+#http
+frontend http
+   bind *:80
+   mode tcp
+   option              	tcplog
+   default_backend f-proxy-http
+
+backend f-proxy-http
+   option tcp-check
+   balance roundrobin
+   server f-proxy-http-1 <ip of capsule1>:80 check
+   server f-proxy-http-2 <ip of capsule2>:80 check
+
+#amqp
+frontend amqp
+   bind *:5647
+   mode tcp
+   option              	tcplog
+   default_backend f-proxy-amqp
+
+backend f-proxy-amqp
+   option tcp-check
+   balance roundrobin
+   server f-proxy-amqp-1 <ip of capsule1>:5647 check
+   server f-proxy-amqp-2 <ip of capsule2>:5647 check
+
+
+#anaconda
+frontend anaconda
+   bind *:8000
+   mode tcp
+   option              	tcplog
+   default_backend f-proxy-anaconda
+
+backend f-proxy-anaconda
+   option tcp-check
+   balance roundrobin
+   server f-proxy-anaconda-1 <ip of capsule1>:8000 check
+   server f-proxy-anaconda-2 <ip of capsule2>:8000 check
+
+#puppet
+frontend puppet
+   bind *:8140
+   mode tcp
+   option              	tcplog
+   default_backend f-proxy-puppet
+
+backend f-proxy-puppet
+   option tcp-check
+   balance roundrobin
+   server f-proxy-puppet-1 <ip of capsule1>:8140 check
+   server f-proxy-puppet-2 <ip of capsule2>:8140 check
+
+#puppet-ca
+frontend puppet-ca
+   bind *:8141
+   mode tcp
+   option              	tcplog
+   default_backend f-proxy-puppet-ca
+
+backend f-proxy-puppet-ca
+   option tcp-check
+   balance roundrobin
+   server f-proxy-puppetca-1 <ip of capsule1>:8140 check
+
+
+#rhsm
+frontend rhsm
+   bind *:8443
+   mode tcp
+   option              	tcplog
+   default_backend f-proxy-rhsm
+
+backend f-proxy-rhsm
+   option tcp-check
+   balance roundrobin
+   server f-proxy-rhsm-1 <ip of capsule1>:8443 check
+   server f-proxy-rhsm-2 <ip of capsule2>:8443 check
+
+#scap
+frontend scap
+   bind *:9090
+   mode tcp
+   option              	tcplog
+   default_backend f-proxy-scap
+
+backend f-proxy-scap
+   option tcp-check
+   balance roundrobin
+   server f-proxy-scap-1 <ip of capsule1>:9090 check
+   server f-proxy-scap-2 <ip of capsule2>:9090 check
+
+#docker
+frontend docker
+   bind *:5000
+   mode tcp
+   option              	tcplog
+   default_backend f-proxy-docker
+
+backend f-proxy-docker
+   option tcp-check
+   balance roundrobin
+   server f-proxy-docker-1 <ip of capsule1>:5000 check
+   server f-proxy-docker-2 <ip of capsule2>:5000 check
+----
+
+. To enable and start the service, enter the following commands:
++
+----
+# systemctl enable haproxy
+# systemctl restart haproxy
+----
+////

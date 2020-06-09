@@ -1,0 +1,178 @@
+[id='configuring-capsule-server-with-default-ssl-certificates-for-load-balancing-with-puppet']
+= Configuring Capsule Server with Default SSL Certificates for Load Balancing with Puppet
+
+The following section describes how to configure Capsule Servers that use default SSL certificates for load balancing with Puppet.
+
+If you use Puppet in your Satellite configuration, you must complete the following procedures:
+
+. xref:configuring-capsule-server-to-generate-and-sign-puppet-certificates-default-certs[]
+
+. xref:configuring-remaining-capsule-servers-for-load-balancing-default-certs[]
+
+[id='configuring-capsule-server-to-generate-and-sign-puppet-certificates-default-certs']
+.Configuring Capsule Server to Generate and Sign Puppet Certificates
+
+Complete this procedure only for the system where you want to configure Capsule Server to generate and sign Puppet certificates for all other Capsule Servers that you configure for load balancing. In the examples in this procedure, the FQDN of this Capsule Server is `capsule_ca.example.com`.
+
+. On Satellite Server, generate Katello certificates for the system where you configure Capsule Server to generate and sign Puppet certificates:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# capsule-certs-generate \
+--foreman-proxy-fqdn _capsule_ca.example.com_ \
+--certs-tar "/root/capsule_ca.example.com-certs.tar" \
+--foreman-proxy-cname _loadbalancer.example.com_
+----
++
+Retain a copy of the example `satellite-installer` command that is output by the `capsule-certs-generate` command for installing the Capsule Server certificate.
+
+. Copy the certificate archive file from Satellite Server to Capsule Server:
++
+----
+# scp /root/capsule_ca.example.com-certs.tar \
+root@capsule_ca.example.com:capsule_ca.example.com-certs.tar
+----
+
+. Append the following options to the `satellite-installer` command that you obtain from the output of the `capsule-certs-generate` command:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+--certs-cname                              "_loadbalancer.example.com_" \
+--puppet-dns-alt-names                     "_loadbalancer.example.com_" \
+--puppet-ca-server                         "_capsule_ca.example.com_" \
+--foreman-proxy-puppetca                   "true" \
+--puppet-server-ca                         "true" \
+--enable-foreman-proxy-plugin-remote-execution-ssh
+----
+
+. On Capsule Server, enter the `satellite-installer` command, for example:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# satellite-installer --scenario capsule \
+--foreman-proxy-content-parent-fqdn        "_satellite.example.com_" \
+--foreman-proxy-register-in-foreman        "true" \
+--foreman-proxy-foreman-base-url           "_https://satellite.example.com_" \
+--foreman-proxy-trusted-hosts              "_satellite.example.com_" \
+--foreman-proxy-trusted-hosts              "_capsule_ca.example.com_" \
+--foreman-proxy-oauth-consumer-key         "_oauth key_" \
+--foreman-proxy-oauth-consumer-secret      "_oauth secret_" \
+--certs-tar-file          "_capsule_ca.example.com-certs.tar_" \
+--puppet-server-foreman-url                "_https://satellite.example.com_" \
+--certs-cname                              "_loadbalancer.example.com_" \
+--puppet-dns-alt-names                     "_loadbalancer.example.com_" \
+--puppet-ca-server                         "_capsule_ca.example.com_" \
+--foreman-proxy-puppetca                   "true" \
+--puppet-server-ca                         "true" \
+--enable-foreman-proxy-plugin-remote-execution-ssh
+----
+
+. On Capsule Server, generate Puppet certificates for all other Capsule Servers that you configure for load balancing, except this first system where you configure Puppet certificates signing:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# puppet cert generate _capsule.example.com_ \
+--dns_alt_names=_loadbalancer.example.com_
+----
++
+This command creates the following files on the system where you configure Capsule Server to sign Puppet certificates:
++
+* `/etc/puppetlabs/puppet/ssl/certs/ca.pem`
+* `/etc/puppetlabs/puppet/ssl/certs/capsule.example.com.pem`
+* `/etc/puppetlabs/puppet/ssl/private_keys/capsule.example.com.pem`
+* `/etc/puppetlabs/puppet/ssl/public_keys/capsule.example.com.pem`
+
+[id='configuring-remaining-capsule-servers-for-load-balancing-default-certs']
+.Configuring Remaining Capsule Servers for Load Balancing
+
+Complete this procedure on each Capsule Server excluding the system where you configure Capsule Server to sign Puppet certificates.
+
+. On Satellite Server, generate Katello certificates for Capsule Server:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# capsule-certs-generate \
+--foreman-proxy-fqdn _capsule.example.com_ \
+--certs-tar "/root/capsule.example.com-certs.tar" \
+--foreman-proxy-cname _loadbalancer.example.com_
+----
++
+Retain a copy of the example `satellite-installer` command that is output by the `capsule-certs-generate` command for installing the Capsule Server certificate.
+
+. Copy the certificate archive file from Satellite Server to Capsule Server:
++
+----
+# scp /root/capsule.example.com-certs.tar \
+root@capsule.example.com:capsule.example.com-certs.tar
+----
+
+. On Capsule Server, install the `puppetserver` package:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# yum install puppetserver
+----
+
+. On Capsule Server, create directories for puppet certificates:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# mkdir -p /etc/puppetlabs/puppet/ssl/certs/ \
+/etc/puppetlabs/puppet/ssl/private_keys/ \
+/etc/puppetlabs/puppet/ssl/public_keys/
+----
+
+. On Capsule Server, copy the Puppet certificates for this Capsule Server from the system where you configure Capsule Server to sign Puppet certificates:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# scp root@_capsule_ca.example.com_:/etc/puppetlabs/puppet/ssl/certs/ca.pem \
+/etc/puppetlabs/puppet/ssl/certs/ca.pem
+# scp root@_capsule_ca.example.com_:/etc/puppetlabs/puppet/ssl/certs/_capsule.example.com_.pem \
+/etc/puppetlabs/puppet/ssl/certs/_capsule.example.com_.pem
+# scp root@_capsule_ca.example.com_:/etc/puppetlabs/puppet/ssl/private_keys/_capsule.example.com_.pem \
+/etc/puppetlabs/puppet/ssl/private_keys/_capsule.example.com_.pem
+# scp root@_capsule_ca.example.com_:/etc/puppetlabs/puppet/ssl/public_keys/_capsule.example.com_.pem \
+/etc/puppetlabs/puppet/ssl/public_keys/_capsule.example.com_.pem
+----
+
+. On Capsule Server, change the directory ownership to user `puppet`, group `puppet` and set the SELinux contexts:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# chown -R puppet:puppet /etc/puppetlabs/puppet/ssl/
+# restorecon -Rv /etc/puppetlabs/puppet/ssl/
+----
+
+. Append the following options to the `satellite-installer` command that you obtain from the output of the `capsule-certs-generate` command:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+--certs-cname                              "_loadbalancer.example.com_" \
+--puppet-dns-alt-names                     "_loadbalancer.example.com_" \
+--puppet-ca-server                         "_capsule_ca.example.com_" \
+--foreman-proxy-puppetca                   "false" \
+--puppet-server-ca                         "false" \
+--enable-foreman-proxy-plugin-remote-execution-ssh
+----
+. On Capsule Server, enter the `satellite-installer` command, for example:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# satellite-installer --scenario capsule \
+--foreman-proxy-content-parent-fqdn        "_satellite.example.com_" \
+--foreman-proxy-register-in-foreman        "true" \
+--foreman-proxy-foreman-base-url           "_https://satellite.example.com_" \
+--foreman-proxy-trusted-hosts              "_satellite.example.com_" \
+--foreman-proxy-trusted-hosts              "_capsule.example.com_" \
+--foreman-proxy-oauth-consumer-key         "_oauth key_" \
+--foreman-proxy-oauth-consumer-secret      "_oauth secret_" \
+--certs-tar-file                           "_capsule.example.com-certs.tar_" \
+--puppet-server-foreman-url                "_https://satellite.example.com_" \
+--certs-cname                              "_loadbalancer.example.com_" \
+--puppet-dns-alt-names                     "_loadbalancer.example.com_" \
+--puppet-ca-server                         "_capsule_ca.example.com_" \
+--foreman-proxy-puppetca                   "false" \
+--puppet-server-ca                         :false" \
+--enable-foreman-proxy-plugin-remote-execution-ssh
+----

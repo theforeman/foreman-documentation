@@ -1,0 +1,61 @@
+[id='configuring-capsule-server-with-default-ssl-certificates-for-load-balancing-without-puppet']
+= Configuring Capsule Server with Default SSL Certificates for Load Balancing without Puppet
+
+The following section describes how to configure Capsule Servers that use default SSL certificates for load balancing without Puppet.
+
+Complete this procedure on each Capsule Server that you want to configure for load balancing.
+
+.Procedure
+
+. On Satellite Server, generate Katello certificates for Capsule Server, for example:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# capsule-certs-generate \
+--foreman-proxy-fqdn _capsule.example.com_ \
+--certs-tar "/root/capsule.example.com-certs.tar" \
+--foreman-proxy-cname _loadbalancer.example.com_
+----
++
+Retain a copy of the example `satellite-installer` command that is output by the `capsule-certs-generate` command for installing the Capsule Server certificate.
+
+. Copy the certificate archive file from Satellite Server to Capsule Server.
++
+----
+# scp /root/capsule.example.com-certs.tar \
+root@capsule.example.com:capsule.example.com-certs.tar
+----
+
+. Append the following options to the `satellite-installer` command that you obtain from the output of the `capsule-certs-generate` command. Set the `--puppet-ca-server` option to point to the Capsule Server where you enter the command. You must install Puppet CA on your Capsule Servers, regardless of whether you intend to use it or not. Puppet is configured in its default single-node configuration.
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+--certs-cname                              "_loadbalancer.example.com_" \
+--puppet-dns-alt-names                     "_loadbalancer.example.com_" \
+--puppet-ca-server                         "_capsule.example.com_" \
+--foreman-proxy-puppetca                   "true" \
+--puppet-server-ca                         "true" \
+--enable-foreman-proxy-plugin-remote-execution-ssh
+----
+
+. On Capsule Server, enter the `satellite-installer` command, for example:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# satellite-installer --scenario capsule \
+--foreman-proxy-content-parent-fqdn        "_satellite.example.com_" \
+--foreman-proxy-register-in-foreman        "true" \
+--foreman-proxy-foreman-base-url           "_https://satellite.example.com_" \
+--foreman-proxy-trusted-hosts              "_satellite.example.com_" \
+--foreman-proxy-trusted-hosts              "_capsule.example.com_" \
+--foreman-proxy-oauth-consumer-key         "_oauth key_" \
+--foreman-proxy-oauth-consumer-secret      "_oauth secret_" \
+--certs-tar-file                           "_capsule.example.com-certs.tar_" \
+--puppet-server-foreman-url                "_https://satellite.example.com_" \
+--certs-cname                              "_loadbalancer.example.com_" \
+--puppet-dns-alt-names                     "_loadbalancer.example.com_" \
+--puppet-ca-server                         "_capsule.example.com_" \
+--foreman-proxy-puppetca                   "true" \
+--puppet-server-ca                         "true" \
+--enable-foreman-proxy-plugin-remote-execution-ssh
+----
