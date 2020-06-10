@@ -36,7 +36,7 @@ browser: html
 	${BROWSER_OPEN} "file://$(realpath $(ROOTDIR)/$(DEST_HTML))"
 
 linkchecker: html
-	linkchecker -vr1 -f $(COMMON_DIR)/linkchecker.ini --check-extern --ignore-url=example.com --ignore-url=cdn.redhat.com --ignore-url=file:///modules "file://$(realpath $(ROOTDIR)/$(DEST_HTML))" --ignore-url=tools.ietf.org --ignore-url=host/unattended/provision
+	linkchecker -vr1 -f $(COMMON_DIR)/linkchecker.ini --check-extern --ignore-url=example.com --ignore-url=cdn.redhat.com --ignore-url=file:///modules "file://$(realpath $(ROOTDIR)/$(DEST_HTML))" --ignore-url=tools.ietf.org --ignore-url=host/unattended/provision --ignore-url=projects.theforeman.org
 
 open-pdf: pdf
 	${BROWSER_OPEN} "$(realpath $(ROOTDIR)/$(DEST_PDF))"
