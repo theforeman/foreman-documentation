@@ -3,22 +3,22 @@
 
 To create hosts using image-based provisioning, you must add information about the image, such as access details and the image location, to your {ProjectServer}.
 
-ifeval::["{context}" == "kvm-provisioning"]
-.Supported Storage Types
-Note that you can manage only directory pool storage types through {ProjectX}.
-endif::[]
+ifdef::kvm-provisioning[Note that you can manage only directory pool storage types through {ProjectX}.]
 
 .Procedure
 
-. In the {Project} web UI, navigate to *Infrastructure* > *Compute Resources* and click the name of your {CRname} connection.
+. In the {Project} web UI, navigate to *Infrastructure* > *Compute Resources* and click the name of the {CRname} connection.
 . Click *Create Image*.
 . In the *Name* field, enter a name for the image.
 . From the *Operating System* list, select the image's base operating system.
 . From the *Architecture* list, select the operating system architecture.
-. In the *Username* field, enter the SSH user name for image access. This is normally the `root` user.
+. In the *Username* field, enter the SSH user name for image access.
+ifdef::kvm-provisioning,openstack-provisioning[This is normally the `root` user.]
+ifdef::gce-provisioning[Specify a user other than `root`, because the `root` user cannot connect to a GCE instance using SSH keys. The username must begin with a letter and consist of lowercase letters and numbers.]
+
 . In the *Password* field, enter the SSH password for image access.
 
-ifeval::["{context}" == "kvm-provisioning"]
+ifdef::kvm-provisioning[]
 . In the *Image path* field, enter the full path that points to the image on the KVM server. For example:
 +
 [options="nowrap" subs="+quotes"]
@@ -26,9 +26,7 @@ ifeval::["{context}" == "kvm-provisioning"]
  /var/lib/libvirt/images/TestImage.qcow2
 ----
 endif::[]
-ifeval::["{context}" == "openstack-provisioning"]
-. From the *Image* list, select the image in OpenStack Image Storage.
-endif::[]
+ifdef::openstack-provisioning,gce-provisioning[. From the *Image* list, select an image from the {CRname} compute resource.]
 
 . Optional: Select the *User Data* check box if the image supports user data input, such as `cloud-init` data.
 . Click *Submit* to save the image details.
@@ -43,12 +41,12 @@ Use the `--uuid` field to store the full path of the image location on the KVM s
 ----
 # hammer compute-resource image create \
 --name "_KVM Image_" \
+--compute-resource "_My_KVM_Server_"
 --operatingsystem "RedHat _version_" \
 --architecture "x86_64" \
 --username root \
 --user-data false \
 --uuid "/var/lib/libvirt/images/_KVMimage_.qcow2" \
---compute-resource "_My_KVM_Server_"
 ----
 endif::[]
 ifeval::["{context}" == "openstack-provisioning"]
@@ -58,11 +56,25 @@ Use the `--uuid` field to store the full path of the image location on the {Open
 ----
 # hammer compute-resource image create \
 --name "OpenStack Image" \
+--compute-resource "_My_OpenStack_Platform_"
 --operatingsystem "RedHat _version_" \
 --architecture "x86_64" \
 --username root \
 --user-data true \
 --uuid "_/path/to/OpenstackImage.qcow2_"
---compute-resource "_My_OpenStack_Platform_"
+----
+endif::[]
+ifeval::["{context}" == "gce-provisioning"]
+With the `--username` option, specify a user other than `root`, because the `root` user cannot connect to a GCE instance using SSH keys. The username must begin with a letter and consist of lowercase letters and numbers.
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer compute-resource image create \
+--name '_gce_image_name_' \
+--compute-resource '_gce_cr_' \
+--operatingsystem-id 1 \
+--architecture-id 1 \
+--uuid '_3780108136525169178_' \
+--username '_admin_'
 ----
 endif::[]
