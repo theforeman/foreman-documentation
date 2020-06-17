@@ -104,7 +104,6 @@ sed 's/:ProductVersionPrevious: 6.6/:ProductVersionPrevious: 6.6/g' common/attri
 mv common/attributes.tmp common/attributes.adoc
 find common -name '*.adoc' -type f -exec sed -i -e 's/{project-context}/satellite/g' -- {} +
 find common -name '*.adoc' -type f -exec sed -i -e 's/{smart-proxy-context}/capsule/g' -- {} +
-find common -name '*.adoc' -type f -exec sed -i -e 's/{OpenStack}/Red{nbsp}Hat OpenStack Platform/g' -- {} +
 
 # Step 4 - Commit and push changes, if any
 if [ `git status | wc -l` == 2 ]
