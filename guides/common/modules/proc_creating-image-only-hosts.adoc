@@ -1,0 +1,97 @@
+[id="creating-image-only-hosts_{context}"]
+= Creating Image-based Hosts on {CRname}
+
+In {Project}, you can use {CRname} provisioning to create hosts from an existing image. The new host entry triggers the {CRname} server to create the instance using the pre-existing image as a basis for the new volume.
+
+.Procedure
+
+. In the {Project} web UI, navigate to *Hosts* > *Create Host*.
+. In the *Name* field, enter a name for the host.
+. Click the *Organization* and *Location* tabs to ensure that the provisioning context is automatically set to the current context.
+. From the *Host Group* list, select the host group that you want to use to populate the form.
+. From the *Deploy on* list, select the {CRname} connection.
+. From the *Compute Profile* list, select a profile to use to automatically populate virtual machine settings.
+. Click the *Interface* tab and click *Edit* on the host's interface.
+. Verify that the fields are automatically populated, particularly the following items:
+* The *Name* from the *Host* tab becomes the *DNS name*.
+* The *MAC address* field is blank. {CRname} assigns a MAC address to the host during provisioning.
+ifndef::azure-provisioning[* {ProjectServer} automatically assigns an IP address for the new host.]
+ifdef::gce-provisioning[* The *Domain* field is populated with the required domain.]
+ifdef::azure-provisioning[* The *Azure Subnet* field is populated with the required Azure subnet.]
+* The *Managed*, *Primary*, and *Provision* options are automatically selected for the first interface on the host. If not, select them.
+
+ifdef::azure-provisioning[. Optional: If you want to use a static private IP address, from the *IPv4 Subnet* list select the {Project} subnet with the *Network Address* field matching the Azure subnet address. In the *IPv4 Address* field, enter an IPv4 address within the range of your Azure subnet.]
+. Click the *Operating System* tab, and confirm that all fields automatically contain values.
+ifdef::openstack-provisioning[. If you want to change the image that populates automatically from your compute profile, from the *Images* list, select a different image to base the new host's root volume on.]
+ifdef::azure-provisioning[. In the *Root Password* field, enter the root password to authenticate with.]
+. Click *Resolve* in *Provisioning templates* to check the new host can identify the right provisioning templates to use.
+. Click the *Virtual Machine* tab and confirm that these settings are populated with details from the host group and compute profile. Modify these settings to suit your needs.
+ifeval::["{build}" == "foreman"]
+. If you use the Katello plugin, click the *Parameters* tab, and ensure that a parameter exists that provides an activation key. If not, add an activation key.
+endif::[]
+ifeval::["{build}" == "satellite"]
+. Click the *Parameters* tab, and ensure that a parameter exists that provides an activation key. If not, add an activation key.
+endif::[]
+. Click *Submit* to save the host entry.
+
+.For CLI Users
+
+* Create the host with the `hammer host create` command and include `--provision-method image`. Replace the values in the following example with the appropriate values for your environment.
+ifeval::["{context}" == "openstack-provisioning"]
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer host create \
+--name "openstack-host1" \
+--organization "_My_Organization_" \
+--location "New York" \
+--hostgroup "_Base_" \
+--compute-resource "_My_OpenStack_Platform_" \
+--provision-method image \
+--image "_OpenStack Image_" \
+--enabled true \
+--managed true \
+--interface "managed=true,primary=true,provision=true" \
+--compute-attributes="flavor_ref=m1.small,tenant_id=openstack,security_groups=default,network=mynetwork"
+----
+endif::[]
+ifeval::["{context}" == "gce-provisioning"]
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer host create \
+--name "_GCE_VM_" \
+--organization "_Your_Organization_" \
+--location "_Your_Location_" \
+--compute-resource _gce_cr_name_
+--compute-profile "_gce_profile_name_" \
+--provision-method 'image' \
+--image _gce_image_name_ \
+--root-password "_your_root_password_" \
+--interface "type=interface,domain_id=1,managed=true,primary=true,provision=true" \
+--puppet-environment-id _1_ \
+--puppet-ca-proxy-id _1_ \
+--puppet-proxy-id _1_ \
+--architecture _x86_64_ \
+--operatingsystem "_operating_system_name_"
+----
+endif::[]
+ifeval::["{context}" == "azure-provisioning"]
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer host create \
+--name="_Azure_VM_" \
+--organization "_Your_Organization_" \
+--location "_Your_Location_" \
+--compute-resource _azure_cr_name_ \
+--compute-profile "_compute_profile_name_" \
+--provision-method 'image' \
+--image _Azure_image_name_ \
+--domain _domain_name_ \
+--architecture _x86_64_ \
+--operatingsystem "_operating_system_name_"
+----
+endif::[]
+
+For more information about additional host creation parameters for this compute resource, enter the `hammer host create --help` command.
