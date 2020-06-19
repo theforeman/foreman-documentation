@@ -1,0 +1,65 @@
+[[chap-Red_Hat_Satellite-Architecture_Guide-Provisioning_Concepts]]
+
+== Provisioning Concepts
+An important feature of Red Hat Satellite is unattended provisioning of hosts. To achieve this, Red Hat Satellite uses DNS and DHCP infrastructures, PXE booting, TFTP, and Kickstart. Use this chapter to understand the working principle of these concepts.
+
+=== PXE Booting
+Preboot execution environment (PXE) provides the ability to boot a system over a network. Instead of using local hard drives or a CD-ROM, PXE uses DHCP to provide host with standard information about the network, to discover a TFTP server, and to download a boot image.
+For more information about setting up a PXE server see https://access.redhat.com/solutions/163253[How to set-up/configure a PXE Server].
+
+
+==== PXE Sequence
+
+. The host boots the PXE image if no other bootable image is found.
+. A NIC of the host sends a broadcast request to the DHCP server.
+. The DHCP server receives the request and sends standard information about the network: IP address, subnet mask, gateway, DNS, the location of a TFTP server, and a boot image.
+. The host obtains the boot loader `image/pxelinux.0` and the configuration file `pxelinux.cfg/00:MA:CA:AD:D` from the TFTP server.
+. The host configuration specifies the location of a kernel image, `initrd` and Kickstart.
+. The host downloads the files and installs the image.
+
+For an example of using PXE Booting by Satellite Server, see https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/provisioning_guide/understanding_provisioning_basics#Understanding_Provisioning_Basics-Defining_the_Provisioning_Workflow[Defining the Provisioning Workflow] in the _Provisioning Guide_.
+
+==== Requirements
+To provision machines through PXE booting ensure that you meet the following requirements:
+
+.VM requirements:
+
+* Ensure you set up a network connection which has access to the DHCP and TFTP servers.
+
+.Network requirements:
+
+* Ensure the UDP ports 67 and 68 are accessible to enable the VM to receive a DHCP offer with the boot options.
+
+* Ensure the UDP port 69 is accessible so that the VM can access the TFTP server on the Capsule.
+
+* Ensure the TCP port 80 is accessible to allow the VM to download files and Kickstart templates from the Capsule.
+
+.Client requirements:
+
+* Configure the DHCP relay agent and point to the DHCP server, if the host and DHCP server are separated by a router.
+
+* Ensure all the network-based firewalls are configured to allow hosts on the subnet to access the Capsule. For more information, see xref:figu-Satellite_Topology_with_Isolated_Capsule[].
+
+* Ensure the subnet to which the host belongs to is DHCP enabled.
+
+.Satellite requirements:
+
+* Ensure DHCP with the correct subnet is enabled using the Satellite installer.
+
+* Enable TFTP using the Satellite installer.
+
+* The Subnet must be created and associated with a DHCP Capsule in the web UI to define which Capsule to use while creating a DHCP reservation. The reservation is always made through a Capsule.
+
+=== Kickstart
+You can use Red{nbsp}Hat Kickstart to automate the installation process of a Red{nbsp}Hat Satellite or Capsule Server by creating a Kickstart file that contains all the information that is required for the installation. For more information about Kickstart, see https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Installation_Guide/chap-kickstart-installations.html[Kickstart Installations] in the _Red{nbsp}Hat Enterprise Linux 7 Installation Guide_.
+
+==== Workflow
+When you run a Red{nbsp}Hat Satellite Kickstart script, the following workflow occurs:
+
+. It specifies the installation location of a Satellite Server or a Capsule Server.
+. It installs the predefined packages.
+. It installs Red{nbsp}Hat Subscription Manager.
+. It uses Activation Keys to subscribe the hosts to Red{nbsp}Hat Satellite.
+. It installs Puppet, and configures a `puppet.conf` file to indicate the Red Hat Satellite or Capsule instance.
+. It enables Puppet to run and request a certificate.
+. It runs user defined snippets.

@@ -1,0 +1,191 @@
+[[chap-Red_Hat_Satellite-Architecture_Guide-Deployment_Considerations]]
+== Deployment Considerations
+
+This section provides an overview of general topics to be considered when planning a Red{nbsp}Hat Satellite 6 deployment together with recommendations and references to more specific documentation. For an example implementation based on a sample customer scenario (specific to Satellite 6.1), see the Red{nbsp}Hat Knowledgebase solution https://access.redhat.com/articles/1585273[10 Steps to Build an SOE: How Red Hat Satellite 6 Supports Setting up a Standard Operating Environment].
+[[sect-Satellite_Server_Configuration]]
+=== Satellite Server Configuration
+
+The first step to a working Satellite infrastructure is installing an instance of Red{nbsp}Hat Satellite Server on a dedicated Red{nbsp}Hat Enterprise Linux 7 Server.
+
+* For more information about installing Satellite Server from a connected network, see https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/installing_satellite_server_from_a_connected_network/[Installing Satellite Server from a Connected Network] and https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/installing_satellite_server_from_a_connected_network/preparing-environment-for-satellite-installation[Preparing your Environment for Installation] in the same guide.
++
+On large Satellite deployments, you can improve performance by configuring your Satellite with predefined tuning profiles. For more information, see https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/installing_satellite_server_from_a_connected_network/performing-additional-configuration#tuning-satellite-server-with-predefined-profiles_satellite[Tuning Satellite Server with Predefined Profiles] in _Installing Satellite Server from a Connected Network_.
+
+* For more information about installing Satellite Server from a disconnected network, see https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/installing_satellite_server_from_a_disconnected_network/[Installing Satellite Server from a Disconnected Network] and https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/installing_satellite_server_from_a_disconnected_network/preparing-environment-for-satellite-installation[Preparing your Environment for Installation] in the same guide.
++
+On large Satellite deployments, you can improve performance by configuring your Satellite with predefined tuning profiles. For more information, see https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/installing_satellite_server_from_a_disconnected_network/performing-additional-configuration#tuning-satellite-server-with-predefined-profiles_satellite[Tuning Satellite Server with Predefined Profiles] in _Installing Satellite Server from a Disconnected Network_.
+
+.Adding Satellite Subscription Manifests to Satellite Server
+
+A Subscription Manifest is a set of encrypted files that contains your subscription information. Satellite Server uses this information to access the CDN and find what repositories are available for the associated subscription. For instructions on how to create and import a Subscription Manifest see https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/content_management_guide/managing_subscriptions[Managing Subscriptions] in the _Content Management Guide_.
+
+Red{nbsp}Hat Satellite 6 requires a single manifest for each organization configured on the Satellite. If you plan to use the Organization feature of Satellite 6 to manage separate units of your infrastructure under one Red{nbsp}Hat{nbsp}Network account, then assign subscriptions from the one account to per-organization manifests as required.
+
+If you plan to have more than one Red{nbsp}Hat{nbsp}Network account, or if you want to manage systems belonging to another entity that is also a Red{nbsp}Hat{nbsp}Network account holder, then you and the other account holder can assign subscriptions, as required, to manifests. A customer that does not have a Satellite subscription can create a Subscription Asset Manager manifest, which can be used with Satellite, if they have other valid subscriptions. You can then use the multiple manifests in one Satellite Server to manage multiple organizations.
+
+If you must manage systems but do not have access to the subscriptions for the RPMs, you must use Red Hat Enterprise Linux Smart Management Add-On. For more information, see https://www.redhat.com/en/store/smart-management-add#?sku=RH00031[Smart Management Add-On].
+
+The following diagram shows two Red{nbsp}Hat{nbsp}Network account holders, who want their systems to be managed by the same Satellite 6 installation. In this scenario, Example Corporation 1 can allocate any subset of their 60 subscriptions, in this example they have allocated 30, to a manifest. This can be imported into the Satellite as a distinct Organization. This allows system administrators the ability to manage Example Corporation 1's systems using Satellite 6 completely independently of Example Corporation 2's organizations (R&D, Operations, and Engineering).
+
+
+[[satellite_server_with_multiple_manifests_image]]
+.Satellite Server with Multiple Manifests
+image::satellite_6_server_multiple_manifests.png[Satellite Server with Multiple Manifests]
+
+When creating a Subscription Manifest:
+
+
+* Add the subscription for Satellite Server to the manifest if planning a disconnected or self-registered Satellite Server. This is not necessary for a connected Satellite Server that is subscribed using the Red{nbsp}Hat Subscription Manager utility on the base system.
+
+* Add subscriptions for all Capsule Servers you want to create.
+
+* Add subscriptions for all Red{nbsp}Hat Products you want to manage with Satellite.
+
+* Note the date when the subscriptions are due to expire and plan for their renewal before the expiry date.
+
+* Create one manifest per organization. You can use multiple manifests and they can be from different Red Hat subscriptions.
+
+Red{nbsp}Hat Satellite {ProductVersion} allows the use of future-dated subscriptions in the manifest. This enables uninterrupted access to repositories when future-dated subscriptions are added to a manifest before the expiry date of existing subscriptions.
+
+Note that the Subscription Manifest can be modified and reloaded to the Satellite Server in case of any changes in your infrastructure, or when adding more subscriptions. Manifests should not be deleted. If you delete the manifest from the Red Hat Customer Portal or in the Satellite Web UI it will unregister all of your content hosts.
+
+[[satellite_server_with_external_database]]
+=== Satellite Server with External Database
+
+When you install Satellite, the `satellite-installer` command creates databases on the same server that you install Satellite. Depending on your requirements, moving to external databases can provide increased working memory for Satellite, which can improve response times for database operating requests. Moving to an external databases distributes the workload and can increase the capacity for performance tuning.
+
+Consider using external databases if you plan to use your Satellite deployment for the following scenarios:
+
+* Frequent remote execution tasks. This creates a high volume of records in PostgreSQL and generates heavy database workloads
+* High disk I/O workloads from frequent repository synchronization or Content View publishing. This causes Satellite to create a record in PostgreSQL for each job
+* High volume of hosts
+* High volume of synced content
+
+For more information about using an external database, see https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/installing_satellite_server_from_a_connected_network/performing-additional-configuration#using-external-databases_satellite[Using External Databases with Satellite] in _Installing Satellite Server from a Connected Network_
+
+[[sect-Mapping_the_Infrastructure_Topology]]
+=== Locations and Topology
+
+This section outlines general considerations that should help you to specify your Satellite 6 deployment scenario. The most common deployment scenarios are listed in xref:chap-Red_Hat_Satellite-Architecture_Guide-Deployment_Scenarios[]. The defining questions are:
+
+
+* *How many Capsule Servers do I need?* – The number of geographic locations where your organization operates should translate to the number of Capsule Servers. By assigning a Capsule to each location, you decrease the load on Satellite Server, increase redundancy, and reduce bandwidth usage. Satellite Server itself can act as a Capsule (it contains an integrated Capsule by default). This can be used in single location deployments and to provision the base system's of Capsule Servers. Using the integrated Capsule to communicate with hosts in remote locations is not recommended as it can lead to suboptimal network utilization.
+
+* *What services will be provided by Capsule Servers?* – After establishing the number of Capsules, decide what services will be enabled on each Capsule. Even though the whole stack of content and configuration management capabilities is available, some infrastructure services (DNS, DHCP, TFTP) can be outside of a Satellite administrator's control. In such case, Capsules have to integrate with those external services (see xref:Red_Hat_Satellite-Architecture_Guide-Capsule_with_External_Services[]).
+
+* *Is my Satellite Server required to be disconnected from the Internet?* – Disconnected Satellite is a common deployment scenario (see xref:sect-Red_Hat_Satellite-Architecture_Guide-Disconnected_Satellite[]). If you require frequent updates of Red{nbsp}Hat content on a disconnected Satellite, plan an additional Satellite instance for inter-Satellite synchronization.
+
+* *What compute resources do I need for my hosts?* – Apart from provisioning bare metal hosts, you can use various compute resources supported by Satellite 6. To learn about provisioning on different compute resources see the https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/provisioning_guide/[Provisioning Guide].
+
+[[sect-Defining_Content_Sources]]
+=== Content Sources
+
+The Subscription Manifest determines what Red{nbsp}Hat repositories are accessible from your Satellite Server. Once you enable a Red{nbsp}Hat repository, an associated Satellite Product is created automatically. For distributing content from custom sources you need to create products and repositories manually. Red{nbsp}Hat repositories are signed with GPG keys by default, and it is recommended to create GPG keys also for your custom repositories. The configuration of custom repositories depends on the type of content they hold (RPM packages, Puppet modules, Docker images, or OSTree snapshots).
+
+Repositories configured as `yum` repositories, that contain only RPM packages, can make use of the new download policy setting to save on synchronization time and storage space. This setting enables selecting from *Immediate*, *On demand*, and *Background*. The *On demand* setting saves space and time by only downloading packages when requested by clients. The *Background* setting saves time by completing the download after the initial synchronization. For detailed instructions on setting up content sources see https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/content_management_guide/importing_red_hat_content[Importing Red Hat Content] in the _Content Management Guide_.
+
+A custom repository within the Satellite Server is in most cases populated with content from an external staging server. Such servers lie outside of the Satellite infrastructure, however, it is recommended to use a revision control system (such as Git) on these servers to have better control over the custom content.
+[[sect-Defining_the_Content_Life_Cycle]]
+=== Content Life Cycle
+
+Satellite 6 provides features for precise management of the content life cycle. A *life cycle environment* represents a stage in the content life cycle, a *Content View* is a filtered set of content, and can be considered as a defined subset of content. By associating Content Views with life cycle environments, you make content available to hosts in a defined way (see xref:figu-Red_Hat_Satellite-Architecture_Guide-Red_Hat_Satellite_6_System_Architecture-Content_Life_Cycle_in_Red_Hat_Satellite_6[] for visualization of the process). For a detailed overview of the content management process see https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/content_management_guide/importing_custom_content[Importing Custom Content] in the _Content Management Guide_. The following section provides general scenarios for deploying content views as well as life cycle environments.
+
+The default life cycle environment called *Library* gathers content from all connected sources. It is not recommended to associate hosts directly with the Library as it prevents any testing of content before making it available to hosts. Instead, create a life cycle environment path that suits your content workflow. The following scenarios are common:
+
+
+* *A single life cycle environment* – content from Library is promoted directly to the production stage. This approach limits the complexity but still allows for testing the content within the Library before making it available to hosts.
++
+image:lc_path-basic.png[A single life cycle environment]
+
+
+
+* *A single life cycle environment path* – both operating system and applications content is promoted through the same path. The path can consist of several stages (for example *Development*, *QA*, *Production*), which enables thorough testing but requires additional effort.
++
+image:lc_path-simple.png[A single life cycle environment path]
+
+
+
+* *Application specific life cycle environment paths* – each application has a separate path, which allows for individual application release cycles. You can associate specific compute resources with application life cycle stages to facilitate testing. On the other hand, this scenario increases the maintenance complexity.
++
+image:lc_path-diverged.png[Application specific life cycle environment paths]
+
+
+
+The following content view scenarios are common:
+
+
+* *All in one content view* – a content view that contains all necessary content for the majority of your hosts. Reducing the number of content views is an advantage in deployments with constrained resources (time, storage space) or with uniform host types. However, this scenario limits the content view capabilities such as time based snapshots or intelligent filtering. Any change in content sources affects a proportion of hosts.
+
+* *Host specific content view* – a dedicated content view for each host type. This approach can be useful in deployments with a small number of host types (up to 30). However, it prevents sharing content across host types as well as separation based on criteria other than the host type (for example between operating system and applications). With critical updates every content view has to be updated, which increases maintenance efforts.
+
+* *Host specific composite content view* – a dedicated combination of content views for each host type. This approach enables separating host specific and shared content, for example you can have a dedicated content view for Puppet configuration. By including this content view into composite content views for several host types, you can update Puppet configuration with higher frequency than other host content.
+
+* *Component based content view* – a dedicated content view for a specific application. For example a database content view can be included into several composite content views. This approach allows for greater standardization but it leads to an increased number of content views.
+
+The optimal solution depends on the nature of your host environment. Avoid creating a large number of content views, but keep in mind that the size of a content view affects the speed of related operations (publishing, promoting). Also make sure that when creating a subset of packages for the content view, all dependencies are included as well. Note that kickstart repositories should not be added to content views, as they are used for host provisioning only.
+
+[[sect-Defining_Content_Deployment]]
+=== Content Deployment
+
+Content deployment is the management of errata and packages on content hosts. There are two methods for content deployment on Satellite; the default is *Goferd service agent*, and a replacement, available from Satellite 6.2.11 onward, is management via *remote execution*.
+
+* *Goferd service agent* - The service communicates to and from the Satellite server and is primarily tasked with installing, updating, and reporting on packages. It is enabled and started automatically on content hosts after successfully installing the *Katello-agent* RPM package.
++
+Note that the Katello agent is deprecated and will be removed in a future {Project} version.
+
+* *Remote execution* - Remote execution via SSH transport allows the install, update, or removal of packages, the bootstrap of configuration management agents, and the trigger of Puppet runs. While the Satellite Server has remote execution enabled by default, it is disabled by default on Capsule Servers and content hosts and has to be manually enabled.
+
+* *Consider method for content deployment* - The use of remote execution allows the *Goferd* service to be disabled, thereby reducing memory and CPU load on content hosts. However, remote execution has to be manually configured on all content hosts before it can replace *Goferd*. This configuration process is extensive for systems with large numbers of deployed content hosts. For details, see https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/managing_hosts/appe-red_hat_satellite-managing_hosts-host_management_without_goferd[Host Management Without Goferd] in _Managing Hosts_.
+
+[[sect-Automating_the_Provisioning]]
+=== Provisioning
+
+Satellite 6 provides several features to help you automate the host provisioning, including provisioning templates, configuration management with Puppet, and host groups for standardized provisioning of host roles. For a description of the provisioning workflow see https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/provisioning_guide/understanding_provisioning_basics[Understanding the Provisioning Workflow] in the _Provisioning Guide_. The same guide contains instructions for provisioning on various compute resources.
+
+[[sect-Defining_Role_Based_Authentication]]
+=== Role Based Authentication
+
+Assigning a role to a user enables controlling access to Satellite 6 components based on a set of permissions. You can think of role based authentication as a way of hiding unnecessary objects from users who are not supposed to interact with them.
+
+There are various criteria for distinguishing among different roles within an organization. Apart from the administrator role, the following types are common:
+
+
+* *Roles related to applications or parts of infrastructure* – for example, roles for owners of Red Hat Enterprise Linux as the operating system versus owners of application servers and database servers.
+
+* *Roles related to a particular stage of the software life cycle* – for example, roles divided among the development, testing, and production phases, where each phase has one or more owners.
+
+* *Roles related to specific tasks* – such as security manager or license manager.
+
+When defining a custom role, consider the following recommendations:
+
+
+* *Define the expected tasks and responsibilities* – define the subset of the Satellite infrastructure that will be accessible to the role as well as actions permitted on this subset. Think of the responsibilities of the role and how it would differ from other roles.
+
+* *Use predefined roles whenever possible* – Satellite 6 provides a number of sample roles that can be used alone or as part of a role combination. Copying and editing an existing role can be a good start for creating a custom role.
+
+* *Consider all affected entities* – for example, a content view promotion automatically creates new Puppet Environments for the particular life cycle environment and content view combination. Therefore, if a role is expected to promote content views, it also needs permissions to create and edit Puppet Environments.
+
+* *Consider areas of interest* – even though a role has a limited area of responsibility, there might be a wider area of interest. Therefore, you can grant the role a read only access to parts of Satellite infrastructure that influence its area of responsibility. This allows users to get earlier access to information about potential upcoming changes.
+
+* *Add permissions step by step* – test your custom role to make sure it works as intended. A good approach in case of problems is to start with a limited set of permissions, add permissions step by step, and test continuously.
+
+
+
+Find instructions on defining roles and assigning them to users in https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/administering_red_hat_satellite/[Administering Red Hat Satellite]. The same guide contains information on configuring external authentication sources.
+[[sect-Additional_Tasks]]
+=== Additional Tasks
+
+This section provides a short overview of selected Satellite capabilities that can be used for automating certain tasks or extending the core usage of Satellite 6:
+
+
+* *Importing existing hosts* – if you have existing hosts that have not been managed by Satellite 6 in the past, you can import those hosts to the Satellite Server. This procedure is usually a step in transitioning from Red{nbsp}Hat Satellite 5, see https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/transition_guide/[Transitioning from Red Hat Satellite 5 to Red Hat Satellite 6] for detailed documentation. A high level overview of the transition process is available in the Red{nbsp}Hat Knowledgebase solution https://access.redhat.com/articles/1187643[Transitioning from Red Hat Satellite 5 to Satellite 6].
+
+* *Discovering bare metal hosts* – the Satellite 6 Discovery plug-in enables automatic bare-metal discovery of unknown hosts on the provisioning network. These new hosts register themselves to the Satellite Server and the Puppet Agent on the client uploads system facts collected by Facter, such as serial ID, network interface, memory, and disk information. After registration you can initialize provisioning of those discovered hosts. For details, see https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/managing_hosts/chap-red_hat_satellite-managing_hosts-discovering_bare_metal_hosts_on_satellite[Discovering Bare-metal Hosts on Satellite] in _Managing Hosts_.
+
+* *Backup management* – procedures for backup and disaster recovery of Satellite Server are available (see https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/administering_red_hat_satellite/backing-up-satellite-server-and-capsule-server[Backing Up Satellite Server and Capsule Server] in _Administering Red Hat Satellite_). Using remote execution, you can also configure recurring backup tasks on managed hosts. For more information on remote execution see https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/managing_hosts/chap-managing_hosts-running_remote_jobs_on_hosts[Running Jobs on Hosts] in _Managing Hosts_.
+
+* *Security management* – Satellite 6 supports security management in various ways, including update and errata management, OpenSCAP integration for system verification, update and security compliance reporting, and fine grained role based authentication. Find more information on errata management and OpenSCAP concepts in https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/managing_hosts/[Managing Hosts].
+
+* *Incident management* – Satellite 6 supports the incident management process by providing a centralized overview of all systems including reporting and email notifications.  Detailed information on each host is accessible from the Satellite Server, including the event history of recent changes. Satellite 6 is also integrated with the https://access.redhat.com/products/red-hat-insights/#sat6[Red{nbsp}Hat Insights].
+
+* *Scripting with Hammer and API* – Satellite 6 provides a command line tool called Hammer that provides a CLI equivalent to the majority of web UI procedures. In addition, you can use the access to the Satellite API to write automation scripts in a selected programming language. For more information see the https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/hammer_cli_guide/[Hammer CLI Guide] and https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/api_guide/[API Guide].

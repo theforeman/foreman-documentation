@@ -1,0 +1,135 @@
+[[chap-Red_Hat_Satellite-Architecture_Guide-Introduction_to_Red_Hat_Satellite]]
+== Introduction to Red Hat Satellite 6
+
+_Red{nbsp}Hat Satellite_ is a system management solution that enables you to deploy, configure, and maintain your systems across physical, virtual, and cloud environments. Satellite provides provisioning, remote management and monitoring of multiple Red{nbsp}Hat Enterprise Linux deployments with a single, centralized tool. _Red{nbsp}Hat Satellite Server_ synchronizes the content from Red{nbsp}Hat Customer{nbsp}Portal and other sources, and provides functionality including fine-grained life cycle management, user and group role-based access control, integrated subscription management, as well as advanced GUI, CLI, or API access.
+
+_Red{nbsp}Hat Satellite Capsule Server_ mirrors content from Red{nbsp}Hat Satellite Server to facilitate content federation across various geographical locations. Host systems can pull content and configuration from the Capsule Server in their location and not from the central Satellite Server. The Capsule Server also provides localized services such as Puppet Master, DHCP, DNS, or TFTP. Capsule{nbsp}Servers assist you in scaling your Satellite environment as the number of your managed systems increases.
+
+Capsule Servers decrease the load on the central server, increase redundancy, and reduce bandwidth usage. For more information, see xref:chap-Documentation-Architecture_Guide-Capsule_Server_Overview[].
+
+[[sect-Red_Hat_Satellite-Architecture_Guide-Introduction_to_Red_Hat_Satellite-Red_Hat_Satellite_6_System_Architecture]]
+=== System Architecture
+
+The following diagram represents the high-level architecture of Red{nbsp}Hat Satellite{nbsp}6.
+
+[[figu-Red_Hat_Satellite-Architecture_Guide-Red_Hat_Satellite_6_System_Architecture-Red_Hat_Satellite_6_System_Architecture]]
+.Red Hat Satellite 6 System Architecture
+
+image::satellite_6_system_architecture.png[Red{nbsp}Hat Satellite 6 System Architecture]
+
+
+There are four stages through which content flows in this architecture:
+
+[[varl-Red_Hat_Satellite-Architecture_Guide-Red_Hat_Satellite_6_System_Architecture-External_Content_Sources]]
+*External Content Sources*:: The _Red{nbsp}Hat Satellite Server_ can consume diverse types of content from various sources. The required connection is the one with Red{nbsp}Hat Customer Portal, which is the primary source of software packages, errata, Puppet modules, and container images. In addition, you can use other supported content sources (Git repositories, Docker Hub, Puppet Forge, SCAP repositories) as well as your organization's internal data store.
+
+
+[[varl-Red_Hat_Satellite-Architecture_Guide-Red_Hat_Satellite_6_System_Architecture-RednbspHat_Satellite_Server]]
+*Red{nbsp}Hat Satellite Server*:: The Red{nbsp}Hat Satellite Server enables you to plan and manage the content life cycle and the configuration of Capsule Servers and hosts through GUI, CLI, or API.
++
+The Satellite Server organizes the life cycle management by using organizations as principal division units. Organizations isolate content for groups of hosts with specific requirements and administration tasks. For example, the OS build team can use a different organization than the web development team.
++
+The Satellite Server also contains a fine-grained authentication system to provide Satellite operators with permissions to access precisely the parts of the infrastructure that lie in their area of responsibility.
+
+
+[[varl-Red_Hat_Satellite-Architecture_Guide-Red_Hat_Satellite_6_System_Architecture-Capsule_Servers]]
+*Capsule Servers*:: Capsule Servers mirror content from the Satellite Server to establish content sources in various geographical locations. This enables host systems to pull content and configuration from the Capsule Servers in their location and not from the central Satellite Server. The recommended minimum number of Capsule Servers is therefore given by the number of geographic regions where the organization that uses Satellite operates.
++
+Using Content Views, you can specify the exact subset of content that the Capsule Server makes available to hosts. See xref:figu-Red_Hat_Satellite-Architecture_Guide-Red_Hat_Satellite_6_System_Architecture-Content_Life_Cycle_in_Red_Hat_Satellite_6[] for a closer look at life cycle management with the use of Content Views.
++
+The communication between managed hosts and the Satellite Server is routed through the Capsule Server that can also manage multiple services on behalf of hosts. Many of these services use dedicated network ports, but the Capsule Server ensures that a single source IP address is used for all communications from the host to the Satellite Server, which simplifies firewall administration. For more information on Capsule Servers see xref:chap-Documentation-Architecture_Guide-Capsule_Server_Overview[].
+
+
+[[varl-Red_Hat_Satellite-Architecture_Guide-Red_Hat_Satellite_6_System_Architecture-Managed_Hosts]]
+*Managed Hosts*:: Hosts are the recipients of content from Capsule Servers. Hosts can be either physical or virtual (deployed on KVM, VMware vSphere, OpenStack, Amazon EC2, Rackspace Cloud Services, or Google Compute Engine). The Satellite Server can have directly managed hosts. The base system running a Capsule Server is also a managed host of the Satellite Server.
+
+The following diagram provides a closer look at the distribution of content from the Satellite Server to Capsules.
+
+[[figu-Red_Hat_Satellite-Architecture_Guide-Red_Hat_Satellite_6_System_Architecture-Content_Life_Cycle_in_Red_Hat_Satellite_6]]
+.Content Life Cycle in Red Hat Satellite 6
+
+image::satellite_6_life_cycle.png[Content Life Cycle in Red{nbsp}Hat Satellite 6]
+
+
+By default, each organization has a Library of content from external sources. Content Views are subsets of content from the Library created by intelligent filtering. You can publish and promote Content Views into life cycle environments (typically Dev, QA, and Production). When creating a Capsule Server, you can choose which life cycle environments will be copied to that Capsule and made available to managed hosts.
+
+Content Views can be combined to create Composite Content Views. It can be beneficial to have a separate Content View for a repository of packages required by an operating system and a separate one for a repository of packages required by an application. One advantage is that any updates to packages in one repository only requires republishing the relevant Content View. You can then use Composite Content Views to combine published Content Views for ease of management.
+
+Which Content Views should be promoted to which Capsule Server depends on the Capsule's intended functionality. Any Capsule Server can run DNS, DHCP, and TFTP as infrastructure services that can be supplemented, for example, with content or configuration services.
+
+You can update the Capsule Server by creating a new version of a Content View using synchronized content from the Library. The new Content View version is then promoted through life cycle environments. You can also create in-place updates of Content Views. This means creating a minor version of the Content View in its current life cycle environment without promoting it from the Library. For example, if you need to apply a security erratum to a Content View used in Production, you can update the Content View directly without promoting to other life cycles. For more information on content management see the https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html/content_management_guide/[Red{nbsp}Hat Satellite Content Management Guide].
+
+[[sect-Red_Hat_Satellite-Architecture_Guide-Red_Hat_Satellite_6_System_Components]]
+=== System Components
+
+Red{nbsp}Hat Satellite{nbsp}6 consists of several open source projects which are integrated, verified, delivered and supported as Satellite{nbsp}6. This information is maintained and regularly updated on the Red{nbsp}Hat Customer Portal, see https://access.redhat.com/articles/1343683[Satellite 6 Component Versions].
+
+Red{nbsp}Hat Satellite{nbsp}6 consists of the following open source projects:
+
+[[varl-Red_Hat_Satellite-Architecture_Guide-Red_Hat_Satellite_6_System_Components-Foreman]]
+*Foreman*:: Foreman is an open source application used for provisioning and life cycle management of physical and virtual systems. Foreman automatically configures these systems using various methods, including kickstart and Puppet modules. Foreman also provides historical data for reporting, auditing, and troubleshooting.
+
+
+[[varl-Red_Hat_Satellite-Architecture_Guide-Red_Hat_Satellite_6_System_Components-Katello]]
+*Katello*:: Katello is a Foreman plug-in for subscription and repository management. It provides a means to subscribe to Red{nbsp}Hat repositories and download content. You can create and manage different versions of this content and apply them to specific systems within user-defined stages of the application life cycle.
+
+
+[[varl-Red_Hat_Satellite-Architecture_Guide-Red_Hat_Satellite_6_System_Components-Candlepin]]
+*Candlepin*:: Candlepin is a service within Katello that handles subscription management.
+
+
+[[varl-Red_Hat_Satellite-Architecture_Guide-Red_Hat_Satellite_6_System_Components-Pulp]]
+*Pulp*:: Pulp is a service within Katello that handles repository and content management. Pulp ensures efficient storage space by not duplicating RPM packages even when requested by Content Views in different organizations.
+
+
+[[varl-Red_Hat_Satellite-Architecture_Guide-Red_Hat_Satellite_6_System_Components-Hammer]]
+*Hammer*:: Hammer is a CLI tool that provides command line and shell equivalents of most Web UI functions.
+
+
+[[varl-Red_Hat_Satellite-Architecture_Guide-Red_Hat_Satellite_6_System_Components-REST_API]]
+*REST API*:: Red{nbsp}Hat Satellite{nbsp}6 includes a RESTful API service that allows system administrators and developers to write custom scripts and third-party applications that interface with Red{nbsp}Hat Satellite.
+
+The terminology used in Red{nbsp}Hat Satellite and its upstream components is extensive, for explanation of frequent terms see xref:appe-Red_Hat_Satellite-Architecture_Guide-Glossary_of_Terms[].
+[[sect-Red_Hat_Satellite-Architecture_Guide-Red_Hat_Satellite_6_Supported_Usage]]
+=== Supported Usage
+
+Each Red{nbsp}Hat Satellite subscription includes one supported instance of Red{nbsp}Hat Enterprise{nbsp}Linux{nbsp}Server. This instance should be reserved solely for the purpose of running  Red{nbsp}Hat Satellite. Using the operating system included with Satellite to run other daemons, applications, or services within your environment is not supported.
+
+Support for Red{nbsp}Hat Satellite components is described below.
+
+[[form-Red_Hat_Satellite-Architecture_Guide-Red_Hat_Satellite_6_Supported_Usage-Puppet]]
+*Puppet*:: Red{nbsp}Hat Satellite{nbsp}6 includes supported Puppet packages. The installation program allows users to install and configure Puppet Masters as a part of Red{nbsp}Hat Satellite Capsule Servers. A Puppet module, running on a Puppet Master on the Red{nbsp}Hat Satellite Server or Satellite Capsule Server, is also supported by Red{nbsp}Hat. For information on what versions of Puppet are supported, see the Red{nbsp}Hat Knowledgebase article https://access.redhat.com/articles/1343683[Satellite 6 Component Versions].
+
+Red{nbsp}Hat supports many different scripting and other frameworks, including Puppet modules. Support for these frameworks is based on the Red{nbsp}Hat Knowledgebase article https://access.redhat.com/articles/369183[How does Red{nbsp}Hat support scripting frameworks].
+
+
+[[form-Red_Hat_Satellite-Architecture_Guide-Red_Hat_Satellite_6_Supported_Usage-Pulp]]
+*Pulp*:: Pulp usage is only supported via the Satellite Server web UI, CLI, and API. Direct modification or interaction with Pulp's local API or database is not supported, as this can cause irreparable damage to the Red{nbsp}Hat Satellite{nbsp}6 databases.
+
+
+[[form-Red_Hat_Satellite-Architecture_Guide-Red_Hat_Satellite_6_Supported_Usage-Foreman]]
+*Foreman*:: Foreman can be extended using plug-ins, but only plug-ins packaged with Red{nbsp}Hat Satellite are supported. Red{nbsp}Hat does not support plug-ins in the Red{nbsp}Hat Satellite Optional repository.
++
+Red{nbsp}Hat Satellite also includes components, configuration and functionality to provision and configure operating systems other than Red{nbsp}Hat Enterprise{nbsp}Linux. While these features are included and can be employed, Red{nbsp}Hat supports their usage for Red{nbsp}Hat Enterprise{nbsp}Linux.
+
+
+[[form-Red_Hat_Satellite-Architecture_Guide-Red_Hat_Satellite_6_Supported_Usage-Candlepin]]
+*Candlepin*:: The only supported methods of using Candlepin are through the Red{nbsp}Hat Satellite{nbsp}6 web UI, CLI, and API. Red{nbsp}Hat does not support direct interaction with Candlepin, its local API or database, as this can cause irreparable damage to the Red{nbsp}Hat Satellite{nbsp}6 databases.
+
+
+[[form-Red_Hat_Satellite-Architecture_Guide-Red_Hat_Satellite_6_Supported_Usage-Embedded_Tomcat_Application_Server]]
+*Embedded Tomcat Application Server*:: The only supported methods of using the embedded Tomcat application server are through the Red{nbsp}Hat Satellite{nbsp}6 web UI, API, and database. Red{nbsp}Hat does not support direct interaction with the embedded Tomcat application server's local API or database.
+
+[[sect-Red_Hat_Satellite-Architecture_Guide-Red_Hat_Satellite_6_Supported_Client_Architectures]]
+=== Supported Client Architectures
+
+include::Content_Management_Support.adoc[]
+
+include::Host_Provisioning_Support.adoc[]
+
+include::Configuration_Management_Support.adoc[]
+
+[NOTE]
+====
+Usage of all Red{nbsp}Hat Satellite components is supported within the context of Red{nbsp}Hat Satellite only. Third-party usage of any components falls beyond supported usage.
+====
