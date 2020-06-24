@@ -1,0 +1,98 @@
+[[chap-Documentation-Architecture_Guide-Capsule_Server_Overview]]
+== {SmartProxyServer} Overview
+
+{SmartProxyServer}s provide *content federation* and run *localized services* to discover, provision, control, and configure hosts. You can use {SmartProxies} to extend the {Project} deployment to various geographical locations. This section contains an overview of features that can be enabled on {SmartProxies} as well as their simple classification.
+
+For more information about {SmartProxy} requirements, installation process, and scalability considerations, see link:{BaseURL}installing_capsule_server/[Installing {SmartProxyServer}].
+
+[[sect-Documentation-Architecture_Guide-Capsule_Features]]
+=== {SmartProxy} Features
+
+There are two sets of features provided by {SmartProxyServer}s. You can use {SmartProxy} to run services required for host management.
+ifeval::["{build}" == "satellite"]
+You can also configure {SmartProxy} to mirror content from {ProjectServer}.
+endif::[]
+ifeval::["{build}" != "satellite"]
+If you have the Katello plug-in installed, you can also configure {SmartProxy} to mirror content from {ProjectServer}.
+endif::[]
+
+Infrastructure and host management services:
+
+* *DHCP* – {SmartProxy} can act as a DHCP server or it can integrate with an existing solution, including ISC DHCP servers, Active Directory, and Libvirt instances.
+
+* *DNS* – {SmartProxy} can act as a DNS server or it can integrate with an existing solution, including ISC DNS, Active Directory, or BIND.
+
+* *TFTP* – {SmartProxy} can act as a TFTP server or integrate with any UNIX-based TFTP server.
+
+* *Realm* – {SmartProxy} can manage Kerberos realms or domains so that hosts can join them automatically during provisioning. {SmartProxy} can integrate with an existing infrastructure, including {FreeIPA} and Active Directory.
+
+* *Puppet Master* – {SmartProxy} can act as a configuration management server by running Puppet Master.
+
+* *Puppet Certificate Authority* – {SmartProxy} can act as a Puppet CA to provide certificates to hosts.
+
+* *Baseboard Management Controller (BMC)* – {SmartProxy} can provide power management for hosts.
+
+* *Provisioning template proxy* – {SmartProxy} can serve provisioning templates to hosts.
+
+* *OpenSCAP* – {SmartProxy} can perform security compliance scans on hosts.
+
+ifeval::["{build}" == "satellite"]
+Content related features:
+endif::[]
+ifeval::["{build}" != "satellite"]
+Content related features, provided by the Katello plug-in:
+endif::[]
+
+* *Repository synchronization* – the content from the {ProjectServer} (more precisely from selected life cycle environments) is pulled to the {SmartProxyServer} for content delivery (enabled by Pulp).
+
+* *Content delivery* – hosts configured to use the {SmartProxyServer} download content from that {SmartProxy} rather than from the central {ProjectServer} (enabled by Pulp).
+
+* *Host action delivery* – {SmartProxyServer} executes scheduled actions on hosts.
+
+* *Red Hat Subscription Management (RHSM) proxy* – hosts are registered to their associated {SmartProxyServer}s rather than to the central {ProjectServer} or the Red{nbsp}Hat Customer Portal (provided by Candlepin).
+
+[[sect-Documentation-Architecture_Guide-Capsule_Types]]
+=== {SmartProxy} Types
+
+Not all {SmartProxy} features have to be enabled at once. You can configure a {SmartProxyServer} for a specific limited purpose. Some common configurations include:
+
+
+* *Infrastructure {SmartProxies}* [DNS + DHCP + TFTP] – provide infrastructure services for hosts. With provisioning template proxy enabled, infrastructure {SmartProxy} has all necessary services for provisioning new hosts.
+
+* *Content {SmartProxies}* [Pulp] – provide content synchronized from the {ProjectServer} to hosts.
+
+* *Configuration {SmartProxies}* [Pulp + Puppet + PuppetCA] – provide content and run configuration services for hosts.
+
+* *All-in-one {SmartProxies}* [DNS + DHCP + TFTP + Pulp + Puppet + PuppetCA] – provide a full set of {SmartProxy} features. All-in-one {SmartProxies} enable host isolation by providing a single point of connection for managed hosts.
+
+[[sect-Documentation-Architecture_Guide-Capsule_Networking]]
+=== {SmartProxy} Networking
+
+The goal of {SmartProxy} isolation is to provide a single endpoint for all of the host's network communications, so that in remote network segments, you need only open firewall ports to the {SmartProxy} itself. The following diagram shows how the {Project} components interact in the scenario with hosts connecting to an isolated {SmartProxy}.
+
+ifeval::["{build}" != "satellite"]
+include::../common/modules/snip_red-hat-images.adoc[]
+endif::[]
+
+[[figu-Satellite_Topology_with_Isolated_Capsule]]
+.{Project} Topology with Isolated {SmartProxy}
+
+image::satellite_6_topology_isolated.png[{ProjectName} topology with isolated host]
+
+
+The following diagram shows how the {Project} components interact when hosts connect directly to the {ProjectServer}. Note that as the base system of an external {SmartProxy} is a Client of the {Project}, this diagram is relevant even if you do not intend to have directly connected hosts.
+
+[[figu-Satellite_Topology_with_Internal_Capsule]]
+.{Project} Topology with Internal {SmartProxy}
+
+image::satellite_6_topology_direct.png[{ProjectName} topology with direct host]
+
+ifeval::["{build}" == "satellite"]
+The link:{BaseURL}installing_satellite_server_from_a_connected_network/preparing-environment-for-satellite-installation#satellite-ports-and-firewalls-requirements_satellite[Ports and Firewalls Requirements] in _{project-installation-guide-title}_, link:{BaseURL}installing_satellite_server_from_a_disconnected_network/preparing-environment-for-satellite-installation#satellite-ports-and-firewalls-requirements_satellite[Ports and Firewalls Requirements] in _Installing {ProjectServer} from a Disconnected Network_ and link:{BaseURL}installing_capsule_server/preparing-environment-for-capsule-installation#ports-and-firewalls-requirements_capsule[Ports and Firewalls Requirements] in _{smart-proxy-installation-guide-title}_ contain complete instructions for configuring the host-based firewall to open the ports required.
+
+A matrix table of ports is available in the Red{nbsp}Hat Knowledgebase solution https://access.redhat.com/solutions/4527661[Red Hat Satellite 6.6 List of Network Ports].
+endif::[]
+
+ifeval::["{build}" != "satellite"]
+The link:{BaseURL}installing_satellite_server_from_a_connected_network/preparing-environment-for-satellite-installation#satellite-ports-and-firewalls-requirements_satellite[Ports and Firewalls Requirements] in _{project-installation-guide-title}_ and link:{BaseURL}installing_capsule_server/preparing-environment-for-capsule-installation#ports-and-firewalls-requirements_capsule[Ports and Firewalls Requirements] in _{smart-proxy-installation-guide-title}_ contain complete instructions for configuring the host-based firewall to open the ports required.
+endif::[]
