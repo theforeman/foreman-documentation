@@ -89,6 +89,7 @@ if ls $US_REPO/guides/doc-* 1> /dev/null 2>&1; then
   cp -r $US_REPO/guides/doc-Managing_Hosts/* $DS_REPO/doc-Managing_Hosts/
   cp -r $US_REPO/guides/doc-Administering_Red_Hat_Satellite/* $DS_REPO/doc-Administering_Red_Hat_Satellite/
   cp -r $US_REPO/guides/doc-Configuring_Load_Balancer/* $DS_REPO/doc-Load_Balancing_Guide/
+  cp -r $US_REPO/guides/doc-Planning_Guide/* $DS_REPO/doc-Architecture_Guide/
 
 fi
 # Add downstream build attributes and find and replace attributes with fixed terms
