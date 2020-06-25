@@ -1,0 +1,31 @@
+[id="updating-the-details-of-multiple-operating-systems_{context}"]
+= Updating the Details of Multiple Operating Systems
+
+Use this procedure to update the details of multiple operating systems. This example shows you how to assign each operating system a partition table called `Kickstart default`, a configuration template called `Kickstart default PXELinux`, and a provisioning template called `Kickstart Default`.
+
+.Procedure
+
+. On {ProjectServer}, run the following Bash script:
++
+[source, Bash, options="nowrap" subs="+quotes"]
+----
+PARTID=$(hammer --csv partition-table list | grep "Kickstart default," | cut -d, -f1)
+PXEID=$(hammer --csv template list --per-page=1000 | grep "Kickstart default PXELinux" | cut -d, -f1)
+SATID=$(hammer --csv template list --per-page=1000 | grep "provision" | grep ",Kickstart default" | cut -d, -f1)
+
+for i in $(hammer --no-headers --csv os list | awk -F, {'print $1'})
+do
+   hammer partition-table add-operatingsystem --id="${PARTID}" --operatingsystem-id="${i}"
+   hammer template add-operatingsystem --id="${PXEID}" --operatingsystem-id="${i}"
+   hammer os set-default-template --id="${i}" --config-template-id=${PXEID}
+   hammer os add-config-template --id="${i}" --config-template-id=${SATID}
+   hammer os set-default-template --id="${i}" --config-template-id=${SATID}
+done
+----
+
+. Display information about the updated operating system to verify that the operating system is updated correctly:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer os info --id _1_
+----
