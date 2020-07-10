@@ -47,6 +47,8 @@ report.write("# Upstreamization report from #{Time.now.utc}\n")
           line.gsub!(/capsule-certs-generate/, '{certs-generate}')
           line.gsub!(/an IdM/, 'a {FreeIPA}')
           line.gsub!(/IdM/, '{FreeIPA}')
+          line.gsub!(/satellite-maintain packages install/, '{package-install-project}')
+          line.gsub!(/satellite-maintain packages remove/, '{package-remove-project}')
           line.gsub!(/satellite-maintain/, '{foreman-maintain}')
           if match = line.match(/^\[options="(\w+)",? subs="(.*)"\]/)
             first, second = match.captures
