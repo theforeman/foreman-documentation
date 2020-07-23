@@ -7,9 +7,13 @@ html: all-html
 
 pdf: all-pdf
 
-linkchecker: all-linkchecker
-
 clean: all-clean
+
+linkchecker:
+	find build -type f -name index\*html | xargs linkchecker -r1 -f common/linkchecker.ini --check-extern
+
+linkchecker-tryer:
+	find build -type f -name index\*html | xargs linkchecker -r1 -f common/linkchecker.ini --check-extern | linkchecker-tryer
 
 all-html:
 	for DIR in $(GUIDES) ; do \
