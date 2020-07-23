@@ -1,0 +1,158 @@
+---
+name: deploy
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build-html:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: guides
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up Ruby 2.6
+        uses: actions/setup-ruby@v1
+        with:
+          ruby-version: 2.6.x
+
+      - name: Setup Python 2.x
+        uses: actions/setup-python@v2
+        with:
+          python-version: '2.x'
+
+      - name: Install AsciiDoctor
+        run: gem install asciidoctor
+
+      - name: Install linkchecker
+        run: pip install linkchecker
+
+      - name: Clean the environment
+        run: make clean
+
+      - name: Build HTML
+        run: |
+          make html BUILD=foreman
+          make html BUILD=foreman-deb
+          make html BUILD=satellite
+
+      - name: Upload HTML
+        uses: actions/upload-artifact@v2
+        with:
+          name: foreman-docs-html
+          path: guides/build/
+
+      - name: Check HTML links
+        run: |
+          make linkchecker BUILD=foreman
+          #make linkchecker BUILD=foreman-deb
+          #make linkchecker BUILD=satellite
+
+  build-pdf:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: guides
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up Ruby 2.6
+        uses: actions/setup-ruby@v1
+        with:
+          ruby-version: 2.6.x
+
+      - name: Install AsciiDoctor
+        run: gem install asciidoctor asciidoctor-pdf --pre
+
+      - name: Clean the environment
+        run: make clean
+
+      - name: Build PDFs
+        run: |
+          make pdf BUILD=foreman
+          #make pdf BUILD=foreman-deb
+          #make pdf BUILD=satellite
+
+      - name: Upload PDFs
+        uses: actions/upload-artifact@v2
+        with:
+          name: foreman-docs-pdf
+          path: guides/build/*.pdf
+
+  build-web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Upload web
+        uses: actions/upload-artifact@v2
+        with:
+          name: foreman-docs-web
+          path: web/
+
+  publish:
+    if: github.ref == 'refs/heads/master'
+    needs:
+      - build-html
+      - build-web
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: refs/heads/gh-pages
+
+      - name: Configure git
+        run: |
+          git config user.name "${GITHUB_ACTOR}"
+          git config user.email "${GITHUB_ACTOR}@bots.github.com"
+
+      - name: Delete all files
+        run: rm -rf *
+
+      - name: Create directory for branch
+        run: mkdir -p public/master
+
+      - name: Download web
+        uses: actions/download-artifact@v2
+        with:
+          name: foreman-docs-web
+          path: public
+
+      - name: Download HTML
+        uses: actions/download-artifact@v2
+        with:
+          name: foreman-docs-html
+          path: public/master
+
+      - name: Commit changes into gh-pages
+        run: |
+          git add -A
+          git commit -m "update docs for $(basename ${GITHUB_REF})" || true
+
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
