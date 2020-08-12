@@ -74,7 +74,8 @@
 <li><a href="#Provisioning_Bare_Metal_Hosts-Security_Token_in_the_Boot_Process">6.2. Configuring the Security Token Validity Duration</a></li>
 <li><a href="#Provisioning_Bare_Metal_Hosts-Creating_New_Hosts_with_Unattended_Provisioning">6.3. Creating Hosts with Unattended Provisioning</a></li>
 <li><a href="#Provisioning_Bare_Metal_Hosts-Creating_New_Hosts_with_PXE-less_Provisioning">6.4. Creating Hosts with PXE-less Provisioning</a></li>
-<li><a href="#Configuring_Provisioning_Resources-Creating_Provisioning_Templates-Deploying_SSH_Keys_during_Provisioning">6.5. Deploying SSH Keys during Provisioning</a></li>
+<li><a href="#creating-hosts-with-uefi-http-boot-provisioning_provisioning">6.5. Creating Hosts with UEFI HTTP Boot Provisioning</a></li>
+<li><a href="#Configuring_Provisioning_Resources-Creating_Provisioning_Templates-Deploying_SSH_Keys_during_Provisioning">6.6. Deploying SSH Keys during Provisioning</a></li>
 </ul>
 </li>
 <li><a href="#configuring-the-discovery-service">7. Configuring the Discovery Service</a>
@@ -2651,7 +2652,7 @@ Discovery workflows are only available when the Discovery plug-in is installed. 
 </ol>
 </div>
 <div class="paragraph">
-<p>This creates the host entry and the relevant provisioning settings. This also includes creating the necessary directories and files for PXE booting the bare metal host. If you start the physical host and set its boot mode to PXE, the host detects the DHCP service of Foreman&#160;server&#8217;s integrated Smart&#160;Proxy and starts installing the operating system from its Kickstart tree.</p>
+<p>This creates the host entry and the relevant provisioning settings. This also includes creating the necessary directories and files for PXE booting the bare metal host. If you start the physical host and set its boot mode to PXE, the host detects the DHCP service of Foreman&#160;server&#8217;s integrated Smart&#160;Proxy, receives HTTP endpoint of the Kickstart tree and installs the operating system.</p>
 </div>
 <div class="paragraph">
 <p>If you use the Katello plug-in, when the installation completes, the host also registers to Foreman&#160;server using the activation key and installs the necessary configuration and management tools from the <a href="https://yum.theforeman.org/client/2.0/" class="bare">https://yum.theforeman.org/client/2.0/</a> repository.</p>
@@ -2855,7 +2856,185 @@ When using a <strong>Host image</strong>, <strong>Generic image</strong>, or <st
 </div>
 </div>
 <div class="sect2">
-<h3 id="Configuring_Provisioning_Resources-Creating_Provisioning_Templates-Deploying_SSH_Keys_during_Provisioning">6.5. Deploying SSH Keys during Provisioning</h3>
+<h3 id="creating-hosts-with-uefi-http-boot-provisioning_provisioning">6.5. Creating Hosts with UEFI HTTP Boot Provisioning</h3>
+<div class="paragraph">
+<p>You can provision hosts from Foreman using the UEFI HTTP Boot.
+This is the only method with which you can provision hosts in IPv6 network.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Ensure that you meet the requirements for HTTP booting. For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.7/html//planning_for_red_hat_satellite_6/chap-red_hat_satellite-architecture_guide-provisioning_concepts#http_booting_requirements">HTTP Booting Requirements</a> in <em>Planning for Foreman</em>.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On Smart&#160;Proxy that you use for provisioning, update the <code>grub2-efi</code> package to the latest version:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># yum install grub2-efi</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Enable <code>foreman-proxy-http</code>, <code>foreman-proxy-httpboot</code>, and <code>foreman-proxy-tftp</code> features.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer --scenario katello \
+--foreman-proxy-httpboot true \
+--foreman-proxy-http true \
+--foreman-proxy-tftp true</pre>
+</div>
+</div>
+</li>
+<li>
+<p>In the Foreman web UI, navigate to <strong>Hosts</strong> &gt; <strong>Create Host</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter a name for the host.</p>
+</li>
+<li>
+<p>Click the <strong>Organization</strong> and <strong>Location</strong> tabs and change the context to match your requirements.</p>
+</li>
+<li>
+<p>From the <strong>Host Group</strong> list, select a host group that you want to use to populate the form.</p>
+</li>
+<li>
+<p>Click the <strong>Interface</strong> tab, and on the host&#8217;s interface, click <strong>Edit</strong>.</p>
+</li>
+<li>
+<p>Verify that the fields are populated with values. Note in particular:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>The <strong>Name</strong> from the <strong>Host</strong> tab becomes the <strong>DNS name</strong>.</p>
+</li>
+<li>
+<p>Foreman&#160;server automatically assigns an IP address for the new host.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>In the <strong>MAC address</strong> field, enter a MAC address of the host&#8217;s provisioning interface. This ensures the identification of the host during the PXE boot process.</p>
+</li>
+<li>
+<p>Ensure that Foreman&#160;server automatically selects the <strong>Managed</strong>, <strong>Primary</strong>, and <strong>Provision</strong> options for the first interface on the host. If not, select them.</p>
+</li>
+<li>
+<p>Click <strong>OK</strong> to save. To add another interface, click <strong>Add Interface</strong>. You can select only one interface for <strong>Provision</strong> and <strong>Primary</strong>.</p>
+</li>
+<li>
+<p>Click the <strong>Operating System</strong> tab, and verify that all fields contain values. Confirm each aspect of the operating system.</p>
+</li>
+<li>
+<p>From the <strong>PXE Loader</strong> list, select <strong>Grub2 UEFI HTTP</strong>.</p>
+</li>
+<li>
+<p>Optional: Click <strong>Resolve</strong> in <strong>Provisioning template</strong> to check the new host can identify the right provisioning templates to use.</p>
+<div class="paragraph">
+<p>For more information about associating provisioning templates, see <a href="#Configuring_Provisioning_Resources-Creating_Provisioning_Templates">[Configuring_Provisioning_Resources-Creating_Provisioning_Templates]</a>.</p>
+</div>
+</li>
+<li>
+<p>If you use the Katello plugin, click the <strong>Parameters</strong> tab, and ensure that a parameter exists that provides an activation key. If not, add an activation key.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong> to save the host details.</p>
+<div class="paragraph">
+<p>For more information about network interfaces, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.7/html//managing_hosts/index#Adding_Network_Interfaces">Adding network interfaces</a>.</p>
+</div>
+</li>
+<li>
+<p>Set the host to boot in UEFI mode from network.</p>
+</li>
+<li>
+<p>Start the host.</p>
+</li>
+<li>
+<p>From the boot menu, select <strong>Kickstart default PXEGrub2</strong>.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>This creates the host entry and the relevant provisioning settings. This also includes creating the necessary directories and files for UEFI booting the bare metal host. When you start the physical host and set its boot mode to UEFI HTTP, the host detects the defined DHCP service, receives HTTP endpoint of Smart&#160;Proxy with the Kickstart tree and installs the operating system.</p>
+</div>
+<div class="paragraph">
+<p>If you use the Katello plug-in, when the installation completes, the host also registers to Foreman&#160;server using the activation key and installs the necessary configuration and management tools from the <a href="https://yum.theforeman.org/client/2.0/" class="bare">https://yum.theforeman.org/client/2.0/</a> repository.</p>
+</div>
+<div class="olist arabic">
+<div class="title">For CLI Users</div>
+<ol class="arabic">
+<li>
+<p>On Smart&#160;Proxy that you use for provisioning, update the <code>grub2-efi</code> package to the latest version:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># yum install grub2-efi</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Enable <code>foreman-proxy-http</code>, <code>foreman-proxy-httpboot</code>, and <code>foreman-proxy-tftp true</code> features.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer --scenario katello \
+--foreman-proxy-httpboot true \
+--foreman-proxy-http true \
+--foreman-proxy-tftp true</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create the host with the <code>hammer host create</code> command.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer host create --name "<em>My_Host</em>" \
+--organization "<em>My_Organization</em>" \
+--location "<em>My_Location</em>" \
+--hostgroup "<em>My_Host_Group</em>" \
+--mac "<em>aa:aa:aa:aa:aa:aa</em>" \
+--build true \
+--enabled true \
+--managed true \
+--pxe-loader "Grub2 UEFI HTTP"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Ensure the network interface options are set using the <code>hammer host interface update</code> command.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer host interface update --host "<em>My_Host</em>" \
+--managed true \
+--primary true \
+--provision true</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Set the host to boot in UEFI mode from network.</p>
+</li>
+<li>
+<p>Start the host.</p>
+</li>
+<li>
+<p>From the boot menu, select <strong>Kickstart default PXEGrub2</strong>.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>This creates the host entry and the relevant provisioning settings. This also includes creating the necessary directories and files for UEFI booting the bare metal host. When you start the physical host and set its boot mode to UEFI HTTP, the host detects the defined DHCP service, receives HTTP endpoint of Smart&#160;Proxy with the Kickstart tree and installs the operating system.</p>
+</div>
+<div class="paragraph">
+<p>If you use the Katello plug-in, when the installation completes, the host also registers to Foreman&#160;server using the activation key and installs the necessary configuration and management tools from the <a href="https://yum.theforeman.org/client/2.0/" class="bare">https://yum.theforeman.org/client/2.0/</a> repository.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Configuring_Provisioning_Resources-Creating_Provisioning_Templates-Deploying_SSH_Keys_during_Provisioning">6.6. Deploying SSH Keys during Provisioning</h3>
 <div class="paragraph">
 <p>Use this procedure to deploy SSH keys added to a user during provisioning. For information on adding SSH keys to a user, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.7/html/administering_red_hat_satellite/chap-red_hat_satellite-administering_red_hat_satellite-users_and_roles#sect-Red_Hat_Satellite-Administering_Red_Hat_Satellite-Creating_and_Managing_Users-Adding_SSH_keys_to_a_User">Adding SSH Keys to a User</a> in <em>Administering Foreman</em>.</p>
 </div>
@@ -7643,7 +7822,7 @@ hammer content-view version promote --content-view "Base" --version 1 \
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2020-08-12 11:48:56 UTC
+Last updated 2020-08-12 12:53:34 UTC
 </div>
 </div>
 </body>
