@@ -3,13 +3,28 @@
 # ##################################################
 # Created on: Fri, 23 Oct 2019
 # Created by: Andrew Dahms
-# Hacked repeately by Melanie Corr to accomodate transitions towards Upstream-Downstream Satellite
+# Hacked repeately by Melanie Corr to accommodate transitions towards Upstream-Downstream Satellite
 # ##################################################
 
 echo ========================================
 echo Satellite Upstream-Downstream Synchronizer
 echo ========================================
 echo
+
+#Print help.
+if [ "$1"  == "?" ] || [ "$1"  == "-?" ] || [ "$1"  == "--help" ] || [ "$1"  == "-h" ]; then
+  echo "To use the script to synchronize changes from the upstream foreman-documentation GitHub repository to the downstream docs-Red_Hat_Satellite_6 repository, complete the following steps:"
+  echo "1. Create a directory to store repositories for synchronization. You can name the directory whatever you want, for example SyncCenter:"
+  echo "$ mkdir ~/Documents/SyncCenter"
+  echo "2. Copy this script to the SyncCenter directory."
+  echo "3. Change to the SyncCenter directory."
+  echo "4. In the upstream repository, ensure that the commits that you want to synchronized are cherry-picked to the related branch, for example, to the SATELLITE-6.8-beta branch. In the upstream repository, all related to downstream branches are in the format 'SATELLITE-x.y'"
+  echo "5. Run the script and specify the upstream branch to copy changes from and the downstream branch to copy changes to. For example, to synchronize between the upstream SATELLITE-6.8-beta branch and the downstream master branch, enter the following command:"
+  echo "$ sh satellite-sync.sh SATELLITE-6.8-beta master"
+  echo "This command copies the changes to the downstream repo and commits them."
+  echo "Note that you can run the script with the `--noop` option to copy changes but not commit them."
+  exit
+fi
 
 # If the first script parameter (master) $1 is empty, print No upstream branch specified - exiting... and exit.
 if [ -z "$1" ];
@@ -90,7 +105,7 @@ if ls $US_REPO/guides/doc-* 1> /dev/null 2>&1; then
   cp -r $US_REPO/guides/doc-Administering_Red_Hat_Satellite/* $DS_REPO/doc-Administering_Red_Hat_Satellite/
   cp -r $US_REPO/guides/doc-Configuring_Load_Balancer/* $DS_REPO/doc-Load_Balancing_Guide/
   cp -r $US_REPO/guides/doc-Planning_Guide/* $DS_REPO/doc-Architecture_Guide/
-
+  cp $US_REPO/guides/satellite-sync.sh $DS_REPO/satellite-sync.sh
 fi
 # Add downstream build attributes and find and replace attributes with fixed terms
 
