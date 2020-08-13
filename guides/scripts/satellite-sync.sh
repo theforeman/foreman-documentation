@@ -119,12 +119,6 @@ fi
 cd $DS_REPO
 sed '1s/^/\:build\: satellite\n/' common/attributes.adoc > common/attributes.tmp
 mv common/attributes.tmp common/attributes.adoc
-sed 's/:TargetVersion: 6.7-beta/:TargetVersion: 6.7/g' common/attributes.adoc > common/attributes.tmp
-mv common/attributes.tmp common/attributes.adoc
-sed 's/:ProductVersion: 6.7-beta/:ProductVersion: 6.7/g' common/attributes.adoc > common/attributes.tmp
-mv common/attributes.tmp common/attributes.adoc
-sed 's/:ProductVersionPrevious: 6.6/:ProductVersionPrevious: 6.6/g' common/attributes.adoc > common/attributes.tmp
-mv common/attributes.tmp common/attributes.adoc
 find common -name '*.adoc' -type f -exec sed -i -e 's/{project-context}/satellite/g' -- {} +
 find common -name '*.adoc' -type f -exec sed -i -e 's/{smart-proxy-context}/capsule/g' -- {} +
 
