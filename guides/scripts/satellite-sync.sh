@@ -119,12 +119,12 @@ if ls $US_REPO/guides/doc-* 1> /dev/null 2>&1; then
   cp -r $US_REPO/guides/doc-Administering_Red_Hat_Satellite/* $DS_REPO/doc-Administering_Red_Hat_Satellite/
   cp -r $US_REPO/guides/doc-Configuring_Load_Balancer/* $DS_REPO/doc-Load_Balancing_Guide/
   cp -r $US_REPO/guides/doc-Planning_Guide/* $DS_REPO/doc-Architecture_Guide/
-  cp $US_REPO/guides/satellite-sync.sh $DS_REPO/satellite-sync.sh
+  cp $US_REPO/guides/scripts/satellite-sync.sh $DS_REPO/scripts/satellite-sync.sh
 fi
 # Add downstream build attributes and find and replace attributes with fixed terms
 
 cd $DS_REPO
-sed -i '1s/^/:build: satellite\n/' common/attributes.adoc > common/attributes.tmp
+sed '1s/^/\:build\: satellite\n/' common/attributes.adoc > common/attributes.tmp
 mv common/attributes.tmp common/attributes.adoc
 sed 's/:TargetVersion: 6.7-beta/:TargetVersion: 6.7/g' common/attributes.adoc > common/attributes.tmp
 mv common/attributes.tmp common/attributes.adoc
