@@ -4,21 +4,6 @@
 # Created on: Fri, 23 Oct 2019
 # Created by: Andrew Dahms
 # Hacked repeately by Melanie Corr to accommodate transitions towards Upstream-Downstream Satellite
-# To use the script to synchronize changes from the upstream foreman-documentation GitHub repository to the downstream docs-Red_Hat_Satellite_6 repository, complete the following steps:"
-# 1. Create a directory to store repositories for synchronization. You can name the directory whatever you want, for example SyncCenter:"
-# $ mkdir ~/Documents/SyncCenter"
-#
-# 2. Copy this script to the SyncCenter directory."
-#
-# 3. Change to the SyncCenter directory."
-#
-# 4. In the upstream repository, ensure that the commits that you want to synchronized are cherry-picked to the related branch, for example, to the SATELLITE-6.8-beta branch. In the upstream repository, all related to downstream branches are in the format 'SATELLITE-x.y'"
-#
-# 5. Run the script and specify the upstream branch to copy changes from and the downstream branch to copy changes to. For example, to synchronize between the upstream SATELLITE-6.8-beta branch and the downstream master branch, enter the following command:"
-# $ sh satellite-sync.sh SATELLITE-6.8-beta master"
-#
-# This command copies the changes to the downstream repo and commits them."
-# Note that you can run the script with the '--noop' option to copy changes but not commit them."
 # ##################################################
 
 echo ========================================
@@ -27,22 +12,31 @@ echo ========================================
 echo
 
 #Print help.
+
 if [ "$1"  == "?" ] || [ "$1"  == "-?" ] || [ "$1"  == "--help" ] || [ "$1"  == "-h" ]; then
+  echo "Usage: sh satellite-sync.sh SOURCE DEST [OPTION]"
+  echo "Copy changes from the source upstream branch to a destination downstream branch."
+  echo "Note that you can run the script with the '--noop' option to copy changes but not commit them."
+  echo ""
   echo "To use the script to synchronize changes from the upstream foreman-documentation GitHub repository to the downstream docs-Red_Hat_Satellite_6 repository, complete the following steps:"
+  echo ""
   echo "1. Create a directory to store repositories for synchronization. You can name the directory whatever you want, for example SyncCenter:"
-  echo "$ mkdir ~/Documents/SyncCenter"
+  echo "   $ mkdir ~/Documents/SyncCenter"
   echo ""
   echo "2. Copy this script to the SyncCenter directory."
   echo ""
   echo "3. Change to the SyncCenter directory."
   echo ""
-  echo "4. In the upstream repository, ensure that the commits that you want to synchronized are cherry-picked to the related branch, for example, to the SATELLITE-6.8-beta branch. In the upstream repository, all related to downstream branches are in the format 'SATELLITE-x.y'"
+  echo "4. In the upstream repository, ensure that the commits that you want to synchronize are cherry-picked to the branches that correspond to the downstream branches."
+  echo "   For example, cherry-pick the commit that relates to the 6.8 branch downstream to the \e[1mSATELLITE-6.8-beta\e[0m branch upstream."
+  echo "   In the upstream repository, the branches that correspond to downstream branches are in the format 'SATELLITE-x.y'."
   echo ""
-  echo "5. Run the script and specify the upstream branch to copy changes from and the downstream branch to copy changes to. For example, to synchronize between the upstream SATELLITE-6.8-beta branch and the downstream master branch, enter the following command:"
-  echo "$ sh satellite-sync.sh SATELLITE-6.8-beta master"
+  echo "5. Run the script and specify the upstream branch to copy changes from and the downstream branch to copy changes to. Repeat this command for each related branch."
+  echo -e "   For example, if you have done a change on \e[1mmaster\e[0m upstream and cherry-picked it to \e[1mSATELLITE-6.8-beta\e[0m, enter the following two commands to synchronize upstream \e[1mmaster\e[0m to downstream \e[1mmaster\e[0m and upstream \e[1mSATELLITE-6.8-beta\e[0m to downstream \e[1m6.8-beta\e[0m:"
+  echo "   $ sh satellite-sync.sh master master"
+  echo "   $ sh satellite-sync.sh SATELLITE-6.8-beta 6.8-beta"
   echo ""
-  echo "This command copies the changes to the downstream repo and commits them."
-  echo "Note that you can run the script with the '--noop' option to copy changes but not commit them."
+  echo "   This command copies the changes to the downstream repo and commits them."
   exit
 fi
 
