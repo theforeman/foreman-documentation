@@ -211,6 +211,46 @@ To configure network services on {Project}'s integrated {SmartProxy}, complete t
 # hammer proxy info --name "_{foreman-example-com}_"
 ----
 
+[[Configuring_Networking-Multiple_Subnets_or_Domains_via_Installer]]
+==== Multiple Subnets or Domains via Installer
+
+The {foreman-installer} options allow only for a single DHCP subnet or DNS domain. One way to define more than one subnet is by using custom configuration file.
+
+For every additional subnet or domain, create an entry in `/etc/foreman-installer/custom-hiera.yaml` file:
+
+----
+dhcp::pools:
+ isolated.lan:
+   network: 192.168.99.0
+   mask: 255.255.255.0
+   gateway: 192.168.99.1
+   range: 192.168.99.5 192.168.99.49
+
+dns::zones:
+  # creates @ SOA $::fqdn root.example.com.
+  # creates $::fqdn A $::ipaddress
+  example.com: {}
+
+  # creates @ SOA test.example.net. hostmaster.example.com.
+  # creates test.example.net A 192.0.2.100
+  example.net:
+    soa: test.example.net
+    soaip: 192.0.2.100
+    contact: hostmaster.example.com.
+
+  # creates @ SOA $::fqdn root.example.org.
+  # does NOT create an A record
+  example.org:
+    reverse: true
+
+  # creates @ SOA $::fqdn hostmaster.example.com.
+  2.0.192.in-addr.arpa:
+    reverse: true
+    contact: hostmaster.example.com.
+----
+
+Execute {foreman-installer} to perform the changes and verify that the `/etc/dhcp/dhcpd.conf` contains appropriate entries. Subnets must be then defined in {Project} database.
+
 ==== DHCP, DNS, and TFTP Options for Network Configuration
 
 .DHCP Options
