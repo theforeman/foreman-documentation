@@ -86,7 +86,8 @@ then
   cd ..
 else
   echo "Local copy of downstream repository not found on server - cloning..."
-  git clone git@gitlab.cee.redhat.com:satellite-6-documentation/docs-Red_Hat_Satellite_6.git
+  # GitLab repository is hidden for security reasons. You must define the $SATELLITE_DOCS_REPOSITORY before running the script by entering the `export GITLABHOSTNAME=<link-to-repository>` command. To find the link to repository, navigate to the GitLab repository, click *Clone*, then click *Copy URL* to the right of the *Clone with SSH* URL.
+  git clone $SATELLITE_DOCS_REPOSITORY
   cd $DS_REPO
   git pull
   git checkout $DS_BRANCH
