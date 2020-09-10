@@ -68,7 +68,7 @@ then
 else
   # Print message, clone the repo, change to the directory, checkout the branch, and update it.
   echo "Local copy of upstream repository not found on server - cloning..."
-  git clone git@github.com:theforeman/foreman-documentation.git
+  git clone https://github.com/theforeman/foreman-documentation.git
   cd $US_REPO
   git pull
   git checkout $US_BRANCH
@@ -129,21 +129,13 @@ find common -name '*.adoc' -type f -exec sed -i -e 's/{project-context}/satellit
 find common -name '*.adoc' -type f -exec sed -i -e 's/{smart-proxy-context}/capsule/g' -- {} +
 
 # Step 4 - Commit and push changes, if any
-if [ `git status | wc -l` == 2 ]
-then
+if [ -n "$(git status --porcelain)" ]; then
 
-  cd ..
-  echo No changes detected - exiting...
-
-else
-
-  if [ -z "$3" ] & [ "$3" == "--noop" ];
-  then
+  if [ -z "$3" ] & [ "$3" == "--noop" ]; then
 
     echo Changes found, but not committed.
 
   else
-
 
     # stream the synchronization
 
@@ -162,5 +154,10 @@ else
     echo Committed ${ID}.
 
   fi
+
+else
+
+  cd ..
+  echo No changes detected - exiting...
 
 fi
