@@ -159,6 +159,6 @@ if [ -n "$(git status --porcelain)" ]; then
 else
 
   cd ..
-  echo No changes detected - exiting...
+  echo No changes detected on $2 - exiting...
 
 fi
