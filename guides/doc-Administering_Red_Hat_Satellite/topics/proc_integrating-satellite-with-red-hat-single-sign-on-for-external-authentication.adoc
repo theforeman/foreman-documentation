@@ -3,17 +3,6 @@
 
 You can configure {Project} to use {Keycloak} as an OpenID provider for external authentication with CAC cards. You can only use CAC cards; other authentication methods are not supported.
 
-ifeval::["{build}" == "satellite"]
-
-[IMPORTANT]
-====
-Authentication using {Keycloak} as an OpenID provider is a Technology Preview feature only. Technology Preview features are not supported with Red Hat production service level agreements (SLAs) and might not be functionally complete. Red Hat does not recommend using them in production. These features provide early access to upcoming product features, enabling customers to test functionality and provide feedback during the development process.
-
-For more information about the support scope of Red Hat Technology Preview features, see https://access.redhat.com/support/offerings/techpreview/.
-====
-
-endif::[]
-
 .Prerequisites
 
 * A working installation of {Keycloak} server that uses HTTPS instead of HTTP.
@@ -82,15 +71,33 @@ For more information about audience support, see https://access.redhat.com/docum
 +
 * From the *Mapper Type* list, select *Group Membership*.
 +
-* From the *Token Claim Name* list, select *groups*.
+* In *Token Claim Name*, enter *groups*.
 +
 * Set the *Full group path* toggle to *OFF*.
 +
 For more information about group mappers, see https://access.redhat.com/documentation/en-us/red_hat_single_sign-on/7.3/html/server_administration_guide/user-storage-federation#ldap_mappers[Group Mapper] in the _LDAP Mappers_ section of the _{Keycloak} Server Administration Guide_.
 
 .. Click *Save*.
-
-. In the {Project} web UI, navigate to *Administer* > *Settings*, and click the *Authentication* tab.
+.. Navigate to *Groups*, and click *New*.
++
+* Enter a *Name* for the group.
+* Click *Save*.
+.. Navigate to *Users* and click *Add user*. 
++
+* Enter the *Username*, *Email*, and other user details. Set the *User Enabled* toggle to *ON*.
++
+* Click *Save*. The user is now created.
++
+* Click the *Credentials* tab and reset the user password under *Manage Password*: Enter *New Password* and confirm the password, set the *Temporary* toggle to *OFF*, and click *Reset Password*.
++
+* Click the *Groups* tab. Select the group you want to join from the *Available Groups* list, and click *Join*. The user is now part of the selected group.
+. In the {Project} web UI, navigate to *Administer* > *User Groups*.
+. Click *Create User Group*, and enter a *Name* for the user group.
+. Click the *Roles* tab, and assign appropriate roles to the user group.
+. Click the *External Groups* tab, then click *Add external user group*.
+. Enter the group name created in the {Keycloak} web UI.
+. Click *Submit*.
+. Navigate to *Administer* > *Settings*, and click the *Authentication* tab.
 . Locate the *Authorize login delegation* row, and in the *Value* column, set the value to `Yes`.
 . Locate the *Authorize login delegation auth source user autocreate* row, and in the *Value* column, set the value to `External`.
 . Locate the *Login delegation logout URL* row, and in the *Value* column, set the value to `https://{foreman-example-com}/users/extlogout`.
@@ -98,23 +105,16 @@ For more information about group mappers, see https://access.redhat.com/document
 For the following steps, you can retrieve the values that you require by navigating to the following URL:  `_{Keycloak-short}.example.com_/auth/realms/_{Keycloak-short}_REALM_/.well-known/openid-configuration`.
 +
 . Locate the *OIDC Algorithm* row, and in the *Value* column, set the algorithm for encoding on {Keycloak}, for example, `RS256`.
-. Locate the *OIDC Audience* row, and in the *Value*  column, set the value to the client ID for {Keycloak}: `['_{foreman-example-com}_']`.
+. Locate the *OIDC Audience* row, and in the *Value*  column, set the value to the client ID for {Keycloak}: `['_{foreman-example-com}_-foreman-openidc']`.
 . Locate the *OIDC Issuer* row, and in the *Value*  column, set the value to `_{Keycloak-short}.example.com_/auth/realms/_{Keycloak-short}_Realm_`.
 . Locate the *OIDC JWKs URL* row, and in the *Value*  column, set the value to `_{Keycloak-short}.example.com_/auth/realms/_{Keycloak-short}_Realm_/protocol/openid-connect/certs`.
 +
-. Until https://bugzilla.redhat.com/show_bug.cgi?id=1792131[BZ#1792131] is resolved, you must use the Hammer CLI to set the organization and location. To retrieve the ID of the {Keycloak} authentication source, enter the following command:
-+
-----
-# hammer auth-source external list
-----
-+
-. Set the organization and location for the authentication source:
-+
-[options="nowrap", subs="+quotes,attributes"]
-----
-# hammer auth-source external update --id _Authentication Source ID_ \
---location-ids _Location ID_ --organization-ids _Organization ID_
-----
+. To set the organization and location for the authentication source, complete the following steps:
+.. Navigate to *Administer* > *Authentication sources*.
+.. Click the options menu next to *External*, and click *Edit*.
+.. Click the *Locations* tab and select locations from the *All items* list.
+.. Click the *Organizations* tab and select organizations from the *All items* list.
+.. Click *Submit*.
 
 You can now authenticate using the _https://{foreman-example-com}/users/extlogin_ login URL.
 
@@ -131,7 +131,7 @@ You can now authenticate using the _https://{foreman-example-com}/users/extlogin
 +
 [options="nowrap", subs="+quotes,attributes"]
 ----
-# keycloak-httpd-client-install --app-name foreman-openidc \
+# keycloak-httpd-client-install --app-name hammer-openidc \
 --keycloak-server-url "_{Keycloak-short}.example.com_" \
 --keycloak-admin-username "_{Keycloak-short}_User_" \
 --keycloak-realm "_{Keycloak-short}_Realm_" \
@@ -146,7 +146,7 @@ This command creates a client for {Project} in {Keycloak}.
 [options="nowrap", subs="+quotes,attributes"]
 ----
 # {foreman-installer} --foreman-keycloak true \
---foreman-keycloak-app-name  "foreman-openidc" \
+--foreman-keycloak-app-name  "hammer-openidc" \
 --foreman-keycloak-realm "_{Keycloak-short}_Realm_"
 ----
 +
@@ -218,13 +218,23 @@ For more information about group mappers, see https://access.redhat.com/document
 +
 . Open the `_{Keycloak-short}.example.com_/auth/realms/_{Keycloak-short}_REALM_/.well-known/openid-configuration` URL and note the values to populate the options in the following steps.
 +
-. Set the value for the Open IDC audience:
+. Add the value for the Hammer client in the Open IDC audience: 
 +
 [options="nowrap", subs="+quotes,attributes"]
 ----
 # hammer settings set --name oidc_audience \
---value "['_{foreman-example-com}_']"
+--value "['_{foreman-example-com}_-hammer-openidc']"
 ----
++
+[NOTE]
+====
+If you register several {Keycloak} clients to {Project}, ensure that you append all audiences in the array. For example:
+[options="nowrap", subs="+quotes,attributes"]
+----
+# hammer settings set --name oidc_audience \
+--value "['_{foreman-example-com}_-foreman-openidc', '_{foreman-example-com}_-hammer-openidc']"
+----
+====
 +
 . Set the value for the Open IDC issuer:
 +
@@ -242,13 +252,14 @@ For more information about group mappers, see https://access.redhat.com/document
 --value "_{Keycloak-short}.example.com_/auth/realms/_{Keycloak-short}_Realm_/protocol/openid-connect/certs"
 ----
 +
-. Until https://bugzilla.redhat.com/show_bug.cgi?id=1792131[BZ#1792131] is resolved, you must use the Hammer CLI to set the organization and location. To set the organization and location, you must first retrieve the ID of the {Keycloak} authentication source:
+. To set the organization and location of the authentication source, complete the following steps:
+.. Retrieve the ID of the {Keycloak} authentication source:
 +
 ----
 # hammer auth-source external list
 ----
 +
-. Set the location and organization:
+.. Set the location and organization:
 +
 [options="nowrap", subs="+quotes,attributes"]
 ----
