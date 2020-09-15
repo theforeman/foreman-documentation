@@ -6,7 +6,7 @@
 # Run this script from the directory where the satellite-sync.sh script is stored to run satellite-sync.sh for each downstream branch.
 # ##################################################
 
-for BRANCH in master $(git branch --list 'SATELLITE-*')
+for BRANCH in master $(git branch -r | grep -o SATELLITE.*)
 do
   if [ $BRANCH == "master" ]
   then
