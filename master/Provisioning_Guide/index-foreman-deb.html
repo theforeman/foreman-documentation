@@ -1440,7 +1440,51 @@ autopart</pre>
 </ol>
 </div>
 <div class="sect3">
-<h4 id="_dhcp_dns_and_tftp_options_for_network_configuration">3.5.1. DHCP, DNS, and TFTP Options for Network Configuration</h4>
+<h4 id="Configuring_Networking-Multiple_Subnets_or_Domains_via_Installer">3.5.1. Multiple Subnets or Domains via Installer</h4>
+<div class="paragraph">
+<p>The foreman-installer options allow only for a single DHCP subnet or DNS domain. One way to define more than one subnet is by using custom configuration file.</p>
+</div>
+<div class="paragraph">
+<p>For every additional subnet or domain, create an entry in <code>/etc/foreman-installer/custom-hiera.yaml</code> file:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>dhcp::pools:
+ isolated.lan:
+   network: 192.168.99.0
+   mask: 255.255.255.0
+   gateway: 192.168.99.1
+   range: 192.168.99.5 192.168.99.49
+
+dns::zones:
+  # creates @ SOA $::fqdn root.example.com.
+  # creates $::fqdn A $::ipaddress
+  example.com: {}
+
+  # creates @ SOA test.example.net. hostmaster.example.com.
+  # creates test.example.net A 192.0.2.100
+  example.net:
+    soa: test.example.net
+    soaip: 192.0.2.100
+    contact: hostmaster.example.com.
+
+  # creates @ SOA $::fqdn root.example.org.
+  # does NOT create an A record
+  example.org:
+    reverse: true
+
+  # creates @ SOA $::fqdn hostmaster.example.com.
+  2.0.192.in-addr.arpa:
+    reverse: true
+    contact: hostmaster.example.com.</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Execute foreman-installer to perform the changes and verify that the <code>/etc/dhcp/dhcpd.conf</code> contains appropriate entries. Subnets must be then defined in Foreman database.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_dhcp_dns_and_tftp_options_for_network_configuration">3.5.2. DHCP, DNS, and TFTP Options for Network Configuration</h4>
 <div class="dlist">
 <div class="title">DHCP Options</div>
 <dl>
@@ -1529,7 +1573,7 @@ autopart</pre>
 </div>
 </div>
 <div class="sect3">
-<h4 id="Configuring_Networking-Using_TFTP_Services_through_NAT">3.5.2. Using TFTP Services through NAT</h4>
+<h4 id="Configuring_Networking-Using_TFTP_Services_through_NAT">3.5.3. Using TFTP Services through NAT</h4>
 <div class="paragraph">
 <p>You can use Foreman TFTP services through NAT. To do this, on all NAT routers or firewalls, you must enable a TFTP service on UDP port 69 and enable the TFTP state tracking feature. For more information, see the documentation for your NAT device.</p>
 </div>
@@ -7631,7 +7675,7 @@ hammer content-view version promote --content-view "Base" --version 1 \
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2020-09-16 06:50:30 UTC
+Last updated 2020-09-17 13:05:05 UTC
 </div>
 </div>
 </body>
