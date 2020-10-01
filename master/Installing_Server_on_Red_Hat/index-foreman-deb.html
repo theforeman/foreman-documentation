@@ -41,10 +41,11 @@
 <li><a href="#configuring-dns-dhcp-and-tftp_foreman">3.3. Configuring DNS, DHCP, and TFTP on Foreman&#160;server</a></li>
 <li><a href="#disabling-dns-dhcp-tftp-for-unmanaged-networks_foreman">3.4. Disabling DNS, DHCP, and TFTP for Unmanaged Networks</a></li>
 <li><a href="#configuring-satellite-for-outgoing-emails_foreman">3.5. Configuring Foreman&#160;server for Outgoing Emails</a></li>
-<li><a href="#configuring-satellite-custom-server-certificate_foreman">3.6. Configuring Foreman&#160;server with a Custom SSL Certificate</a></li>
-<li><a href="#using-external-databases_foreman">3.7. Using External Databases with Foreman</a></li>
-<li><a href="#restricting-access-to-mongod_foreman">3.8. Restricting Access to mongod</a></li>
-<li><a href="#tuning-satellite-server-with-predefined-profiles_foreman">3.9. Tuning Foreman&#160;server with Predefined Profiles</a></li>
+<li><a href="#configuring-an-alternate-cname_foreman">3.6. Configure an Alternate CNAME for Foreman</a></li>
+<li><a href="#configuring-satellite-custom-server-certificate_foreman">3.7. Configuring Foreman&#160;server with a Custom SSL Certificate</a></li>
+<li><a href="#using-external-databases_foreman">3.8. Using External Databases with Foreman</a></li>
+<li><a href="#restricting-access-to-mongod_foreman">3.9. Restricting Access to mongod</a></li>
+<li><a href="#tuning-satellite-server-with-predefined-profiles_foreman">3.10. Tuning Foreman&#160;server with Predefined Profiles</a></li>
 </ul>
 </li>
 <li><a href="#configuring-external-services">4. Configuring Foreman&#160;server with External Services</a>
@@ -1487,7 +1488,77 @@ For information on configuring email notifications for individual users or user 
 </div>
 </div>
 <div class="sect2">
-<h3 id="configuring-satellite-custom-server-certificate_foreman">3.6. Configuring Foreman&#160;server with a Custom SSL Certificate</h3>
+<h3 id="configuring-an-alternate-cname_foreman">3.6. Configure an Alternate CNAME for Foreman</h3>
+<div class="paragraph">
+<p>You can configure an alternate CNAME for Foreman. This might be useful if you want to deploy the Foreman web interface on a different domain name than the one that is used by client systems to connect to Foreman. You must plan the alternate CNAME configuration in advance prior to installing Smart&#160;Proxies and registering hosts to Foreman to avoid redeploying new certificates to hosts.</p>
+</div>
+<div class="paragraph">
+<p>This procedure is only for Katello plug-in users.</p>
+</div>
+<div class="sect3">
+<h4 id="configuring-project-with-an-alternate-cname_foreman">3.6.1. Configuring Foreman with an Alternate CNAME</h4>
+<div class="paragraph">
+<p>Use this procedure to configure Foreman with an alternate CNAME. Note that the procedures for users of a default Foreman certificate and custom certificate differ. Note that if you have any hosts registered to Foreman, you must update the <code>katello-ca-consumer</code> package on the hosts after regenerating the Foreman SSL certificate.</p>
+</div>
+<div class="ulist">
+<div class="title">For Default Foreman Certificate Users</div>
+<ul>
+<li>
+<p>If you have installed Foreman with a default Foreman certificate and want to configure Foreman with an alternate CNAME, enter the following command on Foreman to generate a new default Foreman SSL certificate with an additional CNAME.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer --certs-cname <em>alternate_fqdn</em> --certs-reset</pre>
+</div>
+</div>
+</li>
+<li>
+<p>If you have not installed Foreman, you can add the <code>--certs-cname <em>alternate_fqdn</em></code> option to the <code>foreman-installer</code> command to install Foreman with an alternate CNAME.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<div class="title">For Custom Certificate Users</div>
+<p>If you use Foreman with a custom certificate, when creating a custom certificate, include the alternate CNAME records to the custom certificate. For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.7/html/installing_satellite_server_from_a_connected_network/performing-additional-configuration#creating-a-custom-certificate_satellite">Creating a Custom SSL Certificate for Foreman Server</a>.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="configuring-hosts-to-use-an-alternate-cname-for-content-management_foreman">3.6.2. Configuring Hosts to Use an Alternate Foreman CNAME for Content Management</h4>
+<div class="paragraph">
+<p>If Foreman is configured with an alternate CNAME, you can configure hosts to use the alternate Foreman CNAME for content management. To do this, you must point hosts to the alternate Foreman CNAME prior to registering the hosts to Foreman. You can do this using the bootstrap script or manually.</p>
+</div>
+<div class="paragraph">
+<div class="title">Configuring Hosts with the bootstrap Script</div>
+<p>On the host, run the bootstrap script with the <code>--server <em>alternate_fqdn.example.com</em></code> option to register the host to the alternate Foreman CNAME:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ./bootstrap.py --server <em>alternate_fqdn.example.com</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<div class="title">Configuring Hosts Manually</div>
+<p>On the host, edit the <code>/etc/rhsm/rhsm.conf</code> file to update <code>hostname</code> and <code>baseurl</code> settings to point to the alternate host name, for example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">[server]
+# Server hostname:
+hostname = <em>alternate_fqdn.example.com</em>
+
+<em>content omitted</em>
+
+[rhsm]
+# Content base URL:
+baseurl=https://<em>alternate_fqdn.example.com</em>/pulp/repos</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now you can register the host with the <code>subscription-manager</code>.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="configuring-satellite-custom-server-certificate_foreman">3.7. Configuring Foreman&#160;server with a Custom SSL Certificate</h3>
 <div class="paragraph">
 <p>This procedure is only for Katello plug-in users.</p>
 </div>
@@ -1514,7 +1585,7 @@ For information on configuring email notifications for individual users or user 
 </ol>
 </div>
 <div class="sect3">
-<h4 id="creating-a-custom-certificate_foreman">3.6.1. Creating a Custom SSL Certificate for Foreman&#160;server</h4>
+<h4 id="creating-a-custom-certificate_foreman">3.7.1. Creating a Custom SSL Certificate for Foreman&#160;server</h4>
 <div class="paragraph">
 <p>Use this procedure to create a custom SSL certificate for Foreman&#160;server. If you already have a custom SSL certificate for Foreman&#160;server, skip this procedure.</p>
 </div>
@@ -1647,7 +1718,7 @@ DNS.1 = <em>foreman.example.com</em> <b class="conum">(3)</b></pre>
 </div>
 </div>
 <div class="sect3">
-<h4 id="deploying-a-custom-ssl-certificate-to-satellite-server_foreman">3.6.2. Deploying a Custom SSL Certificate to Foreman&#160;server</h4>
+<h4 id="deploying-a-custom-ssl-certificate-to-satellite-server_foreman">3.7.2. Deploying a Custom SSL Certificate to Foreman&#160;server</h4>
 <div class="paragraph">
 <p>Use this procedure to configure your Foreman&#160;server to use a custom SSL certificate signed by a Certificate Authority. The <code>katello-certs-check</code> command validates the input certificate files and returns the commands necessary to deploy a custom SSL certificate to Foreman&#160;server.</p>
 </div>
@@ -1733,7 +1804,7 @@ Do not delete the certificate archive file after you deploy the certificate. It 
 </div>
 </div>
 <div class="sect3">
-<h4 id="deploying-a-custom-ssl-certificate-to-hosts_foreman">3.6.3. Deploying a Custom SSL Certificate to Hosts</h4>
+<h4 id="deploying-a-custom-ssl-certificate-to-hosts_foreman">3.7.3. Deploying a Custom SSL Certificate to Hosts</h4>
 <div class="paragraph">
 <p>After you configure Foreman&#160;server to use a custom SSL certificate, you must also install the <code>katello-ca-consumer</code> package on every host that is registered to this Foreman&#160;server.</p>
 </div>
@@ -1754,7 +1825,7 @@ http://<em>foreman.example.com</em>/pub/katello-ca-consumer-latest.noarch.rpm</p
 </div>
 </div>
 <div class="sect2">
-<h3 id="using-external-databases_foreman">3.7. Using External Databases with Foreman</h3>
+<h3 id="using-external-databases_foreman">3.8. Using External Databases with Foreman</h3>
 <div class="paragraph">
 <p>As part of the installation process for Foreman, the <strong>foreman-installer</strong> command installs MongoDB and PostgreSQL databases on the same server as Foreman. In certain Foreman deployments, using external databases instead of the default local databases can help with the server load. Depending on your requirements, you can use external databases for either MongoDB or PostgreSQL database, or both.</p>
 </div>
@@ -1781,7 +1852,7 @@ http://<em>foreman.example.com</em>/pub/katello-ca-consumer-latest.noarch.rpm</p
 </ol>
 </div>
 <div class="sect3">
-<h4 id="mongodb-as-an-external-database-considerations_foreman">3.7.1. MongoDB as an External Database Considerations</h4>
+<h4 id="mongodb-as-an-external-database-considerations_foreman">3.8.1. MongoDB as an External Database Considerations</h4>
 <div class="paragraph">
 <p>Pulp uses the MongoDB database. If you want to use MongoDB as an external database, the following information can help you decide if this option is right for your Foreman configuration. Foreman supports MongoDB version 3.4.</p>
 </div>
@@ -1823,7 +1894,7 @@ http://<em>foreman.example.com</em>/pub/katello-ca-consumer-latest.noarch.rpm</p
 </div>
 </div>
 <div class="sect3">
-<h4 id="postgresql-as-an-external-database-considerations_foreman">3.7.2. PostgreSQL as an External Database Considerations</h4>
+<h4 id="postgresql-as-an-external-database-considerations_foreman">3.8.2. PostgreSQL as an External Database Considerations</h4>
 <div class="paragraph">
 <p>Foreman, Katello, and Candlepin use the PostgreSQL database. If you want to use PostgreSQL as an external database, the following information can help you decide if this option is right for your Foreman configuration. Foreman supports PostgreSQL version 9.2.</p>
 </div>
@@ -1860,7 +1931,7 @@ http://<em>foreman.example.com</em>/pub/katello-ca-consumer-latest.noarch.rpm</p
 </div>
 </div>
 <div class="sect3">
-<h4 id="preparing-a-host-for-external-databases_foreman">3.7.3. Preparing a Host for External Databases</h4>
+<h4 id="preparing-a-host-for-external-databases_foreman">3.8.3. Preparing a Host for External Databases</h4>
 <div class="paragraph">
 <p>Install a freshly provisioned system with the latest Red&#160;Hat Enterprise Linux 7 server to host the external databases.</p>
 </div>
@@ -1895,7 +1966,7 @@ http://<em>foreman.example.com</em>/pub/katello-ca-consumer-latest.noarch.rpm</p
 </div>
 </div>
 <div class="sect3">
-<h4 id="installing-mongodb_foreman">3.7.4. Installing MongoDB</h4>
+<h4 id="installing-mongodb_foreman">3.8.4. Installing MongoDB</h4>
 <div class="paragraph">
 <p>You can install only the same version of MongoDB that is installed with the <code>foreman-installer</code> tool during an internal database installation. You can install MongoDB using Red Hat Software Collections (RHSCL) repositories or from an external source, as long as the version is supported. Foreman supports MongoDB version 3.4.</p>
 </div>
@@ -1978,7 +2049,7 @@ http://<em>foreman.example.com</em>/pub/katello-ca-consumer-latest.noarch.rpm</p
 </div>
 </div>
 <div class="sect3">
-<h4 id="installing-postgresql_foreman">3.7.5. Installing PostgreSQL</h4>
+<h4 id="installing-postgresql_foreman">3.8.5. Installing PostgreSQL</h4>
 <div class="paragraph">
 <p>You can install only the same version of PostgreSQL that is installed with the <code>foreman-installer</code> tool during an internal database installation. You can install PostgreSQL using Red Hat Enterprise Linux Server 7 repositories or from an external source, as long as the version is supported. Foreman supports PostgreSQL version 9.2.</p>
 </div>
@@ -2095,7 +2166,7 @@ CREATE DATABASE candlepin OWNER candlepin;</pre>
 </div>
 </div>
 <div class="sect3">
-<h4 id="configuring-satellite-to-use-external-databases_foreman">3.7.6. Configuring Satellite to use External Databases</h4>
+<h4 id="configuring-satellite-to-use-external-databases_foreman">3.8.6. Configuring Satellite to use External Databases</h4>
 <div class="paragraph">
 <p>Use the <code>foreman-installer</code> command to configure Foreman to connect to external MongoDB and PostgreSQL databases.</p>
 </div>
@@ -2157,7 +2228,7 @@ CREATE DATABASE candlepin OWNER candlepin;</pre>
 </div>
 </div>
 <div class="sect2">
-<h3 id="restricting-access-to-mongod_foreman">3.8. Restricting Access to mongod</h3>
+<h3 id="restricting-access-to-mongod_foreman">3.9. Restricting Access to mongod</h3>
 <div class="paragraph">
 <p>To reduce the risk of data loss, configure only the <code>apache</code> and <code>root</code> users to have access to the MongoDB database daemon, <code>mongod</code>.</p>
 </div>
@@ -2213,7 +2284,7 @@ tcp -m tcp --dport 28017 -j DROP</pre>
 </div>
 </div>
 <div class="sect2">
-<h3 id="tuning-satellite-server-with-predefined-profiles_foreman">3.9. Tuning Foreman&#160;server with Predefined Profiles</h3>
+<h3 id="tuning-satellite-server-with-predefined-profiles_foreman">3.10. Tuning Foreman&#160;server with Predefined Profiles</h3>
 <div class="paragraph">
 <p>If your Foreman deployment includes more than 5000 hosts, you can use predefined tuning profiles to improve the performance of Foreman&#160;server.</p>
 </div>
@@ -3529,7 +3600,7 @@ For more information about answer files, see <a href="https://access.redhat.com/
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2020-09-24 07:30:49 UTC
+Last updated 2020-10-01 15:43:06 UTC
 </div>
 </div>
 </body>
