@@ -68,12 +68,20 @@ root@_{smart-proxy-context}_ca.example.com_:__{smart-proxy-context}_ca.example.c
 --enable-foreman-proxy-plugin-remote-execution-ssh
 ----
 
-. On {SmartProxyServer}, generate Puppet certificates for all other {SmartProxyServer}s that you configure for load balancing, except this first system where you configure Puppet certificates signing:
+. On {SmartProxyServer}, generate Puppet certificates for all other {SmartProxyServer}s that you configure for load balancing, except the first system where you configure Puppet certificates signing:
+.. First, stop the Puppet agent:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-# puppet cert generate _{smartproxy-example-com}_ \
---dns_alt_names=_loadbalancer.example.com_
+# puppet resource service puppetserver ensure=stopped
+----
++
+.. Generate certificate for the {SmartProxyServer}:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# puppetserver ca generate --certname _{smartproxy-example-com}_ \
+--subject-alt-names _loadbalancer.example.com_ --ca-client
 ----
 +
 This command creates the following files on the system where you configure {SmartProxyServer} to sign Puppet certificates:
@@ -82,6 +90,13 @@ This command creates the following files on the system where you configure {Smar
 * `/etc/puppetlabs/puppet/ssl/certs/_{smartproxy-example-com}_.pem`
 * `/etc/puppetlabs/puppet/ssl/private_keys/_{smartproxy-example-com}_.pem`
 * `/etc/puppetlabs/puppet/ssl/public_keys/_{smartproxy-example-com}_.pem`
+.. Resume the Puppet agent:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# puppet resource service puppetserver ensure=running
+----
++
 
 [id='configuring-remaining-capsule-servers-for-load-balancing-default-certs']
 .Configuring Remaining {SmartProxyServer}s for Load Balancing
