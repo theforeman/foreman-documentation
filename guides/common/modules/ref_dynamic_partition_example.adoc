@@ -1,0 +1,37 @@
+[[dynamic-partition-example]]
+= Dynamic Partition Example
+
+Using an Anaconda kickstart template, the following section instructs Anaconda to erase the whole disk, automatically partition, enlarge one partition to maximum size, and then proceed to the next sequence of events in the provisioning process:
+
+----
+zerombr
+clearpart --all --initlabel
+autopart <%= host_param('autopart_options') %>
+----
+
+Dynamic partitioning is executed by the installation program. Therefore, you can write your own rules to specify how you want to partition disks according to runtime information from the node, for example, disk sizes, number of drives, vendor, or manufacturer.
+
+If you want to provision servers and use dynamic partitioning, add the following example as a template. When the `#Dynamic` entry is included, the content of the template load into a  `%pre` shell scriplet and creates a `/tmp/diskpart.cfg` that is then included into the Kickstart partitioning section.
+
+----
+#Dynamic (do not remove this line)
+
+MEMORY=$((`grep MemTotal: /proc/meminfo | sed 's/^MemTotal: *//'|sed 's/ .*//'` / 1024))
+if [ "$MEMORY" -lt 2048 ]; then
+    SWAP_MEMORY=$(($MEMORY * 2))
+elif [ "$MEMORY" -lt 8192 ]; then
+    SWAP_MEMORY=$MEMORY
+elif [ "$MEMORY" -lt 65536 ]; then
+    SWAP_MEMORY=$(($MEMORY / 2))
+else
+    SWAP_MEMORY=32768
+fi
+
+cat <<EOF > /tmp/diskpart.cfg
+zerombr yes
+clearpart --all --initlabel
+part /boot --fstype ext4 --size 200 --asprimary
+part swap --size "$SWAP_MEMORY"
+part / --fstype ext4 --size 1024 --grow
+EOF
+----
