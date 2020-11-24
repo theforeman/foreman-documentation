@@ -1,0 +1,185 @@
+[id="Global_Registration"]
+= Registering Host with Global Registration
+
+With Global Registration feature hosts can be registered to the Foreman with
+just one command.
+Main power of this feature came from utilization of provisioning templates,
+which gives user complete control over the process of the host registration.
+
+
+.Prerequisites
+- Foreman user must have `create_hosts` permission
+- Host OS must have assigned Registration template.
+  Go to the template detail > Associations & select the OS
+  Then on OS detail (Hosts > Operating Systems) set default registration template
+- Root privileges on the host that's going to be registered.
+
+
+.Procedure
+. Login to {ProjectName}
+. Go to Hosts > All Hosts > Register Host
+. Set required parameters and generate the command
+. Log in to the Host
+. Run command generated in {ProjectServer}
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# Example:
+curl http://_{foreman-example-com}_/register | bash
+----
++
+
+
+.Templates & snippets
+
+[cols=2*]
+|===
+|Global Registration Template
+|Contains steps for registration of host to the Foreman. Rendered when accessing `/register` endpoint.
+
+|Host Registration Template
+|In Foreman named `Linux registration default`, contains commands for Host setup.
+
+|`remote_execution_ssh_keys` snippet
+| Used in Host registration template, deploy SSH keys to the host. Only when `host_registration_remote_execution` parameter is `true`. Part of Host registration template
+
+|`insights` snippet
+| Download & install insights client. Only for Red Hat OS & when global parameter `host_registration_insights` is set to true. Part of Host registration template
+|===
+
+
+.Registration parameters
+* Organization
+* Location
+* Host Group
+* Operating System - No need to specify for registration with subscription-manager
+* Proxy
+* Setup Insights - Install insights client & register host. Override value of `host_registration_insights` global parameter on the Host level. Plus only for Red Hat OS.
+* Remote Execution - Override value of `host_registration_remote_execution` global parameter on the Host level.
+* Token lifetime
+
+Parameters can be extended from the plugins, see ee https://github.com/theforeman/foreman/blob/develop/developer_docs/how_to_create_a_plugin.asciidoc
+
+
+.Authentication
+For authentication we use JSON Web Tokens (JWT):
+[options="nowrap", subs="+quotes,attributes"]
+----
+curl -X GET "https://foreman.example.com/register" -H 'Authorization: Bearer ...
+----
+
+The user who generated the command with JWT is also the one who's permissions
+will be used for authorization.
+This means that if user will lost or gain some additional permissions,
+the JWT will "have" these permissions to.
+Deleting or blocking the user will also invalidate the token.
+Token can be also used at any other `/api` endpoints.
+
+By default expiration time of the token is set to four hours, and can be used unlimited times for
+unlimited number of the host until it expires.
+
+For testing purposes, you can use basic authorization, like this:
+[options="nowrap", subs="+quotes,attributes"]
+----
+curl -X GET "https://foreman.example.com/register" --user admin:changeme
+----
+However this should be done only for testing and not used anywhere else,
+since it expose user's credentials.
+
+
+.Settings
+All default templates in Foreman are locked. If you want to customize the registration process,
+you need to clone the default Global registration template, and then in the Administer > Settings > Provisioning
+change the _Default Global registration template_ setting to the name of your new registration template.
+
+
+.Global Parameters
+* `host_registration_remote_execution` - used in `remote_execution_ssh_keys` snippet, default value is `true`.
+* `host_registration_insights` - used in `insights` snippet, default value is `false` for the Foreman and `true` for the Satellite
+
+
+.With Smart proxy
+For registration through proxy you need to enable two modules: Registration module and Templates module
+Registration module forwards all `/register` requests to the Foreman,
+and templates module gis option to exit build status of the host.
+
+Enabling modules:
+[options="nowrap", subs="+quotes,attributes"]
+----
+foreman-installer --foreman-proxy-registration \
+                  --foreman-proxy-templates \
+                  --foreman-proxy-template-url 'http://proxy.example.com'
+----
+
+Then you can call `/register` endpoint on the proxy:
+[options="nowrap", subs="+quotes,attributes"]
+----
+curl http://proxy.example.com/register | bash
+----
+This will forward requests to the Foreman endpoint and change all urls
+in the templates to the Smart proxy.
+
+.SSL
+For calling Foreman endpoints via https CA authority must be installed on the host.
+Path to CA file can be found in Settings > Authentication > SSL CA file.
+
+If you don't want to upload & install CA on the host, you can run first `curl` command
+with `---insecure` parameter, like this:
+[options="nowrap", subs="+quotes,attributes"]
+----
+curl -X GET --insecure https://foreman.example.com/register | bash
+----
+
+This make first call insecure, however Global Registration template will
+download CA and will use it for secure connections for any other calls to the Foreman.
+
+.Global Registration templates variables
+[cols=3*,options=header]
+|===
+|Variable
+|Command argument
+|Description
+
+|`@user`
+|none
+|Current authenticated user object.
+
+|`@organization`
+|`organization_id`
+|If `organization_id` is not set, then user's default organization is set, or the first organization from user's organizations list.
+
+|`@location`
+|`location_id`
+|If `location_id` is not set, user  default location is set, or the first location from user's locations list.
+
+|`@hostgroup`
+|`hostgroup_id`
+|Host group of the host.
+
+|`@operatingsystem`
+|`operatingsystem_id`
+|Host OS.
+
+|`@setup_insights`
+|`setup_insights`
+|Override the value of `` global parameter for the registered host & install insights client.
+
+|`@setup_remote_execution`
+|`setup_remote_execution`
+| Override the value of `` global parameter for the registered host & deploy SSH keys for remote execution.
+
+|`@remote_execution_interface`
+|`remote_execution_interface`
+|Set default interface of host for the remote execution.
+
+|`@activation_key`
+|`activation_key`
+|Activation keys for subscription manager, available only with katello plugin.
+
+|`@registration_url`
+|none
+|URl for `/register` endpoint.
+|===
+
+.Extension from plugins
+See https://github.com/theforeman/foreman/blob/develop/developer_docs/how_to_create_a_plugin.asciidoc
