@@ -61,12 +61,7 @@
 <li><a href="#sect-Red_Hat_Satellite-Administering_Red_Hat_Satellite-Specifications_Supported_OpenSCAP">6.8. Specifications Supported by OpenSCAP</a></li>
 </ul>
 </li>
-<li><a href="#Disabling_Weak_SSL_Encryption">7. Disabling Weak Encryption</a>
-<ul class="sectlevel2">
-<li><a href="#Disabling_Weak_SSL_2-0_and_3-0_Encryption">7.1. Disabling Weak SSL 2.0 and SSL 3.0 Encryption</a></li>
-<li><a href="#Disabling_64-bit_Block_Size_Cipher_Suites">7.2. Disabling 64-bit Block Size Cipher Suites (SWEET32)</a></li>
-</ul>
-</li>
+<li><a href="#Disabling_Weak_SSL_2-0_and_3-0_Encryption">7. Disabling TLS 1.0 and TLS 1.1 Encryption</a></li>
 <li><a href="#backing-up-satellite-server-and-capsule-server">8. Backing Up Foreman&#160;server and Smart&#160;Proxy&#160;server</a>
 <ul class="sectlevel2">
 <li><a href="#estimating-the-size-of-a-backup_admin">8.1. Estimating the Size of a Backup</a></li>
@@ -3108,21 +3103,16 @@ However Ansible does not perform scheduled runs. To add a new policy, you must r
 </div>
 </div>
 <div class="sect1">
-<h2 id="Disabling_Weak_SSL_Encryption">7. Disabling Weak Encryption</h2>
+<h2 id="Disabling_Weak_SSL_2-0_and_3-0_Encryption">7. Disabling TLS 1.0 and TLS 1.1 Encryption</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>You might want to change the encryption settings for Foreman depending on the security requirements of your infrastructure or to fix vulnerabilities quickly. Use the following sections to disable weak SSL encryption and 64-bit cipher suites.</p>
-</div>
-<div class="sect2">
-<h3 id="Disabling_Weak_SSL_2-0_and_3-0_Encryption">7.1. Disabling Weak SSL 2.0 and SSL 3.0 Encryption</h3>
-<div class="paragraph">
-<p>If your Foreman fails Nessus scans because of SSL vulnerabilities, or your security infrastructure requires that you disable SSL 2.0 and SSL 3.0, you can edit the <code>/etc/foreman-installer/custom-hiera.yaml</code> file to remove weak encryption.</p>
+<p>You might want to change the encryption settings for Foreman depending on the security requirements of your infrastructure or to fix vulnerabilities quickly.</p>
 </div>
 <div class="paragraph">
-<div class="title">Disabling Weak SSL 2.0 and SSL 3.0 Encryption for Foreman</div>
-<p>To disable weak encryption for Foreman, complete the following steps:</p>
+<p>Apache and Qpid services in Foreman have TLS 1.0 and 1.1 encryption enabled by default. Use this procedure on Foreman and Smart&#160;Proxy to configure Foreman and Smart&#160;Proxy to only allow TLS 1.2, as required, for example, by PCI-DSS regulations.</p>
 </div>
 <div class="olist arabic">
+<div class="title">Procedure</div>
 <ol class="arabic">
 <li>
 <p>Open the <code>/etc/foreman-installer/custom-hiera.yaml</code> file for editing:</p>
@@ -3136,160 +3126,24 @@ However Ansible does not perform scheduled runs. To add a new policy, you must r
 <p>Add the following entries:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># Foreman Proxy
-foreman_proxy::tls_disabled_versions: [ '1.1' ]
-
-# Dynflow
-foreman_proxy::plugin::dynflow::tls_disabled_versions: [ '1.1' ]
-
-# Apache
+<pre class="nowrap"># Apache
 apache::mod::ssl::ssl_protocol: [ 'ALL' , '-SSLv3' , '-TLSv1' , '-TLSv1.1' , '+TLSv1.2' ]
 
-# Tomcat / Candlepin
-candlepin::tls_versions: [ '1.2' ]
-
 # QPID Dispatch
-foreman_proxy_content::qpid_router_ssl_protocols: [ 'TLSv1.2' ]
 foreman_proxy_content::qpid_router_ssl_ciphers: 'ALL:!aNULL:+HIGH:-SSLv3:!IDEA-CBC-SHA'</pre>
 </div>
 </div>
 </li>
 <li>
-<p>Rerun the <code>foreman-installer</code> tool with no arguments:</p>
+<p>Enter the <code>foreman-installer</code> command to apply the above configuration and configure Qpid to use TLS 1.2 only:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># foreman-installer</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Restart the <code>foreman-maintain</code> services:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># foreman-maintain service restart</pre>
+<pre class="nowrap"># foreman-installer \
+--foreman-proxy-content-qpid-router-ssl-protocols=TLSv1.2</pre>
 </div>
 </div>
 </li>
 </ol>
-</div>
-<div class="paragraph">
-<div class="title">Disabling Weak SSL 2.0 and SSL 3.0 Encryption for Smart&#160;Proxy</div>
-<p>To disable weak encryption for Smart&#160;Proxy, complete the following steps:</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Open the <code>/etc/foreman-installer/custom-hiera.yaml</code> file for editing:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># vi /etc/foreman-installer/custom-hiera.yaml</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Add the following entries:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># Foreman Proxy
-foreman_proxy::tls_disabled_versions: [ '1.1' ]
-
-# Dynflow
-foreman_proxy::plugin::dynflow::tls_disabled_versions: [ '1.1' ]
-
-# Apache
-apache::mod::ssl::ssl_protocol: [ 'ALL' , '-SSLv3' , '-TLSv1' , '-TLSv1.1' , '+TLSv1.2' ]
-
-# QPID Dispatch
-foreman_proxy_content::qpid_router_ssl_protocols: [ 'TLSv1.2' ]
-foreman_proxy_content::qpid_router_ssl_ciphers: 'ALL:!aNULL:+HIGH:-SSLv3:!IDEA-CBC-SHA'
-
-# PULP
-pulp::ssl_protocol: "ALL -SSLv3 -TLSv1 -TLSv1.1 +TLSv1.2"</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Rerun the <code>foreman-installer</code> tool with no arguments:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># foreman-installer</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Restart the <code>foreman-maintain</code> services:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># foreman-maintain service restart</pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
-</div>
-<div class="sect2">
-<h3 id="Disabling_64-bit_Block_Size_Cipher_Suites">7.2. Disabling 64-bit Block Size Cipher Suites (SWEET32)</h3>
-<div class="paragraph">
-<p>If you want to update your cipher suites for Foreman, you can edit the ciphers and then add your changes to the <code>/etc/foreman-installer/custom-hiera.yaml</code> file to make these changes persistent.</p>
-</div>
-<div class="paragraph">
-<p>You can use the following procedure to update your cipher suite.</p>
-</div>
-<div class="paragraph">
-<p>The minimum browser requirements for the following Ciphers is Firefox 27.</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Open the <code>/etc/httpd/conf.d/ssl.conf</code> Apache configuration file for editing:</p>
-<div class="listingblock">
-<div class="content">
-<pre># vi /etc/httpd/conf.d/ssl.conf</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Update the values of <code>SSLCipherSuite</code> parameter:</p>
-<div class="listingblock">
-<div class="content">
-<pre>SSLCipherSuite ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Restart the <strong>httpd</strong> service:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># systemctl restart httpd</pre>
-</div>
-</div>
-</li>
-<li>
-<p>To make the change persistent across different foreman-installer executions, open the <code>/etc/foreman-installer/custom-hiera.yaml</code> file for editing:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># vi /etc/foreman-installer/custom-hiera.yaml</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Add the following entry for <code>apache</code>:</p>
-<div class="listingblock">
-<div class="content">
-<pre>apache::mod::ssl::ssl_cipher: ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Run the <code>foreman-installer</code> tool to add the changes to the Apache configuration:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># foreman-installer</pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
 </div>
 </div>
 </div>
@@ -7745,7 +7599,7 @@ The default and recommended option <code>Yes</code> denies the access to variabl
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2020-11-24 15:38:46 UTC
+Last updated 2020-11-26 11:51:49 UTC
 </div>
 </div>
 </body>
