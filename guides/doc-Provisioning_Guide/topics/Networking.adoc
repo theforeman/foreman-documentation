@@ -1,41 +1,64 @@
 [[Configuring_Networking]]
 == Configuring Networking
 
-Each provisioning type requires some network configuration. Use this chapter to configure network services in your integrated {SmartProxy} on {ProjectServer}.
+Each provisioning type requires some network configuration.
+Use this chapter to configure network services in your integrated {SmartProxy} on {ProjectServer}.
 
-New hosts must have access to your {SmartProxyServer}. {SmartProxyServer} can be either your integrated {SmartProxy} on {ProjectServer} or an external {SmartProxyServer}. You might want to provision hosts from an external {SmartProxyServer} when the hosts are on isolated networks and cannot connect to {ProjectServer} directly, or when the content is synchronized with the {SmartProxyServer}. Provisioning using the external {SmartProxyServer} can save on network bandwidth.
+New hosts must have access to your {SmartProxyServer}.
+{SmartProxyServer} can be either your integrated {SmartProxy} on {ProjectServer} or an external {SmartProxyServer}.
+You might want to provision hosts from an external {SmartProxyServer} when the hosts are on isolated networks and cannot connect to {ProjectServer} directly, or when the content is synchronized with the {SmartProxyServer}.
+Provisioning using the external {SmartProxyServer} can save on network bandwidth.
 
 Configuring {SmartProxyServer} has two basic requirements:
 
-. Configuring network services. This includes:
+. Configuring network services.
+This includes:
   * Content delivery services
   * Network services (DHCP, DNS, and TFTP)
   * Puppet configuration
 . Defining network resource data in {ProjectServer} to help configure network interfaces on new hosts.
 
-The following instructions have similar applications to configuring standalone {SmartProxies} managing a specific network. To configure {Project} to use external DHCP, DNS, and TFTP services, see link:{InstallingProjectDocURL}configuring-external-services[Configuring External Services] in _{project-installation-guide-title}_.
+The following instructions have similar applications to configuring standalone {SmartProxies} managing a specific network.
+To configure {Project} to use external DHCP, DNS, and TFTP services, see link:{InstallingProjectDocURL}configuring-external-services[Configuring External Services] in _{project-installation-guide-title}_.
 
 [[networking_resources]]
 === Network Resources
 
-{Project} contains networking resources that you must set up and configure to create a host. {Project} includes the following networking resources:
+{Project} contains networking resources that you must set up and configure to create a host.
+{Project} includes the following networking resources:
 
 Domain::
-You must assign every host that is managed by {Project} to a domain. Using the domain, {Project} can manage A, AAAA, and PTR records. Even if you do not want {Project} to manage your DNS servers, you still must create and associate at least one domain. Domains are included in the naming conventions {Project} hosts, for example, a host with the name `test123` in the `example.com` domain has the fully qualified domain name `test123.example.com`.
+You must assign every host that is managed by {Project} to a domain.
+Using the domain, {Project} can manage A, AAAA, and PTR records.
+Even if you do not want {Project} to manage your DNS servers, you still must create and associate at least one domain.
+Domains are included in the naming conventions {Project} hosts, for example, a host with the name `test123` in the `example.com` domain has the fully qualified domain name `test123.example.com`.
 
 Subnet::
-You must assign every host managed by {Project} to a subnet. Using subnets, {Project} can then manage IPv4 reservations. If there are no reservation integrations, you still must create and associate at least one subnet. When you manage a subnet in {Project}, you cannot create DHCP records for that subnet outside of {Project}. In {Project}, you can use IP Address Management (IPAM) to manage IP addresses with one of the following options:
+You must assign every host managed by {Project} to a subnet.
+Using subnets, {Project} can then manage IPv4 reservations.
+If there are no reservation integrations, you still must create and associate at least one subnet.
+When you manage a subnet in {Project}, you cannot create DHCP records for that subnet outside of {Project}.
+In {Project}, you can use IP Address Management (IPAM) to manage IP addresses with one of the following options:
 +
-* *DHCP*: DHCP {SmartProxy} manages the assignment of IP addresses by finding the next available IP address starting from the first address of the range and skipping all addresses that are reserved. Before assigning an IP address, {SmartProxy} sends an ICMP and TCP pings to check whether the IP address is in use. Note that if a host is powered off, or has a firewall configured to disable connections, {Project} makes a false assumption that the IP address is available. This check does not work for hosts that are turned off, therefore, the *DHCP* option can only be used with subnets that {Project} controls and that do not have any hosts created externally.
+* *DHCP*: DHCP {SmartProxy} manages the assignment of IP addresses by finding the next available IP address starting from the first address of the range and skipping all addresses that are reserved.
+Before assigning an IP address, {SmartProxy} sends an ICMP and TCP pings to check whether the IP address is in use.
+Note that if a host is powered off, or has a firewall configured to disable connections, {Project} makes a false assumption that the IP address is available.
+This check does not work for hosts that are turned off, therefore, the *DHCP* option can only be used with subnets that {Project} controls and that do not have any hosts created externally.
 +
 The {SmartProxy} DHCP module retains the offered IP addresses for a short period of time to prevent collisions during concurrent access, so some IP addresses in the IP range might remain temporarily unused.
-* *Internal DB*: {Project} finds the next available IP address from the Subnet range by excluding all IP addresses from the {Project} database in sequence. The primary source of data is the database, not DHCP reservations. This IPAM is not safe when multiple hosts are being created in parallel; in that case, use *DHCP* or *Random DB* IPAM instead.
-* *Random DB*: {Project} finds the next available IP address from the Subnet range by excluding all IP addresses from the {Project} database randomly. The primary source of data is the database, not DHCP reservations. This IPAM is safe to use with concurrent host creation as IP addresses are returned in random order, minimizing the chance of a conflict.
+* *Internal DB*: {Project} finds the next available IP address from the Subnet range by excluding all IP addresses from the {Project} database in sequence.
+The primary source of data is the database, not DHCP reservations.
+This IPAM is not safe when multiple hosts are being created in parallel; in that case, use *DHCP* or *Random DB* IPAM instead.
+* *Random DB*: {Project} finds the next available IP address from the Subnet range by excluding all IP addresses from the {Project} database randomly.
+The primary source of data is the database, not DHCP reservations.
+This IPAM is safe to use with concurrent host creation as IP addresses are returned in random order, minimizing the chance of a conflict.
 * *EUI-64*: Extended Unique Identifier (EUI) 64bit IPv6 address generation, as per RFC2373, is obtained through the 48-bit MAC address.
-* *External IPAM*: Delegates IPAM to an external system through {SmartProxy} feature. {Project} currently does not ship with any external IPAM implementations, but several plug-ins are in development.
+* *External IPAM*: Delegates IPAM to an external system through {SmartProxy} feature.
+{Project} currently does not ship with any external IPAM implementations, but several plug-ins are in development.
 * *None*: IP address for each host must be entered manually.
 +
-Options DHCP, Internal DB and Random DB can lead to DHCP conflicts on subnets with records created externally. These subnets must be under exclusive {Project} control.
+Options DHCP, Internal DB and Random DB can lead to DHCP conflicts on subnets with records created externally.
+These subnets must be under exclusive {Project} control.
 +
 For more information about adding a subnet, see xref:Configuring_Networking-Adding_a_Subnet_to_the_Satellite_Server[].
 
@@ -44,10 +67,13 @@ You can define the same DHCP range in {ProjectServer} for both discovered and pr
 
 === {Project} and DHCP Options
 
-{Project} manages DHCP reservations through a DHCP {SmartProxy}. {Project} also sets the `next-server` and `filename` DHCP options.
+{Project} manages DHCP reservations through a DHCP {SmartProxy}.
+{Project} also sets the `next-server` and `filename` DHCP options.
 
 .The next-server option
-The `next-server` option provides the IP address of the TFTP server to boot from. This option is not set by default and must be set for each TFTP {SmartProxy}. You can use the `{foreman-installer}` command with the `--foreman-proxy-tftp-servername` option to set the TFTP server in the `/etc/foreman-proxy/settings.d/tftp.yml` file:
+The `next-server` option provides the IP address of the TFTP server to boot from.
+This option is not set by default and must be set for each TFTP {SmartProxy}.
+You can use the `{foreman-installer}` command with the `--foreman-proxy-tftp-servername` option to set the TFTP server in the `/etc/foreman-proxy/settings.d/tftp.yml` file:
 
 [options="nowrap" subs="+quotes,attributes"]
 ----
@@ -61,14 +87,19 @@ When the PXE loader is set to `none`, {Project} does not populate the `next-serv
 If the `next-server` option remains undefined, {Project} uses reverse DNS search to find a TFTP server address to assign, but you might encounter the following problems:
 
 * DNS timeouts during provisioning
-* Querying of incorrect DNS server. For example, authoritative rather than caching
-* Errors about incorrect IP address for the TFTP server. For example, `PTR record was invalid`
+* Querying of incorrect DNS server.
+For example, authoritative rather than caching
+* Errors about incorrect IP address for the TFTP server.
+For example, `PTR record was invalid`
 
 If you encounter these problems, check the DNS setup on both {Project} and {SmartProxy}, specifically the PTR record resolution.
 
 .The filename option
 
-The `filename` option contains the full path to the file that downloads and executes during provisioning. The PXE loader that you select for the host or host group defines which `filename` option to use. When the PXE loader is set to `none`, {Project} does not populate the `filename`  option into the DHCP record. Depending on the PXE loader option, the `filename` changes as follows:
+The `filename` option contains the full path to the file that downloads and executes during provisioning.
+The PXE loader that you select for the host or host group defines which `filename` option to use.
+When the PXE loader is set to `none`, {Project} does not populate the `filename`  option into the DHCP record.
+Depending on the PXE loader option, the `filename` changes as follows:
 
 |=======
 |PXE loader option | filename entry| Notes
@@ -83,11 +114,14 @@ The `filename` option contains the full path to the file that downloads and exec
 
 === Troubleshooting DHCP Problems in {Project}
 
-{Project} can manage an ISC DHCP server on internal or external DHCP {SmartProxy}. {Project} can list, create, and delete DHCP reservations and leases. However, there are a number of problems that you might encounter on occasions.
+{Project} can manage an ISC DHCP server on internal or external DHCP {SmartProxy}.
+{Project} can list, create, and delete DHCP reservations and leases.
+However, there are a number of problems that you might encounter on occasions.
 
 .Out of sync DHCP records
 
-When an error occurs during DHCP orchestration, DHCP records in the {Project} database and the DHCP server might not match. To fix this, you must add missing DHCP records from the {Project} database to the DHCP server and then remove unwanted records from the DHCP server as per the following steps:
+When an error occurs during DHCP orchestration, DHCP records in the {Project} database and the DHCP server might not match.
+To fix this, you must add missing DHCP records from the {Project} database to the DHCP server and then remove unwanted records from the DHCP server as per the following steps:
 
 . To preview the DHCP records that are going to be added to the DHCP server, enter the following command:
 +
@@ -103,7 +137,9 @@ When an error occurs during DHCP orchestration, DHCP records in the {Project} da
 # foreman-rake orchestration:dhcp:add_missing subnet_name=NAME perform=1
 ----
 
-. To keep DHCP records in {Project} and in the DHCP server synchronized, you can remove unwanted DHCP records from the DHCP server. Note that {Project} assumes that all managed DHCP servers do not contain third-party records, therefore, this step might delete those unexpected records. To preview what records are going to be removed from the DHCP server, enter the following command:
+. To keep DHCP records in {Project} and in the DHCP server synchronized, you can remove unwanted DHCP records from the DHCP server.
+Note that {Project} assumes that all managed DHCP servers do not contain third-party records, therefore, this step might delete those unexpected records.
+To preview what records are going to be removed from the DHCP server, enter the following command:
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
@@ -119,15 +155,18 @@ When an error occurs during DHCP orchestration, DHCP records in the {Project} da
 
 .PXE loader option change
 
-When the PXE loader option is changed for an existing host, this causes a DHCP conflict. The only workaround is to overwrite the DHCP entry.
+When the PXE loader option is changed for an existing host, this causes a DHCP conflict.
+The only workaround is to overwrite the DHCP entry.
 
 ifeval::["{build}" != "satellite"]
-This is a known issue. Until https://projects.theforeman.org/issues/27877[Issue 27877] is fixed, the only workaround is to overwrite the DHCP entry.
+This is a known issue.
+Until https://projects.theforeman.org/issues/27877[Issue 27877] is fixed, the only workaround is to overwrite the DHCP entry.
 endif::[]
 
 .Incorrect permissions on DHCP files
 
-An operating system update can update the `dhcpd` package. This causes the permissions of important directories and files to reset so that the DHCP {SmartProxy} cannot read the required information.
+An operating system update can update the `dhcpd` package.
+This causes the permissions of important directories and files to reset so that the DHCP {SmartProxy} cannot read the required information.
 
 ifeval::["{build}" == "satellite"]
 For more information, see https://access.redhat.com/solutions/2952061[DHCP error while provisioning host from Satellite server Error ERF12-6899 ProxyAPI::ProxyException: Unable to set DHCP entry RestClient::ResourceNotFound 404 Resource Not Found] on Red{nbsp}Hat Knowledgebase.
@@ -139,21 +178,28 @@ endif::[]
 
 .Changing the DHCP {SmartProxy} entry
 
-{Project} manages DHCP records only for hosts that are assigned to subnets with a DHCP {SmartProxy} set. If you create a host and then clear or change the DHCP {SmartProxy}, when you attempt to delete the host, the action fails.
+{Project} manages DHCP records only for hosts that are assigned to subnets with a DHCP {SmartProxy} set.
+If you create a host and then clear or change the DHCP {SmartProxy}, when you attempt to delete the host, the action fails.
 
 If you create a host without setting the DHCP {SmartProxy} and then try to set the DHCP {SmartProxy}, this causes DHCP conflicts.
 
 .Deleted hosts entries in the dhcpd.leases file
 
-Any changes to a DHCP lease are appended to the end of the `dhcpd.leases` file. Because entries are appended to the file, it is possible that two or more entries of the same lease can exist in the `dhcpd.leases` file at the same time. When there are two or more entries of the same lease, the last entry in the file takes precedence. Group, subgroup and host declarations in the lease file are processed in the same manner. If a lease is deleted, `{ deleted; }` is appended to the declaration.
+Any changes to a DHCP lease are appended to the end of the `dhcpd.leases` file.
+Because entries are appended to the file, it is possible that two or more entries of the same lease can exist in the `dhcpd.leases` file at the same time.
+When there are two or more entries of the same lease, the last entry in the file takes precedence.
+Group, subgroup and host declarations in the lease file are processed in the same manner.
+If a lease is deleted, `{ deleted; }` is appended to the declaration.
 
 === Prerequisites for Image Based Provisioning
 
 .Post-Boot Configuration Method
 
-Images that use the `finish` post-boot configuration scripts require a managed DHCP server, such as {Project}'s integrated {SmartProxy} or an external {SmartProxy}. The host must be created with a subnet associated with a DHCP {SmartProxy}, and the IP address of the host must be a valid IP address from the DHCP range.
+Images that use the `finish` post-boot configuration scripts require a managed DHCP server, such as {Project}'s integrated {SmartProxy} or an external {SmartProxy}.
+The host must be created with a subnet associated with a DHCP {SmartProxy}, and the IP address of the host must be a valid IP address from the DHCP range.
 
-It is possible to use an external DHCP service, but IP addresses must be entered manually. The SSH credentials corresponding to the configuration in the image must be configured in {Project} to enable the post-boot configuration to be made.
+It is possible to use an external DHCP service, but IP addresses must be entered manually.
+The SSH credentials corresponding to the configuration in the image must be configured in {Project} to enable the post-boot configuration to be made.
 
 Check following items when troubleshooting a virtual machine booted from an image that depends on post-configuration scripts:
 
@@ -163,11 +209,14 @@ Check following items when troubleshooting a virtual machine booted from an imag
   * The IP address acquired by the virtual machine using DHCP matches the address configured in {ProjectServer}.
   * The virtual machine created from an image responds to SSH requests.
   * The virtual machine created from an image authorizes the user and password, over SSH, which is associated with the image being deployed.
-  * {ProjectServer} has access to the virtual machine via SSH keys. This is required for the virtual machine to receive post-configuration scripts from {ProjectServer}.
+  * {ProjectServer} has access to the virtual machine via SSH keys.
+This is required for the virtual machine to receive post-configuration scripts from {ProjectServer}.
 
 .Pre-Boot Initialization Configuration Method
 
-Images that use the `cloud-init` scripts require a DHCP server to avoid having to include the IP address in the image. A managed DHCP {SmartProxy} is preferred. The image must have the `cloud-init` service configured to start when the system boots and fetch a script or configuration data to use in completing the configuration.
+Images that use the `cloud-init` scripts require a DHCP server to avoid having to include the IP address in the image.
+A managed DHCP {SmartProxy} is preferred.
+The image must have the `cloud-init` service configured to start when the system boots and fetch a script or configuration data to use in completing the configuration.
 
 Check the following items when troubleshooting a virtual machine booted from an image that depends on initialization scripts included in the image:
 
@@ -181,7 +230,10 @@ endif::[]
 [[Configuring_Networking-Configuring_Network_Services_for_PXE_Boot]]
 === Configuring Network Services
 
-Some provisioning methods use {SmartProxyServer} services. For example, a network might require the {SmartProxyServer} to act as a DHCP server. A network can also use PXE boot services to install the operating system on new hosts. This requires configuring the {SmartProxyServer} to use the main PXE boot services: DHCP, DNS, and TFTP.
+Some provisioning methods use {SmartProxyServer} services.
+For example, a network might require the {SmartProxyServer} to act as a DHCP server.
+A network can also use PXE boot services to install the operating system on new hosts.
+This requires configuring the {SmartProxyServer} to use the main PXE boot services: DHCP, DNS, and TFTP.
 
 Use the `{foreman-installer}` command with the options to configure these services on the {ProjectServer}.
 
@@ -246,7 +298,8 @@ To configure network services on {Project}'s integrated {SmartProxy}, complete t
 [[Configuring_Networking-Multiple_Subnets_or_Domains_via_Installer]]
 ==== Multiple Subnets or Domains via Installer
 
-The {foreman-installer} options allow only for a single DHCP subnet or DNS domain. One way to define more than one subnet is by using custom configuration file.
+The {foreman-installer} options allow only for a single DHCP subnet or DNS domain.
+One way to define more than one subnet is by using custom configuration file.
 
 For every additional subnet or domain, create an entry in `/etc/foreman-installer/custom-hiera.yaml` file:
 
@@ -281,26 +334,32 @@ dns::zones:
     contact: hostmaster.example.com.
 ----
 
-Execute {foreman-installer} to perform the changes and verify that the `/etc/dhcp/dhcpd.conf` contains appropriate entries. Subnets must be then defined in {Project} database.
+Execute {foreman-installer} to perform the changes and verify that the `/etc/dhcp/dhcpd.conf` contains appropriate entries.
+Subnets must be then defined in {Project} database.
 
 ==== DHCP, DNS, and TFTP Options for Network Configuration
 
 .DHCP Options
 
 --foreman-proxy-dhcp::
-  Enables the DHCP service. You can set this option to `true` or `false`.
+  Enables the DHCP service.
+You can set this option to `true` or `false`.
 
 --foreman-proxy-dhcp-managed::
-  Enables Foreman to manage the DHCP service. You can set this option to `true` or `false`.
+  Enables Foreman to manage the DHCP service.
+You can set this option to `true` or `false`.
 
 --foreman-proxy-dhcp-gateway::
-  The DHCP pool gateway. Set this to the address of the external gateway for hosts on your private network.
+  The DHCP pool gateway.
+Set this to the address of the external gateway for hosts on your private network.
 
 --foreman-proxy-dhcp-interface::
-  Sets the interface for the DHCP service to listen for requests. Set this to `eth1`.
+  Sets the interface for the DHCP service to listen for requests.
+Set this to `eth1`.
 
 --foreman-proxy-dhcp-nameservers::
-  Sets the addresses of the nameservers provided to clients through DHCP. Set this to the address for {ProjectServer} on `eth1`.
+  Sets the addresses of the nameservers provided to clients through DHCP.
+Set this to the address for {ProjectServer} on `eth1`.
 
 --foreman-proxy-dhcp-range::
   A space-separated DHCP pool range for Discovered and Unmanaged services.
@@ -312,16 +371,20 @@ Execute {foreman-installer} to perform the changes and verify that the `/etc/dhc
 .DNS Options
 
 --foreman-proxy-dns::
-  Enables DNS service. You can set this option to `true` or `false`.
+  Enables DNS service.
+You can set this option to `true` or `false`.
 
 --foreman-proxy-dns-managed::
-  Enables Foreman to manage the DNS service. You can set this option to `true` or `false`.
+  Enables Foreman to manage the DNS service.
+You can set this option to `true` or `false`.
 
 --foreman-proxy-dns-forwarders::
-  Sets the DNS forwarders. Set this to your DNS servers.
+  Sets the DNS forwarders.
+Set this to your DNS servers.
 
 --foreman-proxy-dns-interface::
-  Sets the interface to listen for DNS requests. Set this to `eth1`.
+  Sets the interface to listen for DNS requests.
+Set this to `eth1`.
 
 --foreman-proxy-dns-reverse::
   The DNS reverse zone name.
@@ -335,13 +398,16 @@ Execute {foreman-installer} to perform the changes and verify that the `/etc/dhc
 .TFTP Options
 
 --foreman-proxy-tftp::
-  Enables TFTP service. You can set this option to `true` or `false`.
+  Enables TFTP service.
+You can set this option to `true` or `false`.
 
 --foreman-proxy-tftp-managed::
-  Enables Foreman to manage the TFTP service. You can set this option to `true` or `false`.
+  Enables Foreman to manage the TFTP service.
+You can set this option to `true` or `false`.
 
 --foreman-proxy-tftp-servername::
-  Sets the TFTP server to use. Ensure that you use {SmartProxy}'s IP address.
+  Sets the TFTP server to use.
+Ensure that you use {SmartProxy}'s IP address.
 
 
 Run `{foreman-installer} --help` to view more options related to DHCP, DNS, TFTP, and other {Project} {SmartProxy} services
@@ -349,7 +415,9 @@ Run `{foreman-installer} --help` to view more options related to DHCP, DNS, TFTP
 [[Configuring_Networking-Using_TFTP_Services_through_NAT]]
 ==== Using TFTP Services through NAT
 
-You can use {Project} TFTP services through NAT. To do this, on all NAT routers or firewalls, you must enable a TFTP service on UDP port 69 and enable the TFTP state tracking feature. For more information, see the documentation for your NAT device.
+You can use {Project} TFTP services through NAT.
+To do this, on all NAT routers or firewalls, you must enable a TFTP service on UDP port 69 and enable the TFTP state tracking feature.
+For more information, see the documentation for your NAT device.
 
 ifeval::["{build}" == "satellite"]
 .Using NAT on Red Hat Enterprise Linux 7:
@@ -379,7 +447,8 @@ endif::[]
 # service iptables save
 ----
 
-. Load the `ip_conntrack_tftp` kernel TFTP state module. In the `/etc/sysconfig/iptables-config` file, locate `IPTABLES_MODULES` and add `ip_conntrack_tftp` as follows:
+. Load the `ip_conntrack_tftp` kernel TFTP state module.
+In the `/etc/sysconfig/iptables-config` file, locate `IPTABLES_MODULES` and add `ip_conntrack_tftp` as follows:
 +
 ----
 IPTABLES_MODULES="ip_conntrack_tftp"
@@ -388,14 +457,17 @@ IPTABLES_MODULES="ip_conntrack_tftp"
 [[Configuring_Networking-Adding_a_Domain_to_the_Satellite_Server]]
 === Adding a Domain to {ProjectServer}
 
-{ProjectServer} defines domain names for each host on the network. {ProjectServer} must have information about the domain and the {SmartProxyServer} responsible for domain name assignment.
+{ProjectServer} defines domain names for each host on the network.
+{ProjectServer} must have information about the domain and the {SmartProxyServer} responsible for domain name assignment.
 
 .Checking for Existing Domains
-{ProjectServer} might already have the relevant domain created as part of {ProjectServer} installation. Switch the context to `Any Organization` and `Any Location` then check the domain list to see if it exists.
+{ProjectServer} might already have the relevant domain created as part of {ProjectServer} installation.
+Switch the context to `Any Organization` and `Any Location` then check the domain list to see if it exists.
 
 .DNS Server Configuration Considerations
 
-During the DNS record creation, {Project} performs conflict DNS lookups to verify that the host name is not in active use. This check runs against one of the following DNS servers:
+During the DNS record creation, {Project} performs conflict DNS lookups to verify that the host name is not in active use.
+This check runs against one of the following DNS servers:
 
 * The system-wide resolver if *Adminster* > *Settings* > *Query local nameservers* is set to *true*.
 * The nameservers that are defined in the subnet associated with the host.
@@ -414,7 +486,8 @@ To add a domain to {Project}, complete the following steps:
 . In the {Project} web UI, navigate to *Infrastructure* > *Domains* and click *Create Domain*.
 . In the *DNS Domain* field, enter the full DNS domain name.
 . In the *Fullname* field, enter the plain text name of the domain.
-. Click the *Parameters* tab and configure any domain level parameters to apply to hosts attached to this domain. For example, user defined Boolean or string parameters to use in templates.
+. Click the *Parameters* tab and configure any domain level parameters to apply to hosts attached to this domain.
+For example, user defined Boolean or string parameters to use in templates.
 . Click *Add Parameter* and fill in the *Name* and *Value* fields.
 . Click the *Locations* tab, and add the location where the domain resides.
 . Click the *Organizations* tab, and add the organization that the domain belongs to.
@@ -436,7 +509,8 @@ In this example, the `--dns-id` option uses `1`, which is the ID of your integra
 [[Configuring_Networking-Adding_a_Subnet_to_the_Satellite_Server]]
 === Adding a Subnet to {ProjectServer}
 
-You must add information for each of your subnets to {ProjectServer} because {Project} configures interfaces for new hosts. To configure interfaces, {ProjectServer} must have all the information about the network that connects these interfaces.
+You must add information for each of your subnets to {ProjectServer} because {Project} configures interfaces for new hosts.
+To configure interfaces, {ProjectServer} must have all the information about the network that connects these interfaces.
 
 .Procedure
 
@@ -451,7 +525,8 @@ To add a subnet to {ProjectServer}, complete the following steps:
 . In the *Gateway address* field, enter the external gateway for the subnet.
 . In the *Primary DNS server* field, enter a primary DNS for the subnet.
 . In the *Secondary DNS server*, enter a secondary DNS for the subnet.
-. From the *IPAM* list, select the method that you want to use for IP address management (IPAM). For more information about IPAM, see xref:networking_resources[].
+. From the *IPAM* list, select the method that you want to use for IP address management (IPAM).
+For more information about IPAM, see xref:networking_resources[].
 +
 . Enter the information for the IPAM method that you select.
 ifeval::["{build}" == "satellite"]
@@ -462,7 +537,8 @@ ifeval::["{build}" != "satellite"]
 endif::[]
 . Click the *Domains* tab and select the domains that apply to this subnet.
 . Click the *{SmartProxies}* tab and select the {SmartProxy} that applies to each service in the subnet, including DHCP, TFTP, and reverse DNS services.
-. Click the *Parameters* tab and configure any subnet level parameters to apply to hosts attached to this subnet. For example, user defined Boolean or string parameters to use in templates.
+. Click the *Parameters* tab and configure any subnet level parameters to apply to hosts attached to this subnet.
+For example, user defined Boolean or string parameters to use in templates.
 . Click the *Locations* tab and select the locations that use this {SmartProxy}.
 . Click the *Organizations* tab and select the organizations that use this {SmartProxy}.
 . Click *Submit* to save the subnet information.
