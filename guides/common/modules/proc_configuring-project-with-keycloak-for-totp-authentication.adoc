@@ -1,4 +1,154 @@
 [id="configuring-project-with-keycloak-for-totp-authentication_{context}"]
 = Configuring {Project} with {Keycloak} for TOTP Authentication
 
+Use this procedure to configure {Project} to use {Keycloak} as an OpenID provider for external authentication with Time-based One-time Password (TOTP).
 
+.Prerequisites
+
+* A working installation of {Keycloak} server that uses HTTPS instead of HTTP.
+* A {Keycloak} account with admin privileges.
+* A realm for {Project} user accounts created in {Keycloak}.
+* If the certificates or the CA are self-signed, ensure that they are added to the end-user certificate trust store.
+
+.Configuring User Federation in the {Keycloak} Web UI
+. Log in to a {Keycloak} administer account.
+. At the top-left of the screen, from the drop-down menu, select the realm for {Project} user accounts.
+. Click *User Fedration*.
+. From the *Add Provider* list, select *ldap*.
+. From the *Vendor* list, select *Active Directory*.
+. From the *Edit Mode* list, select *UNSYNCED*.
+. In the *Username LDAP attribute* field, enter _*sAMAccountName*_.
+. In the *RDN LDAP attribute* field, enter _*sAMAccountName*_.
+. In the *objectGUID* field, enter *objectGUID*.
+. In the *User Object Classes* field, enter *person, organizationalPerson, user*.
+. In the *Connection URL* field, enter _*ldaps://srz-ldaps.prodsrz.srzintra.de:636*_.
+. In the *Users DN* field, enter _*OU=Service-RZ,DC=ProdSRZ,DC=SRZIntra,DC=de*_.
+. From the *Bind Type* list, select *simple*.
+. Set *Enable StartTLS* to *OFF*.
+. In the *Bind DN* field, enter __*CN=Funktionsuser Red_Hat_SSO_Testsystem,OU=Verfahren-und-Dienste,OU=Service-
+RZ,DC=ProdSRZ,DC=SRZIntra,DC=de*__.
+. In the *Bind Credential* field, enter your account password.
+. In the *Custom User LDAP Filter* field, enter _**_.
+. From the *Search Scope* list, select *Subtree*.
+. Click the *Test Connection* and *Test Authentication* button to ensure that configuration works.
+. Click *Save*.
+
+.Configuring Mappers in the {Keycloak} Web UI
+
+. Click the *Mappers* tab.
+. Click the *Create* button and create the following 7 mappers:
++
+.Mappers
+|===
+|Name |Mapper Type |User Model Attribute |LDAP Attribute |Read Only |Always Read Value From LDAP |Is Mandatory In LDAP |Is Binary Attribute |Password Policy Hints Enabled
+|username |user-attribute-ldap-mapper |username |sAMAccountName |ON |ON |ON |OFF |-
+|MSAD-account controls |mcad-user-account-control-mapper |- |- |- |- |- |- |ON
+|last name |user-attribute-ldap-mapper |lastName |sn |ON |ON |ON |OFF |-
+|first name |user-attribute-ldap-mapper |firstName |givenName |ON |ON |ON |OFF |-
+|modify date |user-attribute-ldap-mapper |modifyTimestamp |whenChanged |ON |ON |OFF |OFF |-
+|email |user-attribute-ldap-mapper |email |mail |ON |ON |OFF |OFF |-
+|creation date |user-attribute-ldap-mapper |creationTimestamp |whenCreated |ON |ON |OFF |OFF |-
+|===
+
+.Importing Users in the {Keycloak} Web UI
+
+. Navigate to *User Federation* and select the federation that you created.
+. Click the *Settings* tab.
+. Click *Synchronize All Users*.
+Synchronization might take some time on a production system when there is no ldap filter.
+When synchronization finishes, a green pop-up informing you that the process has completed is displayed.
+. In the realm menu at the right of the screen, navigate to *Users*.
+. Click *View all users* to view all imported users.
+
+.Configuring {Project}
+. On the {Project} server, install the following packages:
++
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+# {package-install-project} mod_auth_openidc keycloak-httpd-client-install
+----
+
+. Register {Project} to {Keycloak} as a client:
++
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+# keycloak-httpd-client-install --app-name foreman-openidc \
+--keycloak-server-url "https://{Keycloak-short}.com:8443" \
+--keycloak-admin-username "_admin_" \
+--keycloak-realm "_{Project}_Realm_" \
+--keycloak-admin-realm master \
+--keycloak-auth-role root-admin \
+-t openidc -l /users/extlogin --force
+----
++
+Enter the password for the administer account when prompted.
+. To configure {Project} to use {Keycloak} as an authentication source, enter the following command:
++
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+# satellite-installer --foreman-keycloak true \
+--foreman-keycloak-app-name "foreman-openidc" \
+--foreman-keycloak-realm "_{Project}_Realm_"
+----
+
+.Configuring {Project] Client in the {Keycloak} Web UI
+. In the {Keycloak} web UI, navigate to {Clients} and click the {Project] client.
+. Ensure that the *Access Type* setting is set to *confidential*.
+. Ensure that there are two entries in the *Valid Redirect URLs* fields.
+. Click *Save*.
+. Click the *Mappers* tab and click *Create* to add an audience mapper.
+. From the *Mapper Type* list, select *Audience*.
+. From the *Included Client Audience* list, select the {Project} client.
+. Click *Save*. 
+. Click the *Mapper* tab and click *Create* to add a group mapper so that you can specify authorization in
+{Project} based on group membership.
+. From the *Mapper Type* list, select *Group Membership*.
+. In the *Token Claim Name* field, enter *groups*.
+. Set the *Full group path* toggle to OFF.
+. Click *Save*.
+
+.Configuring {Keycloak} Authentication in the {Project} Web UI
+. In the {Project} web UI, navigate to *Administer* > *Settings*, and click the *Authentication* tab
+. Locate the *Authorize login delegation* row, and in the *Value* column, set the value to *Yes*.
+. Locate the *Authorize login delegation auth source user autocreate* row, and in the *Value* column,
+set the value to *External*.
+. Locate the *Login delegation logout URL* row, and in the *Value* column, set the value to
+*https://{foreman-example-com}/users/extlogout*.
+. Locate the *OIDC Algorithm* row, and in the *Value* column, set the algorithm for encoding on {Keycloak} to *RS256*.
+. Locate the *OIDC Audience* row, and in the *Value* column, set the value to the client ID for {Keycloak}.
+. Locate the *OIDC Issuer* row, and in the *Value* column, set the value to https://{Keycloak-short}.com:8443/auth/realms/{Project}_Realm.
+. Locate the *OIDC JWKs URL* row, and in the *Value* column, set the value to https://{Keycloak-short}.com:8443auth/realms/{Project}_Realm/protocol/openid-connect/certs.
+
+.Configuring Group Mapping in the {Project} Web UI
+To implement the Role Based Access Control (RBAC), create groups in {Project}, assign a role to that group and then map an Active Directory group to that {Project} group. This means that anyone in the given group in {Keycloak} will be under the corresponding {Project} group. This example configures users of the {Project}-admin user group in the Active Directory to authenticate as users with administer privileges on {Project}. 
+
+. In the {Project} web UI, navigate to *Administer* > *User Groups*, and click the *Create User Group* button.
+. In the *Name* field, enter a name for the user group.
+The name should not be the same as in the Active Directory.
+. Do not add users and user groups to the right-hand columns.
+Click the *Roles* tab.
+. Select the *Administer* check box.
+. Click the *External Groups* tab.
+. Click the *Add external user group* button.
+. In the *Name* field, enter the name of the Active Directory group.
+. From the list, select *EXTERNAL*.
+
+.Setting Organization and Location for the Authentication Source
+
+To set the organization and location for the authentication source, enter the following command:
+
+----
+# hammer auth-source external update --id 3 --location-ids 2,3,4,5,6 --organization-ids 1
+----
+
+.Configuring 2FA Authentication
+
+. In the {Keycloak} web UI, navigate to *Authentication*, and click the *OTP Policy* tab.
+. Configure the OTP settings to suit your requirements.
+. Click the *Required Actions* tab.
+. Locate the *Configure OTP* raw and elect the *Default Action* check box for this raw.
+. To verify that OTP authentication works, log in to {Project}, {Project} redirects you to SSO login screen.
+. Enter your username and password, and click *Log In*.
+. Because this is the first attempt to log in, {Keycloak} requests you to configure your client by scanning the barcode and entering the pin displayed.
+. After configuring your client and entering a valid PIN, you are redirected to {Project} and
+logged in.
