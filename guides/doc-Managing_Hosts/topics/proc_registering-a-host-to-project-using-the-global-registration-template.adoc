@@ -6,36 +6,110 @@ Use the following procedure to register a host to {ProjectNameX}.
 With this registration method you can register hosts to {Project} by generating a `curl` command on {Project} and running this command on hosts.
 This method uses the global registration template that gives you complete control over the process of the host registration.
 
+ifeval::["{build}" != "satellite"]
+Note that you can extend the parameters by plug-ins. For more information, see https://github.com/theforeman/foreman/blob/develop/developer_docs/how_to_create_a_plugin.asciidoc.
+endif::[]
+
 .Prerequisites
 * The {Project} user that generates the `curl` command must have the `create_hosts` permission.
 * You must have root privileges on the host that you want to register.
 
 .Procedure
 . In {Project} web UI, navigate to *Hosts* > *Provisioning Templates* and locate and click *Linux registration default*.
+
 . Click the *Association* tab.
+
 . Select the operating systems that you want to register.
+
 . Navigate to *Hosts* > *Operating Systems* and click the operating system that you want to register.
+
 . Click *Submit*.
+
 . Click the *Templates* tab.
+
 . From the *Registration template* list, select *Linux registration default*.
+
 . Click *Submit*.
+
 . Navigate to *Hosts* > *All Hosts* > *Register Host*.
 
+. Optional: If you want to register hosts to {SmartProxy}, enter the following command on the {SmartProxy} to enable required modules:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# foreman-installer --foreman-proxy-registration \
+--foreman-proxy-templates \
+--foreman-proxy-template-url 'http://{smartproxy-example-com}'
+----
+
 . What fields are required for Satellite and Foreman?
+
 . Optional: From the *Host Group* list, select the host group to associate the hosts with.
+
 . From the *Operating System* list, select the operating system of hosts that you want to register.
+
 . Optional: If you want to register hosts to a {SmartProxy}, from the *{SmartProxy}* list, select the {SmartProxy} to register hosts to.
+
+ifeval::["{build}" == "satellite"]
 . Optional: If you do not want to register hosts with Insights, from the *Insights* list, select *No*. What are the defaults for those two?
+endif::[]
+
 . Optional: If you do not want to deploy {Project} SSH keys to hosts, from the *Remote Execution* list, select *No*.
-. Optional: If required, change the authorization token lifetime. This settings defines how long the generated `curl` command works.
+
+. Optional: {Project} uses the JSON Web Tokens (JWT) for authentication.
+This duration of this token defines how long the generated `curl` command works.
+If you want to change the duration of the token, enter the required duration to the *Token lifetime (hours)* field.
+You can set the duration to any number of hours.
++
+Note that {Project} uses the permissions of the user who generated the `curl` command for authorization of hosts.
+If user loses or gains additional permissions, the permissions of the JWT change too.
+Therefore, do not delete, block, or change permissions of the user during the token duration.
+
 . Optional: What is remote execution interface?
+
+ifeval::["{build}" != "satellite"]
 . In the *Activation Key(s)* field, enter one or more activation keys to assign to registered hosts.
+endif::[]
+
 . Click *Generate command*.
+
 . Copy the generated `curl` command to enter it on the hosts.
+
 . On the hosts that you want to register, enter the generated `curl` command as `root`.
 
-.Templates & snippets
+.SSL
+For calling Foreman endpoints via https CA authority must be installed on the host.
+Path to CA file can be found in Settings > Authentication > SSL CA file.
 
+If you don't want to upload & install CA on the host, you can run first `curl` command
+with `---insecure` parameter, like this:
+
+[options="nowrap", subs="+quotes,attributes"]
+----
+curl -X GET --insecure https://foreman.example.com/register | bash
+----
+
+This make first call insecure, however Global Registration template will
+download CA and will use it for secure connections for any other calls to the Foreman.
+
+.Customizing the Templates
+
+Note that all default templates in Foreman are locked.
+If you want to customize the registration process, you need to clone the default Global registration template and change the *Default Global registration template* setting in *Administer* > *Settings* > *Provisioning*.
+
+You can configure the following global parameters by navigating to *Configure* > *Global Parameters*:
+
+* The `host_registration_remote_execution` parameter is used in the `remote_execution_ssh_keys` snippet, the default value is `true`.
+
+ifeval::["{build}" != "satellite"]
+* The `host_registration_insights` parameter is used in the `insights` snippet, the default value is `false`.
+endif::[]
+
+ifeval::["{build}" == "satellite"]
+* The `host_registration_insights` parameter is used in the `insights` snippet, the default value is `true`.
+endif::[]
+
+.Templates & snippets
 [cols=2*]
 |===
 |Global Registration Template
@@ -50,92 +124,6 @@ This method uses the global registration template that gives you complete contro
 |`insights` snippet
 | Download & install insights client. Only for Red Hat OS & when global parameter `host_registration_insights` is set to true. Part of Host registration template
 |===
-
-
-.Registration parameters
-* Organization
-* Location
-* Host Group
-* Operating System - No need to specify for registration with subscription-manager
-* Proxy
-* Setup Insights - Install insights client & register host. Override value of `host_registration_insights` global parameter on the Host level. Plus only for Red Hat OS.
-* Remote Execution - Override value of `host_registration_remote_execution` global parameter on the Host level.
-* Token lifetime
-
-Parameters can be extended from the plugins, see ee https://github.com/theforeman/foreman/blob/develop/developer_docs/how_to_create_a_plugin.asciidoc
-
-
-.Authentication
-For authentication we use JSON Web Tokens (JWT):
-[options="nowrap", subs="+quotes,attributes"]
-----
-curl -X GET "https://foreman.example.com/register" -H 'Authorization: Bearer ...
-----
-
-The user who generated the command with JWT is also the one who's permissions
-will be used for authorization.
-This means that if user will lost or gain some additional permissions,
-the JWT will "have" these permissions to.
-Deleting or blocking the user will also invalidate the token.
-Token can be also used at any other `/api` endpoints.
-
-By default expiration time of the token is set to four hours, and can be used unlimited times for
-unlimited number of the host until it expires.
-
-For testing purposes, you can use basic authorization, like this:
-[options="nowrap", subs="+quotes,attributes"]
-----
-curl -X GET "https://foreman.example.com/register" --user admin:changeme
-----
-However this should be done only for testing and not used anywhere else,
-since it expose user's credentials.
-
-
-.Settings
-All default templates in Foreman are locked. If you want to customize the registration process,
-you need to clone the default Global registration template, and then in the Administer > Settings > Provisioning
-change the _Default Global registration template_ setting to the name of your new registration template.
-
-
-.Global Parameters
-* `host_registration_remote_execution` - used in `remote_execution_ssh_keys` snippet, default value is `true`.
-* `host_registration_insights` - used in `insights` snippet, default value is `false` for the Foreman and `true` for the Satellite
-
-
-.With Smart proxy
-For registration through proxy you need to enable two modules: Registration module and Templates module
-Registration module forwards all `/register` requests to the Foreman,
-and templates module gis option to exit build status of the host.
-
-Enabling modules:
-[options="nowrap", subs="+quotes,attributes"]
-----
-foreman-installer --foreman-proxy-registration \
-                  --foreman-proxy-templates \
-                  --foreman-proxy-template-url 'http://proxy.example.com'
-----
-
-Then you can call `/register` endpoint on the proxy:
-[options="nowrap", subs="+quotes,attributes"]
-----
-curl http://proxy.example.com/register | bash
-----
-This will forward requests to the Foreman endpoint and change all urls
-in the templates to the Smart proxy.
-
-.SSL
-For calling Foreman endpoints via https CA authority must be installed on the host.
-Path to CA file can be found in Settings > Authentication > SSL CA file.
-
-If you don't want to upload & install CA on the host, you can run first `curl` command
-with `---insecure` parameter, like this:
-[options="nowrap", subs="+quotes,attributes"]
-----
-curl -X GET --insecure https://foreman.example.com/register | bash
-----
-
-This make first call insecure, however Global Registration template will
-download CA and will use it for secure connections for any other calls to the Foreman.
 
 .Global Registration templates variables
 [cols=3*,options=header]
@@ -184,6 +172,3 @@ download CA and will use it for secure connections for any other calls to the Fo
 |none
 |URl for `/register` endpoint.
 |===
-
-.Extension from plugins
-See https://github.com/theforeman/foreman/blob/develop/developer_docs/how_to_create_a_plugin.asciidoc
