@@ -34,7 +34,7 @@ endif::[]
 
 . Navigate to *Hosts* > *All Hosts* > *Register Host*.
 
-. Optional: If you want to register hosts to {SmartProxy}, ensure that the *Registration* feature is enabled on this {SmartProxy}.
+. Optional: If you want to register hosts through {SmartProxy}, ensure that the *Registration* feature is enabled on this {SmartProxy}.
 +
 Navigate to *Infrastructure* > *{SmartProxies}*, click the {SmartProxy} that you want to use, and locate the *Registration* feature in the *Active features* list.
 +
@@ -51,7 +51,7 @@ Optional: If the *Registration* feature is not enabled on your {SmartProxy}, ent
 
 . From the *Operating System* list, select the operating system of hosts that you want to register.
 
-. Optional: If you want to register hosts to a {SmartProxy}, from the *{SmartProxy}* list, select the {SmartProxy} to register hosts to.
+. Optional: If you want to register hosts through {SmartProxy}, from the *{SmartProxy}* list, select the {SmartProxy} to register hosts to.
 
 ifeval::["{build}" == "satellite"]
 . From the *Insights* list, select whether you want to register the hosts to Insights or not.
@@ -75,7 +75,8 @@ ifeval::["{build}" == "satellite"]
 endif::[]
 
 ifeval::["{build}" != "satellite"]
-. Optional: If you register RHEL or CentOS hosts, in the *Activation Key(s)* field, enter one or more activation keys to assign to registered hosts.
+. Optional: This step is for the Katello users only.
+If you register RHEL or CentOS hosts, in the *Activation Key(s)* field, enter one or more activation keys to assign to registered hosts.
 endif::[]
 
 . Click *Generate command*.
@@ -87,7 +88,9 @@ endif::[]
 * Add the `--insecure` option to the `curl` command.
 This makes the first call insecure, however, during this first call, hosts download the CA file from {Project}.
 Hosts will use this CA file to connect to {Project} with all future calls making them secure.
-If an attacker fetches the CA file from the first insecure call, the attacker will be able to access the registered host, get the `curl` command with the JWT, and call the `/register` endpoint from {Project}.
++
+If an attacker, locating in the network between {Project} and a host, fetches the CA file from the first insecure call, the attacker will be able to access the content of the API calls to and from the registered host and the JWT.
+Therefore, if you have chosen to deploy SSH keys during registration, the attacker will be able to access the host using the SSH key.
 The following is an example of the `curl` command with the `--insecure` option:
 +
 [options="nowrap", subs="+quotes,attributes"]
@@ -108,84 +111,3 @@ Copy the CA file to the `/etc/pki/ca-trust/source/anchors/` directory on hosts a
 ----
 
 . On the hosts that you want to register, enter the `curl` command as `root`.
-
-.Customizing the Templates
-
-Note that all default templates in {Project} are locked.
-If you want to customize the registration process, you need to clone the default Global registration template and change the *Default Global registration template* setting in *Administer* > *Settings* > *Provisioning*.
-
-You can configure the following global parameters by navigating to *Configure* > *Global Parameters*:
-
-* The `host_registration_remote_execution` parameter is used in the `remote_execution_ssh_keys` snippet, the default value is `true`.
-
-ifeval::["{build}" != "satellite"]
-* The `host_registration_insights` parameter is used in the `insights` snippet, the default value is `false`.
-endif::[]
-
-ifeval::["{build}" == "satellite"]
-* The `host_registration_insights` parameter is used in the `insights` snippet, the default value is `true`.
-endif::[]
-
-.Templates & snippets
-[cols=2*]
-|===
-|Global Registration Template
-|Contains steps for registration of host to the {Project}. Rendered when accessing `/register` endpoint.
-
-|Host Registration Template
-|In {Project} named `Linux registration default`, contains commands for Host setup.
-
-|`remote_execution_ssh_keys` snippet
-| Used in Host registration template, deploy SSH keys to the host. Only when `host_registration_remote_execution` parameter is `true`. Part of Host registration template
-
-|`insights` snippet
-| Download & install insights client. Only for Red Hat OS & when global parameter `host_registration_insights` is set to true. Part of Host registration template
-|===
-
-.Global Registration templates variables
-[cols=3*,options=header]
-|===
-|Variable
-|Command argument
-|Description
-
-|`@user`
-|none
-|Current authenticated user object.
-
-|`@organization`
-|`organization_id`
-|If `organization_id` is not set, then user's default organization is set, or the first organization from user's organizations list.
-
-|`@location`
-|`location_id`
-|If `location_id` is not set, user  default location is set, or the first location from user's locations list.
-
-|`@hostgroup`
-|`hostgroup_id`
-|Host group of the host.
-
-|`@operatingsystem`
-|`operatingsystem_id`
-|Host OS.
-
-|`@setup_insights`
-|`setup_insights`
-|Override the value of `` global parameter for the registered host & install insights client.
-
-|`@setup_remote_execution`
-|`setup_remote_execution`
-| Override the value of `` global parameter for the registered host & deploy SSH keys for remote execution.
-
-|`@remote_execution_interface`
-|`remote_execution_interface`
-|Set default interface of host for the remote execution.
-
-|`@activation_key`
-|`activation_key`
-|Activation keys for subscription manager, available only with katello plugin.
-
-|`@registration_url`
-|none
-|URl for `/register` endpoint.
-|===
