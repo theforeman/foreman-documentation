@@ -2,28 +2,33 @@
 [[NFS_Share]]
 == Using an NFS Share for Content Storage
 
-Your environment requires adequate hard disk space to fulfill content storage. In some situations, it is useful to use an NFS share to store this content. This appendix shows how to mount the NFS share on your {ProjectServer}'s content management component.
+Your environment requires adequate hard disk space to fulfill content storage.
+In some situations, it is useful to use an NFS share to store this content.
+This appendix shows how to mount the NFS share on your {ProjectServer}'s content management component.
 
 [IMPORTANT]
-Do not mount the full `/var/lib/pulp` on an NFS share. Use high-bandwidth, low-latency storage for the `/var/lib/pulp` file system. {ProjectName} has many I/O-intensive operations; therefore, high-latency, low-bandwidth storage might have issues with performance degradation. Only use the NFS share for the `/var/lib/pulp/content` directory.
+Do not mount the full `/var/lib/pulp` on an NFS share.
+Use high-bandwidth, low-latency storage for the `/var/lib/pulp` file system.
+{ProjectName} has many I/O-intensive operations; therefore, high-latency, low-bandwidth storage might have issues with performance degradation.
+Only use the NFS share for the `/var/lib/pulp/content` directory.
 
-1. Create the NFS share. This example uses a share at `nfs.example.com:/satellite/content`. Ensure this share provides the appropriate permissions to {ProjectServer} and its `apache` user.
-
-2. Stop the `{foreman-maintain}` services on the {Project} host:
+. Create the NFS share.
+This example uses a share at `nfs.example.com:/satellite/content`.
+Ensure this share provides the appropriate permissions to {ProjectServer} and its `apache` user.
+. Stop the `{foreman-maintain}` services on the {Project} host:
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
 # {foreman-maintain} service stop
 ----
-
-3. Ensure {ProjectServer} has the `nfs-utils` package installed:
+. Ensure {ProjectServer} has the `nfs-utils` package installed:
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
 # {package-install-project} nfs-utils
 ----
-
-4. You need to copy the existing contents of `/var/lib/pulp/content` to the NFS share. First, mount the NFS share to a temporary location:
+. You need to copy the existing contents of `/var/lib/pulp/content` to the NFS share.
+First, mount the NFS share to a temporary location:
 +
 ----
 # mkdir /mnt/temp
@@ -35,36 +40,32 @@ Copy the existing contents of `/var/lib/pulp/content` to the temporary location:
 ----
 # cp -r /var/lib/pulp/content/* /mnt/temp/.
 ----
-
-5. Set the permissions for all files on the share to use the `apache` user. This ID of this user is usually 48.
-
-6. Unmount the temporary storage location:
+. Set the permissions for all files on the share to use the `apache` user.
+This ID of this user is usually 48.
+. Unmount the temporary storage location:
 +
 ----
 # umount /mnt/temp
 ----
-
-7. Remove the existing contents of `/var/lib/pulp/content`:
+. Remove the existing contents of `/var/lib/pulp/content`:
 +
 ----
 # rm -rf /var/lib/pulp/content/*
 ----
-
-8. Edit the `/etc/fstab` file and add the following line:
+. Edit the `/etc/fstab` file and add the following line:
 +
 ----
 nfs.example.com:/satellite/content    /var/lib/pulp/content   nfs    rw,hard,intr,context="system_u:object_r:httpd_sys_rw_content_t:s0"
 ----
 +
-This makes the mount persistent across system reboots. Ensure to include the SELinux context.
-
-9. Enable the mount:
+This makes the mount persistent across system reboots.
+Ensure to include the SELinux context.
+. Enable the mount:
 +
 ----
 # mount -a
 ----
-
-10. Confirm the NFS share mounts to `var/lib/pulp/content`:
+. Confirm the NFS share mounts to `var/lib/pulp/content`:
 +
 ----
 # df
@@ -79,12 +80,13 @@ Also confirm that the existing content exists at the mount on `var/lib/pulp/cont
 ----
 # ls /var/lib/pulp/content
 ----
-
-11. Start the `{foreman-maintain}` services on the {Project} host:
+. Start the `{foreman-maintain}` services on the {Project} host:
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
 # {foreman-maintain} service start
 ----
 
-{ProjectServer} now uses the NFS share to store content. Run a content synchronization to ensure the NFS share works as expected. For more information, see  xref:Importing_Red_Hat_Content-Synchronizing_Content[].
+{ProjectServer} now uses the NFS share to store content.
+Run a content synchronization to ensure the NFS share works as expected.
+For more information, see xref:Importing_Red_Hat_Content-Synchronizing_Content[].
