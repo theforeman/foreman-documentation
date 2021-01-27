@@ -23,6 +23,12 @@ Files that are included in more than one guide have prefixes to distingish their
 ## Conventions
 
 * User input is surrounded by underscores (`_`) to indicate variable input, e.g. `hammer organization create --name "_My Organization_" --label "_my_organization_"`.
+* A single line only contains one sentence.
+Please do not wrap lines by hand.
+This makes `git diff` much easier to read and helps reviewing changes.
+* No trailing whitespace on lines and in files.
+Whitespace after partial files has to be handled in the file using the `include::` directive.
+* Source files use UTF-8 character encoding.
 
 ## License
 
