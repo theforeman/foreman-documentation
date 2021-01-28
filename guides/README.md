@@ -1,10 +1,13 @@
 # Foreman Guides
 
-This is upstream source code of [Red Hat Satellite 6](https://access.redhat.com/documentation/en-us/red_hat_satellite) documentation. All content in this repository uses [AsciiDoctor](https://asciidoctor.org/) syntax and aims to follow [Guidelines for Red Hat Documentation](https://redhat-documentation.github.io/). This is a **work in progress*, an attempt to take content written by Red Hat documentation team, modularize it, incorporate [existing documentation](https://theforeman.org/documentation.html) and eventually make this the only and official documentation for Foreman, Katello and all plugins.
+This is upstream source code of [Red Hat Satellite 6](https://access.redhat.com/documentation/en-us/red_hat_satellite) documentation.
+All content in this repository uses [AsciiDoctor](https://asciidoctor.org/) syntax and aims to follow [Guidelines for Red Hat Documentation](https://redhat-documentation.github.io/).
+This is a **work in progress*, an attempt to take content written by Red Hat documentation team, modularize it, incorporate [existing documentation](https://theforeman.org/documentation.html) and eventually make this the only and official documentation for Foreman, Katello and all plugins.
 
 ## Building
 
-Install required tools. In Fedora perform:
+Install required tools.
+In Fedora perform:
 
     dnf -y install ruby asciidoctor asciidoctor-pdf make linkchecker
 
@@ -20,9 +23,12 @@ If AsciiDoctor is not available in repositories or under RVM/rbenv, simply insta
 
   	gem install asciidoctor asciidoctor-pdf --pre
 
-Then simply run `make` or `make html` which builds HTML artifacts. Generating PDF output is slow, therefore command `make pdf` must be used separately. To make both formats in one command, use `make html pdf`. 
+Then simply run `make` or `make html` which builds HTML artifacts.
+Generating PDF output is slow, therefore command `make pdf` must be used separately.
+To make both formats in one command, use `make html pdf`.
 
-Few additional make targets are available on the guide level. To quickly build HTML version and open new tab in a browser do:
+Few additional make targets are available on the guide level.
+To quickly build HTML version and open new tab in a browser do:
 
     cd doc-Provisioning_Guide
     make browser
@@ -43,7 +49,8 @@ Currently there are three different versions
 `make BUILD=foreman-deb` - This generates  a version for Foreman installed on Debian.
 
 
-The final artifacts can be found in the ./build subdirectory. Note that GNU Makefile tracks changes and only builds relevant artifacts, to trigger full rebuild use `make clean` to delete build directory and start over.
+The final artifacts can be found in the ./build subdirectory.
+Note that GNU Makefile tracks changes and only builds relevant artifacts, to trigger full rebuild use `make clean` to delete build directory and start over.
 
 It's also possible to check links, the following command will check all links except example.com domain:
 
@@ -51,11 +58,14 @@ It's also possible to check links, the following command will check all links ex
 
 ## Reading or Publishing
 
-We do not publish the content yet to prevent users confusion, however this section will cover steps required to publish the content. We should make sure that only the last stable version of the HTML document is indexed by search engines, old and nightly builds should not be indexed. All PDFs should be available for download tho.
+We do not publish the content yet to prevent users confusion, however this section will cover steps required to publish the content.
+We should make sure that only the last stable version of the HTML document is indexed by search engines, old and nightly builds should not be indexed.
+All PDFs should be available for download tho.
 
 ## Stylying
 
-CSS styles are based on the official AsciiDoctor styles with some small modifications. To generate the stylesheet:
+CSS styles are based on the official AsciiDoctor styles with some small modifications.
+To generate the stylesheet:
 
 	git clone https://github.com/lzap/asciidoctor-stylesheet-factory
 	git checkout foreman-css
@@ -63,7 +73,8 @@ CSS styles are based on the official AsciiDoctor styles with some small modifica
 
 ## Contributing
 
-Please read [Guidelines for Red Hat Documentation](https://redhat-documentation.github.io/) before opening a Pull Request. Additional rules apply:
+Please read [Guidelines for Red Hat Documentation](https://redhat-documentation.github.io/) before opening a Pull Request.
+Additional rules apply:
 
 Never write "Foreman" or "Satellite" words directly but use the following variables:
 
@@ -80,14 +91,16 @@ Never write "Foreman" or "Satellite" words directly but use the following variab
 
 The table only covers the most frequent terms, the rest is defined in the [included file](common/attributes.adoc).
 
-Variables cannot be used in shell or code examples. To use them, use "attributes" keyword:
+Variables cannot be used in shell or code examples.
+To use them, use "attributes" keyword:
 
 	[options="nowrap" subs="+quotes,attributes"]
 	----
 	# ls {VariableName}
 	----
 
-Hide or show specific blocks, paragraphs, warnings or chapters via special variable called "build". Its value can be set either to "foreman" or "satellite":
+Hide or show specific blocks, paragraphs, warnings or chapters via special variable called "build".
+Its value can be set either to "foreman" or "satellite":
 
 	ifeval::["{build}" == "foreman"]
 	NOTE: This part is only relevant for deployments with Katello plugin.
