@@ -153,22 +153,8 @@ jobs:
         if: github.event_name == 'pull_request'
         run: echo "BRANCH_NAME=$(echo ${GITHUB_HEAD_REF} | tr / -)" >> $GITHUB_ENV
 
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          ref: refs/heads/gh-pages
-
-      - name: Configure git
-        run: |
-          git config user.name "${GITHUB_ACTOR}"
-          git config user.email "${GITHUB_ACTOR}@bots.github.com"
-
-      - name: Create master->nightly symlink
-        run: ln -sf nightly master || true
-        working-directory: ./public
-
-      - name: Create directory for the branch
-        run: mkdir -p public/master public/${{ env.BRANCH_NAME }}
+      - name: Create public directory
+        run: mkdir public
 
       - name: Download web
         uses: actions/download-artifact@v2
@@ -176,19 +162,19 @@ jobs:
           name: foreman-docs-web-${{ env.BRANCH_NAME }}
           path: public
 
+      - name: Create master->nightly symlink
+        run: ln -sf nightly master
+        working-directory: ./public
+
       - name: Download HTML
         uses: actions/download-artifact@v2
         with:
           name: foreman-docs-html-${{ env.BRANCH_NAME }}
           path: public/${{ env.BRANCH_NAME }}
 
-      - name: Commit changes into gh-pages
-        run: |
-          git add -A
-          git commit -m "update docs for ${{ env.BRANCH_NAME }}" || true
-
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./public
+          keep_files: true
