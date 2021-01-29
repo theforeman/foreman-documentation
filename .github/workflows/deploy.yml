@@ -5,9 +5,11 @@ on:
   push:
     branches:
       - master
+      - "[0-9]+.[0-9]+"
   pull_request:
     branches:
       - master
+      - "[0-9]+.[0-9]+"
 
 jobs:
   build-html:
@@ -49,7 +51,7 @@ jobs:
       - name: Upload HTML
         uses: actions/upload-artifact@v2
         with:
-          name: foreman-docs-html
+          name: foreman-docs-html-${GITHUB_REF##*/}
           path: guides/build/
 
       - name: Check HTML links
@@ -89,7 +91,7 @@ jobs:
       - name: Upload PDFs
         uses: actions/upload-artifact@v2
         with:
-          name: foreman-docs-pdf
+          name: foreman-docs-pdf-${GITHUB_REF##*/}
           path: guides/build/*.pdf
 
   build-web:
@@ -105,11 +107,11 @@ jobs:
       - name: Upload web
         uses: actions/upload-artifact@v2
         with:
-          name: foreman-docs-web
+          name: foreman-docs-web-${GITHUB_REF##*/}
           path: web/public/
 
   publish:
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/2.3'
     needs:
       - build-html
       - build-web
@@ -128,23 +130,24 @@ jobs:
           git config user.name "${GITHUB_ACTOR}"
           git config user.email "${GITHUB_ACTOR}@bots.github.com"
 
-      - name: Delete all files
-        run: rm -rf *
+      - name: Create master->nightly symlink
+        run: ln -sf nightly master || true
+        working-directory: ./public
 
-      - name: Create directory for branch
-        run: mkdir -p public/nightly
+      - name: Create directory for the branch
+        run: mkdir -p public/master public/${GITHUB_REF##*/}
 
       - name: Download web
         uses: actions/download-artifact@v2
         with:
-          name: foreman-docs-web
+          name: foreman-docs-web-${GITHUB_REF##*/}
           path: public
 
       - name: Download HTML
         uses: actions/download-artifact@v2
         with:
-          name: foreman-docs-html
-          path: public/nightly
+          name: foreman-docs-html-${GITHUB_REF##*/}
+          path: public/${GITHUB_REF##*/}
 
       - name: Commit changes into gh-pages
         run: |
