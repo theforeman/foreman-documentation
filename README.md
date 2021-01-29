@@ -18,6 +18,10 @@ See README in the web/ subdirectory for more information.
 
 * [web](web/README.md)
 
+## Deployment
+
+Github actions perform HTML (with link validation), PDF and WEB artifact creation and if suceeded and branch is master or stable, artifacts are downloaded, extracted and deployed (commited into gh-pages). Deployment does not delete files, in order to remove some unwanted content, manual deletion and push into gh-pages must be performed.
+
 ## License
 
 See LICENSE files in individual subdirectories
