@@ -12,6 +12,8 @@ IMAGES_TS = $(DEST_DIR)/.timestamp-images
 SOURCES = master.adoc $(shell find . -type f -name \*.adoc)
 IMAGES = $(shell find ./images ./common/images -type f 2>/dev/null || true)
 UNAME = $(shell uname)
+DATE_MDY = $(shell LC_ALL=C date "+%b %d %Y")
+DATE_MY = $(shell LC_ALL=C date "+%b %Y")
 
 ifeq ($(UNAME), Linux)
 BROWSER_OPEN = xdg-open
@@ -50,7 +52,7 @@ $(IMAGES_TS): $(IMAGES)
 	touch $(IMAGES_TS)
 
 $(DEST_HTML): $(SOURCES)
-	asciidoctor -a build=$(BUILD) -a stylesheet=$(BUILD).css -a linkcss=true -b html5 -d book --trace -o $@ $<
+	asciidoctor -a build=$(BUILD) -a date_mdy="$(DATE_MDY)" -a date_my="$(DATE_MY)" -a docdatetime="$(DATE_MY)" -a stylesheet=$(BUILD).css -a linkcss=true -b html5 -d book --trace -o $@ $<
 
 $(DEST_PDF): $(SOURCES) $(IMAGES)
 	asciidoctor-pdf -a build=$(BUILD) -d book --trace -o $@ $<
