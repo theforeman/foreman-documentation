@@ -2,7 +2,7 @@
 
 This is upstream source code of [Red Hat Satellite 6](https://access.redhat.com/documentation/en-us/red_hat_satellite) documentation.
 All content in this repository uses [AsciiDoctor](https://asciidoctor.org/) syntax and aims to follow [Guidelines for Red Hat Documentation](https://redhat-documentation.github.io/).
-This is a **work in progress*, an attempt to take content written by Red Hat documentation team, modularize it, incorporate [existing documentation](https://theforeman.org/documentation.html) and eventually make this the only and official documentation for Foreman, Katello and all plugins.
+This is a **work in progress**, an attempt to take content written by Red Hat documentation team, modularize it, incorporate [existing documentation](https://theforeman.org/documentation.html) and eventually make this the only and official documentation for Foreman, Katello and all plugins.
 
 ## Building
 
@@ -128,6 +128,7 @@ This makes `git diff` much easier to read and helps reviewing changes.
 * No trailing whitespace on lines and in files.
 Whitespace after partial files has to be handled in the file using the `include::` directive.
 * Source files use UTF-8 character encoding.
+* Image file names use dashes (`-`) and suffix a build target, e.g. `foreman`.
 
 ## The process (TODO)
 
