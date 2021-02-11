@@ -119,8 +119,10 @@
 <li><a href="#_refreshing_external_user_groups_for_ldap">13.5. Refreshing External User Groups for LDAP</a></li>
 <li><a href="#_refreshing_external_user_groups_for_freeipa_or_ad">13.6. Refreshing External User Groups for FreeIPA or AD</a></li>
 <li><a href="#sect-Red_Hat_Satellite-Administering_Red_Hat_Satellite-Configuring_External_Authentication-External_Authentication_for_Provisioned_Hosts">13.7. External Authentication for Provisioned Hosts</a></li>
-<li><a href="#integrating-satellite-with-red-hat-single-sign-on-for-external-authentication">13.8. Integrating Foreman with Keycloak for External Authentication</a></li>
-<li><a href="#_disabling_keycloak_authentication">13.9. Disabling Keycloak Authentication</a></li>
+<li><a href="#configuring-project-with-keycloak-authentication_keycloak-general">13.8. Configuring Foreman with Keycloak Authentication</a></li>
+<li><a href="#configuring-keycloak-authentication-with-totp_keycloak-totp">13.9. Configuring Keycloak Authentication with TOTP</a></li>
+<li><a href="#configuring-keycloak-authentication-with-cac-cards_keycloak-cac-cards">13.10. Configuring Keycloak Authentication with PIV Cards</a></li>
+<li><a href="#disabling-keycloak-authentication_admin">13.11. Disabling Keycloak Authentication</a></li>
 </ul>
 </li>
 <li><a href="#chap-Red_Hat_Satellite-Administering_Red_Hat_Satellite-Monitoring_Resources">14. Monitoring Resources</a>
@@ -5017,8 +5019,16 @@ For more information see <a href="#sect-Red_Hat_Satellite-Administering_Red_Hat_
 For more information see <a href="#active-directory-with-cross-forest-trust_admin">Active Directory with Cross-Forest Trust</a>.</p>
 </li>
 <li>
-<p>Using Keycloak as an OpenID provider for external authentication to Foreman with CAC cards.
-For more information, see <a href="#integrating-satellite-with-red-hat-single-sign-on-for-external-authentication">Integrating Foreman with Keycloak for External Authentication</a>.</p>
+<p>Using Keycloak as an OpenID provider for external authentication to Foreman.
+For more information, see <a href="#configuring-project-with-keycloak-authentication_keycloak-general">Configuring Foreman with Keycloak Authentication</a>.</p>
+</li>
+<li>
+<p>Using Keycloak as an OpenID provider for external authentication to Foreman with TOTP.
+For more information, see <a href="#configuring-keycloak-authentication-with-totp_keycloak-totp">Configuring Keycloak Authentication with TOTP</a>.</p>
+</li>
+<li>
+<p>Using Keycloak as an OpenID provider for external authentication to Foreman with PIV cards.
+For more information, see <a href="#configuring-keycloak-authentication-with-cac-cards_keycloak-cac-cards">Configuring Keycloak Authentication with PIV Cards</a>.</p>
 </li>
 </ul>
 </div>
@@ -5563,19 +5573,6 @@ However, if you have administrator privileges for both servers, you can configur
 </li>
 <li>
 <p>On Foreman&#160;server, install the IPA client:</p>
-<div class="admonitionblock warning">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Warning</div>
-</td>
-<td class="content">
-This command might restart Foreman services during the installation of the package.
-For more information about installing and updating packages on Foreman, see <a href="#installing-and-updating-packages-on-satellite-server">[installing-and-updating-packages-on-satellite-server]</a>.
-</td>
-</tr>
-</table>
-</div>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># apt-get install ipa-client</pre>
@@ -6470,27 +6467,73 @@ FreeIPA host groups allow for Host-Based Access Controls (HBAC), sudo policies a
 </div>
 </div>
 <div class="sect2">
-<h3 id="integrating-satellite-with-red-hat-single-sign-on-for-external-authentication">13.8. Integrating Foreman with Keycloak for External Authentication</h3>
+<h3 id="configuring-project-with-keycloak-authentication_keycloak-general">13.8. Configuring Foreman with Keycloak Authentication</h3>
 <div class="paragraph">
-<p>You can configure Foreman to use Keycloak as an OpenID provider for external authentication with CAC cards.
-You can only use CAC cards; other authentication methods are not supported.</p>
+<p>Use this section to configure Foreman to use Keycloak as an OpenID provider for external authentication.</p>
+</div>
+<div class="sect3">
+<h4 id="prerequisites-for-integrating-project-with-keycloak_keycloak-general">13.8.1. Prerequisites for Configuring Foreman with Keycloak Authentication</h4>
+<div class="paragraph">
+<p>Before configuring Foreman with Keycloak external authentication, ensure that you meet the following requirements:</p>
 </div>
 <div class="ulist">
-<div class="title">Prerequisites</div>
 <ul>
 <li>
 <p>A working installation of Keycloak server that uses HTTPS instead of HTTP.</p>
 </li>
 <li>
+<p>A Keycloak account with admin privileges.</p>
+</li>
+<li>
+<p>A realm for Foreman user accounts created in Keycloak.</p>
+</li>
+<li>
 <p>If the certificates or the CA are self-signed, ensure that they are added to the end-user certificate trust store.</p>
 </li>
+<li>
+<p>Users imported or added to Keycloak.</p>
+<div class="paragraph">
+<p>If you have an existing user database configured such as LDAP or Kerberos, you can import users from it by configuring user federation.
+For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_single_sign-on/7.4/html/server_administration_guide/user-storage-federation">User Storage Federation</a> in the <em>Red&#160;Hat Single Sign-On Server Administration Guide</em>.</p>
+</div>
+<div class="paragraph">
+<p>If you do not have an existing user database configured, you can manually create users in Keycloak.
+For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_single_sign-on/7.4/html/server_administration_guide/user_management#create-new-user">Creating New Users</a> in the <em>Red&#160;Hat Single Sign-On Server Administration Guide</em>.</p>
+</div>
+</li>
 </ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="registering-project-as-a-keycloak-client_keycloak-general">13.8.2. Registering Foreman as a Keycloak Client</h4>
+<div class="paragraph">
+<p>Use this procedure to register Foreman to Keycloak as a client and configure Foreman to use Keycloak as an authentication source.</p>
+</div>
+<div class="paragraph">
+<p>You can configure Foreman and Keycloak with two different authentication methods:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Users authenticate to Foreman using the Foreman web UI.</p>
+</li>
+<li>
+<p>Users authenticate to Foreman using the Foreman CLI.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>You must decide on how you want your users to authenticate in advance because both methods require different Foreman clients to be registered to Keycloak and configured.
+The steps to register and configure Foreman client in Keycloak are distinguished within the procedure.</p>
+</div>
+<div class="paragraph">
+<p>You can also register two different Foreman clients to Keycloak if you want to use both authentication methods and configure both clients accordingly.</p>
 </div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
 <ol class="arabic">
 <li>
-<p>Install the following packages:</p>
+<p>On the Foreman server, install the following packages:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># apt-get install mod_auth_openidc keycloak-httpd-client-install</pre>
@@ -6498,340 +6541,257 @@ You can only use CAC cards; other authentication methods are not supported.</p>
 </div>
 </li>
 <li>
-<p>On Foreman&#160;server, install the Keycloak httpd client:</p>
+<p>Register Foreman to Keycloak as a client.
+Note that you the registration process for logging in using the web UI and the CLI are different.
+You can register two clients Foreman clients to Keycloak to be able to log in to Foreman from the web UI and the CLI.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>If you want you users to authenticate to Foreman using the web UI, create a client as follows:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># keycloak-httpd-client-install --app-name foreman-openidc \
---keycloak-server-url "<em>Keycloak.example.com</em>" \
---keycloak-admin-username "<em>Keycloak_User</em>" \
---keycloak-realm "<em>Keycloak_Realm</em>" \
+--keycloak-server-url "<em>https://Keycloak.com</em>" \
+--keycloak-admin-username "<em>admin</em>" \
+--keycloak-realm "<em>Foreman_Realm</em>" \
 --keycloak-admin-realm master \
---keycloak-auth-role root-admin -t openidc -l /users/extlogin --force</pre>
+--keycloak-auth-role root-admin \
+-t openidc -l /users/extlogin --force</pre>
 </div>
 </div>
 <div class="paragraph">
-<p>The above command registers a client for Foreman in Keycloak.</p>
+<p>Enter the password for the administer account when prompted.
+This command creates a client for Foreman in Keycloak.</p>
 </div>
-</li>
-<li>
-<p>Enable Keycloak using <code>foreman-installer</code>:</p>
+<div class="paragraph">
+<p>Then, configure Foreman to use Keycloak as an authentication source:</p>
+</div>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># foreman-installer --foreman-keycloak true \
---foreman-keycloak-app-name  "foreman-openidc" \
---foreman-keycloak-realm "<em>Keycloak_Realm</em>"</pre>
+<pre class="nowrap"># satellite-installer --foreman-keycloak true \
+--foreman-keycloak-app-name "foreman-openidc" \
+--foreman-keycloak-realm "<em>Foreman_Realm</em>"</pre>
 </div>
 </div>
 </li>
 <li>
-<p>Restart the <strong>httpd</strong> service:</p>
+<p>If you want your users to authenticate to Foreman using the CLI, create a client as follows:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># keycloak-httpd-client-install --app-name hammer-openidc \
+--keycloak-server-url "<em>https://Keycloak.com</em>" \
+--keycloak-admin-username "<em>admin</em>" \
+--keycloak-realm "<em>Foreman_Realm</em>" \
+--keycloak-admin-realm master \
+--keycloak-auth-role root-admin \
+-t openidc -l /users/extlogin --force</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Enter the password for the administer account when prompted.
+This command creates a client for Foreman in Keycloak.</p>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Restart the <code>httpd</code> service:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># systemctl restart httpd</pre>
 </div>
 </div>
 </li>
-<li>
-<p>In the Keycloak web UI, navigate to <strong>Client</strong> and click the Foreman client.</p>
-</li>
-<li>
-<p>Ensure that the <strong>Access type</strong> setting is set to <strong>Confidential</strong>.</p>
-</li>
-<li>
-<p>If you use Keycloak version 7.3 or later, complete the following steps:</p>
-<div class="olist loweralpha">
-<ol class="loweralpha" type="a">
-<li>
-<p>Navigate to the Keycloak web UI, click <strong>Clients</strong> and click the client registered with Foreman.</p>
-</li>
-<li>
-<p>Locate the <strong>Valid redirect URI</strong> field that contains one redirect URI by default.
-Add a <strong>Valid redirect URI</strong> in the following form: <code><a href="https://foreman.example.com/users/extlogin" class="bare">https://foreman.example.com/users/extlogin</a></code>.</p>
-</li>
-<li>
-<p>Click <strong>Save</strong>.</p>
-</li>
-<li>
-<p>Click the <strong>Mappers</strong> tab and click <strong>Create</strong>.
-Set the following values for the audience mapper:</p>
-<div class="ulist">
-<ul>
-<li>
-<p>From the <strong>Mapper Type</strong> list, select <strong>Audience</strong>.</p>
-</li>
-<li>
-<p>From the <strong>Included Client Audience</strong> list, select the client that you use with Foreman.</p>
-<div class="paragraph">
-<p>For more information about audience support, see <a href="https://access.redhat.com/documentation/en-us/red_hat_single_sign-on/7.3/html/server_administration_guide/clients#audience">Audience Support</a> in the <em>Keycloak Server Administration Guide</em>.</p>
-</div>
-</li>
-</ul>
-</div>
-</li>
-<li>
-<p>Click <strong>Save</strong>.</p>
-</li>
-<li>
-<p>Click the <strong>Mapper</strong> tab and click <strong>Create</strong> to add a group mapper so that you can specify authorization in Foreman based on group membership.
-Set the following values for the group mapper:</p>
-<div class="ulist">
-<ul>
-<li>
-<p>From the <strong>Mapper Type</strong> list, select <strong>Group Membership</strong>.</p>
-</li>
-<li>
-<p>In <strong>Token Claim Name</strong>, enter <strong>groups</strong>.</p>
-</li>
-<li>
-<p>Set the <strong>Full group path</strong> toggle to <strong>OFF</strong>.</p>
-<div class="paragraph">
-<p>For more information about group mappers, see <a href="https://access.redhat.com/documentation/en-us/red_hat_single_sign-on/7.3/html/server_administration_guide/user-storage-federation#ldap_mappers">Group Mapper</a> in the <em>LDAP Mappers</em> section of the <em>Keycloak Server Administration Guide</em>.</p>
-</div>
-</li>
-</ul>
-</div>
-</li>
-<li>
-<p>Click <strong>Save</strong>.</p>
-</li>
-<li>
-<p>Navigate to <strong>Groups</strong>, and click <strong>New</strong>.</p>
-<div class="ulist">
-<ul>
-<li>
-<p>Enter a <strong>Name</strong> for the group.</p>
-</li>
-<li>
-<p>Click <strong>Save</strong>.</p>
-</li>
-</ul>
-</div>
-</li>
-<li>
-<p>Navigate to <strong>Users</strong> and click <strong>Add user</strong>.</p>
-<div class="ulist">
-<ul>
-<li>
-<p>Enter the <strong>Username</strong>, <strong>Email</strong>, and other user details.
-Set the <strong>User Enabled</strong> toggle to <strong>ON</strong>.</p>
-</li>
-<li>
-<p>Click <strong>Save</strong>.
-The user is now created.</p>
-</li>
-<li>
-<p>Click the <strong>Credentials</strong> tab and reset the user password under <strong>Manage Password</strong>: Enter <strong>New Password</strong> and confirm the password, set the <strong>Temporary</strong> toggle to <strong>OFF</strong>, and click <strong>Reset Password</strong>.</p>
-</li>
-<li>
-<p>Click the <strong>Groups</strong> tab.
-Select the group you want to join from the <strong>Available Groups</strong> list, and click <strong>Join</strong>.
-The user is now part of the selected group.</p>
-</li>
-</ul>
-</div>
-</li>
 </ol>
 </div>
-</li>
-<li>
-<p>In the Foreman web UI, navigate to <strong>Administer</strong> &gt; <strong>User Groups</strong>.</p>
-</li>
-<li>
-<p>Click <strong>Create User Group</strong>, and enter a <strong>Name</strong> for the user group.</p>
-</li>
-<li>
-<p>Click the <strong>Roles</strong> tab, and assign appropriate roles to the user group.</p>
-</li>
-<li>
-<p>Click the <strong>External Groups</strong> tab, then click <strong>Add external user group</strong>.</p>
-</li>
-<li>
-<p>Enter the group name created in the Keycloak web UI.</p>
-</li>
-<li>
-<p>Click <strong>Submit</strong>.</p>
-</li>
-<li>
-<p>Navigate to <strong>Administer</strong> &gt; <strong>Settings</strong>, and click the <strong>Authentication</strong> tab.</p>
-</li>
-<li>
-<p>Locate the <strong>Authorize login delegation</strong> row, and in the <strong>Value</strong> column, set the value to <code>Yes</code>.</p>
-</li>
-<li>
-<p>Locate the <strong>Authorize login delegation auth source user autocreate</strong> row, and in the <strong>Value</strong> column, set the value to <code>External</code>.</p>
-</li>
-<li>
-<p>Locate the <strong>Login delegation logout URL</strong> row, and in the <strong>Value</strong> column, set the value to <code><a href="https://foreman.example.com/users/extlogout" class="bare">https://foreman.example.com/users/extlogout</a></code>.</p>
+</div>
+<div class="sect3">
+<h4 id="configuring-the-project-client-in-keycloak_keycloak-general">13.8.3. Configuring the Foreman Client in Keycloak</h4>
 <div class="paragraph">
-<p>For the following steps, you can retrieve the values that you require by navigating to the following URL:  <code><em>Keycloak.example.com</em>/auth/realms/<em>Keycloak_REALM</em>/.well-known/openid-configuration</code>.</p>
-</div>
-</li>
-<li>
-<p>Locate the <strong>OIDC Algorithm</strong> row, and in the <strong>Value</strong> column, set the algorithm for encoding on Keycloak, for example, <code>RS256</code>.</p>
-</li>
-<li>
-<p>Locate the <strong>OIDC Audience</strong> row, and in the <strong>Value</strong>  column, set the value to the client ID for Keycloak: <code>['<em>foreman.example.com</em>-foreman-openidc']</code>.</p>
-</li>
-<li>
-<p>Locate the <strong>OIDC Issuer</strong> row, and in the <strong>Value</strong>  column, set the value to <code><em>Keycloak.example.com</em>/auth/realms/<em>Keycloak_Realm</em></code>.</p>
-</li>
-<li>
-<p>Locate the <strong>OIDC JWKs URL</strong> row, and in the <strong>Value</strong>  column, set the value to <code><em>Keycloak.example.com</em>/auth/realms/<em>Keycloak_Realm</em>/protocol/openid-connect/certs</code>.</p>
-</li>
-<li>
-<p>To set the organization and location for the authentication source, complete the following steps:</p>
-<div class="olist loweralpha">
-<ol class="loweralpha" type="a">
-<li>
-<p>Navigate to <strong>Administer</strong> &gt; <strong>Authentication sources</strong>.</p>
-</li>
-<li>
-<p>Click the options menu next to <strong>External</strong>, and click <strong>Edit</strong>.</p>
-</li>
-<li>
-<p>Click the <strong>Locations</strong> tab and select locations from the <strong>All items</strong> list.</p>
-</li>
-<li>
-<p>Click the <strong>Organizations</strong> tab and select organizations from the <strong>All items</strong> list.</p>
-</li>
-<li>
-<p>Click <strong>Submit</strong>.</p>
-</li>
-</ol>
-</div>
-</li>
-</ol>
-</div>
-<div class="paragraph">
-<p>You can now authenticate using the <em><a href="https://foreman.example.com/users/extlogin" class="bare">https://foreman.example.com/users/extlogin</a></em> login URL.</p>
+<p>Use this procedure to configure the Foreman client in the Keycloak web UI and create group and audience mappers for the Foreman client.</p>
 </div>
 <div class="olist arabic">
-<div class="title">For CLI Users</div>
+<div class="title">Procedure</div>
 <ol class="arabic">
 <li>
-<p>Install the following packages:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># apt-get install keycloak-httpd-client-install</pre>
-</div>
+<p>In the Keycloak web UI, navigate to <strong>Clients</strong> and click the Foreman client.</p>
+</li>
+<li>
+<p>Configure access type:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>If you want your users to authenticate to Foreman using the web UI, from the <strong>Access Type</strong> list, select <strong>confidential</strong>.</p>
+</li>
+<li>
+<p>If you want your users to authenticate to Foreman using the CLI, from the <strong>Access Type</strong> list, select <strong>public</strong>.</p>
+</li>
+</ul>
 </div>
 </li>
 <li>
-<p>On Foreman&#160;server, install the Keycloak httpd client:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># keycloak-httpd-client-install --app-name hammer-openidc \
---keycloak-server-url "<em>Keycloak.example.com</em>" \
---keycloak-admin-username "<em>Keycloak_User</em>" \
---keycloak-realm "<em>Keycloak_Realm</em>" \
---keycloak-admin-realm master \
---keycloak-auth-role root-admin -t openidc -l /users/extlogin --force</pre>
-</div>
-</div>
+<p>In the <strong>Valid redirect URI</strong> fields, add a valid redirect URI.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>If you want your users to authenticate to Foreman using the web UI, in the blank field below the existing URI, enter a URI in the form <code><a href="https://foreman.example.com/users/extlogin" class="bare">https://foreman.example.com/users/extlogin</a></code>. Note that you must add the string <code>/users/extlogin</code> after the Foreman FQDN.</p>
 <div class="paragraph">
-<p>This command creates a client for Foreman in Keycloak.</p>
+<p>After completing this step, the Foreman client for logging in using the web UI must have the following <strong>Valid Redirect URIs</strong>:</p>
 </div>
-</li>
-<li>
-<p>Enable Keycloak using <code>foreman-installer</code>:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># foreman-installer --foreman-keycloak true \
---foreman-keycloak-app-name  "hammer-openidc" \
---foreman-keycloak-realm "<em>Keycloak_Realm</em>"</pre>
+<pre class="nowrap">https://foreman.example.com/users/extlogin/redirect_uri
+https://foreman.example.com/users/extlogin</pre>
 </div>
 </div>
 </li>
 <li>
-<p>Restart the <strong>httpd</strong> service:</p>
+<p>If you want your users to authenticate to Foreman using the CLI, in the blank field below the existing URI, enter <strong>urn:ietf:wg:oauth:2.0:oob</strong>.</p>
+<div class="paragraph">
+<p>After completing this step, the Foreman client for logging in using the CLI must have the following <strong>Valid Redirect URIs</strong>:</p>
+</div>
 <div class="listingblock">
 <div class="content">
-<pre># systemctl restart httpd</pre>
+<pre class="nowrap">https://foreman.example.com/users/extlogin/redirect_uri
+urn:ietf:wg:oauth:2.0:oob</pre>
 </div>
 </div>
 </li>
-<li>
-<p>In the Keycloak web UI, navigate to <strong>Client</strong> and click the Foreman client.</p>
-</li>
-<li>
-<p>Set the <strong>Access type</strong> setting to <strong>Public</strong>.</p>
-</li>
-<li>
-<p>In the <strong>Valid Redirect URL</strong> field, enter <code>urn:ietf:wg:oauth:2.0:oob</code>.</p>
-</li>
-<li>
-<p>If you use Keycloak version 7.3 or later, complete the following steps:</p>
-<div class="olist loweralpha">
-<ol class="loweralpha" type="a">
-<li>
-<p>Navigate to the Keycloak web UI, click <strong>Clients</strong> and click the client registered with Foreman.</p>
-</li>
-<li>
-<p>Locate the <strong>Valid redirect URI</strong> field that contains one redirect URI by default.
-Add a <strong>Valid redirect URI</strong> in the following form: <code><a href="https://foreman.example.com/users/extlogin" class="bare">https://foreman.example.com/users/extlogin</a></code>.</p>
+</ul>
+</div>
 </li>
 <li>
 <p>Click <strong>Save</strong>.</p>
 </li>
 <li>
-<p>Click the <strong>Mappers</strong> tab and click <strong>Create</strong>.
-Set the following values for the audience mapper:</p>
-<div class="ulist">
-<ul>
+<p>Click the <strong>Mappers</strong> tab and click <strong>Create</strong> to add an audience mapper.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter a name for the audience mapper.</p>
+</li>
 <li>
 <p>From the <strong>Mapper Type</strong> list, select <strong>Audience</strong>.</p>
 </li>
 <li>
-<p>From the <strong>Included Client Audience</strong> list, select the client that you use with Foreman.</p>
-<div class="paragraph">
-<p>For more information about audience support, see <a href="https://access.redhat.com/documentation/en-us/red_hat_single_sign-on/7.3/html/server_administration_guide/clients#audience">Audience Support</a> in the <em>Keycloak Server Administration Guide</em>.</p>
-</div>
-</li>
-</ul>
-</div>
+<p>From the <strong>Included Client Audience</strong> list, select the Foreman client.</p>
 </li>
 <li>
 <p>Click <strong>Save</strong>.</p>
 </li>
 <li>
-<p>Click the <strong>Mapper</strong> tab and click <strong>Create</strong> to add a group mapper so that you can specify authorization in Foreman based on group membership.
-Set the following values for the group mapper:</p>
-<div class="ulist">
-<ul>
+<p>Click <strong>Create</strong> to add a group mapper so that you can specify authorization in Foreman based on group membership.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter a name for the group mapper.</p>
+</li>
 <li>
 <p>From the <strong>Mapper Type</strong> list, select <strong>Group Membership</strong>.</p>
 </li>
 <li>
-<p>From the <strong>Token Claim Name</strong> list, select <strong>groups</strong>.</p>
+<p>In the <strong>Token Claim Name</strong> field, enter <strong>groups</strong>.</p>
 </li>
 <li>
-<p>Set the <strong>Full group path</strong> toggle to <strong>OFF</strong>.</p>
-<div class="paragraph">
-<p>For more information about group mappers, see <a href="https://access.redhat.com/documentation/en-us/red_hat_single_sign-on/7.3/html/server_administration_guide/user-storage-federation#ldap_mappers">Group Mapper</a> in the <em>LDAP Mappers</em> section of the <em>Keycloak Server Administration Guide</em>.</p>
-</div>
-</li>
-</ul>
-</div>
+<p>Set the <strong>Full group path</strong> setting to OFF.</p>
 </li>
 <li>
 <p>Click <strong>Save</strong>.</p>
 </li>
 </ol>
 </div>
+</div>
+<div class="sect3">
+<h4 id="configuring-project-settings-for-keycloak-authentication_keycloak-general">13.8.4. Configuring Foreman Settings for Keycloak Authentication</h4>
+<div class="paragraph">
+<p>Use this section to configure Foreman for Keycloak authentication using the Foreman web UI or the CLI.</p>
+</div>
+<div class="sect4">
+<h5 id="configuring-project-settings-for-keycloak-authentication-using-the-web-ui_keycloak-general">Configuring Foreman Settings for Keycloak Authentication Using the Web UI</h5>
+<div class="paragraph">
+<p>Use this procedure to configure Foreman settings for Keycloak authentication using the Foreman web UI.</p>
+</div>
+<div class="paragraph">
+<p>Note that you can navigate to the following URL within your realm to obtain values to configure Foreman settings: <code><a href="https://Keycloak.com/auth/realms/Foreman_Realm/.well-known/openid-configuration" class="bare">https://Keycloak.com/auth/realms/Foreman_Realm/.well-known/openid-configuration</a></code></p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisite</div>
+<ul>
+<li>
+<p>Ensure that the <strong>Access Type</strong> setting in the Foreman client in the Keycloak web UI is set to <strong>confidential</strong></p>
 </li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Administer</strong> &gt; <strong>Settings</strong>, and click the <strong>Authentication</strong> tab.</p>
+</li>
+<li>
+<p>Locate the <strong>Authorize login delegation</strong> row, and in the <strong>Value</strong> column, set the value to <strong>Yes</strong>.</p>
+</li>
+<li>
+<p>Locate the <strong>Authorize login delegation auth source user autocreate</strong> row, and in the <strong>Value</strong> column,
+set the value to <strong>External</strong>.</p>
+</li>
+<li>
+<p>Locate the <strong>Login delegation logout URL</strong> row, and in the <strong>Value</strong> column, set the value to
+<strong><a href="https://foreman.example.com/users/extlogout" class="bare">https://foreman.example.com/users/extlogout</a></strong>.</p>
+</li>
+<li>
+<p>Locate the <strong>OIDC Algorithm</strong> row, and in the <strong>Value</strong> column, set the algorithm for encoding on Keycloak to <strong>RS256</strong>.</p>
+</li>
+<li>
+<p>Locate the <strong>OIDC Audience</strong> row, and in the <strong>Value</strong> column, set the value to the client ID for Keycloak.</p>
+</li>
+<li>
+<p>Locate the <strong>OIDC Issuer</strong> row, and in the <strong>Value</strong> column, set the value to <strong><em><a href="https://Keycloak.com/auth/realms/Foreman_Realm" class="bare">https://Keycloak.com/auth/realms/Foreman_Realm</a></em></strong>.</p>
+</li>
+<li>
+<p>Locate the <strong>OIDC JWKs URL</strong> row, and in the <strong>Value</strong> column, set the value to <strong><em><a href="https://Keycloak.com/auth/realms/Foreman_Realm/protocol/openid-connect/certs" class="bare">https://Keycloak.com/auth/realms/Foreman_Realm/protocol/openid-connect/certs</a></em></strong>.</p>
+</li>
+<li>
+<p>Navigate to <strong>Administer</strong> &gt; <strong>Authentication Sources</strong> and click <strong>External</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Create LDAP Authentication Source</strong> and select the Keycloak server.</p>
+</li>
+<li>
+<p>Click the <strong>Locations</strong> tab and add locations that can use the Keycloak authentication source.</p>
+</li>
+<li>
+<p>Click the <strong>Organizations</strong> tab and add organizations that can use the Keycloak authentication source.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect4">
+<h5 id="configuring-project-settings-for-keycloak-authentication-using-the-cli_keycloak-general">Configuring Foreman Settings for Keycloak Authentication Using the CLI</h5>
+<div class="paragraph">
+<p>Use this procedure to configure Foreman settings for Keycloak authentication using the Foreman CLI.</p>
+</div>
+<div class="paragraph">
+<p>Note that you can navigate to the following URL within your realm to obtain values to configure Foreman settings: <code><a href="https://Keycloak.com/auth/realms/Foreman_Realm/.well-known/openid-configuration" class="bare">https://Keycloak.com/auth/realms/Foreman_Realm/.well-known/openid-configuration</a></code></p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisite</div>
+<ul>
+<li>
+<p>Ensure that the <strong>Access Type</strong> setting in the Foreman client in the Keycloak web UI is set to <strong>public</strong></p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
 <li>
 <p>On Foreman, set the login delegation to <code>true</code> so that users can authenticate using the Open IDC protocol:</p>
 <div class="listingblock">
 <div class="content">
 <pre># hammer settings set --name authorize_login_delegation --value true</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Set the login authorization to an external source:</p>
-<div class="listingblock">
-<div class="content">
-<pre># hammer settings set --name authorize_login_delegation_auth_source_user_autocreate --value External</pre>
 </div>
 </div>
 </li>
@@ -6904,9 +6864,513 @@ For example:</p>
 </div>
 </li>
 <li>
-<p>To set the organization and location of the authentication source, complete the following steps:</p>
-<div class="olist loweralpha">
-<ol class="loweralpha" type="a">
+<p>Retrieve the ID of the Keycloak authentication source:</p>
+<div class="listingblock">
+<div class="content">
+<pre># hammer auth-source external list</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Set the location and organization:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer auth-source external update --id <em>Authentication Source ID</em> \
+--location-ids <em>Location ID</em> --organization-ids <em>Organization ID</em></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="logging-in-to-the-project-web-ui-using-keycloak_keycloak-general">13.8.5. Logging in to the Foreman Web UI Using Keycloak</h4>
+<div class="paragraph">
+<p>Use this procedure to log in to the Foreman web UI using Keycloak.</p>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>In your browser, log in to Foreman and enter your credentials.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="logging-in-to-the-project-cli-using-keycloak_keycloak-general">13.8.6. Logging in to the Foreman CLI Using Keycloak</h4>
+<div class="paragraph">
+<p>Use this procedure to authenticate to the Foreman CLI using the code grant type.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>To authenticate to the Foreman CLI using the code grant type, enter the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer auth login oauth \
+--two-factor \
+--oidc-token-endpoint 'https://<em>Keycloak.example.com</em>/auth/realms/ssl-realm/protocol/openid-connect/token' \
+--oidc-authorization-endpoint 'https://<em>Keycloak.example.com</em>/auth' \
+--oidc-client-id '<em>foreman.example.com</em>-foreman-openidc' \
+--oidc-redirect-uri urn:ietf:wg:oauth:2.0:oob</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The command prompts you to enter a success code.</p>
+</div>
+</li>
+<li>
+<p>To retrieve the success code, navigate to the URL that the command returns and provide the required information.</p>
+</li>
+<li>
+<p>Copy the success code that the web UI returns.</p>
+</li>
+<li>
+<p>In the command prompt of <code>hammer auth login oauth</code>, enter the success code to authenticate to the Foreman CLI.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="configuring-group-mapping-for-keycloak-authentication_keycloak-general">13.8.7. Configuring Group Mapping for Keycloak Authentication</h4>
+<div class="paragraph">
+<p>Optionally, to implement the Role Based Access Control (RBAC), create a group in Foreman, assign a role to this group, and then map an Active Directory group to the Foreman group.
+As a result, anyone in the given group in Keycloak are logged in under the corresponding Foreman group.
+This example configures users of the Foreman-admin user group in the Active Directory to authenticate as users with administrator privileges on Foreman.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Administer</strong> &gt; <strong>User Groups</strong>, and click the <strong>Create User Group</strong> button.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter a name for the user group.
+The name should not be the same as in the Active Directory.</p>
+</li>
+<li>
+<p>Do not add users and user groups to the right-hand columns.
+Click the <strong>Roles</strong> tab.</p>
+</li>
+<li>
+<p>Select the <strong>Administer</strong> check box.</p>
+</li>
+<li>
+<p>Click the <strong>External Groups</strong> tab.</p>
+</li>
+<li>
+<p>Click <strong>Add external user group</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter the name of the Active Directory group.</p>
+</li>
+<li>
+<p>From the list, select <strong>EXTERNAL</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="configuring-keycloak-authentication-with-totp_keycloak-totp">13.9. Configuring Keycloak Authentication with TOTP</h3>
+<div class="paragraph">
+<p>Use this section to configure Foreman to use Keycloak as an OpenID provider for external authentication with TOTP cards.</p>
+</div>
+<div class="sect3">
+<h4 id="prerequisites-for-integrating-project-with-keycloak_keycloak-totp">13.9.1. Prerequisites for Configuring Foreman with Keycloak Authentication</h4>
+<div class="paragraph">
+<p>Before configuring Foreman with Keycloak external authentication, ensure that you meet the following requirements:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>A working installation of Keycloak server that uses HTTPS instead of HTTP.</p>
+</li>
+<li>
+<p>A Keycloak account with admin privileges.</p>
+</li>
+<li>
+<p>A realm for Foreman user accounts created in Keycloak.</p>
+</li>
+<li>
+<p>If the certificates or the CA are self-signed, ensure that they are added to the end-user certificate trust store.</p>
+</li>
+<li>
+<p>Users imported or added to Keycloak.</p>
+<div class="paragraph">
+<p>If you have an existing user database configured such as LDAP or Kerberos, you can import users from it by configuring user federation.
+For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_single_sign-on/7.4/html/server_administration_guide/user-storage-federation">User Storage Federation</a> in the <em>Red&#160;Hat Single Sign-On Server Administration Guide</em>.</p>
+</div>
+<div class="paragraph">
+<p>If you do not have an existing user database configured, you can manually create users in Keycloak.
+For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_single_sign-on/7.4/html/server_administration_guide/user_management#create-new-user">Creating New Users</a> in the <em>Red&#160;Hat Single Sign-On Server Administration Guide</em>.</p>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="registering-project-as-a-keycloak-client_keycloak-totp">13.9.2. Registering Foreman as a Keycloak Client</h4>
+<div class="paragraph">
+<p>Use this procedure to register Foreman to Keycloak as a client and configure Foreman to use Keycloak as an authentication source.</p>
+</div>
+<div class="paragraph">
+<p>You can configure Foreman and Keycloak with two different authentication methods:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Users authenticate to Foreman using the Foreman web UI.</p>
+</li>
+<li>
+<p>Users authenticate to Foreman using the Foreman CLI.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>You must decide on how you want your users to authenticate in advance because both methods require different Foreman clients to be registered to Keycloak and configured.
+The steps to register and configure Foreman client in Keycloak are distinguished within the procedure.</p>
+</div>
+<div class="paragraph">
+<p>You can also register two different Foreman clients to Keycloak if you want to use both authentication methods and configure both clients accordingly.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On the Foreman server, install the following packages:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># apt-get install mod_auth_openidc keycloak-httpd-client-install</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Register Foreman to Keycloak as a client.
+Note that you the registration process for logging in using the web UI and the CLI are different.
+You can register two clients Foreman clients to Keycloak to be able to log in to Foreman from the web UI and the CLI.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>If you want you users to authenticate to Foreman using the web UI, create a client as follows:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># keycloak-httpd-client-install --app-name foreman-openidc \
+--keycloak-server-url "<em>https://Keycloak.com</em>" \
+--keycloak-admin-username "<em>admin</em>" \
+--keycloak-realm "<em>Foreman_Realm</em>" \
+--keycloak-admin-realm master \
+--keycloak-auth-role root-admin \
+-t openidc -l /users/extlogin --force</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Enter the password for the administer account when prompted.
+This command creates a client for Foreman in Keycloak.</p>
+</div>
+<div class="paragraph">
+<p>Then, configure Foreman to use Keycloak as an authentication source:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-installer --foreman-keycloak true \
+--foreman-keycloak-app-name "foreman-openidc" \
+--foreman-keycloak-realm "<em>Foreman_Realm</em>"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>If you want your users to authenticate to Foreman using the CLI, create a client as follows:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># keycloak-httpd-client-install --app-name hammer-openidc \
+--keycloak-server-url "<em>https://Keycloak.com</em>" \
+--keycloak-admin-username "<em>admin</em>" \
+--keycloak-realm "<em>Foreman_Realm</em>" \
+--keycloak-admin-realm master \
+--keycloak-auth-role root-admin \
+-t openidc -l /users/extlogin --force</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Enter the password for the administer account when prompted.
+This command creates a client for Foreman in Keycloak.</p>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Restart the <code>httpd</code> service:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl restart httpd</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="configuring-the-project-client-in-keycloak_keycloak-totp">13.9.3. Configuring the Foreman Client in Keycloak</h4>
+<div class="paragraph">
+<p>Use this procedure to configure the Foreman client in the Keycloak web UI and create group and audience mappers for the Foreman client.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Keycloak web UI, navigate to <strong>Clients</strong> and click the Foreman client.</p>
+</li>
+<li>
+<p>Configure access type:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>If you want your users to authenticate to Foreman using the web UI, from the <strong>Access Type</strong> list, select <strong>confidential</strong>.</p>
+</li>
+<li>
+<p>If you want your users to authenticate to Foreman using the CLI, from the <strong>Access Type</strong> list, select <strong>public</strong>.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>In the <strong>Valid redirect URI</strong> fields, add a valid redirect URI.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>If you want your users to authenticate to Foreman using the web UI, in the blank field below the existing URI, enter a URI in the form <code><a href="https://foreman.example.com/users/extlogin" class="bare">https://foreman.example.com/users/extlogin</a></code>. Note that you must add the string <code>/users/extlogin</code> after the Foreman FQDN.</p>
+<div class="paragraph">
+<p>After completing this step, the Foreman client for logging in using the web UI must have the following <strong>Valid Redirect URIs</strong>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">https://foreman.example.com/users/extlogin/redirect_uri
+https://foreman.example.com/users/extlogin</pre>
+</div>
+</div>
+</li>
+<li>
+<p>If you want your users to authenticate to Foreman using the CLI, in the blank field below the existing URI, enter <strong>urn:ietf:wg:oauth:2.0:oob</strong>.</p>
+<div class="paragraph">
+<p>After completing this step, the Foreman client for logging in using the CLI must have the following <strong>Valid Redirect URIs</strong>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">https://foreman.example.com/users/extlogin/redirect_uri
+urn:ietf:wg:oauth:2.0:oob</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Click the <strong>Mappers</strong> tab and click <strong>Create</strong> to add an audience mapper.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter a name for the audience mapper.</p>
+</li>
+<li>
+<p>From the <strong>Mapper Type</strong> list, select <strong>Audience</strong>.</p>
+</li>
+<li>
+<p>From the <strong>Included Client Audience</strong> list, select the Foreman client.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Create</strong> to add a group mapper so that you can specify authorization in Foreman based on group membership.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter a name for the group mapper.</p>
+</li>
+<li>
+<p>From the <strong>Mapper Type</strong> list, select <strong>Group Membership</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Token Claim Name</strong> field, enter <strong>groups</strong>.</p>
+</li>
+<li>
+<p>Set the <strong>Full group path</strong> setting to OFF.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="configuring-project-settings-for-keycloak-authentication_keycloak-totp">13.9.4. Configuring Foreman Settings for Keycloak Authentication</h4>
+<div class="paragraph">
+<p>Use this section to configure Foreman for Keycloak authentication using the Foreman web UI or the CLI.</p>
+</div>
+<div class="sect4">
+<h5 id="configuring-project-settings-for-keycloak-authentication-using-the-web-ui_keycloak-totp">Configuring Foreman Settings for Keycloak Authentication Using the Web UI</h5>
+<div class="paragraph">
+<p>Use this procedure to configure Foreman settings for Keycloak authentication using the Foreman web UI.</p>
+</div>
+<div class="paragraph">
+<p>Note that you can navigate to the following URL within your realm to obtain values to configure Foreman settings: <code><a href="https://Keycloak.com/auth/realms/Foreman_Realm/.well-known/openid-configuration" class="bare">https://Keycloak.com/auth/realms/Foreman_Realm/.well-known/openid-configuration</a></code></p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisite</div>
+<ul>
+<li>
+<p>Ensure that the <strong>Access Type</strong> setting in the Foreman client in the Keycloak web UI is set to <strong>confidential</strong></p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Administer</strong> &gt; <strong>Settings</strong>, and click the <strong>Authentication</strong> tab.</p>
+</li>
+<li>
+<p>Locate the <strong>Authorize login delegation</strong> row, and in the <strong>Value</strong> column, set the value to <strong>Yes</strong>.</p>
+</li>
+<li>
+<p>Locate the <strong>Authorize login delegation auth source user autocreate</strong> row, and in the <strong>Value</strong> column,
+set the value to <strong>External</strong>.</p>
+</li>
+<li>
+<p>Locate the <strong>Login delegation logout URL</strong> row, and in the <strong>Value</strong> column, set the value to
+<strong><a href="https://foreman.example.com/users/extlogout" class="bare">https://foreman.example.com/users/extlogout</a></strong>.</p>
+</li>
+<li>
+<p>Locate the <strong>OIDC Algorithm</strong> row, and in the <strong>Value</strong> column, set the algorithm for encoding on Keycloak to <strong>RS256</strong>.</p>
+</li>
+<li>
+<p>Locate the <strong>OIDC Audience</strong> row, and in the <strong>Value</strong> column, set the value to the client ID for Keycloak.</p>
+</li>
+<li>
+<p>Locate the <strong>OIDC Issuer</strong> row, and in the <strong>Value</strong> column, set the value to <strong><em><a href="https://Keycloak.com/auth/realms/Foreman_Realm" class="bare">https://Keycloak.com/auth/realms/Foreman_Realm</a></em></strong>.</p>
+</li>
+<li>
+<p>Locate the <strong>OIDC JWKs URL</strong> row, and in the <strong>Value</strong> column, set the value to <strong><em><a href="https://Keycloak.com/auth/realms/Foreman_Realm/protocol/openid-connect/certs" class="bare">https://Keycloak.com/auth/realms/Foreman_Realm/protocol/openid-connect/certs</a></em></strong>.</p>
+</li>
+<li>
+<p>Navigate to <strong>Administer</strong> &gt; <strong>Authentication Sources</strong> and click <strong>External</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Create LDAP Authentication Source</strong> and select the Keycloak server.</p>
+</li>
+<li>
+<p>Click the <strong>Locations</strong> tab and add locations that can use the Keycloak authentication source.</p>
+</li>
+<li>
+<p>Click the <strong>Organizations</strong> tab and add organizations that can use the Keycloak authentication source.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect4">
+<h5 id="configuring-project-settings-for-keycloak-authentication-using-the-cli_keycloak-totp">Configuring Foreman Settings for Keycloak Authentication Using the CLI</h5>
+<div class="paragraph">
+<p>Use this procedure to configure Foreman settings for Keycloak authentication using the Foreman CLI.</p>
+</div>
+<div class="paragraph">
+<p>Note that you can navigate to the following URL within your realm to obtain values to configure Foreman settings: <code><a href="https://Keycloak.com/auth/realms/Foreman_Realm/.well-known/openid-configuration" class="bare">https://Keycloak.com/auth/realms/Foreman_Realm/.well-known/openid-configuration</a></code></p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisite</div>
+<ul>
+<li>
+<p>Ensure that the <strong>Access Type</strong> setting in the Foreman client in the Keycloak web UI is set to <strong>public</strong></p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On Foreman, set the login delegation to <code>true</code> so that users can authenticate using the Open IDC protocol:</p>
+<div class="listingblock">
+<div class="content">
+<pre># hammer settings set --name authorize_login_delegation --value true</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Set the login delegation logout URL:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer settings set --name login_delegation_logout_url \
+--value https://foreman.example.com/users/extlogout</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Set the algorithm for encoding on Keycloak, for example, <code>RS256</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre># hammer settings set --name oidc_algorithm --value 'RS256'</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Open the <code><em>Keycloak.example.com</em>/auth/realms/<em>Keycloak_REALM</em>/.well-known/openid-configuration</code> URL and note the values to populate the options in the following steps.</p>
+</li>
+<li>
+<p>Add the value for the Hammer client in the Open IDC audience:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer settings set --name oidc_audience \
+--value "['<em>foreman.example.com</em>-hammer-openidc']"</pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If you register several Keycloak clients to Foreman, ensure that you append all audiences in the array.
+For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer settings set --name oidc_audience \
+--value "['<em>foreman.example.com</em>-foreman-openidc', '<em>foreman.example.com</em>-hammer-openidc']"</pre>
+</div>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Set the value for the Open IDC issuer:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer settings set --name oidc_issuer \
+--value "<em>Keycloak.example.com</em>/auth/realms/<em>Keycloak_Realm</em>"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Set the value for Open IDC Java Web Token (JWT):</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer settings set --name oidc_jwks_url \
+--value "<em>Keycloak.example.com</em>/auth/realms/<em>Keycloak_Realm</em>/protocol/openid-connect/certs"</pre>
+</div>
+</div>
+</li>
 <li>
 <p>Retrieve the ID of the Keycloak authentication source:</p>
 <div class="listingblock">
@@ -6926,9 +7390,74 @@ For example:</p>
 </li>
 </ol>
 </div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="configuring-project-with-keycloak-for-totp-authentication_keycloak-totp">13.9.5. Configuring Foreman with Keycloak for TOTP Authentication</h4>
+<div class="paragraph">
+<p>Use this procedure to configure Foreman to use Keycloak as an OpenID provider for external authentication with Time-based One-time Password (TOTP).</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Keycloak web UI, navigate to the Foreman realm.</p>
 </li>
 <li>
-<p>To authenticate using two-factor authentication, enter the following command:</p>
+<p>Navigate to <strong>Authentication</strong>, and click the <strong>OTP Policy</strong> tab.</p>
+</li>
+<li>
+<p>Ensure that the <strong>Supported Applications</strong> field includes FreeOTP or Google Authenticator.</p>
+</li>
+<li>
+<p>Configure the OTP settings to suit your requirements.</p>
+</li>
+<li>
+<p>Optional: If you want to use TOTP authentication as a default authentication method for all users, click the <strong>Flows</strong> tab, and to the right of the <strong>OTP Form</strong> setting, select <strong>REQUIRED</strong>.</p>
+</li>
+<li>
+<p>Click the <strong>Required Actions</strong> tab.</p>
+</li>
+<li>
+<p>To the right of the <strong>Configure OTP</strong> row, select the <strong>Default Action</strong> check box.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="logging-in-to-the-project-web-ui-using-keycloak-totp-authentication_keycloak-totp">13.9.6. Logging in to the Foreman Web UI Using Keycloak TOTP Authentication</h4>
+<div class="paragraph">
+<p>Use this procedure to log in to the Foreman web UI using Keycloak TOTP authentication.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Log in to Foreman, Foreman redirects you to the Keycloak login screen.</p>
+</li>
+<li>
+<p>Enter your username and password, and click <strong>Log In</strong>.</p>
+</li>
+<li>
+<p>The first attempt to log in, Keycloak requests you to configure your client by scanning the barcode and entering the pin displayed.</p>
+</li>
+<li>
+<p>After you configure your client and enter a valid PIN, Keycloak redirects you to Foreman and
+logs you in.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="logging-in-to-the-project-cli-using-keycloak_keycloak-totp">13.9.7. Logging in to the Foreman CLI Using Keycloak</h4>
+<div class="paragraph">
+<p>Use this procedure to authenticate to the Foreman CLI using the code grant type.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>To authenticate to the Foreman CLI using the code grant type, enter the following command:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># hammer auth login oauth \
@@ -6940,15 +7469,684 @@ For example:</p>
 </div>
 </div>
 <div class="paragraph">
-<p>The command prompts you to enter a success code.
-To retrieve the success code, navigate to the URL that the commands returns and provide the required information.</p>
+<p>The command prompts you to enter a success code.</p>
+</div>
+</li>
+<li>
+<p>To retrieve the success code, navigate to the URL that the command returns and provide the required information.</p>
+</li>
+<li>
+<p>Copy the success code that the web UI returns.</p>
+</li>
+<li>
+<p>In the command prompt of <code>hammer auth login oauth</code>, enter the success code to authenticate to the Foreman CLI.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="configuring-group-mapping-for-keycloak-authentication_keycloak-totp">13.9.8. Configuring Group Mapping for Keycloak Authentication</h4>
+<div class="paragraph">
+<p>Optionally, to implement the Role Based Access Control (RBAC), create a group in Foreman, assign a role to this group, and then map an Active Directory group to the Foreman group.
+As a result, anyone in the given group in Keycloak are logged in under the corresponding Foreman group.
+This example configures users of the Foreman-admin user group in the Active Directory to authenticate as users with administrator privileges on Foreman.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Administer</strong> &gt; <strong>User Groups</strong>, and click the <strong>Create User Group</strong> button.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter a name for the user group.
+The name should not be the same as in the Active Directory.</p>
+</li>
+<li>
+<p>Do not add users and user groups to the right-hand columns.
+Click the <strong>Roles</strong> tab.</p>
+</li>
+<li>
+<p>Select the <strong>Administer</strong> check box.</p>
+</li>
+<li>
+<p>Click the <strong>External Groups</strong> tab.</p>
+</li>
+<li>
+<p>Click <strong>Add external user group</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter the name of the Active Directory group.</p>
+</li>
+<li>
+<p>From the list, select <strong>EXTERNAL</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="configuring-keycloak-authentication-with-cac-cards_keycloak-cac-cards">13.10. Configuring Keycloak Authentication with PIV Cards</h3>
+<div class="paragraph">
+<p>Use this section to configure Foreman to use Keycloak as an OpenID provider for external authentication with PIV cards.</p>
+</div>
+<div class="sect3">
+<h4 id="prerequisites-for-integrating-project-with-keycloak_keycloak-cac-cards">13.10.1. Prerequisites for Configuring Foreman with Keycloak Authentication</h4>
+<div class="paragraph">
+<p>Before configuring Foreman with Keycloak external authentication, ensure that you meet the following requirements:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>A working installation of Keycloak server that uses HTTPS instead of HTTP.</p>
+</li>
+<li>
+<p>A Keycloak account with admin privileges.</p>
+</li>
+<li>
+<p>A realm for Foreman user accounts created in Keycloak.</p>
+</li>
+<li>
+<p>If the certificates or the CA are self-signed, ensure that they are added to the end-user certificate trust store.</p>
+</li>
+<li>
+<p>Users imported or added to Keycloak.</p>
+<div class="paragraph">
+<p>If you have an existing user database configured such as LDAP or Kerberos, you can import users from it by configuring user federation.
+For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_single_sign-on/7.4/html/server_administration_guide/user-storage-federation">User Storage Federation</a> in the <em>Red&#160;Hat Single Sign-On Server Administration Guide</em>.</p>
+</div>
+<div class="paragraph">
+<p>If you do not have an existing user database configured, you can manually create users in Keycloak.
+For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_single_sign-on/7.4/html/server_administration_guide/user_management#create-new-user">Creating New Users</a> in the <em>Red&#160;Hat Single Sign-On Server Administration Guide</em>.</p>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="registering-project-as-a-keycloak-client_keycloak-cac-cards">13.10.2. Registering Foreman as a Keycloak Client</h4>
+<div class="paragraph">
+<p>Use this procedure to register Foreman to Keycloak as a client and configure Foreman to use Keycloak as an authentication source.</p>
+</div>
+<div class="paragraph">
+<p>You can configure Foreman and Keycloak with two different authentication methods:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Users authenticate to Foreman using the Foreman web UI.</p>
+</li>
+<li>
+<p>Users authenticate to Foreman using the Foreman CLI.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>You must decide on how you want your users to authenticate in advance because both methods require different Foreman clients to be registered to Keycloak and configured.
+The steps to register and configure Foreman client in Keycloak are distinguished within the procedure.</p>
+</div>
+<div class="paragraph">
+<p>You can also register two different Foreman clients to Keycloak if you want to use both authentication methods and configure both clients accordingly.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On the Foreman server, install the following packages:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># apt-get install mod_auth_openidc keycloak-httpd-client-install</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Register Foreman to Keycloak as a client.
+Note that you the registration process for logging in using the web UI and the CLI are different.
+You can register two clients Foreman clients to Keycloak to be able to log in to Foreman from the web UI and the CLI.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>If you want you users to authenticate to Foreman using the web UI, create a client as follows:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># keycloak-httpd-client-install --app-name foreman-openidc \
+--keycloak-server-url "<em>https://Keycloak.com</em>" \
+--keycloak-admin-username "<em>admin</em>" \
+--keycloak-realm "<em>Foreman_Realm</em>" \
+--keycloak-admin-realm master \
+--keycloak-auth-role root-admin \
+-t openidc -l /users/extlogin --force</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Enter the password for the administer account when prompted.
+This command creates a client for Foreman in Keycloak.</p>
+</div>
+<div class="paragraph">
+<p>Then, configure Foreman to use Keycloak as an authentication source:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-installer --foreman-keycloak true \
+--foreman-keycloak-app-name "foreman-openidc" \
+--foreman-keycloak-realm "<em>Foreman_Realm</em>"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>If you want your users to authenticate to Foreman using the CLI, create a client as follows:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># keycloak-httpd-client-install --app-name hammer-openidc \
+--keycloak-server-url "<em>https://Keycloak.com</em>" \
+--keycloak-admin-username "<em>admin</em>" \
+--keycloak-realm "<em>Foreman_Realm</em>" \
+--keycloak-admin-realm master \
+--keycloak-auth-role root-admin \
+-t openidc -l /users/extlogin --force</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Enter the password for the administer account when prompted.
+This command creates a client for Foreman in Keycloak.</p>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Restart the <code>httpd</code> service:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl restart httpd</pre>
+</div>
 </div>
 </li>
 </ol>
 </div>
 </div>
+<div class="sect3">
+<h4 id="configuring-the-project-client-in-keycloak_keycloak-cac-cards">13.10.3. Configuring the Foreman Client in Keycloak</h4>
+<div class="paragraph">
+<p>Use this procedure to configure the Foreman client in the Keycloak web UI and create group and audience mappers for the Foreman client.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Keycloak web UI, navigate to <strong>Clients</strong> and click the Foreman client.</p>
+</li>
+<li>
+<p>Configure access type:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>If you want your users to authenticate to Foreman using the web UI, from the <strong>Access Type</strong> list, select <strong>confidential</strong>.</p>
+</li>
+<li>
+<p>If you want your users to authenticate to Foreman using the CLI, from the <strong>Access Type</strong> list, select <strong>public</strong>.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>In the <strong>Valid redirect URI</strong> fields, add a valid redirect URI.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>If you want your users to authenticate to Foreman using the web UI, in the blank field below the existing URI, enter a URI in the form <code><a href="https://foreman.example.com/users/extlogin" class="bare">https://foreman.example.com/users/extlogin</a></code>. Note that you must add the string <code>/users/extlogin</code> after the Foreman FQDN.</p>
+<div class="paragraph">
+<p>After completing this step, the Foreman client for logging in using the web UI must have the following <strong>Valid Redirect URIs</strong>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">https://foreman.example.com/users/extlogin/redirect_uri
+https://foreman.example.com/users/extlogin</pre>
+</div>
+</div>
+</li>
+<li>
+<p>If you want your users to authenticate to Foreman using the CLI, in the blank field below the existing URI, enter <strong>urn:ietf:wg:oauth:2.0:oob</strong>.</p>
+<div class="paragraph">
+<p>After completing this step, the Foreman client for logging in using the CLI must have the following <strong>Valid Redirect URIs</strong>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">https://foreman.example.com/users/extlogin/redirect_uri
+urn:ietf:wg:oauth:2.0:oob</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Click the <strong>Mappers</strong> tab and click <strong>Create</strong> to add an audience mapper.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter a name for the audience mapper.</p>
+</li>
+<li>
+<p>From the <strong>Mapper Type</strong> list, select <strong>Audience</strong>.</p>
+</li>
+<li>
+<p>From the <strong>Included Client Audience</strong> list, select the Foreman client.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Create</strong> to add a group mapper so that you can specify authorization in Foreman based on group membership.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter a name for the group mapper.</p>
+</li>
+<li>
+<p>From the <strong>Mapper Type</strong> list, select <strong>Group Membership</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Token Claim Name</strong> field, enter <strong>groups</strong>.</p>
+</li>
+<li>
+<p>Set the <strong>Full group path</strong> setting to OFF.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="configuring-project-settings-for-keycloak-authentication_keycloak-cac-cards">13.10.4. Configuring Foreman Settings for Keycloak Authentication</h4>
+<div class="paragraph">
+<p>Use this section to configure Foreman for Keycloak authentication using the Foreman web UI or the CLI.</p>
+</div>
+<div class="sect4">
+<h5 id="configuring-project-settings-for-keycloak-authentication-using-the-web-ui_keycloak-cac-cards">Configuring Foreman Settings for Keycloak Authentication Using the Web UI</h5>
+<div class="paragraph">
+<p>Use this procedure to configure Foreman settings for Keycloak authentication using the Foreman web UI.</p>
+</div>
+<div class="paragraph">
+<p>Note that you can navigate to the following URL within your realm to obtain values to configure Foreman settings: <code><a href="https://Keycloak.com/auth/realms/Foreman_Realm/.well-known/openid-configuration" class="bare">https://Keycloak.com/auth/realms/Foreman_Realm/.well-known/openid-configuration</a></code></p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisite</div>
+<ul>
+<li>
+<p>Ensure that the <strong>Access Type</strong> setting in the Foreman client in the Keycloak web UI is set to <strong>confidential</strong></p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Administer</strong> &gt; <strong>Settings</strong>, and click the <strong>Authentication</strong> tab.</p>
+</li>
+<li>
+<p>Locate the <strong>Authorize login delegation</strong> row, and in the <strong>Value</strong> column, set the value to <strong>Yes</strong>.</p>
+</li>
+<li>
+<p>Locate the <strong>Authorize login delegation auth source user autocreate</strong> row, and in the <strong>Value</strong> column,
+set the value to <strong>External</strong>.</p>
+</li>
+<li>
+<p>Locate the <strong>Login delegation logout URL</strong> row, and in the <strong>Value</strong> column, set the value to
+<strong><a href="https://foreman.example.com/users/extlogout" class="bare">https://foreman.example.com/users/extlogout</a></strong>.</p>
+</li>
+<li>
+<p>Locate the <strong>OIDC Algorithm</strong> row, and in the <strong>Value</strong> column, set the algorithm for encoding on Keycloak to <strong>RS256</strong>.</p>
+</li>
+<li>
+<p>Locate the <strong>OIDC Audience</strong> row, and in the <strong>Value</strong> column, set the value to the client ID for Keycloak.</p>
+</li>
+<li>
+<p>Locate the <strong>OIDC Issuer</strong> row, and in the <strong>Value</strong> column, set the value to <strong><em><a href="https://Keycloak.com/auth/realms/Foreman_Realm" class="bare">https://Keycloak.com/auth/realms/Foreman_Realm</a></em></strong>.</p>
+</li>
+<li>
+<p>Locate the <strong>OIDC JWKs URL</strong> row, and in the <strong>Value</strong> column, set the value to <strong><em><a href="https://Keycloak.com/auth/realms/Foreman_Realm/protocol/openid-connect/certs" class="bare">https://Keycloak.com/auth/realms/Foreman_Realm/protocol/openid-connect/certs</a></em></strong>.</p>
+</li>
+<li>
+<p>Navigate to <strong>Administer</strong> &gt; <strong>Authentication Sources</strong> and click <strong>External</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Create LDAP Authentication Source</strong> and select the Keycloak server.</p>
+</li>
+<li>
+<p>Click the <strong>Locations</strong> tab and add locations that can use the Keycloak authentication source.</p>
+</li>
+<li>
+<p>Click the <strong>Organizations</strong> tab and add organizations that can use the Keycloak authentication source.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect4">
+<h5 id="configuring-project-settings-for-keycloak-authentication-using-the-cli_keycloak-cac-cards">Configuring Foreman Settings for Keycloak Authentication Using the CLI</h5>
+<div class="paragraph">
+<p>Use this procedure to configure Foreman settings for Keycloak authentication using the Foreman CLI.</p>
+</div>
+<div class="paragraph">
+<p>Note that you can navigate to the following URL within your realm to obtain values to configure Foreman settings: <code><a href="https://Keycloak.com/auth/realms/Foreman_Realm/.well-known/openid-configuration" class="bare">https://Keycloak.com/auth/realms/Foreman_Realm/.well-known/openid-configuration</a></code></p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisite</div>
+<ul>
+<li>
+<p>Ensure that the <strong>Access Type</strong> setting in the Foreman client in the Keycloak web UI is set to <strong>public</strong></p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On Foreman, set the login delegation to <code>true</code> so that users can authenticate using the Open IDC protocol:</p>
+<div class="listingblock">
+<div class="content">
+<pre># hammer settings set --name authorize_login_delegation --value true</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Set the login delegation logout URL:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer settings set --name login_delegation_logout_url \
+--value https://foreman.example.com/users/extlogout</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Set the algorithm for encoding on Keycloak, for example, <code>RS256</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre># hammer settings set --name oidc_algorithm --value 'RS256'</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Open the <code><em>Keycloak.example.com</em>/auth/realms/<em>Keycloak_REALM</em>/.well-known/openid-configuration</code> URL and note the values to populate the options in the following steps.</p>
+</li>
+<li>
+<p>Add the value for the Hammer client in the Open IDC audience:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer settings set --name oidc_audience \
+--value "['<em>foreman.example.com</em>-hammer-openidc']"</pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If you register several Keycloak clients to Foreman, ensure that you append all audiences in the array.
+For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer settings set --name oidc_audience \
+--value "['<em>foreman.example.com</em>-foreman-openidc', '<em>foreman.example.com</em>-hammer-openidc']"</pre>
+</div>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Set the value for the Open IDC issuer:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer settings set --name oidc_issuer \
+--value "<em>Keycloak.example.com</em>/auth/realms/<em>Keycloak_Realm</em>"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Set the value for Open IDC Java Web Token (JWT):</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer settings set --name oidc_jwks_url \
+--value "<em>Keycloak.example.com</em>/auth/realms/<em>Keycloak_Realm</em>/protocol/openid-connect/certs"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Retrieve the ID of the Keycloak authentication source:</p>
+<div class="listingblock">
+<div class="content">
+<pre># hammer auth-source external list</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Set the location and organization:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer auth-source external update --id <em>Authentication Source ID</em> \
+--location-ids <em>Location ID</em> --organization-ids <em>Organization ID</em></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="configuring-keycloak-settings-for-authentication-with-cac-cards_keycloak-cac-cards">13.10.5. Configuring Keycloak Settings for Authentication With PIV Cards</h4>
+<div class="paragraph">
+<p>You must configure Keycloak settings for authentication with PIV cards.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Keycloak web UI, navigate to the <strong>Authentication</strong> tab.</p>
+</li>
+<li>
+<p>From the <strong>Flows</strong> list, select <strong>Browser</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Copy</strong> to copy this flow.</p>
+</li>
+<li>
+<p>In the <strong>Copy Authentication Flow</strong> window, enter a new name for the flow and click <strong>OK</strong>.</p>
+</li>
+<li>
+<p>In the copied flow, delete <strong>Username Password Form</strong> and <strong>OTP Form</strong> entries.</p>
+</li>
+<li>
+<p>Click <strong>Add execution</strong>.</p>
+</li>
+<li>
+<p>From the <strong>Provider</strong> list, select <strong>X509/Validate Username Form</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>In the <strong>X509/Validate Username Form</strong> raw, select <strong>ALTERNATIVE</strong>.</p>
+</li>
+<li>
+<p>In the <strong>X509/Validate Username Form</strong> raw, click <strong>Actions</strong> &gt; <strong>Config</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Alias</strong> field, enter a name for this configuration.</p>
+</li>
+<li>
+<p>From the <strong>User Identity Source</strong> list, select <strong>Subject’s Common Name</strong>,</p>
+</li>
+<li>
+<p>From the <strong>User mapping method</strong> list, select <strong>Username or Email</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Navigate to <strong>Authentication</strong> &gt; <strong>Bindings</strong>.</p>
+</li>
+<li>
+<p>From the <strong>Browser Flow</strong> list, select the created flow.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="configuring-users-os-for-keycloak-authentication-with-cac-cards_keycloak-cac-cards">13.10.6. Configuring Users' OS for Keycloak Authentication with PIV Cards</h4>
+<div class="paragraph">
+<p>Complete this procedure on each system from which you want to be able to log in to Foreman using Keycloak PIV cards.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Install required packages:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">apt-get install opensc -y</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Install the Firefox browser if not installed.</p>
+</li>
+<li>
+<p>Launch Firefox and navigate to <strong>Preferences</strong>.</p>
+</li>
+<li>
+<p>Click the <strong>Privacy and Security</strong> tab.</p>
+</li>
+<li>
+<p>Click <strong>Security Devices</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Load</strong>.</p>
+</li>
+<li>
+<p>In the Load PKCS#11 Device Driver window, in the <strong>Module Name</strong> field, enter a name for this device.</p>
+</li>
+<li>
+<p>In the <strong>Module filename</strong> field, enter <strong>/usr/lib64/pkcs11/opensc-pkcs11.so</strong>.</p>
+</li>
+<li>
+<p>Click <strong>OK</strong>.</p>
+</li>
+<li>
+<p>If the PIV card is connected to system, restart the <code>pcscd</code> service.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="logging-in-to-the-project-web-ui-using-keycloak-cac-cards_keycloak-cac-cards">13.10.7. Logging in to the Foreman Web UI Using Keycloak PIV Cards</h4>
+<div class="paragraph">
+<p>Use this procedure to log in to the Foreman web UI using the Keycloak PIV cards.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In Firefox, log in to Foreman and enter your credentials.</p>
+</li>
+<li>
+<p>When prompted, enter the PIN of the PIV card.</p>
+</li>
+<li>
+<p>Choose the certificate for authentication.
+Browser verifies this certificate with Keycloak.
+Once authenticated, browser redirects you back to Foreman and logs you in.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="logging-in-to-the-project-cli-using-keycloak_keycloak-cac-cards">13.10.8. Logging in to the Foreman CLI Using Keycloak</h4>
+<div class="paragraph">
+<p>Use this procedure to authenticate to the Foreman CLI using the code grant type.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>To authenticate to the Foreman CLI using the code grant type, enter the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer auth login oauth \
+--two-factor \
+--oidc-token-endpoint 'https://<em>Keycloak.example.com</em>/auth/realms/ssl-realm/protocol/openid-connect/token' \
+--oidc-authorization-endpoint 'https://<em>Keycloak.example.com</em>/auth' \
+--oidc-client-id '<em>foreman.example.com</em>-foreman-openidc' \
+--oidc-redirect-uri urn:ietf:wg:oauth:2.0:oob</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The command prompts you to enter a success code.</p>
+</div>
+</li>
+<li>
+<p>To retrieve the success code, navigate to the URL that the command returns and provide the required information.</p>
+</li>
+<li>
+<p>Copy the success code that the web UI returns.</p>
+</li>
+<li>
+<p>In the command prompt of <code>hammer auth login oauth</code>, enter the success code to authenticate to the Foreman CLI.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="configuring-group-mapping-for-keycloak-authentication_keycloak-cac-cards">13.10.9. Configuring Group Mapping for Keycloak Authentication</h4>
+<div class="paragraph">
+<p>Optionally, to implement the Role Based Access Control (RBAC), create a group in Foreman, assign a role to this group, and then map an Active Directory group to the Foreman group.
+As a result, anyone in the given group in Keycloak are logged in under the corresponding Foreman group.
+This example configures users of the Foreman-admin user group in the Active Directory to authenticate as users with administrator privileges on Foreman.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Administer</strong> &gt; <strong>User Groups</strong>, and click the <strong>Create User Group</strong> button.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter a name for the user group.
+The name should not be the same as in the Active Directory.</p>
+</li>
+<li>
+<p>Do not add users and user groups to the right-hand columns.
+Click the <strong>Roles</strong> tab.</p>
+</li>
+<li>
+<p>Select the <strong>Administer</strong> check box.</p>
+</li>
+<li>
+<p>Click the <strong>External Groups</strong> tab.</p>
+</li>
+<li>
+<p>Click <strong>Add external user group</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter the name of the Active Directory group.</p>
+</li>
+<li>
+<p>From the list, select <strong>EXTERNAL</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
 <div class="sect2">
-<h3 id="_disabling_keycloak_authentication">13.9. Disabling Keycloak Authentication</h3>
+<h3 id="disabling-keycloak-authentication_admin">13.11. Disabling Keycloak Authentication</h3>
 <div class="paragraph">
 <p>If you want to disable Keycloak authentication in Foreman, complete this procedure.</p>
 </div>
