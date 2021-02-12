@@ -1,0 +1,104 @@
+[[Syncing_Centos_Stream]]
+== Syncing CentOS Stream to {Project}
+This chapter outlines how you can manage Centos Streams {customcontent} of different types to {Project}. We will over the following steps.
+
+* Create {customrepo} to mirror content from Centos Stream
+* Synchronize the Content
+* Setup `Activation Keys`
+* Register Hosts to consume this content.
+* Manage Hosts, install/update/or remove rpms on `Host` via `katello-agent`
+
+
+== Create repositories to synchronize
+
+The first step is to discover available repositories in the Centos Stream, then select the repositories to mirror and bundle into a {customproduct}.
+
+.Procedure
+. In the {Project} web UI, navigate to *Content* > *Products*
+. Click *Repo Discovery*.
+. In the *Repository Type* field, choose *Yum Repositories*.
+. In the *URL to Discover* field, enter the Centos Stream URL `http://mirror.centos.org/centos/8-stream`.
+. Click *Discover*.
+. Once the repository discovery process is complete you should be able to list of repositories found under that url.
+. Select `/AppStream/x86_64/os/` and `/BaseOS/x86_64/os/` repositories.
+. Click *Create Selected*. This will enable you to create the repositories. However before creation we need  to point this group of repositories to a new product.
+. In the *Product* field choose *New Product*
+. In the *Name* field enter *Centos Stream* or desired product name.
+. Click *Run Repository Creation*. This should successfully create 2 repositories under the given product.
+
+_Note_ while repo discovery provides a convenient way to enable/create multiple repositories in one go, you could manually create the product and repositories directly.
+
+== Examine the generated entities
+
+In this section we will examine the repositories we created.
+
+. Navigate to *Content* > *Products*
+. Select the *Centos Stream* product that we created.
+. Notice the 2 repositories with names *AppStream x86_64 os* and *BaseOS x86_64 os*
+. Click on *AppStream x86_64 os*. This should take you to the Repository Details page.
+. Notice that the *Upstream URL* is set to `http://mirror.centos.org/centos/8-stream/AppStream/x86_64/os/` and the *Type* is set to *yum*
+
+
+== Pull the content from upstream repository
+
+In this section we will pull and the mirror the contents of the upstream centos repositories. This is accomplished by the *Synchronization* action.
+
+. Navigate to *Content* > *Products*
+. Select the *Centos Stream* product that we created.
+. Notice the 2 repositories with names *AppStream x86_64 os* and *BaseOS x86_64 os*
+. Click on *AppStream x86_64 os*. This should take you to the Repository Details page.
+. Notice that the *Upstream URL* is set to `http://mirror.centos.org/centos/8-stream/AppStream/x86_64/os/` and the *Type* is set to *yum*
+. Select both repositories
+. Click *Sync Now*
+. Examine the repository counts after sync.
+
+== Create Activation Key
+
+In this section  we will create an *Activation Key* that can be used to register a host to {Project}.
+
+. In the {Project} web UI, navigate to *Content* > *Activation keys* and click *Create Activation Key*.
+. In the *Name* field, enter the name of the activation key.
+. In the *Description* field, enter a description for the activation key.
+. From the *Environment* list, select the *Library*.
+. From the *Content View* list, select *Default Organization View*.
+. Click *Save*.
+
+. Click on the *Subscriptions* tab on the Activation Key's details page.
+. Click on the *Add* tab. This should list a set of product subscriptions that would automatically apply when a host is registered to {Project}
+. Select all the product subscriptions in the table.
+. Click *Add Selected* to save.
+
+== Registering a Centos Stream host to {Project}
+
+In this section we will use the Activation key we just created to register the content host to {Project}
+
+. Login to the Centos 8 host you wish register on your terminal.
+. Download the consumer RPM for your {ProjectServer}.
+. This is located in the `pub` directory on the {ProjectServer}'s web server.
+For example, for a {ProjectServer} with the host name `{foreman-example-com}`, enter the following command on the host to register:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# rpm -Uvh _http://{foreman-example-com}_/pub/katello-ca-consumer-latest.noarch.rpm
+----
++
+This RPM installs the necessary certificates for accessing repositories on {ProjectServer} and configures Red Hat Subscription Manager to use the server's URL.
++
+. On the host, enter the following command to register the host to {Project} using the activation key:
++
+[options="nowrap" subs="+quotes"]
+----
+# subscription-manager register --activationkey="_My_Activation_Key_"  --org="_My_Organization_"
+----
+. After registration run the yum repolist commands to update `/etc/yum.repos.d/redhat.repo` and enable content from {ProjectServer}
++
+[options="nowrap" subs="+quotes"]
+----
+# yum repolist
+
+repo id                                                           repo name
+Default_Organization_Centos_Stream_AppStream_x86_64_os            AppStream x86_64 os
+Default_Organization_Centos_Stream_BaseOS_x86_64_os               BaseOS x86_64
+Uploading Enabled Repositories Report
+----
+. Check the `/etc/yum.repos.d/redhat.conf` and ensure that the appropriate repos have been enabled. You should be able to pull content from {ProjectServer}
