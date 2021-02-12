@@ -70,9 +70,6 @@ The freshly provisioned system must not have the following users provided by ext
 <p>postgres</p>
 </li>
 <li>
-<p>mongodb</p>
-</li>
-<li>
 <p>apache</p>
 </li>
 <li>
@@ -150,11 +147,6 @@ These values are based on expected use case scenarios and can vary according to 
 <td class="tableblock halign-left valign-top"><p class="tableblock">300 GB</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">/var/lib/mongodb/</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">3.5 GB</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">50 GB</p></td>
-</tr>
-<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">/var/lib/qpidd/</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">25 MB</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Not Applicable</p></td>
@@ -215,7 +207,7 @@ This is a requirement for the <code>puppetserver</code> service to work.</p>
 For example, 10 000 Content Hosts require 20 GB of disk space in <code>/var/lib/qpidd/</code>.</p>
 </li>
 <li>
-<p>Use high-bandwidth, low-latency storage for the <code>/var/lib/pulp/</code> and <code>/var/lib/mongodb/</code> directories.
+<p>Use high-bandwidth, low-latency storage for the <code>/var/lib/pulp/</code> directories.
 As Red&#160;Hat Satellite has many operations that are I/O intensive, using high latency, low-bandwidth storage causes performance degradation.
 Ensure your installation has a speed in the range 60 - 80 Megabytes per second.
 You can use the <code>fio</code> tool to get this data.
@@ -229,10 +221,6 @@ See the Red&#160;Hat Knowledgebase solution <a href="https://access.redhat.com/s
 <li>
 <p>Use the XFS file system for Red&#160;Hat Satellite&#160;6 because it does not have the inode limitations that <code>ext4</code> does.
 Because Satellite&#160;Server uses a lot of symbolic links it is likely that your system might run out of inodes if using <code>ext4</code> and the default number of inodes.</p>
-</li>
-<li>
-<p>Do not use NFS with MongoDB because MongoDB does not use conventional I/O to access data files and performance problems occur when both the data files and the journal files are hosted on NFS.
-If required to use NFS, mount the volume with the following options in the <code>/etc/fstab</code> file: <code>bg</code>, <code>nolock</code>, and <code>noatime</code>.</p>
 </li>
 <li>
 <p>Do not use NFS for Pulp data storage.
@@ -274,7 +262,7 @@ To avoid this, specify the SELinux context of the <code>/var/lib/pulp</code> dir
 <div class="title">Duplicated Packages</div>
 <p>Packages that are duplicated in different repositories are only stored once on the disk.
 Additional repositories containing duplicate packages require less additional storage.
-The bulk of storage resides in the <code>/var/lib/mongodb/</code> and <code>/var/lib/pulp/</code> directories.
+The bulk of storage resides in the <code>/var/lib/pulp/</code> directory.
 These end points are not manually configurable.
 Ensure that storage is available on the <code>/var</code> file system to prevent storage problems.</p>
 </div>
@@ -297,7 +285,7 @@ Up to 8 RPM content synchronization tasks can run simultaneously by default, wit
 </div>
 <div class="paragraph">
 <div class="title">Symbolic links</div>
-<p>You cannot use symbolic links for <code>/var/lib/pulp/</code> and <code>/var/lib/mongodb/</code>.</p>
+<p>You cannot use symbolic links for <code>/var/lib/pulp/</code>.</p>
 </div>
 <div class="paragraph">
 <div class="title">ISO Images</div>
@@ -1117,7 +1105,7 @@ An administrator can view the answer file to see previously used options for bot
 <div class="paragraph">
 <p>This initial configuration procedure creates an organization, location, user name, and password.
 After the initial configuration, you can create additional organizations and locations if required.
-The initial configuration also installs MongoDB and PostgreSQL databases on the same server.</p>
+The initial configuration also installs the PostgreSQL database on the same server.</p>
 </div>
 <div class="paragraph">
 <p>The installation process can take tens of minutes to complete.
@@ -2605,17 +2593,13 @@ http://<em>satellite.example.com</em>/pub/katello-ca-consumer-latest.noarch.rpm<
 <div class="sect2">
 <h3 id="using-external-databases_satellite">3.10. Using External Databases with Satellite</h3>
 <div class="paragraph">
-<p>As part of the installation process for Red&#160;Hat Satellite, the <strong>satellite-installer</strong> command installs MongoDB and PostgreSQL databases on the same server as Satellite.
-In certain Satellite deployments, using external databases instead of the default local databases can help with the server load.
-Depending on your requirements, you can use external databases for either MongoDB or PostgreSQL database, or both.</p>
+<p>As part of the installation process for Red&#160;Hat Satellite, the <strong>satellite-installer</strong> command installs a PostgreSQL database on the same server as Satellite.
+In certain Satellite deployments, using external databases instead of the default local databases can help with the server load.</p>
 </div>
 <div class="paragraph">
 <p>Red Hat does not provide support or tools for external database maintenance.
 This includes backups, upgrades, and database tuning.
 You must have your own database administrator to support and maintain external databases.</p>
-</div>
-<div class="paragraph">
-<p>Use <a href="#mongodb-as-an-external-database-considerations_satellite">MongoDB as an External Database Considerations</a> and <a href="#postgresql-as-an-external-database-considerations_satellite">PostgreSQL as an External Database Considerations</a> to decide if you want to use external databases for your Satellite deployment.</p>
 </div>
 <div class="paragraph">
 <p>To create and use external databases for Satellite, you must complete the following procedures:</p>
@@ -2625,10 +2609,6 @@ You must have your own database administrator to support and maintain external d
 <li>
 <p><a href="#preparing-a-host-for-external-databases_satellite">Preparing a Host for External Databases</a>.
 Prepare a Red&#160;Hat Enterprise Linux 7 server to host the external databases.</p>
-</li>
-<li>
-<p><a href="#installing-mongodb_satellite">Installing MongoDB</a>.
-Prepare MongoDB with user <code>pulp</code> owning the <code>pulp_database</code></p>
 </li>
 <li>
 <p><a href="#installing-postgresql_satellite">Installing PostgreSQL</a>.
@@ -2641,51 +2621,7 @@ Edit the parameters of <code>satellite-installer</code> to point to the new data
 </ol>
 </div>
 <div class="sect3">
-<h4 id="mongodb-as-an-external-database-considerations_satellite">3.10.1. MongoDB as an External Database Considerations</h4>
-<div class="paragraph">
-<p>Pulp uses the MongoDB database.
-If you want to use MongoDB as an external database, the following information can help you decide if this option is right for your Satellite configuration.
-Satellite supports MongoDB version 3.4.</p>
-</div>
-<div class="ulist">
-<div class="title">Advantages of External MongoDB</div>
-<ul>
-<li>
-<p>Increase in free memory and free CPU on Satellite</p>
-</li>
-<li>
-<p>Flexibility to tune the MongoDB server&#8217;s system without adversely affecting Satellite operations</p>
-</li>
-</ul>
-</div>
-<div class="ulist">
-<div class="title">Disadvantages of External MongoDB</div>
-<ul>
-<li>
-<p>Increase in deployment complexity that can make troubleshooting more difficult</p>
-</li>
-<li>
-<p>An external MongoDB server is an additional system to patch and maintain</p>
-</li>
-<li>
-<p>If either the Satellite or the Mongo database server suffers a hardware or storage failure, Satellite is not operational</p>
-</li>
-<li>
-<p>If there is latency between the Satellite and the external database server, performance can suffer</p>
-</li>
-</ul>
-</div>
-<div class="ulist">
-<div class="title">FIPS-related Restrictions</div>
-<ul>
-<li>
-<p>You cannot use an external MongoDB with Satellite in FIPS mode.</p>
-</li>
-</ul>
-</div>
-</div>
-<div class="sect3">
-<h4 id="postgresql-as-an-external-database-considerations_satellite">3.10.2. PostgreSQL as an External Database Considerations</h4>
+<h4 id="postgresql-as-an-external-database-considerations_satellite">3.10.1. PostgreSQL as an External Database Considerations</h4>
 <div class="paragraph">
 <p>Foreman, Katello, and Candlepin use the PostgreSQL database.
 If you want to use PostgreSQL as an external database, the following information can help you decide if this option is right for your Satellite configuration.
@@ -2729,7 +2665,7 @@ If you have slow queries, contact Red Hat Support.</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="preparing-a-host-for-external-databases_satellite">3.10.3. Preparing a Host for External Databases</h4>
+<h4 id="preparing-a-host-for-external-databases_satellite">3.10.2. Preparing a Host for External Databases</h4>
 <div class="paragraph">
 <p>Install a freshly provisioned system with the latest Red&#160;Hat Enterprise Linux 7 server to host the external databases.</p>
 </div>
@@ -2765,90 +2701,7 @@ You must also attach a Satellite subscription to the base operating system that 
 </div>
 </div>
 <div class="sect3">
-<h4 id="installing-mongodb_satellite">3.10.4. Installing MongoDB</h4>
-<div class="paragraph">
-<p>You can install only the same version of MongoDB that is installed with the <code>satellite-installer</code> tool during an internal database installation.
-You can install MongoDB using Red Hat Software Collections (RHSCL) repositories or from an external source, as long as the version is supported.
-Satellite supports MongoDB version 3.4.</p>
-</div>
-<div class="olist arabic">
-<div class="title">Procedure</div>
-<ol class="arabic">
-<li>
-<p>To install MongoDB, enter the following command:</p>
-<div class="listingblock">
-<div class="content">
-<pre># yum install rh-mongodb34 rh-mongodb34-syspaths</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Start and enable the <strong>rh-mongodb34</strong> service:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># systemctl start rh-mongodb34-mongod
-# systemctl enable rh-mongodb34-mongod</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Create a Pulp user on MongoDB for database <strong>pulp_database</strong>:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># mongo pulp_database \
---eval "db.createUser({user:'pulp',pwd:'pulp_password',roles:[{role:'dbOwner', db:'pulp_database'},{ role: 'readWrite', db: 'pulp_database'}]})"</pre>
-</div>
-</div>
-</li>
-<li>
-<p>In the <code>/etc/opt/rh/rh-mongodb34/mongod.conf</code> file, specify the bind IP:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">bindIp: <em>your_mongodb_server_bind_IP</em>,::1</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Edit the <code>/etc/opt/rh/rh-mongodb34/mongod.conf</code> file to enable authentication in the <code>security</code> section:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">security:
-  authorization: enabled</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Restart the <code>rh-mongodb34-mongod</code> service:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># systemctl restart rh-mongodb34-mongod</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Open port 27017 for MongoDB:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># firewall-cmd --add-port=27017/tcp
-# firewall-cmd --runtime-to-permanent</pre>
-</div>
-</div>
-</li>
-<li>
-<p>From Satellite&#160;Server, test that you can access the database.
-If the connection succeeds, the command returns <code>1</code>.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># scl enable rh-mongodb34 " mongo --host <em>mongo.example.com</em> \
--u pulp -p <em>pulp_password</em> --port 27017 --eval 'ping:1' <em>pulp_database</em>"</pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
-</div>
-<div class="sect3">
-<h4 id="installing-postgresql_satellite">3.10.5. Installing PostgreSQL</h4>
+<h4 id="installing-postgresql_satellite">3.10.3. Installing PostgreSQL</h4>
 <div class="paragraph">
 <p>You can install only the same version of PostgreSQL that is installed with the <code>satellite-installer</code> tool during an internal database installation.
 You can install PostgreSQL using Red Hat Enterprise Linux Server 7 repositories or from an external source, as long as the version is supported.
@@ -2966,15 +2819,15 @@ If the connection succeeds, the commands return <code>1</code>.</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="configuring-satellite-to-use-external-databases_satellite">3.10.6. Configuring Satellite to use External Databases</h4>
+<h4 id="configuring-satellite-to-use-external-databases_satellite">3.10.4. Configuring Satellite to use External Databases</h4>
 <div class="paragraph">
-<p>Use the <code>satellite-installer</code> command to configure Satellite to connect to external MongoDB and PostgreSQL databases.</p>
+<p>Use the <code>satellite-installer</code> command to configure Satellite to connect to an external PostgreSQL database.</p>
 </div>
 <div class="ulist">
 <div class="title">Prerequisites</div>
 <ul>
 <li>
-<p>You have installed and configured MongoDB and PostgreSQL databases on a Red&#160;Hat Enterprise Linux server.</p>
+<p>You have installed and configured a PostgreSQL database on a Red&#160;Hat Enterprise Linux server.</p>
 </li>
 </ul>
 </div>
@@ -3012,14 +2865,6 @@ If the connection succeeds, the commands return <code>1</code>.</p>
 </div>
 </div>
 </li>
-<li>
-<p>For MongoDB, enter the following command:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># satellite-maintain service status --only rh-mongodb34-mongod</pre>
-</div>
-</div>
-</li>
 </ul>
 </div>
 </li>
@@ -3028,60 +2873,7 @@ If the connection succeeds, the commands return <code>1</code>.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="restricting-access-to-mongod_satellite">3.11. Restricting Access to mongod</h3>
-<div class="paragraph">
-<p>To reduce the risk of data loss, configure only the <code>apache</code> and <code>root</code> users to have access to the MongoDB database daemon, <code>mongod</code>.</p>
-</div>
-<div class="paragraph">
-<p>To restrict access to <code>mongod</code> on your Satellite&#160;Server, you must update your firewall configuration.</p>
-</div>
-<div class="olist arabic">
-<div class="title">Procedure</div>
-<ol class="arabic">
-<li>
-<p>Update the firewall configuration by entering the following command:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># firewall-cmd  --direct --add-rule ipv4 filter OUTPUT 0 -o lo -p \
-tcp -m tcp --dport 27017 -m owner --uid-owner apache -j ACCEPT \
-&amp;&amp; firewall-cmd  --direct --add-rule ipv6 filter OUTPUT 0 -o lo -p \
-tcp -m tcp --dport 27017 -m owner --uid-owner apache -j ACCEPT \
-&amp;&amp; firewall-cmd  --direct --add-rule ipv4 filter OUTPUT 0 -o lo -p \
-tcp -m tcp --dport 27017 -m owner --uid-owner root -j ACCEPT \
-&amp;&amp; firewall-cmd  --direct --add-rule ipv6 filter OUTPUT 0 -o lo -p \
-tcp -m tcp --dport 27017 -m owner --uid-owner root -j ACCEPT \
-&amp;&amp; firewall-cmd  --direct --add-rule ipv4 filter OUTPUT 1 -o lo -p \
-tcp -m tcp --dport 27017 -j DROP \
-&amp;&amp; firewall-cmd  --direct --add-rule ipv6 filter OUTPUT 1 -o lo -p \
-tcp -m tcp --dport 27017 -j DROP \
-&amp;&amp; firewall-cmd  --direct --add-rule ipv4 filter OUTPUT 0 -o lo -p \
-tcp -m tcp --dport 28017 -m owner --uid-owner apache -j ACCEPT \
-&amp;&amp; firewall-cmd  --direct --add-rule ipv6 filter OUTPUT 0 -o lo -p \
-tcp -m tcp --dport 28017 -m owner --uid-owner apache -j ACCEPT \
-&amp;&amp; firewall-cmd  --direct --add-rule ipv4 filter OUTPUT 0 -o lo -p \
-tcp -m tcp --dport 28017 -m owner --uid-owner root -j ACCEPT \
-&amp;&amp; firewall-cmd  --direct --add-rule ipv6 filter OUTPUT 0 -o lo -p \
-tcp -m tcp --dport 28017 -m owner --uid-owner root -j ACCEPT \
-&amp;&amp; firewall-cmd  --direct --add-rule ipv4 filter OUTPUT 1 -o lo -p \
-tcp -m tcp --dport 28017 -j DROP \
-&amp;&amp; firewall-cmd  --direct --add-rule ipv6 filter OUTPUT 1 -o lo -p \
-tcp -m tcp --dport 28017 -j DROP</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Make the changes persistent:</p>
-<div class="listingblock">
-<div class="content">
-<pre># firewall-cmd --runtime-to-permanent</pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
-</div>
-<div class="sect2">
-<h3 id="tuning-with-predefined-profiles">3.12. Tuning Satellite&#160;Server with Predefined Profiles</h3>
+<h3 id="tuning-with-predefined-profiles">3.11. Tuning Satellite&#160;Server with Predefined Profiles</h3>
 <div class="paragraph">
 <p>If your Satellite deployment includes more than 5000 hosts, you can use predefined tuning profiles to improve performance of Satellite.</p>
 </div>

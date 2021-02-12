@@ -44,7 +44,6 @@
 <li><a href="#adding-life-cycle-environments_smart-proxy">3.3. Adding Life Cycle Environments to Smart&#160;Proxy&#160;servers</a></li>
 <li><a href="#enabling-power-management-on-managed-hosts_smart-proxy">3.4. Enabling Power Management on Managed Hosts</a></li>
 <li><a href="#configuring-dns-dhcp-and-tftp_smart-proxy">3.5. Configuring DNS, DHCP, and TFTP on Smart&#160;Proxy&#160;server</a></li>
-<li><a href="#restricting-access-to-mongod_smart-proxy">3.6. Restricting Access to mongod</a></li>
 </ul>
 </li>
 <li><a href="#capsule-server-scalability-considerations_smart-proxy">Appendix A: Smart&#160;Proxy&#160;server Scalability Considerations</a></li>
@@ -98,9 +97,6 @@ The freshly provisioned system must not have the following users provided by ext
 <ul>
 <li>
 <p>postgres</p>
-</li>
-<li>
-<p>mongodb</p>
 </li>
 <li>
 <p>apache</p>
@@ -172,11 +168,6 @@ These values are based on expected use case scenarios and can vary according to 
 <td class="tableblock halign-left valign-top"><p class="tableblock">300 GB</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">/var/lib/mongodb/</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">3.5 GB</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">50 GB</p></td>
-</tr>
-<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">/var/spool/squid/</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">0 GB</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">10 GB</p></td>
@@ -212,7 +203,7 @@ This is a requirement for the <code>puppetserver</code> service to work.</p>
 For example, 10 000 Content Hosts require 20 GB of disk space in <code>/var/lib/qpidd/</code>.</p>
 </li>
 <li>
-<p>Use high-bandwidth, low-latency storage for the <code>/var/lib/pulp/</code> and <code>/var/lib/mongodb/</code> directories.
+<p>Use high-bandwidth, low-latency storage for the <code>/var/lib/pulp/</code> directories.
 As Foreman has many operations that are I/O intensive, using high latency, low-bandwidth storage causes performance degradation.
 Ensure your installation has a speed in the range 60 - 80 Megabytes per second.</p>
 </li>
@@ -224,10 +215,6 @@ Ensure your installation has a speed in the range 60 - 80 Megabytes per second.<
 <li>
 <p>Use the XFS file system for Foreman because it does not have the inode limitations that <code>ext4</code> does.
 Because Smart&#160;Proxy&#160;server uses a lot of symbolic links it is likely that your system might run out of inodes if using <code>ext4</code> and the default number of inodes.</p>
-</li>
-<li>
-<p>Do not use NFS with MongoDB because MongoDB does not use conventional I/O to access data files and performance problems occur when both the data files and the journal files are hosted on NFS.
-If required to use NFS, mount the volume with the following options in the <code>/etc/fstab</code> file: <code>bg</code>, <code>nolock</code>, and <code>noatime</code>.</p>
 </li>
 <li>
 <p>Do not use NFS for Pulp data storage.
@@ -269,7 +256,7 @@ To avoid this, specify the SELinux context of the <code>/var/lib/pulp</code> dir
 <div class="title">Duplicated Packages</div>
 <p>Packages that are duplicated in different repositories are only stored once on the disk.
 Additional repositories containing duplicate packages require less additional storage.
-The bulk of storage resides in the <code>/var/lib/mongodb/</code> and <code>/var/lib/pulp/</code> directories.
+The bulk of storage resides in the <code>/var/lib/pulp/</code> directory.
 These end points are not manually configurable.
 Ensure that storage is available on the <code>/var</code> file system to prevent storage problems.</p>
 </div>
@@ -292,7 +279,7 @@ Up to 8 RPM content synchronization tasks can run simultaneously by default, wit
 </div>
 <div class="paragraph">
 <div class="title">Symbolic links</div>
-<p>You cannot use symbolic links for <code>/var/lib/pulp/</code> and <code>/var/lib/mongodb/</code>.</p>
+<p>You cannot use symbolic links for <code>/var/lib/pulp/</code>.</p>
 </div>
 </div>
 <div class="sect2">
@@ -1910,65 +1897,6 @@ The following example shows configuring full provisioning services:</p>
 </div>
 <div class="paragraph">
 <p>For more information about configuring DHCP, DNS, and TFTP services, see the <a href="https://docs.theforeman.org/nightly/Provisioning_Guide/index-foreman.html#Configuring_Networking-Configuring_Network_Services_for_PXE_Boot">Configuring Network Services</a> section in the <em>Provisioning Guide</em>.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="restricting-access-to-mongod_smart-proxy">3.6. Restricting Access to mongod</h3>
-<div class="paragraph">
-<p>This procedure is only for Katello plug-in users.</p>
-</div>
-<div class="paragraph">
-<p>To reduce the risk of data loss, configure only the <code>apache</code> and <code>root</code> users to have access to the MongoDB database daemon, <code>mongod</code>.</p>
-</div>
-<div class="paragraph">
-<p>To restrict access to <code>mongod</code> on your Smart&#160;Proxy&#160;server, you must update your firewall configuration.</p>
-</div>
-<div class="paragraph">
-<p>If you do not use <code>firewall-cmd</code> to configure the Linux firewall, implement using the command of your choice.</p>
-</div>
-<div class="olist arabic">
-<div class="title">Procedure</div>
-<ol class="arabic">
-<li>
-<p>Update the firewall configuration by entering the following command:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># firewall-cmd  --direct --add-rule ipv4 filter OUTPUT 0 -o lo -p \
-tcp -m tcp --dport 27017 -m owner --uid-owner apache -j ACCEPT \
-&amp;&amp; firewall-cmd  --direct --add-rule ipv6 filter OUTPUT 0 -o lo -p \
-tcp -m tcp --dport 27017 -m owner --uid-owner apache -j ACCEPT \
-&amp;&amp; firewall-cmd  --direct --add-rule ipv4 filter OUTPUT 0 -o lo -p \
-tcp -m tcp --dport 27017 -m owner --uid-owner root -j ACCEPT \
-&amp;&amp; firewall-cmd  --direct --add-rule ipv6 filter OUTPUT 0 -o lo -p \
-tcp -m tcp --dport 27017 -m owner --uid-owner root -j ACCEPT \
-&amp;&amp; firewall-cmd  --direct --add-rule ipv4 filter OUTPUT 1 -o lo -p \
-tcp -m tcp --dport 27017 -j DROP \
-&amp;&amp; firewall-cmd  --direct --add-rule ipv6 filter OUTPUT 1 -o lo -p \
-tcp -m tcp --dport 27017 -j DROP \
-&amp;&amp; firewall-cmd  --direct --add-rule ipv4 filter OUTPUT 0 -o lo -p \
-tcp -m tcp --dport 28017 -m owner --uid-owner apache -j ACCEPT \
-&amp;&amp; firewall-cmd  --direct --add-rule ipv6 filter OUTPUT 0 -o lo -p \
-tcp -m tcp --dport 28017 -m owner --uid-owner apache -j ACCEPT \
-&amp;&amp; firewall-cmd  --direct --add-rule ipv4 filter OUTPUT 0 -o lo -p \
-tcp -m tcp --dport 28017 -m owner --uid-owner root -j ACCEPT \
-&amp;&amp; firewall-cmd  --direct --add-rule ipv6 filter OUTPUT 0 -o lo -p \
-tcp -m tcp --dport 28017 -m owner --uid-owner root -j ACCEPT \
-&amp;&amp; firewall-cmd  --direct --add-rule ipv4 filter OUTPUT 1 -o lo -p \
-tcp -m tcp --dport 28017 -j DROP \
-&amp;&amp; firewall-cmd  --direct --add-rule ipv6 filter OUTPUT 1 -o lo -p \
-tcp -m tcp --dport 28017 -j DROP</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Make the changes persistent:</p>
-<div class="listingblock">
-<div class="content">
-<pre># firewall-cmd --runtime-to-permanent</pre>
-</div>
-</div>
-</li>
-</ol>
 </div>
 </div>
 </div>
