@@ -36,11 +36,11 @@ To quickly build HTML version and open new tab in a browser do:
 Similarly, to build and open PDF version do:
 
     make open-pdf
-    
-Currently there are three different versions 
+
+Currently there are three different versions
 
 
-`make BUILD=foreman` - This is the default that is generated with `make html` or `pdf`.
+`make BUILD=foreman-el` - This is the default that is generated with `make html` or `pdf`.
 
 
 `make BUILD=satellite` - This generates a downstream preview of the guide.
@@ -100,9 +100,9 @@ To use them, use "attributes" keyword:
 	----
 
 Hide or show specific blocks, paragraphs, warnings or chapters via special variable called "build".
-Its value can be set either to "foreman" or "satellite":
+Its value can be set either to "foreman-el" or "satellite":
 
-	ifeval::["{build}" == "foreman"]
+	ifeval::["{build}" == "foreman-el"]
 	NOTE: This part is only relevant for deployments with Katello plugin.
 	endif::[]
 

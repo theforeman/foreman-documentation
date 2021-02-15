@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-BUILD = foreman
+BUILD = foreman-el
 BUILD_DIR = ../build
 COMMON_DIR = ../common
 ROOTDIR = $(realpath .)
