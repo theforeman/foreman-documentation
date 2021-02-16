@@ -1,0 +1,94 @@
+[id="configuring-external-dns_{context}"]
+= Configuring {ProductName} with External DNS
+
+You can configure {ProductName} with external DNS.
+{ProductName} uses the `nsupdate` utility to update DNS records on the remote server.
+
+To make any changes persistent, you must enter the `{foreman-installer}` command with the options appropriate for your environment.
+
+.Prerequisites
+
+* You must have a configured external DNS server.
+
+.Procedure
+
+ifeval::["{build}" != "foreman-deb"]
+. Install the `bind-utils` package:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {package-install} bind bind-utils
+----
+endif::[]
+
+ifeval::["{build}" == "foreman-deb"]
+
+. Install the `bind-utils` package:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {package-install} bind9
+----
+endif::[]
+
+. Copy the `/etc/rndc.key` file from the external DNS server to {ProductName}:
++
+[options="nowrap" subs="+quotes"]
+----
+# scp root@_dns.example.com_:/etc/rndc.key /etc/rndc.key
+----
+
+. Configure the ownership, permissions, and SELinux context:
++
+[options="nowrap"]
+----
+# restorecon -v /etc/rndc.key
+# chown -v root:named /etc/rndc.key
+# chmod -v 640 /etc/rndc.key
+----
+
+. To test the `nsupdate` utility, add a host remotely:
++
+[options="nowrap", subs="+quotes"]
+----
+# echo -e "server _DNS_IP_Address_\n \
+update add aaa.virtual.lan 3600 IN A _Host_IP_Address_\n \
+send\n" | nsupdate -k /etc/rndc.key
+# nslookup aaa.virtual.lan _DNS_IP_Address_
+# echo -e "server _DNS_IP_Address_\n \
+update delete aaa.virtual.lan 3600 IN A _Host_IP_Address_\n \
+send\n" | nsupdate -k /etc/rndc.key
+----
+
+.  Assign the `foreman-proxy` user to the `named` group manually.
+Normally, {foreman-installer} ensures that the `foreman-proxy` user belongs to the `named` UNIX group, however, in this scenario {Project} does not manage users and groups, therefore you need to assign the `foreman-proxy` user to the `named` group manually.
++
+[options="nowrap"]
+----
+# usermod -a -G named foreman-proxy
+----
+
+. Enter the `{foreman-installer}` command to make the following persistent changes to the `/etc/foreman-proxy/settings.d/dns.yml` file:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# {foreman-installer} --foreman-proxy-dns=true \
+--foreman-proxy-dns-managed=false \
+--foreman-proxy-dns-provider=nsupdate \
+--foreman-proxy-dns-server="_DNS_IP_Address_" \
+--foreman-proxy-keyfile=/etc/rndc.key \
+--foreman-proxy-dns-ttl=86400
+----
+
+. Restart the foreman-proxy service:
++
+[options="nowrap"]
+----
+# systemctl restart foreman-proxy
+----
+
+. Log in to the {ProjectServer} web UI.
+
+. Navigate to *Infrastructure* > *{SmartProxies}*, locate the {ProductName}, and from the list in the *Actions* column, select *Refresh*.
+
+. Associate the DNS service with the appropriate subnets and domain.

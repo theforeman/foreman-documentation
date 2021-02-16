@@ -1,0 +1,125 @@
+[id="adding-images-to-server_{context}"]
+= Adding {CRname} Images to {ProjectServer}
+
+To create hosts using image-based provisioning, you must add information about the image, such as access details and the image location, to your {ProjectServer}.
+
+ifdef::kvm-provisioning[Note that you can manage only directory pool storage types through {ProjectX}.]
+
+.Procedure
+
+. In the {Project} web UI, navigate to *Infrastructure* > *Compute Resources* and click the name of the {CRname} connection.
+. Click *Create Image*.
+. In the *Name* field, enter a name for the image.
+. From the *Operating System* list, select the image's base operating system.
+. From the *Architecture* list, select the operating system architecture.
+. In the *Username* field, enter the SSH user name for image access.
+ifdef::kvm-provisioning,rhv-provisioning,openstack-provisioning[This is normally the `root` user.]
+ifdef::gce-provisioning[Specify a user other than `root`, because the `root` user cannot connect to a GCE instance using SSH keys. The username must begin with a letter and consist of lowercase letters and numbers.]
+ifdef::azure-provisioning[You cannot use the `root` user.]
+
+ifdef::kvm-provisioning,rhv-provisioning,openstack-provisioning[. In the *Password* field, enter the SSH password for image access.]
+ifdef::azure-provisioning[. Optional: In the *Password* field, enter a password to authenticate with.]
+
+ifdef::kvm-provisioning[]
+. In the *Image path* field, enter the full path that points to the image on the KVM server.
+For example:
++
+[options="nowrap" subs="+quotes"]
+----
+ /var/lib/libvirt/images/TestImage.qcow2
+----
+endif::[]
+ifdef::rhv-provisioning,openstack-provisioning,gce-provisioning[. From the *Image* list, select an image from the {CRname} compute resource.]
+ifdef::azure-provisioning[]
+. In the *Azure Image Name* field, enter an image name in the format `_prefix://UUID_`.
++
+* For a custom image, use the prefix `custom`.
+For example, *custom://image-name*.
+* For a shared gallery image, use the prefix `gallery`.
+For example, *gallery://image-name*.
+* For public and RHEL Bring Your Own Subscription (BYOS) images, use the prefix `marketplace`.
+For example, *marketplace://OpenLogicCentOS:7.5:latest*. 
++
+For more information, see https://docs.microsoft.com/en-us/azure/virtual-machines/linux/cli-ps-findimage[Find Linux VM images in the Azure Marketplace with the Azure CLI].
+endif::[]
+
+. Optional: Select the *User Data* check box if the image supports user data input, such as `cloud-init` data.
+. Click *Submit* to save the image details.
+
+.For CLI Users
+
+* Create the image with the `hammer compute-resource image create` command.
+ifeval::["{context}" == "kvm-provisioning"]
+Use the `--uuid` field to store the full path of the image location on the KVM server.
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# hammer compute-resource image create \
+--name "_KVM Image_" \
+--compute-resource "_My_KVM_Server_"
+--operatingsystem "RedHat _version_" \
+--architecture "x86_64" \
+--username root \
+--user-data false \
+--uuid "/var/lib/libvirt/images/_KVMimage_.qcow2" \
+----
+endif::[]
+ifeval::["{context}" == "rhv-provisioning"]
+Use the `--uuid` option to store the template UUID on the {oVirt} server.
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# hammer compute-resource image create \
+--name "__{oVirtShort}_Image__" \
+--compute-resource "__My_{oVirtShort}__"
+--operatingsystem "RedHat _version_" \
+--architecture "x86_64" \
+--username root \
+--uuid "9788910c-4030-4ae0-bad7-603375dd72b1" \
+----
+endif::[]
+ifeval::["{context}" == "openstack-provisioning"]
+Use the `--uuid` field to store the full path of the image location on the {OpenStack} server.
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# hammer compute-resource image create \
+--name "OpenStack Image" \
+--compute-resource "_My_OpenStack_Platform_"
+--operatingsystem "RedHat _version_" \
+--architecture "x86_64" \
+--username root \
+--user-data true \
+--uuid "_/path/to/OpenstackImage.qcow2_"
+----
+endif::[]
+ifeval::["{context}" == "gce-provisioning"]
+With the `--username` option, specify a user other than `root`, because the `root` user cannot connect to a GCE instance using SSH keys.
+The username must begin with a letter and consist of lowercase letters and numbers.
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# hammer compute-resource image create \
+--name '_gce_image_name_' \
+--compute-resource '_gce_cr_' \
+--operatingsystem-id 1 \
+--architecture-id 1 \
+--uuid '_3780108136525169178_' \
+--username '_admin_'
+----
+endif::[]
+ifeval::["{context}" == "azure-provisioning"]
+Note that the username that you enter for the image must be the same that you use when you create a host with this image.
+The `--password` option is optional when creating an image.
+You cannot use the `root` user.
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# hammer compute-resource image create \
+--name _Azure_image_name_ \
+--compute-resource _azure_cr_name_ \
+--uuid '_marketplace://RedHat:RHEL:7-RAW:latest_' \
+--username '_azure_username_' \
+--user-data _no_
+----
+endif::[]

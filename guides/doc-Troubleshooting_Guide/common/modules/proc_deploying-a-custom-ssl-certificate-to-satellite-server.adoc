@@ -1,0 +1,84 @@
+[id="deploying-a-custom-ssl-certificate-to-satellite-server_{context}"]
+
+= Deploying a Custom SSL Certificate to {ProjectServer}
+
+Use this procedure to configure your {ProjectServer} to use a custom SSL certificate signed by a Certificate Authority.
+The `katello-certs-check` command validates the input certificate files and returns the commands necessary to deploy a custom SSL certificate to {ProjectServer}.
+
+.Procedure
+
+To deploy a custom certificate on your {ProjectServer}, complete the following steps:
+
+. Validate the custom SSL certificate input files.
+Note that for the `katello-certs-check` command to work correctly, Common Name (CN) in the certificate must match the FQDN of {ProjectServer}.
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# katello-certs-check \
+-c __/root/satellite_cert/satellite_cert.pem__ \      <1>
+-k __/root/satellite_cert/satellite_cert_key.pem__ \  <2>
+-b __/root/satellite_cert/ca_cert_bundle.pem__        <3>
+----
+<1> Path to the {ProjectServer} certificate file that is signed by a Certificate Authority.
+<2> Path to the private key that was used to sign the {SmartProxyServer} certificate.
+<3> Path to the Certificate Authority bundle.
++
+If the command is successful, it returns two `{foreman-installer}` commands, one of which you must use to deploy a certificate to {ProjectServer}.
+ifeval::["{build}" == "satellite"]
++
+.Example output of `katello-certs-check`
+[options="nowrap", subs="+quotes,attributes"]
+----
+Validation succeeded.
+
+To install the Red Hat Satellite Server with the custom certificates, run:
+
+  satellite-installer --scenario satellite \
+    --certs-server-cert "_/root/satellite_cert/satellite_cert.pem_" \
+    --certs-server-key "_/root/satellite_cert/satellite_cert_key.pem_" \
+    --certs-server-ca-cert "_/root/satellite_cert/ca_cert_bundle.pem_"
+
+To update the certificates on a currently running Red Hat Satellite installation, run:
+
+  satellite-installer --scenario satellite \
+    --certs-server-cert "_/root/satellite_cert/satellite_cert.pem_" \
+    --certs-server-key "_/root/satellite_cert/satellite_cert_key.pem_" \
+    --certs-server-ca-cert "_/root/satellite_cert/ca_cert_bundle.pem_" \
+    --certs-update-server --certs-update-server-ca
+----
+endif::[]
+ifeval::["{build}" != "satellite"]
++
+.Example output of `katello-certs-check`
+[options="nowrap", subs="+quotes,attributes"]
+----
+Validation succeeded.
+
+To install the Katello main server with the custom certificates, run:
+
+  foreman-installer --scenario katello \\
+    --certs-server-cert "_/root/satellite_cert/satellite_cert.pem_" \
+    --certs-server-key "_/root/satellite_cert/satellite_cert_key.pem_" \
+    --certs-server-ca-cert "_/root/satellite_cert/ca_cert_bundle.pem_"
+
+To update the certificates on a currently running Katello installation, run:
+
+  foreman-installer --scenario katello \\
+    --certs-server-cert "_/root/satellite_cert/satellite_cert.pem_" \
+    --certs-server-key "_/root/satellite_cert/satellite_cert_key.pem_" \
+    --certs-server-ca-cert "_/root/satellite_cert/ca_cert_bundle.pem_" \
+    --certs-update-server --certs-update-server-ca
+----
+endif::[]
+
+. From the output of the `katello-certs-check` command, depending on your requirements, enter the `{foreman-installer}` command that installs a new {Project} with custom SSL certificates or updates certificates on a currently running {Project}.
++
+If you are unsure which command to run, you can verify that {Project} is installed by checking if the file `/etc/foreman-installer/scenarios.d/.installed` exists.
+If the file exists, run the second `{foreman-installer}` command that updates certificates.
++
+IMPORTANT: Do not delete the certificate archive file after you deploy the certificate.
+It is required, for example, when upgrading {ProjectServer}.
+
+. On a computer with network access to {ProjectServer}, navigate to the following URL: `https://_{foreman-example-com}_`.
+
+. In your browser, view the certificate details to verify the deployed certificate.

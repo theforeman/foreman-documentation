@@ -1,0 +1,83 @@
+[id="configuring-project-settings-for-keycloak-authentication-using-the-cli_{context}"]
+= Configuring {Project} Settings for {Keycloak} Authentication Using the CLI
+
+Use this procedure to configure {Project} settings for {Keycloak} authentication using the {Project} CLI.
+
+Note that you can navigate to the following URL within your realm to obtain values to configure {Project} settings: `https://{Keycloak-short}.com/auth/realms/{Project}_Realm/.well-known/openid-configuration`
+
+.Prerequisite
+
+* Ensure that the *Access Type* setting in the {Project} client in the {Keycloak} web UI is set to *public*
+
+.Procedure
+
+. On {Project}, set the login delegation to `true` so that users can authenticate using the Open IDC protocol:
++
+----
+# hammer settings set --name authorize_login_delegation --value true
+----
+
+. Set the login delegation logout URL:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# hammer settings set --name login_delegation_logout_url \
+--value https://{foreman-example-com}/users/extlogout
+----
+
+. Set the algorithm for encoding on {Keycloak}, for example, `RS256`:
++
+----
+# hammer settings set --name oidc_algorithm --value 'RS256'
+----
+
+. Open the `_{Keycloak-short}.example.com_/auth/realms/_{Keycloak-short}_REALM_/.well-known/openid-configuration` URL and note the values to populate the options in the following steps.
+
+. Add the value for the Hammer client in the Open IDC audience: 
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# hammer settings set --name oidc_audience \
+--value "['_{foreman-example-com}_-hammer-openidc']"
+----
++
+[NOTE]
+====
+If you register several {Keycloak} clients to {Project}, ensure that you append all audiences in the array.
+For example:
+[options="nowrap", subs="+quotes,attributes"]
+----
+# hammer settings set --name oidc_audience \
+--value "['_{foreman-example-com}_-foreman-openidc', '_{foreman-example-com}_-hammer-openidc']"
+----
+====
+
+. Set the value for the Open IDC issuer:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# hammer settings set --name oidc_issuer \
+--value "_{Keycloak-short}.example.com_/auth/realms/_{Keycloak-short}_Realm_"
+----
+
+. Set the value for Open IDC Java Web Token (JWT):
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# hammer settings set --name oidc_jwks_url \
+--value "_{Keycloak-short}.example.com_/auth/realms/_{Keycloak-short}_Realm_/protocol/openid-connect/certs"
+----
+
+. Retrieve the ID of the {Keycloak} authentication source:
++
+----
+# hammer auth-source external list
+----
+
+. Set the location and organization:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# hammer auth-source external update --id _Authentication Source ID_ \
+--location-ids _Location ID_ --organization-ids _Organization ID_
+----

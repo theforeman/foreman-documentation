@@ -1,0 +1,193 @@
+[id="configuring-dynamic-dns-update-with-gss-tsig-authentication_{context}"]
+
+= Configuring Dynamic DNS Update with GSS-TSIG Authentication
+
+You can configure the IdM server to use the generic security service algorithm for secret key transaction (GSS-TSIG) technology defined in https://tools.ietf.org/html/rfc3645[RFC3645].
+To configure the IdM server to use the GSS-TSIG technology, you must install the IdM client on the {ProductName} base operating system.
+
+.Prerequisites
+
+* You must ensure the IdM server is deployed and the host-based firewall is configured correctly.
+For more information, see https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Linux_Domain_Identity_Authentication_and_Policy_Guide/installing-ipa.html#prereq-ports[Port Requirements] in the _Linux Domain Identity, Authentication, and Policy Guide_.
+* You must contact the IdM server administrator to ensure that you obtain an account on the IdM server with permissions to create zones on the IdM server.
+* You must confirm whether {ProjectServer} or {SmartProxyServer} is configured to provide DNS service for your deployment.
+* You must configure DNS, DHCP and TFTP services on the base operating system of either the {Project} or {SmartProxy} that is managing the DNS service for your deployment.
+* You must create a backup of the answer file.
+You can use the backup to restore the answer file to its original state if it becomes corrupted.
+For more information, see {InstallingProjectDocURL}configuring-server_{project-context}[Configuring {ProjectServer}].
+
+.Procedure
+To configure dynamic DNS update with GSS-TSIG authentication, complete the following steps:
+
+.Creating a Kerberos Principal on the IdM Server
+
+. Obtain a Kerberos ticket for the account obtained from the IdM administrator:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# kinit _idm_user_
+----
+
+. Create a new Kerberos principal for {ProductName} to use to authenticate on the IdM server.
++
+ifeval::["{context}" == "{smart-proxy-context}"]
+[options="nowrap" subs="+quotes,attributes"]
+----
+# ipa service-add _{smartproxy-example-com}_
+----
+endif::[]
+ifeval::["{context}" == "{project-context}"]
+[options="nowrap" subs="+quotes,attributes"]
+----
+# ipa service-add _{foreman-example-com}_
+----
+endif::[]
+
+.Installing and Configuring the IdM Client
+
+. On the base operating system of either the {Project} or {SmartProxy} that is managing the DNS service for your deployment, install the `ipa-client` package:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {package-install-project} ipa-client
+----
+
+. Configure the IdM client by running the installation script and following the on-screen prompts:
++
+[options="nowrap"]
+----
+# ipa-client-install
+----
+
+. Obtain a Kerberos ticket:
++
+[options="nowrap"]
+----
+# kinit admin
+----
+
+. Remove any preexisting `keytab`:
++
+[options="nowrap"]
+----
+# rm /etc/foreman-proxy/dns.keytab
+----
+
+. Obtain the `keytab` for this system:
++
+
+[options="nowrap" subs="+quotes,attributes"]
+----
+# ipa-getkeytab -p {smart-proxy-context}/_{foreman-example-com}@EXAMPLE.COM_ \
+-s _idm1.example.com_ -k /etc/foreman-proxy/dns.keytab
+----
++
+[NOTE]
+====
+When adding a keytab to a standby system with the same host name as the original system in service, add the `r` option to prevent generating new credentials and rendering the credentials on the original system invalid.
+====
++
+. For the `dns.keytab` file, set the group and owner to `foreman-proxy`:
++
+[options="nowrap"]
+----
+# chown foreman-proxy:foreman-proxy /etc/foreman-proxy/dns.keytab
+----
+
+. Optional: To verify that the `keytab` file is valid, enter the following command:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# kinit -kt /etc/foreman-proxy/dns.keytab \
+{smart-proxy-context}/_{foreman-example-com}@EXAMPLE.COM_
+----
+
+.Configuring DNS Zones in the IdM web UI
+
+. Create and configure the zone that you want to manage:
+.. Navigate to *Network Services* > *DNS* > *DNS Zones*.
+.. Select *Add* and enter the zone name.
+For example, `example.com`.
+.. Click *Add and Edit*.
+.. Click the Settings tab and in the *BIND update policy* box, add the following to the semi-colon separated list:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+grant {smart-proxy-context}/047__{foreman-example-com}@EXAMPLE.COM__ wildcard * ANY;
+----
+
+.. Set *Dynamic update* to *True*.
+.. Enable *Allow PTR sync*.
+.. Click *Save* to save the changes.
+
+. Create and configure the reverse zone:
+.. Navigate to *Network Services* > *DNS* > *DNS Zones*.
+.. Click *Add*.
+.. Select *Reverse zone IP network* and add the network address in CIDR format to enable reverse lookups.
+.. Click *Add and Edit*.
+.. Click the *Settings* tab and in the *BIND update policy* box, add the following to the semi-colon separated list:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+grant {smart-proxy-context}\047__{foreman-example-com}@EXAMPLE.COM__ wildcard * ANY;
+----
+
+.. Set *Dynamic update* to *True*.
+.. Click *Save* to save the changes.
+
+
+.Configuring the {Project} or {SmartProxyServer} that Manages the DNS Service for the Domain
+
+. Use the `{foreman-installer}` command to configure the {Project} or {SmartProxy} that manages the DNS Service for the domain:
+* On {Project}, enter the following command:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+{installer-scenario} \
+--foreman-proxy-dns=true \
+--foreman-proxy-dns-managed=true \
+--foreman-proxy-dns-provider=nsupdate_gss \
+--foreman-proxy-dns-server="_idm1.example.com_" \
+--foreman-proxy-dns-tsig-principal="{smart-proxy-context}/_{foreman-example-com}@EXAMPLE.COM_" \
+--foreman-proxy-dns-tsig-keytab=/etc/foreman-proxy/dns.keytab \
+--foreman-proxy-dns-reverse="55.168.192.in-addr.arpa" \
+--foreman-proxy-dns-zone=_example.com_ \
+--foreman-proxy-dns-ttl=86400
+----
+
+* On {SmartProxy}, enter the following command:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+{installer-scenario-smartproxy} \
+--foreman-proxy-dns=true \
+--foreman-proxy-dns-managed=true \
+--foreman-proxy-dns-provider=nsupdate_gss \
+--foreman-proxy-dns-server="_idm1.example.com_" \
+--foreman-proxy-dns-tsig-principal="{smart-proxy-context}/_{foreman-example-com}@EXAMPLE.COM_" \
+--foreman-proxy-dns-tsig-keytab=/etc/foreman-proxy/dns.keytab \
+--foreman-proxy-dns-reverse="55.168.192.in-addr.arpa" \
+--foreman-proxy-dns-zone=_example.com_ \
+--foreman-proxy-dns-ttl=86400
+----
+
+. Restart the {Project} or {SmartProxy}'s Proxy Service.
++
+[options="nowrap"]
+----
+# systemctl restart foreman-proxy
+----
+
+After you run the `{foreman-installer}` command to make any changes to your {SmartProxy} configuration, you must update the configuration of each affected {SmartProxy} in the {Project} web UI.
+
+.Updating the Configuration in the {Project} web UI
+. Navigate to *Infrastructure* > *{SmartProxies}*, locate the {ProductName}, and from the list in the *Actions* column, select *Refresh*.
+. Configure the domain:
+.. Navigate to *Infrastructure* > *Domains* and select the domain name.
+.. In the *Domain* tab, ensure *DNS {SmartProxy}* is set to the {SmartProxy} where the subnet is connected.
+. Configure the subnet:
+.. Navigate to *Infrastructure* > *Subnets* and select the subnet name.
+.. In the *Subnet* tab, set *IPAM* to *None*.
+.. In the *Domains* tab, select the domain that you want to manage using the IdM server.
+.. In the *{SmartProxies}* tab, ensure *Reverse DNS {SmartProxy}* is set to the {SmartProxy} where the subnet is connected.
+.. Click *Submit* to save the changes.

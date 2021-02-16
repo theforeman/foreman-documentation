@@ -1,0 +1,114 @@
+[id="configuring-dns-dhcp-and-tftp_{context}"]
+
+= Configuring DNS, DHCP, and TFTP on {ProductName}
+
+To configure the DNS, DHCP, and TFTP services on {ProductName}, use the `{foreman-installer}` command with the options appropriate for your environment.
+To view a complete list of configurable options, enter the `{installer-scenario} --help` command.
+
+Any changes to the settings require entering the `{foreman-installer}` command again.
+You can enter the command multiple times and each time it updates all configuration files with the changed values.
+
+ifeval::["{build}" != "foreman-deb"]
+To use external DNS, DHCP, and TFTP services instead, see xref:configuring-external-services[].
+endif::[]
+
+.Adding Multihomed DHCP details
+
+If you want to use Multihomed DHCP, you must update the network interface file.
+
+. In the `/etc/systemd/system/dhcpd.service.d/interfaces.conf` file, edit the following line to add Multihomed DHCP:
++
+[options="nowrap" subs="+quotes"]
+----
+[Service]
+ExecStart=/usr/sbin/dhcpd -f -cf /etc/dhcp/dhcpd.conf -user dhcpd -group dhcpd --no-pid eth0 eth1 eth2
+----
++
+If this file does not exist already, create it.
+. Enter the following command to perform a daemon reload:
++
+----
+# systemctl --system daemon-reload
+----
++
+. Enter the following command to restart the *dhcpd* service:
++
+----
+# systemctl restart dhcpd.service
+----
+
+.Prerequisites
+
+ifeval::["{context}" == "{project-context}"]
+* Ensure that the following information is available to you:
+** DHCP IP address ranges
+** DHCP gateway IP address
+** DHCP nameserver IP address
+** DNS information
+** TFTP server name
+
+* Use the FQDN instead of the IP address where possible in case of network changes.
+endif::[]
+
+ifeval::["{context}" == "{smart-proxy-context}"]
+* You must have the correct network name (`dns-interface`) for the DNS server.
+* You must have the correct interface name (`dhcp-interface`) for the DHCP server.
+endif::[]
+
+* Contact your network administrator to ensure that you have the correct settings.
+
+.Procedure
+
+* Enter the `{foreman-installer}` command with the options appropriate for your environment.
+The following example shows configuring full provisioning services:
+
+ifeval::["{context}" == "{project-context}"]
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {installer-scenario} \
+--foreman-proxy-dns true \
+--foreman-proxy-dns-managed true \
+--foreman-proxy-dns-interface __eth0__ \
+--foreman-proxy-dns-zone __example.com__ \
+--foreman-proxy-dns-reverse __2.0.192.in-addr.arpa__ \
+--foreman-proxy-dhcp true \
+--foreman-proxy-dhcp-managed true \
+--foreman-proxy-dhcp-interface __eth0__ \
+--foreman-proxy-dhcp-range "__192.0.2.100__ __192.0.2.150__" \
+--foreman-proxy-dhcp-gateway __192.0.2.1__ \
+--foreman-proxy-dhcp-nameservers __192.0.2.2__ \
+--foreman-proxy-tftp true \
+--foreman-proxy-tftp-managed true \
+--foreman-proxy-tftp-servername _192.0.2.3_
+----
+
+You can monitor the progress of the `{foreman-installer}` command displayed in your prompt.
+You can view the logs in `/var/log/foreman-installer/{project-context}.log`.
+You can view the settings used, including the `initial_admin_password` parameter, in the `/etc/foreman-installer/scenarios.d/{project-context}-answers.yaml` file.
+endif::[]
+
+ifeval::["{context}" == "{smart-proxy-context}"]
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {installer-scenario-smartproxy} \
+--foreman-proxy-dns true \
+--foreman-proxy-dns-managed true \
+--foreman-proxy-dns-interface _eth0_ \
+--foreman-proxy-dns-zone _example.com_ \
+--foreman-proxy-dns-reverse _2.0.192.in-addr.arpa_ \
+--foreman-proxy-dhcp true \
+--foreman-proxy-dhcp-managed true \
+--foreman-proxy-dhcp-interface _eth0_ \
+--foreman-proxy-dhcp-range "_192.0.2.100_ _192.0.2.150_" \
+--foreman-proxy-dhcp-gateway _192.0.2.1_ \
+--foreman-proxy-dhcp-nameservers _192.0.2.2_ \
+--foreman-proxy-tftp true \
+--foreman-proxy-tftp-managed true \
+--foreman-proxy-tftp-servername _192.0.2.3_
+----
+endif::[]
+
+
+For more information about configuring DHCP, DNS, and TFTP services, see the {ProvisioningDocURL}Configuring_Networking-Configuring_Network_Services_for_PXE_Boot[Configuring Network Services] section in the _Provisioning Guide_.
