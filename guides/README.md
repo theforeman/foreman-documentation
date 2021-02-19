@@ -102,8 +102,28 @@ To use them, use "attributes" keyword:
 Hide or show specific blocks, paragraphs, warnings or chapters via special variable called "build".
 Its value can be set either to "foreman-el" or "satellite":
 
-	ifeval::["{build}" == "foreman-el"]
+	ifeval::["{build}" == "katello"]
 	NOTE: This part is only relevant for deployments with Katello plugin.
+	endif::[]
+
+This syntax does not allow multiple conditionals, in that case use, now preferred, `ifdef` syntax:
+
+	ifdef::katello[]
+	NOTE: This part is only relevant for deployments with Katello plugin.
+	endif::[]
+
+Use comma for logic "or":
+
+	ifdef::katello,satellite[]
+	NOTE: This part is only relevant for deployments with Katello plugin or in Satellite environment.
+	endif::[]
+
+Some files are included in different contexts, there are attributes to find the correct context. In these cases use both `ifdef` and `ifeval`:
+
+	ifdef::foreman-el,foreman-deb[]
+	ifeval::["{context}" == "{project-context}"]
+	* A minimum of 4 GB RAM is required for {ProjectServer} to function.
+	endif::[]
 	endif::[]
 
 When doing review, consider checking out the topic branch and putting necessary changes on top of author's work to making many comments on github.
