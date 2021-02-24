@@ -1,0 +1,257 @@
+[[Logging]]
+= Log locations and debug logging
+
+{ProjectName} as a stock install comes with `:INFO` level logging enabled. There are times where this may not be adequate and the level needs to be raised.
+
+=== Increase log levels
+
+.To enable debugging logging level on all components
+----
+# hammer admin logging --all --level-debug
+# foreman-maintain service restart
+----
+
+.To flip configuration back to production mode
+----
+# hammer admin logging --all --level-production
+# foreman-maintain service restart
+----
+
+.To see list of all components and changed configuration files
+----
+# hammer admin logging --list
+-----------|-------------------------------------|-------------------------------------
+COMPONENT  | AUTO-DETECTED BY EXISTENCE OF       | DESTINATIONS                        
+-----------|-------------------------------------|-------------------------------------
+postgresql | /var/lib/pgsql/data/postgresql.conf | syslog /var/lib/pgsql/data/pg_log/  
+rails      | /etc/foreman/settings.yaml          | /var/log/foreman/production.log     
+proxy      | /etc/foreman-proxy/settings.yml     | /var/log/foreman-proxy/proxy.log         
+dhcpd      | /etc/dhcp/dhcpd.conf                | syslog /var/log/dhcpd-debug.log     
+qpidd      | /etc/qpid/qpidd.conf                | syslog                              
+tomcat     | /etc/candlepin/candlepin.conf       | /var/log/candlepin/ /var/log/tomcat/   
+virt-who   | /etc/sysconfig/virt-who             | syslog                              
+-----------|-------------------------------------|-------------------------------------
+----
+
+.To set debug level only on the Tomcat component
+----
+# hammer admin logging --components tomcat --level-debug
+----
+
+=== Hammer
+
+* The log location for Hammer is in `~/.hammer/log/hammer.log`
+
+* To change the log level manually
+
+.Change the following line in `/etc/hammer/cli_config.yml`
+----
+:log_level: 'error'
+----
+.to
+----
+:log_level: 'debug'
+----
+
+=== {SmartProxy}
+
+* The log location for {SmartProxy} is in `/var/log/foreman-proxy/proxy.log`
+
+* To change the log level manually
+
+.Uncomment the `DEBUG` line in `/etc/foreman-proxy/settings.yml`
+----
+# WARN, DEBUG, Error, Fatal, INFO, UNKNOWN
+#:log_level: DEBUG
+----
+.Restart the foreman-proxy service
+----
+# systemctl restart foreman-proxy
+----
+
+CAUTION: Running the installer will revert this change back.
+
+=== Candlepin
+
+* The log location for Candlepin is in `/var/log/candlepin/candlepin.log`
+  - Any errors are also logged in a seperate file for easier debugging `/var/log/candlepin/error.log`
+
+* To change the log level manually
+
+.Add to /etc/candlepin/candlepin.conf
+----
+log4j.logger.org.candlepin=DEBUG
+----
+.Restart the `tomcat` service
+----
+# systemctl restart tomcat
+----
+.If the candlepin log files are found to be too verbose with the default debug settings `WARN` can be used
+----
+log4j.logger.org.candlepin.resource.ConsumerResource=WARN
+log4j.logger.org.candlepin.resource.HypervisorResource=WARN
+----
+
+=== {ProjectName}
+
+* The log location for {ProjectName} is `/var/log/foreman/production.log`
+
+* {ProjectName} also stores logs for Apache in:
+  - `/var/log/httpd/foreman_error.log`
+  - `/var/log/httpd/foreman_access.log`
+  - `/var/log/httpd/foreman_ssl_error.log`
+  - `/var/log/httpd/foreman_ssl_access.log`
+
+* To change the log level manually
+
+.Edit `/etc/foreman/settings.yaml` in two places. First, set appropriate level of logging (`info`, `debug`,..)
+----
+:logging:
+  :production:
+    :type: file
+    :layout: pattern
+    :level: debug
+----
+.Second, to selectively enable some loggers, add to the end
+----
+:loggers:
+  :ldap:
+    :enabled: true
+  :permissions:
+    :enabled: true
+  :sql:
+    :enabled: true
+----
+.Restart the {ProjectName} services
+----
+# foreman-maintain service restart
+----
+
+* It is possible to enable just some of the loggers. Note that to see logging from some area, debug logging has to be set.
+
+* Complete list of loggers with their default values can be found in `/usr/share/foreman/config/application.rb` in the `Foreman::Logging.add_loggers` command
+----
+    # Check that the loggers setting exist to configure the app and sql loggers
+    Foreman::Logging.add_loggers((SETTINGS[:loggers] || {}).reverse_merge(
+      :app => {:enabled => true},
+      :audit => {:enabled => true},
+      :ldap => {:enabled => false},
+      :permissions => {:enabled => false},
+      :proxy => {:enabled => false},
+      :sql => {:enabled => false},
+      :templates => {:enabled => true},
+      :notifications => {:enabled => true},
+      :background => {:enabled => true},
+      :dynflow => {:enabled => true},
+      :telemetry => {:enabled => false},
+      :blob => {:enabled => true}
+    ))
+----
+
+=== Qpid Dispatch Router
+
+* Qpid logs to syslog and can be viewed in `/var/log/messages` or with `journalctl`
+
+* To change the log level manually
+
+.Change the following line in `/etc/qpid-dispatch/qdrouterd.conf`
+----
+enable: info+
+----
+.to
+----
+enable: debug+
+----
+.Restart the Qpid Dispatch Router
+----
+# systemctl restart qdrouterd`
+----
+
+CAUTION: Running the installer will revert this change back.
+
+=== Qpid Broker
+
+* Qpid logs to syslog and can be viewed in `/var/log/messages` or with `journalctl`
+
+* To change the log level manually
+
+.Change the following line in `/etc/qpid/qpidd.conf`
+----
+log-enable=error+
+----
+.to
+----
+log-enable=debug+
+----
+.Restart the Qpid Broker
+----
+# systemctl restart qpidd`
+----
+
+CAUTION: Running the installer will revert this change back.
+
+=== Redis
+
+* The log location for Redis is `/var/log/redis/redis.log`
+
+* To change the log level manually
+
+.Change the following line in `/etc/opt/rh/rh-redis5/redis.conf`
+----
+loglevel notice
+----
+.to
+----
+loglevel debug
+----
+.Restart the Redis service
+----
+systemctl restart rh-redis5-redis
+----
+
+=== Postgres
+
+* The log location for Postgres is `/var/opt/rh/rh-postgresql12/lib/pgsql/data/log/`
+
+* To log queries to debug slow queries and actions
+
+.Uncomment and change the following line in `/var/opt/rh/rh-postgresql12/lib/pgsql/data/postgresql.conf`
+----
+#log_statement = 'none'
+----
+.to
+----
+log_statement = 'all'
+----
+.Restart the {ProjectName} services
+----
+# foreman-maintain service restart
+----
+
+CAUTION: Based on the size of your {ProjectName} installation, this can cause disk space to fill up very quickly. Only turn this on if absolutely needed.
+
+* For other debug log settings, please refer to the official Postgresql https://www.postgresql.org/docs/current/runtime-config-logging.html[documentation]
+
+=== {ProjectName} Installer
+
+* Log files are located in `/var/log/foreman-installer/`
+
+.To increase the log level of the {ProjectName} Installer during an install
+----
+# foreman-installer --verbose-log-level debug
+----
+
+=== Pulp
+
+* By default Pulp logs to syslog and can be viewed in `/var/log/messages` or with `journalctl`
+
+* To change the log level manually
+
+.Add the following config to the `/etc/pulp/settings.py` file
+----
+LOGGING = {"dynaconf_merge": True, "loggers": {'': {'handlers': ['console'], 'level': 'DEBUG'}}}
+----
+.Restart the Pulp services
+----
+# systemctl restart rh-redis5-redis pulpcore-api pulpcore-resource-manager pulpcore-content pulpcore-worker@1 pulpcore-worker@2
+----
