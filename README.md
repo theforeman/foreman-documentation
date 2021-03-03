@@ -1,26 +1,27 @@
 # Foreman documentation
 
-THIS IS A WORK IN PROGRESS, VISIT OFFICIAL [FOREMAN OR KATELLO DOCUMENTATION](https://theforeman.org/documentation.html) IF YOU ARE SEEKING HELP.
+THIS IS A WORK IN PROGRESS. VISIT THE OFFICIAL [FOREMAN OR KATELLO DOCUMENTATION](https://theforeman.org/documentation.html) IF YOU ARE SEEKING HELP.
 
 This git repository contains PoC of improving Foreman documentation.
 
 ## Foreman Guides
 
 This is a tree of documentation based on Red Hat Satellite 6 official books.
+Contributions are welcome.
 See README in the guides/ subdirectory for more information.
 
 * [guides](guides/README.md)
 
 ## Static Site
 
-Landing page for [docs.theforeman.org](https://docs.theforeman.org) is available as a Hugo project.
+The landing page for [docs.theforeman.org](https://docs.theforeman.org) is available as a Hugo project.
 See README in the web/ subdirectory for more information.
 
 * [web](web/README.md)
 
 ## Deployment
 
-Github actions perform HTML (with link validation), PDF and WEB artifact creation and if suceeded and branch is master or stable, artifacts are downloaded, extracted and deployed (commited into gh-pages). Deployment does not delete files, in order to remove some unwanted content, manual deletion and push into gh-pages must be performed.
+Github actions perform HTML (with link validation), PDF and WEB artifact creation and if succeeded and branch is master or stable, artifacts are downloaded, extracted and deployed (commited into gh-pages). Deployment does not delete files, in order to remove some unwanted content, manual deletion and push into gh-pages must be performed.
 
 When a commit is pushed into `master`:
 
@@ -49,3 +50,19 @@ When a commit is pushed into `X.Y`:
 ## License
 
 See LICENSE files in individual subdirectories
+
+## The process (TODO)
+
+This is what we are working on right now:
+
+* [x] Initial import of Provisioning Guide
+* [x] Provide Makefiles and Travis integration
+* [x] Replace Satellite 6 with Foreman term
+* [ ] Modularize content
+* [ ] Hide irrelevant chapters
+* [ ] Incorporate parts from upstream docs
+* [ ] Incorporate https://community.theforeman.org/t/discovery-ipxe-efi-workflow-in-foreman-1-20/13026
+* [ ] Write better introduction
+* [ ] Add Anaconda-image based provisioning workflow
+* [ ] Update with PXE Grub2 steps
+* [ ] Discuss with Foreman community if to continue with other guides

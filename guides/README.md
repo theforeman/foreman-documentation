@@ -4,6 +4,8 @@ This is upstream source code of [Red Hat Satellite 6](https://access.redhat.com/
 All content in this repository uses [AsciiDoctor](https://asciidoctor.org/) syntax and aims to follow [Guidelines for Red Hat Documentation](https://redhat-documentation.github.io/).
 This is a **work in progress**, an attempt to take content written by Red Hat documentation team, modularize it, incorporate [existing documentation](https://theforeman.org/documentation.html) and eventually make this the only and official documentation for Foreman, Katello and all plugins.
 
+Contributions are welcome. Please read the [Contribution guidelines](#contribution-guidelines) before opening a Pull Request.
+
 ## Building
 
 Install required tools.
@@ -62,7 +64,7 @@ We do not publish the content yet to prevent users confusion, however this secti
 We should make sure that only the last stable version of the HTML document is indexed by search engines, old and nightly builds should not be indexed.
 All PDFs should be available for download tho.
 
-## Stylying
+## Styling
 
 CSS styles are based on the official AsciiDoctor styles with some small modifications.
 To generate the stylesheet:
@@ -71,12 +73,14 @@ To generate the stylesheet:
 	git checkout foreman-css
 	compass compile
 
-## Contributing
+## Contribution guidelines
 
-Please read [Guidelines for Red Hat Documentation](https://redhat-documentation.github.io/) before opening a Pull Request.
-Additional rules apply:
+Please read these guidelines before opening a Pull Request. For more information, see [Guidelines for Red Hat Documentation](https://redhat-documentation.github.io/).
 
-Never write "Foreman" or "Satellite" words directly but use the following variables:
+### Variables
+
+The content in this repository is shared between the community Foreman docs and the Red Hat Satellite docs.
+Therefore, never write "Foreman" or "Satellite" words directly, but use the following variables:
 
 | Variable | Upstream value | Downstream value |
 | -------- | -------------- | ---------------- |
@@ -128,18 +132,11 @@ Some files are included in different contexts, there are attributes to find the 
 
 When doing review, consider checking out the topic branch and putting necessary changes on top of author's work to making many comments on github.
 
-We should avoid using phases like, "Starting from version 6.5 or 1.22" because it is not possible to easily translate these strings in both the streams.
+Avoid using phases like "Starting from version 6.5 or 1.22" because it is not possible to easily translate these strings in both the streams.
 
-## Structure
+### Conventions
 
-Files that are included in more than one guide have prefixes to distingish their type of content as follows:
-
-* `con`: File starting with `con_` contain concepts and explain the _what_ and _why_.
-* `proc`: Files starting with `proc_` contain procedures and explain _how_ to achieve a specific goal.
-* `ref`: Files starting with `ref_` contain references and append other files, e.g. tables with options.
-* `snip`: Files starting with `snip_` contain snippets that are reused throughout multiple guides, e.g. admonitions.
-
-## Conventions
+Use the following markup conventions:
 
 * User input is surrounded by underscores (`_`) to indicate variable input, e.g. `hammer organization create --name "_My Organization_" --label "_my_organization_"`.
 * A single line only contains one sentence.
@@ -150,18 +147,23 @@ Whitespace after partial files has to be handled in the file using the `include:
 * Source files use UTF-8 character encoding.
 * Image file names use dashes (`-`) and suffix a build target, e.g. `foreman`.
 
-## The process (TODO)
+### Structure
 
-This is what we are working on right now:
+If you create a new file, use the file structure described here.
 
-* [x] Initial import of Provisioning Guide
-* [x] Provide Makefiles and Travis integration
-* [x] Replace Satellite 6 with Foreman term
-* [ ] Modularize content
-* [ ] Hide irrelevant chapters
-* [ ] Incorporate parts from upstream docs
-* [ ] Incorporate https://community.theforeman.org/t/discovery-ipxe-efi-workflow-in-foreman-1-20/13026
-* [ ] Write better introduction
-* [ ] Add Anaconda-image based provisioning workflow
-* [ ] Update with PXE Grub2 steps
-* [ ] Discuss with Foreman community if to continue with other guides
+Files that are included in more than one guide are kept in the common/ subdirectory, and have prefixes to distinguish their type of content.
+
+Assemblies are kept at the top of the common/ subdirectory:
+
+* [`assembly`](https://redhat-documentation.github.io/modular-docs/#forming-assemblies): Files starting with `assembly_` contain user stories and the modules required to accomplish those user stories. See the [assembly template](https://raw.githubusercontent.com/redhat-documentation/modular-docs/master/modular-docs-manual/files/TEMPLATE_ASSEMBLY_a-collection-of-modules.adoc).
+
+Modules are kept in the common/modules/ subdirectory:
+
+* [`con`]:(https://redhat-documentation.github.io/modular-docs/#creating-concept-modules) Files starting with `con_` contain concepts and explain the _what_ and _why_. See the [concept template](https://raw.githubusercontent.com/redhat-documentation/modular-docs/master/modular-docs-manual/files/TEMPLATE_CONCEPT_concept-explanation.adoc).
+* [`proc`]:(https://redhat-documentation.github.io/modular-docs/#creating-procedure-modules) Files starting with `proc_` contain procedures and explain _how_ to achieve a specific goal. See the [procedure template](https://raw.githubusercontent.com/redhat-documentation/modular-docs/master/modular-docs-manual/files/TEMPLATE_PROCEDURE_doing-one-procedure.adoc).
+* [`ref`](https://redhat-documentation.github.io/modular-docs/#creating-reference-modules): Files starting with `ref_` contain references and append other files, e.g. tables with options. See the [reference template](https://raw.githubusercontent.com/redhat-documentation/modular-docs/master/modular-docs-manual/files/TEMPLATE_REFERENCE_reference-material.adoc).
+* [`snip`]:(https://redhat-documentation.github.io/modular-docs/#using_text_snippets_or_text_fragments_writing-mod-docs) Files starting with `snip_` contain snippets that are reused throughout multiple guides, e.g. admonitions. Snippets do not require an ID.
+
+Images that are used in more than one guide are kept in the common/images/ subdirectory.
+
+For more information, see the [Modular Documentation Reference Guide](https://redhat-documentation.github.io/modular-docs/).
