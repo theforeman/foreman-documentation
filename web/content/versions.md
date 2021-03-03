@@ -1,2 +1,2 @@
-[2.3](/version-2.3)
-[Nightly](/)
+[Nightly](/nightly.html)
+[2.3](/2.3.html)
