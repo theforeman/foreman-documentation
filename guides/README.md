@@ -93,7 +93,8 @@ Therefore, never write "Foreman" or "Satellite" words directly, but use the foll
 | {SmartProxyServer} | Smart Proxy server | Capsule Server |
 | {SmartProxy} | Smart Proxy | Capsule |
 
-The table only covers the most frequent terms, the rest is defined in the [included file](common/attributes.adoc).
+The table only covers the most frequent terms.
+The rest are defined in the [attributes file](common/attributes.adoc).
 
 Variables cannot be used in shell or code examples.
 To use them, use "attributes" keyword:
@@ -155,14 +156,19 @@ Files that are included in more than one guide are kept in the common/ subdirect
 
 Assemblies are kept at the top of the common/ subdirectory:
 
-* [`assembly`](https://redhat-documentation.github.io/modular-docs/#forming-assemblies): Files starting with `assembly_` contain user stories and the modules required to accomplish those user stories. See the [assembly template](https://raw.githubusercontent.com/redhat-documentation/modular-docs/master/modular-docs-manual/files/TEMPLATE_ASSEMBLY_a-collection-of-modules.adoc).
+* [`assembly`](https://redhat-documentation.github.io/modular-docs/#forming-assemblies): Files starting with `assembly_` contain user stories and the modules required to accomplish those user stories.
+See the [assembly template](https://raw.githubusercontent.com/redhat-documentation/modular-docs/master/modular-docs-manual/files/TEMPLATE_ASSEMBLY_a-collection-of-modules.adoc).
 
 Modules are kept in the common/modules/ subdirectory:
 
-* [`con`]:(https://redhat-documentation.github.io/modular-docs/#creating-concept-modules) Files starting with `con_` contain concepts and explain the _what_ and _why_. See the [concept template](https://raw.githubusercontent.com/redhat-documentation/modular-docs/master/modular-docs-manual/files/TEMPLATE_CONCEPT_concept-explanation.adoc).
-* [`proc`]:(https://redhat-documentation.github.io/modular-docs/#creating-procedure-modules) Files starting with `proc_` contain procedures and explain _how_ to achieve a specific goal. See the [procedure template](https://raw.githubusercontent.com/redhat-documentation/modular-docs/master/modular-docs-manual/files/TEMPLATE_PROCEDURE_doing-one-procedure.adoc).
-* [`ref`](https://redhat-documentation.github.io/modular-docs/#creating-reference-modules): Files starting with `ref_` contain references and append other files, e.g. tables with options. See the [reference template](https://raw.githubusercontent.com/redhat-documentation/modular-docs/master/modular-docs-manual/files/TEMPLATE_REFERENCE_reference-material.adoc).
-* [`snip`]:(https://redhat-documentation.github.io/modular-docs/#using_text_snippets_or_text_fragments_writing-mod-docs) Files starting with `snip_` contain snippets that are reused throughout multiple guides, e.g. admonitions. Snippets do not require an ID.
+* [`con`](https://redhat-documentation.github.io/modular-docs/#creating-concept-modules): Files starting with `con_` contain concepts and explain the _what_ and _why_.
+See the [concept template](https://raw.githubusercontent.com/redhat-documentation/modular-docs/master/modular-docs-manual/files/TEMPLATE_CONCEPT_concept-explanation.adoc).
+* [`proc`](https://redhat-documentation.github.io/modular-docs/#creating-procedure-modules): Files starting with `proc_` contain procedures and explain _how_ to achieve a specific goal.
+See the [procedure template](https://raw.githubusercontent.com/redhat-documentation/modular-docs/master/modular-docs-manual/files/TEMPLATE_PROCEDURE_doing-one-procedure.adoc).
+* [`ref`](https://redhat-documentation.github.io/modular-docs/#creating-reference-modules): Files starting with `ref_` contain references and append other files, e.g. tables with options.
+See the [reference template](https://raw.githubusercontent.com/redhat-documentation/modular-docs/master/modular-docs-manual/files/TEMPLATE_REFERENCE_reference-material.adoc).
+* [`snip`](https://redhat-documentation.github.io/modular-docs/#using_text_snippets_or_text_fragments_writing-mod-docs): Files starting with `snip_` contain snippets that are reused throughout multiple guides, e.g. admonitions.
+Snippets do not require an ID.
 
 Images that are used in more than one guide are kept in the common/images/ subdirectory.
 
