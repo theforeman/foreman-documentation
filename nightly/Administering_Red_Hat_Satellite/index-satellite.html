@@ -354,7 +354,7 @@ View the list of these services by executing:</p>
 <h2 id="migrating-from-internal-databases-to-external-databases_admin">3. Migrating from Internal Satellite Databases to External Databases</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>When you install Red&#160;Hat Satellite, the <strong>satellite-installer</strong> command installs a PostgreSQL database on the same server as Satellite.
+<p>When you install Red&#160;Hat Satellite, the <strong>satellite-installer</strong> command installs PostgreSQL databases on the same server as Satellite.
 If you are using the default internal databases but want to start using external databases to help with the server load, you can migrate your internal databases to external databases.</p>
 </div>
 <div class="paragraph">
@@ -384,7 +384,7 @@ Prepare a Red&#160;Hat Enterprise Linux 7 server to host the external databases.
 </li>
 <li>
 <p><a href="#installing-postgresql_admin">Installing PostgreSQL</a>.
-Prepare PostgreSQL with databases for Satellite and Candlepin and dedicated users owning them.</p>
+Prepare PostgreSQL with databases for Satellite, Pulp and Candlepin with dedicated users owning them.</p>
 </li>
 <li>
 <p><a href="#migrating-to-external-databases_admin">Migrating to External Databases</a>.
@@ -593,13 +593,13 @@ If the connection succeeds, the commands return <code>1</code>.</p>
 <div class="sect2">
 <h3 id="migrating-to-external-databases_admin">3.4. Migrating to External Databases</h3>
 <div class="paragraph">
-<p>Back up and transfer existing data, then use the <code>satellite-installer</code> command to configure Satellite to connect to an external PostgreSQL database.</p>
+<p>Back up and transfer existing data, then use the <code>satellite-installer</code> command to configure Satellite to connect to an external PostgreSQL database server.</p>
 </div>
 <div class="ulist">
 <div class="title">Prerequisites</div>
 <ul>
 <li>
-<p>You have installed and configured a PostgreSQL database on a Red&#160;Hat Enterprise Linux server.</p>
+<p>You have installed and configured a PostgreSQL server on a Red&#160;Hat Enterprise Linux server.</p>
 </li>
 </ul>
 </div>
@@ -615,7 +615,7 @@ If the connection succeeds, the commands return <code>1</code>.</p>
 </div>
 </li>
 <li>
-<p>Start the <strong>postgreSQL</strong> services:</p>
+<p>Start the <strong>PostgreSQL</strong> services:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># systemctl start postgresql</pre>
@@ -635,7 +635,8 @@ If the connection succeeds, the commands return <code>1</code>.</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap">PGPASSWORD='<em>Foreman_Password</em>' pg_restore -h <em>postgres.example.com</em> -U foreman -d foreman &lt; <em>/var/migration_backup/foreman.dump</em>
-PGPASSWORD='<em>Candlepin_Password</em>' pg_restore -h <em>postgres.example.com</em> -U candlepin -d candlepin &lt; <em>/var/migration_backup/candlepin.dump</em></pre>
+PGPASSWORD='<em>Candlepin_Password</em>' pg_restore -h <em>postgres.example.com</em> -U candlepin -d candlepin &lt; <em>/var/migration_backup/candlepin.dump</em>
+PGPASSWORD='<em>Pulpcore_Password</em>' pg_restore -h <em>postgres.example.com</em> -U pulpcore -d pulpcore &lt; <em>/var/migration_backup/pulpcore.dump</em></pre>
 </div>
 </div>
 </li>
@@ -652,11 +653,10 @@ PGPASSWORD='<em>Candlepin_Password</em>' pg_restore -h <em>postgres.example.com<
     --katello-candlepin-db-name candlepin \
     --katello-candlepin-db-password <em>Candlepin_Password</em> \
     --katello-candlepin-manage-db false \
-    --katello-pulp-db-username pulp \
-    --katello-pulp-db-password <em>pulp_password</em> \
-    --katello-pulp-db-seeds <em>mongo.example.com:27017</em> \
-    --katello-pulp-db-name <em>pulp_database</em> \
-    --katello-pulp-manage-db false</pre>
+    --foreman-proxy-content-pulpcore-manage-postgresql false \
+    --foreman-proxy-content-pulpcore-postgresql-host <em>postgres.example.com</em> \
+    --foreman-proxy-content-pulpcore-postgresql-db-name pulpcore \
+    --foreman-proxy-content-pulpcore-postgresql-password <em>Pulpcore_Password</em></pre>
 </div>
 </div>
 </li>
@@ -3171,18 +3171,18 @@ Compression occurs after the archives are created to decrease the time when Sate
 <p>Enter the <code>du</code> command to estimate the size of uncompressed directories containing Satellite database and configuration files:</p>
 <div class="listingblock">
 <div class="content">
-<pre># du -sh /var/lib/pgsql/data /var/lib/pulp
-100G    /var/lib/pgsql/data
+<pre># du -sh /var/opt/rh/rh-postgresql12/lib/pgsql/data /var/lib/pulp
+100G  /var/opt/rh/rh-postgresql12/lib/pgsql/data
 100G	/var/lib/pulp
 # du -csh /var/lib/qpidd /var/lib/tftpboot /etc /root/ssl-build \
 /var/www/html/pub /opt/puppetlabs
-886M    /var/lib/qpidd
-16M     /var/lib/tftpboot
-37M	/etc
+886M  /var/lib/qpidd
+16M   /var/lib/tftpboot
+37M   /etc
 900K	/root/ssl-build
 100K	/var/www/html/pub
-2M	/opt/puppetlabs
-942M   total</pre>
+2M	  /opt/puppetlabs
+942M  total</pre>
 </div>
 </div>
 </li>
@@ -3210,7 +3210,7 @@ Compression occurs after the archives are created to decrease the time when Sate
 <tbody>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">PostgreSQL database files</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>/var/lib/pgsql/data</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>/var/opt/rh/rh-postgresql12/lib/pgsql/data</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">80 - 85%</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">100 GB &#8594; 20 GB</p></td>
 </tr>
@@ -3615,7 +3615,7 @@ Ensure no other tasks are scheduled for the same time as the backup.</p>
 <div class="ulist">
 <ul>
 <li>
-<p>The system uses LVM for the directories that you snapshot: <code>/var/lib/pulp/</code>, and <code>/var/lib/pgsql/</code>.</p>
+<p>The system uses LVM for the directories that you snapshot: <code>/var/lib/pulp/</code>, and <code>/var/opt/rh/rh-postgresql12/lib/pgsql</code>.</p>
 </li>
 <li>
 <p>The free disk space in the relevant volume group (VG) is three times the size of the snapshot.
@@ -4603,25 +4603,8 @@ Note that after this change the log messages do not appear in <code>/var/log/for
 <td class="tableblock halign-left valign-top"><p class="tableblock">Apache HTTP server</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>/var/log/foreman-installer/satellite</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Satellite installer</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>/var/log/foreman-installer/capsule</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Capsule&#160;Server installer</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>/var/log/libvirt</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Virtualization API</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>/var/log/production</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Foreman</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>/var/log/pulp</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Celerybeat and Celery startup request messages.
-After startup is complete, messages are logged to <code>/var/log/messages</code>.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>/var/log/foreman-installer</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Installer</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>/var/log/puppet</code></p></td>
@@ -4632,12 +4615,12 @@ After startup is complete, messages are logged to <code>/var/log/messages</code>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Subscription management</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>/var/log/tomcat6</code> and <code>/var/log/tomcat</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Apache web server messages for Red&#160;Hat Enterprise&#160;Linux&#160;6 and Red&#160;Hat Enterprise&#160;Linux&#160;7, respectively.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>/var/log/tomcat</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Candlepin webservice logs</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>/var/log/messages</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Various other log messages related to pulp, rhsm, and goferd.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Various other log messages</p></td>
 </tr>
 </tbody>
 </table>
@@ -7799,7 +7782,7 @@ A red icon indicates an inactive Capsule, use the <code>service foreman-proxy re
 </dd>
 <dt class="hdlist1"><strong>What services are enabled on the Capsule&#160;Server?</strong></dt>
 <dd>
-<p>In the <strong>Features</strong> column you can verify if the Capsule for example provides a DHCP service or acts as a Pulp node.
+<p>In the <strong>Features</strong> column you can verify if the Capsule for example provides a DHCP service or acts as a Pulp mirror.
 Capsule features can be enabled during installation or configured in addition.
 For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.9-beta/html-single/installing_capsule_server/index#">Installing Capsule&#160;Server</a>.</p>
 </dd>
@@ -7823,7 +7806,7 @@ Click the number to view the details of associated hosts.</p>
 </dd>
 <dt class="hdlist1"><strong>How much storage space is available on the Capsule&#160;Server?</strong></dt>
 <dd>
-<p>The amount of storage space occupied by the Pulp content in <code>/var/lib/pulp</code>, and <code>/var/lib/pulp/content</code> is displayed.
+<p>The amount of storage space occupied by the Pulp content in <code>/var/lib/pulp</code> is displayed.
 Also the remaining storage space available on the Capsule can be ascertained.</p>
 </dd>
 </dl>
