@@ -7,13 +7,11 @@ In some situations, it is useful to use an NFS share to store this content.
 This appendix shows how to mount the NFS share on your {ProjectServer}'s content management component.
 
 [IMPORTANT]
-Do not mount the full `/var/lib/pulp` on an NFS share.
 Use high-bandwidth, low-latency storage for the `/var/lib/pulp` file system.
 {ProjectName} has many I/O-intensive operations; therefore, high-latency, low-bandwidth storage might have issues with performance degradation.
-Only use the NFS share for the `/var/lib/pulp/content` directory.
 
 . Create the NFS share.
-This example uses a share at `nfs.example.com:/satellite/content`.
+This example uses a share at `nfs.example.com:/satellite/pulp`.
 Ensure this share provides the appropriate permissions to {ProjectServer} and its `apache` user.
 . Stop the `{foreman-maintain}` services on the {Project} host:
 +
@@ -27,35 +25,34 @@ Ensure this share provides the appropriate permissions to {ProjectServer} and it
 ----
 # {package-install-project} nfs-utils
 ----
-. You need to copy the existing contents of `/var/lib/pulp/content` to the NFS share.
+. You need to copy the existing contents of `/var/lib/pulp` to the NFS share.
 First, mount the NFS share to a temporary location:
 +
 ----
 # mkdir /mnt/temp
-# mount -o rw nfs.example.com:/satellite/content /mnt/temp
+# mount -o rw nfs.example.com:/satellite/pulp /mnt/temp
 ----
 +
-Copy the existing contents of `/var/lib/pulp/content` to the temporary location:
+Copy the existing contents of `/var/lib/pulp` to the temporary location:
 +
 ----
-# cp -r /var/lib/pulp/content/* /mnt/temp/.
+# cp -r /var/lib/pulp/* /mnt/temp/.
 ----
-. Set the permissions for all files on the share to use the `apache` user.
-This ID of this user is usually 48.
+. Set the permissions for all files on the share to use the `pulp` user.
 . Unmount the temporary storage location:
 +
 ----
 # umount /mnt/temp
 ----
-. Remove the existing contents of `/var/lib/pulp/content`:
+. Remove the existing contents of `/var/lib/pulp`:
 +
 ----
-# rm -rf /var/lib/pulp/content/*
+# rm -rf /var/lib/pulp/*
 ----
 . Edit the `/etc/fstab` file and add the following line:
 +
 ----
-nfs.example.com:/satellite/content    /var/lib/pulp/content   nfs    rw,hard,intr,context="system_u:object_r:httpd_sys_rw_content_t:s0"
+nfs.example.com:/satellite/pulp    /var/lib/pulp   nfs    rw,hard,intr,context="system_u:object_r:pulpcore_var_lib_t:s0"
 ----
 +
 This makes the mount persistent across system reboots.
@@ -65,20 +62,20 @@ Ensure to include the SELinux context.
 ----
 # mount -a
 ----
-. Confirm the NFS share mounts to `var/lib/pulp/content`:
+. Confirm the NFS share mounts to `var/lib/pulp`:
 +
 ----
 # df
 Filesystem                         1K-blocks     Used Available Use% Mounted on
 ...
-nfs.example.com:/satellite/content 309506048 58632800 235128224  20% /var/lib/pulp/content
+nfs.example.com:/satellite/pulp 309506048 58632800 235128224  20% /var/lib/pulp
 ...
 ----
 +
-Also confirm that the existing content exists at the mount on `var/lib/pulp/content`:
+Also confirm that the existing content exists at the mount on `var/lib/pulp`:
 +
 ----
-# ls /var/lib/pulp/content
+# ls /var/lib/pulp
 ----
 . Start the `{foreman-maintain}` services on the {Project} host:
 +
