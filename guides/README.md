@@ -8,7 +8,7 @@ Contributions are welcome. Please read the [Contribution guidelines](#contributi
 
 ## Building
 
-Install required tools.
+Install the required tools.
 In Fedora perform:
 
     dnf -y install ruby asciidoctor asciidoctor-pdf make linkchecker
@@ -39,7 +39,7 @@ Similarly, to build and open PDF version do:
 
     make open-pdf
 
-Currently there are three different versions
+Currently there are three different versions:
 
 
 `make BUILD=foreman-el` - This is the default that is generated with `make html` or `pdf`.
@@ -54,7 +54,7 @@ Currently there are three different versions
 The final artifacts can be found in the ./build subdirectory.
 Note that GNU Makefile tracks changes and only builds relevant artifacts, to trigger full rebuild use `make clean` to delete build directory and start over.
 
-It's also possible to check links, the following command will check all links except example.com domain:
+It's also possible to check links; the following command will check all links except example.com domain:
 
 	make linkchecker
 
@@ -62,7 +62,7 @@ It's also possible to check links, the following command will check all links ex
 
 We do not publish the content yet to prevent users confusion, however this section will cover steps required to publish the content.
 We should make sure that only the last stable version of the HTML document is indexed by search engines, old and nightly builds should not be indexed.
-All PDFs should be available for download tho.
+All PDFs should be available for download though.
 
 ## Styling
 
@@ -79,7 +79,7 @@ Please read these guidelines before opening a Pull Request. For more information
 
 ### Variables
 
-The content in this repository is shared between the community Foreman docs and the Red Hat Satellite docs.
+The content in this repository is shared between the upstream Foreman community and branded downstream products such as Red Hat Satellite and orcharhino by ATIX.
 Therefore, never write "Foreman" or "Satellite" words directly, but use the following variables:
 
 | Variable | Upstream value | Downstream value |
@@ -133,7 +133,7 @@ Some files are included in different contexts, there are attributes to find the 
 
 When doing review, consider checking out the topic branch and putting necessary changes on top of author's work to making many comments on github.
 
-Avoid using phases like "Starting from version 6.5 or 1.22" because it is not possible to easily translate these strings in both the streams.
+Avoid using phrases like "Starting from version 6.5 or 1.22" because it is not possible to easily translate these strings into all streams.
 
 ### Conventions
 
