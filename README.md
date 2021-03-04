@@ -62,7 +62,7 @@ This is what we are working on right now:
 * [ ] Hide irrelevant chapters
 * [ ] Incorporate parts from upstream docs
 * [ ] Incorporate https://community.theforeman.org/t/discovery-ipxe-efi-workflow-in-foreman-1-20/13026
-* [ ] Write better introduction
+* [ ] Write a better introduction
 * [ ] Add Anaconda-image based provisioning workflow
 * [ ] Update with PXE Grub2 steps
 * [ ] Discuss with Foreman community if to continue with other guides
