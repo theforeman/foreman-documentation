@@ -1,0 +1,180 @@
+[[updating_satellite_server_to_next_minor_version]]
+
+
+= Updating {ProjectServer}
+
+.Prerequisites
+
+* Ensure that you have synchronized {ProjectServer} repositories for
+{Project}, {SmartProxy}, and {project-client-name}.
+* Ensure each external {SmartProxy} and Content Host can be updated by
+promoting the updated repositories to all relevant Content Views.
+
+[WARNING]
+If you customize configuration files, manually or use a tool such as Hiera, these customizations are overwritten when the installation script runs during upgrading or updating. You can use the `--noop` option with the {foreman-installer} script to test for changes. For more information, see the Red Hat Knowledgebase solution https://access.redhat.com/solutions/3351311[How to use the noop option to check for changes in {Project} config files during an upgrade].
+
+*Updating {ProjectServer} to the Next Minor Version*
+
+.To Update {ProjectServer}:
+
+. Ensure the {Project} Maintenance repository is enabled:
++
+[options="nowrap" subs="attributes"]
+----
+# subscription-manager repos --enable \
+{RepoRHEL7Server{Project}MaintenanceProductVersion}
+----
+
+. Check the available versions to confirm the next minor version is listed:
++
+[options="nowrap"]
+----
+# {foreman-maintain} upgrade list-versions
+----
+
+. Use the health check option to determine if the system is ready for upgrade. On first use of this command, `{foreman-maintain}` prompts you to enter the hammer admin user credentials and saves them in the `/etc/foreman-maintain/foreman-maintain-hammer.yml` file.
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foreman-maintain} upgrade check --target-version {TargetVersion}.__z__
+----
++
+Review the results and address any highlighted error conditions before performing the upgrade.
+
+. Because of the lengthy update time, use a utility such as `screen` to suspend and reattach a communication session. You can then check the upgrade progress without staying connected to the command shell continuously. For more information about using the screen command, see link:https://access.redhat.com/articles/5247[How do I use the screen command?] article in the _Red{nbsp}Hat Knowledge{nbsp}Base_.
++
+If you lose connection to the command shell where the upgrade command is running, you can see the logged messages in the `/var/log/foreman-installer/satellite.log` file to check if the process completed successfully.
+
+. Perform the upgrade:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foreman-maintain} upgrade run --target-version {TargetVersion}.__z__
+----
+
+. Check when the kernel packages were last updated:
++
+[options="nowrap"]
+----
+# rpm -qa --last | grep kernel
+----
+
+. Optional: If a kernel update occurred since the last reboot, stop the `{foreman-maintain}` services and reboot the system:
++
+----
+# {foreman-maintain} service stop
+# reboot
+----
+
+
+= Updating Disconnected {ProjectServer}
+
+.Prerequisites
+
+* Before syncing the following repositories, set the download policy to *Immediate*. This is required because {Project} downloads all packages only during synchronization of repositories with the immediate download policy.
++
+* Ensure that you have synchronized the following {ProjectServer} repositories for {Project}, {SmartProxy}, and {project-client-name}:
+** rhel-7-server-rpms
+** rhel-7-server-satellite-6.8-rpms
+** rhel-7-server-satellite-maintenance-6-rpms
+** rhel-server-rhscl-7-rpms
+** rhel-7-server-ansible-2.9-rpms
++
+For more information about configuring download policies, see {BaseURL}content_management_guide/importing_red_hat_content#changing_the_download_policy_for_a_repository[] in the _Content Management guide_.
++
+* Ensure no Red Hat repositories are enabled by entering the command:
++
+----
+# yum repolist
+----
+
+.Updating Disconnected {ProjectServer} to the Next Minor Version
+
+. Create a new configuration file as follows:
++
+[options="nowrap" subs="attributes"]
+----
+# vi /etc/yum.repos.d/redhat-local.repo
+
+[{RepoRHEL7ServerAnsible}]
+name=Ansible {{Project}AnsibleVersion} RPMs for Red Hat Enterprise Linux 7 Server x86_64
+baseurl=file:///var/lib/pulp/published/yum/https/repos/Default_Organization/Library/content/dist/rhel/server/7/7Server/x86_64/ansible/2.9/os/
+enabled=1
+
+[{RepoRHEL7Server}]
+name=Red Hat Enterprise Linux 7 Server RPMs x86_64
+baseurl=file:///var/lib/pulp/published/yum/https/repos/Default_Organization/Library/content/dist/rhel/server/7/7Server/x86_64/os/
+enabled=1
+
+[{RepoRHEL7Server{Project}ServerProductVersion}]
+name={ProjectNameX} for RHEL 7 Server RPMs x86_64
+baseurl=file:///var/lib/pulp/published/yum/https/repos/Default_Organization/Library/content/dist/rhel/server/7/7Server/x86_64/satellite/{ProductVersion}/os/
+enabled=1
+
+[{RepoRHEL7Server{Project}MaintenanceProductVersion}]
+name={ProjectName} Maintenance 6 for RHEL 7 Server RPMs x86_64
+baseurl=file:///var/lib/pulp/published/yum/https/repos/Default_Organization/Library/content/dist/rhel/server/7/7Server/x86_64/sat-maintenance/6/os/
+enabled=1
+
+[{RepoRHEL7ServerSoftwareCollections}]
+name=Red Hat Software Collections RPMs for Red Hat Enterprise Linux 7 Server x86_64
+baseurl=file:///var/lib/pulp/published/yum/https/repos/Default_Organization/Library/content/dist/rhel/server/7/7Server/x86_64/rhscl/1/os/
+enabled=1
+----
++
+. In the configuration file, replace `Default_Organization` in the `baseurl` with the correct organization label. To obtain the organization label, enter the commmand:
++
+----
+# ls /var/lib/pulp/published/yum/https/repos/
+----
++
+
+. Ensure that the `rubygem-foreman_maintain` package that provides `{foreman-maintain}` is installed and up to date:
++
+[options="nowrap"]
+----
+# yum install rubygem-foreman_maintain
+----
+
+. Check the available versions to confirm the next minor version is listed:
++
+[options="nowrap"]
+----
+# {foreman-maintain} upgrade list-versions
+----
+
+. Use the health check option to determine if the system is ready for the upgrade. On the first use of this command, `{foreman-maintain}` prompts you to enter the hammer admin user credentials and saves them in the `/etc/foreman-maintain/foreman-maintain-hammer.yml` file.
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foreman-maintain} upgrade check --target-version {ProductVersion}.__z__
+----
++
+Review the results and address any highlighted error conditions before performing the upgrade.
+
+. Because of the lengthy update time, use a utility such as `screen` to suspend and reattach a communication session. You can then check the upgrade progress without staying connected to the command shell continuously. For more information about using the screen command, see link:https://access.redhat.com/articles/5247[How do I use the screen command?] article in the _Red{nbsp}Hat Knowledge{nbsp}Base_.
++
+If you lose connection to the command shell where the upgrade command is running, you can see the logged messages in the `/var/log/foreman-installer/satellite.log` file to check if the process completed successfully.
+
+. Perform the upgrade:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foreman-maintain} upgrade run --target-version {ProductVersion}.__z__
+----
+
+. Check when the kernel packages were last updated:
++
+[options="nowrap"]
+----
+# rpm -qa --last | grep kernel
+----
+
+. Optional: If a kernel update occurred since the last reboot, stop the `{foreman-maintain}` services and reboot the system:
++
+----
+# {foreman-maintain} service stop
+# reboot
+----
+
+

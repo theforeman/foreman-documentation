@@ -1,0 +1,81 @@
+[[upgrading_clients]]
+
+= Upgrading {Project} Clients
+
+The {project-client-name} repository provides `katello-agent` and `katello-host-tools`, which provide communication services for managing Errata.
+
+Note that the Katello agent is deprecated and will be removed in a future {Project} version. Migrate your workloads to use the remote execution feature to update clients remotely. For more information, see {BaseURL}managing_hosts/host-management-without-goferd-and-katello-agent_managing-hosts[Host Management Without Goferd and Katello Agent] in the _Managing Hosts Guide_.
+
+Currently, the {Project} {ProductVersionPrevious} version of `katello-agent` and other client libraries in the {project-client-name} repository are not formally tested or supported against {Project} {ProductVersion}.
+
+For deployments using `katello-agent` and *goferd*, update all clients to the new version of `katello-agent`. For deployments not using `katello-agent` and *goferd*, update all clients to the new version of `katello-host-tools`. Complete this action as soon as possible so that your clients are fully compatible with {ProjectServer}.
+
+.Prerequisites
+
+* You must have upgraded {ProjectServer}.
+* You must have enabled the new {project-client-name} repositories on the {Project}.
+* You must have synchronized the new repositories in the {Project}.
+* If you have not previously installed `katello-agent` on your clients and you want to install, use the manual method. For more information, see xref:upgrading_clients_manually[].
+
+[WARNING]
+====
+If you implemented custom certificates, you must retain the content of both the `/root/ssl-build` directory and the directory in which you created any source files associated with your custom
+certificates.
+
+Failure to retain these files during an upgrade causes the upgrade to fail. If
+these files have been deleted, they must be restored from a backup in order for
+the upgrade to proceed.
+====
+
+.Upgrade {Project} Clients Using the Bulk Repository Set UI:
+
+. In the {Project} web UI, navigate to *Hosts* > *Content Hosts* and select the Content Hosts that you want to upgrade.
+. From the *Select Action* list, select *Manage Repository Sets*.
+. From the *Repository Sets Management* list, select the *{ProjectName} Tools {ProductVersionPrevious}* check box.
+. From the *Select Action* list, select *Override to Disabled*, and click *Done*.
+. When the process completes, on the same set of hosts from the previous steps, from the *Select Action* list *Manage Repository Sets*.
+. From the *Repository Sets Management* list, select the *Red Hat {project-client-name}* check box.
+. From the *Select Action* list, select *Override to Enabled*, and click *Done*.
+. When the process completes, on the same set of hosts from the previous steps, from the *Select Action* list, select *Manage Packages*.
+. In the *Package* search field, enter one of the following options depending on your configuration:
++
+* If your deployment uses `katello-agent` and *goferd*, enter `katello-agent`.
+* If your deployment does not use `katello-agent` and *goferd*, enter `katello-host-tools`.
++
+. Until https://bugzilla.redhat.com/show_bug.cgi?id=1649764[BZ#1649764] is resolved, from the *Update* list, you must select *via remote execution*. This is required because if you update the package using the Katello agent, the package update disrupts the communication between the client and {Project} or {SmartProxyServer}, which causes the update to fail. For more information, see {BaseURL}managing_hosts/chap-managing_hosts-running_remote_jobs_on_hosts[Running Jobs on Hosts] in the _Managing Hosts_ guide.
+
+
+[[upgrading_clients_manually]]
+.Upgrade {Project} Clients Manually
+
+. Log into the client system.
+
+. Disable the repositories for the previous version of {Project}.
++
+[options="nowrap" subs="attributes"]
+----
+# subscription-manager repos \
+--disable rhel-7-server-satellite-tools-{ProductVersionPrevious}-rpms
+----
+
+. Enable the {project-client-name} repository for this version of {Project}.
++
+[options="nowrap" subs="attributes"]
+----
+# subscription-manager repos \
+--enable={project-client-RHEL7-url}
+----
+
+. Depending on your configuration, complete one of the following steps:
++
+* If your deployment uses `katello-agent` and *goferd*, enter the following command to install or upgrade `katello-agent`:
++
+----
+# yum install katello-agent
+----
++
+* If your deployment does not use `katello-agent` and *goferd*, enter the following command to install or upgrade `katello-host-tools`:
++
+----
+# yum install katello-host-tools
+----
