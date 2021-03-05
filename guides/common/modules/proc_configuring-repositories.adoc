@@ -2,14 +2,68 @@
 
 = Configuring Repositories
 
-Use this procedure to enable the repositories that are required to install {ProductName}.
+Use this procedure to enable the repositories that are required to install {ProductName}. Choose from the available list which operating system and version you are installing on:
 
-.Procedure
-.For {RHEL} users
-ifeval::["{build}" == "foreman-el"]
-This procedure is only for Katello plug-in users.
-Skip steps involving `subscription-manager` when not installing on the {RHEL} operating system.
+ifdef::foreman-el,katello[]
+* xref:#storage-centos-7[CentOS 7]
+* xref:#storage-centos-8[CentOS 8]
 endif::[]
+ifdef::foreman-el,katello,satellite[]
+* xref:#storage-rhel-7[Red Hat Enterprise Linux 7]
+endif::[]
+ifdef::foreman-deb[]
+* xref:#storage-debian-10[Debian 10 (Buster)]
+* xref:#storage-ubuntu-1804[Ubuntu 18.04 (Bionic)]
+endif::[]
+
+ifdef::foreman-el,katello[]
+== [[centos-7]]CentOS 7
+
+:distribution-major-version: 7
+:package-manager: yum
+include::proc_configuring-repositories-el.adoc[]
+
++
+. Install the `epel-release` package:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {package-manager} install epel-release
+----
++
+. Install the `foreman-release-scl` package:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {package-manager} install foreman-release-scl
+----
+endif::[]
+
+ifdef::foreman-el,katello[]
+== [[centos-8]]CentOS 8
+
+:distribution-major-version: 8
+:package-manager: dnf
+
+include::proc_configuring-repositories-el.adoc[]
+
+endif::[]
+
+ifdef::katello[]
++
+. Enable `powertools` repository:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {package-manager} config-manager --set-enabled powertools
+----
+endif::[]
+
+ifdef::foreman-el,katello,satellite[]
+== [[rhel-7]]Red Hat Enterprise Linux 7
+
+:distribution-major-version: 7
+:package-manager: yum
 
 . Disable all repositories:
 +
@@ -19,7 +73,7 @@ endif::[]
 ----
 +
 . Enable the following repositories:
-ifdef::foreman,katello[]
+ifdef::foreman-el,katello[]
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
@@ -28,8 +82,14 @@ ifdef::foreman,katello[]
 --enable {RepoRHEL7ServerSoftwareCollections}
 ----
 +
+. Install the `epel-release-latest-{distribution-major-version}.noarch.rpm` package:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {package-manager} localinstall https://dl.fedoraproject.org/pub/epel/epel-release-latest-{distribution-major-version}.noarch.rpm
+----
 endif::[]
-ifeval::["{build}" == "satellite"]
+ifdef::satellite[]
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
@@ -39,90 +99,27 @@ ifeval::["{build}" == "satellite"]
 --enable={RepoRHEL7ServerSoftwareCollections} \
 --enable={RepoRHEL7ServerAnsible}
 ----
-+
 endif::[]
+ifdef::foreman-el,katello[]
+include::proc_configuring-repositories-el.adoc[]
+endif::[]
+
 NOTE: If you are installing {ProductName} as a virtual machine hosted on {oVirt}, you must also enable the *Red{nbsp}Hat Common* repository, and install {oVirt} guest agents and drivers.
 For more information, see https://access.redhat.com/documentation/en-us/red_hat_virtualization/4.3/html/virtual_machine_management_guide/installing_guest_agents_and_drivers_linux#Installing_the_Guest_Agents_and_Drivers_on_Red_Hat_Enterprise_Linux[Installing the Guest Agents and Drivers on Red Hat Enterprise Linux] in the _Virtual Machine Management Guide_ for more information.
-+
-. Clear any metadata:
-+
-[options="nowrap" subs="+quotes,attributes"]
-----
-# {package-clean} all
-----
-+
-. Optional: Verify that the required repositories are enabled:
-+
-[options="nowrap"]
-----
-# yum repolist enabled
-----
-ifdef::foreman,katello[]
-+
-. Install the `foreman-release.rpm` package:
-+
-[options="nowrap" subs="+quotes,attributes"]
-----
-# yum localinstall https://yum.theforeman.org/releases/{ProjectVersion}/el7/x86_64/foreman-release.rpm
-----
 endif::[]
-ifdef::katello[]
-+
-. Install the `katello-repos-latest.rpm` package
-+
-[options="nowrap" subs="+quotes,attributes"]
-----
-# yum localinstall https://fedorapeople.org/groups/katello/releases/yum/{KatelloVersion}/katello/el7/x86_64/katello-repos-latest.rpm
-----
-endif::[]
-+
-. Install the `puppet6-release-el-7.noarch.rpm` package:
-+
-----
-# yum localinstall https://yum.puppet.com/puppet6-release-el-7.noarch.rpm
-----
-+
-. Install the `epel-release-latest-7.noarch.rpm` package:
-+
-----
-# yum localinstall https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
-----
 
-ifeval::["{build}" != "satellite"]
-.CentOS Users
-If you use a CentOS operating system, complete the following steps:
+ifdef::foreman-deb[]
+== [[debian-10]]Debian 10 (Buster)
 
-. Install the `foreman-release.rpm` package:
-+
-[options="nowrap" subs="+quotes,attributes"]
-----
-# yum localinstall https://yum.theforeman.org/releases/{ProjectVersion}/el7/x86_64/foreman-release.rpm
-----
-ifdef::katello[]
-+
-. Install the `katello-repos-latest.rpm` package
-+
-[options="nowrap" subs="+quotes,attributes"]
-----
-# yum localinstall https://fedorapeople.org/groups/katello/releases/yum/{KatelloVersion}/katello/el7/x86_64/katello-repos-latest.rpm
-----
+:distribution-codename: buster
+include::proc_configuring-repositories-deb.adoc[]
+
 endif::[]
-+
-. Install the `puppet6-release-el-7.noarch.rpm` package:
-+
-----
-# yum localinstall https://yum.puppet.com/puppet6-release-el-7.noarch.rpm
-----
-+
-. Install the `epel-release` package:
-+
-----
-# yum install epel-release
-----
-+
-. Install the `foreman-release-scl` package:
-+
-----
-# yum install centos-release-scl-rh
-----
+
+ifdef::foreman-deb[]
+== [[ubuntu-1804]]Ubuntu 18.04 (Bionic)
+
+:distribution-codename: bionic
+include::proc_configuring-repositories-deb.adoc[]
+
 endif::[]
