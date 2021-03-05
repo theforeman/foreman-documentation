@@ -1,0 +1,61 @@
+[id="reclaiming-mongodb-space_{context}"]
+= Reclaiming MongoDB Space
+
+The MongoDB database can use a large amount of disk space especially in heavily loaded deployments.
+Use this procedure to reclaim some of this disk space on {Project}.
+
+.Prerequisites
+
+* Back up the MongoDB database.
+For more information about backing up {Project}, see {AdministeringDocURL}backing-up-satellite-server-and-capsule-server[Backing Up {ProjectServer} and {SmartProxyServer}].
+
+.Procedure
+
+. Stop Pulp services:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foreman-maintain} service stop --only \
+pulp_celerybeat.service,pulp_resource_manager.service,pulp_streamer.service,pulp_workers.service,httpd
+----
+
+. Access the MongoDB shell:
++
+----
+# mongo pulp_database
+----
+
+. Check the amount of disk space used by MongoDB before a repair:
++
+----
+> db.stats()
+----
+
+. Ensure that you have free disk space equal to the size of your current MongoDB database plus 2 GB.
+If the volume containing the MongoDB database lacks sufficient space, you can mount a separate volume and use that for the repair.
+
+. Enter the repair command.
+Note that the repair command blocks all other operations and can take a long time to complete, depending on the size of the database.
++
+----
+> db.repairDatabase()
+----
+
+. Check the amount of disk space used by MongoDB after a repair:
++
+----
+> db.stats()
+----
+
+. Exit the MongoDB shell:
++
+----
+> exit
+----
+
+. Start Pulp services:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foreman-maintain} service start
+----
