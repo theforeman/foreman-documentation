@@ -1,0 +1,142 @@
+[[upgrading_capsule_server]]
+
+= Upgrading {SmartProxyServer}s
+
+This section describes how to upgrade {SmartProxyServer}s from {ProductVersionPrevious} to {ProductVersion}.
+
+.Before You Begin
+
+* You must upgrade {ProjectServer} before you can upgrade any {SmartProxyServer}s. Note that you can upgrade {SmartProxies} separately from {Project}. For more information, see xref:upgrading_capsules-separately-from-satellite_upgrade-guide[].
+* Ensure the {ProjectName} {SmartProxy} {ProductVersion} repository is enabled in {ProjectServer} and synchronized.
+* Ensure that you synchronize the required repositories on {ProjectServer}. For more information, see xref:synchronizing_the_new_repositories[].
+* If you use Content Views to control updates to the base operating system of {SmartProxyServer}, update those Content Views with new repositories and publish their updated versions. For more information, see {BaseURL}content_management_guide/managing_content_views[Managing Content Views] in the _Content Management Guide_.
+* Ensure the {SmartProxy}'s base system is registered to the newly upgraded {ProjectServer}.
+* Ensure the {SmartProxy} has the correct organization and location settings in the newly upgraded {ProjectServer}.
+* Review and update your firewall configuration prior to upgrading your {SmartProxyServer}. For more information, see link:{BaseURL}installing_capsule_server/preparing-environment-for-capsule-installation#ports-and-firewalls-requirements_capsule[Ports and Firewalls Requirements] in _Installing {SmartProxyServer}_.
+
+[WARNING]
+====
+If you implemented custom certificates, you must retain the content of both the `/root/ssl-build` directory and the directory in which you created any source files associated with your custom
+certificates.
+
+Failure to retain these files during an upgrade causes the upgrade to fail. If
+these files have been deleted, they must be restored from a backup in order for
+the upgrade to proceed.
+====
+
+.Upgrading {SmartProxyServer}s
+
+. Create a backup.
++
+* On a virtual machine, take a snapshot.
+* On a physical machine, create a backup.
++
+For information on backups, see https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersionPrevious}/html/administering_red_hat_satellite/backing-up-satellite-server-and-capsule-server[Backing Up {ProjectServer} and {SmartProxyServer}] in the _Administering {ProjectName} {ProductVersionPrevious}_ guide.
+
+. Optional: If you made manual edits to DNS or DHCP configuration in the `/etc/zones.conf` or `/etc/dhcp/dhcpd.conf` files, back up the configuration files because the installer only supports one domain or subnet, and therefore restoring changes from these backups might be required.
+
+. Optional: If you made manual edits to DNS or DHCP configuration files and do not want to overwrite the changes, enter the following command:
++
+[options="nowrap"]
+----
+# {foreman-installer} --foreman-proxy-dns-managed=false \
+--foreman-proxy-dhcp-managed=false
+----
+
+. In the {Project} web UI, go to *Hosts* > *Discovered hosts*. If there are discovered hosts available, power off the hosts and then delete all entries under the `Discovered hosts` page. Select all other organizations in turn using the organization setting menu and repeat this action as required. Reboot these hosts after the upgrade has completed.
+
+. Clean yum cache:
++
+----
+# yum clean all
+----
+
+. Ensure that the `rubygem-foreman_maintain` package that provides `{foreman-maintain}` is installed and up to date:
++
+[options="nowrap" subs="attributes"]
+----
+# {package-install} rubygem-foreman_maintain
+----
+
+. Update the `gofer` package:
+[options="nowrap" subs="attributes"]
++
+----
+# {package-update-project} gofer
+----
+
+. Restart the `goferd` service:
++
+[options="nowrap"]
+----
+# systemctl restart goferd
+----
+
+. On {SmartProxyServer}, verify that the `foreman_url` setting points to the {Project} FQDN:
++
+----
+# grep foreman_url /etc/foreman-proxy/settings.yml
+----
+
+. Check the available versions to confirm the version you want is listed:
++
+[options="nowrap"]
+----
+# {foreman-maintain} upgrade list-versions
+----
+
+. Because of the lengthy upgrade time, use a utility such as `screen` to suspend and reattach a communication session. You can then check the upgrade progress without staying connected to the command shell continuously. For more information about using the screen command, see link:https://access.redhat.com/articles/5247[How do I use the screen command?] article in the _Red{nbsp}Hat Knowledge{nbsp}Base_.
++
+If you lose connection to the command shell where the upgrade command is running you can see the logged messages in the `/var/log/foreman-installer/satellite.log` file to check if the process completed successfully.
+
+. Use the health check option to determine if the system is ready for upgrade:
++
+[options="nowrap" subs="attributes"]
+----
+# {foreman-maintain} upgrade check --target-version {TargetVersionMaintainUpgrade}
+----
++
+Review the results and address any highlighted error conditions before performing the upgrade.
+
+. Perform the upgrade:
++
+[options="nowrap" subs="attributes"]
+----
+# {foreman-maintain} upgrade run --target-version {TargetVersionMaintainUpgrade}
+----
++
+[WARNING]
+====
+If you run the command from a directory containing a *_config_* subdirectory, you will encounter the following error:
+[options="nowrap"]
+----
+ERROR: Scenario (config/capsule.yaml) was not found, can not continue.
+----
+In such a case, change directory, for example to the *_root_* user's home directory, and run the command again.
+====
+
+. Check when the kernel packages were last updated:
++
+[options="nowrap"]
+----
+# rpm -qa --last | grep kernel
+----
+
+. Optional: If a kernel update occurred since the last reboot, stop the `{foreman-maintain}` services and reboot the system:
++
+----
+# {foreman-maintain} service stop
+# reboot
+----
+
+. Optional: If you made manual edits to DNS or DHCP configuration files, check and restore any changes required to the DNS and DHCP configuration files using the backups made earlier.
+
+. Optional: If you use custom repositories, ensure that you enable these custom repositories after the upgrade completes.
+
+. Optional: If you plan to use {SmartProxyServer} as a proxy for discovered hosts, install the Discovery plug-in and turn on the hosts that were shut down prior to the upgrade:
++
+[options="nowrap" subs="attributes"]
+----
+# {package-install-project} tfm-rubygem-smart_proxy_discovery.noarch
+----
+
