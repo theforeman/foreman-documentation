@@ -1,10 +1,8 @@
 [id="host-management-without-goferd-and-katello-agent_{context}"]
-== Host Management Without Goferd and Katello Agent
+== Migrating from Katello Agent to Remote Execution
 
-The `goferd` service that is used by the Katello agent to manage packages on content hosts consumes large amount of resources.
-To reduce memory and CPU load on content hosts, you can manage packages through remote execution.
-
-Note that the Katello agent is deprecated and will be removed in a future {Project} version; therefore, using remote execution will be the only way to manage packages on hosts.
+The Katello Agent is deprecated and will be removed in a future {Project} version; therefore, using remote execution will be the only way to manage packages on hosts.
+Follow these steps to switch to Remote Execution.
 
 .Prerequisites
 
@@ -17,15 +15,9 @@ For more information, see {InstallingProjectDocURL}synchronizing-the-satellite-t
 endif::[]
 
 * You have enabled the {project-client-name} repository on content hosts.
+* You have previously installed the `katello-agent` package on content hosts.
 
 .Procedure
-
-. Install  the `katello-host-tools` package on content hosts:
-+
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
-# {package-install} katello-host-tools
-----
 
 . Stop the goferd service on content hosts:
 +
@@ -50,7 +42,7 @@ WARNING: If your host is installed on {oVirt} version 4.4 or lower, do not remov
 # {package-remove} katello-agent
 ----
 
-. Distribute the SSH keys to the content hosts.
+. Distribute the remote execution SSH keys to the content hosts.
 For more information, see xref:ssh-keys-for-remote-execution-overview_{context}[].
 
 . In the {Project} web UI, navigate to *Administer* > *Settings*.
@@ -59,13 +51,12 @@ For more information, see xref:ssh-keys-for-remote-execution-overview_{context}[
 
 . Set the *Use remote execution by default* parameter to *Yes*.
 
-The {Project} server now uses host management by remote execution instead of goferd.
+The {Project} server now uses host management by remote execution instead of katello-agent.
 
 .Hammer Limitations
 
-The following applies if you are using the `hammer` command to push errata.
-The `hammer` command is dependent on goferd to manage errata on content hosts.
-As a workaround, use the {Project} remote execution feature to apply errata.
+The `hammer host package` and `hammer host errata` commands currently depend on the Katello Agent.
+The following illustrates the {Project} remote execution equivalent via `hammer job-invocation`.
 
 For example, enter the following command to perform a `yum -y update` on _host123.example.org_:
 [options="nowrap", subs="+quotes,verbatim,attributes"]
@@ -74,7 +65,4 @@ For example, enter the following command to perform a `yum -y update` on _host12
 --job-template "Run Command - SSH Default" \
 --inputs command="yum -y update" \
 --search-query "name ~ host123"
-Job invocation 24 created
-[.........................................] [100%]
-1 task(s), 1 success, 0 fail
 ----
