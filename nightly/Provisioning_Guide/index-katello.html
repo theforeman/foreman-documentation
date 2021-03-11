@@ -166,10 +166,11 @@
 </li>
 <li><a href="#provisioning-cloud-instances-azure">16. Provisioning Cloud Instances on Microsoft Azure Resource Manager</a>
 <ul class="sectlevel2">
-<li><a href="#adding-azure-connection_azure-provisioning">16.1. Adding a Microsoft Azure Resource Manager Connection to Foreman&#160;server</a></li>
-<li><a href="#adding-images-to-server_azure-provisioning">16.2. Adding Microsoft Azure Resource Manager Images to Foreman&#160;server</a></li>
-<li><a href="#adding-azure-details-to-a-compute-profile_azure-provisioning">16.3. Adding Microsoft Azure Resource Manager Details to a Compute Profile</a></li>
-<li><a href="#creating-image-only-hosts_azure-provisioning">16.4. Creating Image-based Hosts on Microsoft Azure Resource Manager</a></li>
+<li><a href="#installing-the-azurerm-plugin_azure-provisioning">16.1. Installing the Foreman AzureRm Plug-in</a></li>
+<li><a href="#adding-azure-connection_azure-provisioning">16.2. Adding a Microsoft Azure Resource Manager Connection to Foreman&#160;server</a></li>
+<li><a href="#adding-images-to-server_azure-provisioning">16.3. Adding Microsoft Azure Resource Manager Images to Foreman&#160;server</a></li>
+<li><a href="#adding-azure-details-to-a-compute-profile_azure-provisioning">16.4. Adding Microsoft Azure Resource Manager Details to a Compute Profile</a></li>
+<li><a href="#creating-image-only-hosts_azure-provisioning">16.5. Creating Image-based Hosts on Microsoft Azure Resource Manager</a></li>
 </ul>
 </li>
 <li><a href="#Initialization_Script_for_Provisioning_Examples">Appendix A: Initialization Script for Provisioning Examples</a></li>
@@ -292,6 +293,12 @@ When you complete all the options for the new host, submit the new host request.
 <p>The installer performs installation of the operating system.</p>
 <div class="ulist">
 <ul>
+<li>
+<p>When Katello plugin is installed, the installer registers the host to Foreman using Red Hat Subscription Manager.</p>
+</li>
+<li>
+<p>When Katello plugin is installed, management tools such as <code>katello-agent</code> and <code>puppet</code> are installed.</p>
+</li>
 <li>
 <p>The installer notifies Foreman of a successful build in the <code>postinstall</code> script.</p>
 </li>
@@ -426,7 +433,8 @@ For example:</p>
 Operating system entries combine previously defined resources, such as installation media, partition tables, provisioning templates, and others.</p>
 </div>
 <div class="paragraph">
-<p>Importing operating systems from Red Hat&#8217;s CDN creates new entries on the <strong>Hosts</strong> &gt; <strong>Operating Systems</strong> page.</p>
+<p>Importing operating systems from Red Hat&#8217;s CDN creates new entries on the <strong>Hosts</strong> &gt; <strong>Operating Systems</strong> page.
+Importing operating systems from Red Hat&#8217;s CDN is only possible when Katello is installed.</p>
 </div>
 <div class="paragraph">
 <p>You can also add custom operating systems using the following procedure:</p>
@@ -620,6 +628,9 @@ Optionally, enter the hardware model with the <code>--hardware-model</code> opti
 <div class="sect2">
 <h3 id="using-a-synced-kickstart-repository_provisioning">2.7. Using a Synced Kickstart Repository for a Host&#8217;s Operating System</h3>
 <div class="paragraph">
+<p>The following feature is provided by the Katello plug-in.</p>
+</div>
+<div class="paragraph">
 <p>Foreman contains a set of synchronized kickstart repositories that you use to install the provisioned host&#8217;s operating system.
 For more information about adding repositories, see <a href="https://docs.theforeman.org/nightly/Content_Management_Guide/index-foreman-el.html#Importing_Content-Synchronizing_Repositories">Syncing Repositories</a> in the <em>Content Management Guide</em>.</p>
 </div>
@@ -656,7 +667,9 @@ For more information, see <a href="https://docs.theforeman.org/nightly/Content_M
 <div class="sect2">
 <h3 id="adding-installation-media_provisioning">2.8. Adding Installation Media to Foreman</h3>
 <div class="paragraph">
-<p>Installation media are sources of packages that Foreman&#160;server uses to install a base operating system on a machine from an external repository.</p>
+<p>Installation media are sources of packages that Foreman&#160;server uses to install a base operating system on a machine from an external repository.
+When you install the Katello plug-in, you can download packages from a Pulp mirror.
+In this case, installation media are ignored.</p>
 </div>
 <div class="paragraph">
 <p>Installation media must be in the format of an operating system installation tree, and must be accessible to the machine hosting the installer through an HTTP URL.
@@ -1619,6 +1632,18 @@ This requires configuring the Smart&#160;Proxy&#160;server to use the main PXE b
 </div>
 <div class="paragraph">
 <p>Use the <code>foreman-installer</code> command with the options to configure these services on the Foreman&#160;server.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+While performing a Katello deployment, to configure these services on an external Smart&#160;Proxy&#160;server, run <code>foreman-installer --scenario foreman-proxy-content</code>.
+</td>
+</tr>
+</table>
 </div>
 <div class="paragraph">
 <p>Foreman&#160;server uses <code>eth0</code> for external communication, such as connecting to Red Hat&#8217;s CDN.</p>
@@ -2742,6 +2767,14 @@ You must update the <code>/etc/dhcp/dhcpd.conf</code> file after every upgrade.
 </div>
 </li>
 <li>
+<p>On Debian/Ubuntu, install the <code>ipxe</code> .deb package:</p>
+<div class="listingblock">
+<div class="content">
+<pre># apt-get install ipxe</pre>
+</div>
+</div>
+</li>
+<li>
 <p>Copy the iPXE firmware to the TFTP server&#8217;s root directory.
 Do not use symbolic links because TFTP runs in the <code>chroot</code> environment.</p>
 <div class="ulist">
@@ -2763,6 +2796,14 @@ Do not use symbolic links because TFTP runs in the <code>chroot</code> environme
 </div>
 </li>
 </ul>
+</div>
+</li>
+<li>
+<p>On systems with SELinux, correct the file contexts:</p>
+<div class="listingblock">
+<div class="content">
+<pre># restorecon -RvF /var/lib/tftpboot/</pre>
+</div>
 </div>
 </li>
 </ol>
@@ -2853,6 +2894,15 @@ For unattended provisioning and discovery-based provisioning, Foreman&#160;serve
 </li>
 <li>
 <p>A bare metal host or a blank VM.</p>
+</li>
+<li>
+<p>The installation media for the operating systems that you want to use to provision hosts.
+If the Katello plug-in is installed, you can use synchronized content repositories for Red&#160;Hat Enterprise Linux.
+For more information, see <a href="https://docs.theforeman.org/nightly/Content_Management_Guide/index-foreman-el.html#Importing_Content-Synchronizing_Repositories">Syncing Repositories</a> in the <em>Content Management Guide</em>.</p>
+</li>
+<li>
+<p>If the Katello plug-in is installed, an activation key for host registration.
+For more information, see <a href="https://docs.theforeman.org/nightly/Content_Management_Guide/index-foreman-el.html#Managing_Activation_Keys-Creating_an_Activation_Key">Creating An Activation Key</a> in the <em>Content Management</em> guide.</p>
 </li>
 </ul>
 </div>
@@ -2951,6 +3001,10 @@ Confirm each aspect of the operating system.</p>
 </div>
 </li>
 <li>
+<p>If you use the Katello plugin, click the <strong>Parameters</strong> tab, and ensure that a parameter exists that provides an activation key.
+If not, add an activation key.</p>
+</li>
+<li>
 <p>Click <strong>Submit</strong> to save the host details.</p>
 <div class="paragraph">
 <p>For more information about network interfaces, see <a href="https://docs.theforeman.org/nightly/Managing_Hosts/index-foreman-el.html#Adding_Network_Interfaces">Adding network interfaces</a>.</p>
@@ -2962,6 +3016,9 @@ Confirm each aspect of the operating system.</p>
 <p>This creates the host entry and the relevant provisioning settings.
 This also includes creating the necessary directories and files for PXE booting the bare metal host.
 If you start the physical host and set its boot mode to PXE, the host detects the DHCP service of Foreman&#160;server&#8217;s integrated Smart&#160;Proxy, receives HTTP endpoint of the Kickstart tree and installs the operating system.</p>
+</div>
+<div class="paragraph">
+<p>If you use the Katello plug-in, when the installation completes, the host also registers to Foreman&#160;server using the activation key and installs the necessary configuration and management tools from the <a href="https://yum.theforeman.org/client/2.4/" class="bare">https://yum.theforeman.org/client/2.4/</a> repository.</p>
 </div>
 <div class="paragraph">
 <div class="title">For CLI Users</div>
@@ -3275,6 +3332,10 @@ Confirm each aspect of the operating system.</p>
 </div>
 </li>
 <li>
+<p>If you use the Katello plugin, click the <strong>Parameters</strong> tab, and ensure that a parameter exists that provides an activation key.
+If not, add an activation key.</p>
+</li>
+<li>
 <p>Click <strong>Submit</strong> to save the host details.</p>
 <div class="paragraph">
 <p>For more information about network interfaces, see <a href="https://docs.theforeman.org/nightly/Managing_Hosts/index-foreman-el.html#Adding_Network_Interfaces">Adding network interfaces</a>.</p>
@@ -3295,6 +3356,9 @@ Confirm each aspect of the operating system.</p>
 <p>This creates the host entry and the relevant provisioning settings.
 This also includes creating the necessary directories and files for UEFI booting the bare metal host.
 When you start the physical host and set its boot mode to UEFI HTTP, the host detects the defined DHCP service, receives HTTP endpoint of Smart&#160;Proxy with the Kickstart tree and installs the operating system.</p>
+</div>
+<div class="paragraph">
+<p>If you use the Katello plug-in, when the installation completes, the host also registers to Foreman&#160;server using the activation key and installs the necessary configuration and management tools from the <a href="https://yum.theforeman.org/client/2.4/" class="bare">https://yum.theforeman.org/client/2.4/</a> repository.</p>
 </div>
 <div class="olist arabic">
 <div class="title">For CLI Users</div>
@@ -3360,6 +3424,9 @@ When you start the physical host and set its boot mode to UEFI HTTP, the host de
 <p>This creates the host entry and the relevant provisioning settings.
 This also includes creating the necessary directories and files for UEFI booting the bare metal host.
 When you start the physical host and set its boot mode to UEFI HTTP, the host detects the defined DHCP service, receives HTTP endpoint of Smart&#160;Proxy with the Kickstart tree and installs the operating system.</p>
+</div>
+<div class="paragraph">
+<p>If you use the Katello plug-in, when the installation completes, the host also registers to Foreman&#160;server using the activation key and installs the necessary configuration and management tools from the <a href="https://yum.theforeman.org/client/2.4/" class="bare">https://yum.theforeman.org/client/2.4/</a> repository.</p>
 </div>
 </div>
 <div class="sect2">
@@ -3467,6 +3534,9 @@ Note that in Red Hat terminology, "Satellite" refers to Foreman and "Capsule" re
 <p>The <code>tfm-rubygem-smart_proxy_discovery</code> package configures Smart&#160;Proxy&#160;server, such as the integrated Smart&#160;Proxy of Foreman&#160;server, to act as a proxy for the Discovery service.</p>
 </div>
 <div class="paragraph">
+<p>You can use the <code>foreman-installer</code> tool to install the packages and the Discovery image.</p>
+</div>
+<div class="paragraph">
 <p>When the installation completes, you can view the new menu option by navigating to <strong>Hosts</strong> &gt; <strong>Discovered Hosts</strong>.</p>
 </div>
 <div class="sect2">
@@ -3479,6 +3549,14 @@ Note that in Red Hat terminology, "Satellite" refers to Foreman and "Capsule" re
 <ol class="arabic">
 <li>
 <p>Enter the following commands on Smart&#160;Proxy&#160;server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer \
+  --enable-foreman-proxy-plugin-discovery \
+  --foreman-proxy-plugin-discovery-install-images=true \
+  --foreman-proxy-plugin-discovery-source-url=http://downloads.theforeman.org/discovery/releases/3.5/</pre>
+</div>
+</div>
 </li>
 <li>
 <p>Restart the foreman-maintain services:</p>
@@ -3633,6 +3711,18 @@ If you use a Foreman FQDN, update the <code>proxy.type</code> argument to <code>
 <pre class="nowrap">proxy.url=https://<em>smartproxy.example.com</em>:8443 proxy.type=proxy</pre>
 </div>
 </div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+For katello scenario deployment, use port 9090.
+</td>
+</tr>
+</table>
+</div>
 </dd>
 </dl>
 </div>
@@ -3671,6 +3761,15 @@ For more information, see <a href="#installing-the-discovery-service">Installing
 </li>
 <li>
 <p>A bare metal host or a blank VM.</p>
+</li>
+<li>
+<p>The installation media for the operating systems that you want to use to provision hosts.
+If the Katello plug-in is installed, you can use synchronized content repositories for Red&#160;Hat Enterprise Linux.
+For more information, see <a href="https://docs.theforeman.org/nightly/Content_Management_Guide/index-foreman-el.html#Importing_Content-Synchronizing_Repositories">Syncing Repositories</a> in the <em>Content Management Guide</em>.</p>
+</li>
+<li>
+<p>If the Katello plug-in is installed, an activation key for host registration.
+For more information, see <a href="https://docs.theforeman.org/nightly/Content_Management_Guide/index-foreman-el.html#Managing_Activation_Keys-Creating_an_Activation_Key">Creating An Activation Key</a> in the <em>Content Management</em> guide.</p>
 </li>
 </ul>
 </div>
@@ -3996,6 +4095,11 @@ Use either a dedicated environment or copy the synchronized repositories and a k
 <ul>
 <li>
 <p>Install the <code>livecd-tools</code> package:</p>
+<div class="listingblock">
+<div class="content">
+<pre># yum install livecd-tools</pre>
+</div>
+</div>
 </li>
 </ul>
 </div>
@@ -4017,7 +4121,13 @@ Use either a dedicated environment or copy the synchronized repositories and a k
 <p>Replace the <code>repo</code> lines in the kickstart file with the repository URLs:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"></pre>
+<pre class="nowrap">repo --name=centos --mirrorlist=http://mirrorlist.centos.org/?release=7&arch=$basearch&repo=os
+repo --name=centos-updates --mirrorlist=http://mirrorlist.centos.org/?release=7&arch=$basearch&repo=updates
+repo --name=epel7 --mirrorlist=https://mirrors.fedoraproject.org/metalink?repo=epel-7&arch=$basearch
+repo --name=centos-sclo-rh --mirrorlist=http://mirrorlist.centos.org/?release=7&arch=x86_64&repo=sclo-rh
+repo --name=foreman-rails-el7 --baseurl=https://yum.theforeman.org/rails/foreman-nightly/el7/$basearch/
+repo --name=foreman-el7 --baseurl=http://yum.theforeman.org/nightly/el7/$basearch/
+repo --name=foreman-plugins-el7 --baseurl=http://yum.theforeman.org/plugins/nightly/el7/$basearch/</pre>
 </div>
 </div>
 </li>
@@ -4218,8 +4328,14 @@ The default value is 300 seconds.</p>
 </dd>
 </dl>
 </div>
-<div class="listingblock">
+<div class="paragraph">
 <div class="title">Using the <code>discovery-remaster</code> Tool to Remaster an OS Image</div>
+<p>Foreman&#160;server provides the <code>discovery-remaster</code> tool.
+This tool remasters the image to include these kernel parameters.
+To remaster the image, run the <code>discovery-remaster</code> tool.
+For example:</p>
+</div>
+<div class="listingblock">
 <div class="content">
 <pre class="nowrap"># discovery-remaster ~/iso/foreman-discovery-image-3.4.4-5.iso \
 "fdi.pxip=192.168.140.20/24 fdi.pxgw=192.168.140.1 \
@@ -4393,11 +4509,18 @@ The root account and SSH access are disabled by default, but you can enable SSH 
 <p>In Foreman, you can integrate with Cockpit to perform actions and monitor your hosts.
 Using Cockpit, you can access Lorax Composer and build images that you can then upload to Foreman and use this image to provision hosts.</p>
 </div>
+<div class="paragraph">
+<p>For more information about integrating Cockpit with Foreman, see <a href="https://theforeman.org/plugins/foreman_remote_execution/1.7/index.html#3.6Cockpitintegration">Cockpit integration</a>.</p>
+</div>
 <div class="olist arabic">
 <div class="title">Prerequisites</div>
 <ol class="arabic">
 <li>
 <p>Use <code>scp</code> or <code>rsync</code> to copy the image using SSH to the base operating system of Foreman.</p>
+</li>
+<li>
+<p>If you use the Katello plug-in, on Foreman, create a custom product, add a custom file repository to this product, and upload the image to the repository.
+For more information, see <a href="https://docs.theforeman.org/nightly/Content_Management_Guide/index-foreman-el.html#importing_individual_iso_images_and_files">Importing Individual ISO Images and Files</a> in the <em>Content Management Guide</em>.</p>
 </li>
 </ol>
 </div>
@@ -4449,6 +4572,15 @@ Foreman can connect to the <code>libvirt</code> API on a KVM server, provision h
 <div class="ulist">
 <div class="title">Prerequisites</div>
 <ul>
+<li>
+<p>The installation media for the operating systems that you want to use to provision hosts.
+If the Katello plug-in is installed, you can use synchronized content repositories for Red&#160;Hat Enterprise Linux.
+For more information, see <a href="https://docs.theforeman.org/nightly/Content_Management_Guide/index-foreman-el.html#Importing_Content-Synchronizing_Repositories">Syncing Repositories</a> in the <em>Content Management Guide</em>.</p>
+</li>
+<li>
+<p>If the Katello plug-in is installed, an activation key for host registration.
+For more information, see <a href="https://docs.theforeman.org/nightly/Content_Management_Guide/index-foreman-el.html#Managing_Activation_Keys-Creating_an_Activation_Key">Creating An Activation Key</a> in the <em>Content Management</em> guide.</p>
+</li>
 <li>
 <p>A Smart&#160;Proxy&#160;server managing a network on the KVM server.
 Ensure no other DHCP services run on this network to avoid conflicts with the Smart&#160;Proxy&#160;server.
@@ -4914,6 +5046,10 @@ Modify these settings if required.</p>
 Modify these settings to suit your needs.</p>
 </li>
 <li>
+<p>If you use the Katello plugin, click the <strong>Parameters</strong> tab, and ensure that a parameter exists that provides an activation key.
+If not, add an activation key.</p>
+</li>
+<li>
 <p>Click <strong>Submit</strong> to save the host entry.</p>
 </li>
 </ol>
@@ -4991,6 +5127,15 @@ This method does not require Foreman to connect to the provisioned virtual machi
 <div class="ulist">
 <div class="title">Prerequisites</div>
 <ul>
+<li>
+<p>The installation media for the operating systems that you want to use to provision hosts.
+If the Katello plug-in is installed, you can use synchronized content repositories for Red&#160;Hat Enterprise Linux.
+For more information, see <a href="https://docs.theforeman.org/nightly/Content_Management_Guide/index-foreman-el.html#Importing_Content-Synchronizing_Repositories">Syncing Repositories</a> in the <em>Content Management Guide</em>.</p>
+</li>
+<li>
+<p>If the Katello plug-in is installed, an activation key for host registration.
+For more information, see <a href="https://docs.theforeman.org/nightly/Content_Management_Guide/index-foreman-el.html#Managing_Activation_Keys-Creating_an_Activation_Key">Creating An Activation Key</a> in the <em>Content Management</em> guide.</p>
+</li>
 <li>
 <p>A Smart&#160;Proxy&#160;server managing a logical network on the oVirt environment.
 Ensure no other DHCP services run on this network to avoid conflicts with the Smart&#160;Proxy&#160;server.
@@ -5260,6 +5405,14 @@ Use the <code>--uuid</code> option to store the template UUID on the oVirt serve
 </div>
 <div class="sect2">
 <h3 id="preparing-a-cloud-init-template_rhv-provisioning">10.4. Preparing a Cloud-init Template</h3>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>You must enable the remote execution plug-in to use a 'cloud-init' template.</p>
+</li>
+</ul>
+</div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
 <ol class="arabic">
@@ -5556,6 +5709,10 @@ Modify these settings if required.</p>
 Modify these settings to suit your needs.</p>
 </li>
 <li>
+<p>If you use the Katello plugin, click the <strong>Parameters</strong> tab, and ensure that a parameter exists that provides an activation key.
+If not, add an activation key.</p>
+</li>
+<li>
 <p>Click <strong>Submit</strong> to save the host entry.</p>
 </li>
 </ol>
@@ -5634,6 +5791,15 @@ For more information, see <a href="#Configuring_Networking">Configuring Networki
 </li>
 <li>
 <p>An existing VMware template if you want to use image-based provisioning.</p>
+</li>
+<li>
+<p>The installation media for the operating systems that you want to use to provision hosts.
+If the Katello plug-in is installed, you can use synchronized content repositories for Red&#160;Hat Enterprise Linux.
+For more information, see <a href="https://docs.theforeman.org/nightly/Content_Management_Guide/index-foreman-el.html#Importing_Content-Synchronizing_Repositories">Syncing Repositories</a> in the <em>Content Management Guide</em>.</p>
+</li>
+<li>
+<p>If the Katello plug-in is installed, an activation key for host registration.
+For more information, see <a href="https://docs.theforeman.org/nightly/Content_Management_Guide/index-foreman-el.html#Managing_Activation_Keys-Creating_an_Activation_Key">Creating An Activation Key</a> in the <em>Content Management</em> guide.</p>
 </li>
 </ul>
 </div>
@@ -6037,6 +6203,10 @@ Modify these settings to suit your needs.</p>
 Modify these settings to suit your requirements.</p>
 </li>
 <li>
+<p>If you use the Katello plugin, click the <strong>Parameters</strong> tab and ensure that a parameter exists that provides an activation key.
+If not, add an activation key.</p>
+</li>
+<li>
 <p>Click <strong>Submit</strong> to save the host entry.</p>
 </li>
 </ol>
@@ -6202,7 +6372,9 @@ EOF</pre>
 </div>
 </li>
 <li>
-<p>Download the <code>katello-server-ca.crt</code> file from Foreman&#160;server:</p>
+<p>Download the <code>katello-server-ca.crt</code> file from Foreman&#160;server:
+You must have the Katello plugin installed to complete this step.
+For Foreman&#160;server deployments, copy the CA certificate from the Apache configuration.</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># wget -O /etc/pki/ca-trust/source/anchors/cloud-init-ca.crt http://<em>foreman.example.com</em>/pub/katello-server-ca.crt</pre>
@@ -6385,6 +6557,15 @@ These capabilities support rapid application modernization across the open hybri
 <div class="title">Prerequisites</div>
 <ul>
 <li>
+<p>The installation media for the operating systems that you want to use to provision hosts.
+If the Katello plug-in is installed, you can use synchronized content repositories for Red&#160;Hat Enterprise Linux.
+For more information, see <a href="https://docs.theforeman.org/nightly/Content_Management_Guide/index-foreman-el.html#Importing_Content-Synchronizing_Repositories">Syncing Repositories</a> in the <em>Content Management Guide</em>.</p>
+</li>
+<li>
+<p>If the Katello plug-in is installed, an activation key for host registration.
+For more information, see <a href="https://docs.theforeman.org/nightly/Content_Management_Guide/index-foreman-el.html#Managing_Activation_Keys-Creating_an_Activation_Key">Creating An Activation Key</a> in the <em>Content Management</em> guide.</p>
+</li>
+<li>
 <p>A KubeVirt user that has the <code>cluster-admin</code> permissions for the Openshift Container Platform virtual cluster.
 For more information, see <a href="https://access.redhat.com/documentation/en-us/openshift_container_platform/4.1/html/authentication/using-rbac">Using RBAC to Define and Apply Permissions</a> in the <em>Authentication</em> guide of the Openshift Container Platform documentation.</p>
 </li>
@@ -6522,6 +6703,15 @@ In Foreman, you can interact with OpenStack REST API to create cloud instances a
 <div class="ulist">
 <div class="title">Prerequisites</div>
 <ul>
+<li>
+<p>The installation media for the operating systems that you want to use to provision hosts.
+If the Katello plug-in is installed, you can use synchronized content repositories for Red&#160;Hat Enterprise Linux.
+For more information, see <a href="https://docs.theforeman.org/nightly/Content_Management_Guide/index-foreman-el.html#Importing_Content-Synchronizing_Repositories">Syncing Repositories</a> in the <em>Content Management Guide</em>.</p>
+</li>
+<li>
+<p>If the Katello plug-in is installed, an activation key for host registration.
+For more information, see <a href="https://docs.theforeman.org/nightly/Content_Management_Guide/index-foreman-el.html#Managing_Activation_Keys-Creating_an_Activation_Key">Creating An Activation Key</a> in the <em>Content Management</em> guide.</p>
+</li>
 <li>
 <p>A Smart&#160;Proxy&#160;server managing a network in your OpenStack environment.
 For more information, see <a href="https://docs.theforeman.org/nightly/Provisioning_Guide/index-foreman-el.html#Configuring_Networking">Configuring Networking</a>.</p>
@@ -6801,6 +6991,10 @@ If not, select them.</p>
 Modify these settings to suit your needs.</p>
 </li>
 <li>
+<p>If you use the Katello plugin, click the <strong>Parameters</strong> tab, and ensure that a parameter exists that provides an activation key.
+If not, add an activation key.</p>
+</li>
+<li>
 <p>Click <strong>Submit</strong> to save the host entry.</p>
 </li>
 </ol>
@@ -6857,6 +7051,15 @@ Use a Virtual Private Cloud (VPC) to ensure a secure network between the hosts a
 </li>
 <li>
 <p>An Amazon Machine Image (AMI) for image-based provisioning.</p>
+</li>
+<li>
+<p>The installation media for the operating systems that you want to use to provision hosts.
+If the Katello plug-in is installed, you can use synchronized content repositories for Red&#160;Hat Enterprise Linux.
+For more information, see <a href="https://docs.theforeman.org/nightly/Content_Management_Guide/index-foreman-el.html#Importing_Content-Synchronizing_Repositories">Syncing Repositories</a> in the <em>Content Management Guide</em>.</p>
+</li>
+<li>
+<p>If the Katello plug-in is installed, an activation key for host registration.
+For more information, see <a href="https://docs.theforeman.org/nightly/Content_Management_Guide/index-foreman-el.html#Managing_Activation_Keys-Creating_an_Activation_Key">Creating An Activation Key</a> in the <em>Content Management</em> guide.</p>
 </li>
 </ul>
 </div>
@@ -7119,6 +7322,10 @@ The Foreman&#160;server automatically selects and IP address and the <strong>Man
 <p>Click the <strong>Virtual Machine</strong> tab and confirm that all fields are populated with values.</p>
 </li>
 <li>
+<p>If you use the Katello plugin, click the <strong>Parameters</strong> tab, and ensure that a parameter exists that provides an activation key.
+If not, add an activation key.</p>
+</li>
+<li>
 <p>Click <strong>Submit</strong> to save your changes.</p>
 </li>
 </ol>
@@ -7300,6 +7507,10 @@ In the corresponding <strong>Value</strong> field, enter the output of <code>cat
 <p>In the <strong>Name</strong> field, enter <code>remote_execution_ssh_user</code>.
 In the corresponding <strong>Value</strong> field, enter <code>ec2-user</code>.</p>
 </li>
+<li>
+<p>If you use the Katello plugin, in the <strong>Name</strong> field, enter <code>activation_keys</code>.
+In the corresponding <strong>Value</strong> field, enter your activation key.</p>
+</li>
 </ol>
 </div>
 </li>
@@ -7333,6 +7544,15 @@ Only image-based provisioning is supported for creating GCE hosts.</p>
 <div class="ulist">
 <div class="title">Prerequisites</div>
 <ul>
+<li>
+<p>The installation media for the operating systems that you want to use to provision hosts.
+If the Katello plug-in is installed, you can use synchronized content repositories for Red&#160;Hat Enterprise Linux.
+For more information, see <a href="https://docs.theforeman.org/nightly/Content_Management_Guide/index-foreman-el.html#Importing_Content-Synchronizing_Repositories">Syncing Repositories</a> in the <em>Content Management Guide</em>.</p>
+</li>
+<li>
+<p>If the Katello plug-in is installed, an activation key for host registration.
+For more information, see <a href="https://docs.theforeman.org/nightly/Content_Management_Guide/index-foreman-el.html#Managing_Activation_Keys-Creating_an_Activation_Key">Creating An Activation Key</a> in the <em>Content Management</em> guide.</p>
+</li>
 <li>
 <p>In your GCE project, configure a service account with the necessary IAM Compute role.
 For more information, see <a href="https://cloud.google.com/compute/docs/access/iam">Compute Engine IAM roles</a> in the GCE documentation.</p>
@@ -7673,6 +7893,10 @@ If not, select them.</p>
 Modify these settings to suit your needs.</p>
 </li>
 <li>
+<p>If you use the Katello plugin, click the <strong>Parameters</strong> tab, and ensure that a parameter exists that provides an activation key.
+If not, add an activation key.</p>
+</li>
+<li>
 <p>Click <strong>Submit</strong> to save the host entry.</p>
 </li>
 </ol>
@@ -7729,6 +7953,15 @@ This includes provisioning using Marketplace images, custom images, and shared i
 <div class="title">Prerequisites</div>
 <ul>
 <li>
+<p>The installation media for the operating systems that you want to use to provision hosts.
+If the Katello plug-in is installed, you can use synchronized content repositories for Red&#160;Hat Enterprise Linux.
+For more information, see <a href="https://docs.theforeman.org/nightly/Content_Management_Guide/index-foreman-el.html#Importing_Content-Synchronizing_Repositories">Syncing Repositories</a> in the <em>Content Management Guide</em>.</p>
+</li>
+<li>
+<p>If the Katello plug-in is installed, an activation key for host registration.
+For more information, see <a href="https://docs.theforeman.org/nightly/Content_Management_Guide/index-foreman-el.html#Managing_Activation_Keys-Creating_an_Activation_Key">Creating An Activation Key</a> in the <em>Content Management</em> guide.</p>
+</li>
+<li>
 <p>Ensure that you have the correct permissions to create an Azure Active Directory application.
 For more information, see <a href="https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal#required-permissions">Check Azure AD permissions</a> in the <em>Microsoft identity platform (Azure Active Directory for developers)</em> documentation.</p>
 </li>
@@ -7755,6 +7988,9 @@ For more information about provisioning templates, see <a href="https://docs.the
 <div class="title">Procedure Overview</div>
 <ol class="arabic">
 <li>
+<p><a href="#installing-the-azurerm-plugin_azure-provisioning">Installing the Foreman AzureRm Plug-in</a>.</p>
+</li>
+<li>
 <p><a href="#adding-azure-connection_azure-provisioning">Adding a Microsoft Azure Resource Manager Connection to Foreman&#160;server</a>.</p>
 </li>
 <li>
@@ -7769,7 +8005,84 @@ For more information about provisioning templates, see <a href="https://docs.the
 </ol>
 </div>
 <div class="sect2">
-<h3 id="adding-azure-connection_azure-provisioning">16.1. Adding a Microsoft Azure Resource Manager Connection to Foreman&#160;server</h3>
+<h3 id="installing-the-azurerm-plugin_azure-provisioning">16.1. Installing the Foreman AzureRm Plug-in</h3>
+<div class="paragraph">
+<p>Use this procedure to install the AzureRm plug-in in Foreman.
+Note that this plug-in is version 2.0.x and does not depend on the previous foreman_azure 1.x as they refer to different Azure APIs.
+This AzureRm plug-in is compatible with Foreman 1.17 and later.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Installing with Bundle (Gem)</div>
+<ol class="arabic">
+<li>
+<p>Append the following line to the <code>Gemfile.local.rb</code> file in your Foreman installation directory <code>/usr/share/foreman/bundler.d/Gemfile.local.rb</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre>$ gem 'foreman_azure_rm'</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Change to the <code>~/usr/share/foreman/bundler.d/</code> directory:</p>
+<div class="listingblock">
+<div class="content">
+<pre>cd ~/usr/share/foreman/bundler.d/</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Run the <code>bundle install</code> command.</p>
+</li>
+<li>
+<p>Enable the <code>foreman_azure_rm</code> plug-in:</p>
+<div class="listingblock">
+<div class="content">
+<pre># foreman-installer --enable-foreman-plugin-azure --enable-foreman-cli-azure</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Reload the Apipie cache:</p>
+<div class="listingblock">
+<div class="content">
+<pre># hammer -r</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="olist arabic">
+<div class="title">Installing with a Package-Management Utility</div>
+<ol class="arabic">
+<li>
+<p>Install the AzureRm plug-in using yum:</p>
+<div class="listingblock">
+<div class="content">
+<pre># yum install tfm-rubygem-foreman_azure_rm</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Enable the <code>foreman_azure_rm</code> plug-in:</p>
+<div class="listingblock">
+<div class="content">
+<pre># foreman-installer --enable-foreman-plugin-azure --enable-foreman-cli-azure</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Reload the Apipie cache:</p>
+<div class="listingblock">
+<div class="content">
+<pre># hammer -r</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="adding-azure-connection_azure-provisioning">16.2. Adding a Microsoft Azure Resource Manager Connection to Foreman&#160;server</h3>
 <div class="paragraph">
 <p>Use this procedure to add Microsoft Azure Resource Manager as a compute resource in Foreman.
 Note that you must add a separate compute resource for each Azure Resource Manager region that you want to use.</p>
@@ -7835,7 +8148,7 @@ Note that the value for the <code>--region</code> option must be in lowercase an
 </div>
 </div>
 <div class="sect2">
-<h3 id="adding-images-to-server_azure-provisioning">16.2. Adding Microsoft Azure Resource Manager Images to Foreman&#160;server</h3>
+<h3 id="adding-images-to-server_azure-provisioning">16.3. Adding Microsoft Azure Resource Manager Images to Foreman&#160;server</h3>
 <div class="paragraph">
 <p>To create hosts using image-based provisioning, you must add information about the image, such as access details and the image location, to your Foreman&#160;server.</p>
 </div>
@@ -7917,7 +8230,7 @@ You cannot use the <code>root</code> user.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="adding-azure-details-to-a-compute-profile_azure-provisioning">16.3. Adding Microsoft Azure Resource Manager Details to a Compute Profile</h3>
+<h3 id="adding-azure-details-to-a-compute-profile_azure-provisioning">16.4. Adding Microsoft Azure Resource Manager Details to a Compute Profile</h3>
 <div class="paragraph">
 <p>Use this procedure to add Azure hardware settings to a compute profile.
 When you create a host on Azure using this compute profile, these settings are automatically populated.</p>
@@ -8038,7 +8351,7 @@ The scripts must contain <code>sudo</code> at the beginning because Foreman down
 </div>
 </div>
 <div class="sect2">
-<h3 id="creating-image-only-hosts_azure-provisioning">16.4. Creating Image-based Hosts on Microsoft Azure Resource Manager</h3>
+<h3 id="creating-image-only-hosts_azure-provisioning">16.5. Creating Image-based Hosts on Microsoft Azure Resource Manager</h3>
 <div class="paragraph">
 <p>In Foreman, you can use Microsoft Azure Resource Manager provisioning to create hosts from an existing image.
 The new host entry triggers the Microsoft Azure Resource Manager server to create the instance using the pre-existing image as a basis for the new volume.</p>
@@ -8114,6 +8427,10 @@ If not, select them.</p>
 Modify these settings to suit your needs.</p>
 </li>
 <li>
+<p>If you use the Katello plugin, click the <strong>Parameters</strong> tab, and ensure that a parameter exists that provides an activation key.
+If not, add an activation key.</p>
+</li>
+<li>
 <p>Click <strong>Submit</strong> to save the host entry.</p>
 </li>
 </ol>
@@ -8151,6 +8468,19 @@ Replace the values in the following example with the appropriate values for your
 <div class="sect1">
 <h2 id="Initialization_Script_for_Provisioning_Examples">Appendix A: Initialization Script for Provisioning Examples</h2>
 <div class="sectionbody">
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+The following chapter describes Red Hat content management provided by Katello plugin.
+Deployments without the plugin use Installation Media to fetch content from remote or local mirrors.
+</td>
+</tr>
+</table>
+</div>
 <div class="paragraph">
 <p>If you have not followed the examples in the Foreman Content Management Guide, you can use the following initialization script to create an environment for provisioning examples.</p>
 </div>
