@@ -1,6 +1,6 @@
 # Foreman Guides
 
-This is upstream source code of [Red Hat Satellite 6](https://access.redhat.com/documentation/en-us/red_hat_satellite) documentation.
+This is upstream source code of [Red Hat Satellite 6](https://access.redhat.com/documentation/en-us/red_hat_satellite) documentation as well as parts of the [orcharhino documentation](https://docs.orcharhino.com/or/docs/index.html).
 All content in this repository uses [AsciiDoctor](https://asciidoctor.org/) syntax and aims to follow [Guidelines for Red Hat Documentation](https://redhat-documentation.github.io/).
 This is a **work in progress**, an attempt to take content written by Red Hat documentation team, modularize it, incorporate [existing documentation](https://theforeman.org/documentation.html) and eventually make this the only and official documentation for Foreman, Katello and all plugins.
 
@@ -50,6 +50,8 @@ Currently there are three different versions:
 
 `make BUILD=foreman-deb` - This generates  a version for Foreman installed on Debian.
 
+`make BUILD=orcharhino` - This generates a downstream preview of the guide for orcharhino.
+
 The final artifacts can be found in the ./build subdirectory.
 Note that GNU Makefile tracks changes and only builds relevant artifacts, to trigger full rebuild use `make clean` to delete build directory and start over.
 
@@ -79,7 +81,7 @@ Please read these guidelines before opening a Pull Request. For more information
 ### Variables
 
 The content in this repository is shared between the upstream Foreman community and branded downstream products such as Red Hat Satellite and orcharhino by ATIX.
-Therefore, never write "Foreman" or "Satellite" words directly, but use the following variables:
+Therefore, never write "Foreman", "Satellite", or "orcharhino" words directly, but use the following variables:
 
 | Variable | Upstream value | Downstream value |
 | -------- | -------------- | ---------------- |
