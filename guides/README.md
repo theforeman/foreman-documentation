@@ -44,9 +44,9 @@ Currently there are three different versions:
 
 `make BUILD=foreman-el` - This is the default that is generated with `make html` or `pdf`.
 
-
 `make BUILD=satellite` - This generates a downstream preview of the guide.
 
+`make BUILD=katello` - this generates a katello build of the guide
 
 `make BUILD=foreman-deb` - This generates  a version for Foreman installed on Debian.
 
