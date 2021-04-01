@@ -17,11 +17,11 @@ In MacOS required tools can be installed via brew but instead "make" call "gmake
 
 Alternatively, XCode development environment can be installed to have make utility available on PATH, however this takes about an hour to download and install and requires several gigabytes of HDD space:
 
-	xcode-select --install
+		xcode-select --install
 
 If AsciiDoctor is not available in repositories or under RVM/rbenv, simply install it from rubygems:
 
-  	gem install asciidoctor asciidoctor-pdf --pre
+		gem install asciidoctor asciidoctor-pdf --pre
 
 Then simply run `make` or `make html` which builds HTML artifacts.
 Generating PDF output is slow, therefore command `make pdf` must be used separately.
@@ -36,8 +36,8 @@ To quickly build HTML version and open new tab in a browser do:
 Similarly, to build and open PDF version do:
 
     make open-pdf
-    
-Currently there are three different versions 
+
+Currently there are three different versions
 
 
 `make BUILD=foreman` - This is the default that is generated with `make html` or `pdf`.
@@ -47,7 +47,6 @@ Currently there are three different versions
 
 
 `make BUILD=foreman-deb` - This generates  a version for Foreman installed on Debian.
-
 
 The final artifacts can be found in the ./build subdirectory.
 Note that GNU Makefile tracks changes and only builds relevant artifacts, to trigger full rebuild use `make clean` to delete build directory and start over.
@@ -89,7 +88,15 @@ Never write "Foreman" or "Satellite" words directly but use the following variab
 | {SmartProxyServer} | Smart Proxy server | Capsule Server |
 | {SmartProxy} | Smart Proxy | Capsule |
 
-The table only covers the most frequent terms, the rest is defined in the [included file](common/attributes.adoc).
+The table only covers the most frequent terms.
+The rest are defined in the attribute files:
+
+* [attributes.adoc](common/attributes.adoc): version definitions and includes for other attribute files.
+* [attributes-base.adoc](common/attributes-base.adoc): base attributes common for all builds.
+* [attributes-foreman-el.adoc](common/attributes-foreman-el.adoc): base overrides for foreman-el build.
+* [attributes-foreman-deb.adoc](common/attributes-foreman-deb.adoc): base overrides for foreman-deb build.
+* [attributes-katello.adoc](common/attributes-katello.adoc): base overrides for katello build.
+* [attributes-satellite.adoc](common/attributes-satellite.adoc): base overrides for satellite build.
 
 Variables cannot be used in shell or code examples.
 To use them, use "attributes" keyword:
