@@ -10,7 +10,7 @@ for BRANCH in $BRANCH1 $BRANCH2; do
   git checkout $BRANCH
   for BUILD in foreman-el foreman-deb katello satellite; do
     make clean
-    make BUILD=$BUILD BUILD_DIR=../build-$BUILD-$BRANCH
+    make -j$(nproc) BUILD=$BUILD BUILD_DIR=../build-$BUILD-$BRANCH html
   done
 done
 git checkout $BRANCH1
