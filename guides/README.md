@@ -39,6 +39,14 @@ Similarly, to build and open PDF version do:
 
     make open-pdf
 
+To speed up the build process, make sure to use `-j` option. Ideally, set it to amount of cores plus one:
+
+		make -j9
+
+An alias is often useful:
+
+		alias make="make -j$(nproc)"
+
 Currently there are three different versions:
 
 

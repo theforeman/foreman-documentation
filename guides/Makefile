@@ -1,5 +1,8 @@
 SHELL := /bin/bash
-GUIDES = $(shell ls -d doc-*)
+ALL_DIRS = $(shell ls -d doc-*)
+GUIDES-HTML = $(ALL_DIRS)
+
+.PHONY: all html pdf linkchecker all-html all-pdf clean all-clean linkchecker-tryer $(GUIDES-HTML)
 
 all: html
 
@@ -15,30 +18,20 @@ linkchecker:
 linkchecker-tryer:
 	find build -type f -name index\*html | xargs linkchecker -r1 -f common/linkchecker.ini --check-extern | linkchecker-tryer
 
-all-html:
-	for DIR in $(GUIDES) ; do \
-		pushd "$$DIR" && \
-		$(MAKE) html && \
-		popd ; \
-	done
+all-html: $(GUIDES-HTML)
+
+$(GUIDES-HTML):
+	$(MAKE) --directory=$@ html
 
 all-pdf:
-	for DIR in $(GUIDES) ; do \
-		pushd "$$DIR" && \
-		$(MAKE) pdf && \
-		popd ; \
+	for DIR in $(ALL_DIRS) ; do \
+		$(MAKE) --directory="$$DIR" pdf ; \
 	done
 
-all-linkchecker:
-	for DIR in $(GUIDES) ; do \
-		pushd "$$DIR" && \
-		$(MAKE) linkchecker && \
-		popd ; \
-	done
+$(GUIDES-PDF):
+	$(MAKE) --directory=$@ pdf
 
 all-clean:
-	for DIR in $(GUIDES) ; do \
-		pushd "$$DIR" && \
-		$(MAKE) clean && \
-		popd ; \
+	for DIR in $(ALL_DIRS) ; do \
+		$(MAKE) --directory="$$DIR" clean ; \
 	done
