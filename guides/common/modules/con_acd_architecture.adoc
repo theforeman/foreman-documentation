@@ -1,0 +1,117 @@
+[id="{context}_architecture"]
+= Architecture
+
+ACD uses {SmartProxies} and a remote execution provider called `acd`.
+
+Ansible playbooks are downloaded from {ProjectServer} to {SmartProxyServer} before being executed.
+Submit any Ansible playbooks that you want to use to {ProjectServer}.
+You do not have to manually add Ansible playbooks to {SmartProxyServer}s.
+
+[id="{context}_ansible_playbooks"]
+== Ansible Playbooks
+
+Ansible playbooks provide the configuration of deployed applications.
+They are required along with to an xref:{context}_application_definitions[application definition] to create xref:{context}_application_instances[application instances].
+
+Ansible group variables are mandatory and only supported as `key:value`, that is lists and dictionaries are currently not allowed and cannot be edited via management UI.
+
+Ansible playbooks need to contain Ansible group variables for each provided service.
+
+The Ansible inventory is automatically created by the ACD plugin.
+
+In the {ProjectWebUI}, navigate to *Applications > Ansible Playbooks* to manage Ansible playbooks for application centric deployment.
+
+[CAUTION]
+====
+The Ansible playbook must contain all necessary roles and tasks to execute the playbook.
+
+If your Ansible playbooks are currently using Ansible collections, ensure that these Ansible collections are added manually to every {SmartProxyServer}.
+To install Ansible collections manually, enter the following command on your {ProjectServer} and {SmartProxyServer}:
+
+[source,bash]
+----
+# ansible-galaxy collection install _namespace.collection_
+----
+
+Replace `namespace.collection` with the Ansible collection you are intending to use, for example `community.general`.
+This uses the Ansible galaxy as configured in the `ansible.cfg` file.
+====
+
+[id="{context}_application_definitions"]
+== Application Definitions
+
+Application definitions are blueprints of deployed applications.
+They are required along with an xref:{context}_ansible_playbooks[Ansible playbook] to create xref:{context}_application_instances[application instances].
+
+Application definitions consist of a list of services and Ansible group variables and serve as a preconfigured _blueprint_ providing easy self service for end users.
+Each service has a name, host group, Ansible group, and minimum and maximum number of host running this service.
+
+Users with administrative access to {ProjectName} handle application definitions and specify the allowed number of hosts for each service.
+
+In the {ProjectWebUI}, navigate to *Applications > App Definitions* to add, edit, and remove application definitions for application centric deployment.
+
+[id="{context}_application_instances"]
+== Application Instances
+
+An application instance is based on a preconfigured xref:{context}_application_definitions[application definition].
+You can use an application instance to automatically deploy and configure hosts based on its application definition and Ansible playbook.
+
+Based on one application definition, end users can configure and deploy multiple application instances.
+
+In the {ProjectWebUI}, navigate to *Applications > App Instances* to add, deploy, and remove application instances for application centric deployment.
+
+[id="{context}_ansible_variables_and_parameter_hierarchy"]
+== Ansible Variables and Parameter Hierarchy
+
+There are different levels on how to set Ansible variables and parameters for a service/host.
+
+.Ansible variables
+* On the base, there are Ansible group variables for _all_ services as defined in the Ansible playbook.
+* Next, there are Ansible group variables defined for _all_ services in the application definition.
+Individual Ansible variables can be locked, removed, or added to the application definition.
+They overwrite the ones from the Ansible playbook.
+* An application definition also contains Ansible variables for _service groups_.
+These overwrite Ansible variables set for all services.
+* An application instance can overwrite any unlocked Ansible variables from the application definition.
+
+.Parameters
+* Managed hosts inherit parameters from multiple entities:
+** Global parameters
+** Organization parameters
+** Location parameters
+** Domain parameters
+** Subnet parameters
+** Operating system parameters
+** Host group parameters
+** Host parameters
+
++
+For example, domain level parameters overwrite both location and organization based parameters and host parameters overwrite any other defined parameter.
+
+Refer to the https://docs.ansible.com/ansible/latest/user_guide/playbooks_variables.html#variable-precedence-where-should-i-put-a-variable[Ansible documentation] for more information about Ansible variable precedence.
+
+[id="{context}_user_roles"]
+== User Roles
+
+The ACD plugin requires the specific {ProjectName} permissions.
+Depending on your environment, there might be two different groups of users in regard to _managing_ an application and _deploying_ an application:
+
+* An administrative group of users might be responsible for providing the tools to deploy an application, that is an Ansible playbook and application definition.
+* An end user group might be using {ProjectName} to deploy applications, that is creating and deploying application instances based on application definitions within their organization and location context.
+Many application instances can be created based on the same application definition.
+
+By default, there are two ACD user roles:
+
+.Application Centric Deployment Manager
+Configuring Ansible playbooks and application definitions requires the `Application Centric Deployment Manager` user role.
+It bundles permissions to manage Ansible playbooks, application definitions, and application instances as well as using ACD remote execution features.
+This role is suited for administrative users.
+
+The ACD manager role includes permissions to deploy and configure hosts; to manage Ansible playbooks, application definitions, and application instances; and to view, create, and cancel job invocations and templates.
+
+.Application Centric Deployment User
+Creating and deploying application instances requires the `Application Centric Deployment User` user role.
+It bundles permissions to manage application instances and access to the ACD remote execution features.
+This role is suited for end users.
+
+The ACD user role includes permissions to deploy and configure hosts; to manage application instances; and to view, create, and cancel job invocations and templates.
