@@ -52,7 +52,9 @@ $(IMAGES_TS): $(IMAGES)
 	touch $(IMAGES_TS)
 
 $(DEST_HTML): $(SOURCES)
-	asciidoctor -a build=$(BUILD) -a date_mdy="$(DATE_MDY)" -a date_my="$(DATE_MY)" -a docdatetime="$(DATE_MY)" -a stylesheet=$(BUILD).css -a linkcss=true -b html5 -d book --trace -o $@ $<
+	asciidoctor -a build=$(BUILD) -a date_mdy="$(DATE_MDY)" -a date_my="$(DATE_MY)" -a docdatetime="$(DATE_MY)" -a stylesheet=$(BUILD).css -a linkcss=true -b html5 -d book --trace -o $@ $< 2>&1 | tee $@.log
+	@! grep -q "^asciidoctor: ERROR" $@.log
 
 $(DEST_PDF): $(SOURCES) $(IMAGES)
-	asciidoctor-pdf -a build=$(BUILD) -d book --trace -o $@ $<
+	asciidoctor-pdf -a build=$(BUILD) -d book --trace -o $@ $< 2>&1 | tee $@.log
+	@! grep -q "^asciidoctor: ERROR" $@.log
