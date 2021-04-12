@@ -6,7 +6,15 @@ This is work-in-progress documentation site for <a href="https://www.theforeman.
 
 Official documentation [is available here](https://theforeman.org/manuals/nightly/index.html).
 
-Available documentation sets are:
+Available upstream documentation sets are:
 
 * [Nightly](/nightly.html)
 * [2.3](/2.3.html)
+
+Other relevant documentation:
+
+* [Red Hat Satellite](https://access.redhat.com/documentation/en-us/red_hat_satellite) is a distribution of Foreman and several plugins including Katello, Remote Execution, Discovery, Bootdisk, OpenSCAP for the enterprise.
+* [orcharhino by ATIX](https://docs.orcharhino.com/or/docs/index.html) is a distribution of Foreman and many plugins including Katello providing vendor-independent management of CentOS, Debian, Oracle Linux, Red Hat Enterprise Linux, SUSE Linux Enterprise Server, and Ubuntu hosts. orcharhino supports Amazon EC2, Google GCE, libvirt, Microsoft Azure, Oracle Linux Virtualization Manager, oVirt, Proxmox, RHV, and VMware vSphere as compute resource providers and Ansible, Puppet, and Salt as configuration management solutions.
+* [Red Hat Satellite Performance Tuning](https://redhatsatellite.github.io/satellite-performance-tuning/) is a set of performance-related resources, a free Red Hat portal account is required to access the content. Note that while some of the guidance here might help you, Red Hat Satellite is a combination of Foreman and Katello. Also available on [Red Hat Portal](https://redhatsatellite.github.io/satellite-performance-tuning/).
+
+The latest Satellite and orcharhino releases are always behind the latest Foreman release. The downstream documentation is meant as an extension, not a substitution for first party Foreman documentation.
