@@ -1,7 +1,7 @@
 [[upgrading_a_connected_satellite_server]]
 = Upgrading a Connected {ProjectServer}
 
-Use this procedure for a {ProjectServer} connected to the Red{nbsp}Hat Content Delivery Network.
+Use this procedure for a {ProjectServer} with access to the public internet
 
 [WARNING]
 If you customize configuration files, manually or using a tool such as Hiera, these changes are overwritten when the installation script runs during upgrading or updating. You can use the `--noop` option with the {foreman-installer} script to test for changes. For more information, see the Red Hat Knowledgebase solution https://access.redhat.com/solutions/3351311[How to use the noop option to check for changes in {Project} config files during an upgrade.]
@@ -14,28 +14,27 @@ If you customize configuration files, manually or using a tool such as Hiera, th
 * On a physical machine, create a backup.
 ifndef::orcharhino[]
 +
-For more information about backups, see https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersionPrevious}/html/administering_red_hat_satellite/backing-up-satellite-server-and-capsule-server[Backing Up {ProjectServer} and {SmartProxyServer}] in the _Administering {ProjectName} {ProductVersionPrevious}_ guide.
-endif::[]
+For more information about backups, see {AdministeringDocURL}#backing-up-satellite-server-and-capsule-server[Backing Up {ProjectServer} and {SmartProxyServer}] in the _Administering {ProjectName} {ProjectVersionPrevious}_ guide.
 
 . Optional: If you made manual edits to DNS or DHCP configuration in the `/etc/zones.conf` or `/etc/dhcp/dhcpd.conf` files, back up the configuration files because the installer only supports one domain or subnet, and therefore restoring changes from these backups might be required.
 
 . Optional: If you made manual edits to DNS or DHCP configuration files and do not want to overwrite the changes, enter the following command:
 +
-[options="nowrap"]
+[options="nowrap" subs="attributes"]
 ----
 # {foreman-installer} --foreman-proxy-dns-managed=false \
 --foreman-proxy-dhcp-managed=false
 ----
-
+ifdef::katello[]
 . Optional: If you use PostgreSQL as an external database, on the PostgreSQL server, install the `rh-postgresql12-postgresql-evr` package, which is available from the `{RepoRHEL7Server{Project}ServerProductVersion}` repository:
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
 # yum install rh-postgresql12-postgresql-evr
 ----
-
+endif::[]
 . In the {Project} web UI, navigate to *Hosts* > *Discovered hosts*. On the Discovered Hosts page, power off and then delete the discovered hosts. From the *Select an Organization* menu, select each organization in turn and repeat the process to power off and delete the discovered hosts. Make a note to reboot these hosts when the upgrade is complete.
-
+ifdef::satellite[]
 . Ensure that the {Project} Maintenance repository is enabled:
 +
 [options="nowrap" subs="attributes"]
@@ -46,7 +45,7 @@ endif::[]
 
 . Check the available versions to confirm the version you want is listed:
 +
-[options="nowrap"]
+[options="nowrap" subs="attributes"]
 ----
 # {foreman-maintain} upgrade list-versions
 ----
@@ -70,41 +69,65 @@ If you lose connection to the command shell where the upgrade command is running
 ----
 # {foreman-maintain} upgrade run --target-version {TargetVersionMaintainUpgrade}
 ----
-
+endif::[]
+ifdef::katello[]
+. Check for running tasks
++
+[options="nowrap" subs="attributes"]
+----
+# foreman-rake katello:upgrade_check
+----
+. Update operating system packages
++
+[options="nowrap" subs="attributes"]
+----
+# yum update -y
+----
+. Update repositories
++
+.For Centos 7 or Red Hat Enterprise Linux Users:
+[options="nowrap" subs="attributes"]
+----
+# yum update -y https://yum.theforeman.org/releases/{ProjectVersion}/el7/x86_64/foreman-release.rpm
+# yum update -y https://yum.theforeman.org/katello/{KatelloVersion}/katello/el7/x86_64/katello-repos-latest.rpm
+# yum install -y centos-release-scl-rh
+----
+. Update packages
+Clean the yum cache and update required packages
++
+[options="nowrap" subs="attributes"]
+----
+# yum clean all
+# yum -y update
+----
+. Run installer
++
+[options="nowrap" subs="attributes"]
+----
+# {foreman-installer}
+----
+endif::[]
 . Check when the kernel packages were last updated:
 +
 [options="nowrap"]
 ----
 # rpm -qa --last | grep kernel
 ----
-
-. Optional: If a kernel update occurred since the last reboot, stop the `{foreman-maintain}` services and reboot the system:
+. Optional: If a kernel update occurred since the last reboot, reboot the system:
 +
 ----
-# {foreman-maintain} service stop
 # reboot
 ----
-
 . If using a BASH shell, after a successful or failed upgrade, enter:
 +
-[options="nowrap"]
+[options="nowrap" subs="attributes"]
 ----
 # hash -d {foreman-maintain} service 2> /dev/null
 ----
-
 . Optional: If you made manual edits to DNS or DHCP configuration files, check and restore any changes required to the DNS and DHCP configuration files using the backups that you make.
-
 . If you make changes in the previous step, restart the `{foreman-maintain}` services.
 +
-[options="nowrap"]
+[options="nowrap" subs="attributes"]
 ----
 # {foreman-maintain} service restart
-----
-
-. If you have the OpenSCAP plug-in installed, but do not have the default OpenSCAP content available, enter the following command:
-
-+
-[options="nowrap"]
-----
-# foreman-rake foreman_openscap:bulk_upload:default
 ----
