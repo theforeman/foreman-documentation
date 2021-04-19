@@ -10,6 +10,7 @@ DEST_PDF = $(BUILD_DIR)/$(subst doc-,,$(NAME))-$(BUILD).pdf
 IMAGES_DIR = $(DEST_DIR)/images
 IMAGES_TS = $(DEST_DIR)/.timestamp-images
 SOURCES = master.adoc $(shell find . -type f -name \*.adoc)
+DEPENDENCIES = $(shell find $(COMMON_DIR) -type f -name \*.adoc)
 IMAGES = $(shell find ./images ./common/images -type f 2>/dev/null || true)
 UNAME = $(shell uname)
 DATE_MDY = $(shell LC_ALL=C date "+%b %d %Y")
@@ -51,10 +52,10 @@ $(IMAGES_TS): $(IMAGES)
 	pushd "$(IMAGES_DIR)" && for IMG in *.*; do ln -s ../../images/$$IMG ../common/images/$$IMG; done && popd
 	touch $(IMAGES_TS)
 
-$(DEST_HTML): $(SOURCES)
+$(DEST_HTML): $(SOURCES) $(DEPENDENCIES)
 	asciidoctor -a build=$(BUILD) -a date_mdy="$(DATE_MDY)" -a date_my="$(DATE_MY)" -a docdatetime="$(DATE_MY)" -a stylesheet=$(BUILD).css -a linkcss=true -b html5 -d book --trace -o $@ $< 2>&1 | tee $@.log
-	@! grep -q "^asciidoctor: ERROR" $@.log
+	@! grep -Eq "^asciidoctor: (ERROR|WARNING)" $@.log
 
-$(DEST_PDF): $(SOURCES) $(IMAGES)
+$(DEST_PDF): $(SOURCES) $(IMAGES) $(DEPENDENCIES)
 	asciidoctor-pdf -a build=$(BUILD) -d book --trace -o $@ $< 2>&1 | tee $@.log
-	@! grep -q "^asciidoctor: ERROR" $@.log
+	@! grep -Eq "^asciidoctor: (ERROR|WARNING)" $@.log
