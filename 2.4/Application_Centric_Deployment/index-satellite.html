@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 2.0.14">
+<title>Application Centric Deployment Guide</title>
+<link rel="stylesheet" href="./satellite.css">
+</head>
+<body class="book">
+<div id="header">
+<h1>Application Centric Deployment Guide</h1>
+</div>
+<div id="content">
+<div class="sect1">
+<h2 id="application_centric_deployment_introduction">1. Introduction</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><em>Application Centric Deployment</em> (ACD) describes a fundamentally different approach to provisioning and configuring hosts in Satellite.
+Traditionally, Red&#160;Hat Satellite has pursued a host-centric approach.
+Now, the ACD approach presents a new idea: deploying hosts to run an application that requires a predefined set of services.</p>
+</div>
+<div class="paragraph">
+<p>Generally, an application consists of multiple services and therefore requires different kinds of hosts connected to each other.
+These hosts have dependencies on each other, for example, an application server might require a database server.</p>
+</div>
+<div class="paragraph">
+<p>The number of deployed hosts depends on the expected usage of the application.
+You can scale an application instance vertically via compute profile or horizontally by choosing multiple hosts to run the same service to handle increased workloads.</p>
+</div>
+<div class="paragraph">
+<p>Within ACD, Ansible playbooks are executed on Satellite&#160;Server.
+Ensure that Satellite&#160;Server can connect to all managed hosts using Ansible.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Host Centric vs. Application Centric Deployment</caption>
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 40%;">
+<col style="width: 40%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Host Centric Deployment</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Application Centric Deployment</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Requirements</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">none (possible by default)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ACD plugin</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Focus</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">individual hosts</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">applications</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Number of Hosts</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">one</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">one to many</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Automation</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">via Host Group</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">via Ansible playbook and application definition</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Advantages</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">full control over each host</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">deploy a number of hosts at once; self service for technically less inclined; scale vertically and/or horizontally</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Disadvantages</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">extra abstraction layer between a host and its purpose</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">dependency on/limitation to existing application templates</p></td>
+</tr>
+</tbody>
+</table>
+<div class="sect2">
+<h3 id="application_centric_deployment_usage_example">1.1. Usage Example</h3>
+<div class="paragraph">
+<p>The following application centric deployment example illustrates the deployment of hosts in an application centric approach.
+The web application requires an HAProxy, an Apache web server, a Tomcat application server, and a database server.</p>
+</div>
+<div class="paragraph">
+<p>Using ACD, this web application can be deployed and configured in a single step:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Import the Ansible playbook</p>
+<div class="paragraph">
+<p>Upload the Ansible playbook to your Satellite&#160;Server.
+Specify the path and the name of the Ansible playbook via management UI.</p>
+</div>
+</li>
+<li>
+<p>Create an application definition</p>
+<div class="paragraph">
+<p>This example requires four different services: proxy servers, web servers, application servers, and database servers.
+Those hosts are ideally part of a host group.</p>
+</div>
+</li>
+<li>
+<p>Optional: Customize Ansible variables</p>
+<div class="paragraph">
+<p>You can either use the default values, change values, or lock the Ansible variables from being edited for an application instance.
+Ansible variables are read from the group variables of the Ansible playbook.</p>
+</div>
+</li>
+<li>
+<p>Optional: Overwrite variables from the host group</p>
+<div class="paragraph">
+<p>For example, change the compute profile or set a different lifecycle environment.</p>
+</div>
+</li>
+<li>
+<p>Deploy an application instance</p>
+<div class="paragraph">
+<p>You may simply deploy the application instance; run the Ansible playbook as is; or customize the Ansible playbook before running it.</p>
+</div>
+</li>
+</ol>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If you want to install a package using an Ansible playbook and the host is subscribed to Satellite&#160;Server, ensure that the package exists in the Content View.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="application_centric_deployment_key_terms">1.2. Key Terms in Application Centric Deployment</h3>
+<div class="paragraph">
+<div class="title">ACD</div>
+<p>ACD stands for <em>Application</em> <em>Centric</em> <em>Deployment</em> and describes a new approach to provision and configure hosts based on the service they provide.</p>
+</div>
+<div class="paragraph">
+<div class="title">Ansible Playbooks</div>
+<p><a href="#application_centric_deployment_ansible_playbooks">Ansible playbooks</a> are the core of the application definition.
+They connect the different services and provide a whole application with one click of a button.
+These playbooks contain roles, which in turn contain tasks to properly configure hosts.</p>
+</div>
+<div class="paragraph">
+<div class="title">Application Definitions</div>
+<p><a href="#application_centric_deployment_application_definitions">Application definitions</a> are blueprints of how to deploy an application and its services.</p>
+</div>
+<div class="paragraph">
+<div class="title">Application Instances</div>
+<p><a href="#application_centric_deployment_application_instances">Application instances</a> are configured application definitions.
+You can define how many hosts to deploy per service and choose unique host names.</p>
+</div>
+<div class="paragraph">
+<p>There might be different configurations based on a testing or production environment or its expected usage.
+For example, deploying a wiki platform for 20 users might use the <code>1-small</code> compute profile, whereas hundreds of expected users might require the <code>3-large</code> compute profile.</p>
+</div>
+<div class="paragraph">
+<div class="title">Service</div>
+<p>A service is a type of host necessary to run an application.
+For example, the <em>LAMP</em> stack consists of three services: an <a href="https://httpd.apache.org/">Apache</a> webserver, a <a href="https://www.mysql.com/">MySQL</a> database, and <a href="https://www.php.net/">PHP</a> scripting language all running on Linux servers.</p>
+</div>
+<div class="paragraph">
+<div class="title">Host Groups</div>
+<p>Host groups are predefined sets of provisioning and configuration settings for a new host.
+For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.9/html-single/managing_hosts/index#creating-a-host-group">Creating a Host Group</a>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="application_centric_deployment_prerequisites">1.3. Prerequisites for Application Centric Deployment</h3>
+<div class="paragraph">
+<p>In order to use the ACD plugin, your Red&#160;Hat Satellite instance must be able to deploy a host and offer properly configured host groups.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="application_centric_deployment_architecture">2. Architecture</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>ACD uses Capsules and a remote execution provider called <code>acd</code>.</p>
+</div>
+<div class="paragraph">
+<p>Ansible playbooks are downloaded from Satellite&#160;Server to Capsule&#160;Server before being executed.
+Submit any Ansible playbooks that you want to use to Satellite&#160;Server.
+You do not have to manually add Ansible playbooks to Capsule&#160;Servers.</p>
+</div>
+<div class="sect2">
+<h3 id="application_centric_deployment_ansible_playbooks">2.1. Ansible Playbooks</h3>
+<div class="paragraph">
+<p>Ansible playbooks provide the configuration of deployed applications.
+They are required along with to an <a href="#application_centric_deployment_application_definitions">application definition</a> to create <a href="#application_centric_deployment_application_instances">application instances</a>.</p>
+</div>
+<div class="paragraph">
+<p>Ansible group variables are mandatory and only supported as <code>key:value</code>, that is lists and dictionaries are currently not allowed and cannot be edited via management UI.</p>
+</div>
+<div class="paragraph">
+<p>Ansible playbooks need to contain Ansible group variables for each provided service.</p>
+</div>
+<div class="paragraph">
+<p>The Ansible inventory is automatically created by the ACD plugin.</p>
+</div>
+<div class="paragraph">
+<p>In the Foreman web UI, navigate to <strong>Applications &gt; Ansible Playbooks</strong> to manage Ansible playbooks for application centric deployment.</p>
+</div>
+<div class="admonitionblock caution">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Caution</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The Ansible playbook must contain all necessary roles and tasks to execute the playbook.</p>
+</div>
+<div class="paragraph">
+<p>If your Ansible playbooks are currently using Ansible collections, ensure that these Ansible collections are added manually to every Capsule&#160;Server.
+To install Ansible collections manually, enter the following command on your Satellite&#160;Server and Capsule&#160;Server:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash"># ansible-galaxy collection install _namespace.collection_</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Replace <code>namespace.collection</code> with the Ansible collection you are intending to use, for example <code>community.general</code>.
+This uses the Ansible galaxy as configured in the <code>ansible.cfg</code> file.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="application_centric_deployment_application_definitions">2.2. Application Definitions</h3>
+<div class="paragraph">
+<p>Application definitions are blueprints of deployed applications.
+They are required along with an <a href="#application_centric_deployment_ansible_playbooks">Ansible playbook</a> to create <a href="#application_centric_deployment_application_instances">application instances</a>.</p>
+</div>
+<div class="paragraph">
+<p>Application definitions consist of a list of services and Ansible group variables and serve as a preconfigured <em>blueprint</em> providing easy self service for end users.
+Each service has a name, host group, Ansible group, and minimum and maximum number of host running this service.</p>
+</div>
+<div class="paragraph">
+<p>Users with administrative access to Red&#160;Hat Satellite handle application definitions and specify the allowed number of hosts for each service.</p>
+</div>
+<div class="paragraph">
+<p>In the Foreman web UI, navigate to <strong>Applications &gt; App Definitions</strong> to add, edit, and remove application definitions for application centric deployment.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="application_centric_deployment_application_instances">2.3. Application Instances</h3>
+<div class="paragraph">
+<p>An application instance is based on a preconfigured <a href="#application_centric_deployment_application_definitions">application definition</a>.
+You can use an application instance to automatically deploy and configure hosts based on its application definition and Ansible playbook.</p>
+</div>
+<div class="paragraph">
+<p>Based on one application definition, end users can configure and deploy multiple application instances.</p>
+</div>
+<div class="paragraph">
+<p>In the Foreman web UI, navigate to <strong>Applications &gt; App Instances</strong> to add, deploy, and remove application instances for application centric deployment.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="application_centric_deployment_ansible_variables_and_parameter_hierarchy">2.4. Ansible Variables and Parameter Hierarchy</h3>
+<div class="paragraph">
+<p>There are different levels on how to set Ansible variables and parameters for a service/host.</p>
+</div>
+<div class="ulist">
+<div class="title">Ansible variables</div>
+<ul>
+<li>
+<p>On the base, there are Ansible group variables for <em>all</em> services as defined in the Ansible playbook.</p>
+</li>
+<li>
+<p>Next, there are Ansible group variables defined for <em>all</em> services in the application definition.
+Individual Ansible variables can be locked, removed, or added to the application definition.
+They overwrite the ones from the Ansible playbook.</p>
+</li>
+<li>
+<p>An application definition also contains Ansible variables for <em>service groups</em>.
+These overwrite Ansible variables set for all services.</p>
+</li>
+<li>
+<p>An application instance can overwrite any unlocked Ansible variables from the application definition.</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Parameters</div>
+<ul>
+<li>
+<p>Managed hosts inherit parameters from multiple entities:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Global parameters</p>
+</li>
+<li>
+<p>Organization parameters</p>
+</li>
+<li>
+<p>Location parameters</p>
+</li>
+<li>
+<p>Domain parameters</p>
+</li>
+<li>
+<p>Subnet parameters</p>
+</li>
+<li>
+<p>Operating system parameters</p>
+</li>
+<li>
+<p>Host group parameters</p>
+</li>
+<li>
+<p>Host parameters</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For example, domain level parameters overwrite both location and organization based parameters and host parameters overwrite any other defined parameter.</p>
+</div>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Refer to the <a href="https://docs.ansible.com/ansible/latest/user_guide/playbooks_variables.html#variable-precedence-where-should-i-put-a-variable">Ansible documentation</a> for more information about Ansible variable precedence.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="application_centric_deployment_user_roles">2.5. User Roles</h3>
+<div class="paragraph">
+<p>The ACD plugin requires the specific Red&#160;Hat Satellite permissions.
+Depending on your environment, there might be two different groups of users in regard to <em>managing</em> an application and <em>deploying</em> an application:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>An administrative group of users might be responsible for providing the tools to deploy an application, that is an Ansible playbook and application definition.</p>
+</li>
+<li>
+<p>An end user group might be using Red&#160;Hat Satellite to deploy applications, that is creating and deploying application instances based on application definitions within their organization and location context.
+Many application instances can be created based on the same application definition.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>By default, there are two ACD user roles:</p>
+</div>
+<div class="paragraph">
+<div class="title">Application Centric Deployment Manager</div>
+<p>Configuring Ansible playbooks and application definitions requires the <code>Application Centric Deployment Manager</code> user role.
+It bundles permissions to manage Ansible playbooks, application definitions, and application instances as well as using ACD remote execution features.
+This role is suited for administrative users.</p>
+</div>
+<div class="paragraph">
+<p>The ACD manager role includes permissions to deploy and configure hosts; to manage Ansible playbooks, application definitions, and application instances; and to view, create, and cancel job invocations and templates.</p>
+</div>
+<div class="paragraph">
+<div class="title">Application Centric Deployment User</div>
+<p>Creating and deploying application instances requires the <code>Application Centric Deployment User</code> user role.
+It bundles permissions to manage application instances and access to the ACD remote execution features.
+This role is suited for end users.</p>
+</div>
+<div class="paragraph">
+<p>The ACD user role includes permissions to deploy and configure hosts; to manage application instances; and to view, create, and cancel job invocations and templates.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="application_centric_deployment_installation">3. Installing the ACD Plugins</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>You need to install both the <code>foreman_acd</code> and <code>smart_proxy_acd</code> plugins to use ACD.</p>
+</div>
+<div class="paragraph">
+<p>This describes the package installation on CentOS 7, Red Hat Enterprise Linux 7, and Oracle Linux 7.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Create a new yum repository <code>/etc/yum.repos.d/foreman-plugins.repo</code> on your Satellite&#160;Server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">[foreman-plugins]
+name=Foreman plugins
+baseurl=https://yum.theforeman.org/plugins/nightly/el7/x86_64/
+enabled=1
+gpgcheck=0</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Install the required packages on your Satellite&#160;Server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash"># yum install tfm-rubygem-foreman_acd tfm-rubygem-smart_proxy_acd tfm-rubygem-smart_proxy_acd_core</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Run database migrations on your Satellite&#160;Server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash"># foreman-rake db:migrate
+# foreman-rake db:seed</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Restart the Red&#160;Hat Satellite services:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash"># satellite-maintain service restart</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>For more information, see <a href="https://theforeman.org/plugins/#2.Installation">Foreman plugin installation</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="application_centric_deployment_usage">4. Usage</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="application_centric_deployment_viewing_an_ansible_playbook">4.1. Viewing an Ansible Playbook</h3>
+<div class="paragraph">
+<p>You can view existing <a href="#application_centric_deployment_ansible_playbooks">Ansible playbooks</a> used for application centric deployment via your Satellite&#160;Server management UI.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Applications &gt; Ansible Playbooks</strong>.</p>
+</li>
+<li>
+<p>Select an entry in the list of Ansible playbooks.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="application_centric_deployment_adding_an_ansible_playbook">4.2. Adding an Ansible Playbook</h3>
+<div class="paragraph">
+<p>You can add <a href="#application_centric_deployment_ansible_playbooks">Ansible playbooks</a> used for application centric deployment via your Satellite&#160;Server management UI.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Applications &gt; Ansible Playbooks</strong>.</p>
+</li>
+<li>
+<p>Click <strong>New Ansible Playbook</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter the name of new Ansible playbook.</p>
+</li>
+<li>
+<p>In the <strong>Description</strong> field, enter an arbitrary description.</p>
+</li>
+<li>
+<p>In the <strong>Path</strong> field, enter the location of the Ansible playbook on your Satellite&#160;Server.</p>
+<div class="paragraph">
+<p>To avoid SELinux issues, add the Ansible playbook to the <code>/etc/foreman/plugins/foreman_acd/ansible-playbooks/</code> directory.</p>
+</div>
+</li>
+<li>
+<p>In the <strong>Playfile</strong> field, enter the name of the Ansible playbook.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong> to save your Ansible playbook.</p>
+</li>
+<li>
+<p>Once submitted, click the <strong>Import groups</strong> button to import Ansible group variables before this Ansible playbook can be used for an application definition.</p>
+</li>
+</ol>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Tip</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Making changes to any Ansible roles included in your Ansible playbook does not require reimporting the Ansible playbook via management UI.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="application_centric_deployment_removing_an_ansible_playbook">4.3. Removing an Ansible Playbook</h3>
+<div class="paragraph">
+<p>You can remove <a href="#application_centric_deployment_ansible_playbooks">Ansible playbooks</a> used for application centric deployment via your Satellite&#160;Server management UI.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Applications &gt; Ansible Playbooks</strong>.</p>
+</li>
+<li>
+<p>Click the <strong>Delete</strong> button in the drop down menu to remove the Ansible playbook from your Satellite&#160;Server.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="application_centric_deployment_viewing_an_application_definition">4.4. Viewing an Application Definition</h3>
+<div class="paragraph">
+<p>You can view existing <a href="#application_centric_deployment_application_definitions">application definitions</a> used for application centric deployment via your Satellite&#160;Server management UI.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Applications &gt; App Definitions</strong>.</p>
+</li>
+<li>
+<p>Select an entry in the list of application definitions.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="application_centric_deployment_creating_an_application_definition">4.5. Creating an Application Definition</h3>
+<div class="paragraph">
+<p>Use this procedure to create <a href="#application_centric_deployment_application_definitions">application definitions</a> to use as part of your application centric deployment.</p>
+</div>
+<div class="paragraph">
+<div class="title">Prerequisites</div>
+<p>You need existing host groups in order to use application centric deployment.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Applications &gt; App Definitions</strong>.</p>
+</li>
+<li>
+<p>Click <strong>New Application Definition</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter the name of the new application definition.</p>
+</li>
+<li>
+<p>In the <strong>Description</strong> field, enter an arbitrary description.</p>
+</li>
+<li>
+<p>From the <strong>Ansible Playbook</strong> list, select the name of an Ansible playbook.</p>
+</li>
+<li>
+<p>Click the plus icon to add new sets of hosts.</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>In the <strong>Name</strong> field, enter the name of the new set of hosts.</p>
+</li>
+<li>
+<p>In the <strong>Description</strong> field, enter an arbitrary description.</p>
+</li>
+<li>
+<p>From the <strong>Hostgroup</strong> menu, select an existing host group.</p>
+</li>
+<li>
+<p>From the <strong>Ansible Group</strong> menu, select existing Ansible group variables from the selected Ansible playbook.</p>
+</li>
+<li>
+<p>In the <strong>min count</strong> field, enter the minimum number of hosts providing this service.
+If it is unset, users can choose to not deploy a host providing this service at all.</p>
+</li>
+<li>
+<p>In the <strong>max count</strong> field, enter the maximum number of hosts providing this service.
+If it is unset, users can choose to deploy an unlimited number of hosts providing this service.</p>
+</li>
+<li>
+<p>In the <strong>Actions</strong> column, complete the following steps:</p>
+<div class="olist lowerroman">
+<ol class="lowerroman" type="i">
+<li>
+<p>Click the <strong>edit</strong> icon to edit an entry;</p>
+</li>
+<li>
+<p>Click the <strong>settings</strong> icon to add or edit existing Red&#160;Hat Satellite parameters.
+Every hierarchy level of Red&#160;Hat Satellite parameters can be overwritten.</p>
+</li>
+<li>
+<p>Click the <strong>A</strong> character to edit, add, lock, or delete Ansible group variables;</p>
+</li>
+<li>
+<p>Click the <strong>delete</strong> icon to delete an entry.</p>
+</li>
+</ol>
+</div>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>Click <strong>Submit</strong> to save your application definition.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="application_centric_deployment_removing_an_application_definition">4.6. Removing an Application Definition</h3>
+<div class="paragraph">
+<p>You can remove <a href="#application_centric_deployment_application_definitions">application definitions</a> used for application centric deployment via your Satellite&#160;Server management UI.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Applications &gt; App Definitions</strong>.</p>
+</li>
+<li>
+<p>Click the <strong>Delete</strong> button to remove the application definition from your Satellite&#160;Server.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="application_centric_deployment_viewing_an_application_instance">4.7. Viewing an Application Instance</h3>
+<div class="paragraph">
+<p>You can view existing <a href="#application_centric_deployment_application_instances">application instances</a> used for application centric deployment via your Satellite&#160;Server management UI.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Applications &gt; App Instances</strong>.</p>
+</li>
+<li>
+<p>Select an entry in the list of application instances.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="application_centric_deployment_creating_an_application_instance">4.8. Creating an Application Instance</h3>
+<div class="paragraph">
+<p>You can create <a href="#application_centric_deployment_application_instances">application instances</a> as a blueprint for users to provision and configure hosts.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Application &gt; App Instances</strong> and click the <strong>New Application Instance</strong> button.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter the name of the new application instance.</p>
+</li>
+<li>
+<p>In the <strong>Description</strong> field, enter an arbitrary description.</p>
+</li>
+<li>
+<p>From the <strong>Application Definition</strong> menu, select an existing application definition.</p>
+</li>
+<li>
+<p>In the table, connect the hosts and necessary services:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>In the <strong>Hostname</strong> field, enter a unique name for the host.
+You can enter lowercase characters, digits, and hyphens.
+Hosts cannot start with a hyphen.</p>
+</li>
+<li>
+<p>In the <strong>Description</strong> field, enter a description.</p>
+</li>
+<li>
+<p>From the <strong>Service</strong> menu, choose a service from the selected application definition.
+Refer to the list of services in the top right corner.</p>
+</li>
+<li>
+<p>In the <strong>Actions</strong> column,</p>
+<div class="olist lowerroman">
+<ol class="lowerroman" type="i">
+<li>
+<p>click the <strong>edit</strong> icon to edit an entry;</p>
+</li>
+<li>
+<p>click the <strong>settings</strong> icon to add or edit existing Red&#160;Hat Satellite parameters.
+Every hierarchy level of Red&#160;Hat Satellite parameters can be overwritten.</p>
+</li>
+<li>
+<p>click the <strong>A</strong> character to edit, add, lock, or delete Ansible group variables;</p>
+</li>
+<li>
+<p>click the <strong>delete</strong> icon to delete an entry.</p>
+</li>
+</ol>
+</div>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>Click the <strong>A</strong> character to view and edit the corresponding Ansible group variables.
+You may edit unlocked values.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong> to save your application instance.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="application_centric_deployment_deploying_an_application_instance">4.9. Deploying an Application Instance</h3>
+<div class="paragraph">
+<p>You can deploy multi-host applications using <a href="#application_centric_deployment_application_instances">application instances</a>.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Applications &gt; App Instances</strong>.</p>
+</li>
+<li>
+<p>Select the application instance you want to deploy and click the <strong>Deploy</strong> button.
+If the selected application instance has been deployed before, confirm that you want to redeploy to existing hosts.</p>
+</li>
+</ol>
+</div>
+<div class="admonitionblock caution">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Caution</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The firewall settings must be handled by the Ansible playbook itself.
+Make sure to open any required network ports for any defined service by creating an additional role or task in the Ansible playbook.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="sect3">
+<h4 id="application_centric_deployment_deploying_an_application_instance_run_playbook">4.9.1. Running the Ansible Playbook</h4>
+<div class="paragraph">
+<p>You can rerun the Ansible playbook to reconfigure existing hosts.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Applications &gt; App Instances</strong>.</p>
+</li>
+<li>
+<p>Select the application instance you want to deploy and click the <strong>Run Playbook</strong> button from the drop down menu.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="application_centric_deployment_deploying_an_application_instance_run_playbook_customize_first">4.9.2. Customizing an Ansible Playbook to Reconfigure Hosts</h4>
+<div class="paragraph">
+<p>You can customize and rerun the Ansible playbook to reconfigure existing hosts.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Applications &gt; App Instances</strong>.</p>
+</li>
+<li>
+<p>Select the application instance you want to deploy and click the <strong>Run Playbook - customize first</strong> button from the drop down menu.
+You can customize your application instance deployment and configuration as follows:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>You can make the Ansible playbook output more verbose.</p>
+</li>
+<li>
+<p>You can add more Ansible variables before executing the Ansible playbook.</p>
+</li>
+<li>
+<p>You can set the amount of concurrently running Ansible tasks.</p>
+</li>
+<li>
+<p>You can select specific tags and hereby limit the tasks of the Ansible playbook that will be executed.
+Alternatively, you can also choose to skip specific tasks by selecting tags to skip.</p>
+<div class="paragraph">
+<p>Those options are passed to the Ansible playbook.</p>
+</div>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Clicking the <strong>Submit</strong> button at the bottom without making a change simply runs the Ansible playbook and deploys the application instance.</p>
+</div>
+</li>
+</ol>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Tip</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>You can also choose to deploy the application instance at a certain point of time in the future or recurringly.
+For example, you can deploy an application every (Sunday) morning as part of a testing routine.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="application_centric_deployment_removing_an_application_instance">4.10. Removing an Application Instance</h3>
+<div class="paragraph">
+<p>You can remove <a href="#application_centric_deployment_application_instances">application instances</a> used for application centric deployment via your Satellite&#160;Server management UI.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Application &gt; App Instances</strong>.</p>
+</li>
+<li>
+<p>In the list of application instances, open the drop down menu and select <strong>Delete</strong> on the application instance you want to remove.</p>
+<div class="paragraph">
+<p>This prompts a list of hosts that have been deployed via the selected application instance.
+You can choose to also delete hosts when deleting the application instance.
+Otherwise, those managed hosts remain.</p>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="application_centric_deployment_developers">5. Developers</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The Foreman ACD plugin was initially developed by <a href="https://atix.de/">ATIX AG</a> with &lt;3 and is completely open source software:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The <a href="https://github.com/ATIX-AG/foreman_acd">Foreman ACD Plugin</a> provides the ACD functionality to Red&#160;Hat Satellite.</p>
+</li>
+<li>
+<p>The <a href="https://github.com/ATIX-AG/smart_proxy_acd">Foreman ACD Smart Proxy Plugin</a> is necessary to receive commands from Red&#160;Hat Satellite.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated Apr 2021
+</div>
+</div>
+</body>
+</html>
