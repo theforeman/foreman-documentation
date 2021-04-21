@@ -1,7 +1,7 @@
 
-
 Cherry-pick into:
 
+* [ ] Foreman 2.4
 * [ ] Foreman 2.3 (Satellite 6.9)
 * [ ] Foreman 2.1 (Satellite 6.8)
 
