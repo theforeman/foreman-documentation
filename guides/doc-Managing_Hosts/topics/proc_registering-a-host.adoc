@@ -1,0 +1,113 @@
+[id="registering-a-host_{context}"]
+= Registering a Host to {ProjectName}
+
+Hosts can be registered to {Project} by generating a `curl` command on {Project} and running this command on hosts.
+This method uses two templates: `global registration` template and `host initial configuration` template. That gives you complete control over the host registration process.
+You can set default templates by navigating to Administer > Settings, and clicking the Provisioning tab.
+
+
+ifndef::satellite[]
+Note that you can extend the parameters by plug-ins.
+For more information, see https://github.com/theforeman/foreman/blob/develop/developer_docs/how_to_create_a_plugin.asciidoc[How to Create a Plugin] and https://theforeman.github.io/foreman/?path=/docs/introduction-slot-and-fill--page[Slot and Fill]
+endif::[]
+
+.Prerequisites
+* The {Project} user that generates the `curl` command must have the `create_hosts` permission.
+* You must have root privileges on the host that you want to register.
+ifdef::satellite[]
+* You must have an activation key created.
+* Optional: If you want to register hosts to Red{nbsp}Hat Insights, you must synchronize the `{RepoRHEL7Server}` repository and make it available in the activation key that you use.
+This is required to install the `insights-client` package on hosts.
+endif::[]
+* Optional: If you want to register hosts through {SmartProxy}, ensure that the *Registration* feature is enabled on this {SmartProxy}.
++
+Navigate to *Infrastructure* > *{SmartProxies}*, click the {SmartProxy} that you want to use, and locate the *Registration* feature in the *Active features* list.
++
+Optional: If the *Registration* feature is not enabled on your {SmartProxy}, enter the following command on the {SmartProxy} to enable it:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# {foreman-installer} --foreman-proxy-registration \
+--foreman-proxy-templates \
+--foreman-proxy-template-url 'http://{smartproxy-example-com}'
+----
+
+.Procedure
+. Navigate to *Hosts* > *Register Host*.
+
+. Optional: From the *Host Group* list, select the host group to associate the hosts with.
+Fields that inherit value from *Host group*: Operating System, Activation Key(s) and Lifecycle environment.
+
+. From the *Operating System* list, select the operating system of hosts that you want to register.
+
+. Optional: From the *{SmartProxy}* list, select the {SmartProxy} to register hosts through. You must select the internal {SmartProxy} if you do not want to use an external {SmartProxy}.
+
+. Optional: *Insecure* - This makes the first call insecure, however, during this first call, hosts download the CA file from {Project}. Hosts will use this CA file to connect to {Project} with all future calls making them secure.
++
+If an attacker, located in the network between {Project} and a host, fetches the CA file from the first insecure call, the attacker will be able to access the content of the API calls to and from the registered host and the JSON Web Tokens (JWT).
+Therefore, if you have chosen to deploy SSH keys during registration, the attacker will be able to access the host using the SSH key.
++
+
+. From the *Remote Execution* list, select whether you want to deploy {Project} SSH keys to hosts or not.
+
+ifdef::satellite[]
+. From the *Insights* list, select whether you want to register the hosts to Insights or not.
+endif::[]
+
+. Optional: {Project} uses the JSON Web Tokens (JWT) for authentication.
+The duration of this token defines how long the generated `curl` command works.
+If you want to change the duration of the token, enter the required duration to the *Token lifetime (hours)* field. You can set the duration to 0 - 999 999 hours or unlimited.
++
+Note that {Project} uses the permissions of the user who generates the `curl` command for authorization of hosts.
+If the user loses or gains additional permissions, the permissions of the JWT change too.
+Therefore, do not delete, block, or change permissions of the user during the token duration.
+ Also, the scope of JWT is limited to the registration endpoints only and cannot be used anywhere else.
+
+. Optional: In the *Remote Execution Interface* field, enter a network interface that hosts must use for the SSH connection.
+If you keep this field blank, {Project} uses the default network interface.
+
+. Optional: *Install packages* - Install packages on the host when registered. Can be set by host_packages parameter
+
+. Optional: *Repository* - A repository to be added before the registration is performed. For example, it can be useful to make the subscription-manager packages available for the purpose of the registration. For Red Hat family distributions, this should be the URL of the repository. For example, http://rpm.example.com/. For Debian OS families, it's the whole list file content, for example 'deb http://deb.example.com/ buster 1.0'.
+
+. Optional: *Repository GPG key URL* - If packages are GPG signed, the public key can be specified here to verify the packages signatures. It needs to be specified in the ascii form with the GPG public key header.
+
+ifdef::satellite[]
+. In the *Activation Key(s)* field, enter one or more activation keys to assign to hosts.
+
+. Optional: *Lifecycle environment*
+
+. Optional: *Ignore errors* - Ignore subscription manager errors
+
+. Optional: *Force* - Remove any `katello-ca-consumer` rpms before registration and run subscription-manager with --force argument.
+endif::[]
+
+ifndef::satellite[]
+. Optional: This step is for the Katello users only.
+If you register RHEL or CentOS hosts, in the *Activation Key(s)* field, enter one or more activation keys to assign to registered hosts.
+endif::[]
+
+. Click *Generate command*.
+
+. Copy the generated `curl` command to enter it on the hosts.
++
+The following is an example of the `curl` command with the `--insecure` option:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+curl -sS --insecure https://{foreman-example-com}/register...
+----
++
+If you do not want to call the `curl` command with the `--insecure` option, you can manually copy and install the CA file on each host.
++
+To do this find where {Project} stores the CA file by navigating to *Administer* > *Settings* > *Authentication* and locating the value for the *SSL CA file* setting.
++
+Copy the CA file to the `/etc/pki/ca-trust/source/anchors/` directory on hosts and enter the following commands:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# update-ca-trust enable
+# update-ca-trust
+----
+
+. On the hosts that you want to register, enter the `curl` command as `root`.
