@@ -7,8 +7,10 @@ This section describes how to upgrade {SmartProxyServer}s from {ProjectVersionPr
 .Before You Begin
 
 * You must upgrade {ProjectServer} before you can upgrade any {SmartProxyServer}s. Note that you can upgrade {SmartProxies} separately from {Project}. For more information, see xref:upgrading_capsules-separately-from-satellite_upgrade-guide[].
+ifdef::satellite[]
 * Ensure the {ProjectName} {SmartProxy} {ProjectVersion} repository is enabled in {ProjectServer} and synchronized.
 * Ensure that you synchronize the required repositories on {ProjectServer}. For more information, see xref:synchronizing_the_new_repositories[].
+endif::[]
 * If you use Content Views to control updates to the base operating system of {SmartProxyServer}, update those Content Views with new repositories and publish their updated versions. For more information, see {ContentManagementDocURL}Managing_Content_Views[Managing Content Views] in the _Content Management Guide_.
 * Ensure the {SmartProxy}'s base system is registered to the newly upgraded {ProjectServer}.
 * Ensure the {SmartProxy} has the correct organization and location settings in the newly upgraded {ProjectServer}.
@@ -33,24 +35,57 @@ the upgrade to proceed.
 +
 For information on backups, see {AdministeringDocURL}backing-up-satellite-server-and-capsule-server[Backing Up {ProjectServer} and {SmartProxyServer}] in the _Administering {ProjectName} {ProjectVersionPrevious}_ guide.
 
-. Optional: If you made manual edits to DNS or DHCP configuration in the `/etc/zones.conf` or `/etc/dhcp/dhcpd.conf` files, back up the configuration files because the installer only supports one domain or subnet, and therefore restoring changes from these backups might be required.
-
-. Optional: If you made manual edits to DNS or DHCP configuration files and do not want to overwrite the changes, enter the following command:
+ifdef::katello[]
++
+. Regenerate certificates.  On the main Foreman/Katello server:
++
+----
+# foreman-proxy-certs-generate --foreman-proxy-fqdn "myproxy.example.com" \
+                       --certs-update-all \
+                       --certs-tar    "~/myproxy.example.com-certs.tar"
+----
++
+. Copy the resulting tarball to your Smart Proxy, for this example we will use /root/myproxy.example.com-certs.tar
+. Update repositories for EL7
 +
 [options="nowrap" subs="attributes"]
 ----
-# {foreman-installer} --foreman-proxy-dns-managed=false \
---foreman-proxy-dhcp-managed=false
+# yum update -y https://yum.theforeman.org/katello/{KatelloVersion}/katello/el7/x86_64/katello-repos-latest.rpm \
+                https://yum.theforeman.org/releases/{ProjectVersion}/el7/x86_64/foreman-release.rpm
 ----
-
-. In the {Project} web UI, go to *Hosts* > *Discovered hosts*. If there are discovered hosts available, power off the hosts and then delete all entries under the `Discovered hosts` page. Select all other organizations in turn using the organization setting menu and repeat this action as required. Reboot these hosts after the upgrade has completed.
-
+. Update repositories for EL8
++
+[options="nowrap" subs="attributes"]
+----
+# yum update -y https://yum.theforeman.org/katello/{KatelloVersion}/katello/el8/x86_64/katello-repos-latest.rpm \
+                https://yum.theforeman.org/releases/{ProjectVersion}/el8/x86_64/foreman-release.rpm
+----
 . Clean yum cache:
 +
 ----
-# yum clean all
+# yum clean metadata
 ----
-
++
+. Update Packages:
++
+----
+# yum update -y
+----
++
+. Run the installer:
++
+----
+# foreman-installer --certs-tar-file /root/myproxy.example.com-certs.tar \
+                  --certs-update-all --certs-regenerate true --certs-deploy true
+----
+endif::[]
+ifdef::satellite[]
+. Clean yum cache:
++
+----
+# yum clean metadata
+----
++
 . Ensure that the `rubygem-foreman_maintain` package that provides `{foreman-maintain}` is installed and up to date:
 +
 [options="nowrap" subs="attributes"]
@@ -114,7 +149,8 @@ ERROR: Scenario (config/capsule.yaml) was not found, can not continue.
 ----
 In such a case, change directory, for example to the *_root_* user's home directory, and run the command again.
 ====
-
++
+endif::[]
 . Check when the kernel packages were last updated:
 +
 [options="nowrap"]
@@ -131,10 +167,3 @@ In such a case, change directory, for example to the *_root_* user's home direct
 . Optional: If you made manual edits to DNS or DHCP configuration files, check and restore any changes required to the DNS and DHCP configuration files using the backups made earlier.
 
 . Optional: If you use custom repositories, ensure that you enable these custom repositories after the upgrade completes.
-
-. Optional: If you plan to use {SmartProxyServer} as a proxy for discovered hosts, install the Discovery plug-in and turn on the hosts that were shut down prior to the upgrade:
-+
-[options="nowrap" subs="attributes"]
-----
-# {package-install-project} tfm-rubygem-smart_proxy_discovery.noarch
-----
