@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 2.0.15">
+<title>Deploying Foreman on Amazon Web Services</title>
+<link rel="stylesheet" href="./katello.css">
+</head>
+<body class="book toc2 toc-left">
+<div id="header">
+<h1>Deploying Foreman on Amazon Web Services</h1>
+<div class="details">
+<span id="revnumber">version Nightly,</span>
+<span id="revdate">published May 2021</span>
+</div>
+<div id="toc" class="toc2">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#Use_Case_Considerations">1. Use Case Considerations</a>
+<ul class="sectlevel2">
+<li><a href="#_use_cases_known_to_work">1.1. Use Cases Known to Work</a></li>
+<li><a href="#_use_cases_that_do_not_work">1.2. Use Cases that Do Not Work</a></li>
+</ul>
+</li>
+<li><a href="#Deployment_Scenarios">2. Deployment Scenarios</a></li>
+<li><a href="#Prerequisites">3. Prerequisites</a>
+<ul class="sectlevel2">
+<li><a href="#_amazon_web_service_assumptions">3.1. Amazon Web Service Assumptions</a></li>
+<li><a href="#_red_hat_cloud_prerequisites">3.2. Red Hat Cloud prerequisites</a></li>
+<li><a href="#_foreman_specific_prerequisites">3.3. Foreman-specific prerequisites</a></li>
+<li><a href="#_preparing_for_the_foreman_installation">3.4. Preparing for the Foreman Installation</a></li>
+</ul>
+</li>
+<li><a href="#Installing_Satellite_on_AWS">4. Installing Foreman&#160;server on AWS</a></li>
+<li><a href="#Installing_Capsule_on_AWS">5. Installing Smart&#160;Proxy on AWS</a></li>
+<li><a href="#registering-hosts-using-the-bootstrap-script">6. Registering Hosts to Foreman Using The Bootstrap Script</a></li>
+</ul>
+</div>
+</div>
+<div id="content">
+<div class="sect1">
+<h2 id="Use_Case_Considerations">1. Use Case Considerations</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Because Amazon Web Services is an image-only service, there are common Foreman use cases that do not work, or require extra configuration in an Amazon Web Service environment.
+If you plan to use Foreman on AWS, ensure that the use case scenarios that you want to use are available in an AWS environment.</p>
+</div>
+<div class="sect2">
+<h3 id="_use_cases_known_to_work">1.1. Use Cases Known to Work</h3>
+<div class="paragraph">
+<p>You can perform the following Foreman use cases on AWS:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://docs.theforeman.org/nightly/Content_Management_Guide/index-foreman-el.html#Managing_Subscriptions">Subscription Management</a></p>
+</li>
+<li>
+<p><a href="https://docs.theforeman.org/nightly/Content_Management_Guide/index-foreman-el.html#Importing_Content">Content Management</a></p>
+</li>
+<li>
+<p><a href="https://docs.theforeman.org/nightly/Content_Management_Guide/index-foreman-el.html#Managing_Errata">Errata Management</a></p>
+</li>
+<li>
+<p><a href="https://docs.theforeman.org/nightly/Managing_Hosts/index-foreman-el.html#registering-a-host-to-satellite">Configuring Hosts</a></p>
+</li>
+<li>
+<p><a href="https://docs.theforeman.org/nightly/Administering_Red_Hat_Satellite/index-foreman-el.html#sect-Red_Hat_Satellite-Administering_Red_Hat_Satellite-Configuring_External_Authentication-Using_Identity_Management">Realm Integration via IdM</a></p>
+</li>
+<li>
+<p><a href="https://docs.theforeman.org/nightly/Administering_Red_Hat_Satellite/index-foreman-el.html#chap-Red_Hat_Satellite-Administering_Red_Hat_Satellite-Security_Compliance_Management">OpenSCAP</a></p>
+</li>
+<li>
+<p><a href="https://docs.theforeman.org/nightly/Managing_Hosts/index-foreman-el.html#configuring-and-setting-up-remote-jobs_managing-hosts">Remote Execution</a></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<div class="title">Subscriptions</div>
+<p>Not all Red Hat subscriptions are eligible to run in public cloud environments.
+For more information about subscription eligibility, see the <a href="https://www.redhat.com/en/technologies/cloud-computing/cloud-access#program-details">Red Hat Cloud Access Page</a>.
+You can create additional organizations and then import additional manifests to the organizations.
+For more information, see <a href="https://docs.theforeman.org/nightly/Content_Management_Guide/index-foreman-el.html#Managing_Organizations-Creating_an_Organization">Creating an Organization</a> in the <em>Content Management Guide</em>.</p>
+</div>
+<div class="paragraph">
+<div class="title">Multi-homed Foreman and Smart&#160;Proxy</div>
+<p>One way to use multi-homed Smart&#160;Proxies is by configuring Smart&#160;Proxies with a load balancer.
+For more information, see <a href="https://docs.theforeman.org/nightly/Configuring_Load_Balancer/index-foreman-el.html#">Configuring Smart&#160;Proxies with a Load Balancer</a>.</p>
+</div>
+<div class="paragraph">
+<p>You must do this when Foreman&#160;server or Smart&#160;Proxy&#160;server has different internal and external DNS host names and there is no site-to-site VPN connection between the locations where you deploy Foreman&#160;server and Smart&#160;Proxy&#160;server.</p>
+</div>
+<div class="paragraph">
+<div class="title">On demand content sources</div>
+<p>You can use the <strong>On demand</strong> download policy to reduce the storage footprint of the Red Hat Enterprise Linux server that runs Foreman.
+When you set the download policy to <strong>On Demand</strong>, content syncs to Foreman&#160;server or Smart&#160;Proxy&#160;server when a content host requests it.</p>
+</div>
+<div class="paragraph">
+<p>For more information, see <a href="https://docs.theforeman.org/nightly/Content_Management_Guide/index-foreman-el.html#Importing_Content">Importing Content</a> in the <em>Content Management Guide</em>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_use_cases_that_do_not_work">1.2. Use Cases that Do Not Work</h3>
+<div class="paragraph">
+<p>In AWS, you cannot manage the DHCP.
+Because of this, most of Foreman&#160;server’s kickstart and PXE provisioning models are unusable.
+This includes:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>PXE Provisioning</p>
+</li>
+<li>
+<p>Discovery and Discovery Rules</p>
+</li>
+<li>
+<p>ISO Provisioning methods.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>PXE-Less Discovery (iPXE)</p>
+</li>
+<li>
+<p>Per-host ISO</p>
+</li>
+<li>
+<p>Generic ISO</p>
+</li>
+<li>
+<p>Full-host ISO</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="Deployment_Scenarios">2. Deployment Scenarios</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>There are three deployment scenarios for Foreman in Amazon Web Services:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>One region setup</p>
+</li>
+<li>
+<p>Connecting on-premise and AWS region</p>
+</li>
+<li>
+<p>Connecting different regions</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>The graphics in this section are Red Hat illustrations.
+Non-Red Hat illustrations are welcome.
+If you want to contribute alternative images, raise a pull request in the <a href="https://github.com/theforeman/foreman-documentation">Foreman Documentation</a> GitHub page.
+Note that in Red Hat terminology, "Satellite" refers to Foreman and "Capsule" refers to Smart Proxy.</p>
+</div>
+<div class="paragraph">
+<div class="title">Scenario 1: One region setup</div>
+<p><span class="image"><img src="images/aws_image1.png" alt="aws image1"></span></p>
+</div>
+<div class="paragraph">
+<p>The least complex configuration of Foreman&#160;server in Amazon Web Services consists of both Foreman&#160;server and the content hosts residing within the same region and within the Virtual Private Cloud (VPC).</p>
+</div>
+<div class="paragraph">
+<p>You can also use a different availability zone.</p>
+</div>
+<div class="paragraph">
+<div class="title">Scenario 2: Connecting on-premise and AWS region</div>
+<p>Create a VPN connection between the on-premise location and the AWS region where the Smart&#160;Proxy resides.</p>
+</div>
+<div class="paragraph">
+<p>It is also possible to use the external host name of Foreman&#160;server when you register the instance which runs Smart&#160;Proxy&#160;server.</p>
+</div>
+<div class="paragraph">
+<p><strong>Option 1: Site-to-Site VPN connection between the AWS region and the On-Premise Datacenter</strong></p>
+</div>
+<div class="paragraph">
+<p><span class="image"><img src="images/aws_image2.png" alt="aws image2"></span></p>
+</div>
+<div class="paragraph">
+<p><strong>Option 2: Direct connection using the External DNS host name</strong></p>
+</div>
+<div class="paragraph">
+<p><span class="image"><img src="images/aws_image3.png" alt="aws image3"></span></p>
+</div>
+<div class="paragraph">
+<div class="title">Scenario 3: Connecting different regions</div>
+<p>Create a site-to-site VPN connection between the different regions so that you can use the Internal DNS host name when you register the instance that runs Smart&#160;Proxy&#160;server to Foreman&#160;server.</p>
+</div>
+<div class="paragraph">
+<p>If you do not establish a site-to-site VPN connection, use the external DNS host name when you register the instance that runs Smart&#160;Proxy&#160;server to Foreman&#160;server.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+Most Public Cloud Providers do not charge for data being transferred into a region, or between availability zones within a single region; however, they do charge for data leaving the region to the Internet.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p><strong>Option 1: Site-to-Site VPN connection between AWS regions</strong></p>
+</div>
+<div class="paragraph">
+<p><span class="image"><img src="images/aws_image4.png" alt="aws image4"></span></p>
+</div>
+<div class="paragraph">
+<p><strong>Option 2: Direct connection using the External DNS host name</strong></p>
+</div>
+<div class="paragraph">
+<p><span class="image"><img src="images/aws_image5.png" alt="aws image5"></span></p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="Prerequisites">3. Prerequisites</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Before you can install and register Foreman and Smart&#160;Proxy, you must set up accounts with Amazon Web Services (AWS) and create and start Red Hat Enterprise Linux instances on AWS.</p>
+</div>
+<div class="sect2">
+<h3 id="_amazon_web_service_assumptions">3.1. Amazon Web Service Assumptions</h3>
+<div class="paragraph">
+<p>To use this guide, you must have a working knowledge of the following aspects of Amazon Web Services:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Creating and accessing Red Hat Enterprise Linux images in AWS</p>
+</li>
+<li>
+<p>Editing network access in AWS Security</p>
+</li>
+<li>
+<p>Creating EC2 instances and how to create EBS volumes</p>
+</li>
+<li>
+<p>Launching instances</p>
+</li>
+<li>
+<p>Importing and exporting virtual machines in AWS</p>
+</li>
+<li>
+<p>Using AWS Direct Connect</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>To install Foreman in an AWS environment, you must ensure that your AWS set up meets the <a href="https://docs.theforeman.org/nightly/Installing_Server_on_Red_Hat/index-katello.html#system-requirements_foreman">System Requirements</a> in <em>Installing Foreman 2.4 server with Katello 4.0 plugin on Enterprise Linux</em>.</p>
+</div>
+<div class="paragraph">
+<p>To install Smart&#160;Proxy in an AWS environment, you must ensure that your AWS set up meets the <a href="https://docs.theforeman.org/nightly/Installing_Proxy_on_Red_Hat/index-foreman-el.html#system-requirements_smart-proxy">System Requirements</a> in <em>Installing an External Smart Proxy Server 2.4</em>.</p>
+</div>
+<div class="paragraph">
+<p>For more information about Amazon Web Services and terminology, see <a href="https://aws.amazon.com/documentation/ec2/">Amazon Elastic Compute Cloud Documentation</a>.</p>
+</div>
+<div class="paragraph">
+<p>For more information about Amazon Web Services Direct Connect, see <a href="https://docs.aws.amazon.com/directconnect/latest/UserGuide/Welcome.html">What is AWS Direct Connect?</a></p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_red_hat_cloud_prerequisites">3.2. Red Hat Cloud prerequisites</h3>
+<div class="paragraph">
+<p>To use this guide, you must complete the following steps:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Register with Red Hat Cloud Access.</p>
+</li>
+<li>
+<p>Migrate any Red Hat subscriptions that you want to use.</p>
+</li>
+<li>
+<p>Create an AWS instance and deploy a Red Hat Enterprise Linux virtual machine to the instance.</p>
+</li>
+<li>
+<p>Ensure that your subscriptions are eligible for transfer to Red Hat Cloud.
+For more information, see <a href="https://www.redhat.com/en/technologies/cloud-computing/cloud-access#program-details">Red Hat Cloud Access Program Details</a>.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For more information about deploying Red Hat Enterprise Linux in AWS, see <a href="https://access.redhat.com/articles/2962171">How to Locate Red Hat Cloud Access Gold Images on AWS EC2</a>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_foreman_specific_prerequisites">3.3. Foreman-specific prerequisites</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Ensure that the Amazon EC2 instance type meets or exceeds the <a href="https://docs.theforeman.org/nightly/Installing_Server_on_Red_Hat/index-katello.html#system-requirements_foreman">System Requirements</a> in <em>Installing Foreman 2.4 server with Katello 4.0 plugin on Enterprise Linux</em>.
+For the best performance, use an <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/storage-optimized-instances.html">AWS storage optimized instance</a>.</p>
+</li>
+<li>
+<p>Use <a href="https://docs.theforeman.org/nightly/Installing_Server_on_Red_Hat/index-katello.html#satellite-storage-requirements_foreman">Storage Requirements</a> in <em>Installing Foreman 2.4 server with Katello 4.0 plugin on Enterprise Linux</em> to understand and assign the correct storage to your AWS EBS volumes.</p>
+</li>
+<li>
+<p>Store the synced content on an EBS volume that is separate to the boot volume.</p>
+</li>
+<li>
+<p>Mount the synced content EBS volume separately in the operating system.</p>
+</li>
+<li>
+<p>Optional: store other data on a separate EBS volume.</p>
+</li>
+<li>
+<p>If you want Foreman&#160;server and Smart&#160;Proxy&#160;server to communicate using external DNS hostnames, open the required ports for communication in the AWS Security Group that is associated with the instance.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_preparing_for_the_foreman_installation">3.4. Preparing for the Foreman Installation</h3>
+<div class="paragraph">
+<p>In your AWS environment, complete the following steps:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Launch an EC2 instance of a Red Hat Enterprise Linux AMI.</p>
+</li>
+<li>
+<p>Connect to the newly created instance.</p>
+</li>
+<li>
+<p>If you use a Red Hat Gold Image, remove the RHUI client and set the <code>enabled</code> parameter in the <code>product-id.conf</code> to <code>1</code>.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># yum remove -y rh-amazon-rhui-client*
+# yum clean all
+# cat &lt;&lt; EOF &gt; /etc/yum/pluginconf.d/product-id.conf
+&gt; [main]
+&gt; enabled=1
+&gt; EOF</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="Installing_Satellite_on_AWS">4. Installing Foreman&#160;server on AWS</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>On your AWS environment, complete the following steps:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Connect to the new instance.</p>
+</li>
+<li>
+<p>Use <a href="https://docs.theforeman.org/nightly/Installing_Server_on_Red_Hat/index-katello.html#index">Installing Foreman 2.4 server with Katello 4.0 plugin on Enterprise Linux</a> to install Foreman&#160;server.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="Installing_Capsule_on_AWS">5. Installing Smart&#160;Proxy on AWS</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>On your AWS environment, complete the following steps:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Connect to the new instance.</p>
+</li>
+<li>
+<p>Install Smart&#160;Proxy&#160;server.
+For more information, see <a href="https://docs.theforeman.org/nightly/Installing_Proxy_on_Red_Hat/index-foreman-el.html#">Installing an External Smart Proxy Server 2.4</a>.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="registering-hosts-using-the-bootstrap-script">6. Registering Hosts to Foreman Using The Bootstrap Script</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This procedure applies only to users of the Katello plug-in.</p>
+</div>
+<div class="paragraph">
+<p>When you install Foreman&#160;server and Smart&#160;Proxy&#160;server, you must then register the content hosts on EC2 instances to Foreman with the bootstrap script.</p>
+</div>
+<div class="paragraph">
+<p>For more information about using the bootstrap script, see <a href="https://docs.theforeman.org/nightly/Managing_Hosts/index-foreman-el.html#registering-a-host-to-satellite-using-the-bootstrap-script">Registering Hosts to Foreman Using The Bootstrap Script</a> in the <em>Managing Hosts</em> guide.</p>
+</div>
+<div class="paragraph">
+<p>Install the Katello Agent.
+For more information, see <a href="https://docs.theforeman.org/nightly/Installing_Proxy_on_Red_Hat/index-foreman-el.html#installing-the-katello-agent_smart-proxy">Installing the katello Agent</a>.</p>
+</div>
+<div class="paragraph">
+<p>Note that the Katello agent is deprecated and will be removed in a future Foreman version.
+Migrate your workloads to use the remote execution feature to update clients remotely.
+For more information, see <a href="https://docs.theforeman.org/nightly/Managing_Hosts/index-foreman-el.html#host-management-without-goferd-and-katello-agent_managing-hosts">Host Management Without Goferd and Katello Agent</a> in the <em>Managing Hosts Guide</em>.</p>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Version Nightly<br>
+Last updated May 2021
+</div>
+</div>
+</body>
+</html>

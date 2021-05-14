@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 2.0.15">
+<title>Installing an External Smart Proxy Server on Debian</title>
+<link rel="stylesheet" href="./foreman-deb.css">
+</head>
+<body class="book toc2 toc-left">
+<div id="header">
+<h1>Installing an External Smart Proxy Server on Debian</h1>
+<div id="toc" class="toc2">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#preparing-environment-for-capsule-installation">1. Preparing your Environment for Installation</a>
+<ul class="sectlevel2">
+<li><a href="#system-requirements_smart-proxy">1.1. System Requirements</a></li>
+<li><a href="#supported-operating-systems_smart-proxy">1.2. Supported Operating Systems</a></li>
+<li><a href="#capsule-ports-and-firewalls-requirements_smart-proxy">1.3. Ports and Firewalls Requirements</a></li>
+<li><a href="#enabling-connections-from-capsule-to-satellite_smart-proxy">1.4. Enabling Connections from Smart&#160;Proxy&#160;server to Foreman&#160;server</a></li>
+<li><a href="#enabling-connections-to-capsule_smart-proxy">1.5. Enabling Connections from Foreman&#160;server and Clients to a Smart&#160;Proxy&#160;server</a></li>
+<li><a href="#verifying-firewall-settings_smart-proxy">1.6. Verifying Firewall Settings</a></li>
+</ul>
+</li>
+<li><a href="#installing-capsule-server">2. Installing Smart&#160;Proxy&#160;server</a>
+<ul class="sectlevel2">
+<li><a href="#configuring-repositories-proxy-deb_smart-proxy">2.1. Configuring Repositories</a></li>
+<li><a href="#installing-capsule-server-packages_smart-proxy">2.2. Installing Smart&#160;Proxy&#160;server Packages</a></li>
+<li><a href="#installing-an-external-smart-proxy-upstream_smart-proxy">2.3. Installing Smart&#160;Proxy&#160;server</a></li>
+<li><a href="#synchronizing-the-system-clock-with-chronyd_smart-proxy">2.4. Synchronizing the System Clock With chronyd</a></li>
+<li><a href="#assigning-organization-location-capsule-server_smart-proxy">2.5. Assigning the Correct Organization and Location to Smart&#160;Proxy&#160;server in the Foreman web UI</a></li>
+<li><a href="#configuring-capsule-default-certificate_smart-proxy">2.6. Configuring Smart&#160;Proxy&#160;server with a Default SSL Certificate</a></li>
+</ul>
+</li>
+<li><a href="#performing-additional-configuration-on-capsule-server">3. Performing Additional Configuration on Smart&#160;Proxy&#160;server</a>
+<ul class="sectlevel2">
+<li><a href="#enabling-openscap_smart-proxy">3.1. Enabling OpenSCAP on External Smart&#160;Proxies</a></li>
+<li><a href="#enabling-power-management-on-managed-hosts_smart-proxy">3.2. Enabling Power Management on Managed Hosts</a></li>
+<li><a href="#configuring-dns-dhcp-and-tftp_smart-proxy">3.3. Configuring DNS, DHCP, and TFTP on Smart&#160;Proxy&#160;server</a></li>
+</ul>
+</li>
+<li><a href="#capsule-server-scalability-considerations_smart-proxy">Appendix A: Smart&#160;Proxy&#160;server Scalability Considerations</a></li>
+</ul>
+</div>
+</div>
+<div id="content">
+<div class="sect1">
+<h2 id="preparing-environment-for-capsule-installation">1. Preparing your Environment for Installation</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="system-requirements_smart-proxy">1.1. System Requirements</h3>
+<div class="paragraph">
+<p>The following requirements apply to the networked base operating system:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>x86_64 architecture</p>
+</li>
+<li>
+<p>4-core 2.0 GHz CPU at a minimum</p>
+</li>
+<li>
+<p>Administrative user (root) access</p>
+</li>
+<li>
+<p>A system umask of 0022</p>
+</li>
+<li>
+<p>Full forward and reverse DNS resolution using a fully-qualified domain name</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Before you install Smart&#160;Proxy&#160;server, ensure that your environment meets the requirements for installation.</p>
+</div>
+<div class="paragraph">
+<p>Smart&#160;Proxy&#160;server must be installed on a freshly provisioned system that serves no other function except to run Smart&#160;Proxy&#160;server.
+The freshly provisioned system must not have the following users provided by external identity providers to avoid conflicts with the local users that Smart&#160;Proxy&#160;server creates:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>apache</p>
+</li>
+<li>
+<p>foreman</p>
+</li>
+<li>
+<p>foreman-proxy</p>
+</li>
+<li>
+<p>postgres</p>
+</li>
+<li>
+<p>puppet</p>
+</li>
+<li>
+<p>puppetserver</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="supported-operating-systems_smart-proxy">1.2. Supported Operating Systems</h3>
+<div class="paragraph">
+<p>You can install the operating system from a disc, local ISO image, or kickstart.</p>
+</div>
+<div class="paragraph">
+<p>The following operating systems are supported by the installer, have packages, and are tested for deploying Foreman:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 1. Operating Systems supported by foreman-installer</caption>
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Operating System</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Architecture</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Notes</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Ubuntu 18.04 (Bionic)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">amd64</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Debian 10 (Buster)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">amd64</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Before you install Foreman, apply all operating system updates if possible.</p>
+</div>
+<div class="paragraph">
+<p>Install Smart&#160;Proxy&#160;server on a freshly provisioned system.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="capsule-ports-and-firewalls-requirements_smart-proxy">1.3. Ports and Firewalls Requirements</h3>
+<div class="paragraph">
+<p>For the components of Foreman architecture to communicate, ensure that the required network ports are open and free on the base operating system.
+You must also ensure that the required network ports are open on any network-based firewalls.</p>
+</div>
+<div class="paragraph">
+<p>The installation of a Smart&#160;Proxy&#160;server fails if the ports between Foreman&#160;server and Smart&#160;Proxy&#160;server are not open before installation starts.</p>
+</div>
+<div class="paragraph">
+<p>Use this information to configure any network-based firewalls.
+Note that some cloud solutions must be specifically configured to allow communications between machines because they isolate machines similarly to network-based firewalls.
+If you use an application-based firewall, ensure that the application-based firewall permits all applications that are listed in the tables and known to your firewall.
+If possible, disable the application checking and allow open port communication based on the protocol.</p>
+</div>
+<div class="paragraph">
+<div class="title">Integrated Smart&#160;Proxy</div>
+<p>Foreman&#160;server has an integrated Smart&#160;Proxy and any host that is directly connected to Foreman&#160;server is a Client of Foreman in the context of this section.
+This includes the base operating system on which Smart&#160;Proxy&#160;server is running.</p>
+</div>
+<div class="paragraph">
+<div class="title">Clients of Smart&#160;Proxy</div>
+<p>Hosts which are clients of Smart&#160;Proxies, other than Foreman&#8217;s integrated Smart&#160;Proxy, do not need access to Foreman&#160;server.
+For more information on Foreman Topology, see <a href="https://docs.theforeman.org/nightly/Planning_Guide/index-foreman-deb.html#sect-Documentation-Architecture_Guide-Capsule_Networking">Smart&#160;Proxy Networking</a> in <em>Planning for Foreman</em>.</p>
+</div>
+<div class="paragraph">
+<p>Required ports can change based on your configuration.</p>
+</div>
+<div class="paragraph">
+<p>The following tables indicate the destination port and the direction of network traffic:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 2. Ports for Smart&#160;Proxy to Foreman Communication</caption>
+<colgroup>
+<col style="width: 24%;">
+<col style="width: 20%;">
+<col style="width: 18%;">
+<col style="width: 38%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Port</th>
+<th class="tableblock halign-left valign-top">Protocol</th>
+<th class="tableblock halign-left valign-top">Service</th>
+<th class="tableblock halign-left valign-top">Required For</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">5646</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TCP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">amqp</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Smart&#160;Proxy&#8217;s Qpid dispatch router to Qpid dispatch router in Foreman</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Some of the following ports apply only to deployments that use the Katello plug-in.
+For Debian deployments, ignore references to the Katello plug-in.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 3. Ports for Client to Smart&#160;Proxy Communication</caption>
+<colgroup>
+<col style="width: 24%;">
+<col style="width: 20%;">
+<col style="width: 18%;">
+<col style="width: 38%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">8140</th>
+<th class="tableblock halign-left valign-top">TCP</th>
+<th class="tableblock halign-left valign-top">HTTPS</th>
+<th class="tableblock halign-left valign-top">Puppet agent to Puppet master connections</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8443</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TCP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">HTTPS</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Subscription Management Services and Telemetry Services</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">9090</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TCP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">HTTPS</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sending SCAP reports to the Smart&#160;Proxy and for the discovery image during provisioning</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">53</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TCP and UDP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DNS</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Client DNS queries to a Smart&#160;Proxy&#8217;s DNS service (Optional)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">67</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">UDP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DHCP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Client to Smart&#160;Proxy broadcasts, DHCP broadcasts for Client provisioning from a Smart&#160;Proxy (Optional)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">69</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">UDP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TFTP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Clients downloading PXE boot image files from a Smart&#160;Proxy for provisioning (Optional)</p></td>
+</tr>
+</tbody>
+</table>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 4. Ports for Smart&#160;Proxy to Client Communication</caption>
+<colgroup>
+<col style="width: 24%;">
+<col style="width: 20%;">
+<col style="width: 18%;">
+<col style="width: 38%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Port</th>
+<th class="tableblock halign-left valign-top">Protocol</th>
+<th class="tableblock halign-left valign-top">Service</th>
+<th class="tableblock halign-left valign-top">Required For</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ICMP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ping</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>DHCP Smart&#160;Proxy to Client network, to verify non-active IP address (Optional)</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">7</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TCP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">echo</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>DHCP Smart&#160;Proxy to Client network, to verify non-active IP address (Optional)</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">68</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">UDP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DHCP</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Smart&#160;Proxy to Client broadcasts, DHCP broadcasts for Client provisioning from a Smart&#160;Proxy (Optional)</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8443</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TCP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">HTTP</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Smart&#160;Proxy to Client "reboot" command to a discovered host during provisioning (Optional)</p>
+</div></div></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Any managed host that is directly connected to Foreman&#160;server is a client in this context because it is a client of the integrated Smart&#160;Proxy.
+This includes the base operating system on which a Smart&#160;Proxy&#160;server is running.</p>
+</div>
+<div class="paragraph">
+<p>A DHCP Smart&#160;Proxy performs ICMP ping or TCP echo connection attempts to hosts in subnets with DHCP IPAM set to find out if an IP address considered for use is free.
+This behavior can be turned off using <code>foreman-installer --foreman-proxy-dhcp-ping-free-ip=false</code>.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 5. Optional Network Ports</caption>
+<colgroup>
+<col style="width: 24%;">
+<col style="width: 20%;">
+<col style="width: 18%;">
+<col style="width: 38%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Port</th>
+<th class="tableblock halign-left valign-top">Protocol</th>
+<th class="tableblock halign-left valign-top">Service</th>
+<th class="tableblock halign-left valign-top">Required For</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">22</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TCP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SSH</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Foreman and Smart&#160;Proxy originated communications, for Remote Execution (Rex) and Ansible.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">7911</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TCP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DHCP</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="ulist">
+<ul>
+<li>
+<p>Smart&#160;Proxy originated commands for orchestration of DHCP records (local or external).</p>
+</li>
+<li>
+<p>If DHCP is provided by an external service, you must open the port on the external server.</p>
+</li>
+</ul>
+</div></div></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+A DHCP Smart&#160;Proxy sends an ICMP ECHO to confirm an IP address is free, <strong>no response</strong> of any kind is expected.
+ICMP can be dropped by a networked-based firewall, but <strong>any</strong> response prevents the allocation of IP addresses.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="enabling-connections-from-capsule-to-satellite_smart-proxy">1.4. Enabling Connections from Smart&#160;Proxy&#160;server to Foreman&#160;server</h3>
+<div class="paragraph">
+<p>On Foreman&#160;server, you must enable the incoming connection from Smart&#160;Proxy&#160;server to Foreman&#160;server and make this rule persistent across reboots.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Ensure that the firewall rules on Foreman&#160;server are configured to enable connections for client to Foreman communication, because Smart&#160;Proxy&#160;server is a client of Foreman&#160;server.
+For more information, see <a href="https://docs.theforeman.org/nightly/Installing_Server_on_Red_Hat/index-foreman-deb.html#enabling-client-connections-to-satellite_foreman">Enabling Connections from a Client to Foreman&#160;server</a> in <em>Installing Foreman 2.4 server on Debian</em>.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>If you do not use <code>firewall-cmd</code> to configure the Linux firewall, implement using the command of your choice.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On Foreman&#160;server, enter the following command to open the port for Smart&#160;Proxy to Foreman communication:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># firewall-cmd --add-port="5646/tcp"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Make the changes persistent:</p>
+<div class="listingblock">
+<div class="content">
+<pre># firewall-cmd --runtime-to-permanent</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="enabling-connections-to-capsule_smart-proxy">1.5. Enabling Connections from Foreman&#160;server and Clients to a Smart&#160;Proxy&#160;server</h3>
+<div class="paragraph">
+<p>On the base operating system on which you want to install Smart&#160;Proxy, you must enable incoming connections from Foreman&#160;server and clients to Smart&#160;Proxy&#160;server and make these rules persistent across reboots.</p>
+</div>
+<div class="paragraph">
+<p>If you do not use <code>firewall-cmd</code> to configure the Linux firewall, implement using the command of your choice.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On the base operating system on which you want to install Smart&#160;Proxy, enter the following command to open the ports for Foreman&#160;server and clients communication to Smart&#160;Proxy&#160;server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># firewall-cmd --add-port="53/udp" --add-port="53/tcp" \
+--add-port="67/udp" --add-port="69/udp" \
+--add-port="80/tcp" --add-port="443/tcp" \
+--add-port="5000/tcp" --add-port="5647/tcp" \
+--add-port="8000/tcp" --add-port="8140/tcp" \
+--add-port="8443/tcp" --add-port="9090/tcp"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Make the changes persistent:</p>
+<div class="listingblock">
+<div class="content">
+<pre># firewall-cmd --runtime-to-permanent</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="verifying-firewall-settings_smart-proxy">1.6. Verifying Firewall Settings</h3>
+<div class="paragraph">
+<p>Use this procedure to verify your changes to the firewall settings.</p>
+</div>
+<div class="paragraph">
+<p>If you do not use <code>firewall-cmd</code> to configure the Linux firewall, implement using the command of your choice.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Enter the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># firewall-cmd --list-all</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="installing-capsule-server">2. Installing Smart&#160;Proxy&#160;server</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Before you install Smart&#160;Proxy&#160;server, you must ensure that your environment meets the requirements for installation.
+For more information, see <a href="https://docs.theforeman.org/nightly/Installing_Proxy_on_Red_Hat/index-foreman-deb.html#preparing-environment-for-capsule-installation">Preparing your Environment for Installation</a>.</p>
+</div>
+<div class="sect2">
+<h3 id="configuring-repositories-proxy-deb_smart-proxy">2.1. Configuring Repositories</h3>
+<div class="paragraph">
+<p>Use the following procedure to enable the repositories that are required to install Foreman.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Add the Debian repository sources to the <code>/etc/apt/sources.list.d/foreman.list</code> file:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># echo "deb http://deb.theforeman.org/ buster 2.4" | tee /etc/apt/sources.list.d/foreman.list
+# echo "deb http://deb.theforeman.org/ plugins 2.4" | tee -a /etc/apt/sources.list.d/foreman.list</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Install the <code>ca-certificates</code> and <code>gpg</code> packages:</p>
+<div class="listingblock">
+<div class="content">
+<pre># apt-get -y install ca-certificates gpg</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Download and add the public GPG key:</p>
+<div class="listingblock">
+<div class="content">
+<pre># wget -q https://deb.theforeman.org/pubkey.gpg -O- | apt-key add -</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="installing-capsule-server-packages_smart-proxy">2.2. Installing Smart&#160;Proxy&#160;server Packages</h3>
+<div class="paragraph">
+<p>Before installing Smart&#160;Proxy&#160;server packages, you must update all packages that are installed on the base operating system.</p>
+</div>
+<div class="paragraph">
+<div class="title">Procedure</div>
+<p>To install Smart&#160;Proxy&#160;server, complete the following steps:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Update all packages:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># apt-get upgrade</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Install the <code>foreman-proxy-content</code> package:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># apt-get install foreman-proxy-content</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="installing-an-external-smart-proxy-upstream_smart-proxy">2.3. Installing Smart&#160;Proxy&#160;server</h3>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>To install an external Smart&#160;Proxy, enter the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">foreman-installer \
+  --no-enable-foreman \
+  --no-enable-foreman-cli \
+  --enable-puppet \
+  --puppet-server-ca=false \
+  --puppet-server-foreman-url=https://{foreman.example.com} \
+  --enable-foreman-proxy \
+  --foreman-proxy-puppetca=false \
+  --foreman-proxy-tftp=false \
+  --foreman-proxy-foreman-base-url=https://{foreman.example.com} \
+  --foreman-proxy-trusted-hosts={foreman.example.com} \
+  --foreman-proxy-oauth-consumer-key=<em>oAuth_Consumer_Key</em> \
+  --foreman-proxy-oauth-consumer-secret=<em>oAuth_Consumer_Secret</em></pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="synchronizing-the-system-clock-with-chronyd_smart-proxy">2.4. Synchronizing the System Clock With chronyd</h3>
+<div class="paragraph">
+<p>To minimize the effects of time drift, you must synchronize the system clock on the base operating system on which you want to install Smart&#160;Proxy&#160;server with Network Time Protocol (NTP) servers.
+If the base operating system clock is configured incorrectly, certificate verification might fail.</p>
+</div>
+<div class="paragraph">
+<p>For more information about the <code>chrony</code> suite, see <a href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/system_administrators_guide/ch-configuring_ntp_using_the_chrony_suite">Configuring NTP Using the chrony Suite</a> in the <em>Red Hat Enterprise Linux 7 System Administrator&#8217;s Guide</em>.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Install the <code>chrony</code> package:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># apt-get install chrony</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Start and enable the <code>chronyd</code> service:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl start chronyd
+# systemctl enable chronyd</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="assigning-organization-location-capsule-server_smart-proxy">2.5. Assigning the Correct Organization and Location to Smart&#160;Proxy&#160;server in the Foreman web UI</h3>
+<div class="paragraph">
+<p>After installing Smart&#160;Proxy&#160;server packages, if there is more than one organization or location, you must assign the correct organization and location to Smart&#160;Proxy to make Smart&#160;Proxy visible in the Foreman web UI.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Log into the Foreman web UI.</p>
+</li>
+<li>
+<p>From the <strong>Organization</strong> list in the upper-left of the screen, select <strong>Any Organization</strong>.</p>
+</li>
+<li>
+<p>From the <strong>Location</strong> list in the upper-left of the screen, select <strong>Any Location</strong>.</p>
+</li>
+<li>
+<p>Navigate to <strong>Hosts</strong> &gt; <strong>All Hosts</strong> and select Smart&#160;Proxy&#160;server.</p>
+</li>
+<li>
+<p>From the <strong>Select Actions</strong> list, select <strong>Assign Organization</strong>.</p>
+</li>
+<li>
+<p>From the <strong>Organization</strong> list, select the organization where you want to assign this Smart&#160;Proxy.</p>
+</li>
+<li>
+<p>Click <strong>Fix Organization on Mismatch</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong>.</p>
+</li>
+<li>
+<p>Select Smart&#160;Proxy&#160;server. From the <strong>Select Actions</strong> list, select <strong>Assign Location</strong>.</p>
+</li>
+<li>
+<p>From the <strong>Location</strong> list, select the location where you want to assign this Smart&#160;Proxy.</p>
+</li>
+<li>
+<p>Click <strong>Fix Location on Mismatch</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong>.</p>
+</li>
+<li>
+<p>Navigate to <strong>Administer</strong> &gt; <strong>Organizations</strong> and click the organization to which you have assigned Smart&#160;Proxy.</p>
+</li>
+<li>
+<p>Click <strong>Smart&#160;Proxies</strong> tab and ensure that Smart&#160;Proxy&#160;server is listed under the <strong>Selected items</strong> list, then click <strong>Submit</strong>.</p>
+</li>
+<li>
+<p>Navigate to <strong>Administer</strong> &gt; <strong>Locations</strong> and click the location to which you have assigned Smart&#160;Proxy.</p>
+</li>
+<li>
+<p>Click <strong>Smart&#160;Proxies</strong> tab and ensure that Smart&#160;Proxy&#160;server is listed under the <strong>Selected items</strong> list, then click <strong>Submit</strong>.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<div class="title">Verification</div>
+<p>Optionally, you can verify if Smart&#160;Proxy&#160;server is correctly listed in the Foreman web UI.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Select the organization from the <strong>Organization</strong> list.</p>
+</li>
+<li>
+<p>Select the location from the <strong>Location</strong> list.</p>
+</li>
+<li>
+<p>Navigate to <strong>Hosts</strong> &gt; <strong>All Hosts</strong>.</p>
+</li>
+<li>
+<p>Navigate to <strong>Infrastructure</strong> &gt; <strong>Smart&#160;Proxies</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="configuring-capsule-default-certificate_smart-proxy">2.6. Configuring Smart&#160;Proxy&#160;server with a Default SSL Certificate</h3>
+<div class="paragraph">
+<p>Use this section to configure Smart&#160;Proxy&#160;server with an SSL certificate that is signed by Foreman&#160;server default Certificate Authority (CA).</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Smart&#160;Proxy&#160;server packages are installed.
+For more information, see <a href="https://docs.theforeman.org/nightly/Installing_Proxy_on_Red_Hat/index-foreman-deb.html#installing-capsule-server-packages_smart-proxy">Installing Smart&#160;Proxy&#160;server Packages</a>.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On Foreman&#160;server, to store all the source certificate files for your Smart&#160;Proxy&#160;server, create a directory that is accessible only to the <code>root</code> user, for example <code>/root/smart-proxy_cert</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># mkdir /root/<em>smart-proxy_cert</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>On Foreman&#160;server, generate the <code><em>/root/smart-proxy_cert/smart-proxy_certs.tar</em></code> certificate archive for your Smart&#160;Proxy&#160;server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-proxy-certs-generate \
+--foreman-proxy-fqdn <em>smartproxy.example.com</em> \
+--certs-tar <em>/root/smart-proxy_cert/smart-proxy_certs.tar</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Retain a copy of the <code>foreman-installer</code> command that the <code>foreman-proxy-certs-generate</code> command returns for deploying the certificate to your Smart&#160;Proxy&#160;server.</p>
+</div>
+<div class="listingblock">
+<div class="title">Example output of <code>foreman-proxy-certs-generate</code></div>
+<div class="content">
+<pre class="nowrap"><em>output omitted</em>
+foreman-installer \
+--scenario foreman-proxy-content \
+--certs-tar-file                              "<em>/root/smart-proxy_certs.tar</em>"\
+--foreman-proxy-content-parent-fqdn           "<em>foreman.example.com</em>"\
+--foreman-proxy-register-in-foreman           "true"\
+--foreman-proxy-foreman-base-url              "https://<em>foreman.example.com</em>"\
+--foreman-proxy-trusted-hosts                 "<em>foreman.example.com</em>"\
+--foreman-proxy-trusted-hosts                 "<em>smartproxy.example.com</em>"\
+--foreman-proxy-oauth-consumer-key            "<em>s97QxvUAgFNAQZNGg4F9zLq2biDsxM7f</em>"\
+--foreman-proxy-oauth-consumer-secret         "<em>6bpzAdMpRAfYaVZtaepYetomgBVQ6ehY</em>"\
+--puppet-server-foreman-url                   "https://<em>foreman.example.com</em>"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>On Foreman&#160;server, copy the certificate archive file to your Smart&#160;Proxy&#160;server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># scp /root/smart-proxy_cert/<em>smartproxy.example.com</em>-certs.tar \
+root@<em>smartproxy.example.com</em>:/root/<em>smartproxy.example.com</em>-certs.tar</pre>
+</div>
+</div>
+</li>
+<li>
+<p>On Smart&#160;Proxy&#160;server, to deploy the certificate, enter the <code>foreman-installer</code> command that the <code>foreman-proxy-certs-generate</code> command returns.</p>
+<div class="paragraph">
+<p>When network connections or ports to Foreman are not yet open, you can set the <code>--foreman-proxy-register-in-foreman</code> option to <code>false</code> to prevent Smart&#160;Proxy from attempting to connect to Foreman and reporting errors.
+Run the installer again with this option set to <code>true</code> when the network and firewalls are correctly configured.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Important</div>
+</td>
+<td class="content">
+Do not delete the certificate archive file after you deploy the certificate.
+It is required, for example, when upgrading Smart&#160;Proxy&#160;server.
+</td>
+</tr>
+</table>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="performing-additional-configuration-on-capsule-server">3. Performing Additional Configuration on Smart&#160;Proxy&#160;server</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Use this chapter to configure additional settings on your Smart&#160;Proxy&#160;server.</p>
+</div>
+<div class="sect2">
+<h3 id="enabling-openscap_smart-proxy">3.1. Enabling OpenSCAP on External Smart&#160;Proxies</h3>
+<div class="paragraph">
+<p>On Foreman&#160;server and the integrated Smart&#160;Proxy of your Foreman&#160;server, OpenSCAP is enabled by default.</p>
+</div>
+<div class="paragraph">
+<p>To use the OpenSCAP plug-in and content on an external Smart&#160;Proxy, you must enable OpenSCAP on each Smart&#160;Proxy.</p>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>To enable OpenSCAP, enter the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer --no-enable-foreman \
+--enable-foreman-proxy-plugin-openscap</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="enabling-power-management-on-managed-hosts_smart-proxy">3.2. Enabling Power Management on Managed Hosts</h3>
+<div class="paragraph">
+<p>To perform power management tasks on managed hosts using the intelligent platform management interface (IPMI) or a similar protocol, you must enable the baseboard management controller (BMC) module on Smart&#160;Proxy&#160;server.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>All managed hosts must have a network interface of BMC type.
+Smart&#160;Proxy&#160;server uses this NIC to pass the appropriate credentials to the host.
+For more information, see <a href="https://docs.theforeman.org/nightly/Managing_Hosts/index-foreman-deb.html#adding-a-bmc-interface">Adding a Baseboard Management Controller (BMC) Interface</a> in <em>Managing Hosts</em>.</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>To enable BMC, enter the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer --no-enable-foreman \
+--foreman-proxy-bmc "true" \
+--foreman-proxy-bmc-default-provider "freeipmi"</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="configuring-dns-dhcp-and-tftp_smart-proxy">3.3. Configuring DNS, DHCP, and TFTP on Smart&#160;Proxy&#160;server</h3>
+<div class="paragraph">
+<p>To configure the DNS, DHCP, and TFTP services on Smart&#160;Proxy&#160;server, use the <code>foreman-installer</code> command with the options appropriate for your environment.
+To view a complete list of configurable options, enter the <code>foreman-installer --scenario foreman --help</code> command.</p>
+</div>
+<div class="paragraph">
+<p>Any changes to the settings require entering the <code>foreman-installer</code> command again.
+You can enter the command multiple times and each time it updates all configuration files with the changed values.</p>
+</div>
+<div class="paragraph">
+<div class="title">Adding Multihomed DHCP details</div>
+<p>If you want to use Multihomed DHCP, you must update the network interface file.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>In the <code>/etc/systemd/system/dhcpd.service.d/interfaces.conf</code> file, edit the following line to add Multihomed DHCP:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">[Service]
+ExecStart=/usr/sbin/dhcpd -f -cf /etc/dhcp/dhcpd.conf -user dhcpd -group dhcpd --no-pid eth0 eth1 eth2</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If this file does not exist already, create it.</p>
+</div>
+</li>
+<li>
+<p>Enter the following command to perform a daemon reload:</p>
+<div class="listingblock">
+<div class="content">
+<pre># systemctl --system daemon-reload</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Enter the following command to restart the <strong>dhcpd</strong> service:</p>
+<div class="listingblock">
+<div class="content">
+<pre># systemctl restart dhcpd.service</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>You must have the correct network name (<code>dns-interface</code>) for the DNS server.</p>
+</li>
+<li>
+<p>You must have the correct interface name (<code>dhcp-interface</code>) for the DHCP server.</p>
+</li>
+<li>
+<p>Contact your network administrator to ensure that you have the correct settings.</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>Enter the <code>foreman-installer</code> command with the options appropriate for your environment.
+The following example shows configuring full provisioning services:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer --no-enable-foreman \
+--foreman-proxy-dns true \
+--foreman-proxy-dns-managed true \
+--foreman-proxy-dns-interface <em>eth0</em> \
+--foreman-proxy-dns-zone <em>example.com</em> \
+--foreman-proxy-dns-reverse <em>2.0.192.in-addr.arpa</em> \
+--foreman-proxy-dhcp true \
+--foreman-proxy-dhcp-managed true \
+--foreman-proxy-dhcp-interface <em>eth0</em> \
+--foreman-proxy-dhcp-range "<em>192.0.2.100</em> <em>192.0.2.150</em>" \
+--foreman-proxy-dhcp-gateway <em>192.0.2.1</em> \
+--foreman-proxy-dhcp-nameservers <em>192.0.2.2</em> \
+--foreman-proxy-tftp true \
+--foreman-proxy-tftp-managed true \
+--foreman-proxy-tftp-servername <em>192.0.2.3</em></pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For more information about configuring DHCP, DNS, and TFTP services, see the <a href="https://docs.theforeman.org/nightly/Provisioning_Guide/index-foreman-deb.html#Configuring_Networking-Configuring_Network_Services_for_PXE_Boot">Configuring Network Services</a> section in the <em>Provisioning Guide</em>.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="capsule-server-scalability-considerations_smart-proxy">Appendix A: Smart&#160;Proxy&#160;server Scalability Considerations</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The maximum number of Smart&#160;Proxy&#160;servers that Foreman&#160;server can support has no fixed limit.
+The tested limit is 17 Smart&#160;Proxy&#160;servers with 2 vCPUs on a Foreman&#160;server with Red Hat Enterprise Linux 7.
+However, scalability is highly variable, especially when managing Puppet clients.</p>
+</div>
+<div class="paragraph">
+<p>Smart&#160;Proxy&#160;server scalability when managing Puppet clients depends on the number of CPUs, the run-interval distribution, and the number of Puppet managed resources.
+Smart&#160;Proxy&#160;server has a limitation of 100 concurrent Puppet agents running at any single point in time.
+Running more than 100 concurrent Puppet agents results in a 503 HTTP error.</p>
+</div>
+<div class="paragraph">
+<p>For example, assuming that Puppet agent runs are evenly distributed with less than 100 concurrent Puppet agents running at any single point during a run-interval, a Smart&#160;Proxy&#160;server with 4 CPUs has a maximum of 1250-1600 Puppet clients with a moderate workload of 10 Puppet classes assigned to each Puppet client.
+Depending on the number of Puppet clients required, the Foreman installation can scale out the number of Smart&#160;Proxy&#160;servers to support them.</p>
+</div>
+<div class="paragraph">
+<p>If you want to scale your Smart&#160;Proxy&#160;server when managing Puppet clients, the following assumptions are made:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>There are no external Puppet clients reporting directly to the Foreman integrated Smart&#160;Proxy.</p>
+</li>
+<li>
+<p>All other Puppet clients report directly to an external Smart&#160;Proxy.</p>
+</li>
+<li>
+<p>There is an evenly distributed run-interval of all Puppet agents.</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+Deviating from the even distribution increases the risk of filling the passenger request queue.
+The limit of 100 concurrent requests applies.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The following table describes the scalability limits using the recommended 4 CPUs.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 6. Puppet Scalability Using 4 CPUs</caption>
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Puppet Managed Resources per Host</th>
+<th class="tableblock halign-left valign-top">Run-Interval Distribution</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">3000-2500</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">10</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2400-2000</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">20</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1700-1400</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>The following table describes the scalability limits using the minimum 2 CPUs.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 7. Puppet Scalability Using 2 CPUs</caption>
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Puppet Managed Resources per Host</th>
+<th class="tableblock halign-left valign-top">Run-Interval Distribution</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1700-1450</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">10</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1500-1250</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">20</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">850-700</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated May 2021
+</div>
+</div>
+</body>
+</html>
