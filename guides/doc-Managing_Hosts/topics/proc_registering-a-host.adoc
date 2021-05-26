@@ -1,14 +1,14 @@
-[id="registering-a-host-to-project-using-the-global-registration-template_{context}"]
-= Registering a Host to {ProjectName} Using the Global Registration Template
+[id="registering-a-host_{context}"]
+= Registering a Host to {ProjectName}
 
-Use the following procedure to register a host to {ProjectNameX}.
+Hosts can be registered to {Project} by generating a `curl` command on {Project} and running this command on hosts.
+This method uses two templates: `global registration` template and `host initial configuration` template. That gives you complete control over the host registration process.
+You can set default templates by navigating to Administer > Settings, and clicking the Provisioning tab.
 
-With this registration method you can register hosts to {Project} by generating a `curl` command on {Project} and running this command on hosts.
-This method uses the global registration template that gives you complete control over the process of the host registration.
 
 ifndef::satellite[]
 Note that you can extend the parameters by plug-ins.
-For more information, see https://github.com/theforeman/foreman/blob/develop/developer_docs/how_to_create_a_plugin.asciidoc[How to Create a Plugin].
+For more information, see https://github.com/theforeman/foreman/blob/develop/developer_docs/how_to_create_a_plugin.asciidoc[How to Create a Plugin] and https://theforeman.github.io/foreman/?path=/docs/introduction-slot-and-fill--page[Slot and Fill]
 endif::[]
 
 .Prerequisites
@@ -19,27 +19,7 @@ ifdef::satellite[]
 * Optional: If you want to register hosts to Red{nbsp}Hat Insights, you must synchronize the `{RepoRHEL7Server}` repository and make it available in the activation key that you use.
 This is required to install the `insights-client` package on hosts.
 endif::[]
-
-.Procedure
-. In the {Project} web UI, navigate to *Hosts* > *Provisioning Templates*, find the *Linux registration default* template and click it.
-
-. Click the *Association* tab.
-
-. Ensure that the operating system that you want to register is in the *Selected items* column.
-
-. Click *Submit*.
-
-. Navigate to *Hosts* > *Operating Systems* and click the operating system that you want to register.
-
-. Click the *Templates* tab.
-
-. From the *Registration template* list, ensure that *Linux registration default* is selected.
-
-. Click *Submit*.
-
-. Navigate to *Hosts* > *All Hosts* > *Register Host*.
-
-. Optional: If you want to register hosts through {SmartProxy}, ensure that the *Registration* feature is enabled on this {SmartProxy}.
+* Optional: If you want to register hosts through {SmartProxy}, ensure that the *Registration* feature is enabled on this {SmartProxy}.
 +
 Navigate to *Infrastructure* > *{SmartProxies}*, click the {SmartProxy} that you want to use, and locate the *Registration* feature in the *Active features* list.
 +
@@ -52,11 +32,23 @@ Optional: If the *Registration* feature is not enabled on your {SmartProxy}, ent
 --foreman-proxy-template-url 'http://{smartproxy-example-com}'
 ----
 
+.Procedure
+. Navigate to *Hosts* > *Register Host*.
+
 . Optional: From the *Host Group* list, select the host group to associate the hosts with.
+Fields that inherit value from *Host group*: Operating System, Activation Key(s) and Lifecycle environment.
 
 . From the *Operating System* list, select the operating system of hosts that you want to register.
 
 . Optional: From the *{SmartProxy}* list, select the {SmartProxy} to register hosts through. You must select the internal {SmartProxy} if you do not want to use an external {SmartProxy}.
+
+. Optional: *Insecure* - This makes the first call insecure, however, during this first call, hosts download the CA file from {Project}. Hosts will use this CA file to connect to {Project} with all future calls making them secure.
++
+If an attacker, located in the network between {Project} and a host, fetches the CA file from the first insecure call, the attacker will be able to access the content of the API calls to and from the registered host and the JSON Web Tokens (JWT).
+Therefore, if you have chosen to deploy SSH keys during registration, the attacker will be able to access the host using the SSH key.
++
+
+. From the *Remote Execution* list, select whether you want to deploy {Project} SSH keys to hosts or not.
 
 . Optional: *Insecure* - This makes the first call insecure, however, during this first call, hosts download the CA file from {Project}. Hosts will use this CA file to connect to {Project} with all future calls making them secure.
 +
@@ -80,22 +72,32 @@ You must enable the following repositories on a registered machine:
 * RHEL 8: `rhel-8-for-x86_64-appstream-rpms` (The `insights-client` package is installed by default on RHEL 8 except in environments whereby RHEL 8 was deployed with "Minimal Install" option)
 +
 
-. From the *Remote Execution* list, select whether you want to deploy {Project} SSH keys to hosts or not.
-
 . Optional: {Project} uses the JSON Web Tokens (JWT) for authentication.
 The duration of this token defines how long the generated `curl` command works.
-If you want to change the duration of the token, enter the required duration to the *Token lifetime (hours)* field.
-You can set the duration to any number of hours.
+If you want to change the duration of the token, enter the required duration to the *Token lifetime (hours)* field. You can set the duration to 0 - 999 999 hours or unlimited.
 +
 Note that {Project} uses the permissions of the user who generates the `curl` command for authorization of hosts.
 If the user loses or gains additional permissions, the permissions of the JWT change too.
 Therefore, do not delete, block, or change permissions of the user during the token duration.
+ Also, the scope of JWT is limited to the registration endpoints only and cannot be used anywhere else.
 
 . Optional: In the *Remote Execution Interface* field, enter a network interface that hosts must use for the SSH connection.
 If you keep this field blank, {Project} uses the default network interface.
 
+. Optional: *Install packages* - Install packages on the host when registered. Can be set by host_packages parameter
+
+. Optional: *Repository* - A repository to be added before the registration is performed. For example, it can be useful to make the subscription-manager packages available for the purpose of the registration. For Red Hat family distributions, this should be the URL of the repository. For example, http://rpm.example.com/. For Debian OS families, it's the whole list file content, for example 'deb http://deb.example.com/ buster 1.0'.
+
+. Optional: *Repository GPG key URL* - If packages are GPG signed, the public key can be specified here to verify the packages signatures. It needs to be specified in the ascii form with the GPG public key header.
+
 ifdef::satellite[]
 . In the *Activation Key(s)* field, enter one or more activation keys to assign to hosts.
+
+. Optional: *Lifecycle environment*
+
+. Optional: *Ignore errors* - Ignore subscription manager errors
+
+. Optional: *Force* - Remove any `katello-ca-consumer` rpms before registration and run subscription-manager with --force argument.
 endif::[]
 
 ifndef::satellite[]
@@ -106,23 +108,15 @@ endif::[]
 . Click *Generate command*.
 
 . Copy the generated `curl` command to enter it on the hosts.
-
-. Configure hosts with the CA certificate with one of the following methods:
 +
-* Add the `--insecure` option to the `curl` command.
-This makes the first call insecure, however, during this first call, hosts download the CA file from {Project}.
-Hosts will use this CA file to connect to {Project} with all future calls making them secure.
-+
-If an attacker, located in the network between {Project} and a host, fetches the CA file from the first insecure call, the attacker will be able to access the content of the API calls to and from the registered host and the JWT.
-Therefore, if you have chosen to deploy SSH keys during registration, the attacker will be able to access the host using the SSH key.
 The following is an example of the `curl` command with the `--insecure` option:
 +
 [options="nowrap", subs="+quotes,attributes"]
 ----
-curl -X GET --insecure https://{foreman-example-com}/register...
+curl -sS --insecure https://{foreman-example-com}/register...
 ----
 +
-* If you do not want to call the `curl` command with the `--insecure` option, you can manually copy and install the CA file on each host.
+If you do not want to call the `curl` command with the `--insecure` option, you can manually copy and install the CA file on each host.
 +
 To do this find where {Project} stores the CA file by navigating to *Administer* > *Settings* > *Authentication* and locating the value for the *SSL CA file* setting.
 +
