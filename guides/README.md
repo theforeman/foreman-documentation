@@ -56,7 +56,7 @@ Currently there are three different versions:
 
 `make BUILD=katello` - this generates a katello build of the guide
 
-`make BUILD=foreman-deb` - This generates  a version for Foreman installed on Debian.
+`make BUILD=foreman-deb` - This generates a version for Foreman installed on Debian.
 
 `make BUILD=orcharhino` - This generates a downstream preview of the guide for orcharhino.
 
@@ -91,19 +91,15 @@ Please read these guidelines before opening a Pull Request. For more information
 The content in this repository is shared between the upstream Foreman community and branded downstream products such as Red Hat Satellite and orcharhino by ATIX.
 Therefore, never write "Foreman", "Satellite", or "orcharhino" words directly, but use the following variables:
 
-| Variable | Upstream value | Downstream value |
-| -------- | -------------- | ---------------- |
-| {ProjectNameXY} | Foreman 1.22 | Red Hat Satellite 6.5 |
-| {ProjectNameX} | Foreman | Red Hat Satellite 6 |
-| {ProjectName} | Foreman | Red Hat Satellite |
-| {ProjectXY} | Foreman 1.22 | Satellite 6.5 |
-| {ProjectX} | Foreman | Satellite 6 |
-| {Project} | Foreman | Satellite |
-| {SmartProxyServer} | Smart Proxy server | Capsule Server |
-| {SmartProxy} | Smart Proxy | Capsule |
+| Variable | Upstream value | Downstream by Red Hat | Downstream by ATIX |
+| -------- | -------------- | --------------------- | ------------------ |
+| {Project} | Foreman | Satellite | orcharhino |
+| {ProjectName} | Foreman | Red Hat Satellite | orcharhino |
+| {ProjectServer} | Foreman server | Satellite Server | orcharhino server |
+| {SmartProxy} | Smart Proxy | Capsule | orcharhino Proxy |
+| {SmartProxyServer} | Smart Proxy server | Capsule Server | orcharhino Proxy |
 
-The table only covers the most frequent terms.
-The rest are defined in the attribute files:
+Every build uses common base attributes, more are defined in the build specific attribute files:
 
 * [attributes.adoc](common/attributes.adoc): version definitions and includes for other attribute files.
 * [attributes-base.adoc](common/attributes-base.adoc): base attributes common for all builds.
@@ -111,8 +107,9 @@ The rest are defined in the attribute files:
 * [attributes-foreman-deb.adoc](common/attributes-foreman-deb.adoc): base overrides for foreman-deb build.
 * [attributes-katello.adoc](common/attributes-katello.adoc): base overrides for katello build.
 * [attributes-satellite.adoc](common/attributes-satellite.adoc): base overrides for satellite build.
+* [attributes-orcharhino.adoc](common/attributes-orcharhino.adoc): base overrides for orcharhino build.
 
-Variables cannot be used in shell or code examples.
+By default, variables cannot be used in shell or code examples.
 To use them, use "attributes" keyword:
 
 	[options="nowrap" subs="+quotes,attributes"]
