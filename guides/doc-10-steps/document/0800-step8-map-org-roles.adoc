@@ -1,0 +1,337 @@
+<<<
+== Step 8: Map your IT organization and roles to your Satellite setup
+
+
+IT organizations are in a state of constant flux. In spite of this environment, many IT organizations base their current structure on particular technologies or products. This type of structuring can severely limit an IT organization, since many software vendors have significantly expanded their product use cases and the products they offer. Plus, many emerging technologies have disrupted how customers work with particular products, such as software-defined networks or storage.
+
+A typical IT organization is divided into units with different roles and responsibilities. Depending on the size and structure of an IT organization, the roles and responsibilities can be organized in many different ways. Some of them are directly related to how Red Hat Satellite Server is used, some of them not. In the following section we will describe some common roles and how Red Hat Satellite supports them.
+
+=== How Red Hat Satellite Lets You Separate Responsibilities
+
+
+Red Hat Satellite offers various options to support roles. Red Hat Satellite:
+
+* Supports both *users and roles*. Satellite can assign default organizations and environments to users, so that when users create new entities, these defaults are automatically used. Users can also be assigned a default _role_, which defines their permissions and access levels. Users’ assigned roles give them rights to see and manage organizations and environments.
+* Supports aggregating different organization (units) within one single Satellite server by using Red Hat Satellite *Multi-Org* concepts
+* Provides the capability to isolate the ownership of systems (deployment targets) from the actual content (deployment content, such as OS or application content)
+* Allows the independent lifecycle management of *Content Views* to support individual ownership of particular system stack layers (for example, the OS, platform and application layers). Satellite also supports aggregating formerly independent ownerships into *Composite Content Views*.
+* Offers independent software-*lifecycle environment* paths to create independent lifecycle stages and environments for individual ownership and release cycles
+* Supports the *granular definition* of access levels for all objects managed within Satellite. This feature supports *role-based access control (RBAC)* concepts.
+
+=== Satellite Users and LDAP Authentication
+
+
+A Satellite 6 user defines a set of details for individuals who use the system. Users can be associated with organizations and environments, so that when they create new entities, the default settings are automatically used. Users can also have one or more roles attached, which grant them rights to view and manage organizations and environments.
+
+Red Hat Satellite includes the option to use a Lightweight Directory Access Protocol (LDAP) service for user information and authentication, using one or more LDAP directories. The required steps to configure LDAP authentication are documented in the Red Hathttps://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html/User_Guide/index.html[https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html/User_Guide/index.html[ ]]https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html/User_Guide/index.html[Satellite User Guide].
+
+In our solution guide, we are not using LDAP authentication.
+
+=== Red Hat Satellite 6 Role-Based Access Control
+
+
+Red Hat Satellite features a fine-grained access control system that allows you to customize sets of roles to precisely the desired allowed actions. Each action on a resource type (host, host collection, lifecycle environment, content view, etc.) can be controlled within each role, and you can restrict the individual objects via a search query.
+
+Some predefined roles are available with a pre-defined set of filters. To see this list of predefined roles, click on Administer -> Roles:
+
+
+
+These templates can be cloned and adapted or enhanced to specific needs. Alternatively, you can create new roles from scratch: Start with an empty role, and then add all required filters.
+
+For each of the 46 different resource types, you can select one or more permissions that belong  to a particular resource type (e.g. view, edit, create, delete). In addition, you can apply filters to restrict these permissions to a particular subset of elements. For further details, see the corresponding chapter in the Satellite 6 User Guide:https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html/User_Guide/chap-Users_and_Roles.html[https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html/User_Guide/chap-Users_and_Roles.html[ ]]https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html/User_Guide/chap-Users_and_Roles.html[https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html/User_Guide/chap-Users_and_Roles.html]
+
+*Note:* +
+Because of its granular model for defining roles and based on Puppet’s powerful configuration-management capabilities, Satellite 6 can manage both operating systems and platforms running on top of Red Hat Enterprise Linux. Satellite 6 can also be used to manage applications, but Red Hat offers a dedicated tool for managing platforms and applications, Red Hat OpenShift Enterprise.
+
+=== Satellite 6 RBAC Recommendations
+
+
+Satellite 6’s Role-Based Access Control (RBAC) lets you assign granular permissions and access controls to all Satellite 6 objects. Because of the huge number of objects (indicated by the 46 different resource types), trying to define an enhanced permission set can become a trial and error journey. The following recommendations should help you define custom roles and their permissions.
+
+==== Define the Expected Tasks and Responsibilities
+
+
+A good way to begin is to think about what a particular role is supposed to do and which Satellite 6 entities might be affected by these tasks. You could think about the responsibilities of this role and how you would define the border between two roles. For example, if a user associated with this role is supposed to execute an action limited to a particular subset of an entity, you need to define this subset. Our QA and SysEng sample roles might help here. The differences between them define the boundaries between two sets of responsibilities. You can use filters to limit the associated permissions.
+
+==== Start Small and Add Permissions Step by Step
+
+
+If tests of a role have not gone well, start with a very limited set of permissions and then add additional permissions step by step. Once the execution is successful, review your filters and check if some of them are unnecessary. If you are unsure, remove a filter or permission and test again to see if the execution still works. Usually you need more “view” permissions and “edit” or “delete” permissions. If you remove unnecessary view permissions, the number of visible items decreases, and the complexity of the user interface decreases as well.
+
+==== Use Search Filters to Limit the Amount of Detail
+
+
+Many roles in a traditional IT organization have a very limited area of responsibility. However, there might be a wider area of interest. For example, the application server owner is responsible for the application server but might have an interest to see (read-only access) the current core build development to get earlier access to information about potential upcoming changes. Usually, areas of interest should be handled more on a cross-team communication and collaboration plan, but the read-only permissions in Satellite 6 would also help users get an overview about other areas of interest.
+
+==== Consider Secondary Entities Affected by a Particular Execution
+
+
+Sometimes, you need to consider which secondary entities are affected. For example, a content view promotion automatically creates new (or changes existing) Puppet environments for this lifecycle environment and content view combination. Therefore, you need to add create and edit permissions for the resource type (Puppet) “Environment,” if this role is expected to promote content views. For further details, see “Sample Role 5: Quality Assurance” in this chapter.
+
+==== Use Predefined Roles Wherever Possible
+
+
+As mentioned, earlier Satellite 6 ships some predefined roles that can be used alone or as part of a role combination. For further details, see “Sample Role 2” and “Sample Role 4” in this chapter.
+
+==== RBAC Focuses on Role Shaping But Not Security control
+
+
+The current focus of Satellite 6’s role-based access control is more on role shaping in the UI (soft settings) than on securing or limiting access (hard settings / enforcement) to various objects or tasks. The examples provided in this chapter primarily focus on hiding unnecessary objects from users who are not supposed to deal with all Satellite 6 entities.
+
+=== Typical content & Lifecycle Role Types
+
+
+There are various criteria for distinguishing among different roles within an IT organization. In this solution guide, we will focus on the following 3 types of roles:
+
+* Roles belonging to a particular owner of an application or specific parts of IT services (for example, different owners of Red Hat Enterprise Linux as the operating system versus owners of application servers and database servers)
+* Roles belonging to a particular stage of the software lifecycle. These roles usually have dedicated requirements and tasks and in most cases also using dedicated compute resources to fulfill these tasks (for example, the roles could be divided among the plan - build - run phases, where each phase has one or more owners)
+* Roles belonging to specific tasks that are partially independent from the roles described above (for example, security manager, license managers)
+
+The following picture illustrates the different areas of responsibilities in a fragmented IT organization with individual roles for each lifecycle stage of each stack layer:
+
+
+=== ACME IT Organization Example
+
+
+As mentioned in the introduction, our example, the ACME IT Organization, is structured as follows:
+
+
+
+Primarily, we divide responsibility areas into operating systems and application responsibilities. In addition, we have a couple of cross-functional roles that take care of various typical IT process areas.
+
+*Note:* +
+Currently, you need to use the permissions’ IDs instead of their names when using hammer CLI to configure the roles and filters until the following bug is fixed:
+
+https://bugzilla.redhat.com/show_bug.cgi?id=1230884[https://bugzilla.redhat.com/show_bug.cgi?id=1230884]
+
+The following hammer commands list all the available permissions and their IDs:
+
+
+|===
+|hammer filter available-permissions --per-page 500
+----|-------------------------------------------------|------------------------
+ID  | NAME                                            | RESOURCE
+----|-------------------------------------------------|------------------------
+1   | view_architectures                              | Architecture
+2   | create_architectures                            | Architecture
+3   | edit_architectures                              | Architecture
+4   | destroy_architectures                           | Architecture
+5   | view_audit_logs                                 | Audit
+6   | view_authenticators                             | AuthSourceLdap
+7   | create_authenticators                           | AuthSourceLdap
+8   | edit_authenticators                             | AuthSourceLdap
+9   | destroy_authenticators                          | AuthSourceLdap
+10  | view_bookmarks                                  | Bookmark
+
+|===
+
+*Note:* +
+Some of these permission IDs have changed with Satellite 6.1 (even between the private and public beta). So if you have used permissions already, you might need to adapt them accordingly.
+
+==== Sample Role 1: Satellite Admin
+
+
+The Satellite Admin is the top-level admin role with unlimited access control to all Satellite objects, including all managed objects (systems and applications). Therefore, the least complex setup is to use the Satellite Admin role for all users working with Red Hat Satellite.
+
+Each user can be assigned to the Admin role just by selecting the corresponding checkbox while creating users under the Roles tab:
+
+
+
+In addition to the master Admin role, Satellite 6 ships with two additional predefined roles called ‘Manager’ and ‘Site Manager’, which also include a lot of privileges and might be sufficient for most administrative tasks as well.
+
+Although this setup  might be sufficient for smaller IT organizations that have only limited (or even no) access control or separation of responsibilities, we strongly recommend that you *not* use the Admin role (or an associated user) as the permanent user to login and work with Red Hat Satellite in a role-segregated environment.
+
+==== Sample Role 2: IT Operations Manager (Read-only Role)
+
+
+Let’s start with a simple example. Our IT Operations Manager is not supposed to use Satellite 6 or manage items inside Satellite 6. Nevertheless, he wants to get an overview about various items handled by Satellite 6. Since this role is not expected to make any changes, a read-only role would be sufficient for it.
+
+*What Is This Role Supposed to Do?*
+
+* View all Satellite 6 entities in read-only mode
+
+
+*RBAC Configuration for this Role*
+
+Based on the expected tasks for this role, we add the predefined *_Viewer_* role to this user. To see the (long) list of associated permissions that are defined for this role, go to Administer -> Roles and click on the Filter inside the Viewer row.
+
+|===
+|*Role Resource Type*|*Permission*|*Filter*
+
+|*Viewer*|*predefined permission set*|
+|===
+
+You can assign this predefined role to a new or existing user if you go to Administer -> Users and then select the existing user or create a new one. Inside the roles tab select the Viewer role:
+
+
+
+*Role Creation Using Hammer CLI*
+
+The following hammer commands create a user and role and add the corresponding permissions to the role:
+
+|===
+|hammer user create --firstname jim \
+
+|===
+
+==== Sample Role 3: License Management Owner
+
+
+Inside the Risk & Security Management team, there is a role for taking care of license and subscription management to satisfy various compliance requirements. Though this might not be a typical Satellite user, this role can benefit from Satellite 6 subscription management and reporting capabilities. Using very restrictive permission filters, we can hide the complexity of managed objects inside Satellite and just focus on the specific tasks with which this role is associated.
+
+*What Is This Role Supposed to Do?*
+
+* upload new subscription manifests (downloaded from the Red Hat Customer Portal) into Satellite 6
+* monitor the subscription utilization for Red Hat products
+* monitor the subscription utilization for 3rd-party products
+* monitor the utilization of different support-level-specific subscriptions (for example, monitor how much the host is using premium vs. standard support level agreements)
+
+*RBAC Configuration for this Role*
+
+Based on the expected tasks for this role, we add the following permissions to it. Since this describes a minimum set of permissions, you might want to add some more.
+
+|===
+|*Role Resource Type*|*Permission*|*Filter*
+
+|Miscellaneous|access_dashboard|
+|Products and Repositories|view_products|
+|Organization|Import_manifest|
+|Reports|view_reports|
+|Host/managed|view_hosts|
+|===
+
+
+The final permissions configuration can be reviewed under Administer -> Roles. Select the role, and click on Filters:
+
+
+
+
+*Role Creation Using Hammer CLI*
+
+The following hammer commands create a user and role and add the corresponding permissions to the role:
+
+|===
+|hammer user  create --firstname license --lastname manager \
+
+|===
+
+If we login as this user, we can see that the navigation bar has been significantly reduced to only a few items that are relevant for this user:
+
+
+
+
+==== Sample Role 4: Core Build (OS) Systems Engineering
+
+
+The next role works inside the IT Operations department as part of the Systems Engineering team. This team defines and creates new versions of our core build definitions and is taking care of the corresponding Puppet configurations that are part of the core build content views.
+
+Since QA is a team that consists of a couple of team members, we use *user groups* instead of individual users here and assign the role to this user group.
+
+*What Is This Role Supposed to Do?*
+
+* control software imports by using repository synchronization
+* control Puppet module imports by using repository synchronization or direct push
+* define, create, and edit core-build content views
+* publish content views and promote them to the DEV stage, which is the test stage for IT Operations
+* create and edit all items relevant for provisioning (provisioning templates, parameters, images, partition tables, etc.)
+* build, create, edit, and destroy hosts to test new content on non-persistent hosts
+* view, edit, and compute to manage the underlying compute infrastructure in stage DEV
+* view and edit host groups and config groups to test Puppet configuration changes
+
+Since this is quite a long list, and we would need to add most of the 234 permissions to this role, we’ve decided to use a role combination here. We’ve added the predefined Manager role to this role and then created and added another role that *limits* the permissions provided by the Manager role to *just* the DEV environment.
+
+The numerous permissions of the predefined Manager role can be investigated under Administer -> Roles. Click on Filters in the Manager role table row:
+
+
+
+*RBAC Configuration for This Role*
+
+Based on the expected responsibilities of this role, we add the following permissions to it. Since this describes the minimum set of permissions, you might want to add more.
+
+|===
+|*Role Resource Type*|*Permission*|*Filter*
+
+|*Manager*|*predefined permission set*|
+|Products and Repositories|create_products|
+|Content Views|view_content_views|*name ~ cv-os**
+|Lifecycle Environments|promote_or_remove_content_views_to_environments|*name ~ DEV*
+|Lifecycle Environments|view_lifecycle_environments|
+|Puppet class|view_puppetclasses|
+|===
+
+The final permissions configuration can be reviewed under Administer -> Roles. Select the role, and click on Filters:
+
+
+
+*Note:* +
+this screenshot shows only the additional permissions that are part of the syseng role. Since we’ve added this extended permission set and also used the predefined Manager role permissions, the final permission set is an intersection of both.
+
+
+*Role Creation Using Hammer CLI*
+
+The following hammer commands create a user and role and add the corresponding permissions to the role:
+
+
+|===
+|# OS SysEng users
+
+|===
+
+
+==== Sample Role 5: Quality Assurance (QA)
+
+
+This role is part of the IT Services Management department and is supposed to ensure that everything is tested properly before being deployed to production. QA has its own dedicated lifecycle stages and a dedicated environment with compute resources, which they use to test all new content and configurations. This role has only limited edit permissions for content, since this department is not supposed to fix issues but only detect and report them.
+
+Since QA is a team that consists of a couple of team members, we are using *user groups* instead of individual users, and we will assign the role to the user group.
+
+*What Is This Role Supposed to Do?*
+
+* import content into the QA stage. The content has been marked as “ready to test” by the software development and systems engineering teams
+* create and edit *composite* content views. These CCVs should define new or adapted *combinations of immutable content and configuration* definitions in the inherent content views (the CCVs should exclude edit permissions on an individual content view level).
+* read-only access to all required items that QA is supposed to use but not edit
+* create, build ,and destroy hosts to test software and configurations
+
+*Note:* +
+Don’t be confused because the content view promotion permission uses a filter that limits the promotion to the QA stage, instead of PROD. If content is promoted to a particular stage, this newer content is automatically picked up by all hosts associated to this content view and lifecycle environment (at least the Puppet configuration). As of today, there is no way to segregate content transition into a stage / environment and the deployment itself. If content is promoted to an environment it will be automatically picked up all hosts associated to this environment if the _version=Latest_ option is used inside Puppet configurations. Since only the IT Operations Production Support team is responsible for the PROD environment, the QA team must not be allowed to promote content to the PROD stage. This applies for other roles in earlier stages as well. Only the QA team itself is allowed to promote content in the QA environment BUT the owners of DEV are not allowed to.
+
+
+*RBAC Configuration for This Role*
+
+Based on the expected responsibilities of this role, we add the following permissions to it. Since this describes a minimum set of permissions, you might want to add more.
+
+
+|===
+|*Role Resource Type*|*Permission*|*Filter*
+
+|Organization|view_organizations|
+|Environment|view_environments|
+|Miscellaneous|view_tasks|
+|Environment|view_environments|
+|Host class|edit_classes|
+|Host Group|view_hostgroups|
+|Host/managed|view_hosts|
+|Location|view_locations|
+|Puppet class|view_puppetclasses|
+|Smart proxy|view_smart_proxies|
+|Miscellaneous|my_organizations|
+|Products and Repositories|view_products|
+|Host class|edit_classes|
+|Lifecycle Environment|view_lifecycle_environments|
+|Lifecycle Environment|promote_or_remove_content_views_to_environments|*name ~ QA*
+|Content Views|view_content_views|*name ~ ccv**
+|===
+
+The final permissions configuration can be reviewed under Administer -> Roles. Select the role, and click on Filters:
+
+
+
+*Role Creation Using Hammer CLI*
+
+The following hammer commands create a user and role and add the corresponding permissions to the role:
+
+
+|===
+|hammer user create --firstname jane \
+
+|===

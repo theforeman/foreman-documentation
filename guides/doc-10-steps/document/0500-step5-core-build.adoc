@@ -1,0 +1,491 @@
+<<<
+== Step 5: Define your Core Build
+
+
+A key goal of setting up a Standard Operating Environment is to increase the standardization in all the different stack layers of an application architecture. The stack layer with the widest usage is the underlying operating system. The *core build *is** **the streamlined, standardized Red Hat Enterprise Linux configuration.
+
+=== Benefits of Red Hat Enterprise Linux for Core Builds
+
+
+A key goal of setting up a Standard Operating Environment is to increase the standardization in all the different stack layers of an application architecture. The stack layer with the widest usage is the underlying operating system. The core build is the streamlined, standardized Red Hat Enterprise Linux configuration. There are a couple of benefits of using Red Hat Enterprise Linux as the operating system standard in an enterprise environment. Red Hat Enterprise Linux sets the standard and provides the best set of features for standardization.
+
+*Stability and support*
+
+Enterprise applications and services require a stable foundation with a defined lifecycle. Red Hat Enterprise Linux features a 10-year lifecycle with ongoing support and updates from launch to retirement.
+
+*Security*
+
+Because a security issue in a standardized operating system will affect the entire environment, it is critical that any security issues are mitigated quickly. Red Hat fixes 95% of all critical security issues in Red Hat Enterprise Linux within 24 hours.
+
+*Reliability*
+
+According to an IDC study, companies that standardized on Red Hat Enterprise Linux experience significantly less downtime than those operating mixed or primarily non-paid Linux distributions due to better management practices and regression testing by both Red Hat and its partner community. Further details can be found here:http://www.redhat.com/promo/standardize/rhs.html[http://www.redhat.com/promo/standardize/rhs.html[ ]]http://www.redhat.com/promo/standardize/rhs.html[http://www.redhat.com/promo/standardize/rhs.html]
+
+*OEM and ISV certification*
+
+Red Hat’s large, well-established OEM and ISV communities ensure that customers can be confident that recent hardware innovations are supported. They can choose from over 14,000 certified software offerings to meet their needs without compromising security, reliability, or support.
+
+*ABI and API compatibility*
+
+Application stability is maintained with ABI and API compatibility between Red Hat Enterprise Linux version upgrades. Applications written for a version of Red Hat Enterprise Linux will run unmodified on any minor release until the retirement of the version.
+
+==== Red Hat ABI and API compatibility commitment
+
+
+During the life cycle of a major release, Red Hat makes commercially reasonable efforts to maintain binary compatibility for the core runtime environment across all minor releases and errata advisories. If necessary, Red Hat may make exceptions to this compatibility goal for critical impact security or other significant issues. Furthermore major releases of Red Hat Enterprise Linux contain a limited set of backward-compatible libraries included in previous major releases to allow for the easy migration of applications.
+
+Typically, Red Hat applies changes in such a way as to minimize the amount of change and to maintain binary compatibility. Exceptions may apply for controlled package re-bases under certain circumstances.
+
+Packages in Red Hat Enterprise Linux are classified under one of four compatibility levels. Many important programming languages and runtimes like python, perl and ruby are part of compatibility levels which means that their ABIs and APIs are stable within one major release of Red Hat Enterprise Linux. Further details are provided inside Red Hat Customer Portal:https://access.redhat.com/articles/rhel-abi-compatibility[https://access.redhat.com/articles/rhel-abi-compatibility[ ]]https://access.redhat.com/articles/rhel-abi-compatibility[https://access.redhat.com/articles/rhel-abi-compatibility]
+
+This compatibility commitment significantly reduces the technical risk of applying changes to the underlying operating system for the applications running on top of it. Additionally it ensures that from an application perspective there is no difference if the OS is running on bare or on any other supported virtualization platform.
+
+Based on ABI/API stability in many customer environments changes of Red Hat Enterprise Linux software are defined as ITIL (R) Standard Changes. A Standard Change is a pre-defined and pre-authorized change which is considered relatively low risk or impact, follows a documented process or procedure and typically performed frequently.
+
+This allows more frequently changes with lower risk while Red Hat Satellite provides the technology to define, deploy, maintain and verify these changes over time.
+
+Further information around ABI/API stability could be found here:https://access.redhat.com/articles/rhel-abi-compatibility[https://access.redhat.com/articles/rhel-abi-compatibility[ ]]https://access.redhat.com/articles/rhel-abi-compatibility[https://access.redhat.com/articles/rhel-abi-compatibility]
+
+=== Core Build Overview
+
+
+Our goal is to achieve highest possible standardization of the operating system layer. The core build should fulfill these requirements. It should:
+
+* Provide the smallest common denominator of all Red Hat Enterprise Linux servers
+* Be infrastructure (hardware and virtualization) agnostic
+* Provide an application or platform-independent OS configuration
+* Be a universal size that allows scaling up to all the sizes used
+* Be based on a minimal installation
+* Contain a partitioning schema and default filesystem layout
+* Contain all Red Hat, third-party and custom software required on all systems
+* Contain all configuration settings required on all systems
+* Typically include basic hardening
+
+
+=== Core Build Recommendations
+
+
+Typically, a core build is created during server provisioning by using kickstart technology. Most of the core build characteristics are therefore created while you are defining your provisioning (documented in the next chapter: Step 6: Automate your Provisioning). This section focuses on the content portions of the core build. These include the applicable content views and Puppet modules.
+
+The following diagram describes the relationship between (basic) provisioning, the core build and the applications running on top of the core build:
+
+
+
+The software and configuration deployed to your target systems during provisioning are part of the core build. As a result, the *software and configuration set used during provisioning must be smaller than the core build definition*.
+
+We recommend that you use the *smallest possible software and configuration set for provisioning* and the *smallest common denominator of all systems to define the core build*.
+
+In our scenario we’re using the @Core package group inside the provisioning template and some sample Puppet modules to install all additional packages which are part of the core build. If we extend the package set later, we do not need to reprovision our existing servers since the Puppet module will be applied to all existing and upcoming servers. The final core build configuration, including all the applicable Puppet modules, are associated with a *dedicated config group*. This config group will be associated with all corresponding host groups in step 7.
+
+Although *provisioning the configuration does not have a life-cycle management* component, the *lifecycle of the core build* is managed using the Satellite 6 *content view lifecycle management*. For more information about content view lifecycle management, see Step 9.
+
+The core build provides the foundation (operating system) of all your Red Hat Enterprise Linux systems and might also contain packages / dependencies for some of the applications running on top of the core build. As a result, you *should* *update it quite frequently*. For further information, see also the application and core build life-cycle management example in Step 9.
+
+Because of Red Hat’s ABI/API Commitment (explained earlier), the associated risk of making software changes to Red Hat Enterprise Linux is comparatively small. We recommend that you *do not postpone updating your software.* Instead, you should *invest in testing and rollback capabilities*.
+
+If Satellite 6 is used to manage just the *operating system but not the applications* running on top of it, it might make sense to use *composite content views* instead of content views for defining a core build. This approach would let you manage all (Puppet) configurations within a dedicated content view to support individual release cycles for fast-changing configurations and (mostly slow changing) software content.
+
+The following system-specific adaptations should be *made outside* the core build definition (inside the parameter-based, application-specific or host-group-specific definitions):
+
+* location, datacenter, region or country-specific adaptations (for example, keyboard layout, timezone, etc.)
+* lifecycle-stage-specific adaptations (The core build is not supposed to be stage specific.)
+* any application-specific adaptations (These should be part of the application’s content view)
+* any system-specific adaptations (These should be part of the host-group definition.)
+
+As explained earlier, the core build should be *hardware and virtualization technology agnostic*.
+
+Because of the current limitations of the static relationship between hosts and (composite) content views, *additional* content views could *not* be dynamically assigned during provisioning and the life-cycle management of core builds. The *core build content view should contain all required hardware and virtualization drivers* for all target systems.
+
+Nevertheless, you can use kickstart templates and Puppet modules inside the core build to deploy particular hardware or a virt driver *automatically*; these kickstart templates and Puppet modules use dynamic environment detection and content. See Step 7 for more information.
+
+To install the appropriate virtualization drivers we need to configure the following items:
+
+* adding additional software repositories to our core build definitions
+* enabling these repositories using activation keys
+* using a Puppet module to automatically install VMware drivers or RHEV agents depending on Puppet fact values
+
+Typically, core builds do *contain required management software components* (for example, backup, monitoring or scheduling agents). If your management software provides different agents for particular applications (for example, a special monitoring or backup agent for a particular database), the *core build should contain the generic software (agent) and configuration,* whereas the application specific agents and configurations should be part of the application content (view).
+
+*Note:* +
+You may also need to split the repositories because Satellite 6 currently does not let you use the same repositories in multiple content views for a system. In our solution guide setup, our RHEL core build contains software packages for the Bareos backup client and the Nagios monitoring agents.
+
+While defining core builds, you must be aware of *(application) dependencies*. Currently you cannot assign / use the same software repository multiple times in the same system, independent of the content or composite content views (see also section XYZ). This limitation does not allow you to define a very limited content set while you are defining the core build and then add application dependencies inside application-specific content views. In other words, the* core build content definition has to contain all dependencies for all applications* running on top of core build.
+
+*In practice,* this means that we would recommend that you exclude the EPEL repository from the core build. Originally, we used Nagios, which is not included in RHEL but is part of EPEL. At that time, we wanted to use EPEL. Because the monitoring agents needed to be installed on every system, we included the EPEL repository in the core build . If we want to use a filter that restricts the content made available from the EPEL repository to Nagios packages, we would have an issue if a particular application (for example, our ACME website, which is based on WordPress, coming from the EPEL repository) required additional content from the EPEL repo. We cannot assign the EPEL repository more than once (for example, as part of the core build CV and also as part of the ACME Web CV).
+
+We recommend that you use *filters* to restrict content availability, at least for *non-enterprise-grade repositories* like EPEL. This approach may require a new content view version with adapted / enhanced filters each time a new application needs additional packages.
+
+*Note:* +
+Containers make this particular challenge significantly easier. The principle of layered applications (where both apps and their dependencies are in individual layers) significantly reduces the complexity of managing application dependencies.
+
+The core build should also contain the *basic / minimum required hardening* for all systems, including:
+
+* common software package exclusions (for example, network sniffers)
+* common software package inclusions (for example, iptables, IDS software, etc.)
+* a default firewall configuration (for example, only specific ports open like SSH + Satellite 6 required ports)
+* a default SElinux policy (for example, enforcing mode), which might be lifted up for some applications later
+* common policies and hardening configurations
+* tools for policy management and verification (for example, openSCAP)
+
+=== How to Define Your Core Builds
+
+
+==== Method 1: The Easy Approach
+
+The easiest and most common way to define a core build is just to define the absolute minimum of required packages and configurations. And then proceed step-by-step to add the most common configurations as mentioned in section XYZ.
+
+==== Method 2: Start Where You Are
+
+Another approach is to start where you are currently, compare all the existing hosts, and look for similarities, so that you can identify the smallest common denominator. Of course, you can use Satellite 6 capabilities, because Red Hat Satellite can provide all the necessary information about the software and configurations of your hosts.
+
+To see a list of all currently installed packages using the Satellite 6 WebUI:
+
+. go to Hosts -> All Host and select one host.
+. Click on the Content button on the top left.
+. Select the Packages tab.
+
+*Note:* +
+As an alternative, you can use the Satellite 6 REST API to get a list of all installed packages of a host. At the time of this writing, Hammer CLI does not support this action.
+
+Some packages that are not part of all system definitions might be worth installing on all systems (especially if the associated risk classification of these packages is low). For example, if only a particular group within your organization is using vim-enhanced instead of the pure vi package, you might consider adding vim-enhanced to all systems.
+
+Keep in mind that the goal of defining core builds is to reduce the absolute number of derivatives in your software architecture. Of course, this approach is also valid for the application and platform standardization we cover in the next section.
+
+=== Core Build Naming conventions
+
+
+Based on the two-layer segregation-of-duties concept explained earlier, we distinguish between the operating system (core build) and any applications running on top of it. We use the strings ‘os’ and ‘app’ to make this distinction. Our core build definitions reflect a particular RHEL release (major and minor), even if the minor release is the latest and greatest. We recommend that you have both major and minor releases of RHEL and that you build RHEL-independent content views for the applications running on top of RHEL. Even if technically feasible, we’ve decided not to use an aggregated core build definition across RHEL major releases (only feasible if a content view is used for multiple RHEL releases). A composite content view consisting of multiple RHEL core build variants is not possible in our scenario because of the overlapping Puppet modules.
+
+Since most of our application content views are RHEL-independent and do not use the optional version or release tag, we’re adding it here to divide our different core builds.
+
+This approach leads to the following naming convention definition for our core build content views:
+
+|===
+|cv-os-rhel  - < 7Server | 6Server >
+
+|===
+
+In most customer environments, some applications need to remain on an older minor release version of Red Hat Enterprise Linux (usually because of certification and support contract provisions). Typically, these are proprietary applications from big software vendor companies. In some cases, this restriction is more a contract-related than a technical risk due to Red Hat’s ABI/API Stability Commitment (see chapter XYZ for further details). In these cases, we recommended you create an additional core build based on a particular minor release version of Red Hat Enterprise Linux. Instead of using 7Server or 6Server, the naming convention for the core build for these legacy applications would specifically look like this:
+
+|===
+|cv-os-rhel  - < 6.3 | 7.0 >
+
+|===
+
+An additional option can be to have a nightly build that would use the creation date or something similar as the core build release version:
+
+|===
+|cv-os-rhel  - < 20150519 | Q2CY2015 >
+
+|===
+
+This solution guide does not use these special types of core builds.
+
+=== Core Build Software Repositories
+
+
+As stated earlier, core builds define the smallest common denominator for software and configurations shared across all (or at least most) of your systems. Because Satellite 6 cannot reuse the same repositories in two content views assembled together into a composite content view (see also the Content View Recommendations section), our core build does *not include* repositories used by *application-specific content views *(especially if these views require different filters). We do *not include the following repositories *even if they are part of the enhanced set of software repositories belonging to the Red Hat Enterprise Linux product (excluding the Red Hat Software Collections, which is shipped as a dedicated product):
+
+* Red Hat Enterprise Linux Extras
+* Red Hat Enterprise Linux Optional
+* Red Hat Enterprise Linux Supplementary
+* Red Hat Software Collections
+
+Our core builds consist primarily of software packages that are part of the Red Hat Enterprise Linux base repository. We’re also adding some non-Red Hat repositories, primarily common tools used for system management (backup, monitoring) purposes. We are adding the following software repositories to our core build:
+
+* Red Hat Enterprise Linux Server RPMs (base operating system)
+* Red Hat Enterprise Linux Server Kickstart (required for provisioning)
+* Red Hat Satellite 6 Tools (client tools used in conjunction with Satellite 6)
+* Zabbix Repository (includes the Zabbix monitoring agents)
+
+Additionally we are adding the following repositories depending on the virtualization platform:
+
+* in case of *Red Hat Enterprise Virtualization*
+** RHEL7: Red Hat Enterprise Linux Common RPMs
+** RHEL6: Red Hat Enterprise Virtualization Agents for RHEL 6 Server RPMs
+* in case of *VMware vSphere*
+** RHEL6: VMware Tools Repository for RHEL6
+** RHEL7: - *nothing* (included in RHEL7) -
+
+The following hammer commands create the core build content view and add the repositories belonging to our RHEL7 core build:
+
+|===
+|hammer content-view create --name "cv-os-rhel-7Server" \
+
+|===
+
+We are also using an exclude filter to filter out particular packages that we do not want to make available to our target hosts. As an example, we are excluding the emacs packages (although there is nothing wrong with emacs). To reduce the number of available packages inside your core build, you can also exclude *entire* package groups instead of just individual packages.
+
+The following hammer command creates the filter and filter rule.
+
+*Note:* +
+Untilhttps://bugzilla.redhat.com/show_bug.cgi?id=1228890[https://bugzilla.redhat.com/show_bug.cgi?id=1228890[ ]]https://bugzilla.redhat.com/show_bug.cgi?id=1228890[BZ#1228890] is fixed you, need to use the repository ID instead of its name.
+
+|===
+|# exclude filter example using emacs package
+
+|===
+
+
+Before publishing our content view, we must add the required Puppet modules that belong to our core build.
+
+=== ACME Core Build Sample Puppet Modules
+
+
+The following section provides some basic examples of Puppet modules used in this solution guide. Since it covers only basic examples and not all of them are the best ways to tackle a particular problem with Puppet, experienced Puppet users might want to skip this section.
+
+Starting with Satellite 6.1, Red Hat has included a dedicated Puppet Guide as part of the Satellite 6 product documentation.
+
+As explained in the core build recommendations section, we are adding some sample Puppet modules to achieve the goals of our core build configuration described earlier. This solution guide uses the following sample Puppet modules:
+
+* A module ‘motd’ to manage the message of the day file in /etc/motd
+* A module to install additional rpm packages called ‘corebuildpackages’
+* A module called ‘ntp’ to set the right ntp servers, depending on the location or lifecycle environments, since we’re using different ntp servers in some of them
+* A module called ‘loghost’ to configure rsyslog remote logging (client option)
+* A module called ‘zabbix’ to configure the Zabbix monitoring client
+
+==== Sample Puppet Module for /etc/motd File
+
+
+To demonstrate a typical Puppet module lifecycle in Satellite 6, we’re starting with a simple Puppet module for managing the /etc/motd file . Any user on any system could take the following steps.
+
+*1. Create an initial Puppet module* that creates a metadata template for us.
+
+|===
+|$ puppet module generate acme-motd
+
+|===
+
+*2. Define file attributes and the templates* to use. We adapted the file acme-motd/manifests/init.pp to make it look like this:
+
+|===
+|class motd {
+
+|===
+
+*3. Create a template *and adapt it using some basic Puppet facts. This step demonstrates how to use certain variables.
+
+|===
+|-------------------------------------------------
+
+|===
+
+*Note:* +
+For more information about using Puppet facts, go to:  https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html/User_Guide/sect-Red_Hat_Satellite-User_Guide-Storing_and_Maintaining_Host_Information.html#sect-Red_Hat_Satellite-User_Guide-Storing_and_Maintaining_Host_Information-Using_Facter_and_Facts[https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html/User_Guide/sect-Red_Hat_Satellite-User_Guide-Storing_and_Maintaining_Host_Information.html#sect-Red_Hat_Satellite-User_Guide-Storing_and_Maintaining_Host_Information-Using_Facter_and_Facts]
+
+*4.* *Build* the Puppet module:
+
+|===
+|puppet module build acme-motd
+
+|===
+
+Once you have successfully built the Puppet module, you can find the resulting module package in tar.gz format inside the acme-motd/pkg folder.
+
+==== Sample Puppet Module for Additional RPM Packages
+
+
+As explained inside the core build recommendations section, the software definitions inside the provisioning templates should contain only the *minimal required set of packages*. Additional software packages can be maintained inside the core build content view to make it easier to *adapt the software definition of all hosts without reprovisioning* or manual installing new or additional packages in all existing hosts.
+
+We are using a very simple Puppet module that contains just the few additional packages we want to see installed on all our hosts.
+
+The array inside the manifest contains four additional packages and can be overridden by using the Ifa Red Hat Satellite 6 Smart Class Parameter.
+
+|===
+|class corebuildpackages (
+
+|===
+
+More documentation for this sample Puppet module is in Appendix I.
+
+==== Sample Puppet Module for the ntp Configuration
+
+
+As a second example, we’ve created a module that uses ntp to configure the time synchronization of all the systems. This example uses *Satellite 6 Smart Variables*.
+
+This module:
+
+* Installs the ntp rpm package
+* Starts the ntp daemon
+* Enables the ntp daemon for autostart
+** The ntp daemon is restarted automatically if the configuration is changed.
+* Configures ntp to synchronize either a single server or a list of servers
+** This configuration is done with a template.
+** It uses “pool.ntp.org” as default, but it can be overridden with Smart Class Parameters.
+
+More documentation for this sample Puppet module is in Appendix I.
+
+==== Sample Puppet Module: Zabbix Monitoring Agent Configuration
+
+
+This sample module installs the required monitoring agent packages and starts and enables the corresponding zabbix-daemon. In addition to earlier examples, we’ve used the ‘latest’ definition inside the packages section of this module to demonstrate the impact of this configuration. Using the ‘latest’ option inside a Puppet module, the corresponding packages will be automatically updated during the next Puppet run if the new content view version containing an updated version of this package has been promoted to the life-cycle environment the target system lives in. There is no further action required to update this particular package using the WebUi or CLI or API.
+
+For further documentation about this sample Puppet module, see Appendix III.
+
+==== Sample Puppet Module for rsyslog Configuration (here: client)
+
+
+As an example for a multi-purpose Puppet module, we’ve created a sample module to manage the rsyslog log management configuration. We are using the same module to manage both the client and server configurations but are using different Puppet classes for them. +
+Because the client configuration should be deployed on all hosts and is therefore part of the core build definition, we’ve added the module to the core build content view.
+
+*Note:* +
+As explained in the content view recommendations section, if the same module is part of multiple content views, you cannot assemble more than one of them together into a composite content view. Therefore, the loghost server content view (see Step 6) does not contain this multi-purpose module because it is already part of the core build content view.
+
+More documentation for this sample Puppet module is in Appendix III.
+
+==== Puppet Labs Modules stdlib and concat
+
+
+Since we are using some modules fromhttps://forge.puppetlabs.com[https://forge.puppetlabs.com[ ]]https://forge.puppetlabs.com[Puppet Labs] for our applications we have added to common dependency modules to our core build definition:
+
+* https://forge.puppetlabs.com/puppetlabs/stdlib[stdlib module] (standard library of resources for Puppet modules)
+* https://forge.puppetlabs.com/puppetlabs/concat[concat module] (to construct files from multiple fragments of text)
+
+Therefore we download and push them into the ACME Puppet repository using hammer CLI:
+
+
+|===
+|# download and push into custom puppet repo the puppetlabs modules we need
+
+|===
+
+
+==== Adding All Core Build Puppet Modules to the Core Build Content View
+
+
+The following hammer commands add the Puppet modules explained above to our RHEL7 core build content view:
+
+|===
+|for module in 'motd' 'ntp' 'corebuildpackages' 'loghost' 'zabbix' 'vmwaretools' 'rhevagent' 'stdlib' 'concat'
+
+|===
+
+
+
+=== Red Hat Satellite 6 Config Groups
+
+
+Config Groups let you associate multiple Puppet classes to a host group or to a single host. These are usually used to define profiles (for example, to configure an entire application stack).
+
+Config Groups are not specific to an environment, so all Puppet classes that are available under _Configure  _➤ _Puppet classes _can be assigned to a Config Group.
+
+*Note:*
+
+* Be aware that Puppet classes assigned to a Config Group may not be available in the environment where a host is placed. This issue can result in the host not being able to consume that particular Puppet class.
+* Puppet classes that are not available to a host assigned from a Config Group are _greyed_ out.
+
+Changes made on a Config Group are automatically changed for every Host Group that uses that Config Group, meaning that a change only needs to be made in a single place (and not multiple places) where the same Puppet classes are used.
+
+==== Naming Conventions
+
+
+We are using the prefix _cfg _to mark all config groups; you can use any text you prefer after cfg-.
+
+|===
+|cfg - < name >
+
+|===
+
+==== Core Build Config Group
+
+
+We create a Config Group called _cfg-corebuild _that will be assigned to *every* host group. The _cfg-corebuild_ Config Group uses the following Puppet classes for the corebuild configuration of a host:
+
+* ntp
+* motd
+* zabbix
+* git::client
+* loghost::client
+* corebuildPackages
+* rhevagent
+* vmwaretools
+
+To create the Config Group, go to:
+
+. _Configure   _➤ _Config groups   _➤ _New Config Group_
+. Insert the Name: _cfg-corebuild_
+. From available classes select the corresponding Puppet classes from the list above
+. Click on _Submit_
+
+
+
+*Note:* +
+The required dependencies _stdlib_ and _concat_ have not been added to these config groups. However, you still need to ensure that they are inside the same Puppet environment. This is automatically done since they are part of the same content view.
+
+=== Publishing and Promoting the Core Build Content Views
+
+
+After we’ve added all required software repositories and Puppet modules belonging to our core builds, we can finally publish them and promote using our default life-cycle environment path (consisting of Dev -> QA -> Prod stages).
+
+To publish and promote these content views:
+
+. Click on the blue Publish New Version button.
+. Provide a description.
+. Click Save.
+The content view will be published.
+
+
+
+We need to wait until the publishing step has been completed before promoting it to the Dev stage.
+
+*Note:* +
+If you get an error message “Validation failed: Puppet environment can't be blank” while publishing a content view you need to run the following command to fix this:
+
+|===
+|foreman-rake console
+
+|===
+
+
+
+
+The same requirement applies if hammer CLI is used to publish and promote a content view. Therefore, we’re not using the hammer --async option while publishing.
+
+To promote a content view using hammer CLI, you must have an additional option: the content view version ID (in the example below: 28).
+
+*Note:* +
+C_ontent view ID_ and _content view version ID_ are *two different items*. Look at the following output of the hammer command (in this example, we already have two versions published, and we’re using the base output format for better readability):
+
+
+|===
+|hammer --output base content-view list --name cv-os-rhel-7Server --organization ACME
+Content View ID: *3
+*Name:            cv-os-rhel-7Server
+Label:           cv-os-rhel-7Server
+Composite:
+Repository IDs:  1, 2, 3, 10, 9
+
+hammer --output base content-view version list --content-view-id 3
+ID:                     *28
+*Name:                   cv-os-rhel-7Server 2.0
+Version:                2.0
+Lifecycle Environments: Library
+
+ID:                     3
+Name:                   cv-os-rhel-7Server 1.0
+Version:                1.0
+Lifecycle Environments:
+
+
+|===
+
+
+To publish and promote our RHEL7 core build content view using the most current version of the content view using hammer, you must execute the following commands:
+
+|===
+|hammer content-view  publish --name "cv-os-rhel-7Server" --organization "$ORG"
+
+|===
+
+Now we have successfully created our RHEL7 core build. You can create, publish and promote the entire RHEL6 core build in a similar fashion by using the following hammer commands:
+
+|===
+|hammer content-view create --name "cv-os-rhel-6Server" \
+
+|===
+
+
+*Notes:*
+
+* For legacy applications that require a *dedicated and usually older minor release version of Red Hat Enterprise Linux* (due to ISV-specific support or certification limitations) you might want to create an additional dedicated core build variant. We do not cover this operation here, because the procedure is similar to the examples above.
+* We did *not create a composite content view containing all core build content views,* because we are using the same Puppet modules in multiple core build content views. As a result, we could not assemble them together.

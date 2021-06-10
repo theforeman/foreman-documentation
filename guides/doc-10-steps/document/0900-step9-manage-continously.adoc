@@ -1,0 +1,343 @@
+<<<
+== Step 9: Manage the Content Lifecycle Continuously
+
+
+This section focuses on lifecycle management over time. This section assumes that:
+
+* All recently created content and composite content views are in place.
+* The hosts associated to these composite content views are up and running.
+* Our nightly content-synchronization plan ensures that Red Hat and third-party software repositories are updated continuously.
+
+=== Red Hat Errata Overview
+
+
+Software changes to most Red Hat products are delivered via individual updates known as errata advisories (through the Red Hat Customer Portal or other authorized portals). Errata advisories can be released individually on an as-needed basis or aggregated as a minor release. Red Hat has three different update types:
+
+* Red Hat *Security* Advisory (RHSA)
+* Red Hat *Bugfix* Advisory (RHBA)
+* Red Hat *Enhancement* Advisory (RHEA)
+
+In addition, security errata are classified into 4 different impact levels following the Common Vulnerability Scoring System (CVSS) scoring model:
+
+* Critical Impact
+* Important Impact
+* Moderate Impact
+* Low Impact
+
+The following links provide further details about these topics:
+
+* Issue Severity Classification:https://access.redhat.com/security/updates/classification[https://access.redhat.com/security/updates/classification[ ]]https://access.redhat.com/security/updates/classification[https://access.redhat.com/security/updates/classification]
+* Red Hat Security Data Metrics:https://www.redhat.com/security/data/metrics/[https://www.redhat.com/security/data/metrics/[ ]]https://www.redhat.com/security/data/metrics/[https://www.redhat.com/security/data/metrics/]
+* Red Hat CVE - Errata Database:https://access.redhat.com/security/cve/[https://access.redhat.com/security/cve/[ ]]https://access.redhat.com/security/cve/[https://access.redhat.com/security/cve/]
+
+Red Hat Errata are part of the content set within the Red Hat repositories, similar to RPM packages, kickstart trees, and installation images. They are synced with Satellite 6, along with its associated packages, during repository sync. In our solution guide, they are synced every night at 3 a.m. using the sync plan defined in Step 3 “Define your Definitive Media Library Content.”
+
+=== Content Change Reporting
+
+
+If you want to see how many new packages have been synced during the daily / night sync, you can check by using the the synchronization status overview: Content -> Sync Status. The following screenshot provides an example of what happens when content changes. In this particular scenario, only the Satellite 6 Capsule Beta repository has changed, and the Red Hat Software Collections for RHEL have remained unchanged. (Because we wrote the document before Satellite 6.1 GA, the example uses a beta repository.)
+
+
+
+
+=== Errata Notification Emails
+
+
+Synchronization notification emails can be configured for each user. To configure emails:
+
+. As a Satellite Administrator, navigate to Administer → Users
+. Click the username of the user you want to edit.
+. On the Mail Preferences tab, select Mail enabled to enable updates.
+. Select the type of notifications the user will receive.
+
+*Note:*
+
+* To receive notifications about changed content sets after synchronizing a repository, select the ‘Satellite sync errata’ notification item.
+* If you create a new user, you will not be able to see the checkboxes for these three different notifications until you’ve submitted the new user and reselected him.
+
+=== Satellite 6 Content Dashboard and Errata Overview
+
+
+Satellite 6 Content Dashboard provides an overview that includes both sync status and errata overview widgets. In addition, under Content -> Errata, you can see a detailed list of errata and the affected content hosts.
+
+=== Satellite 6 Errata Management Overview
+
+
+Red Hat Satellite provides tools to inspect and filter errata, allowing for precise update management. This way, you can select relevant updates and propagate them through content views to selected content hosts.
+
+In Red Hat Satellite, two keywords describe errata with regard to their relationship to the available content hosts:
+
+* Applicable: errata applies to one or more content hosts, which means it updates packages present on the content host. Applicable errata are not yet accessible by the content host.
+* Installable: errata applies to one or more content hosts and it has been made available to the content host. Installable errata are present in the content host’s life cycle environment and content view, but are not yet installed. This way, errata can be installed by users that have permissions to manage content hosts, but are not entitled for errata management at higher levels.
+
+The following section explains different scenarios and how to fulfill these using Red Hat Satellite 6.
+
+*Note:* +
+Currently, Errata are only available for Red Hat Products (and the EPEL repository). Third-party software and custom software usually do not ship errata, and custom errata are not in Satellite 6 yet. This limitation primarily affects “Use Case 4) Incremental Updates - Applying Selected Errata to Hosts” in this Step. All other use cases work for all software sources.
+
+=== Use Case 1) Updating the Core Build
+
+
+During step 5 we defined our different core builds (shared content sets used by all hosts). Primarily the core build contains a core set of packages that are part of Red Hat Enterprise Linux as the operating system. *Errata affecting one or more core builds automatically affect a huge number of systems.* Therefore, these updates are more critical than those that affect only a small subset of systems.
+
+In this scenario we assume that all Puppet configurations remain unchanged. Only the software packages inside the content view *for the core build *are updated. We will cover changes to Puppet configurations in another scenario. For more recommendations about Puppet-related changes, see “Use Case 5) Adding a New Puppet Module to an Existing Content View” in this Step.
+
+The core build content view has the following end-to-end update cycle:
+
+. Update the core-build content view.
+. Update the affected composite content views.
+. Promote the composite content views through the appropriate lifecycle stages.
+. Update the host(s) that belong to the host groups.
+
+==== 1. Update the Core Build Content View
+
+
+Satellite updates its software repositories every night by using the sync planes created during Step 1. To apply all content available at a certain time, publish a new content view version; all content that has been synchronized into Satellite since the last time this content view was published is now automatically added to its content. When we say “automatically,” we means that the total number of packages and errata in the updated content view will be higher than in the old version, _if the content has changed._ (Red Hat repositories grow continuously because we do not remove packages, but only add newer ones).
+
+To update the Core Build Content View:
+
+. Go to Content -> Content View
+. Select the core build content view ‘cv-os-rhel-7Server’
+. Click the Publish new version button.
+. Enter an appropriate description (for instance, ‘unfiltered content update May 26th 2015’, and click Submit.
+The new content view version is published. You should see a higher number of packages.
+
+After we’ve successfully updated the core build content view for RHEL 7, we can promote through the dedicated lifecycle environment path used by IT Operations (DEV->QA->PROD) and execute the associated tasks associated to this environment or lifecycle stage (primarily testing).
+
+The following hammer commands publish and promote the newest version to stage Dev:
+
+|===
+|hammer content-view publish --name "cv-os-rhel-7Server" --organization ACME
+
+|===
+
+
+*Note:* +
+Until you have updated the composite content views that contain the RHEL 7 core build content to the current version, all operations executed previously have no impact on the applications running on top of the core build.
+
+==== 2. Update the Affected Composite Content Views
+
+
+To make the content change relevant to applications and hosts using the RHEL 7 core build, we need to update the corresponding composite content views now. First we need to figure out which composite content view is using our recently updated core-build content view.
+
+Using the Web UI, you need to investigate each composite content view to identify if it is using the core build content view we’re looking for:
+
+. Click on Content -> Content Views.
+. Select a composite content view.
+. Click on the Content Views tab to see the inherent content views inside.
+ (Each Content View that uses our RHEL7 Core Build needs to be updated.)
+. Click the Edit button next to the version of the core-build content view, and select our new version.
+. Click on Publish New Version.
+After you have successfully published the composite content view, you can promote it to the next lifecycle stage.
+
+TODO hammer script
+
+*Note:* +
+In future releases of Red Hat Satellite, you might have the option to automatically use the latest version of a content view inside a composite content view. The corresponding RFE for this feature is here:https://bugzilla.redhat.com/show_bug.cgi?id=1177766[https://bugzilla.redhat.com/show_bug.cgi?id=1177766[ ]]https://bugzilla.redhat.com/show_bug.cgi?id=1177766[https://bugzilla.redhat.com/show_bug.cgi?id=1177766]
+
+==== 3. Promote the Composite Content view Through the Corresponding Lifecycle Stages
+
+
+After successfully publishing the composite content view, you must promote it through the corresponding lifecycle environment path. As mentioned in previous Steps, you do not need to promote the the inherent content views, because the *entire* content of the composite content view is promoted. This is also true in conjunction with capsules, in cases where capsules are associated to particular lifecycle environments (for example, in our case, the stages ‘Web-DEV’ and ‘Web-QA’ are associated to the capsule in the Boston location).
+
+==== 4. Update All Affected Hosts That Belong to the Corresponding Host Groups
+
+
+After you have successfully promoted the composite content view to further lifecycle environments, the content automatically becomes available to all host (groups) associated to this (composite) content view and lifecycle environment.
+
+If you click on Hosts -> Content Host, you can see a list of all Satellite 6 managed hosts, including the installable errata available to these hosts.  In the example below, you can see several errata in our new version of the content view. These errata are available to the third host corebuild-testsrv7.dmz.example.com.
+
+
+
+After selecting this host and clicking on the Errata tab, we can also see a list of these installable errata. Note that we left the “Show from” selection as “Current Environment.” As a result, we see the 24 errata in total that are installable to this host.
+
+
+
+
+To demonstrate the difference between installable and applicable errata, we now change the “Show From” list to “Library Synced Content.” *The number of available errata increases from 24 to 31.* This change means that there are 7 additional errata in the Library that are not part of the content view version in this environment (Prod).
+
+
+
+
+
+
+Because we plant to describe the applicable errata in “Use Case 4) Incremental Updates - Apply Selected Errata to Hosts,” let’s change the Show from field back to “Current Environment”. Now we can select particular errata or all 24 errata at the same time. After you select all and click on “Apply Selected,” Satellite 6 asks if you are sure.
+
+
+
+Click Apply.  You will see a progress bar and a list of the errata that are currently applied to the selected host. If the operation has been successfully completed, go back to the Hosts -> Content Hosts overview page. Now all 3 test systems have no remaining installable errata. The systems updated to their current content view version in this lifecycle environment.
+
+=== Use Case 2) New Version of the Application CV with an Unchanged Core Build
+
+
+Use Case 2 is similar to the core build scenario explained above. The same steps apply except for those involving the application content view:
+
+. Update the application-specific content view
+. Update the affected composite content views
+. Promote the composite content view through the corresponding lifecycle stages
+. Update your host belonging to the host groups
+
+In our ACME scenario, we assume that the dedicated owners of the application stack layer perform these operations. See Step 8 for further details.
+
+=== Use Case 3) Core Build and Application CVs Updated Simultaneously
+
+
+In this scenario the release unit is the full application stack. All software components are updated at the same time. The procedure now includes updating all inherent content views. The order in which you update the core build and the application-specific content view doesn’t matter. The procedure has these steps:
+
+. Update the core-build content view
+. Update the application-specific content view
+. Update the affected composite content views
+. Promote the composite content view through the corresponding lifecycle stages
+. Update the host belonging to the host groups
+
+
+=== Use Case 4) Incremental Updates - Apply Selected Errata to Hosts
+
+
+The three previous scenarios start with the content and then move to the target hosts. Satellite 6.1 provides an additional way to update servers by starting from a host and then moving to the content. The overview page under Content -> Errata lists all errata available to certain hosts in your environment. As explained earlier, this page shows both applicable and installable errata. In these previous scenarios, we updated the content views and made the content available to the affected hosts. We selected ‘Installable’ and unselected ‘Applicable’ to show only the updates managed by our recently updated content views.
+
+In this use case, we did not update the content views but instead applied (critical) errata to the affected hosts.  Satellite 6 automatically creates, publishes, and promotes a new content view *minor* version to the lifecycle environments with which the host (group) is associated.
+
+Instead of using the Errata overview under Content -> Errata, start with Hosts -> Content Hosts. In the third column “Installable Errata,” you can see the errata that are available but have not yet been installed on this particular content host. You can see the type of errata (RHSA, RHBA, RHEA) and the total number of available errata of each type.
+
+Because Use Case 1) already describes how to apply installable errata, we’re going to assume that you no longer have installable errata and your screen looks like this:
+
+
+
+
+
+If we now change the Show From list to “Library Synced Content,” we can see a single security errata in the Library. But this errata is not yet in the content view version in this lifecycle environment. In contrast to the procedure in Use Case 1), we cannot select and apply this errata, because it is not in the content view version.
+
+
+
+The link in this information points to the Content -> Errata overview page. If we click the link and use the filter to display just this particular Red Hat Security Advisory, we can now select this errata.
+
+
+After clicking Apply Errata, we can see a list of the content hosts affected by this errata. In this scenario, 7 hosts are affected. We select the most critical one, our production Satellite 6 capsule server, and then click Next and Confirm.
+
+After we have successfully completed the incremental update, the details screen shows which content views have been affected:
+
+
+
+This operation has actually performed the following tasks:
+
+. Created a new minor version 1.1 of the core-build content view, cv-os-rhel-7Server, where the openssl packages are part of the repositories inside this content view.
+. Created a new minor version 2.1 of the composite content view, ccv-infra-capsule, which is the composite content view associated with this host within this host group
+. Promoted the content view to the PROD lifecycle environment, where the selected host is located
+
+The difference between the composite content view *version 2.0 *and the newer *version 2.1* are the five packages associated with this errata as listed in the previous screenshot. While the former CV version 2.0 contains only 14091 packages, the new minor version 2.1 contains all these plus the 5 new packages (14096).
+
+
+
+
+*Warning:* +
+When you go to a host and update it with errata, be sure to select the *host and content view* checkbox. Otherwise, even if you select particular errata and specific hosts to update, each update creates a new minor version of the associated content view or composite content view. The incremental update management creates, publishes, and promotes a new minor version of the affected content or composite content view. *All host groups and hosts associated to this content view and lifecycle environment now have access to this new content at the same time. The content is not limited to the hosts originally selected for this operation*.
+
+=== Use Case 5) Adding a New Puppet Module to an Existing Content View
+
+
+The biggest difference between the software package changes in the previous scenarios and the Puppet configuration change in this use case is that *each Puppet change automatically implies a software change at the same time, if the software repositories have changed*. See the Content View Best Practices chapter for more details.
+
+==== Our Solution Guide and Dedicated Content Views
+
+In this solution guide, *we are not using dedicated content views for Puppet configuration*. Our setup follows this process:
+
+. You make a change to the Puppet configuration
+. That change is published automatically to the content view. All software packages synced to Sat6 since the last time the content view was published are now part of that content view.
+In our opinion the advantages of our setup outweigh the disadvantages. Stalled software changes would only postpone the potential issues, not solve them.
+
+==== Adding a New Version or a New Class
+
+The following procedures are the same for these similar use cases:
+
+* Adding a *new version *of an existing Puppet module
+* Adding a *new class* inside an existing Puppet module
+
+You would take these basic steps to perform one of these use cases related to Puppet module changes: +
+(These steps assume the new (version of a) Puppet module is already pushed or synchronized into the custom *Puppet* repository. See Step 3 for further information.)
+
+. Add the new Puppet module or change the version (if not set to _Latest_) of an existing module inside the content view, and publish the new version of the content view (core build or application specific). (Make these changes on the Puppet Modules tab.)
+. Update the affected composite content views.
+. Promote the composite content view through the corresponding lifecycle stages.
+. _Optional:_ Add the new Puppet classes to a config group.
+. Add the new Puppet classes to all host groups with which the adapted CV is associated.
+
+These additional steps are required only if you add new Puppet modules or new classes to existing modules.
+
+The following sections provide more details about each of these steps.
+
+===== 1. Add a New Puppet Module or Adapt an Existing Version
+
+Before you can add a new module or select a newer version of it, the module must be pushed to or synced with Red Hat Satellite. See Step 3 for further details.
+
+*If it is an existing module and the Puppet module version inside the content view has been set to latest, *you do not need to adapt the version of this module on the Puppet Module tab of the content view.
+
+If it is a *new module* (either in a particular content view or in general), you need to add this Puppet module initially to this content view:
+
+. Click the Puppet Modules tab inside the content view.
+. Click the Add New Module button.
+ A (potentially long) list of all Puppet modules available in Satellite displays.
+. Use the filter field to make it easier to find the module.
+. Click the Select Version button of the module you want to add.
+ A new page that contains all available versions of the module displays
+. You can either:
+** Select a particular version
+ -or-
+** Set it to Use Latest.
+
+*Note:* +
+If you set it to *Use Latest, *a newer version of the Puppet module** **automatically** **becomes part of the content view if the content is published. Each time a new content view version is published and *if there is also a newer version of the Puppet module* available, the newer version of the module automatically becomes part of the new content view version.
+
+If the newer version of the module contains new Puppet classes, you do not need to do anything else. The *content view manages the entire Puppet module, including all its inherent classes*. However, if you create a new class, you must take an additional step in the host group and / or make adaptations to the config group as explained in the next section.
+
+===== 2. Update the Affected Composite Content Views
+
+This step is similar to updating composite content views in the previous use cases. You can take the same basic steps as in “1. Add a New Puppet Module or Adapt an Existing Version.”
+
+===== 3. Promote the Composite Content View Through the Corresponding Lifecycle Stages
+
+In earlier use cases in this section, we explain how to promote a composite content view through the corresponding lifecycle stages. You can take the same basic steps here.
+
+As a part of content view creation and promotion, Red Hat Satellite 6 automatically creates a new Puppet environment for each combination of a content view and a lifecycle environment. This Puppet environment should n7ow contain our module. You can view this new Puppet environment on the Configure → Environments page.
+
+*Tip:* +
+If you have successfully imported a Puppet module, added it to the content view and promoted the content view through lifecycle stages but can’t see the module inside the corresponding Puppet environments you might have a typo inside your Puppet module. If you can see the module inside the same Puppet environment on the filesystem on Satellite 6 server in _/etc/puppet/environments_ but not using the WebUI on Configure -> Environments a typo inside the Puppet could be the cause. In our case a missing comma at the end of a line led to this scenario.
+
+==== 4. Optional: Add the New Puppet Classes to a Config Group
+
+In Step 7 we created some config groups. Though config groups are not mandatory, they make it easier to manage an increasing number of Puppet modules and their inherent classes. Instead of selecting individual Puppet classes inside a host group or while provisioning new hosts, you can assemble different classes into a config group. This process makes it easier to assign host groups and hosts.
+
+*Notes:*
+
+* If you are *creating a new Puppet module or a newer version of a module* that contains new Puppet classes,** **you need to adapt the associated config groups.
+* If you *make changes to an existing *Puppet class*, *you do not have to adapt config group.
+
+==== 5. Add the New Puppet Classes to All Host Groups with Which the Adapted CV is Associated
+
+
+The same basic rules apply for host groups as for config groups:
+
+* If you are *creating a new Puppet module or a newer version of a module *that contains new Puppet classes, you need to adapt the associated host groups.
+* If you *make changes to an existing *Puppet class, you do not have to adapt the host group.
+
+To adapt a host group’s association:
+
+. Go to Configure -> Puppet Classes.
+ To the right of each Puppet class, you see the currently associated host groups. If we assume that we are talking about a new class (in an existing or as part of a new Puppet module), the list of host groups should be empty at this time.
+. Click on the Puppet class name.
+. On the new screen, select the host groups to which the Puppet class should be assigned..
+. If you are using Smart Class Parameter or Smart Variables in the module, select the corresponding tabs and adapt accordingly.
+. Click Submit.
+ The Puppet class is now associated with the corresponding host groups.
+
+*Warning:* +
+Once you click Submit, no further action is required for the target systems. All changes are immediately available to the corresponding client systems. By default all the client systems should be updated with these changes in the next 30 minutes (this is the default interval of a Puppet run, defined inside _/etc/puppet/puppet.conf_ otherwise).
+
+If you want to apply the changes immediately without waiting on the next run, you can log into the host and enforce an immediate run by using the following command:
+
+|===
+|puppet agent --no-daemonize --onetime --verbose;
+
+|===
+
+You can also monitor all changes on the Satellite 6 Dashboard.

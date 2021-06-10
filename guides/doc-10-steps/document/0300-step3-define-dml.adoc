@@ -1,0 +1,575 @@
+<<<
+== Step 3: Define Your Definitive Media Library Content.
+
+
+In a controlled IT environment, it is crucial that only authorized software and configuration versions are used in production. A Definitive Media Library is a repository that stores and protects the definitive, authorized versions of software and configurations. The corresponding change-and-release management process ensures that these configurations are tested and quality-assured before they are deployed to production.
+
+=== Software Entry Points and Formats
+
+Software comes along in various formats. Some of them depend primarily on their associated license models.
+
+The following diagram illustrates a sample software-format lifecyle and highlights some steps that are required *before* Satellite 6 can manage these individual software types:
+
+
+
+
+If we divide the software lifecycle into the 9 steps visualized in the grey chevrons, we can divide it into the following software-entry formats:
+
+* Red Hat software already packaged as rpm and GPG-key signed. This model applies to all Red Hat products in the diagram: Red Hat Enterprise Virtualization, Red Hat Enterprise Linux and Red Hat JBoss Enterprise Application Platform (though all Red Hat products are open source and available as source code or source rpm packages we are focusing on the binary rpm packages here).
+* Software already packaged as rpm and GPG key signed from a 3rd-party vendor
+* Proprietary software which is not available in source-code format but only as binary build, partially not packaged as rpm and GPG-key signed
+* Open source tools available as source code (and usually as binary builds for common operating systems as well)
+* Custom applications usually available as source code
+
+Software that is available as source code and binary format but not packaged as rpm and GPG-key signed *requires additional steps* when being built (resulting format: binaries), packaged (resulting format: rpm), GPG-key signed (resulting format: GPG-key-signed rpm package) and tested before we can import it into Satellite 6 as part of our Definitive Media Library.
+
+=== Satellite Content Types
+
+You can use Red Hat Satellite to manage various content types by using different content formats and entry points. Red Hat Satellite can act as the Definitive Software Library (DSL, ITIL ® v2) as part of the Definitive Media Library (DML, ITIL ® v3), following the ITIL® definition.
+
+We recommend that all content deployed to systems managed by Red Hat Satellite is also stored, maintained and deployed via Satellite.
+
+Red Hat Satellite supports the following types of content:
+
+
+
+. Software packaged and signed as RPM, including both Red Hat and foreign software
+. Software and configurations packaged as Puppet modules
+. Docker container images, including both Red Hat and foreign images
+
+In addition to these deployment content types, Red Hat Satellite manages Red Hat errata updates, kickstart trees, and installation images.
+
+In this document we use software provided by Red Hat and third-party vendors or communities, as well as custom software, to demonstrate how these different software types should be configured/handled differently.
+
+*Note:* +
+All non-Red Hat and custom software used here is not a part of Red Hat Enterprise Linux and does not fall under our Production Support Scope of Coverage. These repositories and packages are considered optional and have not been tested by our quality engineers. More more information about the support coverage of EPEL, see:https://access.redhat.com/solutions/410753[https://access.redhat.com/solutions/410753[ ]]https://access.redhat.com/solutions/410753[https://access.redhat.com/solutions/410753]
+
+=== Satellite Products and Repositories
+
+
+Red Hat Satellite 6 uses Satellite Products to assemble particular repositories that belong to these products together. A product can consist of multiple repositories. In the opposite to content views explained later which are supposed to be user-modifiable products are kind of a master copy of the original repositories. Products are also used to handle subscriptions. For Red Hat software synchronized to Red Hat Satellite 6 the corresponding products are automatically created.
+
+The following diagram illustrates the relationship between Satellite content types, products and repositories based on a section of our ACME scenario.
+
+
+TODO adapt it to current setup o
+
+=== Red Hat Satellite Product and Repository Recommendations
+
+
+If you have custom or third-party software and Puppet content, you must manually create your Satellite Products. Since you can use Products to bundle various repositories that might be split off later into different content views, we recommend that you create *as few Products as possible.*
+
+The *minimum required number of Products is determined by the GPG keys* used to sign the RPM packages inside the repositories. Because you can only assign *one* GPG to a Product, you need to have at least *one* Product for each GPG-key signature.
+
+You can split different versions and architectures of ISV or custom software into different Products, but we recommend that you *bundle all Products and variants of each software within one Product* as long as they use the same GPG key (see above). This bundling is still valid if these different versions and variants are managed by different roles (separation of responsibilities) and might therefore be split into different content views later.
+
+Another *determining factor for the total number of Products are the synchronization plans *(explained later in this chapter). When creating a Product, you can select the appropriate synchronization plan for this product.
+
+When you enable Red Hat repository synchronization (Content -> Red Hat Repositories), Satellite 6 automatically creates the corresponding Products and includes the selected repositories. Unlike custom Products, you cannot modify these *Red Hat Products *(for example, by using a different name or syncing twice). In contrast to Satellite 5, Satellite 6 does not allow you to clone repositories and Products.
+
+Red Hat Satellite Products are used for inherent *Satellite 6 subscription management*. Because subscriptions are mapped to Products instead of Repositories, you could create individual Products for all third-party software, if you want to track their usage on an individual basis. For instance, if you are using different versions of a third-party product that are based on *different contracts and license or subscription fees,* we recommend creating individual products for each of them to better track their license or subscription consumption.
+
+*Note:* +
+*Independent of its license or subscription type, Red Hat and all other Products* (third party and even custom products) and their associated software repositories *need to be managed using the Satellite 6 subscription management*. Each of these Products and repositories needs to be explicitly enabled inside an activation key. Please see the related activation key section in Step 7.
+
+Because you cannot use the same repository inside multiple content views that are stacked together as a composite content view, some scenarios may force you to create *two Products with the same repository* (not shared but actually configured and synchronized twice). For more details, see the EPEL example inside the Content View Recommendations chapter.
+
+If software repositories share the same GPG key and sync plan you can create a *RHEL-major-version-independent product* containing repositories for different RHEL major releases. We’ve create a single Product for Zabbix monitoring software containing both RHEL6 and RHEL7 Zabbix software repositories.
+
+Because products for Red Hat software are created automatically in the next steps, we have to create Products only for third-party software (divided by each vendor) and one Product for all ACME custom software. We also plan to create a single Product for all custom ACME content that contains one more more software (yum) and configuration (Puppet) repositories.
+
+=== Product and Repositories Naming Conventions
+
+
+As stated earlier, we are using a naming convention in this solution guide that better supports automation by enabling filtering and pattern matching. Because Satellite 6 primarily uses Products to track software consumption (such as, license or subscription management),  Product names are not significantly important. As a result, we are using a simple and non-binding naming convention for Products, primarily consisting of the vendor or upstream project name and the product name or purpose. If the product is specific to a particular major or minor release of Red Hat Enterprise Linux (for example, because different GPG keys are used to sign it), we add an optional third segment:
+
+|===
+|< vendor or upstream project > - < product name or purpose > [ - < RHEL release > ]
+
+|===
+
+*Note:* +
+Product and repository names for Red Hat Products and their associated repositories are automatically created based on names defined by Red Hat.
+
+In most cases Product and repositories names have to be used in conjunction (for example, while adding a repository to a content view). Only a few operations are done directly on a repository level (for example, adding a filter rule). +
+*Note:* +
+Even if the name and label of a repository configured as part of the Product have to be unique only inside that particular Product, we are using unique labels for all repositories across products.
+
+Rather than having a strict naming convention for Products and repositories, we have tried to reduce the total number of Products and repositories. If you have a smaller number of custom Products and repositories, the naming convention becomes less important, at least compared to other entities like host groups, content views, or activations, which all occur frequently.
+
+=== GPG Keys for Red Hat, Third-party and Custom Software
+
+
+GPG keys are used by Red Hat and many third-party software vendors to sign rpm packages. They are used to verify the origin and integrity of rpm packages. By default Red Hat Enterprise Linux allows you to install only those rpm packages that are GPG key signed and for which the related GPG key has been imported to the local rpm database.
+
+You can display all GPG keys imported to a system rpm database with the following command:
+
+|===
+|rpm -q gpg-pubkey --qf '%{name}-%{version}-%{release} --> %{summary}\n'
+
+|===
+
+Red Hat Satellite supports GPG-key management, which includes importing and associating the keys to one or more repositories and deploying and importing them into the rpm databases of target systems.
+
+The following subsections describe how to manage the different GPG keys used in this solution guide.
+
+==== Red Hat GPG Keys
+
+
+For all Red Hat Enterprise Linux systems managed by Red Hat Satellite, the Red Hat GPG Keys (https://access.redhat.com/security/team/key[https://access.redhat.com/security/team/key]) have already been installed during the provisioning of these systems. The advantage is you don’t need to take care of importing and deploying Red Hat GPG keys to your clients systems. However, you cannot change these keys and their deployment.
+
+==== Third-party GPG Keys
+
+
+For third-party software and custom software, you have to create or download the GPG key used to sign the corresponding rpm packages and import them into Satellite. Typically, the GPG keys are either published at the website of your software vendor and / or are part of the RPM package repository provided by this vendor.
+
+==== Custom GPG Keys
+
+
+Even though it is technically feasible to work with unsigned rpm packages on both Red Hat Satellite and its client systems, we strongly recommended that you use a custom GPG key to sign your custom rpm packages.
+
+For comprehensive documentation about custom GPG keys available, see:
+
+https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/5.7/html/Getting_Started_Guide/sect-Digital_Signatures_for_Red_Hat_Network_Packages.html[https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/5.7/html/Getting_Started_Guide/sect-Digital_Signatures_for_Red_Hat_Network_Packages.html]
+
+In order to use RPM package-signing capabilities for ACME internal software as well, we’ve created an ACME GPG key to sign custom packages. We’ve created a new user ‘rpmbuild’ on our build host system and created and exported a GPG key using the following commands:
+
+
+|===
+|mkdir -p ~/.gnupg
+gpg --gen-key
+
+|===
+
+
+==== Importing GPG Keys into Satellite 6
+
+
+Red Hat Satellite acts as a Definitive Media Library and allows you to store and deploy GPG keys for its target systems. As a result, you need to upload all GPG keys that belong to the software you want Satellite 6 to manage. Take these steps:
+
+. Click on Content -> GPG Keys
+. Click on New GPG Key
+. Enter an appropriate name, for example “GPG-EPEL-RHEL7”
+. Select “Paste GPG Key Contents” and paste in the content fromhttps://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-7[https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-7[ ]]https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-7[https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-7]
+. Click Save
+
+Repeat the procedure above for all GPG keys that belong to the products and signed RPM packages you want to manage using Satellite 6. In our reference-architecture implementation, we’ve configured the following GPG keys:
+
+|===
+|*GPG Key Name*|*Source*
+
+|GPG-VMware-RHEL6|http://packages.vmware.com/tools/keys/VMWARE-PACKAGING-GPG-DSA-KEY.pub[http://packages.vmware.com/tools/keys/VMWARE-PACKAGING-GPG-DSA-KEY.pub]
+|GPG-EPEL-RHEL6|https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-6[https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-6]
+|GPG-EPEL-RHEL7|https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-7[https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-7]
+|GPG-ZABBIX|http://repo.zabbix.com/RPM-GPG-KEY-ZABBIX[http://repo.zabbix.com/RPM-GPG-KEY-ZABBIX]
+|GPG-ACME|<internal as described above>
+|===
+
+The following commands download and import the key for the RHEL7 repository of EPEL as an example:
+
+|===
+|wget -O /tmp/EPEL7.key https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-7
+
+|===
+
+After you have imported your GPG keys, you can view the list of all GPG keys if you click on Content -> GPG keys.
+
+=== Importing Red Hat Software into Satellite 6
+
+
+The Red Hat subscription manifest we’ve imported earlier gives access to Red Hat products and repositories. However, since most products have several architectures and product versions, Red Hat Satellite Server allows the Satellite administrators to choose which repositories are required by their organizations.
+
+==== How to Enable Red Hat Software Repositories
+
+
+The repositories need to be enabled in the Red Hat Satellite Server to prepare it for synchronization. This is done via Content -> Red Hat Repositories:
+
+
+
+The following steps show how to enable a Red Hat repository: +
+⁠
+
+. Click Content → Red Hat Repositories.
+. Click on the tab of the type of content to be enabled. The tabs are: RPMs, Source RPMs, Debug RPMs, Beta, ISOs, Docker Images, Other.
+. Expand each Red Hat product to examine the different repository sets available by clicking on the arrow by the product name.
+. Choose which Red Hat repository sets you wish to add. Choosing it will automatically enable that repository for your Red Hat Satellite server.
+. For example, a common basic set of subscriptions which contain repositories with the latest packages for Red Hat Enterprise Linux 6 would be:
+. Red Hat Enterprise Linux 6 Server Kickstart x86_64 6Server Repository
+. Red Hat Enterprise Linux 6 Server RPMs x86_64 6Server Repository
+
+
+
+*Note:* +
+The Red Hat Satellite Tools repository must be enabled, because it provides client systems registered to the Satellite Server katello-agent and Puppet packages.
+
+==== Selecting the Appropriate Repositories
+
+
+In our solution guide implementation, we’ve synchronized the following repositories:
+
+* Red Hat Enterprise Linux 7 Server *RPMS* x86_64 *7Server*
+* Red Hat Enterprise Linux 7 Server *Kickstart* x86_64 *7.1*
+* Red Hat Enterprise Linux 7 Server – *Optional* RPMs x86_64 *7Server*
+* Red Hat Enterprise Linux 7 Server - *Extras* RPMS x86_64 *7Server*
+* Red Hat *Satellite Tools 6* Beta (for RHEL 7 Server) (RPMs) *7Server*
+* Red Hat *Software Collections* RPMs for Red Hat Enterprise Linux 7 *Server*
+* Red Hat Enterprise Linux 6 Server *RPMs* x86_64 *6.5*
+* Red Hat Enterprise Linux 6 Server *Kickstart* x86_64 *6.5*
+* Red Hat Enterprise Linux 6 Server – *Optional* RPMs x86_64 *6.5*
+* Red Hat Enterprise Linux 6 Server – *Extras* RPMs x86_64 *6.5*
+* Red Hat *Satellite Tools 6* Beta (for RHEL 6 Server) (RPMs) *6.5*
+* Red Hat *Software Collections* RPMs for RHEL 6 Server x86_64 *6.5*
+* Red Hat *Enterprise Virtualization Agents* for RHEL 6 Server (RPMs) *6.5*
+
+After selecting the Red Hat repositories under Content -> Red Hat Repositories, the corresponding Red Hat products are automatically created. In our solution guide setup, you should now see a product called “Red Hat Enterprise Linux Server” beside other Red Hat products.
+
+*Note:* +
+You cannot change the name of automatically created Red Hat products, and you cannot clone or sync them twice with Satellite 6.
+
+To enable the synchronization of Red Hat Software repositories using the hammer CLI, you need to know the following labels of each Red Hat product you want to synchronize:
+
+* label of Product
+* label of repository
+* basearch of the repository
+* release version of the repository
+
+The following screenshots illustrate which item under Content -> Red Hat Repositories provides which label. These screenshots are based on an example of an older version of JBoss Enterprise Application Platform that isn’t used in this solution guide:
+
+
+
+The corresponding hammer command to enable this product in Satellite 6 would be (this is just an example, since we don’t use this particular product in our solution guide):
+
+|===
+|hammer repository-set enable --organization ACME \
+
+|===
+
+==== Synchronize Repositories
+
+
+After successfully enabling the product, we need to start the synchronization and (optional) add it to a regular sync plan. Use the following commands:
+
+|===
+|hammer product synchronize --organization ACME \
+
+|===
+
+*Note:* +
+We use the *--async* option to run the repository synchronization in the background. If this option is not used, you must wait until the synchronization is finished before the second command associates the product with our sync plan. Using --async allows us to enable and sync other products in parallel.
+
+*Warning:* +
+A Product or other entity can have one label during initial repository enabling and a different repository label used to add it to a content view. *In this example, the repository labels for initial enabling are not the same ones used later while creating content views*. The following hammer commands create a content view for the JBoss Enterprise Application Platform repository enabled above. Note how the highlighted repository name differs from the repository name we used to enable this Red Hat product repository earlier.
+
+|===
+|hammer content-view create --name "cv-app-jbosseap7"    \
+
+|===
+
+*Note:* +
+Especially products with a long lifecycle like Red Hat Enterprise Linux will consume a lot of disk space to store all corresponding packages. You need to ensure that the directory or mountpoint Satellite 6 uses to store packages (_/var/lib/pulp_)has a sufficient space before enabling and synching these repositories. The following knowledgebase article provides examples for some typical software repositories and expected space required:https://access.redhat.com/solutions/1458933[https://access.redhat.com/solutions/1458933[ ]]https://access.redhat.com/solutions/1458933[https://access.redhat.com/solutions/1458933]
+
+The following hammer commands have been used to enable and synchronize all Red Hat products used inside this solution guide:
+
+|===
+|*# RHEL7 repos*
+
+|===
+
+
+
+*Note:* +
+Synchronizing all these huge repositories can take a few hours. You can monitor the current synchronization using Content -> Synchronization Status. We need to wait until all repositories have been successfully synchronized *before* creating our content views in the next steps.
+
+=== Importing (RPM) Packaged Third-party Software into Satellite 6
+
+
+Red Hat Satellite lets you manage any RPM-packaged and signed content and is not limited to Red-Hat-provided software.  For all non-Red-Hat content, we need to create Products *first.* Then, we can later add them to content views.
+
+==== Creating a new product in Red Hat Satellite
+
+⁠
+
+. Click Content → Products.
+. Click +New Product .
+. Type in the name of the new Product in the Name field.
+. Type in label for the new Product in the Label field.
+. Select a GPG key from the GPG Key drop-down menu.
+. Select a synchronization plan from the Sync Plan drop-down menu. Alternatively, select the +New Sync Plan link to create a new synchronization plan.
+. Type in a description of the new Product in the Description field.
+. Click the Save button to save your new Product.
+
+The following hammer commands create a custom product and repository of type yum for our ACME custom rpm packages:
+
+|===
+|hammer product create --name="$ORG" --organization="$ORG"
+
+|===
+
+Because we import RPM-packaged software on a yum repository level, we need to distinguish between these two situations:
+
+* *Situation 1.*  The software vendor provides access to a repo.
+* *Situation 2. *You have to manually create a repository consisting of these software packages.
+
+==== Situation 1. Importing Third-party RPM Packages from an Existing yum Repository
+
+
+Satellite 6 provides automated repository synchronization for both: Red Hat and 3rd party software. You can use the synchronization capabilities for all existing yum repositories.
+
+The easiest way to configure repositories and Products is with the repository discovery feature of Satellite 6. The following procedure describes how to set up a product called “RHEL6 VMware Tools” and details syncing the repository of the corresponding packages for RHEL6.
+
+. Click Content -> Product
+. Click on the “Repo Discovery Button”
+. Enter the URLhttp://packages.vmware.com/tools/esx/5.1u2/[http://packages.vmware.com/tools/esx/5.1u2/[ ]]http://packages.vmware.com/tools/esx/5.1u2/[http://packages.vmware.com/tools/esx/5.1u2/]  inside the field “URL to discover”, and click Discover
+. Select ‘rhel6/x86_64/index.html’ (and corresponding 32bit repo if used) from the resulting list, and click the Create selected button
+. Select a new product
+. Enter a name, label, and description
+. Select the appropriate GPG key (created earlier)
+. Click Create
+
+
+
+After the page has reloaded you need to select the repository and click the Sync Now button.
+
+
+*Note:* +
+Even if there is a repository provided by VMware containing VMware tools for RHEL7, we no longer need to use it. Starting with RHEL7, Red Hat Enterprise Linux contains the open-vm-tools, which are the open source implementation of VMware Tools. VMware fully supports the usage of open-vm-tools as part of Red Hat Enterprise Linux. For more information, see:http://kb.vmware.com/selfservice/microsites/search.do?language=en_US&cmd=displayKC&externalId=2073803[http://kb.vmware.com/selfservice/microsites/search.do?language=en_US&cmd=displayKC&externalId=2073803[ ]]http://kb.vmware.com/selfservice/microsites/search.do?language=en_US&cmd=displayKC&externalId=2073803[http://kb.vmware.com/selfservice/microsites/search.do?language=en_US&cmd=displayKC&externalId=2073803]
+
+==== Situation 2. Importing Third-party RPM Packages Without an Existing yum Repository
+
+
+If you have individual packages, you basically have two options for uploading them into Satellite. You can:
+
+. Push the packages directly into Satellite 6 using hammer CLI
+. Manually create a yum repo using the createrepo tool and sync packages
+
+
+*Note:* +
+We recommend that you put all your custom and foreign packages under a revision control similar to your (Puppet) configuration for both options.
+
+*Via Hammer* +
+To upload a custom package via the hammer command line interface (option 1), use this command:
+
+|===
+|hammer repository upload-content --product "$ORG" \
+
+|===
+
+*Note:* +
+Currently, you can upload only one package at a time using the upload-content option. If you provide a regular expression like /tmp/acme-*, which would match to more than one package / file, the upload fails. The following script snippet provides a workaround for this limitation:
+
+|===
+|for package in $(ls -1 /path/to/your/packages/*.rpm)
+
+|===
+
+As an alternative, you can can manually create a yum repository structure out of a directory of your custom or foreign rpm packages by using the createrepo tool, which is available via the Red Hat Enterprise Linux base channel:
+
+. Download the sources (if not packaged yet)
+. Create a rpmbuild spec file (if not packaged yet)
+. Build the binary rpm using rpmbuild command (if not packaged yet)
+. Sign the rpm using a GPG key (if not signed yet)
+. Store the resulting rpm(s) in a directory
+. Create a local yum repository using createrepo
+. Make this repository available via http
+. Configure this repository inside Satellite 6
+
+Because the Red Hat Portal already has documentation about these topics, we do not cover them in this solution guide. See these links for more details:
+
+* createrepo usage:https://access.redhat.com/solutions/9892[https://access.redhat.com/solutions/9892[ ]]https://access.redhat.com/solutions/9892[https://access.redhat.com/solutions/9892]
+* enable http export:https://access.redhat.com/articles/1343513[https://access.redhat.com/articles/1343513[ ]]https://access.redhat.com/articles/1343513[https://access.redhat.com/articles/1343513]
+
+=== Importing Other (Not RPM-packaged) Software into Satellite 6
+
+
+For software not yet packaged as a RPM, you basically have two options:
+
+* Deploy unpackaged files using Puppet (as part of Satellite 6)
+-or-
+
+* Package the software as RPMs and deploy using Satellite 6 software management
+
+*Advantages and disadvantages*
+
+The advantage of using Puppet for binary deployment is that you don’t have to deal with packaging and its (slight) complexity. You can use exec statements in Puppet to download, extract, and execute installer scripts. Especially for binary installers (usually only supported from the vendor if the installer has been used for deployment), the advantage is that even if you package the binary results of the installer, you still might be in a grey area regarding vendor support.  For an overview of how to use Puppet to deploy binary files and installers, see:https://puppetlabs.com/presentations/puppet-camp-portland-2014-wrangling-3rd-party-installers-puppet[https://puppetlabs.com/presentations/puppet-camp-portland-2014-wrangling-3rd-party-installers-puppet[ ]]https://puppetlabs.com/presentations/puppet-camp-portland-2014-wrangling-3rd-party-installers-puppet[https://puppetlabs.com/presentations/puppet-camp-portland-2014-wrangling-3rd-party-installers-puppet]  .
+
+Despite the additional efforts required for rpm packaging an application, this approach has some significant advantages, and we prefer this option. Using RPM as the deployment format provides the following (additional) benefits:
+
+* Unattended install / uninstall
+* Upgrades and downgrades supported
+* Version controls and a changelog
+* Automatic resolution of dependencies
+* Conflict detection / handling
+* No build tools required on target systems (only on the build host)
+* Querying, checksum and verification capabilities
+* Ability to sign RPMs with GPG (preferred)
+
+Given this comprehensive list of advantages, we recommended that you consider packaging your third-party and custom applications as RPMs. However, we will still explain both scenarios using the WordPress as a sample application. We are using latest version of WordPress (http://wordpress.org/latest.tar.gz[http://wordpress.org/latest.tar.gz]), 4.1.1 at the time of this writing.
+
+==== Deploying Unpackaged Files Using Puppet (as Part of Satellite 6)
+
+
+Because Puppet modules can consist of both text and binary, one option is to use Puppet to deploy binary files as part of Puppet modules. Because we recommend using RPM packages to deploy binary files, this solution guide does not cover this use case.
+
+==== Packaging as RPM and Deploying Using Satellite 6 Software Management
+
+
+The following procedure describes the required steps to transform unpackaged software into Satellite-manageable RPM content.
+
+. Download the tar.gz file from vendors / open source project website
+. Package it using the rpmbuild command
+. Sign it with your custom GPG key (should be uploaded to Satellite)
+. Push the package into Satellite’s custom channel or create a repository using createrepo tool and synchronize it as explained above
+
+In our solution guide setup, we have not used custom RPM packages. However, we have created a custom repository as part of our ACME product, which you could use in your environment.
+
+=== Importing Puppet Content into Satellite 6
+
+
+Puppet is a tool for applying and managing system configurations. Puppet collects system information, or facts, and uses this information to create a customized system configuration using a set of modules. These modules contain parameters, conditional arguments, actions, and templates. Puppet is used as either a local system command line tool or in a client-server relationship where the server acts as the Puppet master and applies configuration to multiple client systems using a Puppet agent. This provides a way to automatically configure newly provisioned systems, either individually or simultaneously to create a certain infrastructure.
+
+
+Satellite 6 uses Puppet in several ways:
+
+* Satellite 6 imports Puppet modules used to define the system configuration. This includes control over module versions and their environments.
+* Satellite 6 can import sets of parameters, from parameterized Puppet classes, from Puppet modules. Users can accept the default values from Puppet classes or provide their own at a global or system-specific level.
+* Satellite 6 triggers the execution of Puppet between the master and the respective agents on each system. Puppet runs can occur either:
+** Automatically, such as after the provisioning process completes or as a daemon that checks and manages the machine's configuration over its lifecycle.
+** Manually, such as needing to trigger an immediate Puppet run.
+* Satellite 6 collects reports from Puppet after the configuration workflow completes. This helps with auditing and archiving system configuration over long term periods.
+
+These functions provide an easy way for users to control system configuration aspects of the application lifecycle using Puppet.
+
+Many Puppet modules are available fromhttps://forge.puppetlabs.com[https://forge.puppetlabs.com[ ]]https://forge.puppetlabs.com[Puppet Forge] and can be used in conjunction with Satellite 6. To synchronize the Puppet Forge repository with Satellite 6, see these instructions:https://access.redhat.com/solutions/1290513[https://access.redhat.com/solutions/1290513[ ]]https://access.redhat.com/solutions/1290513[https://access.redhat.com/solutions/1290513]
+
+*Note:* +
+Currently, you cannot limit which subset of a repository you want to synchronize. In the case ofhttps://forge.puppetlabs.com[https://forge.puppetlabs.com[ ]]https://forge.puppetlabs.com[Puppetforge], you must sync the entire repository, which currently contains 3280 modules.
+
+We will create some sample Puppet modules in Steps 5 and 6. This chapter primarily focuses on importing existing modules.
+
+In order to import Puppet modules into Satellite 6, we have two options:
+
+*Option 1. *Directly push the module to the corresponding Satellite 6 product repository +
+*Option 2. *Store the module in git and use the git repository synchronization of Satellite 6
+
+For both options the final destination of our Puppet module in Satellite 6 is the Puppet repository (as part of the ACME Product created earlier).
+
+The following hammer command directly pushes the Puppet module into the repository (option 1):
+
+|===
+|hammer -v repository upload-content --organization “ACME” --product ACME --name "ACME Puppet Repo" --path acme-motd.tgz
+
+|===
+
+However, we recommend using option 2:
+
+Storing the resulting Puppet modules in git to ensure version control and then synchronizing the git repo or selected modules by using Satellite 6 sync plans or manual sync.
+
+If we assume that there is already one (or sometimes more) git servers or repositories in place, the next steps focus on using the existing git repository(ies) in conjunction with Red Hat Satellite 6. If you do not have an existing git repository or dedicated server in place, step 6 describes how to setup and configure a server like that.
+
+To allow automatically and regular synchronization using Satellite 6 sync plans of this git repository, we have to transform the git repository into a format that Satellite 6 can use for synchronization. For instructions, see:https://access.redhat.com/solutions/1173803[https://access.redhat.com/solutions/1173803[ ]]https://access.redhat.com/solutions/1173803[https://access.redhat.com/solutions/1173803]
+
+The required tool, pulp-puppet-module-builder, is already installed on the Satellite 6 server by default. Because we want to use our git server as the single source of Puppet modules, we need to install this package on our git servers as well. See the following Knowledgebase article for the required procedure:https://access.redhat.com/solutions/1378663[https://access.redhat.com/solutions/1378663[ ]]https://access.redhat.com/solutions/1378663[https://access.redhat.com/solutions/1378663]
+
+After installing this tool, we create the module repository:
+
+|===
+|yum -y install pulp-puppet-module-builder
+
+|===
+
+Finally, we have to add a repository (type: ‘puppet’) that belongs to the ACME generic product that we created earlier and synchronize it with our git host:
+
+|===
+|hammer repository create --name="$ORG Puppet Repo" \
+
+|===
+
+
+*Note:* +
+Although the pulp-puppet-module-builder performs both the puppet-module build and the pulp-manifest creation, there is a simpler way to create just the pulp manifest. If you have already built your Puppet modules successfully, you can use the following script to create the PULP_MANIFEST file required for the Satellite 6 repository synchronization:
+
+|===
+|#!/usr/bin/env bash
+
+|===
+
+
+Unlike the pulp-puppet-module-builder tool, this approach lets you store the resulting Puppet modules in different subdirectories. We’re using this approach as part of a git hook to automatically create the pulp manifest (in case a new Puppet module is checked in). For more details, see the related Puppet configuration, which is described as part of the ACME git server configuration example in Step 6.
+
+=== Importing Docker Container Images into Satellite 6
+
+
+Docker is an open source project that automates deploying applications inside Linux Containers, and lets you package an application with its runtime dependencies into a container. Linux containers enable rapid application deployment and simpler testing, maintenance, and troubleshooting while improving security. For more information see thehttps://access.redhat.com/articles/881893[https://access.redhat.com/articles/881893[ ]]https://access.redhat.com/articles/881893[Get Started with Docker Formatted Container Images on Red Hat Systems] article on the Red Hat Customer Portal.
+
+Satellite 6.1 introduces new management capabilities related to containers that enable organizations to deploy applications rapidly.  With Satellite, users can easily manage, version and deploy Docker content.
+
+Importing content and managing the lifecycle of container images are similar to managing other content types (rpm and Puppet). You have to configure repositories that can be bundled with Products and then use those repositories inside content views, similar to RPM packages or Puppet modules.
+
+You can define the following Docker image repositories / registries:
+
+* Red Hat Docker Image Registry (registry.access.redhat.com)
+* DockerHub (https://registry.hub.docker.com[https://registry.hub.docker.com])
+* Custom (e.g. internal) Docker image registries
+
+*Note:* +
+At the time of this writing, the new Red Hat repository management (Content -> Red Hat Repositories) tab called “Docker Images” does not contain container images. Currently, the Red Hat container image registry has to be configured as an “external registry”.
+
+The main purpose of Satellite 6 in the area of container management is to provide Satellite 6 content-lifecycle management capabilities to this specific content type, similar to traditional rpm and Puppet based content. This capability also includes container image content management, which allows you to perform local caching on container hosts. For this particular solution guide, container image management is out of scope.
+
+All the Docker-management capabilities are documented in the Satellite 6.1 User Guide in a dedicated chapter calledhttps://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html/User_Guide/chap-Red_Hat_Satellite-User_Guide-Working_with_Containers.html[https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html/User_Guide/chap-Red_Hat_Satellite-User_Guide-Working_with_Containers.html[ ]]https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html/User_Guide/chap-Red_Hat_Satellite-User_Guide-Working_with_Containers.html[Working with Containers].
+
+*Note:* +
+In Red Hat Satellite, you can deploy containers *only* on a Docker compute resource. As a result, when you attempt to view or create containers for the first time, Satellite prompts you to create a Docker compute resource. This solution guide explains how to create the required content views, Puppet modules, host groups and compute resource in Steps 5, 6 and 7.
+
+=== Configuring Regular Repository Synchronization by Using Sync Plans
+
+
+Regular, frequent synchronization is required to maintain data integrity between packages as well as making sure that packages are updated to the latest security fixes. Red Hat Satellite provides the ability to create scheduled synchronization plans that allow package updates at intervals convenient to the organization.
+
+The followings procedure describes how to create a new sync plan:
+
+. Click Content → Sync Plans.
+. Click the New Sync Plan link to create a new synchronization plan.
+. Enter the Name, Description and other details for the plan.
+. Click Save to create the synchronization plan.
+
+After you have created a synchronization plan, you need to associate products with that plan to create a synchronization schedule. The following procedure describes how to create a synchronization schedule in Red Hat Satellite 6. +
+⁠
+
+. Click Content → Sync Plans and select the synchronization plan you want to implement.
+. Click Products → Add in the synchronization plan main page.
+. Select the checkbox of the product to associate with the synchronization plan.
+. Click Add Selected.
+
+
+*Note:* +
+Although you do not have to configure regular repository synchronization, we strongly recommend that you regularly synchronize at least the Red Hat products and repositories. The reason for this (besides automation) is that it is more efficient. Otherwise, all reporting of the errata status is based on the last synchronization, and the errata status might not be up to date. Though Satellite 6.1 does show errata applicable to systems independent of its real availability (managed via content views), it could not show errata available at redhat.com and inside CDN if they are not yet synced to Satellite 6. This limitation also applies if a critical errata is published between two daily sync runs. If there is critical errata that requires an emergency change, you can always sync the product and repositories manually (using the hammer CLI, either on the repository or at the Product level).
+
+In our solution guide implementation, we’ve created the following sync plan:
+
+
+|===
+|*Parameter*|*Value*
+
+|Name|daily sync at 3 a.m.
+|Interval|daily
+|Start date|2015-04-15
+|Start time|03:00
+|===
+
+The following hammer command creates the daily sync plan:
+
+|===
+|hammer sync-plan create --name 'daily sync at 3 a.m.' --description 'A daily sync plans runs every morning a 3 a.m.' --enabled=true --interval daily --organization ‘ACME’ --sync-date '2015-04-15 03:00:00'
+
+|===
+
+All formerly configured products were added to this sync plan.
+
+|===
+|# get all products which have been synced (ignore not_synced)
+
+|===
+
+
+After you import content from different sources and add all products to the synchronization plan, content will be updated regularly every morning. You can monitor the synchronization status if you go to Content -> Sync Status and then click on Expand All. You should see a full list of all your Products and their repositories. You will also see when syncing was started, how long it took and if it has been completed:

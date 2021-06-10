@@ -1,0 +1,1647 @@
+<<<
+== Step 7: Automate your provisioning
+
+
+A high degree of automatization is one of the key factors for successfully establishing your Standard Operating Environment (SOE). Red Hat Satellite 6 offers many features that help you to automate your provisioning:
+
+* Parameterization for provisioning templates and managing configurations (improves the re-usability of provisioning templates and Puppet classes to achieve different configurations based on the parameters at a host level)
+* Provisioning Templates (for example, a customizable Kickstart for unattended installations)
+* Configuration management with Puppet (defines the target state of a host through its entire lifecycle)
+* Host Groups for standardized provisioning of server roles
+
+By the time you finish this section, the Red Hat Satellite Server will be configured to provision the _Core Build_ based on a Red Hat Enterprise Linux 7 Server with the following sample configuration:
+
+* Customized partition layout
+* Additional RPM packages to the @core package group through Puppet
+* Static network configuration
+* Sample service configuration for ntp and remote logging
+* A host configuration for monitoring with zabbix, as an example
+
+In this chapter we will set up all required Satellite 6 entities to deploy all the sample services and applications we have created in the previous two steps:
+
+* A plain OS / Core Build server
+* A server acting as a container host
+* A server acting as a Satellite 6 capsule server
+* A server acting as a git server
+* A server acting as a loghost
+* A server acting as a (database) backend server for ACME web application
+* A server acting as a (WordPress-based) frontend server for ACME web application
+
+=== Provisioning Recommendations
+
+
+The server provisioning configuration is one of the most powerful and complex configurations in Red Hat Satellite 6. +
+The primary goal is to provision new servers based on a pre-defined configuration with the highest possible degree of standardization and automation, as well as up to the highest possible abstraction layer (typically the application).
+
+Even if provisioning of the operation system (core build) is the most common use case in many customer environments, Red Hat Satellite provides the capability to provision servers that are ready to be used in production. This capability includes both:
+
+* The provisioning of operating systems and the applications running on top of the OS
+* The integration into the entire management tool chain
+This provisioning produces what we call "ready2run systems." These systems are completely configured and can be used in production and test environments immediately. Even if many customers have not implemented these capabilities yet, you would need to have them in place in a cloud scenario where servers (and primarily applications running on top of them) can be accessed through a self-service portal.
+
+The diagram below illustrates the basic workflow of this enhanced provisioning. The main goals of this fully automated server provisioning are:
+
+
+|===
+||* To be able to provision a server within a few minutes
+
+|===
+
+
+The effort required to implement such a fully automated provisioning might be extensive. But in terms of synergy, it can be it: while initial provisioning might be a seldomly used use case, at least in production, the technology core is similar to three other use cases:
+
+
+
+. *Disaster Recovery Procedures:* The main difference between initial provisioning and performing a restore is that the data restore could be triggered at the end of provisioning.
+. *System Cloning:* Lets you create production clones (for example, for testing changes and reproducing incidents). The main differences are the environment-specific adaptations (for example, different connection credentials for subsystems), which should be covered anyway in the server configuration, because the content (view) is promoted unchanged through the different lifecycle environments (see chapter Recommendations for Content Views for further details)
+. *Dynamic (horizontal) Scale-Out*: Lets you add additional / similar systems of the same type to achieve horizontal scalability. The main difference is that the new system has to be added with a load balancer in front of it. If a load balancer has been used already, this might be already covered in the deployment configuration.
+
+
+In order to re-use (initial) provisioning capabilities for restore / disaster recovery procedures, we recommend that you use a split partitioning schema to divide between the software and data disks. We will explain this in the Partition Tables section.
+
+Because most of the automation discussed in this solution guide relies heavily on a working kickstart configuration, *every change in all related objects should be considered carefully and tested before you apply it to the production configuration*. The following section provides some guidance on how to reduce the complexity of the provisioning configuration and how to maintain it efficiently.
+
+The complete installation and configuration of the system might not be enough for it to be used in production. You must also* integrate this system into the system management tool chain*, primarily focusing on monitoring, backup, scheduling, incident management and so on. Specifically this integration means that the new host must be added to our monitoring configuration, in addition to the monitoring-related software installation and the configuration of the client. This integration might also include remote executions running as hooks on *different servers than the recently provisioned host* (for example, on the backup management server). In our solution guide, we're demonstrating this integration based on the monitoring use case. Further enhancements are listed in step 10.
+
+The primary goal therefore is to *reduce the total number of kickstart configurations to an absolute minimum*. The flexibility and dynamic adoptions (both parameter based or automatically detected) help to cover as many options and variants as possible within one single kickstart file, used by all servers. On the other hand, and given the importance of provisioning for all the 4 use cases mentioned above, we recommend that you create at least *one test clone* for each production kickstart file. Use this *test clone to validate changes before applying them to a configuration used in production*. The validation of a newer version of a kickstart configuration should test as options as possible that are covered by the provisioning configuration (such as, different hardware and virtualization platforms and different application types).
+
+Red Hat Satellite ships with a lot of different templates for provisioning that might already be *sufficient for many customer environments*. Before you clone and adapt these templates, we recommend that you verify that you actually need to adapt them. In most cases, you may only need to create one or two additional custom templates. For maintenance reasons, it is easier to add custom templates (which might be based on the pre-configured ones / clones of them) than to adapt the original template.
+
+As an alternative to adding functionality to the kickstart files and templates, consider *adding this functionality to the content managed inside content views* instead. Step 5 outlines that the core build can contain most of these capabilities that might be easier to maintain because the content view is using the inherent lifecycle management capabilities. See Step 5 for more details.
+
+Though it is much easier to add a “yum -y install _<yourpackage>_” line into kickstart than it is to write a Puppet module and add it to a content view, the main disadvantage of adding this line is that then it applies only to systems that are provisioned. If you want to add the required packages to an already existing server, you would have to re-provision it. Sure, you could manually add the packages later using the WebUI, but that option defeats the goal of repeatability.
+
+To avoid an unnecessary complexity in content views and host groups, we recommend that you *make the provisioning configuration flexible enough to deal with all options that are primarily based on the different hardware and virtualization platforms used in your environment*. Most of them can be automatically detected, and you can use the conditional statements in the kickstart configuration to adapt how these actions are automatically executed. If you are using different hardware platforms that require different partition tables (for example,  /dev/sda for standard hardware but /dev/cciss for older HP servers), we recommend that you create a dynamic environment that handles all these options, instead of creating different kickstart configurations for all of them.
+
+Red Hat Satellite currently only provides a version control that includes diff and change-reverting capabilities for individual templates. If you adapt a template, you can view the diffs and revert changes by selecting the template under Host -> Provisioning Templates -> Your Template and clicking on the History tab:
+
+
+
+If you are using advanced provisioning setups that include a lot of modified and enhanced templates, we recommend that you back up and version control these items on a regular basis. Either before importing them into Satellite or using the API to gather, download and store all related objects in a revision control system.
+
+=== Provisioning Methods
+
+
+Satellite Server 6 offers multiple ways to boot a host into the Anaconda installer to initiate the provisioning phase.
+
+* *PXE*
+
+The Satellite Server automatically manages a Pre-boot eXecution Environment (PXE) through the Red Hat Capsule features (TFTP and DHCP). The DHCP Server assigns the host its network configuration and directs the host to the TFTP Server. +
+By default, the TFTP Server is managed through the _Kickstart default PXELinux_ template to create a tftp boot record that points the host to its installation configuration.
+
+* *Boot ISO*
+
+As an alternative, you can use Boot ISOs. By default, Boot ISOs are generated with the _Boot disk iPXE - host_ template.
+
+ To generate a host specific Boot ISO, navigate to (after you have already created the new host entry):
+
+   _Hosts_ ➤ _All Hosts_ ➤ select host to generate boot iso for ➤ select _Boot disk_ ➤ select _Host '%name' image_
+
+*Note:* +
+Boot ISOs have the disadvantage that they have to be manually uploaded to a _Compute Resource_ or to the Board Management Controller of a physical server in order to provision a host.
+
+* *Image Based*
+
+Another method is _Image-based_ provisioning. This is only available when a host is provisioned through _Compute Resources_. _Images _that are available in the image store on a Compute Resource have to be flagged so that you can use them with the Red Hat Satellite.
+
+Two different provisioning types are available when image-based provisioning is being used.
+
+* Type finish (Satellite Kickstart Default Finish)
+A custom post-installation script that requires the Red Hat Satellite Server to connect to the host via SSH in order to execute the script.
+
+* Type user_data (Satellite Kickstart Default User Data)
+When a _Compute Resource _like OpenStack or EC2 is used, the _user_data_ template can be used for a role-specific configuration after image deployment. The _user_data_ template is a post script where the *host* connects to the Red Hat Satellite Server to register itself with the assigned activation key to get access to its content. The user_data type has a mandatory requirement for user_data capable images (for example, cloud-init or another metadata-receiving script).
+
+		*Note:* +
+This method is covered in the Scenario C) implementation at the end of step 2 of this document.
+
+To assign images to be used by Red Hat Satellite for provisioning, go to: +
+1. _Infrastructure _➤ _Compute Resources_ ➤ select the Compute Resource that contains the image +
+2. Navigate to the _Images_ tab  ➤ _New Image_ +
+3. Fill in the corresponding information for the new image. If the image is capable to execute user_data scripts, Make sure to check the "User data" checkbox.
+
+=== Parameters
+
+
+Parameters are key/value pairs that can be used in _Provisioning templates_ as well as for _configuration management_ _(Puppet)_. Parameters can be defined in several places in a hierarchical manner. If the same key is used in more than one of those places, the most specific one to the host will be used.
+
+The Red Hat Satellite Server manages two different types of parameters, global parameters and smart class parameters.
+
+==== Global Parameters
+
+
+Global parameters are accessible for use in Red Hat Satellite as well as for Puppet configuration management.
+
+You can access global parameters to use in Red Hat Satellite whereverhttp://ruby-doc.org/stdlib-2.2.2/libdoc/erb/rdoc/ERB.html[http://ruby-doc.org/stdlib-2.2.2/libdoc/erb/rdoc/ERB.html[ ]]http://ruby-doc.org/stdlib-2.2.2/libdoc/erb/rdoc/ERB.html[ERB templating] is being used. You can access the value of global parameters in:
+
+* Any type of provisioning template
+* Partition tables
+
+The recommended way to access Global Parameters in a Puppet manifest is $::variable, but $variable works as well.
+
+Parameters available to a host for provisioning or configuration management with Puppet can be reviewed at:
+
+. _Hosts _➤ _All Hosts _➤ Select the host for which you want to view the available parameters.
+. Click on the _YAML _button.
+
+	*Note:* +
+No matter at which level parameters are defined in the hierarchy, in the end the parameters are always made available on a per host basis. For this reason, they can  always be accessed with the variable *host.params[‘parameter_name’]*.
+
+
+The following graphic outlines the global parameter hierarchy.
+
+
+
+	Where to define Parameters:
+
+* Global parameters: _	Configure _➤_ Global parameters._
+* Organization: _		Administer _➤_ Organizations _➤_ edit _➤ _Parameters._
+* Location:_		Administer _➤_ Locations _➤_ edit _➤_ Parameters._
+* Domain:_ 		Infrastructure _➤_ Domains _➤_ edit _➤ _Parameters._
+* Operating System:_	Hosts _➤_ Operating systems _➤_ edit _➤_ Parameters._
+* Host Group:_		Configure _➤_ Host groups _➤_ edit _➤_ Parameters._
+* Host:	_		Hosts _➤_ All hosts _➤_ edit _➤_ Parameters._
+
+===== Smart Variables
+
+_Smart Variables_ are also part of the global parameters and can be defined on any level of that hierarchy based on a matcher rule being used in the smart variable definition. Matcher rules are used to define the level of the hierarchy to which a parameter should be assigned. For example, to assign a different variable based on the environment, you could create a smart variable matcher rule like this:
+
+
+
+*Note:* +
+It is important to flag the checkbox “override” to tell Red Hat Satellite to manage the variable.
+
+_Smart Variables_ are used in Puppet manifests and can be configured under
+
+* _Configure _➤ _Smart Variables_
+
+==== Smart Class Parameters
+
+These parameters are scoped (assigned) to a single Puppet class. Other than global parameters, _class parameters_ are available only inside the Puppet class where the parameter is defined.
+
+==== Define Global Parameters
+
+
+To reach a high level of standardization, ACME is using a single *provisioning template* for all hosts, no matter the location or role of the host. To be able to configure hosts differently based on the location, ACME uses the location parameters to set the *_timezone_* and *_language_***:**
+
+
+|===
+|*Location*|*Parameter: Key*|*Parameter: Value*
+
+|boston|time-zone|America/New_York
+||language|en_US.UTF-8
+|munich|time-zone|Europe/Berlin
+||language|en_US.UTF-8
+|munich-dmz|time-zone|Europe/Berlin
+||language|en_US.UTF-8
+|===
+
+To define the location-based parameters that will be used in the *_Provisioning template _* section of this chapter, navigate to:
+
+Location munich:
+
+. _Administer_ ➤ _Locations_ ➤ select the location _munich_ ➤ on the left pane select _Parameters_
+. Add the key: *time-zone* and the value: *Europe/Berlin*
+. Add the key: *language* and the value: *en_US.UTF-8*
+
+
+Location munich-dmz:
+
+. _Administer_ ➤ _Locations_ ➤ select the location _munich-dmz_ ➤ on the left pane select _Parameters_
+. Add the key: *time-zone* and the value: *Europe/Berlin*
+. Add the key: *language* and the value: *en_US.UTF-8*
+
+
+
+Location boston:
+
+. _Administer_ ➤ _Locations_ ➤ select the location _munich-dmz_ ➤ on the left pane select _Parameters_
+. Add the key: *time-zone* and the value: *America/New_York*
+. Add the key: *language* and the value: *en_US.UTF-8*
+
+
+
+*Note:* +
+At the time of this writing, the location-level parameters could not be assigned through hammer.
+
+The firewall service and SELinux are not being used and should be deactivated through the provisioning phase. ACME is using global parameters to disable the firewall service and sets SELinux into permissive mode.
+
+|===
+|*Global*|*Parameter: Key*|*Parameter: Value*
+
+||firewall|--disabled
+||selinux|--permissive
+|===
+
+Configure Global parameter:
+
+. _Configure_ ➤ _Global parameters_ ➤ _New Parameter_
+. Add the name: *firewall* and the value: *--disabled*
+. Add the name: *selinux* and the value: *--permissive*
+
+
+
+via hammer:
+
+|===
+|hammer global-parameter set --name "firewall" --value "--disabled"
+
+|===
+
+*Note:* +
+Values can be hidden. For example, you can hide passwords by checking the _hide _checkbox individually for each parameter. But be aware that if you are using the _hide_ checkbox, the +
+parameter can still be seen in *cleartext* if you look at the _YAML _output of a host.
+
+*Note:* +
+You can achieve the same configuration state by using configuration management with Puppet instead of using provisioning templates. We recommend that you achieve the same host configuration state with Puppet. The benefit of achieving the same host configuration state with Puppet is that image-based deployment results in the same host configuration state as pxe or boot iso provisioning. +
+Parametrization of provisioning templates is done to show the possibilities and capabilities of the Red Hat Satellite Server. It is better to keep using the official Red Hat provisioning templates whenever possible, because updates shipped by Red Hat that could introduce new features on the templates have to be merged manually if you not using the official templates.
+
+=== Templates
+
+
+The Red Hat Satellite Server 6 is making use of thehttp://ruby-doc.org/stdlib-2.2.2/libdoc/erb/rdoc/ERB.html[http://ruby-doc.org/stdlib-2.2.2/libdoc/erb/rdoc/ERB.html[ ]]http://ruby-doc.org/stdlib-2.2.2/libdoc/erb/rdoc/ERB.html[ERB] templating language, which is part of the Ruby standard library. ERB templating can be used in all *_provisioning template types _*and *_partition tables_*.
+
+
+ERB introduces a new flexibility that lets you provision Red Hat Enterprise Linux 5, 6 and 7 through a single provisioning template.
+
+When a kickstart file is rendered for provisioning, the ERB code used in the templates is evaluated and substituted on the Satellite Server 6.
+
+*Note:* +
+Puppet templates also support the ERB templating language in order to specify content of files.
+
+==== Template type overview:
+
+
+|===
+|*Type*|*Description*
+
+|provision|The main template, used for unattended installation (Kickstart)
+|snippet|Script that can be included in another template
+|Bootdisk|Creates a boot.iso; enables deployment in environments without DHCP and TFTP
+|PXELinux|Manages TFTP records for network-based installations
+|iPXE|Used in iPXE environments instead of PXELinux
+|finish|Install script that is used to execute custom actions in the %post section during kickstart.
+|user_data|Custom finish script used for image-based deployments in RHEL Openstack Platform.
+|===
+
+Templates are located under:
+
+. _Hosts_ ➤ _Provisioning templates_
+
+Red Hat ships the following important templates to use for Red Hat Enterprise Linux provisioning:
+
+|===
+|*Template Name*|*Type*|*Comment*
+
+|Satellite Kickstart Default|provision|Kickstart profile - main installation template. Snippets are normally included in this profile type.
+|Kickstart default PXELinux|PXELinux|Creates the TFTP boot record
+|subscription_manager_registration|snippet|When a Host or Host Group is associated with an activation key for provisioning, the _Satellite Kickstart Default_ template loads the _subscription_manager_registration_ snippet to register the host at the Red Hat Satellite Server and to installs the katello-agent package.
+|Boot disk iPXE - host|iPXE|Generates a host-specific boot iso
+|puppet.conf|snippet|Creates a node (host) specific puppet.conf
+|Satellite Kickstart Default Finish|finish|
+|Satellite Kickstart Default User Data|user_data|
+|===
+
+*Note:* +
+For an overview of the kickstart options that can be used in the provisioning template, see: +
+https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Installation_Guide/sect-kickstart-syntax.html[https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Installation_Guide/sect-kickstart-syntax.html]
+
+==== Clone a Provisioning Template
+
+
+_Provisioning templates_ that are shipped by Red Hat are not allowed to be edited directly. The templates are locked to ensure that a host can always be successfully provisioned with these templates. Moreover, the templates may be enhanced when the Red Hat Satellite Server will be updated.
+
+To change a provisioning template or use a parameter inside it_, _it must be *cloned*.
+
+In this document the template _Satellite Kickstart Default _is the only one that will be cloned and adapted to use the previously defined parameters at the global and location level.
+
+To clone a template, navigate to:
+
+. _Hosts_ ➤ _Provisioning templates_
+. On the row with the name _Satellite Kickstart Default, _go to the right side and click on the _clone _button
+. On the New Template page fill in the name *_ACME Kickstart Default_*
+. Replace the variables
+.. replace language with:	_lang <%= @host.params[‘language’] %>_
+.. replace selinux with:		_selinux <%= @host.params[‘selinux’] %>_
+.. replace firewall with:		_firewall <%= @host.params[‘firewall’] %>_
+.. note that the parameter _time-zone_ is already used by default if available.
+
+
+
+*via hammer:*
+
+. Download the existing Provisioning template
+
+|===
+|hammer template dump --name "Satellite Kickstart Default" > "/tmp/tmp.skd"
+
+|===
+
+. Edit the file /tmp/tmp.skd to replace the variables listed above
+
+. Import the template under the new name
+
+|===
+|ORG=ACME
+
+|===
+
+
+*Note:* +
+All necessary _Provisioning templates_ should already be assigned to the _Organization_ by default, if your template is missing, navigate to:
+
+_Administer_ ➤ _Organizations_ ➤ select _Organization_ ➤ select _Templates_ on the left side ➤ check the missing template in the left box to assign it to the _Organization_ ➤ click the _Submit_ button
+
+=== Partition Tables
+
+
+_Partition tables_ are a type of _provisioning template_. They are located under another section because it is often the case that the same host template is being used with different partition layouts based on the role assigned to a host.
+
+Partition tables are created under:
+
+. _Hosts _➤ _Partition tables_
+
+There are two kinds of partition tables, _static _and _dynamic_.
+
+*Static Partition Table*
+
+As the name implies, static partition tables contain a fixed partition layout.
+
+*Dynamic Partition Tables*
+
+Dynamic partition tables enable an administrator to create a different partition layout dynamically with only one partition table. A dynamic partition table can make use of ERB & Bash. In these cases, ERB is evaluated on the Red Hat Satellite and the Bash code is executed on the host itself during installation.
+
+For example, the swap size of a partition can be a different size, based on the memory available.
+
+To inform the Red Hat Satellite Server that a partition table should be dynamic, place hashtag(#)Dynamic at the top of the partition table.
+
+|===
+|#Dynamic
+
+|===
+
+A Dynamic partition table has to be located at _/tmp/diskpart.cfg _on the filesystem of a host at the %pre section of the kickstart process.
+
+Example:
+
+|===
+|#Dynamic
+
+|===
+
+
+==== Create the Custom Partition Table
+
+
+*Warning:* +
+The following information has been provided by Red Hat, but is outside the scope of the postedhttps://access.redhat.com/support/offerings/production/[https://access.redhat.com/support/offerings/production/[ ]]https://access.redhat.com/support/offerings/production/[Service Level Agreements and support procedures]. The information in this article could make the Operating System unsupported by Red Hat Global Support Services. In this chapter we show an example of how powerful using dynamic partition tables can be. However, use of the information is at the user's own risk.
+
+We create a dynamic partition table with the following capabilities:
+
+* Uses Red Hat Enterprise Linux 6 and 7
+** for RHEL6, uses the ext4 filesystem
+** for RHEL7, uses the xfs filesystem
+* Uses the same partition layout for the Operating System and a different application layout on a second disk based on additional snippets
+* When a second disk is available, loads a nested partition table
+** the first disk is used for the Operating System only
+** the second disk is used for the data (application) only
+*** the nested partition table is loaded when a parameter called _@host.params[‘ptable’] _is available.
+**** the nested partition table is a snippet located under the provisioning templates and follows this naming convention:
+
+|===
+|ptable - < org > - < ptable name >
+
+|===
+
+
+* when the host is re-provisioned, the filesystem layout and the data on the second disk remain available.
+		*Note:* +
+ERB code (<%...%>) is evaluated on the Red Hat Satellite Server. +
+Bash code is executed on the client in the %pre section of the Kickstart file.
+
+To create the dynamic partition table for Red Hat Enterprise Linux 6 and 7, go to:
+
+. _Hosts _➤ _Partition tables _➤ _New Partition Table_
+. Enter the name: _ptable-acme-os-rhel-server_
+. Copy & paste the partition layout from the box below into the _Layout _text field
+. Select the OS family_ Red Hat_
+. Submit
+
+|===
+|#Dynamic
+
+|===
+
+
+
+*via hammer:*
+
+. Create the file /tmp/tmp.ptable-acme-os-rhel-server.ptable with the partition table layout above
+
+. Upload the partition table
+
+|===
+|hammer partition-table create --name ptable-acme-os-rhel-server --os-family "Redhat" --file /tmp/tmp.ptable-acme-os-rhel-server.ptable
+
+|===
+
+
+The Nested Partition Table for the git server has to be created as a snippet under provisioning templates:
+
+. _Hosts _➤ _Provisioning templates _➤ _New Template_
+. Enter the name: _ptable-acme-git_
+. Copy & paste the code below into the template editor
+. Switch to the _Type _tab ➤ flag the checkbox _Snippet_
+. Switch to the _Location _tab ➤ add all three locations
+. Submit
+
+|===
+|<% if @host.operatingsystem.major.to_i > 6 %>
+
+|===
+
+
+
+*via hammer:*
+
+. Create the file /tmp/tmp.ptable-acme-git.ptable with the partition table layout above
+
+. Upload the partition table
+
+|===
+|hammer partition-table create --name ptable-acme-git --os-family "Redhat" --file /tmp/tmp.ptable-acme-git.ptable
+
+|===
+
+*Note:*
+
+* ERB code is written in blue.
+* Bash code is written in orange.
+
+=== Provisioning Setup
+
+
+Before a host can be provisioned through the Red Hat Satellite Server, several objects have to be configured and combined. The following graphic outlines how these objects are combined, and the next section gives a step-by-step explanation of the process:
+
+
+
+To be able to provision a host, you *must* go through the following setup:
+
+. *Assign the Operating System to a Provisioning Template*
+
+Associate the _Operating Systems_ with the _Provisioning template_ you plan to use. *You must first* associate an _Operating System_ with a _Provisioning template_ before that Template can be selected in the _Operating System _menu.
+
+
+
+
+	Add the Operating System:
+
+. _Hosts_ ➤ _Provisioning Templates_
+. Follow the same steps for the following templates:
+.. ACME Kickstart default
+.. Boot disk iPXE - host
+.. Kickstart default PXELinux
+.. Satellite Kickstart Default User Data
+. Select the template ➤ switch to the _Association _tab ➤ add all Operating Systems
+. Switch to the _Locations _tab ➤ add all locations
+. Switch to the _Organizations _tab ➤ verify that the organization is already assigned or assign it
+. Submit
+
+*via hammer:*
+
+|===
+|ORG=”ACME”
+
+|===
+
+. *Assign the Architecture, Templates, and Partition Table to an Operating System*
+
+
+
+__	__Add the Architecture, Provisioning templates and Partition table:
+
+. _Hosts_ ➤ _Operating systems_
+. For each Operating system that needs to be synchronized, follow these steps:
+.. On the _Operating System _tab ➤ flag the checkbox _x86_64_
+.. Switch to the _Partition Table _tab ➤ flag the _ptable-acme-os-rhel-server _and _Kickstart default_
+.. Switch to the _Installation media _tab ➤ flag the Installation media corresponding to the selected _Operating System_
+.. Switch to the _Templates _tab ➤ select the following templates:
+... provision:	ACME Kickstart default
+... Bootdisk:	Boot disk iPXE - host
+... PXELinux:	Kickstart default PXELinux
+... user_data:	Satellite Kickstart Default User Data
+.. Submit
+
+*	via hammer:*
+
+|===
+|ORG=”ACME”
+
+|===
+
+. *Assign the Capsule Features to a Subnet*
+
+A Red Hat Capsule has to be assigned to a _Subnet_ if the Capsule needs to:
+
+* manage IP addresses (IPAM), next-server and host records - Capsule (DHCP)
+* manage TFTP boot records - Capsule (TFTP)
+* create a reverse dns lookup (PTR) record on the DNS - Capsule (DNS)
+
+
+
+Add a Red Hat Capsule to a subnet:
+
+. _Infrastructure_ ➤ _Subnets_
+. Configure each subnet according to the following table:
+
+|===
+|*Subnet tab*|*Capsules tab*|*Locations tab*
+
+|example.com|for DHCP, TFTP and DNS Capsule:|munich
+|dmz.example.com|for DHCP, TFTP and DNS Capsule:|munich-dmz
+|novalocal|for DNS Capsule:     |boston
+|===
+
+. Submit
+
+*	via hammer:*
+
+. Query the Red Hat Capsule ID
+
+
+|===
+|hammer capsule list
+
+|===
+
+
+. Assign the Red Hat Capsule to a corresponding Subnet
+|===
+|#example.com
+
+|===
+
+. *Assign the Red Hat Capsule to a Domain*
+
+A Red Hat Capsule must be assigned to a _Domain_ if the Capsule manages an A record on the DNS Server.
+
+
+
+Add a Red Hat Capsule to a _Domain_:
+
+. _Infrastructure_ ➤ _Domains_
+. Configure each domain according to the following table:
+
+|===
+|*Domain*|*Domain tab*|*Locations tab*
+
+|example.com|DNS Capsule:|munich
+|dmz.example.com|DNS Capsule:|munich-dmz
+|novalocal|DNS Capsule:     |boston
+|===
+
+. Submit
+
+*via hammer:*
+
+. Assign Red Hat Capsule to the corresponding Subnet
+|===
+|#example.com
+
+|===
+
+. *Assign the Domain to a Subnet*
+
+	A Domain has to be assigned to a subnet:
+
+* To identify the domain to which the subnet belongs to
+* *If the Red Hat Capsule DNS feature is used, *to manage the DNS reverse zone.
+
+
+
+Add a Domain to a Subnet
+
+. _Infrastructure_ ➤ _Subnets_
+. Add each domain according to the following table
+
+|===
+|*Subnet*|*Domains tab*
+
+|example.com|flag the domain
+|dmz.example.com|flag the domain
+|novalocal|flag the domain
+|===
+
+. Submit
+
+*via hammer:*
+
+|===
+|#example.com
+
+|===
+
+. *Verify the Compute Resource’s Organization and Location*
+
+You can limit the use of a _Compute Resource_ by assigning it to an organization and to specific locations.
+
+
+
+	To verify the _Compute Resource’s _organization and location assignment:
+
+. _Administer _ ➤ _Organizations_ ➤_ACME_
+.. select _Compute Resources_ on the left pane ➤ verify all _Compute Resources _are added
+.. _Submit_
+. _Administer_ ➤ _Locations _ ➤ for every location (munich, munich-dmz and boston)
+.. select _Compute Resources_ on the left pane ➤ verify that the _Compute Resource _for this location is added.
+.. _Submit_
+
+*via hammer:*
+
+|===
+|ORG=”ACME”
+
+|===
+
+. *Assign the Location to an Organization*
+
+
+
+	To add a location to an organization:
+
+. _Administer_ ➤ _Organizations _➤ _ACME_
+. select _Locations_ on the left pane
+. Add the three location _munich, munich-dmz _and_ boston _to the selected items
+. Submit
+
+*via hammer:*
+
+|===
+|ORG=”ACME”
+
+|===
+
+. *Assign and verify location assignments*
+
+Verify that the following objects are assigned to the corresponding location; otherwise, they have to be added.
+
+
+
+To verify the object assignment:
+
+. _Administer_ ➤ _Locations _➤ for every location
+. Ensure that the elements required for the location are added
+.. for every object on the list ➤ select the object on the left pane
+... Media:				ACME/Library/*
+... Organization:			ACME
+... Capsule:			select the Capsule for the location
+... Environments:			flag the checkbox _All environments_
+... Subnet	:			select the Subnet for the location
+... Templates:			flag the checkbox _All templates_
+... Domains:			select the Domain for the location
+... Host Groups:			flag the checkbox _All host groups_
+... Compute Resources:		select the Compute Resource for the
+location
+
+. Submit
+
+		*Note:* +
+Environments are published content (content-views) and not the Lifecycle Environment.
+
+The Capsule for the locations munich-dmz and boston will be assigned after they are installed.
+
+=== Provisioning Workflow
+
+
+The provisioning workflow gives an overview of the steps that a host executes during provisioning.
+
+For provisioning we differentiate between two different types of action, _one-time actions_ and _repeatable actions _across an entire host lifecycle.
+
+==== One-time actions
+
+
+Actions that are executed only once on a host during provisioning and are expected not to change during the whole lifecycle of a host. One-time actions are configured in _templates_ on Satellite Server 6.
+
+Some examples of one-time actions:
+
+|===
+|*Action*
+
+|Partitioning
+|System Language
+|System Timezone
+|===
+
+==== Repeatable actions
+
+
+Actions to ensure a system’s target state during the whole lifecycle of a host. Use repeatable actions if the configuration on a host could change after initial provisioning. Repeatable actions are executed through Satellites _configuration management_.
+
+Some examples of repeatable actions:
+
+|===
+|*Action*
+
+|DNS configuration
+|NTP configuration
+|System hardening
+|===
+
+*Note:* +
+We recommend that you configure everything on a host through configuration management whenever possible.
+
+Provisioning Workflow overview
+
+
+
+
+*1.* *Create a New Host in Satellite*
+
+Define a host record on the Red Hat Satellite Server, where the host’s role is assigned, as well as host specific information (Hostname, Domain, Subnet, IP,...)
+
+	*Note:* +
+Because of the Capsule feature of the Red Hat Satellite Server used in this solution guide, TFTP, DHCP and DNS records are created automatically, based on the information provided from the host record.
+
+*2. Create a VM*
+
+The Satellite Server connects to the configured *Compute Resource* and creates a virtual machine (VM) based on the specification from the _Compute Profile_ that you have used or through a manual definition during host creation. Afterwards, the VM is started so that it can perform the installation.
+
+	*Note:* +
+If any step is not executed successfully during the host creation on the Satellite Server or VM creation on the _Compute Resource,_ the integrated workflow engine (https://github.com/Dynflow/dynflow/[https://github.com/Dynflow/dynflow/]) rolls back the changes and displays a notification that describes what went wrong.
+
+*3. PXE or Boot ISO*
+
+The host is configured with the network information for loading the Anaconda installer and for loading and using the Kickstart profile.
+
+	*Note:* +
+A Boot ISO can be used to boot the host into Anaconda if DHCP for PXE cannot be used in your environment.
+
+*4. Bootstrap Anaconda*
+
+Initialise Anaconda (Red Hat’s installation program)
+
+*6. Query the Server Definition*
+
+Anaconda will request the host’s Kickstart profile from the Satellite Server.
+
+*7. Generate Kickstart*
+
+On the Satellite Server, the _Provisioning template(s)_  will be rendered fora host-specific Kickstart profile. The templates will be rendered with the information provided during *1. Create a New Host in Satellite *in this procedure.
+
+	*Note:* +
+To review a Kickstart profile before performing the actual installation (it is useful to check a Kickstart profile for syntax errors, for example, or if it can be rendered successfully) navigate to:
+
+_Host_s ➤ _All Hosts_ ➤ select host for which to render the kickstart template ➤ select the _Templates_ tab ➤ for the provisioning template, click on the arrow down button ➤ select _review_
+
+
+
+
+*8. Retrieve the Kickstart Profile*
+
+Anaconda retrieves the Kickstart profile and will execute it.
+
+*9. Apply the Filesystem Layout*
+
+Anaconda will configure the filesystem corresponding to the layout, as specified in the Kickstart profile.
+
+*10. Install Minimal Software*
+
+Install the Red Hat Enterprise Linux Server with the minimal set of packages.
+
+*11. Configure the Static Network*
+
+Before the system can register itself on the Satellite Server, static networking must be configured.
+
+*12. Register at Satellite*
+
+The host will use _Activation Keys_ to register itself to the Satellite Server. Once it is registered, it can access its _(Composite) Content-View_ on the _Lifecycle Environment_ associated with that _Activation Key_.
+
+*13. Execute Puppet Modules*
+
+All components that are assigned to the host through its role will be installed and configured. These also include the components defined in the Core Build as those that are inherited to every host.
+
+*14. Configure a remote server (optional)*
+
+This step allows you to execute a custom script on the Red Hat Satellite Server in different stages of the provisioning phase. The custom script could, for example, connect to a remote server, or it could create a host record on the monitoring server.
+
+=== Foreman Hooks
+
+
+Foreman hooks are a plugin engine used by Red Hat Satellite that lets you run custom hook scripts on Foreman events. These hooks can be used to trigger various actions on the Satellite Server itself or on external systems. These allow an easy integration with various other tools used inside an environment.
+
+*Warning:* +
+The following information has been provided by Red Hat, but is outside the scope of the postedhttps://access.redhat.com/support/offerings/production/[https://access.redhat.com/support/offerings/production/[ ]]https://access.redhat.com/support/offerings/production/[Service Level Agreements and support procedures]. The information in this article could make the Operating System unsupported by Red Hat Global Support Services. In this chapter we show how to use Foreman hooks to enhance the flexibility of provisioning or  to integrate Satellite 6 provisioning into an existing tool chain. However, use of the information is at the user's own risk.
+
+In this solution guide, we provide three sample hooks to demonstrate the functionality of Foreman hooks and to provide examples for potential use cases:
+
+* a hook script that adds a new host as a Satellite compute resource of type Docker if it belongs to the appropriate host group (containerhost)
+* a hook script integrating an additional logging or auditing tool that generates log messages each time Foreman is provisioning a new server
+* a hook script to add a new host to Zabbix monitoring automatically
+
+A hook is executed under the _Foreman_ user and always gets executed with two arguments. The first argument is the event (create, update, destroy) the second argument is the object that was hooked (in this example, the hostname of a host).
+
+==== Foreman Hook Script Sample 1: Containerhost
+
+
+Hooks located in the same directory are executed in alphabetical order. We recommend that you use a numerical naming convention to ensure the proper execution order.
+
+You must create a specific subdirectory structure on the Red Hat Satellite where the Foreman hooks are stored. The subdirectory for the object must contain another subdirectory for the event.
+
+*Note:* +
+_before_provision _event is started after a host has completed its Operating System installation.
+
+To create the subdirectory structure:
+
+. Login on the Red Hat Satellite Server through ssh and create the directory structure:
+
+|===
+|_mkdir -p /usr/share/foreman/config/hooks/host/managed/before_provision/_
+
+|===
+
+. Place the script _05_containerhost.sh _from the Appendix into the just created directory, change the ownership to Foreman, and mark it as executable:
+
+|===
+|chown foreman.foreman _/usr/share/foreman/config/hooks/host/managed/before_provision/05_containerhost.sh_
+
+|===
+
+. By default, the Red Hat Satellite Server is running in SELinux mode enforcing. This mode ensures that the SELinux context is set correctly for the scripts to be executed:
+
+|===
+|restorecon -RvF /usr/share/foreman/config/hooks
+
+|===
+
+*Note:* +
+The corresponding SELinux context is foreman_hook_t. Since this is an alias to bin_t context you will see the latter if you verify the SELinux context.
+
+==== Foreman Hook Script Sample 2: New Host Notification
+
+
+As we said earlier, this hook script creates additional log messages each time Foreman provisions a new server. It can be used to debug or test foreman hook capabilities, and it also can be used to integrate an additional logging or auditing tool that is notified each time a new server is created.
+
+The hook script itself is quite simple since it includes only a single command using the two arguments it was executed with (action and host):
+
+|===
+|logger $1 $2
+
+|===
+
+Similar to the other example the script needs to be placed in the appropriate directory and made executable. Additionally the SELinux security context needs to be restored as well.
+
+Because the logger command requires a certain permission, we need to create a sudoers rule for it inside the _/etc/sudoers_ configuration file:
+
+|===
+|foreman ALL=(ALL)       NOPASSWD:/usr/bin/logger
+
+|===
+
+
+==== Foreman Hook Script Sample 2: ITSM Tool Integration (Monitoring)
+
+
+The third sample script automatically adds a new host to the Zabbix monitoring configuration  by using the Zabbix API. This approach allows us to put each new server under monitoring control. If necessary, this script can be extended to use filter rules to apply only to particular servers (for example, only for servers belonging to the PROD lifecycle environment but not to DEV or QA). The containerhost sample explained earlier can be reused therefore, because it includes this kind of condition.
+
+This sample script you can find inside Appendix figures out MAC addresses of this host via hammer CLI and handovers hostname and MAC addresses to the Zabbix monitoring server to enable and configure some basic predefined checks.
+
+*Note:* +
+The Zabbix Group IDs and template IDs for ICMP ping test and Linux OS templates are hardcoded and need to be adapted to your environment.
+
+More detailed information about Foreman hooks can be found on the official project page:https://github.com/theforeman/foreman_hooks[https://github.com/theforeman/foreman_hooks[ ]]https://github.com/theforeman/foreman_hooks[https://github.com/theforeman/foreman_hooks]
+
+=== Activation Keys
+
+
+Activation Keys are a registration token used in a Kickstart file to control actions at registration. These are similar to Activation Keys in Red Hat Satellite 5, but provide only a subset of features because Puppet controls package and configuration management after registration.
+
+Activation Keys are used to subscribe a host against the Katello part of the Red Hat Satellite Server, so the host can access the software repositories inside the (composite) content-views. As mentioned in Step 3, explicit *subscription and repository management (to enable or disable) is required for all products (including Red Hat, third party, and custom products)*.
+
+Multiple _Activation Keys_ can be used in a comma separated list to register a host on the Satellite Server.
+
+The first key on the left side has a special role and determines:
+
+* The Lifecycle Environment to which a host belongs
+* The (Composite) Content-View assigned to a host
+
+Every key (the first and all the following keys) in the list can:
+
+* Add the host to Host Collections
+* Add subscriptions for the host to consume
+* Enable _Product Content_ repositories belonging to the (Composite) Content-View
+
+	*Note:* +
+Even if other keys in the list have a Content-View and/or Lifecycle Environment, if it is not the first key in the list, this information is ignored for registration.
+
+By default the registration will be done through the template snippet called _subscription_manager_registration_ and uses the Activation Keys listed in the parameter _kt_activation_keys_.
+
+==== Naming Conventions
+
+
+* Activation Keys start with the prefix _act _as an abbreviation for Activation Key.
+* The next part of the name details lifecycle environment to which the host is assigned.
+* The third (biz|infra) defines which composite content-view to use.
+* The fourth part (role name) is the Host Group name including its meta parent if used.
+* The fifth part defines the architecture.
+
+As a result, the activation keys have the following naming structure:
+
+|===
+|act - < lifecycle environment > - < biz|infra|os > - < role name > - < architecture >
+
+|===
+
+==== Create Activation Keys
+
+
+To create activation keys:
+
+. Navigate to: _Content_ ➤ _Activation keys _➤ _New Activation Key_
+. Add the name for the activation key ➤ select the Lifecycle Environment ➤ select the Content-View
+. Save
+. Switch to the _Subscription _tab ➤ click on the sub-tab _Add _➤ assign subscriptions (needed to access _Product Content) _➤ _Add Selected_
+. Switch to the _Product Content) tab _➤ enable repositories
+.. For the solution guide the following activation keys have to be created:
+
+|===
+|*Name*|*Environment*|*Content-View*|*Subscription*|*Product Content*
+
+|act-dev-infra-capsule-x86_64|DEV|ccv-infra-capsule|-) Red Hat Enterprise Linux|-) Red Hat Satellite Tools 6
+|act-qa-infra-capsule-x86_64|QA|||
+|act-prod-infra-capsule-x86_64|PROD|||
+|act-dev-infra-gitserver-x86_64|DEV|ccv-infra-gitserver|-) Red Hat Enterprise Linux|-) Red Hat Satellite Tools 6
+|act-qa-infra-gitserver-x86_64|QA|||
+|act-prod-infra-gitserver-x86_64|PROD|||
+|act-dev-infra-loghost-x86_64|DEV|cv-os-rhel-6Server|-) Red Hat Enterprise Linux|-) Red Hat Satellite Tools 6
+|act-qa-infra-loghost-x86_64|QA|||
+|act-prod-infra-loghost-x86_64|PROD|||
+|act-dev-infra-containerhost-x86_64|DEV|ccv-infra-containerhost|-) Red Hat Enterprise Linux|-) Red Hat Enterprise Linux 7 Server
+|act-qa-infra-containerhost-x86_64|QA|||
+|act-prod-infra-containerhost-x86_64|PROD|||
+|act-dev-infra-corebuild-rhel-6server-x86_64|DEV|cv-os-rhel-6Server|-) Red Hat Enterprise Linux|-) Red Hat Satellite Tools 6
+|act-qa-infra-corebuild-rhel-6server-x86_64|QA|||
+|act-prod-infra-corebuild-rhel-6server-x86_64|PROD|||
+|act-dev-infra-corebuild-rhel-7server-x86_64|DEV|cv-os-rhel-7Server|-) Red Hat Enterprise Linux|-) Red Hat Satellite Tools 6
+|act-qa-infra-corebuild-rhel-7server-x86_64|QA|||
+|act-prod-infra-corebuild-rhel-7server-x86_64|PROD|||
+|act-web-dev-biz-acmeweb-frontend-x86_64|Web-DEV|ccv-biz-acmeweb|-) Red Hat Enterprise Linux|-) Red Hat Satellite Tools 6
+|act-web-qa-biz-acmeweb-frontend-x86_64|Web-QA|||
+|act-web-uat-biz-acmeweb-frontend-x86_64|Web-UAT|||
+|act-web-prod-biz-acmeweb-frontend-x86_64|Web-PROD|||
+|act-web-dev-biz-acmeweb-backend-x86_64|Web-DEV|ccv-biz-acmeweb|-) Red Hat Enterprise Linux|-) Red Hat Satellite Tools 6
+|act-web-qa-biz-acmeweb-backend-x86_64|Web-QA|||
+|act-web-uat-biz-acmeweb-backend-x86_64|Web-UAT|||
+|act-web-prod-biz-acmeweb-backend-x86_64|Web-PROD|||
+|===
+
+*via hammer:*
+
+|===
+|#Create Host Collections
+
+|===
+
+=== Satellite 6 Host Groups Overview
+
+
+Host Groups greatly help in *standardization* and *automatization* and improve overall *operational efficiency* for a host’s entire lifecycle.
+
+A Host Group is a blueprint (template) for building a Host where objects are combined to define how a host should look after deployment. The host group acts as the definition of the target state of a server. In our scenario the final target is equivalent to a role (including profiles).This includes the content view (which defines the available RPM files and Puppet modules) and the Puppet classes to apply (which ultimately determine the software and configuration).
+
+Host Groups are used to define “ready2run systems” as explained in the Provisioning Best Practices section.
+
+Host Groups can be nested. When a Host Group gets a _parent_ assigned, all defined objects are inherited to the _child._ See the section Host Group Scenarios for an explanation of the advantages of the nested Host Group feature.
+
+The following graphic gives an overview of all objects that can be defined in a single Host Group. As you can see host groups are a key element of Satellite 6 assembling many entities we have configured earlier together.
+
+
+
+*Host Group*
+
+* *Parent*
+When a** **parent is assigned to a Host Group, all defined objects are inherited by that parent.
+
+* *Name*
+	Enter the name of the Host Group.
+
+* *Lifecycle Environment*
+Select the lifecycle environment to which the Host provisioned with this Host Group should belong.
+
+* *Content View*
+You *must* select a lifecycle environment *before *you can select a content view.
+**	**
+
+* *Puppet Environment*
+When a content view is selected, the Red Hat Satellite automatically assigns the Puppet environment that belongs to it.** **The Puppet Classes tab is *hidden* until a Lifecycle Environment and a Content View are chosen.
+
+* *Puppet Classes*
+Assign Puppet Classes to a Host Group.
+
+Puppet Modules often contain subclasses that exist only for the internal Puppet module structure and are not intended for direct consumption. Subclasses that are not intended for direct consumption can be excluded by a filter, so only classes that are intended to be assigned to a host can be seen.
+
+Module example:
+
+|===
+|ntp/
+
+|===
+The Red Hat Satellite Server offers to assign any of the following classes to a host or host group:
+
+|===
+|ntp
+
+|===
+
+To exclude the classes ntp::install and ntp::params from the selection, since they should not be assigned alone to a host or host group_, _create the following file__:__
+
+. Create file
+|===
+|cat << EOF > /usr/share/foreman/config/ignored_environments.yml
+
+|===
+
+
+* *Config Groups*
+	Add a Config Group to a Host Group.
+
+When Puppet classes are assigned to a Config Group, all Puppet classes available can be assigned to the class no matter through which content view or Puppet environment they are made available. When the Config Group is assigned to a Host Group, only the Puppet classes available in the Puppet environment are really used by the host / host group. Puppet classes that cannot be used because they are not available in the Puppet environment should be greyed out.
+
+*Network*
+
+* *Domain*
+Select a Domain. The Domain is used to configure a Hosts FQDN. If the DNS Capsule feature is configured, the associated domain is used to create an A record.
+
+* *Subnet*
+**	**Subnets are available to be selected *only if* they are assigned to the Domain.
+
+* *Realm*
+**	**When a realm is configured, a computer account can be automatically configured. +
+*Note:* +
+This feature is not covered in this solution guide.
+
+*Operating System*
+
+
+
+* *Architecture*
+**	**Select the Operating System architecture.
+
+* *Operating System*
+**	**All Operating Systems that offer the selected architecture are displayed for selection.
+
+* *Partition Table*
+Only the partition tables that were previously assigned to the Operating System can be selected.
+
+*Parameter*
+
+
+Parameters of a Host Group level are defined here.
+
+We are using the parameter _ptable,_ for example, to define which partition table snippet should be used to set up a second hard disk.
+
+When a parameter is changed on a Host Group, it is also directly inherited by hosts already provisioned through the Host Group and also by any host assigned to the Host Group after provisioning.
+
+
+*Activation Keys*
+
+
+
+A comma-separated list of activation keys is added here.
+
+The Activation Keys tab is hidden until a Lifecycle Environment and a Content View are selected. The Activation key tab lets you add the parameter _kt_activation_keys_ with a specified value, which is used by the snippet _subscription_manager_register _during the provisioning phase.
+
+*Locations*
+
+
+Every location where the Host Group is provisioned is added here.
+
+*Organizations*
+
+
+
+Because Host Groups can be shared between organizations, you need to add the organizations that use the Host Group.
+
+=== Satellite 6 Host Group Scenarios
+
+
+The following section describes multiple host group scenarios. Because there is no one-size-fits-all approach and each customer environment has different requirements and priorities, we describe four different host group scenarios with their individual advantages and disadvantages. The primary difference between scenarios B, C and D is that each one offers a different perspective on how to structure or separate your host and application divisions. One scenario that could come very close to a perfect world would be to combine these three scenarios and include a multi-dimensional view of this setup. Unfortunately, because this approach is currently not possible, we cannot document it here. If you switched to a multi-dimensional view, the current 1:1 relationship between host groups and hosts would have to be removed.
+
+*Note:* +
+Mixing these different hierarchy types is possible and might be the best option in a typical customer environment where some server roles should be divided into one of these types and other server roles into another. For example, you could use the business view in scenario C for business applications but divide infrastructure services based on scenario D, or even A. You can use *different structure types side-by-side but not for the same host (group)*.
+
+The following four scenarios are described in further detail below:
+
+
+
+==== Scenario A) Flat Host Group Structure
+
+
+A typical starting point for using host groups is to start with a completely flat structure. In this approach, all host groups are created side by side, and no nesting is used. If your environment is similar to our ACME sample scenario and you are using different lifecycle stages and multiple combinations of applications and OS versions, you need to create host groups for each relevant combination of these 3 items. The purpose of an activation key is to assign a content view or composite content view to a particular host. Since the association with a particular lifecycle environment determines which content views are available inside this environment,  you *must *have an activation key.
+
+In our sample flat host group structure, we are using the following naming convention:
+
+|===
+|< LC ENV > - < infra | biz > - < profile > - < OS release and architecture >
+
+|===
+
+You might need to adapt this to your needs.
+
+*Advantages*
+
+The primary advantage of a flat structure is the limited complexity because you avoid using hierarchical and inheritance models. In an environment with a high degree of standardization or with only a few different roles types or hosts, this scenario is the best option.
+
+*Disadvantages*
+
+The main disadvantage is not using inheritance. Therefore, you could end up creating a huge number of nearly similar host groups that have more commonalities than differences.
+
+==== Scenario B) Lifecycle-Environment Focused Hierarchical Structure
+
+
+This scenario uses inheritance. It divides the lifecycle environments inside the first level of the hierarchy tree. Then, the second level splits out the OS release version and the architecture. Finally, the third level contains the role type. You could swap the second and third level.
+
+The idea behind this approach is that the top level contains the lifecycle environments, which are required to select a particular content view that has been promoted into this lifecycle environment. All lifecycle-environment-specific parameters are assigned to the first host-group level. This approach can be an advantage in customer scenarios where responsibilities are divided among lifecycle environments (for example, if there is a dedicated owner for the Dev, QA and Prod stages).
+
+The second level defines the particular core build definition (for example, for RHEL 7). All common configurations belonging to the individual core build definitions are applied here. The Operating System and activation keys, which enable access to these subscriptions and repositories, are selected and applied here.
+
+The third level adds the application-specific configurations and parameters and defines the *final* definition of the target systems. Typically, the configuration groups with levels like this example are used to simplify the Puppet configuration management in this area.
+
+*Advantages*
+
+The main advantage of this approach is that the inheritance models follow the relationship models in Satellite 6. The lifecycle environment defines the available content views. Putting the operating system / core build on top of the application level allows better standardization on the OS level. Moreover, this scenario lets you separate responsibilities across lifecycle stages.
+
+*Disadvantages*
+
+One disadvantage is that this hierarchical structure might not be intuitive for somebody who is looking from the top down-- either from an application- (business) or from a host-perspective. Additionally, this scenario increases the maintenance efforts for all application-relevant configurations, because each application owner now has up to 6 host groups to manage (assuming that there are 3 lifecycle stages and 2 different core-build versions). This approach might be best for advanced Puppet users who are following Puppet best practices, because all Puppet configurations are both lifecycle-stage and OS-type independent.
+
+==== Scenario C) Business View
+
+
+In this scenario the host group hierarchy is following the business- or application-centric view, which looks from the top (application level) down (operating system + lifecycle stage). In our example (provided above and documented in this solution guide), we have added an additional layer of separation between the top and bottom layers. This layer lets you group the different server types (for example, the backend and frontend servers), because this in-between layer either affects or is affected by the location and network relationship (frontend servers are inside a DMZ, but backend servers are not).
+
+*Advantages*
+
+This approach allows us to segregate different relevant characteristics of the final hosts and show how the final hosts are associated with the host groups in the bottom level of the hierarchy. It allows additional layers for segregating network or security, and better supports the Puppet-focused management of complex configurations (assuming that Puppet modules are OS-independent and support multi-tier definitions using a roles / profile pattern).
+
+*Disadvantages*
+
+The disadvantage (based on the mandatory assignment of a particular lifecycle environment to a content view) is that the lowest hierarchy level *must* include the lifecycle stage or *needs to be* the lifecycle stage (if you add a dedicated layer at the bottom). Therefore, content or composite content views can be assigned only to hosts at this level. The other levels are primarily for parameters and configurations shared across the inherent objects.
+
+==== Scenario D) Location based
+
+
+This approach is best for global customers who have a lot of federated locations (for example, in the retail vertical). In these cases, it makes sense to structure the host groups based on locations.
+
+*Advantages*
+
+The main advantage is that the distribution of locations / datacenters and the resources inside them is aligned to the host group structure. If a location is associated to a Capsule and additionally to particular host groups, the data-center topology and host group structure follows the same logic. In a scenario where the data-center topology or federations determine many other attributes, this approach would be the best option.
+
+*Disadvantages*
+
+This scenario complicates the standardization of core builds and applications across locations or subsidiaries. In complex environments with a huge number of applications and different configurations, the number of host group changes that are required for each configuration change increases significantly.
+
+In our solution guide, we’ve decided to use scenario B (explained in further detail below).
+
+==== Create Host Groups
+
+
+Scenario B) Lifecycle-Environment-focused hierarchical structure is the host-group scenario implemented in this solution guide document.
+
+To create a Host Group, go to:
+
+. _Configure_ __ __➤ _Host groups  _➤ _New Host Group_
+. _Specify the information according to the table below_
+(The specified entries are defaults that you can change when a new host is provisioned.)
+
+. _Submit_
+
+For the solution guide, create the following Host Groups:
+
+*Lifecycle Environments*
+
+|===
+||*Object*|*Value*
+
+|*Host Group*|Parent:    |
+|*Puppet Classes*|Classes:|
+|*Network*|Domain:|
+|*Operating System*|Architecture:|
+|*Parameter*||
+|*Location*||munich, munich-dmz
+|*Organization*||ACME
+|*Activation Key*||
+|===
+
+*Note:* +
+Create the same Host Group for the *_qa_*, *_prod, web-dev, web-qa, web-uat _*and*_ web-prod_* environments. +
+Clone the Host Group and adapt the following information:
+
+* Host Group
+** Name
+** Lifecycle Environment
+
+*via hammer:*
+|===
+|ORG="ACME"
+
+|===
+
+*Red Hat Enterprise Linux 6*
+
+|===
+||*Object*|*Value*
+
+|*Host Group*|Parent:    |dev
+|*Puppet Classes*|Classes:|
+|*Network*|Domain:|example.com
+|*Operating System*|Architecture:|x86_64
+|*Parameter*||
+|*Location*||munich, munich-dmz
+|*Organization*||ACME
+|*Activation Key*||act-dev-os-rhel-6server-x86_64
+|===
+
+*Note:* +
+At the time this document was written, the Config Group _cfg-corebuild_ could not be assigned via hammer. Please add it *manually to every Red Hat Enterprise Linux Host Group* if the hammer command is used to create the structure.
+
+Create the same Host Group for the *_qa_*, *_prod _*environment. +
+Clone the Host Group and adapt the following information:
+
+* Host Group
+** Name
+** Lifecycle Environment
+** Content-View
+* Puppet Classes
+** cfg-corebuild (has to be added again due to Lifecycle Environment change)
+* Activation Key
+** change the environment part
+
+*via hammer:*
+|===
+|MAJOR="6"
+
+|===
+
+*Red Hat Enterprise Linux 7*
+
+|===
+||*Object*|*Value*
+
+|*Host Group*|Parent:    |dev
+|*Puppet Classes*|Classes:|
+|*Network*|Domain:|example.com
+|*Operating System*|Architecture:|x86_64
+|*Parameter*||
+|*Location*||munich, munich-dmz, boston
+|*Organization*||ACME
+|*Activation Key*||act-dev-os-rhel-7server-x86_64
+|===
+
+*Note:* +
+At the time this document was written, the Config Group _cfg-corebuild_ could not be assigned via hammer. Please add it *manually to every Red Hat Enterprise Linux Host Group* if the hammer command is used to create the structure.
+
+Create the same Host Group for the *_qa_*, *_prod, web-dev, web-qa, web-uat _*and*_ web-prod_* environments. +
+Clone the Host Group and adapt the following information:
+
+* Host Group
+** Name
+** Lifecycle Environment
+** Content-View
+* Puppet Classes
+** cfg-corebuild (has to be added again due to Lifecycle Environment change)
+* Activation Key
+** change the environment part
+
+*via hammer:*
+|===
+|MAJOR="7"
+
+|===
+
+*Meta Parent*
+
+|===
+||*Object*|*Value*
+
+|*Host Group*|Parent:    |rhel6-server-x86_64
+|===
+
+
+|===
+||*Object*|*Value*
+
+|*Host Group*|Parent:    |rhel7-server-x86_64
+|===
+
+*Note:* +
+Create the same Host Group for the *_qa_*__ __and__ __*_prod _*environments for *rhel6-server-x86_64* and *rhel7-server-x86_64*. +
+Clone the Host Group and adapt the following information:
+
+* Host Group
+** Name
+
+*via hammer:*
+|===
+| MAJOR="7"
+
+|===
+
+
+*Gitserver*
+
+|===
+||*Object*|*Value*
+
+|*Host Group*|Parent:    |dev/rhel-7server-x86_64/infra
+|*Puppet Classes*|Classes:|git::server
+|*Network*|Domain:|(inherited)
+|*Operating System*|Architecture:|(inherited)
+|*Parameter*|ptable|git
+|*Location*||munich, munich-dmz
+|*Organization*||ACME
+|*Activation Key*||act-dev-infra-gitserver-x86_64
+|===
+
+*Note:* +
+Create the same Host Group for the *_qa_* and *_prod_* environments. +
+Clone the Host Group and adapt the following information:
+
+* Host Group
+** Name
+** Lifecycle Environment
+* Puppet Classes
+** Re-select the Puppet classes (they have to be selected again because the Puppet Environment changed)
+* Activation Key
+
+*via hammer:*
+|===
+|MAJOR="7"
+
+|===
+
+*Containerhost*
+
+|===
+||*Object*|*Value*
+
+|*Host Group*|Parent:    |dev/rhel-7server-x86_64/infra
+|*Puppet Classes*|Classes:|docker
+|*Network*|Domain:|(inherited)
+|*Operating System*|Architecture:|(inherited)
+|*Parameter*|selinux|--enforcing
+|*Location*||munich, munich-dmz
+|*Organization*||ACME
+|*Activation Key*||act-dev-infra-containerhost-x86_64
+|===
+
+*Note:* +
+Create the same Host Group for the *_qa_* and *_prod_* environments. +
+Clone the Host Group and adapt the following information:
+
+* Host Group
+** Name
+** Lifecycle Environment
+* Puppet Classes
+** Re-select the Puppet classes (they have to be selected again because the Puppet environment changed)
+* Activation Key
+
+*via hammer:*
+|===
+|MAJOR="7"
+
+|===
+
+*Capsule*
+
+|===
+||*Object*|*Value*
+
+|*Host Group*|Parent:    |dev/rhel-7server-x86_64/infra
+|*Puppet Classes*|Classes:|
+|*Network*|Domain:|
+|*Operating System*|Architecture:|(inherited)
+|*Parameter*||
+|*Location*||munich
+|*Organization*||ACME
+|*Activation Key*||act-dev-infra-capsule-x86_64
+|===
+
+*Note:* +
+Create the same Host Group for the *_qa_* and *_prod_* environments. +
+Clone the Host Group and adapt the following information:
+
+* Host Group
+** Name
+** Lifecycle Environment
+* Puppet Classes
+** Re-select the Puppet classes (they have to be selected again because the Puppet environment changed)
+* Activation Key
+
+*via hammer:*
+|===
+| MAJOR="7"
+
+|===
+
+*Loghost*
+
+|===
+||*Object*|*Value*
+
+|*Host Group*|Parent:    |dev/rhel-6server-x86_64/infra
+|*Puppet Classes*|Classes:|loghost::server
+|*Network*|Domain:|(inherited)
+|*Operating System*|Architecture:|(inherited)
+|*Parameter*||
+|*Location*||munich, munich-dmz
+|*Organization*||ACME
+|*Activation Key*||act-dev-infra-loghost-x86_64
+|===
+
+*Note:* +
+Create the same Host Group for the *_qa_* and *_prod_* environments. +
+Clone the Host Group and adapt the following information:
+
+* Host Group
+** Name
+** Lifecycle Environment
+* Puppet Classes
+** Re-select the Puppet classes (they have to be selected again because the Puppet environment changed)
+* Activation Key
+
+*via hammer:*
+|===
+| #LOGHOST
+
+|===
+
+Add _Matcher-Value_ for the Smart Class Parameter *_mode _*to value *_server _*based on the Host Group:
+
+. Configure -> Puppet Classes -> select *loghost *module
+. Select the Tab: Smart Class Parameter
+. Select the Smart Class Parameter *mode*
+. Mark the *Override *checkbox
+. Add Matcher-Values
+.. Match: hostgroup=dev/rhel-6server-x86_64/loghost
+.. Value: server
+.. Match: hostgroup=qa/rhel-6server-x86_64/loghost
+.. Value: server
+.. Match: hostgroup=prod/rhel-6server-x86_64/loghost
+.. Value: server
+
+
+
+*Note:* +
+At the time of writing a Matcher-Value had to be added for every *_loghost _*Host Group entry.
+
+*acmeweb*
+
+|===
+||*Object*|*Value*
+
+|*Host Group*|Parent:    |dev/rhel-7server-x86_64/
+|*Puppet Classes*|Classes:|
+|*Network*|Domain:|(inherited)
+|*Operating System*|Architecture:|(inherited)
+|*Parameter*||
+|*Location*||munich, munich-dmz, boston
+|*Organization*||ACME
+|*Activation Key*||
+|===
+
+*Note:* +
+Create the same Host Group for the *web-**_qa, web-uat_* and *_web-prod_* environments. +
+Clone the Host Group and adapt the following information:
+
+* Host Group
+** Name
+** Lifecycle Environment
+
+*via hammer:*
+|===
+|MAJOR="7"
+
+|===
+
+*acmeweb frontend*
+
+|===
+||*Object*|*Value*
+
+|*Host Group*|Parent:    |dev/rhel-7server-x86_64/acmeweb
+|*Puppet Classes*|Classes:|acmeweb::frontend
+|*Network*|Domain:|(inherited)
+|*Operating System*|Architecture:|(inherited)
+|*Parameter*||
+|*Location*||munich, munich-dmz, boston
+|*Organization*||ACME
+|*Activation Key*||act-dev-biz-acmeweb-x86_64
+|===
+
+*Note:* +
+Create the same Host Group for the *web-**_qa, web-uat_* and *_web-prod_* environments. +
+Clone the Host Group and adapt the following information:
+
+* Host Group
+** Name
+** Lifecycle Environment
+* Puppet Classes
+** Re-select the Puppet classes (they have to be selected again because the Puppet environment changed)
+* Activation Key
+
+*via hammer:*
+
+|===
+|MAJOR="7"
+
+|===
+
+*acmeweb backend*
+
+|===
+||*Object*|*Value*
+
+|*Host Group*|Parent:    |dev/rhel-7server-x86_64/acmeweb
+|*Puppet Classes*|Classes:|acmeweb::backend
+|*Network*|Domain:|(inherited)
+|*Operating System*|Architecture:|(inherited)
+|*Parameter*||
+|*Location*||munich, munich-dmz, boston
+|*Organization*||ACME
+|*Activation Key*||act-dev-biz-acmeweb-x86_64
+|===
+
+*Note:* +
+Create the same Host Group for the *web-**_qa, web-uat_* and *_web-prod_* environments. +
+Clone the Host Group and adapt the following information:
+
+* Host Group
+** Name
+** Lifecycle Environment
+* Puppet Classes
+** Re-select the Puppet classes (they have to be selected again because the Puppet environment changed)
+* Activation Key
+
+*via hammer:*
+|===
+|MAJOR="7"
+
+|===
+
+
+*Note:* +
+Everything is now prepared for the Red Hat Capsule installation and configuration, if you want to set up a Red Hat Capsule, go back to Step 2 for detailed instructions.
+
+
+=== Provisioning a new host
+
+
+Since we have now configured all required Satellite 6 entities, we can provision a new host to verify that the configuration works. As an example, we are provisioning a new host inside our DMZ network using the RHEL7 core-build content view. Click on Hosts -> New Hosts.
+
+On the first tab, enter or adapt the following items:
+
+* Enter a hostname: corebuild-test-dev1
+* Leave the Organization unchanged (ACME)
+* Change Location to munich-dmz
+* Select the host group: infra/corebuild/dev
+* Select acme-rhev-munich-dmz as the deployment target (compute resource)
+* Change the lifecycle environment to DEV
+* Select the RHEL7 core-build content view: cv-os-rhel-7Server
+ The Puppet environment should be automatically adapted
+* Select capsule-munich.dmz.example.com as content source
+* Select capsule-munich.dmz.example.com as the Puppet CA
+* Select capsule-munich.dmz.example.com as the Puppet Master
+
+The final New Host configuration should look like this:
+
+
+
+Select the Puppet Classes tab. Because the config group cfg-corebuild was assigned to the host group selected in the first step, we don’t need to change anything here.
+
+
+
+Select the Network tab, and change both Domain and Subnet to dmz.example.com. The IP address suggestion should be automatically adapted to the corresponding IP range.
+
+
+Select the Operating System tab. Since all items listed on this tab are already defined in the corresponding host group definition, all you need to do here is enter the root password for this server.
+
+
+
+
+Select the Virtual Machine tab. Here we need to make the following changes:
+
+* Optional: Adapt the number of virtual CPU cores of the VM (we are using 2)
+* Adapt the virtual memory of the VM (we are using 2 GB, minimum is 1 GB)
+* Click on Add Interface to add a network interface to this VM
+** Enter a name (eth0)
+** Select the corresponding network (here: our VLAN 99)
+* Click on Add Volume
+** Enter the disk size (our customized partition table ptable-acme-os-rhel-server requires at least 20 GB). We are using 25 GB (by default, thin provisioning is used, and, as long as the Preallocate Disk checkbox is not selected, the real disk space consumption will be lower than 25 GB).
+** Select the bootable radio button
+
+
+
+*Note:* +
+It might be confusing. In addition to the third tab, Network, we need to explicitly add a network interface here. You must do the same with the volume. However, if the provisioning method as configured in the operating system tab is network based instead of image based and these two items are required to create a virtual machine, the current version of Satellite 6 does not automatically provide empty or predefined fields to configure these required values.
+
+We leave the last two tabs (Parameters and Additional Information) unchanged and then click Submit. After a couple of minutes, our newly created host should be listed under the Hosts -> Content Hosts tab.
