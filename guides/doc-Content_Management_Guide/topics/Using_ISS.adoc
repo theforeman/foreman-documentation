@@ -46,6 +46,7 @@ To export a Content View, ensure that {ProjectServer} where you want to export m
 * Ensure that you set download policy to *Immediate* for all repositories within the Content View you export.
 For more information, see xref:Importing_Content-Configuring_Download_Policies[].
 * Ensure that you synchronize Products that you export to the required date.
+* Ensure that the user exporting the content has the `Content Exporter` role.
 
 .To Export a Content View Version:
 
@@ -85,11 +86,11 @@ Get the version number of desired version. The following example targets version
 
 .Export with chunking
 
-In many cases, the exported archive content can be several gigabytes in size. You might want to split it smaller sizes or chunks. You can use the `--chunk-size-mb` option with in the `hammer content-export` command to handle this. The following example uses the `--chunk-size-mb=10` to split the archives into `10 MB` chunks.
+In many cases, the exported archive content can be several gigabytes in size. You might want to split it smaller sizes or chunks. You can use the `--chunk-size-gb` option with in the `hammer content-export` command to handle this. The following example uses the `--chunk-size-gb=2` to split the archives into `2 GB` chunks.
 
 [options="nowrap" subs="+quotes"]
 ----
-# hammer content-export complete version --content-view=view --version=1.0 --organization=export-21527 --chunk-size-mb=10
+# hammer content-export complete version --content-view=view --version=1.0 --organization=export-21527 --chunk-size-gb=2
 
 # ls -lh  /var/lib/pulp/exports/export-21527/view/1.0/2021-02-25T21-15-22-00-00/
 ----
@@ -133,63 +134,39 @@ You can use the archive that the `hammer content-export` command outputs to crea
 For more information about exporting a Content View version, see xref:Using_ISS-Exporting-a-Content-View-Version[].
 
 When you import a Content View version, it has the same major and minor version numbers and contains the same repositories with the same packages and errata.
-You can customize the version numbers by changing the `major` and `minor` settings in the `json` file that is located in the exported archive.
+The Custom Repositories, Products and Content Views are automatically created if they don't exist in the importing organization.
 
 .Prerequisites
 
 To import a Content View, ensure that {ProjectServer} where you want to import meets the following conditions:
 
-ifdef::satellite[]
-* If you want to import a Content View to {Project} in a disconnected environment, you must configure {Project} to synchronize content with a local CDN server and then synchronize content that the CV you export contains.
-For more information, see xref:configuring-satellite-to-synchronize-content-with-a-local-cdn-server_content-management[].
-endif::[]
-
-* Ensure that you set download policy to *Immediate* for all repositories within the Content View you export.
-
-For more information, see xref:Managing_Content_Views-Creating_a_Simple_Content_View[].
+. The exported archive must be in a directory under `/var/lib/pulp/imports`.
+. The directory must have `pulp:pulp` permissions so that Pulp can read and write the `.json` files in that directory.
+. The user importing the content view version must have the 'Content Importer' Role.
 
 .Procedure
 
 . Copy the archived file with the exported Content View version to the `/var/lib/pulp/imports` directory on {ProjectServer} where you want to import.
-. Set the SELinux permission of the archive files to `pulp:pulp`.
+. Set the user:group permission of the archive files to `pulp:pulp`.
 +
 [subs="+quotes"]
 ----
 # chown -R pulp:pulp /var/lib/pulp/imports/2021-02-25T21-15-22-00-00/
 ----
 +
-. Verify that the SELinux permission change occurs:
+. Verify that the permission change occurs:
 +
 [subs="+quotes"]
 ----
 # ls -lh  /var/lib/pulp/imports/2021-02-25T21-15-22-00-00/
 
 ----
-+
-. On {ProjectServer} where you want to import, create a Content View with the same name and label as the exported Content View with the `Import Only` option set.
-For more information, see xref:Managing_Content_Views-Creating_a_Simple_Content_View[].
-. Ensure that you enable the repositories that the Products in the exported Content View version include.
-For more information, see xref:Importing_Content-Selecting_Red_Hat_Repositories_to_Synchronize[].
-. In the {Project} web UI, navigate to *Content* > *Products*, click the *Yum content* tab and add the same `Yum` content that the exported Content View version includes.
-. Identify the Content View that you want to import
-+
-[subs="+quotes"]
-----
-# hammer content-view list --organization=import-20639
-----------------|---------------------------|--------------------------------------|-----------|---------------------|---------------
-CONTENT VIEW ID | NAME                      | LABEL                                | COMPOSITE | LAST PUBLISHED      | REPOSITORY IDS
-----------------|---------------------------|--------------------------------------|-----------|---------------------|---------------
-4               | Default Organization View | 6e13cfca-cfb3-4870-9d8b-3bdc0caf97c9 | false     | 2021/03/01 22:50:10 |
-5               | view                      | view                                 | false     |                     |
-----------------|---------------------------|--------------------------------------|-----------|---------------------|---------------
-+
-----
+
 . To import the Content View version to {ProjectServer}, enter the following command:
 +
 [subs="+quotes"]
 ----
-# hammer content-import version --content-view=view \
-                                --organization=import-20639 \
+# hammer content-import version --organization=import-20639 \
                                 --path=/var/lib/pulp/imports/2021-02-25T21-15-22-00-00/
 ----
 +
@@ -262,25 +239,18 @@ total 68M
 
 .Export with chunking
 
-In many cases the exported archive content may be several gigabytes in size. We may want to split it smaller sizes or chunks. We can use the `--chunk-size-mb` flag directly in the export command to handle this. In the example below we specify `--chunk-size-mb=10` to split the archives in `10 MB` chunks.
+In many cases the exported archive content may be several gigabytes in size.
+If you want to split it into smaller sizes or chunks.
+You can use the `--chunk-size-gb` flag directly in the export command to handle this.
+In the following example, you can see how to specify `--chunk-size-gb=2` to split the archives in `2 GB` chunks.
 
 [options="nowrap" subs="+quotes"]
 ----
-# hammer content-export complete library --organization=export-21527 --chunk-size-mb=10
+# hammer content-export complete library --organization=export-21527 --chunk-size-gb=2
 [.....................................................................................................................................................................................................................................] [100%]
 Generated /var/lib/pulp/exports/export-21527/Export-Library/2.0/2021-03-02T04-01-25-00-00/metadata.json
 
 # ls -lh /var/lib/pulp/exports/export-21527/Export-Library/2.0/2021-03-02T04-01-25-00-00/
-total 68M
--rw-r--r--. 1 pulp pulp  10M Mar  2 04:01 export-fa948a08-b307-492e-86f0-39cd41c87958-20210302_0401.tar.gz.0000
--rw-r--r--. 1 pulp pulp  10M Mar  2 04:01 export-fa948a08-b307-492e-86f0-39cd41c87958-20210302_0401.tar.gz.0001
--rw-r--r--. 1 pulp pulp  10M Mar  2 04:01 export-fa948a08-b307-492e-86f0-39cd41c87958-20210302_0401.tar.gz.0002
--rw-r--r--. 1 pulp pulp  10M Mar  2 04:01 export-fa948a08-b307-492e-86f0-39cd41c87958-20210302_0401.tar.gz.0003
--rw-r--r--. 1 pulp pulp  10M Mar  2 04:01 export-fa948a08-b307-492e-86f0-39cd41c87958-20210302_0401.tar.gz.0004
--rw-r--r--. 1 pulp pulp  10M Mar  2 04:01 export-fa948a08-b307-492e-86f0-39cd41c87958-20210302_0401.tar.gz.0005
--rw-r--r--. 1 pulp pulp 7.7M Mar  2 04:01 export-fa948a08-b307-492e-86f0-39cd41c87958-20210302_0401.tar.gz.0006
--rw-r--r--. 1 pulp pulp 1.2K Mar  2 04:01 export-fa948a08-b307-492e-86f0-39cd41c87958-20210302_0401-toc.json
--rw-r--r--. 1 root root  443 Mar  2 04:01 metadata.json
 ----
 
 .Incremental Export
@@ -367,7 +337,7 @@ This Content View is used to facilitate the library content import.
 
 |Export a content view version promoted  to the Dev Environment|`hammer content-export complete version --content-view=view --organization="Default_Organization" --lifecycle-environment=’Dev’`
 
-|Export a content view in smaller chunks (200 mb slabs)|`hammer content-export complete version --content-view=view --version=1.0 --organization="Default_Organization" --chunk-size-mb=200`
+|Export a content view in smaller chunks (2 gb slabs)|`hammer content-export complete version --content-view=view --version=1.0 --organization="Default_Organization" --chunk-size-gb=2`
 
 |Get a list of exports|`hammer content-export list --content-view=view --organization="Default_Organization"`
 
@@ -378,7 +348,7 @@ This Content View is used to facilitate the library content import.
 |=========================================================
 |Intent | Command
 
-|Import to a content view version (view is a `import_only` content view)| `hammer content-import version --content-view=view --organization="Default_Organization" --path=’/var/lib/pulp/imports/dump_dir’`
+|Import to a content view version | `hammer content-import version --organization="Default_Organization" --path=’/var/lib/pulp/imports/dump_dir’`
 
 |Import to an Organization's Library| `hammer content-import library --organization="Default_Organization" --path=’/var/lib/pulp/imports/dump_dir’`
 |=========================================================
