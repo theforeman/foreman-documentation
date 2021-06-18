@@ -42,10 +42,10 @@ When a commit is pushed into `X.Y`:
 * Push the changes into `master`.
 * Check the site if links and landing page appeared correctly.
 * Create a new `X.Y` branch.
-* Update `attributes.adoc`: DocState, Version attributes
+* Update `TargetVersion` and `TargetVersionMaintainUpgrade` in `guides/common/attributes.adoc`
 * Push into `X.Y` branch.
 * HTML guildes should be deployed into `/X.Y`
-* Update `attributes.adoc` in old version to "unsupported".
+* Set `DocState` to `unsupported` in `guides/common/attributes.adoc`
 
 ## License
 
