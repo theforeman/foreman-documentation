@@ -13,3 +13,4 @@ Use `make` or `hugo` to build contents from markdown and layouts in `public/` di
 ## Deployment
 
 Do not commit directory public/ into git, site is generated via Github Actions.
+The site is built from `master` branch.
