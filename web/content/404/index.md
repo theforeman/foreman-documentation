@@ -3,4 +3,4 @@ title: 404
 headless: true
 ---
 
-{{% guide-list version="nightly" %}}
+Continue to the [front page](https://docs.theforeman.org) to find available documentation.
