@@ -1,0 +1,538 @@
+<<<
+== Step 4: Define your Content lifecycle
+
+
+Satellite 6 introduces new concepts that support advanced software lifecycle management. Besides the Red Hat software repository and errata, the following new concepts have been introduced with Satellite 6:
+
+* Capsules that provide federated management of content (see step 2)
+* Advanced synchronization management for software (yum), Puppet (git) and Docker image (registry) repositories (see step 3)
+* Library (stage) that acts  as a Definitive Media Library (DML) (see step 3)
+* Products as repository bundles to track their consumption, such as for license management purposes (covered in this step)
+* content views (CVs) and composite content views (CCVs) (covered in this step)
+* Lifecycle Environments and Lifecycle Environment Paths (covered in this step)
+
+These concepts allow for the implementation of advanced lifecycle management.
+
+=== Satellite 6 Content Views
+
+
+*Definition* +
+Content views are managed selections of content that contain one or more repositories (yum / Puppet) and that allow optional filtering. Filters can be either inclusive or exclusive. Use filters to:
+
+* Tailor a system view of content for lifecycle management
+* Customize content to be made available to client systems
+
+*If You Are Familiar with Satellite 5* +
+For customers familiar with Satellite 5 and software channel concepts, the content views are comparable to or a refinement of the combination of channels and cloning from Satellite 5 / Spacewalk. Further information about differences between Satellite 5 and 6 and recommendations how to migrate can be found in the transition guide:https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html/Transition_Guide/index.html[https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html/Transition_Guide/index.html[ ]]https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html/Transition_Guide/index.html[https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html/Transition_Guide/index.html]
+
+*Lifecycle Environments* +
+Content views are moved through the defined lifecycle environments explained in this chapter. This diagram shows how to create and promote content views through lifecycle environments:
+
+
+
+Content views provide an *inherent versioning*. Starting with Satellite 6.1 a content view version is divided between major and minor versions. For further details see the content view life-cycle management examples provided inside step 9.
+
+*Content Views Versus Provisioning Definition Definitions* +
+Content views are often mixed up with the deployment blueprint definitions. Content views only define the content made available to a particular set of systems. The final subset of content that is *deployed* to particular target systems is defined either as part of the provisioning definition (see Step 7) or as a combination of both provisioning template *and* Puppet configuration files that are part of a content view. The mapping between target systems and particular deployment configuration is done through host groups. Content views and host groups are brought together via activation keys. Step 7 shows a step-by-step procedure for all required entities and should clarify  what to do.
+
+*Warning:* +
+Content views can become very complex within a very short timeframe and require effort to maintain them. Using too small or too many content views can lead to CV sprawl. In these situations, you may have a large number of content views with somewhat similar content that you must maintain regularly.
+
+=== Satellite 6 Content View lifecycle Overview
+
+
+The content view lifecycle has the following stages:
+
+. Create a new or adapt an existing content view
+. Publish the new (version of the) content view
+. Promote the content view to the next life-cycle stage(s)
+. Retire (delete) a (particular version of a) content view
+
+Publishing a content view makes it available inside the Library. Assuming that (nearly) all hosts are subscribed to a particular lifecycle environment using host groups, the publishing step does not affect existing hosts.
+
+As the default, a version of a content view always flows from left to right in the life-cycle environment path.
+
+*Warning***:**
+
+You* cannot skip a particular life-cycle environment / stage within a promotion path*. However, the s*ame content view can be associated to more than one life-cycle environment path and to different stages within these environment paths*.
+
+The *exception* for this is the system level or emergency errata feature. Starting with Satellite 6.1 you can select and apply errata to individual hosts independent of the current content inside the content view. Using this new feature a *minor version of a content view* will be created and automatically promoted *only to the lifecycle environment the host belongs to*. This includes skipping of multiple lifecycle environments. Further details can be found in Step 9 Use Case 4 covering this emergency errata feature.
+
+*Example:*
+
+The same content view can be promoted to Dev, QA and Prod in one path but remain in stage App-Dev in a second life-cycle environment path.
+
+Step 9 covers different content view lifecycle scenarios in detail. We create content views in the next section.
+
+=== Content View and Composite Content View Scenarios
+
+
+You can use content views and composite content views to achieve more than one type of goal. This diagram shows four common scenarios how content views and composite content views can be used:
+
+
+
+The next section describes each of these scenarios and can help you decide which one fits best in your particular environment.
+
+==== Scenario A) The “All in one” Content View
+
+
+
+
+This approach to content views primarily targets reducing the total number of content views. Instead, you create a multi-purpose content view that contains  all necessary content for all (or at least most) of your systems. This CV would show the intersection of all or many systems.
+
+You can also split repositories and products into multiple content views. However, you do have the option to *bundle as many as possible repositories into a small number of content views*. The rule of thumb here is, the bigger, the better. +
+To avoid maintaining more specific content views, you can even add repositories that are not used by *all * systems belonging to the host groups associated with this content view.
+
+
+*Advantages*
+
+* You have a *small number of content views* to manage. If creating and maintaining content views is a big challenge (for example, you do not have the time, resources, or disk capacity), this option provides an *alternative* for at least some environments or subset of systems.
+* Content views can include different Red Hat (and third party) products. Since each repository can be individually subscribed using activation keys (covered in Step 7) this might contain repositories not every systems needs to be subscribed to as well.
+*Note:*
+
+* Content views define only the content set that can be split into specific products (and therefore repositories). Each product is associated with an assigned subscription that is activated with an activation key.
+* This option would reduce the number of content views, but it would also *increase the number of activation keys*.
+
+
+*Disadvantages*
+
+This scenario limits your flexibility and the degree to which you can use the content view capabilities.
+
+*Examples:*
+
+* You might be unable to use filters, or they might become huge and difficult to maintain.
+* Time-based snapshots (an important purpose of content views) might become difficult to use. If *different content sets* (repositories) are *changed* at the same time, this change can *affect a huge number of systems*.
+* difficult since *different content sets* (repositories) might get *changed* at the same time and *affect a huge number of systems*.
+
+==== Scenario B) Host-Specific or Server Type Content Views
+
+
+
+
+Satellite 6 maintains a 1:1 relationship between hosts and (composite) content views. As a result, some customers define a *dedicated content view for each dedicated host or server type (role)*.
+
+This approach might be a good option if:
+
+* You use  only a few different host types and do not need to  segregate different layers of responsibility.
+* You have a very small or not very complex environment.
+* You have a large-scale environment that consists primarily of similar server types like a typical HPC setup. (This is a valid option because of the low number of different content views.)
+
+
+*Note:* +
+In many typical customer environments, you might have more server types or roles (though at least some of them might re-use other, quite similar content views). In an environment of *more than 30 different role types,* one of the other scenarios described in this section might make more sense (based on the assumption that there are some  shared application components (profiles) across these servers).
+
+*Advantages*
+
+This scenario completely defines the content that is made available to a particular system or group of systems. You can change the content of a selected set of systems, up to a single host. For a typical mission-critical or legacy system, this approach might be a good option because  it avoids potential risks based on shared changes that apply to this critical system.
+
+*Disadvantages*
+
+This approach prevents:
+
+* the reuse of content that is shared across several systems.
+* The segregation of  layers of duties (for example, the division between the operating system and the applications on top of it).
+
+To ensure consistency of updates to all these different host-type-specific content views, you need to ensure that each update of particular content items (for example, a particular security errata) becomes part of all affected content views that use  the software package being updated. This means that you have to perform the content view update operation (change or adapt filter, publish and promote) for each and every affected content view.
+
+*Note:* +
+Even using automation like hammer CLI usage we do *not recommend *this scenario because it can lead to *higher* maintenance efforts. In addition, if the updates cannot be done simultaneously, this problem might result in different content sets or different time-based snapshots of specific content views if content has changed between these different content view updates.
+
+The rule of thumb here is: *The higher the degree of standardization is, the less this scenario is the best option*. Nevertheless it might be a valid alternative for *some (!) special or critical systems*.
+
+==== Scenario C) Host Specific Composite Content Views
+
+
+
+
+Another approach that  targets host or server type specific content is to create *composite content views* for each server type or role. Using composite content views means you can change just a particular subset of the content made available to a host or host group but leave other content *unchanged*. Although this approach is possible by using content views and filters for individual repositories, it is much *harder to maintain filter rules* than just select a particular content view version.
+
+A typical scenario is to have a dedicated content view for just the *Puppet* configuration. This CV is typically updated more frequently than the software content that remains unchanged. You would change only  the Puppet content view version inside the composite content view while leaving the software-content-related content view version unchanged.
+
+*Advantages* +
+Using *composite* content views makes it easier deal with widely diverged release cycles when different content subsets are encapsulated in dedicated content views.
+
+*Disadvantages*
+
+* Your view of the content is host and not application specific.
+* It can be difficult to achieve a certain level of standardization, depending on how many different server types/roles are used inside an environment.
+
+==== Scenario D) Component-Based Composite Content Views
+
+
+
+
+This scenario can help you:
+
+* achieve the *highest degree of standardization of commonly used application components*.
+* Get a different perspective on content segregation using Red Hat Satellite 6 content views.
+In contrast to previous scenarios, this one has an *application-component view  instead of a host-centric* or server-type-specific *view*.
+
+If you use the *same application component more than once* as part of a content set for individual role types, it could be moved into a dedicated content view.
+
+*Example:* +
+If Postgresql is used as a database backend for a public website and also as a backend for our backup management system, a dedicated content view for PostgreSQL (profile) is used as a *shared profile for both role-specific composite content views*.
+
+*Advantages*
+
+This solution guide targets Standard Operating Environments (SOE). One of the primary goals of an SOE is a highly *standardized and automated environment* to improve overall *operational efficiency*. We are using this scenario inside this solution guide.
+
+*Disadvantages*
+
+*This scenario may cause an increased number of content views.*
+
+Since composite content views have to be created *in addition* to all content views, this scenario only makes sense if the number of role-specific composite content views plus the inherent re-usable / shared application components is not significantly higher than the number of content views in Scenario B(independent of the number of composite content views in scenario C). Re-using shared application component content views may solve this problem.
+
+If  a lot of individual derivatives exist for every application component, this scenario would significantly increase the total number of content and composite content views (especially if the latter ones are created for all possible combinations of slightly different application component configurations).
+
+=== Satellite 6 Content View Recommendations
+
+
+Content views are managed selections of content, which contain one or more repositories (yum / Puppet / container images) with optional filtering. Filters are used are used to customize content to be made available to client systems.
+
+==== How Filters Work
+
+* Filters can be either inclusive or exclusive, and tailor a system view of content for lifecycle management.
+* Before using filters, you need to *understand how filters work and consider potential pitfalls*.
+* If no filter is applied to a content view all content (“everything”) of the associated repositories *at the time of publishing* is included in this content view
+* Filters apply only to software content (yum repositories) but *not to Puppet modules*.
+* You can use multiple filters for each content view. For example using an “include” filter adds only the package (group)s you’ve selected and excludes all other packages.
+* Including filters does *not resolve any dependencies* of the packages listed in the filters.
+==== Recommendations for Filters
+
+* Test which packages are required by the packages you want to put inside the “include” filter. You should also test if all dependencies could be satisfied with your content view definition.
+* Do not use “include filter” inside the OS/core build content view to avoid missing dependencies that might prevent a successful kickstart of new servers.
+* If you use *include filters,* you should make a regular habit of *selecting each individual repository affected by this filter rule*. By default a filter applies to all repositories (present and future) belonging to this content view.  If you create an “include” filter for a particular package belonging to one of the associated repositories and don’t select this particular repository, only the package defined in this filter rule will be part of this content view. No other packages from the other repositories will be available since the* include filter excludes all other packages from all repositories* inside this content view.
+* Use *exclude filters* to strip down the available content and to exclude packages, package groups, or errata. We will provide an example package that has the exclude filter as part of our core build content view definition.
+* If you use additional software that might not be extensively tested and supported by a vendor (for example, the Extra Packages for Enterprise Linux (EPEL) repositories) we recommend that you *use include filters to provide only the packages you need for *your systems, instead of all of the repositories. (*Note*: You also need to include the dependencies of these packages.) You will find an example for this scenario in chapter XYZ.
+
+==== Recommendations for Content Views
+
+* Content views can consist of *any combination of any content type* Satellite can manage, including:
+** RPM software packages
+** errata
+** Puppet modules
+** Docker container images
+Even if you can create a dedicated content view for each individual repository or content type, we recommend that you bundle together as many repositories as possible to reduce the total number of content views (unless these content types have widely divergent release cycles). See the Puppet example in scenario C.
+
+* The only content type which should *not* be part of a content view are *kickstart trees*. All kickstart tree repositories have “Kickstart” included in their label, for example “Red Hat Enterprise Linux 6 Server Kickstart x86_64 6.5”. These packages are only for host provisioning and *must not be included in content views and composite content views*.
+* Content views also can *contain multiple RHEL versions and architecture repositories*. For example, one CV can contain RHEL 6 32bit + RHEL 6 64bit + RHEL 7 64bit. Using multiple RHEL versions and architectures significantly reduces the numbers of content views, especially if CCVs are used (see below). Subscription manager automatically assigns the corresponding RHEL major version and architecture. On the other hand this *increases the number of packages* inside the content view, especially in large volume repositories like Red Hat Enterprise Linux with several thousands packages inside. This has an additional *impact on all content view related operations* like content view publishing and promoting.
+
+==== Recommendations for  Composite Content Views (CCV)
+
+You can bundle multiple content views together as a *composite content view.*
+
+* Because of the current requirement of a one-to-one relationship between a host (group) and content view / composite content view, you *must use composite content views if you have independent content views with independent ownership and release cycles*.
+* Only a CCV can define the final content that is made available to target systems.. We recommend that you create CCVs only for the actually relevant combinations of CVs. Do not create CCVs for all possible combinations of content views.
+
+*Warning:* +
+All typical *configuration options of a content view* like repositories, filters, Puppet modules, container images are *not available as configurable option in a composite content view*. A composite content view just combines two or more content views together. All these configuration options have to be set inside the underlying content view definitions.
+
+==== Multiple Snapshots (Clones) of Content Views
+
+===== Advantages
+
+You can use content views to *provide multiple snapshots of the same repository* at the same time. You can use the same content source repositories and can create different snapshots based on different timestamps and filters of the same content set. You can also create multiple (for instance, *quarterly snapshots)* of the same content and make it available to different clients that require different content sets.
+
+===== Disadvantages
+
+Using content views to provide snapshots increases the *total number of content views*. You can use composite content views to achieve the same result. Make content views of different time-based snapshots and just select the corresponding version of these content views inside a CCV. You cannot use this method if you need different filters since you cannot apply filters at a CCV level. However, if you’re using content views only as snapshots, filters are unnecessary.
+
+==== CCVs in a Dedicated Life-Cycle Environment
+
+You can associate a CCV with a dedicated life-cycle environment path, independent from its internal content views. Using CCVs for a content life +
+cycle might make promoting the contained content views through life-cycle environments obsolete (see chapter XYZ for details).
+
+*Notes:*
+
+* A CCV is an additional content view to maintain. If you must maintain a content view within a CCV, you may need to change the CCV as well. As a result, if you release the content views within a CCV often, the CCV would also have to be updated frequently.
+* Satellite 6 does not limit which particular CV version is used inside a CCV. A *CCV does not enforce using the most current CV version* within a particular life-cycle stage and could even contain versions that have not passed a test or QA stage and/or are currently only in the Library. (For more details see the scenario described in chapter XYZ.)
+
+
+
+
+==== How Content Views work with Products and Repositories
+
+A product (and its repositories) can be part of one or more content views. You can also create *multiple content views with the same* *content* (products and repositories) in parallel. This feature is helpful if you need different content snapshots or want to use different filters (for example, time-based filters), especially if one of the content views must *not *contain a particular package (exclude filter).
+
+You *cannot use the same repository more than once inside a composite content view*. For example if you use the same repository to bundle two content views, you cannot put both content views into a single CCV.
+
+===== Operating-System (OS) content
+
+To separate OS content from application content, you must ensure that the *OS-relevant content repositories* (including RHEL base and child channels, as well as kickstart trees) are *part of only the OS / Core Build CV* and not part of any other (application) CV.
+
+===== Red Hat Software Collections (RHSCL)
+
+RHSCL provide newer versions of common software packages that could be installed in parallel to the default (older) versions that are part of the relevant RHEL version. If your application requires RHSCL, you should:
+
+* *Either* define them as part of the CoreBuild (then they will be  available to all applications)
+* *Or* (*_recommended_*) you can add the correct repository to each application content view that requires RHSCL software packages. You cannot do both.
+
+===== Puppet Modules
+
+You *cannot use the same Puppet module more than once inside a CCV *(for example, if you have a dual-purpose module like the one we are using for our rsyslog configuration (see step 7)).
+
+Although we can add the Puppet module ‘loghost’ to our core build content view and add it to the application-specific content view for loghosts (cv-app-rsyslog), we cannot assemble both content views together for our role-specific CCV (ccv-infra-loghost) because of this limitation with Puppet. We should remove the module from the application-specific module and instead use the core build content view. For more details see chapter XYZ, where we create and use this module and content views.
+
+*Warning:* +
+If you must use the *same repository more than once with different filters and inside different content views (deployed to a particular system* ) by using CCVs, you may need to duplicate the repository.
+
+===== How These Repository Limitations Relate to Our Solution Guide Example
+
+In our solution guide example, we originally wanted to use packages from EPEL repositories within different layers of our application architecture. We wanted to use the nagios-plugins within EPEL as part of the core build and WordPress for our ACME website application. At the same time, we did not want to make the entire EPEL repository available to all our hosts and to have to use filters. Although we were able to two different content views containing the EPEL repository and use different filters for each of them, we were not able to create a Composite content view of both because of the repository conflict.
+
+Basically we had three options to achieve our goal:
+
+*Option 1. *Make the entire EPEL repository available to all hosts (required since we use it as part of the core build), but use two filters for the Nagios and WordPress packages. In this scenario we would have to add a third filter if any other application running on top of the core build required an additional package within the EPEL repository. This option would also require us to update, publish, and promote our core build content view each time we introduce a new application and would increase our maintenance efforts.
+
+*Option 2. *Make the entire  EPEL repository available to all hosts (required since we use it as part of the core build) without using filters. This approach would avoid the additional maintenance efforts described in Option 1. Since the content view defines only the content availability and not the deployment definition, the additional (eventually undesirable) packages are available to all systems but not deployed. You should decide between options 1 and 2  by looking at current risk evaluations.
+
+*Option 3.* Create manually a dedicated repository and use the _hammer repository upload-content_ command (see Step 3 Situation 2 for an example) to push only the required packages (including dependencies) into this repository. This needs to be done each time the upstream repository content will be updated.
+
+*Option 4. *Duplicate the entire EPEL repository and use these different repositories inside the different content views by using different filters.
+
+Now that we have moved to using Zabbix for monitoring our hosts, this particular challenge has disappeared, and we do not need to sync the EPEL repository twice. However, we’ve intentionally left this information in this document in case you are facing a similar challenge.
+
+===== Puppet and Content Views
+
+The configuration files that are managed with Puppet can either be part of the software-focused content view or separated from it. Some customers prefer *separating the Puppet configuration from the software content management* because of the different / shorter release cycles or other reasons.You can also combine multiple software-focused content views (for example, one for the core build and another for the application server) with one aggregated Puppet-focused content view. This CV can  consist of a configuration for both stack layers (*n:1 relation of software:config*).
+
+*Note:* +
+If you don’t manage your Puppet configuration inside a dedicated content view,* each Puppet module change automatically causes a software change at the same time, if the software repositories have changed since the last update*. If we manage the Puppet configuration by using a Satellite 6 content view and the life-cycle management feature (and not by using custom Puppet environments), we must publish and promote a new version of the appropriate content views that contain the new or adapted Puppet modules. Even if you don’t use static date filters for all software repositories inside a particular content view, the software content in the Library is automatically added to this content view while publishing. If the way you have implemented your particular change and release management process requires you to manage independent configuration changes without simultaneously software changes, the best option is to use dedicated content views for Puppet configuration.
+
+You should try not to split the software and configuration into separate content views. This practice increases the number and complexity of content views and can lead to “*CV sprawl*.”
+
+In this solution guide we are not using dedicated content views for Puppet configuration. We made this decision based on risk estimation through using the life-cycle management to test changes before applying them to production systems. Stalled software changes would only postpone the potential problems and not solve them.
+
+===== How Content Views Are Updated
+
+Content views are supposed to be continuously updated if newer content is available in the appropriate repositories (and synced to the Library using sync plans). Currently *only the most current version* of each content view is available within a particular stage. You cannot use former versions of a content view within a particular life-cycle stage.
+
+When the content inside a CV is updated, the version number is also incremented (this feature provides *inherent version control of content views*). Beginning with version 6.1 of Satellite, you can update the content incrementally. See Step 9 Use Case 4 for further details.
+
+Because of the availability of only the most current version, you might have scenarios in which it makes sense to copy a content view and allow for *multiple versions of the same content view* in parallel within the same life-cycle stage.
+
+Some customers are creating monthly or quarterly snapshots of content (for example, for Red Hat Enterprise Linux (RHEL)) to offer multiple update levels of RHEL in parallel. For example, they need the most recent version of RHEL for frontend servers but an old(er) version for some legacy applications. To avoid CV sprawl, you should use this approach only when absolutely necessary.
+
+Currently, content views move *unchanged* through the defined life-cycle environments. Sometimes life-cycle-specific adaptations are required. For instance, you may need to install additional debugging packages or use different debugging or logging configurations  in Dev or QA. You must make *life-cycle-environment-specific changes* inside the Puppet configuration to ensure that content views remain  consistent in all life-cycle stages.
+
+As mentioned earlier Satellite 6 does not limit which particular CV version is used inside a CCV. A CCV does not enforce using the most current CV version within a particular life-cycle stage and could even contain versions that have not passed a test or QA stage and/or are currently only in the Library. We also recommend that you *delete any content view versions that have not successfully passed a particular test or QA stage*. This precaution prevents these CVs being selected as part of a CCV in production.
+
+Repositories inside a content view display as yum repositories to Red-Hat-Satellite-managed clients. Currently, you cannot use the yum-priorities plugin to order or prioritize them. Therefore, we recommend that you do NOT associate multiple repositories that contain similar software packages with multiple versions of a content view. This problem is not likely to occur with Red Hat software repositories, but it might happen with third-party software repositories. You still can define specific package versions as part of Puppet configuration but this needs to continuously updated.
+
+=== Content View Naming Conventions
+
+
+Because content views are a central item of Red Hat Satellite 6, we recommend that you use a naming convention for your content views that allows automation (to be introduced later). For instance, the role-based access control model explained in Step 8 is based on these naming conventions. Appendix III provides an overview of all naming conventions used in this solution guide.
+
+==== Basic Guidelines for Naming Conventions
+
+* The particular RHEL version is not part of our naming conventions. When creating content views, we try to create CVs independent of RHEL releases. (If you want to create OS-specific content views, add an additional segment that defines the OS version.)
+* If you do not specify a version or release, the content view is supposed to be continuously updated. If you need to provide multiple versions of the content in parallel, add a specific version or release tag.
+==== Content Views Versus Composite Content Views
+
+When naming components/profiles (based on CVs) and final deployment configurations/roles (based on CCVs), we add a string to distinguish between the two. The name will then begin with either:
+
+CV or CCV
+
+*How to Name Components/Profiles (based on CVs)* +
+Use this table to distinguish between the different types of components/profiles.
+|===
+|*If we are naming . . .*|*Then we use this string in the name . . .*
+
+|Operating systems (core build)|os
+|Applications running on top of the operating system|app
+|===
+
+These naming convention lead to the following schema:
+|===
+|cv - < os|app > - < profile name > [ - < version or release > ]
+
+|===
+
+==== How to name Final Deployment Configurations/Roles (based on CCVs)
+
+Use this table to distinguish between the different types of deployment configurations/roles.
+|===
+|*If we are naming . . .*|*Then we use this string in the name . . .*
+
+|Business applications|biz
+|Infrastructure Services|infra
+|===
+
+All roles that will be configured as composite content views use the following schema:
+|===
+|ccv - < biz|infra > - < role name > [ - < version or release > ]
+
+|===
+
+*Note:* +
+The same string used in composite content views for role name is used as the host group name in Step 7.
+
+=== Typical lifecycle stages
+
+
+Most IT organizations divide the life-cycle stages of operating systems and applications into 3 stages:
+
+. *Dev* for stage Development
+. *QA* for stage Test & Quality Assurance
+. *Prod* for stage Production
+
+Some organizations may use Plan - Build - Run instead or have more than just three stages (Example: Dev - Test - UAT - INT - Prod).
+
+This solution guide focuses on some common scenarios, starting with a simple setup and continuing with some typical enhancements. See Step 9 (REF) for examples of how  to use these life-cycle environments in conjunction with some content (view) life-cycle scenarios. Steps 5 and 6 (REF) show how to create the related content views and composite content views.
+
+=== Red Hat Satellite lifecycle Environments
+
+
+The application lifecycle is divided into _lifecycle environments_, which mimic each stage of the lifecycle. These lifecycle environments are linked in an _environment path_. You can promote content along the environment path to the next life-cycle stage when required. For example, if development completes on a particular version of an application, you can promote this version to the testing environment and start development on the next version.
+
+=== The Special Role of the Library
+
+
+The Library is a built-in stage of Red Hat. All content that is synchronized into Satellite manually or periodically using sync plans is stored inside the Library. Therefore, the Library is similar to ITIL®’s Definitive Media Library for all software components. Every software and configuration component maintained using Red Hat Satellite is stored inside the Library.
+
+The content inside the Library is updated on a regular basis. If you’re using synchronization plans, we do not recommend subscribing systems directly to this stage. There might be two exceptions:
+
+* very simple setup without any lifecycle management requirements
+* the Library used for regular testing of new Core Build releases (see Chapter “The special role of Core Build” below), especially in combination with nightly builds (not covered inside this document)
+
+=== The Special Role of the RHEL Core Build
+
+
+Usually, software life-cycle management focuses on a business perspective that is primarily a top-down view looking from the top-level application downwards to the underlying components (for example, application platform, operating system and infrastructure). Typically, a core build is the smallest common denominator for all or a particular subset of your Red Hat Enterprise Linux Systems. For further information see also the detailed information in Step 5 Define your Core Build.
+
+The core build itself has a special role in the lifecycle-management area. From the perspective of the team who maintains the Core Build, every stage outside of their own (lab) environment is “production,” by definition. Even the stages called “dev” or “qa” are (from an IT Ops perspective) “prod” stages, independent of their application-centric labels.
+
+We deal with this exception in a number of ways, including:
+
+* IT Ops uses the *Library* Stage itself for their initial testing of a core build. If we assume that this initial testing doesn’t take too long, the risk of changed content during these tests might be acceptable.
+* IT Ops uses a *dedicated pre-stage* at the stage next to Library but before the application-centric stage for all or most of the life-cycle environment paths (for example, Library -> *Ops Test* -> Dev -> QA -> Prod).
+* IT Ops uses a *dedicated life-cycle environment path* to build and test the core build. This life-cycle environment path might be used by other applications or infrastructure services owned by IT Ops as well.
+
+Because we’re using at least one dedicated life-cycle environment path for our business application, we’re using the third option inside this solution guide.
+
+=== Lifecycle Specific Adaptations
+
+
+Satellite 6 follows the principle of *content consistency across environments*. This means that content flows *unchanged* through the defined life-cycle environments using content views. Nevertheless, in some customer scenarios, life-cycle specific adaptations are required (for instance, the additional installation of debugging packages or different debug or logging configuration  in Dev or QA). These changes could be handled inside the Puppet configuration that is part of the content (views) flowing through the life-cycle environments.
+
+=== Typical Lifecycle Environment Scenarios
+
+
+The following chapter elaborates some common scenarios for using Red Hat Satellite lifecycle Environments. The four most common scenarios are described below:
+
+
+
+==== Scenario A) One lifecycle stage for everything
+
+
+The setup with the lowest complexity does not use the life-cycle environment. All content is synchronized with the Library, and all systems are subscribed to the Library’s environment directly. Since this does not allow for any testing (all changes made in the Library are automatically applied to all systems during the periodic run of Puppet the agent), we assume that this scenario is not optimal.
+
+Nevertheless, small or simple setups that do not require specific life-cycle management might be able to use this scenario. To ensure at least one dedicated transition of new content to your production systems, the most simple but still reasonable setup is to define one life-cycle environment path with only one stage. Content might be promoted from Library to this single life-cycle stage on a regular basis. Testing is done inside the Library. Let’s label this stage “generic.”
+
+*Guidelines for Scenario A*
+
+* Ensure that the content (software and configuration) you’re testing within the Library stage is the same as the one you’re deploying to your systems belonging to the generic stage.
+* Ensure that the Library content won’t change between testing and promotion.
+* Check your sync plans to determine what schedules are used to update the content if the provider repository has changed.
+
+To create a life-cycle environment:
+
+. Click on Content -> Lifecycle Environments -> New Environment Path
+. Type in a name, label and description.
+. Click the Save button.
+
+The following hammer CLI commands creates a new life-cycle environment path that contains just the single generic stage:
+
+|===
+|hammer lifecycle-environment create --name='Generic' --prior='Library' --organization=ACME
+
+|===
+
+===== Advantages and Disadvantages
+
+
+* This scenario lets you avoid the additional complexity and effort of life-cycle management.
+* If you don’t have a dedicated software development environment and you have limited or no internal QA capabilities, this scenario would let you deploy software to your systems without testing a great deal beforehand. This approach might be especially relevant for IT organizations focused on resiliency (fast mean time to resolution) instead of robustness (extensive testing before deploying it to production). In a resiliency-focused environment additional life-cyle stages would slow down the push of the resolution through the (unnecessary) additional stages.
+==== Scenario B) One Life-Cycle Environment Path for All Applications and Operating Systems (OS)
+
+
+This scenario leverages the content promotion capabilities of Satellite 6, but it does not make a distinction between different applications and operating systems managed by Red Hat Satellite. This means that all (composite) content views (assuming we still divide the OS and applications using different content views) are using the same content promotion path. Our solution guide uses these three stages:
+
+. *Dev* for stage Development
+. *QA* for stage Test & Quality Assurance
+. *Prod* for stage Production
+
+The following hammer CLI commands creates the new promotion path and includes these three environments:
+
+|===
+|hammer lifecycle-environment create --organization "ACME" --name "DEV" --description "development" --prior "Library"
+
+|===
+
+If you click on Content -> Lifecycle Environments, you should see this view:
+
+
+
+In this scenario, all content views use the same lifecycle environments and are promoted through them. This scenario still allows for independent release cycles for different OS versions or applications, because promotion is done on an individual CV level. For instance, you can promote the content view for RHEL6 to QA or Prod more frequently than you do the application server (and keep its old version) and vice versa.
+
+*Advantages and disadvantages*
+
+This scenario divides our software release cycle into different stages that are mapped to dedicated compute environments (servers) and are clearly distinguished from each other. Usually, we have clearly defined transition or handover procedures between these stages as part of the Change or Release Management process definition. Satellite 6 lifecycle environments would reflect these process steps inside the systems management infrastructure.
+
+The primary goal for this lifecycle management approach is to avoid issues that affect your production systems by testing extensively beforehand. The wider the test coverage is, the lower the risk of the remaining issues, even you do not have 100% coverage of potential difficulties. +
+One disadvantages is that such a regulated process requires extra effort. In addition, the Dev and QA environment require additional resources.
+
+Besides, the compute resources required for these additional environments and the human and technological efforts necessary to establish an efficient QA scenario are large  and require a significant investment in test automation.
+
+In a resiliency-focused IT organization deploying newer versions of software and configuration very frequently, having to push through these additional stages might slow down implementation.
+
+==== Scenario C) dedicated lifecycle path for particular applications
+
+
+In the typical scenario described above we’ve only had one single content promotion path for all operating systems and applications. In many customer environments this might be not sufficient due to additional requirements as listed below:
+
+* requirement for having segregated release pipelines for (specific) applications to allow independent release cycles for particular applications
+* dedicated owner (usually the application owner) who defines which particular combination of OS (Core Build) and application is used in each stage
+* dedicated compute environments (physical or virtual) owned by these dedicated owners to execute specific tests or to divide production ownership as well
+
+*Note:* +
+The name and label of each life-cycle environment must be unique within one but not across multiple organizations. In our solution guide we’re adding a prefix for each application type which owns a dedicated life-cycle environment path. Further details you can find in the naming convention explained in Appendix III.
+
+
+*Advantages and disadvantages*
+
+The advantage of this scenario is the additional degree of freedom for particular applications to work in individual lifecycle environments and release cycles. It also allows to define more fine granular access level for individual users and roles based on filters (see Step 8).
+
+The disadvantage is the increased level of complexity to maintain these life-cycle environment paths and the additional flows of content (views) across these additional stages.
+
+==== Scenario D) Deviant Lifecycle Paths Require an Overall Mapping
+
+
+Some customer environments have additional requirements in terms of the lifecycle environment paths. These deviant lifecycle environments could have a different number of stages or the stages may be be subdivided (for example, a dedicated user acceptance testing (UAT) stage for some but not for all stages or no stage dev for COTS applications).
+
+*Advantages and disadvantages*
+
+This scenario may better reflect a company’s needs for required life-cycle stages,  appropriate compute environments or individual applications. This scenario might work best for customers who have an internal software development department but also use some COTS applications that do not require specific test stages. These customers might benefit from defining the optimal number of lifecycle stages for each individual application.
+
+Currently, however, Satellite 6 does not provide overall grouping or mapping of some stages and their relationships. In fact, the lifecycle environment paths are completely independent of each other. To have a specific flow through the development stages, *you must have your own regulated formal process outside of Satellite 6.* The ACME scenario in the next section describes potential flows to follow.
+
+=== ACME Scenario
+
+
+Our ACME organization has these relevant requirements:
+
+* Our individual application owners (of business applications) require a dedicated release pipeline, independent of our core build and other infrastructure services managed by the ACME IT Operations team. (see also chapter XYZ)
+* These individual application owners are responsible for deciding which combination of current and former core build releases are bundled together with current or former application releases (using the composite content view feature of Satellite 6). (We will cover this in step XYZ.)
+* in addition to generic Dev-QA-Prod stages, our business applications require a dedicated UAT stage.
+
+The ACME Life-cycle Environment Overview looks like this:
+
+
+
+We use the following commands to create these life-cycle environment paths:
+
+|===
+|# create the generic lifecycle env path
+
+|===

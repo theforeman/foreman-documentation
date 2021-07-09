@@ -1,0 +1,517 @@
+<<<
+== Step 6: Define Your Application Content
+
+In the earlier chapters we described how to define and deploy an enhanced operating system definition (core build) on top of an existing virtualization infrastructure. In a cloud context this describes an *Infrastructure as a Service *(IaaS) setup. Though core build management is the focus area of Red Hat Satellite, enhancing these capabilities to a *Platform as a Service* (PaaS) setup (at least for infrastructure and backend services) is just an additional layer on top of the setup described earlier. The integration of Puppet as a configuration management tool makes it significantly easier to define, deploy and manage both the operating system and applications running on top of it.
+
+*Note:* +
+Application deployment is not the primary target of Satellite 6, even if technically feasible. We recommend using a dedicated PaaS tool for this use case, such ashttp://www.redhat.com/en/technologies/cloud-computing/openshift[http://www.redhat.com/en/technologies/cloud-computing/openshift[ ]]http://www.redhat.com/en/technologies/cloud-computing/openshift[Red Hat OpenShift Enterprise].
+
+All Red Hat Satellite 6 entities and procedures explained earlier can be used identically for application life-cycle management as for operation system / core build life-cycle management. In this section we will adapt the current configuration accordingly.
+
+Since we have already created the two different operating systems content views for RHEL 6 and 7, we now need to create the content views for the applications running on top of RHEL. Afterwards, we will assemble them into a composite content view.
+
+We will call all final server personalities "*roles*" and all included components (independent of shared or single-purpose) "*profiles.*" This means that all business applications and infrastructure services are *roles*, but the inherent components (for example, MariaDB, Git, WordPress, and also our core build itself) are *profiles*.
+
+If we map this principle (primarily coming from Puppet) to our Satellite 6 objects, *all roles have dedicated composite content views* that contain one or more *content views of profiles*. The main reason for this approach is that the final server personality is configured as a host group, and each host group can only be associated to a single content view or a composite content view. It is not possible to assign multiple content views (for example, WordPress + MariaDB + CoreBuild) at this time. For further details, see the Content View Recommendations chapter.
+
+The procedure for creating a content view for an application is similar to what we described earlier when creating our core build content views. The main difference between the OS (Core Build) content view and the application content views is primarily how we answer some design questions. In addition to the general discussion about using an application-specific content view, composite content view, or assembled composite content view (consisting of reusable component content views as discussed in Step 4), we need to make another design decision inside the application layer. Multi-tier applications consisting of different subcomponents or stack layers (for example, front-end, mid-tier, database backend) can be installed in two different ways:
+
+* as a *single-host / all-in-one setup* where all components are deployed with the same server
+* as a *multi-host / federated setup* where at least some components are installed in a federated way
+
+These design criteria might influence the content view design decision as well. Although using an all-in-one content view that consists of all inherent components reduces the total number of content views, it also increases the number of required control parameters. If we create an all-in-one content view and do not want to execute a single-host (but instead a federated setup), we need to control the deployment of the particular components that you should install on a target host by using parameters handed over during the new host definition. In our solution guide, we’ve decided to use component-based content views, because our application architecture has been designed to be a multi-host deployment.
+
+=== ACME’s Sample Application Architecture
+
+
+All our ACME applications run on top of Red Hat Enterprise Linux. Although most of the applications run on top of RHEL 7, we still use RHEL 6 for some servers. The following diagram illustrates the relationship between the applications and the operating system versions:
+
+
+=== Sample Application 1: git Server
+
+
+Git is a fast, scalable, distributed revision control system. The corresponding software packages are part of Red Hat Enterprise Linux, and newer versions are also available in Red Hat Software Collections.
+
+We are using multiple git servers as dedicated revision control systems to centrally manage various software and configuration items. These include:
+
+* all Puppet modules deployed by Red Hat Satellite 6
+* all scripts used to automate specific use cases
+* all templates we have created or adapted inside Satellite 6
+* all software (source code) and configuration files used by ACME software development departments
+
+We are using Red Hat Satellite 6 to provision and maintain various git servers automatically, to enable better support of our ACME software development efforts and projects.
+
+==== Example: Puppet Module for git (Server and Client)
+
+
+Similar to the core build Puppet modules in Step 5, the following subsection provides some basic examples of Puppet modules used inside this solution guide. Since it covers only basic examples and not all of them are necessarily the best way to tackle a particular problem with Puppet, experienced Puppet users might want to skip this chapter.
+
+The primary goal of this module is to provide a simple example of a multi-purpose Puppet module, used for both the server and client configuration of the git revision control system. In our ACME sample scenario, we use only the server component to provision the git Puppet module repository server (explained in Step 1).
+
+Basically, the Puppet module performs the following tasks:
+
+* Installs the required software packages and all its dependencies
+** the git19-git package from the Red Hat Software Collections repository if it is acting as a git server (default)
+** the default git package as part of Red Hat Enterprise Linux if it is acting as a git client
+** or any other package name provided as a Smart Class Parameter
+* Installs the Apache http server package to make the git repository available via http (required for regular repository synchronization in conjunction with Satellite 6)
+* Starts and permanently enables starting the http daemon
+* Integrates the git binary path into profile.d configuration
+* Creates a particular directory for git repository data, if the directory does not already exist
+** Initializes a git repository inside the directory, if the repository does not already exist
+* Provides a git hook to create the PULP_MANIFEST file automatically (required for regular repository synchronization in conjunction with Satellite 6)
+** Only adds Puppet modules that are built to the PULP_MANIFEST
+
+
+The detailed documentation for this sample Puppet module is in Appendix III.
+
+==== Content View for git Server Profile
+
+
+We will now create content views for each application type and assemble them with our core build content views (created earlier) to construct server-type-specific composite content views.
+
+In order to install a git server on top of our already configured core build, we need to install one or more additional software packages and do some configuration. Both should become part of our content view called ‘cv-app-git’, which follows our naming convention.
+
+We’re using the *Satellite 6 content search* functionality to figure out which versions of git are available in which of the software repositories that we synchronized during Step 2. The following procedure describes how to search for a package called ‘git*’:
+
+. Go to Content -> Content Search
+. Select ‘Packages’ from the drop-down menu
+. Enter ‘Default Organization View’ into the search field below ‘Content Views’ and click ‘Add’ (to get only results from the original repositories and not the content views you might already have at this time)
+. Enter ‘git*’ into the search field below ‘Packages’ and click on ‘Refresh results’
+
+You should now see a page similar to this screenshot:
+
+
+
+The Results show that the git package is available inside various software repositories.
+
+* On the right, you should see the core-build content view created earlier (‘cv-os-rhel-7Server’).
+* If you click on the ‘Red Hat Enterprise Linux Server’ field, it expands to show ‘Red Hat Enterprise Linux 7 Server RPMs x86_64 7Server’. You should be able to see that the git version available in our core build is git *1.8.3*.
+* If you go to the ‘Default Organization View” (our Library), you should see a repository called ‘Red Hat Software Collections for RHEL Server’. If you select it and then select ‘Red Hat Software Collections RPMs for Red Hat Enterprise Linux 7 Server x86_64 7Server’, you should see that git version *1.9* is available via our Red Hat Software Collections repository.
+If we don’t need to use version 1.9, we would not need to add an additional software repository since version 1.8.3 is already available through our core build content view. +
+In both scenarios our Puppet configurations should be able to handle both versions of git. Being able to handle both versions means that Satellite 6 must be able to deal with the difference between the installation of an RPM (which is part of Red Hat Enterprise Linux) and the usage of Red Hat Software Collections. In our ACME scenario we’ve decided to use the newer version of git, 1.9.
+
+Basically, the application-specific content view for our git server must let you:
+
+* access and enable the Red Hat Software Collections repository
+* install the git rpm package
+* configure a git repository (if one does not already exist)
+* provide http access to the git repository to allow regular content synchronization
+
+Except for the content provisioning of the Red Hat Software Collections repository, all other tasks are done inside the Puppet module created earlier.
+
+===== Creating the content view
+
+Create a content view called ‘cv-app-git’ following our naming convention, and click Save.
+. *Add the Red Hat Software Collection Repository.*
+** In the screenshot below, we’ve selected the corresponding product to shorten the list of available repositories:
+
+
+* Select the repository, and click on ‘Add Repositories’.
+Now the entire content of the Red Hat Software Collections repository is available through this content view.
+
+. *Limit the content availability to just git packages by creating a filter and a rule:*
+** Click on ‘Yum Content’ and ‘Filters’. There should be no filter at this time.
+** Click on the +New Filter button, and fill-in a name, in our case ‘git-packages-only’.
+** Select Content Type ‘Package’ and Filter Type ‘Include’ and add a description as in the example below.
+** Click Save.
+
+
+
+If you enter ‘git’ in the Packages field, a list of all packages matching this string displays:
+
+
+*Warning:* +
+It is not enough to select a particular package listed in the screenshot above. If you select the git19-git-all package and try to use the content, you will notice that the installation of git fails, due to missing dependencies. As explained in the Content View Recommendations chapter, filters do not resolve dependencies. To figure out which dependencies a particular package has, start with a content view without filters and note the additional packages that have been installed for dependency reasons. After that, you can adapt your filter rules accordingly--either by using wildcards or by creating additional filter rules for each additional dependency. +
+After testing it using the content view without a filter, we’ve noticed that all dependencies match the following pattern: git19-*. Therefore, we did not select a particular item in the list of packages but entered the pattern in the Package Name field. Since more than one package is covered by this pattern, we leave Detail field set to ‘All Versions’ and click the +Add button.
+
+Though in our scenario it is not critical (since we only have one repository), you should make a regular habit of specifying the affected repositories in the corresponding tab. Otherwise, this filter rule applies to all repositories belonging to this content view. In short, other repositories (to which you don’t want to apply filters) are also affected by this Include filter. If they don’t provide the package(s) defined in our filter rule, none of the packages inside these other repositories are available to hosts associated with this content view. For further details, see ‘Content View Recommendations’.
+
+. *Click on the ‘Affected repositories’ tab, and select the option: *‘This filter applies only to a subset of repositories in the content view.’ Select the Red Hat Software Collections repository. If we were to add other repositories to this content view later in its lifecycle, the filter rule would still be valid:
+
+
+
+. *Add the Puppet modules created earlier. *Click the ‘Puppet Modules’ tab, and then click the +Add New Module button. You should see the module called git in the list of available Puppet modules. If you have several Puppet modules, you can use the filter field. Select git module, and click ‘Select version’. Select ‘Use Latest version’ to avoid having to update the filter rule each time you update the module.
+
+
+
+===== Publishing the Content View
+
+Now we’ve finally configured our content view and can publish it.
+
+. Click the Publish New Version button.
+. Provide a description.
+. Click Save.
+After the content view has been successfully published, it is available in the Library stage.
+
+. Use hammer CLI to execute the following command to create the content view and publish it:
+
+|===
+|hammer content-view create --name "cv-app-git" \
+
+|===
+
+As explained in the content view lifecycle overview chapter, we do not need to promote this application-specific content view to other lifecycle stages since we *only promote the final composite content view* (consisting of both the application-specific and core-build content views) through the corresponding lifecycle environment path.
+
+But first we need to create the composite content view.
+
+==== Creating the Composite Content View for the gitserver Role
+
+
+. Click ‘Content’ -> ‘Content Views’.
+. Click +Create New View.
+ Following our naming convention, we fill-in ‘ccv-infra-gitserver’ in the Name and Label fields and provide a description. This time we check the ‘Composite View’ select box:
+
+
+
+. Select the two content views to assemble together: the ‘cv-app-git’ content view created earlier and the ‘cv-os-rhel-7Server’ core build content view created during Step 5. If there are already multiple versions available for these content views, select the appropriate (probably newest) one and click +Add Content Views. You can double check if you’ve selected the right content views and versions by clicking the ‘List / Remove’ tab. Our sample scenario already has a version 2.0. Therefore, we have selected a version 2.0 for our core build content view:
+
+
+
+. Click the Publish New Version button, fill in a description, and click Save.
+
+
+
+Because we need *both* a content view ID and a content view version ID to assemble multiple content views together into a composite content view and we *need* the content view version ID again to promote it, we’ve written the following function to determine the most current version ID of a content view:
+
+
+|===
+|function get_latest_version {
+
+|===
+
+If we assume that we want to use all the most current versions of the inherent content views, the following command determines the version IDs of both the core build and git application content views and uses them to create and publish a composite content view:
+
+|===
+|RHEL7_CB_VID=`get_latest_version cv-os-rhel-7Server`
+
+|===
+
+
+After it is successfully published, the composite content view is available in the Library and can be promoted to our Dev stage. Click the Promote button, and select the ‘Dev’ stage in our default life-cycle environment path (which is used for all infrastructure services):
+
+
+
+Click the Promote Version button. Using hammer CLI, you need to execute the following command to promote the composite content view to stage Dev:
+
+|===
+|CVID==$(hammer --csv content-view list --name ‘ccv-infra-gitserver --organization ${ORG} | grep -vi '^Content View ID,' | awk -F',' '{print $1}' )
+
+|===
+
+You have now successfully promoted the composite content view to our Dev stage, so that it can be tested on systems associated with this lifecycle environment and composite content view. Therefore, we need to create additional host groups. Before creating those, we will use the same procedure to create a few other content views and composite content views.
+
+=== Sample Application 2: Container Host
+
+
+Our ACME Emerging Technologies (ET) Department investigates new technologies and their potential to improve the efficiency or effectiveness of ACME IT and Business.
+
+Containers are one of the most exciting technology developments in recent years. Containers provide application portability, facilitate modern application design concepts like micro-services, and support agile development and DevOps. Red Hat has been at the forefront of bringing container technology to the enterprise, with our extensive development work on projects like Linux, Docker, and Kubernetes. Container technologies, such as Docker, can provide tremendous value on their own, but to truly enable innovation at scale it must be delivered and managed as part of an automated, orchestrated, and intelligent system.
+
+Currently, the Emerging Technology department is investigating if and how container technology can support the new ACME web shop application, which is currently under development. ACME ET is primarily looking for a solution that supports the following goals:
+
+* Accelerates development and delivery
+* Provides for efficient use of infrastructure
+* Gives developers choice
+* Offers multiple interaction models
+
+A current favorite of this investigation is the new Red Hat OpenShift Enterprise, Version 3:https://www.redhat.com/en/technologies/cloud-computing/openshift[https://www.redhat.com/en/technologies/cloud-computing/openshift[ ]]https://www.redhat.com/en/technologies/cloud-computing/openshift[https://www.redhat.com/en/technologies/cloud-computing/openshift]
+
+To start becoming familiar with the underlying base technologies, ACME ET has asked the Systems Engineering team to provide a couple of test systems that can act as simple a container host based on Docker technology (which is included in Red Hat Enterprise Linux 7).
+
+In order to provision container hosts in an automated fashion, ACME Systems Engineering has provided three items:
+
+. a Puppet module to configure the container host accordingly
+. a content view containing the required software packages and configuration
+. a post-provisioning hook to integrate new hosts automatically into the Satellite 6 compute resources
+
+==== Sample Puppet Module for Docker Host Compute Resource
+
+
+This module is used to configure a RHEL7 host to become a Satellite 6 compute resource for the Docker type. It:
+
+* Installs the required Docker package and ensures that it is updated if a newer version is available, by using the ‘latest’ option (which can be overridden by using a Smart Class Parameter)
+* Configures the _/etc/sysconfig/docker_ configuration file according to the documentation in the Satellite 6 User Guide
+* Starts the Docker daemon and enables the daemon’s automatic starting
+
+For more detailed documentation about this sample Puppet module, see Appendix III.
+
+==== Content View for Docker Profile
+
+
+The following content view has been created for the Docker profile:
+
+|===
+|*CV Name*|cv-app-docker
+
+|*CV Label*|cv-app-docker
+|*CV Description*|Docker Host Content View
+|*Composite CV?*|no
+|*YUM Repositories*|Red Hat Enterprise Linux 7 Server Extras RPMs
+|*Puppet Modules*|docker
+|*Filters*|include: docker*
+|*Life-cycle Env Path*|DEV -> QA -> PROD
+|===
+
+The following hammer commands create the content view, add the corresponding Puppet module to it and publish the content view:
+
+|===
+|hammer content-view create --name "cv-app-docker" \
+
+|===
+
+==== Composite Content View for Containerhost Role
+
+
+The following composite content view has been created for the containerhost infrastructure service server role:
+
+|===
+|*CV Name*|ccv-infra-containerhost
+
+|*CV Label*|ccv-infra-containerhost
+|*CV Description*|CCV for Infra Container Host
+|*Composite CV?*|yes: including the following content views:
+|*YUM Repositories*|N/A
+|*Puppet Modules*|N/A
+|*Filters*|N/A
+|*Life-cycle Env Path*|DEV -> QA -> PROD
+|===
+
+The following hammer commands then create the composite content view, publish and promote it to the lifecycle environment DEV:
+
+|===
+|APP_CVID=`get_latest_version cv-app-docker`
+
+|===
+
+==== Post-Installation Hook for Containerhost
+
+
+In addition to the Puppet module, a *post-installation hook* automatically configures a new host of this type to become a Satellite 6 Docker compute resource using a foreman hook and the hammer CLI. For further information, see the documentation about this hook in Step 8.
+
+=== Sample Application 3: Central loghost Server
+
+
+Rsyslogd is a system utility that provides support for message logging. The corresponding software packages are part of Red Hat Enterprise Linux. We are using multiple logservers in different environments. For example, we have dedicated logservers inside our DMZ environment, and we are running dedicated logservers for high volume logfiles in our QA environment, because we need to use debugging log levels here.
+
+We use this as an example of a special type of an application that *requires neither a content view nor a composite content view*. This special case is valid for all applications and daemons that:
+
+* require only software that is already part of our core-build definition
+* use a multi-purpose Puppet module that is part of core-build definition
+
+The only required software package _rsyslogd_ is already in the core-build content view and, in addition, it is already installed by default using the Puppet module loghost.
+
+As documented in Step 5, we have created a multi-purpose Puppet module to manage rsyslog log-management configuration. We are using the same module to manage both client and server configurations. We are also using different Puppet classes for each of them and a Smart Class Parameter to select the appropriate class (which depends on the use case).
+
+The only item that distinguishes between a standard core build RHEL server and this role type is the Satellite 6 *Smart Class Parameter*. The default value is set to ‘client’ and therefore the host group definition for plain core builds does not require a specific Smart Class Parameter configuration. For the role type ‘loghost’ we need to set this Smart Class Parameter to ‘server in the corresponding host group. This parameter is the only difference between these two host groups. We will explain this parameter type and this scenario later in Step 7.
+
+=== Sample Application 4: Satellite 6 Capsule
+
+
+Based on our federated setup with multiple sites and locations, we are using a couple of Red Hat Satellite 6 Capsules. Therefore, we created a dedicated role type.
+
+*Note:* +
+Because the capsule installation uses a dedicated installer, we did not create a *Puppet module* for this role type.
+
+
+==== Content View for Satellite 6 Capsule Profile
+
+The following content view was created for the Satellite 6 Capsule profile:
+
+|===
+|*CV Name*|cv-app-capsule
+
+|*CV Label*|cv-app-capsule
+|*CV Description*|Satellite 6 Capsule Content View
+|*Composite CV?*|no
+|*YUM Repositories*|Red Hat Software Collections RPMs RHEL7
+|*Puppet Modules*|-
+|*Filters*|-
+|*Life-cycle Env Path*|DEV -> QA -> PROD
+|===
+
+*Note:* +
+When this document was written, Satellite 6.1 was in Beta phase. Therefore, we have used the corresponding channel. This needs to be adapted after Satellite 6.1 GA.
+
+The following hammer commands create the content view, add the corresponding Puppet module to it, and then publish the content view:
+
+|===
+|hammer content-view create --name "cv-app-capsule" \
+
+|===
+
+
+
+==== Composite Content View for Satellite 6 Capsule Role
+
+
+The following composite content view was created for the container host infrastructure service server role:
+
+|===
+|*CV Name*|ccv-infra-capsule
+
+|*CV Label*|ccv-infra-capsule
+|*CV Description*|CCV for Satellite 6 Capsule
+|*Composite CV?*|yes: including the following content views:
+|*YUM Repositories*|N/A
+|*Puppet Modules*|N/A
+|*Filters*|N/A
+|*Life-cycle Env Path*|DEV -> QA -> PROD
+|===
+
+The following hammer commands create and publish the composite content view and then publish it and promote it to the lifecycle environment DEV:
+
+|===
+|APP_CVID=`get_latest_version cv-app-capsule`
+
+|===
+
+
+=== Sample Application 5: ACME Website
+
+
+The ACME public website is currently based in WordPress. Based on a security guideline from the ACME risk & security management team, the frontend and backend servers are separated. The frontend servers run inside the DMZ environment, and the backend servers run in the main Munich location.
+
+The frontend part consists of Apache, PHP, and WordPress itself. The database servers used as backends are based on MySQL or MariaDB.
+
+There is a *dedicated lifecycle environment path* for the ACME web (created during Step 4) that consists of Web-DEV, Web-QA, Web-UAT, and Web-PROD lifecycle environments.
+
+Because the current software development is based on Boston, US, the first two *lifecycle environments, Web-DEV and Web-QA,* are associated to the Boston location, as defined in the related Satellite 6 capsule configuration:
+
+
+
+Because most of the development and qa systems are *non-persistent,* ACME has decided to use thehttp://www.redhat.com/en/technologies/linux-platforms/openstack-platform[http://www.redhat.com/en/technologies/linux-platforms/openstack-platform[ ]]http://www.redhat.com/en/technologies/linux-platforms/openstack-platform[Red Hat Enterprise Linux Openstack Platform] as the underlying virtualization infrastructure in Boston. The configuration of the corresponding location, capsule and compute resources was documented in Step 2.
+
+The ACME web application architecture has three parts:
+
+* frontend content (Apache, PHP, WordPress)
+* backend content (MariaDB or MySQL)
+* operating system / core build (here: RHEL7 for both frontend and backend)
+
+==== Sample Puppet Module for MariaDB server profile
+
+
+Since software development is done by ACME software development department all software and configuration is designed and developed in Boston. The following Puppet modules are inside the area of responsibility of and have been provided by the software development department.
+
+We are using the standard Puppet module from Puppetlabs to manage the MySQL and MariaDB databases:https://forge.puppetlabs.com/puppetlabs/mysql[https://forge.puppetlabs.com/puppetlabs/mysql[ ]]https://forge.puppetlabs.com/puppetlabs/mysql[https://forge.puppetlabs.com/puppetlabs/mysql]
+
+This module also requires the standard library of resources for Puppet modules, _stdlib,_ which is part of our core build definitions.
+
+==== Sample Puppet Module for ACME Web Role
+
+
+Following the roles-profiles model explained earlier, the top layer of the entire application stack has to contain the role (Puppet) configuration. In our scenario, we created a mixed type module that contains both: the role definition and a profile definition for the WordPress application itself.
+
+This module installs and configures the ACME website application. It allows us to distribute the application on two hosts, one for the frontend (Apache+PHP) and one for the backend (MySQL/MariaDB).
+
+The frontend definition does the following items:
+
+* Installs the Apache + PHP packages using the standard Puppet module from Puppetlabs to manage the Apache webserver:https://forge.puppetlabs.com/puppetlabs/apache[https://forge.puppetlabs.com/puppetlabs/apache[ ]]https://forge.puppetlabs.com/puppetlabs/apache[https://forge.puppetlabs.com/puppetlabs/apache]
+* Extracts the currently latest WordPress version, which is shipped as a file through the Puppet module (version: 4.2.2)
+* Configures _/var/www/html/wp-config.php _with the backend connection parameter, using the Satellite 6 Smart Class Parameters
+
+This module also requires the standard library of resources for the Puppet module _stdlib_ and the _concat_ module, which are already part of our core build definitions.
+
+Detailed documentation for this sample Puppet module is in Appendix III.
+
+==== ACME Web Config Groups
+
+
+Just as we created our core-build definition, we need to assemble the Puppet classes that belong to our ACME web roles and combine them with a config group. We distinguish between the frontend and backend, just as we did with our content view definitions.
+
+The corresponding config group for frontend servers consists of the following Puppet classes:
+
+
+
+The corresponding config group for backend servers consists of the following Puppet classes:
+
+
+
+*Note:* +
+The required dependencies _stdlib_ and _concat_ have not been added to these config groups. However, you still need to ensure that they are inside the same Puppet environment. This is automatically done since they are part of the same composite content view.
+
+
+==== Content View for MariaDB Profile
+
+
+The following content view has been created for the MariaDB profile:
+
+|===
+|*CV Name*|cv-app-mariadb
+
+|*CV Label*|cv-app-mariadb
+|*CV Description*|MariaDB Content View
+|*Composite CV?*|no
+|*YUM Repositories*|Red Hat Software Collections RPMs for RHEL6
+|*Puppet Modules*|mysql
+|*Filters*|-
+|*Life-cycle Env Path*|- (remains in Library)
+|===
+
+The following hammer commands create the content view, add the corresponding Puppet module to it, and publish the content view:
+
+|===
+|hammer content-view create --name "cv-app-mariadb" \
+
+|===
+
+==== Content View for the WordPress profile
+
+
+The following content view has been created for the WordPress profile:
+
+|===
+|*CV Name*|cv-app-wordpress
+
+|*CV Label*|cv-app-
+|*CV Description*|WordPress Content View
+|*Composite CV?*|no
+|*YUM Repositories*|none (if WordPress rpm used: EPEL 7)
+|*Puppet Modules*|acmeweb
+|*Filters*|
+|*Life-cycle Env Path*|- (remains in Library)
+|===
+
+The following hammer commands create the content view, add the corresponding Puppet module to it, and publish the content view:
+
+|===
+|hammer content-view create --name "cv-app-wordpress" \
+
+|===
+
+
+==== Composite Content View for ACME Web Role
+
+
+The following composite content view has been created for the ACME Web service server role:
+
+|===
+|*CV Name*|ccv-biz-acmeweb
+
+|*CV Label*|ccv-biz-acmeweb
+|*CV Description*|CCV for ACME including WordPress and MariaDB
+|*Composite CV?*|yes: including the following content views:
+|*YUM Repositories*|N/A
+|*Puppet Modules*|N/A
+|*Filters*|N/A
+|*Life-cycle Env Path*|Web-DEV -> Web-QA -> Web-UAT -> Web-PROD
+|===
+
+
+The following hammer commands create the composite content view, publish it, and promote it to the lifecycle environment DEV:
+
+|===
+|APP1_CVID=`get_latest_version cv-app-mariadb`
+
+|===
+
+Click on Content -> Content Views to see a long list of content views and composite content views.
+
+
+
+To list all the content views we’ve created so far, use hammer commands:
+
+
+
+*Note:* +
+This list provides some additional information that might be relevant to you. Besides the content view type (composite, true, or empty), you can also see content views that have no repository IDs associated with them (*composite* content views have no repositories associated with them by default). These are our content views that use the core build repositories for software (for example MariaDB as part of Red Hat Enterprise Linux) and that only contain Puppet modules.

@@ -1,0 +1,121 @@
+<<<
+== Step 10: Automate and extend your setup
+
+
+This step should provide some ideas about potential extensions of the setup we completed in previous steps. Some of them go beyond the primary purpose of Satellite 6 and the targeted use cases. However, Satellite 6, and especially its CLI and API capabilities, allow a lot of potential enhancements, further automation, and integration of Satellite 6 as part of a wider orchestration of the tool chain.
+
+We have not completed and documented all possible enhancements. But at least some of these extensions and further automations might become parts of upcoming documents.
+
+The scenarios mentioned below are outside of the the scope of the posted Service Level Agreements and support procedures (https://access.redhat.com/support/offerings/production/[https://access.redhat.com/support/offerings/production/]). They provide an overview about potential enhancements, as partially seen in various customer projects and environments.
+
+=== Talk to us!
+
+If you have other use cases you want us to cover or have tips/tricks that you would like to share with the Satellite 6 community, contact us at refarch-feedback@redhat.com. We’d love to hear from you. If we use your work, we will add you to our contributor list.
+
+=== Importing existing hosts
+
+
+Typically, an organization may have hosts that have not been managed by Satellite 6 in the past. These hosts cannot be managed by Red Hat Satellite server unless they are imported first. Usually these hosts have been managed over Red Hat Network (RHN) in the past, which is the default registration point for all Red Hat Enterprise Linux installations. For Red Hat Satellite 5 customers want to migrate their hosts from Satellite 5 to Satellite 6 Red Hat provides a dedicated transition documentation:https://access.redhat.com/knowledge/articles/1187643[https://access.redhat.com/knowledge/articles/1187643[ ]]https://access.redhat.com/knowledge/articles/1187643[https://access.redhat.com/knowledge/articles/1187643]
+
+To register an existing host to your Red Hat Satellite 6 server, take the following steps:
+
+. Ensure that the registration prerequisites have been fulfilled.
+. Ensure a proper time synchronization (usage of ntpd or chrony recommended).
+. Install the Red Hat Satellite 6 CA certificate.
+. Register the host using subscription-manager. Designate the corresponding organization and activation key parameters.
+. Install the katello-agent package.
+. Install and configure Puppet.
+
+The prerequisites and all following steps are documented in detail inside the Red Hat Satellite 6 User Guide:  https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html/User_Guide/index.html#sect-Red_Hat_Satellite-User_Guide-Configuring_Hosts_for_Registration[https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html/User_Guide/index.html#sect-Red_Hat_Satellite-User_Guide-Configuring_Hosts_for_Registration]
+
+*Warning:* +
+It’s important to be aware of the host group and the content view associated with the activation key used during registration. This host and especially the *Puppet classes* associated with this host group (and all configurations defined inside) *automatically applies to this host* during the next Puppet run.
+
+This association between the Puppet classes and the host groups might lead to *unforeseeable and critical changes* to the host configuration. In fact, the *system and its application could become unusable*. Before registering a system, you need to ensure that all configurations defined primarily in the equivalent host group definitions won’t overwrite and damage any existing configurations of this host.
+
+Although this point is not as critical, be careful that the *content view* associated to the host group with which the activation key is associated *provides all required software repositories which are currently used by these hosts*. The same thinking applies to the inherent *update level*. Missing software repositories or older update levels than the already installed ones might prevent your systems from being properly updated during software maintenance.
+
+=== Improve your bare metal provisioning using the Discovery Plugin
+
+
+The Foreman Discovery plug-in in Red Hat Satellite Server adds Metal-as-a-Service (MaaS) features. Bare-metal hosts on Satellite Server-managed networks can be booted over the network through PXE into stripped-down Red Hat Enterprise Linux systems running from memory to collect and send hardware facts to the Satellite Server.
+
+After they have booted, these systems appear as discovered hosts on the Satellite Server. Administrators can use these collected hardware facts to provision systems, removing the need to manually collect MAC addresses and other hardware information and reducing the time required to provision hosts.
+
+After the provisioning configuration is complete, the Foreman discovery plug-in sends a reboot command to the discovered host and the installation begins. The host then moves from the Discovered Hosts list in the Satellite Server to the All Hosts list.
+
+For more information, see:https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html/User_Guide/index.html#chap-Red_Hat_Satellite-User_Guide-Using_the_Foreman_Discovery_Plug_in[https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html/User_Guide/index.html#chap-Red_Hat_Satellite-User_Guide-Using_the_Foreman_Discovery_Plug_in[ ]]https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html/User_Guide/index.html#chap-Red_Hat_Satellite-User_Guide-Using_the_Foreman_Discovery_Plug_in[https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html/User_Guide/index.html#chap-Red_Hat_Satellite-User_Guide-Using_the_Foreman_Discovery_Plug_in]
+
+Satellite 6.1 extends this capability and allows the administrator to define rules that govern how these discovered systems are provisioned. Provisioning can occur automatically and without further intervention.
+
+Detailed documentation is available here:https://access.redhat.com/comment/923233[https://access.redhat.com/comment/923233[ ]]https://access.redhat.com/comment/923233[https://access.redhat.com/comment/923233]
+
+=== Integration of Backup Management and Systems Management
+
+
+Similar to the monitoring integration as described inside this solution guide, a second typical integration point is backup management. If the particular backup-management setup requires host- or application-specific configurations,they might become part of the host or application-specific content and configuration definitions. More precisely, the following potential integration points are supported by Red Hat Satellite 6:
+
+* deploying backup-management agents on particular hosts
+* configuring the client-side backup management configuration files so that they correspond to pre-defined configuration templates for individual applications
+* deploying the client-side configuration to run regular backups (chron)
+* automatically adding new hosts to the server-side backup configuration by using foreman hooks
+* installing and configuring the backup-management server
+* installing and configuring software-based scale-out storage used as backend storage for backup (for example,https://www.redhat.com/en/technologies/storage/gluster[https://www.redhat.com/en/technologies/storage/gluster[ ]]https://www.redhat.com/en/technologies/storage/gluster[Red Hat Gluster Storage])
+* backing up the Satellite 6 configuration *and* data
+
+Some of the items mentioned above are part of upcoming documentation that is currently in progress.
+
+Starting with version 6.1, Red Hat Satellite ships with two new scripts, _katello-backup_ for backing up and _katello-restore_ for restoring a Satellite 6 server.
+
+See the Satellite 6 User Guide for details on how to back up and restore the Satellite 6 configuration files and data:https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.0/html/User_Guide/sect-Disaster_Recovery.html[https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.0/html/User_Guide/sect-Disaster_Recovery.html[ ]]https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.0/html/User_Guide/sect-Disaster_Recovery.html[https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.0/html/User_Guide/sect-Disaster_Recovery.html]
+
+=== How Satellite 6 Supports Your Security Management Process
+
+
+Red Hat provides a huge number of security-related technologies that help customers ensure that their systems can be protected against various types of security risks efficiently. Just a few of these technologies include: Security Enhanced Linux, firewalls, sVirt, auditd, SSSD, Idm, openSCAP, file system encryptions, and many many more. In addition, Red Hat has many security-specific certifications of various Red Hat products, and other vendors also provide a broad ecosystem of complementary security-related products. Red Hat provides security-related training and documentation, such as the “https://access.redhat.com/site/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Security_Guide/index.html[Red Hat Enterprise Linux Security Guide]” or the “https://www.redhat.com/en/services/training/rh413-red-hat-server-hardening[Server Hardening Training Course (RH 413)]”.
+
+Satellite supports security management in various areas:
+
+* errata notifications and reporting
+* efficient update and errata management
+* errata management independent of the current content availability set (applicable vs. installable), including automated content-set adaptations (content-view minor releases)
+* openSCAP integration for verifying the presence of patches, checking system-security configuration settings, and examining systems for signs of compromise
+* deployment and configuration of various security-related technologies and configurations
+* verification of deployed packages and configurations using built-in verification capabilities of rpm format and Puppet
+* segregation of duty and fine-granular access control for all Satellite 6 entities
+
+
+=== How Satellite 6 Supports Your Service Validation & Testing (QA) Process
+
+
+Satellite 6 can be used in various ways to support QA/QE activities as part of the Service Validation and Testing process. The following scenarios leverage the various capabilities provided by Red Hat Satellite 6:
+
+* creating copies of existing production systems to reproduce errors and test fixes
+* considering lifecycle-stage-specific adoption (for example, the additional installation of testing tools or adapted configurations for test systems using parametrization and environment-specific configurations)
+* using automated system provisioning (required for the fast spin-up of test systems and environments, especially for non-persistent test environments)
+* managing roles and access based on RBAC features to support role concepts and approval workflows
+* decoupling release cycles through independent release management and lifecycle environments to support smaller and faster changes
+* and many more
+
+Some customers have implemented efficient testing (up to Continuous-Integration-like environments) based on Satellite 6 and some enhancements that leverage its API- and CLI-automation capabilities.
+
+=== How Satellite 6 Supports Your Asset & Configuration Management Process
+
+
+Satellite 6 acts as a central system management tool across different hardware and virtualization platforms and includes all software and configuration assets managed by your Satellite. It also has access to and provides a lot of information around its managed entities. The following list provides some examples of how Satellite 6 can be used to support this core process of IT Service Management:
+
+* overview of all assets managed by Satellite 6, including bare-metal and virtual assets and their general information (for example, vendor, mainboard, pci devices, memory, cpu, etc.)
+* detailed overview of all software and configuration objects for each individual system
+* defined release definitions that use content views as time-based snapshots of content
+* fine-granular access control of each configuration object type ,including read-only roles for reporting / auditing
+* enhanced configuration management, including drift management and reporting based on Puppet
+* provisioning of all information via CLI and API to allow export to or sync with external configuration management systems or tools
+
+=== How Satellite 6 Supports Your Incident Management Process
+
+
+Satellite 6 can support the incident management process in various ways:
+
+* centralized overview of all systems including reporting (dashboard)
+* detailed information of each system, including the event history of recent changes
+* integration of Red Hat Access Insights as a new feature of Satellite 6.1

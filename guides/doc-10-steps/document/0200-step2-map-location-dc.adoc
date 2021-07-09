@@ -1,0 +1,793 @@
+<<<
+== Step 2: Map your Location and Datacenter Topology
+
+
+In this step we introduce different datacenter topologies that require different Satellite 6 configurations. This particular network topology of an environment has even more impact than federated locations. You can use Satellite 6 to provide network infrastructure services, or you can leverage existing ones and reflect existing domains and subnets in the configuration settings.
+
+The following Satellite 6 entities are explained in this step:
+
+* Red Hat Satellite 6 Capsules
+** Capsule Infrastructure Services (DNS, DHCP, TFTP)
+* Red Hat Satellite 6 Compute Resources
+** Red Hat Enterprise Virtualization, RHEL OpenStack Platform
+* Red Hat Satellite 6 Locations
+* Red Hat Satellite 6 Domains
+* Red Hat Satellite 6 Subnets
+
+The following diagram illustrates the relationship between the underlying virtualization platforms configured as compute resources, subnets and domains, locations and the associated Satellite 6 Capsules in our setup.
+
+
+
+=== Red Hat Satellite 6 Capsule Server Overview
+
+
+The Red Satellite Capsule Server is a Satellite component that provides federated services to discover, provision, and configure hosts outside of the primary Satellite server. A Satellite Capsule Server provides the following features:
+
+Content Delivery Node features, including:
+
+* Repository synchronization
+
+Repository synchronization allows a Red Hat Capsule to synchronize content (yum and Puppet) from the Satellite Server to be used for _content delivery_.
+
+* Content delivery
+
+A Red Hat Capsule located on a remote site can be configured as a content delivery node. This allows hosts configured to use this capsule to fetch content from the Capsule rather than having to fetch it from the central Satellite 6 server.
+
+Red Hat Satellite Provisioning Smart Proxy features, including:
+
+* DHCP, including ISC DHCP servers
+
+A Red Hat Capsule can act as a DHCP server or integrate with an existing DHCP server. Since DHCP requests are done through broadcast, they are normally not propagated between subnets and for this reason a DHCP server needs to be present on every subnet (alternatively a dhcp helper service can be used). If no DHCP server exists on a certain subnet and connecting the central Red Hat Satellite 6 server to this subnet is not feasible, putting a Red Hat Capsule on this subnet can resolve the problem.
+
+* DNS, including Bind
+
+A Red Hat Satellite 6 Capsule can integrate with a DNS or Realm server. If the DNS or Realm server are not reachable from the Red Hat Satellite 6, a Red Hat Capsule can be used instead.
+
+* TFTP server
+
+A Red Hat Capsule can function as a TFTP server. If network restrictions prohibit the clients from using TFTP towards the central Satellite, they can be configured to used a locally place Red Hat Capsule instead.
+
+* Puppet Master, including Puppet CA to manage certificate signing and cleaning
+
+The Red Hat Capsule provides an integrated Puppet Master for configuration management and acts as an External Node Classifier (ENC). A node checks in at regular basis to query the ENC for its configuration (Puppet Class assignment). When using the Puppet configuration management system, each time a client checks in, some fairly resource-intensive tasks need to be done on the Puppet master. For scalability reasons, clients can be configured to check in with a Red Hat Capsule rather than with the central Satellite thereby lightening the load on the main Satellite server.
+
+* Baseboard Management Controller (BMC) for power management
+
+A Red Hat Satellite 6 Capsule has the ability to control clients BMCs, thereby powering them on and off for provisioning purpose. If network restrictions prevent the main Satellite from reaching the clients BMCs, a Red Hat Satellite 6 Capsule located near the BMCs can be used instead.
+
+The Satellite Capsule Server can be used to solve various challenges. While the primary purpose is to manage federated network configurations more efficiently, it can be additionally used to *scale out *the Satellite installation. Organizations can create various capsules in different geographical locations where datacenters are located. These are centrally managed through the Satellite Server. This feature allows hosts in distributed locations to communicate to the capsule instead of directly to the Satellite 6 server itself.
+
+Additionally, it allows you to select which particular content subset is managed by a specific capsule and, therefore, made available to the hosts behind the capsule. For example, a capsule associated with a particular lifecycle environment only provides the content (views) available in this environments to its hosts.
+
+Further Information for scaling purposes can be found in the product documentation:
+
+https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html/Installation_Guide/chap-Red_Hat_Satellite-Installation_Guide-Installing_Red_Hat_Satellite_Capsule_Server.html[https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html/Installation_Guide/chap-Red_Hat_Satellite-Installation_Guide-Installing_Red_Hat_Satellite_Capsule_Server.html]
+
+Satellite 6.1 introduces a couple of new features around isolations of communications between managed hosts and Satellite 6 server and capsules. An overview of the Satellite 6 capsule communications and the differences between Satellie 6.0 and 6.1 can be found here:https://access.redhat.com/articles/1447533[https://access.redhat.com/articles/1447533[ ]]https://access.redhat.com/articles/1447533[https://access.redhat.com/articles/1447533]
+
+=== Sample Datacenter Topology Scenarios
+
+
+Even if there are many more types and possible combinations, we will focus on the following architecture types ( which are prevalent in many customer environments):
+
+==== Scenario A) Centralized Management - One Red Hat Satellite for All Segments
+
+
+The architecture with the lowest complexity is using a single Red Hat Satellite Server to manage all segments for all locations and the datacenter. This requires a setup where the Red Hat Satellite is installed in one of these segments, and the segments can be based on:
+
+* Network Zones (Subnets)
+* Lifecycle Environments
+* Domains
+* Datacenters
+* Compute Resources
+
+Red Hat Satellite has direct network access to all other segments. All managed systems and end users have access to Red Hat Satellite
+
+
+
+
+*Note:* +
+We do not recommend using a single Satellite Server to integrate remote locations. Using a Red Hat Capsule has several advantages. For example, this practice can save bandwidth since hosts can obtain the required data from a local Red Hat Capsule and can load the data only once from Red Hat Satellite Server to the Red Hat Capsule, instead of every time a host needs new packages, updates, or an entire installation. In addition, it can be quite challenging to set up a provisioning infrastructure that works when connecting to remote locations. You should consider the following topologies (described in Scenarios B, C, D, and E) for this type of situation.
+
+==== Scenario B) Segregated Network Zones Within a Datacenter
+
+
+To fulfill particular security requirements, most datacenters are segregated into different network zones. Red Hat Capsule capabilities can be used to manage hosts and Compute Resources in those segregated networks to ensure that they only have to access the Red Hat Capsule Server for provisioning, configuration, errata, and general management. The Red Hat Capsule Server is the only system that does need direct communication with the Red Hat Satellite Server in this situation.
+
+
+*Note:* +
+The DMZ Compute Resource can be another datacenter managed in the same Virtualization Manager or be a completely separate entity. A Compute Resource has to be created for each Datacenter existing in both cases (or tenant in case of RHELOSP).
+
+==== Scenario C) Geographically Separate Locations
+
+
+Hosts in a remote location typically get their own provisioning and update infrastructure as a way to lower bandwidth consumption between geographically separate locations. +
+You can easily manage hosts and Compute Resources in remote locations with a Red Hat Capsule.
+
+
+
+
+==== Scenario D) Disconnected / Isolated
+
+
+Many users of Red Hat Satellite deploy in disconnected or air gapped environments. In these secured environments, the Satellite is on a network where it cannot reach the Red Hat Content Delivery Network (cdn.redhat.com). As such, the Satellite is unable to retrieve content “over the wire.” The following Knowledgebase article provides recommended practices for a user who is setting up Red Hat Satellite in such an environment.
+
+Information on how to setup a disconnected Satellite Server can be found here: +
+https://access.redhat.com/articles/1375133[https://access.redhat.com/articles/1375133]
+
+*Note: *This disconnected Satellite scenario is not covered in this document.
+
+=== Sample ACME Datacenter Scenario
+
+
+In our ACME scenario all hosts in the primary datacenter in Munich are directly connected to the built-in Capsule based on the Satellite 6 server itself. Hosts running inside segregated networks (DMZ) and in the secondary datacenter in Boston are connected to dedicated Capsules.
+
+The Satellite Server will be placed in the location _munich_ in Germany, the dmz capsule is in the location _munich-dmz,_ and the remote capsule is placed in _boston_.
+
+The following table provides an overview of the Red Hat Capsule mapping to _location_, _Compute Resource_, _domain_ and _subnet_.
+
+
+|===
+|*Type*|*Location*|*Domain*|*Subnet*|*Compute Resource*
+
+|Red Hat Satellite|munich|example.com|172.24.96.0/24|RHEV (acme-rhev-munich)
+|Red Hat Capsule|munich-dmz|dmz.example.com|172.24.99.0/24|RHEV (acme-rhev-munich-dmz)
+|Red Hat Capsule|boston|novalocal|10.0.40.0/24|RHELOSP
+|===
+
+
+
+=== Locations
+
+
+A Location is collection of default settings that represent a physical place. These can be nested so that you can set up an hierarchical collection of locations.
+
+*Note*: +
+Most Satellite 6 entities can be associated to more than one location and one location can be associated to more than one entity (for example, capsules, compute resources, host groups, roles).
+
+One of the advantages of using locations is that you can assign _Subnets_, _Domains_, _Compute Resources_ etc. to prevent incorrect host placement or configuration. For example, you cannot assign a subnet, domain or compute resources to a capsule but only to a location. This restriction means that capsules, domains, subnets and compute resources are assigned to a particular location. The location is therefore the logical grouping for all four of these objects. You need to ensure that these relationships are valid (for example, the subnet and domain are available for this particular compute resource).
+
+Create the _location_ through the WebUI:
+
+1. _Administer_ ➤ _Locations_ ➤ _New Location_ ➤ add location name ➤ submit
+
+
+2. Click on the _location_ to edit ➤ select _Organizations_ on the left side ➤ select your _Organization_ to add it to the location
+
+
+
+*Via hammer:*
+
+|===
+|ORG="ACME"
+
+|===
+
+Because the Satellite Server can manage multiple organizations, we also have to specify the O_rganization_ to which the location should belong. The following Hammer command assigns all three locations created earlier to our ACME organization:
+
+
+|===
+|for LOC in ${LOCATIONS}
+
+|===
+
+
+
+
+
+=== Red Hat Satellite 6 Compute Resources
+
+
+Red Hat Satellite can provision and manage systems across bare-metal, private, and public clouds. Red Hat Satellite Compute resources are hardware abstractions from virtualization and cloud providers. Satellite uses compute resources to provision virtual machines and containers. Supported private providers include Red Hat Enterprise Virtualization, oVirt, OpenStack, VMware, Libvirt, and Docker. Supported public cloud providers include Amazon EC2, Google Compute Engine, and Rackspace.
+
+We’ve recently published a solution guide describing the deployment of the Red Hat Cloud Infrastructure (RHCI) components using Satellite 6:https://access.redhat.com/articles/1434843[https://access.redhat.com/articles/1434843[ ]]https://access.redhat.com/articles/1434843[https://access.redhat.com/articles/1434843]
+
+For this solution guide we assume that you already have an existing Red Hat Enterprise Virtualization and Red Hat Enterprise Linux OpenStack Platform setup.
+
+==== Configuring Your Virtualization and Cloud Infrastructures as Compute Resources
+
+
+In order to provision systems on top of the platforms described here, you have to configure them as compute resources.
+
+We used the following infrastructure architecture for this solution guide:
+
+
+
+Although the emulated datacenter location in Munich, Germany is using Red Hat Enterprise Virtualization, the second virtual datacenter in Boston, US is using Red Hat Enterprise Linux Openstack Platform as the underlying virtualization platform. The installation and configuration of these virtualization platforms is not covered in this document.
+
+The benefit of using _Compute Resource_ is that the Virtual Machine Container is automatically created and started based on a _Compute Profile_ or individual settings. New hosts can be managed through a single interface, which saves administration time. Additionally, the console of the VM can also be accessed through the Satellite WebUI.
+
+To be able to connect a _Compute Resourc_e to the Satellite Server, the following port(s) have to be open:
+
+|===
+|*Initiator*|*Endpoint*|*Endpoint Detail*|*Port*|*Protocol*|*SELinux Type*
+
+|Satellite Server|Compute Resource|RHEV-Manager|443|https|https_port_t
+|Satellite Server|Compute Resource|RHELOSP|5000|http|commplex_main_port_t
+|===
+
+*Note:* +
+Currently, a direct communication between the Satellite 6 server and all compute resources is required, even if hosts running on top of the corresponding compute resource are using  a Satellite 6 capsule to communicate.  This includes network connections to all affected admin services like the Red Hat Enterprise Linux Openstack service end-points. Usually they have to be on the same network as the Satellite 6 server itself.
+
+A detailed list of all required required network ports could be found here: +
+https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html/Installation_Guide/sect-Red_Hat_Satellite-Installation_Guide-Prerequisites.html#tabl-Red_Hat_Satellite-Installation_Guide-Prerequisites-Required_Network_Ports[https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html/Installation_Guide/sect-Red_Hat_Satellite-Installation_Guide-Prerequisites.html#tabl-Red_Hat_Satellite-Installation_Guide-Prerequisites-Required_Network_Ports]
+
+==== Location Munich: Configuring RHEV as Compute Resource
+
+
+As stated in the introduction chapter, we assume that Red Hat Enterprise Virtualization is already installed and configured. The setup and configuration of RHEV is documented in detail in the earlier reference architecturehttps://inquiries.redhat.com/go/redhat/rhev-for-servers[https://inquiries.redhat.com/go/redhat/rhev-for-servers[ ]]https://inquiries.redhat.com/go/redhat/rhev-for-servers[“Deploying Red Hat Enterprise Virtualization (RHEV) for Servers”]. We also have other reference architectures that:
+
+* Are related to particular use cases and use RHEV as the underlying virtualization platform, likehttps://inquiries.redhat.com/go/redhat/sap-rhev[https://inquiries.redhat.com/go/redhat/sap-rhev[ ]]https://inquiries.redhat.com/go/redhat/sap-rhev[scaling SAP] orhttps://inquiries.redhat.com/go/redhat/lamp-rhev[https://inquiries.redhat.com/go/redhat/lamp-rhev[ ]]https://inquiries.redhat.com/go/redhat/lamp-rhev[scaling LAMP stacks]
+* Show 3rd party integrations ofhttps://engage.redhat.com/forms/veritas-rhel-ha?offer_id=70160000000Tq8jAAC[https://engage.redhat.com/forms/veritas-rhel-ha?offer_id=70160000000Tq8jAAC[ ]]https://engage.redhat.com/forms/veritas-rhel-ha?offer_id=70160000000Tq8jAAC[Symantec Veritas Cluster] orhttps://engage.redhat.com/forms/rhev-netbackup?offer_id=70160000000Tq93AAC[https://engage.redhat.com/forms/rhev-netbackup?offer_id=70160000000Tq93AAC[ ]]https://engage.redhat.com/forms/rhev-netbackup?offer_id=70160000000Tq93AAC[Symantec Net Backup]
+* Explain various migration paths
+
+For a full list of all published reference architectures, go to: +
+https://access.redhat.com/search/#/knowledgebase?q=&p=1&sort=relevant&language=en&article_type=Reference%20Architecture&documentKind=Solution,Article[https://access.redhat.com/search/#/knowledgebase?q=&p=1&sort=relevant&language=en&article_type=Reference%20Architecture&documentKind=Solution,Article]
+
+To configure RHEV as a compute resource of Red Hat Satellite 6, you need the following credentials:
+
+* URL of RHEV-M (for example,http://rhev-m.acme.com/api[http://rhev-m.acme.com/api[ ]]http://rhev-m.acme.com/api[https://rhev-m.acme.com/api])
+* Login Credentials to this RHEV environment (username, password)
+* the RHEV datacenter to be used
+* _Optional_: Quota ID of this datacenter
+* X509 certificate (automatically loaded)
+
+To create the RHEV _Compute Resource_ for the internal network through the WebUI:
+
+. _Infrastructure_ ➤ _Compute Resources_ ➤ _New Compute Resource_
+. Select _RHEV_  as the provider ➤ fill in the connection information ➤ _Submit_
+
+You can also map the selected RHEV environment to particular locations and organizations managed by Red Hat Satellite in the equivalent tabs.
+
+
+
+*Via hammer:*
+
+|===
+|NAME="acme-rhev-munich"
+
+|===
+
+Repeat the same steps for the _Compute Resource_ in the DMZ network with the corresponding information.
+
+*Note:*
+
+* http://www.ovirt.org/Home[Ovirt] is the upstream version of Red Hat Enterprise Virtualization and is used as the compute resource type name for Hammer. Replace the variables with the corresponding values for your environment.
+* Using Red Hat Enterprise Virtualization as the underlying virtualization platform might also affect other configurations documented later in this solution guide. Though all RHEV-specific virtualization drivers are already part of the kernel in both RHEL6 and RHEL7, *we recommend using the optional RHEV agents. *These help you to get additional information and execute control commands inside the guest. Since the rhev-agent software packages are available in software channels that are not typically assigned to our RHEL systems, we’re adding them to our core-build configuration (see Step 5).
+* We’re adapting the partition table templates for our provisioning so that they reflect the naming of the virtual disks in the guests (see Step 7).
+
+==== Location Boston: Configuring RHEL OpenStack Platform as a Compute Resource
+
+
+*Note:* +
+Differences in the configuration of the Compute Resource are highlighted in *bold* text.
+
+===== Configuring the Compute Resource
+
+To create the Red Hat Enterprise Linux OpenStack Platform _Compute Resource_ through the WebUI: +
+1. _Infrastructure_ ➤ _Compute Resources_ ➤ _New Compute Resource_ +
+2. Select *_RHEL OpenStack Platform_* as the provider ➤ fill in the connection information ➤ _Submit_
+
+
+
+
+*Via hammer:*
+
+|===
+|NAME="acme-rhelosp-boston"
+
+|===
+
+*Note:* +
+You must add *multiple* Compute Resources when a Compute Resource has several datacenters or tenants (in RHELOSP).
+
+To add a RHELOSP Compute Resource, *you must add* port 5000 and /v2.0/tokens to the url.
+
+
+
+
+==== Configuring VMware vSphere as a Compute Resource
+
+
+Similar to using other virtualization platforms already mentioned, using VMware vSphere as the underlying virtualization platform can also affect other configurations (such as, partition tables, installation of additional packages (virtualization drivers), and configuration adaptations). Although we have not used VMware virtualization in our setup, we have added some VMware-specific enhancements to our core-build definitions in case you do.
+
+*Note***:** +
+If you have Red Hat subscriptions that require host-to-guest mapping (such as Virtual Datacenter (VDC), unlimited Guest or Virtualization SKUS (known as flex guest)), you must  also install virt-who an additional time. This procedure is not covered in this document. For more information on why and when you should use _virt-who_, see:https://access.redhat.com/articles/1300283[https://access.redhat.com/articles/1300283[ ]]https://access.redhat.com/articles/1300283[https://access.redhat.com/articles/1300283] andhttps://access.redhat.com/articles/480693[https://access.redhat.com/articles/480693[ ]]https://access.redhat.com/articles/480693[https://access.redhat.com/articles/480693].
+
+=== Domains
+
+
+You can use Satellite to assign domain names with the Red Hat Satellite Capsule Server DNS. This feature lets you group and name hosts within a particular domain.
+
+To create the domain _example.com_ in the WebUI, go to: +
+1. _Infrastructure_ ➤ _Domains_ ➤ _New Domain_ +
+2. On the _Domain_ tab, enter DNS domain _example.com_ ➤ select the Red Hat Satellite as DNS Capsule +
+3. Go to the _Locations_ tab ➤ select the location _munich_ +
+4. Go to the _Organizations_ tab ➤ verify that the organization _ACME_ is already assigned +
+5. Click on _Submit_
+
+*For the domain **_dmz.example.com:_*__ __Follow the same procedure__,__ and assign the location _munich-dmz_. But leave the DNS Capsule empty (the Capsule for this location does not exist yet).
+
+*For the domain **_novalocal:_*__ __Redo the same steps, and assign the location _boston_. Leave the DNS Capsule empty again for the same reason.
+
+*Via hammer:*
+
+|===
+|#munich
+
+|===
+
+=== Subnets
+
+
+Satellite can create networks for groups of systems. Subnets use standard IP-address settings to define the network and use the Red Hat Satellite Capsule Server's DHCP features to assign IP addresses to systems within the subnet.
+
+To create the subnet _172.24.96.0/24_ with the WebUI, go to: +
+1. _Infrastructure_ ➤ _Subnets_ ➤ _New Subnet_ +
+2. On the _Domain_ tab, enter DNS domain _example.com_ ➤ select the Red Hat Satellite as DNS Capsule +
+3. Go to the _Locations_ tab ➤ select the location _munich_ +
+4. Go to the _Organizations_ tab ➤ verify that the organization _ACME_ is already assigned +
+5. click on _Submit_
+
+
+*Note:* +
+If the Red Hat Capsule handles the IP address management (IPAM) for the subnet, you can choose one of two options:
+
+* *DHCP*
+The DHCP service on the associated Red Hat Capsule manages entries for hosts (mac address + ip address and the next-server to point to the TFTP server). If you choose DHCP, the DHCP range configured during *_capsule-installer_* must match the range specified on the WebUI.
+
+* *Internal DB*
+The Red Hat Capsule provides ip addresses based on the range provided in the subnet configuration; no external service is configured (for example, DHCP). If the host still should be provisioned via PXE, you must add a record manually or via foreman_hooks (see Step 7) to the DHCP server used. Use this option with the _Boot mode_ static.
+
+*Via hammer:*
+
+|===
+|DOMAIN="example.com"
+
+|===
+
+*Note:* +
+You can acquire the Red Hat Capsule ID with the command:
+|===
+|hammer capsule list
+
+|===
+
+Create the subnet to be managed by the Red Hat Capsule _capsule-munich.dmz.example.com_:
+
+1. _Infrastructure_ ➤ _Subnets_ ➤ _New Subnet_ +
+2. On the _Subnet_ Tab ➤ fill in the corresponding information. For IPAM select _DHCP_ and for the Boot mode _static_.
+
+*Via hammer:*
+
+|===
+|DOMAIN="dmz.example.com"
+
+|===
+
+3. On the second tab _Domains_ ➤ check the domain _dmz.example.com_ +
+4. On the fourth tab _Locations_ ➤ add the location _dmz.example.com_ to the right side +
+5. Verify that _ACME_ is already added to the Organizations tab.
+
+For RHEL OSP you need to create the subnet so that the DNS Capsule can create DNS reverse records (PTR) as the domain is only responsible to create the forward record.
+
+To create the subnet that the Red Hat Capsule _capsule-boston.novalocal_ will manage:
+
+1. _Infrastructure_ ➤ _Subnets_ ➤ _New Subnet_ +
+2. On the _Subnet_ Tab ➤ add the Name, Network Address and Network Mask +
+3. On the _Domains _Tab ➤ flag the checkbox _novalocal_ +
+4. Submit
+
+*Via hammer:*
+
+|===
+|DOMAIN="novalocal"
+
+|===
+
+The Red Hat Capsule features for the subnets for _boston_ and _munich-dmz_ will be added once the Red Hat Capsule installation is complete.
+
+*Note:* +
+If a Red Hat Capsule *actively provides* network infrastructure services (DNS, DHCP), it can (currently) manage only *one subnet* (DHCP service) and *one domain* (DNS service). Otherwise, a Capsule can be associated with multiple subnets and/or domains, as long as the network infrastructure services are provided externally.
+
+=== Red Hat Capsule Installation
+
+We assume that no provisioning infrastructure is available in the remote location for installing Red Hat Capsules. We recommend that you install a plain RHEL 7.1+ system without any additional packages and that has at least 200 GB of disk space for the _/var _filesystem.
+
+For detailed Red Hat Capsule prerequisites, see:
+
+https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html/Installation_Guide/sect-Red_Hat_Satellite-Installation_Guide-Red_Hat_Satellite_Capsule_Server_Prerequisites.html[https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html/Installation_Guide/sect-Red_Hat_Satellite-Installation_Guide-Red_Hat_Satellite_Capsule_Server_Prerequisites.html]
+
+Because the Red Hat Satellite 6 Capsule is one of our sample infrastructure services in this document, we cover content views and host groups used to manage Capsule content definitions in additional steps.
+
+==== Sample Capsule 1: Munich DMZ in the RHEV Datacenter
+
+
+You need to ensure that the forward-and-reverse DNS resolution works in both directions:
+
+* *To* the Red Hat Satellite Server *from* the Red Hat Capsule
+* *From* the Red Hat Satellite Server *to* the Red Hat Capsule
+
+*Warning:* +
+If you do not have the DNS resolution set correctly, the capsule-installer fails and displays the message: +
+The capsule-installer is failing with error Could not set 'present' on ensure: Unprocessable Entity at :/usr/share/katello-installer/modules/foreman_proxy/manifests/register.pp" see the following knowledge base article for more information: +
+https://access.redhat.com/solutions/1230493[https://access.redhat.com/solutions/1230493]
+
+Configure the firewall with the required Red Hat Capsule ports:
+
+|===
+|firewall-cmd --permanent \
+
+|===
+
+Install the Red Hat Satellite Certificate on the Red Hat Capsule Server:
+
+|===
+|SATELLITE-FQDN="satellite.example.com"
+
+|===
+
+Register the Red Hat Capsule to Satellite using an activation key.
+
+*Example:
+*This example uses the dedicated activation key for Capsules that belong to the lifecycle environment PROD, which we create later in Step 7:
+
+|===
+|ORG="ACME"
+
+|===
+
+
+*Note:* +
+The activation key ensures that the following two required yum repositories are enabled (and no other repositories):
+
+* rhel-7-server-rpms
+* rhel-server-7-satellite-capsule-6-beta-rpms
+These repositories are provided through the ccv-infra-capsule Composite Content-View.
+
+The Red Hat Capsule should be installed on a RHEL 7.1 or newer. We recommend running the following command to ensure that all updates have been applied:
+
+|===
+|yum -y update
+
+|===
+
+Install the Red Hat Capsule installer:
+
+|===
+|yum -y install capsule-installer
+
+|===
+
+Before the Red Hat Capsule can be configured, you need to *create the corresponding certificates* for the Capsule on the Red Hat Satellite Server.
+
+To create these certificates, use the following commands to connect to the Red Hat Satellite Server, create the certificates, and copy them to the Red Hat Capsule Server
+
+|===
+|CAPSULE-FQDN="capsule-munich.dmz.example.com"
+
+|===
+
+*Note:* +
+You *must* use the output generated from the _capsule-certs-generate_ command, so that the _capsule-installer_ can successfully register the Red Hat Capsule on the Red Hat Satellite Server.
+
+===== Red Hat Capsule Configuration
+
+
+Similar to our main Satellite server itself, the Red Hat Capsule for the location _munich-dmz_ serves the DHCP, TFTP, and DNS services for provisioning.
+
+Run the _capsule-installer_ command *with* the output from the _capsule-cert-generate_ command and *with* these additional options:
+
+|===
+|capsule-installer  --parent-fqdn "<replace>"\
+
+|===
+
+The following table outlines which switches to use to ensure that a host has to communicate with the Red Hat Capsule *only* for provisioning:
+
+|===
+|*Switch*|*Function*
+
+|--pulp|stores synchronized content on the Red Hat Capsule
+|--qpid-router|is used for content (yum, Puppet) synchronization
+|--reverse-proxy|is used to ensure that traffic from a host ist sent to the satellite via the capsule
+|--templates|store provisioning templates on the capsule
+|--tftp, --dhcp, --dns|to enable full provisioning features
+|===
+
+*Note:* +
+If you see the following error message: "`puppet_parse': invalid byte sequence in US-ASCII (ArgumentError)", make sure that LANG & LC_CTYPE is set to "en_US.UTF-8"
+|===
+|export LANG=en_US.UTF-8
+
+|===
+
+After successfully running the_ capsule-installer_ command, *initiate content synchronization *from the Red Hat Satellite to the Red Hat Capsule.
+
+(On the Red Hat Satellite) +
+List all available capsules:
+
+|===
+|hammer capsule list
+
+|===
+
+Please note the Capsule ID marked with red color which we will use for further commands below.
+
+Initiate the content synchronization:
+
+|===
+|hammer capsule content synchronize --id **2**
+
+|===
+
+
+===== Lifecycle Environments
+
+
+The Satellite-embedded Capsule automatically inherits all existing _Lifecycle Environments_. Red Hat Capsules can be used to separate _Lifecycle Environments_. In this sample configuration, all _Lifecycle Environments_ are available to the Red Hat Capsule located in the DMZ.
+
+To assign _Lifecycle Environments_ to a Red Hat Capsule: +
+1. Navigate to _Infrastructure_ ➤ _Capsules_ ➤ select the Red Hat Capsule _capsule-munich.dmz.example.com_ +
+2. Click on the _Lifecycle Environments_ tab ➤ add all Environments to the right side in order to synchronize content belonging to the corresponding Lifecycle Environment to the Red Hat Capsule.
+
+
+*Note:* +
+At the time of this writing, it was not possible to complete this step via Hammer.
+
+3. Click on the _Locations_ tab ➤ add the location _munich-dmz_ to the right side
+
+*Via Hammer:*
+
+|===
+|hammer location add-smart-proxy \
+
+|===
+
+===== Subnet
+
+
+Add the Red Hat Capsule to the Subnet _dmz.example.com_: +
+1. From _Infrastructure_ ➤ _Subnets_ ➤ select the subnet _dmz.example.com_ +
+2. On the third tab _Capsules_ ➤ add _capsule-munich.dmz.example.com_ as the DHCP,TFTP and DNS Capsule
+
+*Via Hammer *(verify the ProxyID first):
+|===
+|ProxyID=$(hammer --output csv proxy list | grep "capsule-munich.dmz.example.com" | cut -d',' -f1)
+
+|===
+
+
+
+===== Domain
+
+
+Add the Red Hat Capsule _capsule-munich.dmz.example.com_ to the domain _dmz.example.com_. This addition allows you to manage DNS records automatically for the domain _dmz.example.com_.
+
+1. From _Infrastructure_ ➤ _Domains_ ➤ select the previously created domain _dmz.example.com_ +
+2. On the _Domain_ tab ➤ select the Red Hat Capsule _capsule-munich.dmz.example.com_ from the _DNS Capsule_ drop-down menu  ➤ Submit
+
+
+*Via Hamme*r (verify ProxyID first):
+
+|===
+|ProxyID=$(hammer --output csv proxy list | grep "capsule-munich.dmz.example.com" | cut -d',' -f1)
+
+|===
+
+===== Locations
+
+
+Verify that the Red Hat Capsule, Subnet and Domain is added to the corresponding location:
+
+1. _Administer_ ➤ _Locations_ ➤ select location _munich-dmz_ ➤ verify that the Capsule, Subnet and Domain is added to the location
+
+The Red Hat Capsule _capsule-munich.dmz.example.com_ is now fully configured and operational for provisioining new hosts.
+
+
+==== Sample Capsule 2: Boston Remote Location Using RHEL OpenStack Platform
+
+
+For the RHEL OpenStack Platform, the Red Hat Capsule features and templates being used are different than for the Red Hat Capsules managing the Red Hat Enterprise Virtualization Environment.
+
+* DHCP and TFTP services are *not* used. The RHEL OpenStack Platform manages the subnets itself and follows an image-based approach for provisioning.
+* The _Domain_ (including the DNS feature) is configured so that the hosts can reach the Red Hat Capsule _capsule-boston.novalocal_.
+
+To be able to provision a new host based on an image already existing in RHEL OSP, you must add the image to the list of images that the Red Hat Satellite Server can use.
+
+*Note:* +
+You can acquire a cloud-based RHEL 7.1 image called "KVM Guest Image" used on RHEL OpenStack Platform here: +
+https://access.redhat.com/downloads/content/69/ver=/rhel---7/7.1/x86_64/product-downloads[https://access.redhat.com/downloads/content/69/ver=/rhel---7/7.1/x86_64/product-downloads]
+
+1. From _Infrastructure_ ➤_ Compute Resources_ ➤ select the Compute Resource _acme-rhelosp-boston_ +
+2. Navigate to the _Images_ tab  ➤ _New Image_ +
+3. Fill in the corresponding information for the new image. Make sure to select the checkbox "User data" and add the username "cloud-user".
+
+*Note:* +
+The root user is deactivated by default on the KVM Guest Image. Add the Username _cloud-user_ for the new image.
+
+*Example:*
+
+
+
+
+*Note:* +
+At the time of this writing, it is not possible to use Hammer to create or update an image to flag the "User data" checkbox.
+
+==== User Data
+
+Use User Data to pass information contained in a local file (the provisioning template from the type _user data_) to an instance at launch time. If you have configured the virtual machine to run the corresponding service at boot time, it retrieves the user data information from the metadata services and takes action based on the user data content. The correct tool for this is cloud-init. In particular, cloud-init is *compatible* with the Compute metadata service, as well as the Compute config drive.
+
+The Red Hat Satellite Server also provides a *provisioning template* for User Data called "Satellite Kickstart Default User Data". After you have booted a system from a template, the provisioning template will be executed to further configure the system (for example, to register the system at the satellite install and to configure the katello-agent and Puppet agent). When you use the "User Data" template, the host initiates communication to the assigned Red Hat Capsule.
+
+*Note:* +
+To be able to login to a system provisioned via RHEL OSP with the KVM Guest Image, you *must add* the parameter "sshkey" to the host with the corresponding public sshkey.
+
+
+
+An alternate approach would be to clone the User data template and then change it according to your specific needs.
+
+To add the provisioning template “Satellite Kickstart Default User Data” for cloud based provisioning: +
+1. From _Hosts_ ➤ _Provisioning templates_ ➤ select the template _Satellite Kickstart Default User Data_ +
+2. Navigate to the _Association_ tab  ➤ assign the Red Hat Enterprise Linux versions to be used on OpenStack ➤ _Submit_
+
+
+
+After adding the Operating System to the template, you must select the template on the Operating System side as well: +
+1. From _Hosts_ ➤ _Operating System_ ➤ select every RHEL OS that needs to get assigned the user_data template +
+2. Navigate to the _Templates_ tab  ➤ select _Satellite Kickstart Default User Data_ for the user_data drop-down list ➤ _Submit_
+
+
+Fulfill the following prerequisites in Red Hat Enterprise Linux OpenStack:
+
+* Install a Red Hat Enterprise Linux on persistent storage
+* Configure the floating IP Range that has to be added to the Red Hat Capsule server
+* Configure the network tenant with the router to an external network (outside RHEL OSP to reach the Red Hat Satellite)
+* Add the IP address of the host that becomes the Red Hat Capsule server as the DNS server in the DHCP configuration.
+* In the DHCP configuration, add the IP address of the Red Hat Capsule server as the DNS server.
+* Configure the Security Group for incoming and outgoing traffic
+Advanced Firewall Configuration:https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html/Installation_Guide/sect-Red_Hat_Satellite-Installation_Guide-Prerequisites.html#idp3202184[https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html/Installation_Guide/sect-Red_Hat_Satellite-Installation_Guide-Prerequisites.html#idp3202184[ ]]https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html/Installation_Guide/sect-Red_Hat_Satellite-Installation_Guide-Prerequisites.html#idp3202184[https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html/Installation_Guide/sect-Red_Hat_Satellite-Installation_Guide-Prerequisites.html#idp3202184]
+
+For detailed list of Red Hat Capsule prerequisites, see:
+
+https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html/Installation_Guide/sect-Red_Hat_Satellite-Installation_Guide-Red_Hat_Satellite_Capsule_Server_Prerequisites.html[https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html/Installation_Guide/sect-Red_Hat_Satellite-Installation_Guide-Red_Hat_Satellite_Capsule_Server_Prerequisites.html]
+
+As with other sample capsules configured earlier, you need to ensure that the forward-and-reverse DNS resolution works in both directions:
+
+* *To* the Red Hat Satellite Server *from* the Red Hat Capsule
+* *From* the Red Hat Satellite Server *to* the Red Hat Capsule
+
+*Warning:* +
+If you do not have the DNS resolution set correctly, the capsule-installer fails and displays the message: +
+The capsule-installer is failing with error Could not set 'present' on ensure: Unprocessable Entity at :/usr/share/katello-installer/modules/foreman_proxy/manifests/register.pp" see the following knowledge base article for more information: +
+https://access.redhat.com/solutions/1230493[https://access.redhat.com/solutions/1230493]
+
+
+*Install* the Red Hat Satellite certificate on the Red Hat Capsule Server:
+
+|===
+|SATELLITE-FQDN="satellite.example.com"
+
+|===
+
+*Register* the Red Hat Capsule to Satellite using an activation key. In this example, we are using a dedicated activation key for Capsules. This key belongs to the lifecycle environment PROD we create in Step 7:
+
+|===
+|ORG="ACME"
+
+|===
+
+*Install* the Red Hat Capsule should on RHEL 7.1+ with the newest update level:
+
+|===
+|yum -y update
+
+|===
+
+*Install* the Red Hat Capsule installer:
+
+|===
+|yum -y install capsule-installer
+
+|===
+
+Before you can configure the Red Hat Capsule can be configured, you *must* create certificates for the Capsule on the Red Hat Satellite Server.
+
+* *Connect* to the Red Hat Satellite Server, create the certificates, and copy them to the Red Hat Capsule Server:
+
+
+|===
+|CAPSULE-FQDN="capsule-boston.novalocal"
+
+|===
+
+*Note:* +
+You must use the output generated from the _capsule-certs-generated_ command for the _capsule-installer_ to successfully register the Red Hat Capsule on the Red Hat Satellite Server.
+
+===== Red Hat Capsule Configuration
+
+
+*Run* the _capsule-installer_ command with the output from the _capsule-cert-generate_ command, along with the following additional commands:
+
+
+|===
+|capsule-installer  --parent-fqdn "<replace>"\
+
+|===
+
+*Note:* +
+We used an image-based provisioning method for RHEL OSP. This method does not require the dhcp and tftp features.
+
+*Initiate* content synchronization from the Red Hat Satellite to the Red Hat Capsule after successfully running the _capsule-installer_ command. +
+(On the Red Hat Satellite) +
+*List* all available capsules:
+
+|===
+|hammer capsule list
+
+|===
+
+*Initiate* the content synchronization:
+
+|===
+|hammer capsule content synchronize --id 3
+
+|===
+
+===== Lifecycle Environments
+
+
+The Satellite embedded Capsule automatically inherits all existing _Lifecycle Environments_. A Red Hat Capsule can be used to segregate different _Lifecycle Environments_. As outlined in the introduction, Boston is responsible for the development and quality assurance of the web platform. We set up a Red Hat Capsule for our secondary datacenter Boston, so that we could segregate responsibilities based on _Lifecycle Environments_. Web-Dev and Web-QA are the only _Lifecycle Environments_ available to the Red Hat Capsule located in Boston.
+
+To assign _Lifecycle Environments_ to a Red Hat Capsule: +
+1. Navigate to _Infrastructure_ ➤ _Capsules_ ➤ select the Red Hat Capsule _capsule-boston.novalocal_ +
+2. Click on the _Lifecycle Environments_ tab ➤ add the _Web-Dev_ and _Web-QA_ environments to the right side to synchronize content that belongs to the corresponding Lifecycle Environments in the Red Hat Capsule
+
+
+
+
+*Note:* +
+This step could not be done via hammer at the time of writing.
+
+3. Click the _Locations_ tab ➤ add the location _boston_ to the right side
+
+*Via Hammer:*
+
+|===
+|hammer location add-smart-proxy --smart-proxy "capsule-boston.novalocal" --name "boston"
+
+|===
+
+===== Subnet
+
+
+*Add* the Red Hat Capsule to the Subnet _novalocal_: +
+1. _Infrastructure_ ➤ _Subnets_ ➤ select the subnet _novalocal_ +
+2. On the third tab _Capsules_ ➤ add _novalocal_ as DNS Capsule
+
+*Add* the DNS Capsule for PTR record creation:
+
+|===
+|ProxyID=3
+
+|===
+
+
+===== Domain
+
+
+*Add* the Red Hat Capsule _capsule-boston.novalocal_ to the domain _novalocal_, so that you can automatically manage DNS records for the domain _novalocal_.
+
+1. From _Infrastructure_ ➤ _Domains_ ➤ select the previously created domain _novalocal_ +
+2. On the _Domain_ tab ➤ select the Red Hat Capsule _capsule-boston.novalocal_ from the _DNS Capsule_ drop-down menu  ➤ _Submit_
+
+
+
+===== Locations
+
+
+*Verify* that the Red Hat Capsule and Domain are added to the corresponding location:
+
+1. _Administer_ ➤ Locations ➤ select location boston ➤ verify that the Capsule and Domain are added to the location
+
+The Red Hat Capsule _capsule-boston.novalocal_ is now fully configured and ready to provision new hosts.
