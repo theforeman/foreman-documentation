@@ -1,9 +1,10 @@
 function addPageFilter(refSelector, selectorToFilter) {
-    var ref = $(refSelector)[0];
-    if (!ref) return;
+    var ref = $(refSelector);
+    if (!ref || !ref[0]) return;
 
+    var parentNode = ref.parent()[0];
     var filter = $('<input placeholder="Filter..." class="form-control" style="margin: 20px 0;width: 70%;"">')[0]
-    ref.parentElement.insertBefore(filter, ref);
+    parentNode.insertBefore(filter, ref[0]);
 
     function filterElements(term, elem) {
         var noMatch = elem.text().search(new RegExp(term, "i")) < 0;
