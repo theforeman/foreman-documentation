@@ -66,3 +66,5 @@ This is what we are working on right now:
 * [ ] Add Anaconda-image based provisioning workflow
 * [ ] Update with PXE Grub2 steps
 * [ ] Discuss with Foreman community if to continue with other guides
+
+test
