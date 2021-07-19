@@ -2699,24 +2699,19 @@ orcharhino server uses the <code>nsupdate</code> utility to update DNS records o
 <li>
 <p>You must have a configured external DNS server.</p>
 </li>
+<li>
+<p>This guide assumes you have an existing installation.</p>
+</li>
 </ul>
 </div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
 <ol class="arabic">
 <li>
-<p>Install the <code>bind-utils</code> package:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># yum install bind bind-utils</pre>
-</div>
-</div>
-</li>
-<li>
 <p>Copy the <code>/etc/rndc.key</code> file from the external DNS server to orcharhino server:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># scp root@<em>dns.example.com</em>:/etc/rndc.key /etc/rndc.key</pre>
+<pre class="nowrap"># scp root@<em>dns.example.com</em>:/etc/rndc.key /etc/foreman-proxy/rndc.key</pre>
 </div>
 </div>
 </li>
@@ -2724,9 +2719,9 @@ orcharhino server uses the <code>nsupdate</code> utility to update DNS records o
 <p>Configure the ownership, permissions, and SELinux context:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># restorecon -v /etc/rndc.key
-# chown -v root:named /etc/rndc.key
-# chmod -v 640 /etc/rndc.key</pre>
+<pre class="nowrap"># restorecon -v /etc/foreman-proxy/rndc.key
+# chown -v root:foreman-proxy /etc/foreman-proxy/rndc.key
+# chmod -v 640 /etc/foreman-proxy/rndc.key</pre>
 </div>
 </div>
 </li>
@@ -2735,21 +2730,12 @@ orcharhino server uses the <code>nsupdate</code> utility to update DNS records o
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># echo -e "server <em>DNS_IP_Address</em>\n \
-update add aaa.virtual.lan 3600 IN A <em>Host_IP_Address</em>\n \
-send\n" | nsupdate -k /etc/rndc.key
-# nslookup aaa.virtual.lan <em>DNS_IP_Address</em>
+update add aaa.example.com 3600 IN A <em>Host_IP_Address</em>\n \
+send\n" | nsupdate -k /etc/foreman-proxy/rndc.key
+# nslookup aaa.example.com <em>DNS_IP_Address</em>
 # echo -e "server <em>DNS_IP_Address</em>\n \
-update delete aaa.virtual.lan 3600 IN A <em>Host_IP_Address</em>\n \
-send\n" | nsupdate -k /etc/rndc.key</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Assign the <code>foreman-proxy</code> user to the <code>named</code> group manually.
-Normally, foreman-installer ensures that the <code>foreman-proxy</code> user belongs to the <code>named</code> UNIX group, however, in this scenario orcharhino does not manage users and groups, therefore you need to assign the <code>foreman-proxy</code> user to the <code>named</code> group manually.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># usermod -a -G named foreman-proxy</pre>
+update delete aaa.example.com 3600 IN A <em>Host_IP_Address</em>\n \
+send\n" | nsupdate -k /etc/foreman-proxy/rndc.key</pre>
 </div>
 </div>
 </li>
@@ -2761,16 +2747,7 @@ Normally, foreman-installer ensures that the <code>foreman-proxy</code> user bel
 --foreman-proxy-dns-managed=false \
 --foreman-proxy-dns-provider=nsupdate \
 --foreman-proxy-dns-server="<em>DNS_IP_Address</em>" \
---foreman-proxy-keyfile=/etc/rndc.key \
---foreman-proxy-dns-ttl=86400</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Restart the foreman-proxy service:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># systemctl restart foreman-proxy</pre>
+--foreman-proxy-keyfile=/etc/foreman-proxy/rndc.key</pre>
 </div>
 </div>
 </li>
