@@ -160,8 +160,10 @@ if (rl.includes("/master/") || rl.includes("/nightly/") || rl.includes("file://"
 <div class="sectionbody">
 <div class="paragraph">
 <p>A host is any Linux client that orcharhino manages.
-Hosts can be physical or virtual.
-Virtual hosts can be deployed on any platform supported by orcharhino, such as KVM, VMware vSphere, OpenStack, Amazon EC2, Rackspace Cloud Services or Google Compute Engine.</p>
+Hosts can be physical or virtual.</p>
+</div>
+<div class="paragraph">
+<p>Virtual hosts can be deployed on any platform supported by orcharhino, such as Amazon EC2, Google GCE, libvirt, Microsoft Azure, Oracle Linux Virtualization Manager, oVirt, Proxmox, RHV, and VMware vSphere.</p>
 </div>
 <div class="paragraph">
 <p>orcharhino enables host management at scale, including monitoring, provisioning, remote execution, configuration management, software management, and subscription management.
@@ -823,10 +825,6 @@ To avoid deleting the virtual machine in this situation, disassociate the virtua
 This method uses two templates: <code>global registration</code> template and <code>host initial configuration</code> template. That gives you complete control over the host registration process.
 You can set default templates by navigating to Administer &gt; Settings, and clicking the Provisioning tab.</p>
 </div>
-<div class="paragraph">
-<p>Note that you can extend the parameters by plug-ins.
-For more information, see <a href="https://github.com/theforeman/foreman/blob/develop/developer_docs/how_to_create_a_plugin.asciidoc">How to Create a Plugin</a> and <a href="https://theforeman.github.io/foreman/?path=/docs/introduction-slot-and-fill&#8212;&#8203;page">Slot and Fill</a></p>
-</div>
 <div class="ulist">
 <div class="title">Prerequisites</div>
 <ul>
@@ -835,6 +833,13 @@ For more information, see <a href="https://github.com/theforeman/foreman/blob/de
 </li>
 <li>
 <p>You must have root privileges on the host that you want to register.</p>
+</li>
+<li>
+<p>You must have an activation key created.</p>
+</li>
+<li>
+<p>Optional: If you want to register hosts to Red&#160;Hat Insights, you must synchronize the <code>rhel-7-server-rpms</code> repository and make it available in the activation key that you use.
+This is required to install the <code>insights-client</code> package on hosts.</p>
 </li>
 <li>
 <p>Optional: If you want to register hosts through orcharhino Proxy, ensure that the <strong>Registration</strong> feature is enabled on this orcharhino Proxy.</p>
@@ -932,8 +937,16 @@ If you keep this field blank, orcharhino uses the default network interface.</p>
 <p>Optional: <strong>Repository GPG key URL</strong> - If packages are GPG signed, the public key can be specified here to verify the packages signatures. It needs to be specified in the ascii form with the GPG public key header.</p>
 </li>
 <li>
-<p>Optional: This step is for the Katello users only.
-If you register RHEL or CentOS hosts, in the <strong>Activation Key(s)</strong> field, enter one or more activation keys to assign to registered hosts.</p>
+<p>In the <strong>Activation Key(s)</strong> field, enter one or more activation keys to assign to hosts.</p>
+</li>
+<li>
+<p>Optional: <strong>Lifecycle environment</strong></p>
+</li>
+<li>
+<p>Optional: <strong>Ignore errors</strong> - Ignore subscription manager errors</p>
+</li>
+<li>
+<p>Optional: <strong>Force</strong> - Remove any <code>katello-ca-consumer</code> rpms before registration and run subscription-manager with --force argument.</p>
 </li>
 <li>
 <p>Click <strong>Generate command</strong>.</p>
@@ -1099,7 +1112,22 @@ This template renders when hosts access the <code>/register</code> endpoint.</p>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>@activation_keys</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>activation_keys</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">The Host activation keys snippet is for Katello users only.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Host activation keys.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>@force</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>force</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Remove any <code>katello-ca-consumer*</code> rpms and run <code>subscription-manager register</code> command with <code>--force</code> argument.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>@ignore_subman_errors</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>ignore_subman_errors</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Ignore subscription-manager errors</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>@lifecycle_environment_id</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>lifecycle_environment_id</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Life cycle environment id</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>@registration_url</code></p></td>
@@ -1364,8 +1392,7 @@ See <a href="#Bonding_Modes_Available_in_orcharhino">[Bonding_Modes_Available_in
 These can be physical interfaces or VLANs.</p>
 </li>
 <li>
-<p><strong>Bond options</strong>: Specify a space-separated list of configuration options, for example <strong>miimon=100</strong>.
-See the <a href="https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Networking_Guide/index.html">Red&#160;Hat Enterprise Linux 7 Networking Guide</a> for details of the configuration options you can specify for the bonded interface.</p>
+<p><strong>Bond options</strong>: Specify a space-separated list of configuration options, for example <strong>miimon=100</strong>.</p>
 </li>
 </ul>
 </div>
@@ -1573,12 +1600,10 @@ The applicable configuration options are the same as for the physical interfaces
 <div class="title">Prerequisites</div>
 <ul>
 <li>
-<p>Ensure that your RHEL 7 hosts meet the requirements for the upgrade to RHEL 8.
-For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/upgrading_from_rhel_7_to_rhel_8/planning-an-upgrade_upgrading-from-rhel-7-to-rhel-8">Planning an upgrade</a> in the <em>Upgrading from RHEL 7 to RHEL 8</em> guide.</p>
+<p>Ensure that your RHEL 7 hosts meet the requirements for the upgrade to RHEL 8.</p>
 </li>
 <li>
-<p>Prepare your hosts for the upgrade.
-For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/upgrading_from_rhel_7_to_rhel_8/preparing-a-rhel-7-system-for-the-upgrade_upgrading-from-rhel-7-to-rhel-8">Preparing a RHEL 7 system for the upgrade</a> in the <em>Upgrading from RHEL 7 to RHEL 8</em> guide.</p>
+<p>Prepare your hosts for the upgrade.</p>
 </li>
 <li>
 <p>Enable remote execution feature on orcharhino.
@@ -1676,7 +1701,8 @@ If you want to access Cockpit features for your hosts from within orcharhino, yo
 <p>Cockpit is installed on the host that you want to view:</p>
 </li>
 <li>
-<p>orcharhino or orcharhino Proxy can authenticate to the host with SSH keys.</p>
+<p>orcharhino or orcharhino Proxy can authenticate to the host with SSH keys.
+For more information, <a href="#ssh-keys-for-remote-execution-overview_managing-hosts">Distributing SSH Keys for Remote Execution</a>.</p>
 </li>
 </ul>
 </div>
@@ -1901,8 +1927,7 @@ If this field remains undefined, the users receive a free-text field in which th
 <div class="sect2">
 <h3 id="proc_exporting_report_templates_api">7.4. Exporting Report Templates Using the orcharhino API</h3>
 <div class="paragraph">
-<p>You can use the orcharhino <code>report_templates</code> API to export report templates from orcharhino.
-For more information about using the orcharhino API, see the <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.9/html/api_guide/index">API Guide</a>.</p>
+<p>You can use the orcharhino <code>report_templates</code> API to export report templates from orcharhino.</p>
 </div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
@@ -2041,8 +2066,7 @@ For more information see <a href="#exporting_report_templates">Exporting Report 
 <h3 id="proc_importing_report_templates_api">7.6. Importing Report Templates Using the orcharhino API</h3>
 <div class="paragraph">
 <p>You can use the orcharhino API to import report templates into orcharhino.
-Importing report templates using the orcharhino API automatically parses the report template metadata and assigns organizations and locations.
-For more information about using the orcharhino API, see the <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.9/html/api_guide/index">API Guide</a>.</p>
+Importing report templates using the orcharhino API automatically parses the report template metadata and assigns organizations and locations.</p>
 </div>
 <div class="ulist">
 <div class="title">Prerequisites</div>
@@ -2152,10 +2176,6 @@ Locate the <strong>Safemode rendering</strong> row to check the value.</p>
 <div class="sect1">
 <h2 id="chap-Red_Hat_Satellite-Managing_Hosts-Configuring_Host_Collections">8. Configuring Host Collections</h2>
 <div class="sectionbody">
-<div class="paragraph">
-<p>This is for users of the Katello plug-in and hosts running RPM-based linux distributions.
-Hosts collections work via the Pulp back end.</p>
-</div>
 <div class="paragraph">
 <p>A host collection is a group of multiple content hosts.
 This feature enables you to perform the same action on multiple hosts at once.
