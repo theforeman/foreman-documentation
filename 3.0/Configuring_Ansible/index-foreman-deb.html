@@ -1,0 +1,1975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 2.0.16">
+<title>Configuring Foreman to use Ansible</title>
+<link rel="stylesheet" href="./foreman-deb.css">
+<script>
+const rl = document.location.toString();
+if (rl.includes("/master/") || rl.includes("/nightly/") || rl.includes("file://")) {
+  document.open();
+  document.write("<span id=\"ribbon\"><a href=\"https://github.com/theforeman/foreman-documentation/tree/master/guides\">Nightly</a></span>");
+  document.close();
+}
+</script>
+</head>
+<body class="book toc2 toc-left">
+<div id="header">
+<h1>Configuring Foreman to use Ansible</h1>
+<div class="details">
+<span id="revnumber">version Nightly,</span>
+<span id="revdate">published Aug 2021</span>
+</div>
+<div id="toc" class="toc2">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#getting-started-with-ansible_ansible">1. Getting Started with Ansible in Foreman</a>
+<ul class="sectlevel2">
+<li><a href="#configuring-your-deployment-to-run-Ansible-roles_ansible">1.1. Configuring your Deployment to Run Ansible Roles</a></li>
+<li><a href="#importing-Ansible-roles_ansible">1.2. Importing Ansible Roles</a></li>
+<li><a href="#importing-Ansible-variables_ansible">1.3. Importing Ansible Variables</a></li>
+<li><a href="#creating-Ansible-variables_ansible">1.4. Creating Ansible Variables</a></li>
+<li><a href="#overriding-Ansible-variables_ansible">1.5. Overriding Ansible Variables in Foreman</a></li>
+<li><a href="#adding-rhel-system-roles_ansible">1.6. Adding Red&#160;Hat Enterprise Linux System Roles</a></li>
+</ul>
+</li>
+<li><a href="#using-ansible-roles_ansible">2. Using Ansible Roles to Automate Repetitive Tasks on Foreman Hosts</a>
+<ul class="sectlevel2">
+<li><a href="#adding-ansible-roles-to-an-existing-host_ansible">2.1. Assigning Ansible Roles to an Existing Host</a></li>
+<li><a href="#running-ansible-roles-on-a-host_ansible">2.2. Running Ansible Roles on a Host</a></li>
+<li><a href="#assigning-an-ansible-role-to-a-host-group_ansible">2.3. Assigning an Ansible Role to a Host Group</a></li>
+<li><a href="#running-ansible-roles-on-a-host-group_ansible">2.4. Running Ansible Roles on a Host Group</a></li>
+</ul>
+</li>
+<li><a href="#configuring-and-setting-up-remote-jobs_ansible">3. Configuring and Setting up Remote Jobs</a>
+<ul class="sectlevel2">
+<li><a href="#about-running-jobs-on-hosts_ansible">3.1. About Running Jobs on Hosts</a></li>
+<li><a href="#remote-execution-workflow_ansible">3.2. Remote Execution Workflow</a></li>
+<li><a href="#permissions-for-remote-execution_ansible">3.3. Permissions for Remote Execution</a></li>
+<li><a href="#creating-a-job-template_ansible">3.4. Creating a Job Template</a></li>
+<li><a href="#configuring-the-fallback-to-any-smartproxy-setting_ansible">3.5. Configuring the Fallback to Any Smart&#160;Proxy Remote Execution Setting in Foreman</a></li>
+<li><a href="#configuring-the-global-smartproxy-remote-execution-setting_ansible">3.6. Configuring the Global Smart&#160;Proxy Remote Execution Setting in Foreman</a></li>
+<li><a href="#configuring-an-alternative-directory-to-execute-remote-jobs-on-hosts_ansible">3.7. Configuring Foreman to Use an Alternative Directory to Execute Remote Jobs on Hosts</a></li>
+<li><a href="#ssh-keys-for-remote-execution-overview_ansible">3.8. Distributing SSH Keys for Remote Execution</a></li>
+<li><a href="#distributing-ssh-keys-for-remote-execution-manually_ansible">3.9. Distributing SSH Keys for Remote Execution Manually</a></li>
+<li><a href="#using-the-api-to-obtain-ssh-keys-for-remote-execution_ansible">3.10. Using the Foreman API to Obtain SSH Keys for Remote Execution</a></li>
+<li><a href="#configuring-a-kickstart-template-to-distribute-ssh-keys-during-provisioning_ansible">3.11. Configuring a Kickstart Template to Distribute SSH Keys during Provisioning</a></li>
+<li><a href="#configuring-a-keytab-for-kerberos-ticket-granting-tickets_ansible">3.12. Configuring a keytab for Kerberos Ticket Granting Tickets</a></li>
+<li><a href="#configuring-kerberos-authentication-for-remote-execution_ansible">3.13. Configuring Kerberos Authentication for Remote Execution</a></li>
+<li><a href="#setting-up-job-templates_ansible">3.14. Setting up Job Templates</a></li>
+<li><a href="#executing-a-remote-job_ansible">3.15. Executing a Remote Job</a></li>
+<li><a href="#monitoring-remote-jobs_ansible">3.16. Monitoring Jobs</a></li>
+</ul>
+</li>
+<li><a href="#integrating-ansible-tower_ansible">4. Integrating Foreman and AWX</a>
+<ul class="sectlevel2">
+<li><a href="#adding-server-as-a-dynamic-inventory-item_ansible">4.1. Adding Foreman&#160;server to AWX as a Dynamic Inventory Item</a></li>
+<li><a href="#provisioning-a-callback-for-a-host_ansible">4.2. Configuring Provisioning Callback for a Host</a></li>
+</ul>
+</li>
+<li><a href="#job-template-examples-and-extensions">Appendix A: Job Template Examples and Extensions</a>
+<ul class="sectlevel2">
+<li><a href="#customizing-templates_ansible">A.1. Customizing Job Templates</a></li>
+<li><a href="#default-job-template-categories_ansible">A.2. Default Job Template Categories</a></li>
+<li><a href="#default-example-restorecon-template_ansible">A.3. Example restorecon Template</a></li>
+<li><a href="#example-rendering-of-the-restorecon-template_ansible">A.4. Rendering a restorecon Template</a></li>
+<li><a href="#default-example-of-executing-restorecon-on-multiple-hosts_ansible">A.5. Executing a restorecon Template on Multiple Hosts</a></li>
+<li><a href="#example-including-power-actions-in-a-job-template_ansible">A.6. Including Power Actions in Templates</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div id="content">
+<div class="sect1">
+<h2 id="getting-started-with-ansible_ansible">1. Getting Started with Ansible in Foreman</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Use this guide to configure Foreman to use Ansible, and then information about how to use Ansible for remote execution.</p>
+</div>
+<div class="sect2">
+<h3 id="configuring-your-deployment-to-run-Ansible-roles_ansible">1.1. Configuring your Deployment to Run Ansible Roles</h3>
+<div class="paragraph">
+<p>In Foreman, you can import Ansible roles to help with automation of routine tasks.
+To enable the Ansible plug-in in Foreman, enter the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">  # foreman-installer --enable-foreman-plugin-ansible \
+  --enable-foreman-proxy-plugin-ansible</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Complete this procedure to configure your Foreman deployment to run Ansible roles.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Add the roles to the <code>/etc/ansible/roles</code> directory on the Foreman and all Smart&#160;Proxies from where you want to use the roles.
+If you want to use custom or third party Ansible roles, ensure to configure an external version control system to synchronize roles between Foreman and Smart&#160;Proxies.</p>
+</li>
+<li>
+<p>On all Smart&#160;Proxies that you want to use to run Ansible roles on hosts, enable the Ansible plug-in:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer --no-enable-foreman \
+--enable-foreman-proxy-plugin-ansible</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Distribute SSH keys to enable Smart&#160;Proxies to connect to hosts using SSH.
+For more information, see <a href="https://docs.theforeman.org/nightly/Managing_Hosts/index-foreman-deb.html#ssh-keys-for-remote-execution-overview_managing-hosts">Distributing SSH Keys for Remote Execution</a> in the <em>Managing Hosts</em> guide.
+Foreman runs Ansible roles the same way it runs remote execution jobs.</p>
+</li>
+<li>
+<p>Import the Ansible roles into Foreman.</p>
+</li>
+<li>
+<p>Proceed to <a href="https://docs.theforeman.org/nightly/Configuring_Ansible/index-foreman-deb.html#using-ansible-roles_ansible">Using Ansible Roles to Automate Repetitive Tasks on Satellite Hosts</a> in <em>Configuring Foreman To Use Ansible</em>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="importing-Ansible-roles_ansible">1.2. Importing Ansible Roles</h3>
+<div class="paragraph">
+<p>You can import Ansible roles from the <code>/etc/ansible/roles</code> directory on Foreman or on a Smart&#160;Proxy that has Ansible enabled.
+Ensure that the roles that you import are located in the <code>/etc/ansible/roles</code> directory on all Smart&#160;Proxies from where you want to use the roles.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Configure</strong> &gt; <strong>Roles</strong> and click the Smart&#160;Proxy that contains the roles that you want to import.</p>
+</li>
+<li>
+<p>From the list of Ansible roles, select the check box of the roles you want to import, and then click <strong>Update</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="importing-Ansible-variables_ansible">1.3. Importing Ansible Variables</h3>
+<div class="paragraph">
+<p>Ansible roles use variables to help refine the configuration of systems that have specific requirements.
+For example, you might need to identify the IP address of a system and use it as a configuration value on another system.</p>
+</div>
+<div class="paragraph">
+<p>If you want to use Ansible variables in your Ansible playbooks, you must import the Ansible variables from Smart&#160;Proxy.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Configure</strong> &gt; <strong>Variables</strong>.</p>
+</li>
+<li>
+<p>In the upper right of the window, select the Smart&#160;Proxy that contains the Ansible variables that you want to import.</p>
+</li>
+<li>
+<p>Select the Ansible variables that you want to import, and click <strong>Update</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="creating-Ansible-variables_ansible">1.4. Creating Ansible Variables</h3>
+<div class="paragraph">
+<p>Ansible roles use variables to help refine the configuration of systems that have specific requirements.</p>
+</div>
+<div class="paragraph">
+<p>Usually, you can import Ansible variables for the Ansible roles that you are using.
+If you require further refinement of your system configuration, you can also create Ansible variables in Foreman.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Configure</strong> &gt; <strong>Variables</strong>.</p>
+</li>
+<li>
+<p>In the upper right of the window, click <strong>New Ansible Variable</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Key</strong> field, enter a name for the variable.
+Ensure that the name references the Ansible role name.</p>
+</li>
+<li>
+<p>In the <strong>Description</strong> field, add a description for the variable.</p>
+</li>
+<li>
+<p>From the <strong>Ansible role</strong> list, select the Ansible role to associate with the variable.</p>
+</li>
+<li>
+<p>Optional: To override the Ansible variable with Foreman, see <a href="https://docs.theforeman.org/nightly/Configuring_Ansible/index-foreman-deb.html#overriding-Ansible-variables_ansible">Overriding Ansible Variables in Foreman</a>.</p>
+</li>
+<li>
+<p>To save the Ansible variable, click <strong>Submit</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="overriding-Ansible-variables_ansible">1.5. Overriding Ansible Variables in Foreman</h3>
+<div class="paragraph">
+<p>If you run Ansible roles in Foreman, you can use Foreman to override Ansible variables for those roles.</p>
+</div>
+<div class="paragraph">
+<div class="title">Precedence in Overriding Variables</div>
+<p>If you use an Ansible role to run a task as a user that is not the <code>Effective User</code>, there is a strict order of precedence for overriding Ansible variables.
+To ensure that the variable that you override follows the correct order of precedence, see <a href="https://docs.ansible.com/ansible/latest/user_guide/playbooks_variables.html#ansible-variable-precedence">Variable precedence: Where should I put a variable?</a> in the <em>Ansible User Guide</em>.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisite</div>
+<ul>
+<li>
+<p>You must have Ansible variables in Foreman.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>To import Ansible variables, see <a href="https://docs.theforeman.org/nightly/Configuring_Ansible/index-foreman-deb.html#importing-Ansible-variables_ansible">Importing Ansible Variables</a></p>
+</li>
+<li>
+<p>To create Ansible variables, see <a href="https://docs.theforeman.org/nightly/Configuring_Ansible/index-foreman-deb.html#creating-Ansible-variables_ansible">Creating Ansible Variables</a></p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The following procedure makes reference to hosts and host groups.
+For more information about hosts and host groups, see the <a href="https://docs.theforeman.org/nightly/Managing_Hosts/index-foreman-deb.html#">Managing Hosts</a> guide.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Configure</strong> &gt; <strong>Variables</strong>.</p>
+</li>
+<li>
+<p>Select the Ansible variable that you want to override and manage with Foreman.</p>
+</li>
+<li>
+<p>Navigate to the <strong>Default Behavior</strong> area, and select the <strong>Override</strong> check box.</p>
+</li>
+<li>
+<p>From the <strong>Parameter Type</strong> select the value type for validation.
+For example, a <strong>string</strong> or <strong>boolean</strong> variable.</p>
+</li>
+<li>
+<p>In the <strong>Default Value</strong> field, enter the default value that you want to use if there is no match for the variable.</p>
+</li>
+<li>
+<p>Optional: If you do not want to display the Ansible variable in plain text, select the <strong>Hidden Values</strong> check box to display the content of the variable as asterisks in the Foreman web UI.</p>
+</li>
+<li>
+<p>To save the override settings, click <strong>Submit</strong>.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>To use the Ansible variable, add the variable as a parameter to your host or host group, or add the variable as a global parameter.</p>
+</div>
+<div class="olist arabic">
+<div class="title">For a Host Group:</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Configure</strong> &gt; <strong>Host Groups</strong>, and select the host group that you want to use.</p>
+</li>
+<li>
+<p>Click the <strong>Parameters</strong> tab, and in the <strong>Host Group Parameters</strong> area, click <strong>Add Parameter</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, add the Ansible variable name.</p>
+</li>
+<li>
+<p>From the <strong>Type</strong> list, select the type of the variable for validation.</p>
+</li>
+<li>
+<p>In the <strong>Value</strong> field, enter the value for the variable.</p>
+</li>
+</ol>
+</div>
+<div class="olist arabic">
+<div class="title">For a Host:</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Hosts</strong> &gt; <strong>All Hosts</strong>, and on the host that you want to use, click the <strong>Edit</strong> button.</p>
+</li>
+<li>
+<p>Click the <strong>Parameters</strong> tab, and in the <strong>Host Parameters</strong> area, click <strong>Add Parameter</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, add the Ansible variable name.</p>
+</li>
+<li>
+<p>From the <strong>Type</strong> list, select the type of the variable for validation.</p>
+</li>
+<li>
+<p>In the <strong>Value</strong> field, enter the value for the variable.</p>
+</li>
+</ol>
+</div>
+<div class="olist arabic">
+<div class="title">To add as a Global Parameter:</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Configure</strong> &gt; <strong>Global Parameters</strong>, and click <strong>Create Parameter</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, add the Ansible variable name.</p>
+</li>
+<li>
+<p>From the <strong>Type</strong> list, select the type of the variable for validation.</p>
+</li>
+<li>
+<p>In the <strong>Value</strong> field, enter the value for the variable.</p>
+</li>
+<li>
+<p>Optional: If you do not want to display the Ansible variable in plain text, select the <strong>Hidden Values</strong> check box to display the content of the variable as asterisks in the Foreman web UI.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="adding-rhel-system-roles_ansible">1.6. Adding Red&#160;Hat Enterprise Linux System Roles</h3>
+<div class="paragraph">
+<p>Red&#160;Hat Enterprise Linux System Roles is a configuration interface to remotely manage Red&#160;Hat Enterprise Linux servers.
+You can use Red&#160;Hat Enterprise Linux System Roles to add Ansible roles in Foreman.
+Using Ansible Roles in Foreman can make configuration faster and easier.</p>
+</div>
+<div class="paragraph">
+<p>Support levels for some of the Red&#160;Hat Enterprise Linux System Roles might be in Technology Preview.
+For up-to-date information about support levels and general information about Red&#160;Hat Enterprise Linux System Roles, see <a href="https://access.redhat.com/articles/3050101">Red Hat Enterprise Linux System Roles</a>.</p>
+</div>
+<div class="paragraph">
+<p>Before subscribing to the Extras channels, see the <a href="https://access.redhat.com/support/policy/updates/extras">Red Hat Enterprise Linux Extras Product Life Cycle</a> article.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Ensure that the <code>rhel-7-server-extras-rpms</code> repository is enabled.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># subscription-manager repos --enable=rhel-7-server-extras-rpms</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Install the <code>rhel-system-roles</code> package.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># apt-get install rhel-system-roles</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>rhel-system-roles</code> package downloads to <code>/usr/share/ansible/roles/</code>.
+You can view and make any modifications that you want to the files before you import.</p>
+</div>
+</li>
+<li>
+<p>In the Foreman web UI, navigate to <strong>Configure</strong> &gt; <strong>Roles</strong> and click the Smart&#160;Proxy that contains the roles that you want to import.</p>
+</li>
+<li>
+<p>From the list of Ansible roles, select the check box of the roles you want to import, and then click <strong>Update</strong>.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>You can now assign Ansible roles to hosts or host groups.
+For more information, see <a href="https://docs.theforeman.org/nightly/Configuring_Ansible/index-foreman-deb.html#adding-ansible-roles-to-an-existing-host_ansible">Assigning Ansible Roles to an Existing Host</a> in <em>Configuring Foreman to Use Ansible</em>.</p>
+</div>
+<div class="paragraph">
+<p>You can also add the modules contained in these roles to your Ansible playbooks by adding them to Ansible Job Templates.
+You must include the <code>hosts:all</code> line in the job template.
+For more information, see <a href="https://access.redhat.com/articles/3050101">Red Hat Enterprise Linux (RHEL) System Roles</a>.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="using-ansible-roles_ansible">2. Using Ansible Roles to Automate Repetitive Tasks on Foreman Hosts</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="adding-ansible-roles-to-an-existing-host_ansible">2.1. Assigning Ansible Roles to an Existing Host</h3>
+<div class="paragraph">
+<p>You can use Ansible roles for remote management of Red&#160;Hat Enterprise Linux versions 8, 7, and 6.9 or later.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Ensure that you have configured and imported Ansible roles.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Hosts</strong> &gt; <strong>All Hosts</strong>.</p>
+</li>
+<li>
+<p>On the host you want to assign an Ansible role to, click <strong>Edit</strong>.</p>
+</li>
+<li>
+<p>Select the <strong>Ansible Roles</strong> tab, and in the <strong>All items</strong> list, search for the roles that you want to add.</p>
+</li>
+<li>
+<p>Select the roles that you want to add, and click the arrow icon to move the roles to the <strong>Selected items</strong> list.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong>.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>After you assign Ansible roles to hosts, you can use Ansible for remote execution.
+For more information, see <a href="https://docs.theforeman.org/nightly/Configuring_Ansible/index-foreman-deb.html#ssh-keys-for-remote-execution-overview_ansible">Distributing SSH Keys for Remote Execution</a>.</p>
+</div>
+<div class="paragraph">
+<div class="title">Overiding Parameter Variables</div>
+<p>On the <strong>Parameters</strong> tab, click <strong>Add Parameter</strong> to add any parameter variables that you want to pass to job templates at run time.
+This includes all Ansible playbook parameters and host parameters that you want to associate with the host.
+To use a parameter variable with an Ansible job template, you must add a <strong>Host Parameter</strong>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="running-ansible-roles-on-a-host_ansible">2.2. Running Ansible Roles on a Host</h3>
+<div class="paragraph">
+<p>You can run Ansible roles on a host through the Foreman web UI.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>You must configure your deployment to run Ansible roles.
+For more information, see <a href="https://docs.theforeman.org/nightly/Configuring_Ansible/index-foreman-deb.html#configuring-your-deployment-to-run-Ansible-roles_ansible">Configuring your Deployment to Run Ansible Roles</a> in <em>Configuring Foreman to use Ansible</em>.</p>
+</li>
+<li>
+<p>You must have assigned the Ansible roles to the host.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Hosts</strong> &gt; <strong>All Hosts</strong>.</p>
+</li>
+<li>
+<p>Select the check box of the host that contains the Ansible role you want to run.</p>
+</li>
+<li>
+<p>From the <strong>Select Action</strong> list, select <strong>Play Ansible roles</strong>.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>You can view the status of your Ansible job on the <strong>Run Ansible roles</strong> page.
+To rerun a job, click the <strong>Rerun</strong> button.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="assigning-an-ansible-role-to-a-host-group_ansible">2.3. Assigning an Ansible Role to a Host Group</h3>
+<div class="paragraph">
+<p>You can use Ansible roles for remote management of Red&#160;Hat Enterprise Linux versions 8, 7, and 6.9 or later.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>You must configure your deployment to run Ansible roles.
+For more information, see <a href="https://docs.theforeman.org/nightly/Configuring_Ansible/index-foreman-deb.html#configuring-your-deployment-to-run-Ansible-roles_ansible">Configuring your Deployment to Run Ansible Roles</a> in <em>Configuring Foreman to use Ansible</em>.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Configure</strong> &gt; <strong>Host Groups</strong>.</p>
+</li>
+<li>
+<p>From the list of host groups, click the host group name that you want to add an Ansible Role to.</p>
+</li>
+<li>
+<p>Select the <strong>Ansible Roles</strong> tab, and in the <strong>All items</strong> list, search for the roles that you want to add.</p>
+</li>
+<li>
+<p>Select the roles that you want to add, and click the arrow icon to move the roles to the <strong>Selected items</strong> list.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="running-ansible-roles-on-a-host-group_ansible">2.4. Running Ansible Roles on a Host Group</h3>
+<div class="paragraph">
+<p>You can run Ansible roles on a host group through the Foreman web UI.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>You must configure your deployment to run Ansible roles.
+For more information, see <a href="https://docs.theforeman.org/nightly/Configuring_Ansible/index-foreman-deb.html#configuring-your-deployment-to-run-Ansible-roles_ansible">Configuring your Deployment to Run Ansible Roles</a> in <em>Configuring Foreman to use Ansible</em>.</p>
+</li>
+<li>
+<p>You must have assigned the Ansible roles to the host group.</p>
+</li>
+<li>
+<p>You must have at least one host in your host group.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Configure</strong> &gt; <strong>Host Groups</strong>.</p>
+</li>
+<li>
+<p>From the list in the <strong>Actions</strong> column for the host group, select <strong>Run all Ansible roles</strong>.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>You can view the status of your Ansible job on the <strong>Run Ansible roles</strong> page.
+To rerun a job, click the <strong>Rerun</strong> button.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="configuring-and-setting-up-remote-jobs_ansible">3. Configuring and Setting up Remote Jobs</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Use this section as a guide to configuring Foreman to execute jobs on remote hosts.</p>
+</div>
+<div class="paragraph">
+<p>Any command that you want to apply to a remote host must be defined as a job template.
+After you have defined a job template you can execute it multiple times.</p>
+</div>
+<div class="sect2">
+<h3 id="about-running-jobs-on-hosts_ansible">3.1. About Running Jobs on Hosts</h3>
+<div class="paragraph">
+<p>You can run jobs on hosts remotely from Smart&#160;Proxies using shell scripts or Ansible tasks and playbooks.
+This is referred to as remote execution.</p>
+</div>
+<div class="paragraph">
+<p>For custom Ansible roles that you create, or roles that you download, you must install the package containing the roles on the Smart&#160;Proxy base operating system.
+Before you can use Ansible roles, you must import the roles into Foreman from the Smart&#160;Proxy where they are installed.</p>
+</div>
+<div class="paragraph">
+<p>Communication occurs through Smart&#160;Proxy&#160;server, which means that Foreman&#160;server does not require direct access to the target host, and can scale to manage many hosts.
+Remote execution uses the SSH service that must be enabled and running on the target host.
+Ensure that the remote execution Smart&#160;Proxy has access to port 22 on the target hosts.</p>
+</div>
+<div class="paragraph">
+<p>Foreman uses ERB syntax job templates.
+For more information, see <a href="https://docs.theforeman.org/nightly/Managing_Hosts/index-foreman-deb.html#appe-Managing_Hosts-Template_Writing_Reference">Template Writing Reference</a> in the <em>Managing Hosts</em> guide.</p>
+</div>
+<div class="paragraph">
+<p>Several job templates for shell scripts and Ansible are included by default.
+For more information, see <a href="https://docs.theforeman.org/nightly/Managing_Hosts/index-foreman-deb.html#setting-up-job-templates_managing-hosts">Setting up Job Templates</a>.</p>
+</div>
+<div class="paragraph">
+<p>By default, Foreman&#160;server is configured to use the Katello Agent rather than remote execution.
+To change this setting, navigate to <strong>Administer</strong> &gt; <strong>Settings</strong>, click <strong>Content</strong>, and change the <strong>Use remote execution by default</strong> setting.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Any Smart&#160;Proxy&#160;server base operating system is a client of Foreman&#160;server&#8217;s internal Smart&#160;Proxy, and therefore this section applies to any type of host connected to Foreman&#160;server, including Smart&#160;Proxies.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>You can run jobs on multiple hosts at once, and you can use variables in your commands for more granular control over the jobs you run.
+You can use host facts and parameters to populate the variable values.</p>
+</div>
+<div class="paragraph">
+<p>In addition, you can specify custom values for templates when you run the command.</p>
+</div>
+<div class="paragraph">
+<p>For more information, see <a href="https://docs.theforeman.org/nightly/Managing_Hosts/index-foreman-deb.html#executing-a-remote-job_managing-hosts">Executing a Remote Job</a>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="remote-execution-workflow_ansible">3.2. Remote Execution Workflow</h3>
+<div class="paragraph">
+<p>When you run a remote job on hosts, for every host, Foreman performs the following actions to find a remote execution Smart&#160;Proxy to use.</p>
+</div>
+<div class="paragraph">
+<p>Foreman searches only for Smart&#160;Proxies that have the Ansible feature enabled.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Foreman finds the host&#8217;s interfaces that have the <strong>Remote execution</strong> check box selected.</p>
+</li>
+<li>
+<p>Foreman finds the subnets of these interfaces.</p>
+</li>
+<li>
+<p>Foreman finds remote execution Smart&#160;Proxies assigned to these subnets.</p>
+</li>
+<li>
+<p>From this set of Smart&#160;Proxies, Foreman selects the Smart&#160;Proxy that has the least number of running jobs.
+By doing this, Foreman ensures that the jobs load is balanced between remote execution Smart&#160;Proxies.</p>
+</li>
+<li>
+<p>If Foreman does not find a remote execution Smart&#160;Proxy at this stage, and if the <strong>Fallback to Any Smart&#160;Proxy</strong> setting is enabled, Foreman adds another set of Smart&#160;Proxies to select the remote execution Smart&#160;Proxy from.
+Foreman selects the most lightly loaded Smart&#160;Proxy from the following types of Smart&#160;Proxies that are assigned to the host:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>DHCP, DNS and TFTP Smart&#160;Proxies assigned to the host&#8217;s subnets</p>
+</li>
+<li>
+<p>DNS Smart&#160;Proxy assigned to the host&#8217;s domain</p>
+</li>
+<li>
+<p>Realm Smart&#160;Proxy assigned to the host&#8217;s realm</p>
+</li>
+<li>
+<p>Puppet server Smart&#160;Proxy</p>
+</li>
+<li>
+<p>Puppet CA Smart&#160;Proxy</p>
+</li>
+<li>
+<p>OpenSCAP Smart&#160;Proxy</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>If Foreman does not find a remote execution Smart&#160;Proxy at this stage, and if the <strong>Enable Global Smart&#160;Proxy</strong> setting is enabled, Foreman selects the most lightly loaded remote execution Smart&#160;Proxy from the set of all Smart&#160;Proxies in the host&#8217;s organization and location to execute a remote job.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="permissions-for-remote-execution_ansible">3.3. Permissions for Remote Execution</h3>
+<div class="paragraph">
+<p>You can control which users can run which jobs within your infrastructure, including which hosts they can target.
+The remote execution feature provides two built-in roles:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Remote Execution Manager</strong>: This role allows access to all remote execution features and functionality.</p>
+</li>
+<li>
+<p><strong>Remote Execution User</strong>: This role only allows running jobs; it does not provide permission to modify job templates.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>You can clone the Remote Execution User role and customize its filter for increased granularity.
+If you adjust the filter with the <code>view_job_templates</code> permission, the user can only see and trigger jobs based on matching job templates.
+You can use the <code>view_hosts</code> and <code>view_smart_proxies</code> permissions to limit which hosts or Smart&#160;Proxies are visible to the role.</p>
+</div>
+<div class="paragraph">
+<p>The <code>execute_template_invocation</code> permission is a special permission that is checked immediately before execution of a job begins.
+This permission defines which job template you can run on a particular host.
+This allows for even more granularity when specifying permissions.
+For more information on working with roles and permissions see <a href="https://docs.theforeman.org/nightly/Administering_Red_Hat_Satellite/index-foreman-deb.html#sect-Administering-Users_and_Roles-Creating_and_Managing_Roles">Creating and Managing Roles</a> in the <em>Administering Foreman</em>.</p>
+</div>
+<div class="paragraph">
+<p>The following example shows filters for the <code>execute_template_invocation</code> permission:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">name = Reboot and host.name = staging.example.com
+name = Reboot and host.name ~ *.staging.example.com
+name = "Restart service" and host_group.name = webservers</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The first line in this example permits the user to apply the <strong>Reboot</strong> template to one selected host.
+The second line defines a pool of hosts with names ending with <strong>.staging.example.com</strong>.
+The third line binds the template with a host group.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Permissions assigned to users can change over time.
+If a user has already scheduled some jobs to run in the future, and the permissions have changed, this can result in execution failure because the permissions are checked immediately before job execution.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="creating-a-job-template_ansible">3.4. Creating a Job Template</h3>
+<div class="paragraph">
+<p>Use this procedure to create a job template.
+To use the CLI instead of the Foreman web UI, see the <a href="#cli-creating-a-job-template_ansible">CLI procedure</a>.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Navigate to <strong>Hosts</strong> &gt; <strong>Job templates</strong>.</p>
+</li>
+<li>
+<p>Click <strong>New Job Template</strong>.</p>
+</li>
+<li>
+<p>Click the <strong>Template</strong> tab, and in the <strong>Name</strong> field, enter a unique name for your job template.</p>
+</li>
+<li>
+<p>Select <strong>Default</strong> to make the template available for all organizations and locations.</p>
+</li>
+<li>
+<p>Create the template directly in the template editor or upload it from a text file by clicking <strong>Import</strong>.</p>
+</li>
+<li>
+<p>Optional: In the <strong>Audit Comment</strong> field, add information about the change.</p>
+</li>
+<li>
+<p>Click the <strong>Job</strong> tab, and in the <strong>Job category</strong> field, enter your own category or select from the default categories listed in <a href="https://docs.theforeman.org/nightly/Managing_Hosts/index-foreman-deb.html#default-job-template-categories_managing-hosts">Default Job Template Categories</a>.</p>
+</li>
+<li>
+<p>Optional: In the <strong>Description Format</strong> field, enter a description template.
+For example, <code>Install package %{package_name}</code>.
+You can also use <code>%{template_name}</code> and <code>%{job_category}</code> in your template.</p>
+</li>
+<li>
+<p>From the <strong>Provider Type</strong> list, select <strong>SSH</strong> for shell scripts and <strong>Ansible</strong> for Ansible tasks or playbooks.</p>
+</li>
+<li>
+<p>Optional: In the <strong>Timeout to kill</strong> field, enter a timeout value to terminate the job if it does not complete.</p>
+</li>
+<li>
+<p>Optional: Click <strong>Add Input</strong> to define an input parameter.
+Parameters are requested when executing the job and do not have to be defined in the template.
+For examples, see the <strong>Help</strong> tab.</p>
+</li>
+<li>
+<p>Optional: Click <strong>Foreign input set</strong> to include other templates in this job.</p>
+</li>
+<li>
+<p>Optional: In the <strong>Effective user</strong> area, configure a user if the command cannot use the default <code>remote_execution_effective_user</code> setting.</p>
+</li>
+<li>
+<p>Optional: If this template is a snippet to be included in other templates, click the <strong>Type</strong> tab and select <strong>Snippet</strong>.</p>
+</li>
+<li>
+<p>Click the <strong>Location</strong> tab and add the locations where you want to use the template.</p>
+</li>
+<li>
+<p>Click the <strong>Organizations</strong> tab and add the organizations where you want to use the template.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong> to save your changes.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>You can extend and customize job templates by including other templates in the template syntax.
+For more information, see the appendices in the <em>Managing Hosts</em> guide.</p>
+</div>
+<div id="cli-creating-a-job-template_ansible" class="olist arabic">
+<div class="title">CLI procedure</div>
+<ol class="arabic">
+<li>
+<p>To create a job template using a template-definition file, enter the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer job-template create \
+--file "<em>path_to_template_file</em>" \
+--name "<em>template_name</em>" \
+--provider-type SSH \
+--job-category "<em>category_name</em>"</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="configuring-the-fallback-to-any-smartproxy-setting_ansible">3.5. Configuring the Fallback to Any Smart&#160;Proxy Remote Execution Setting in Foreman</h3>
+<div class="paragraph">
+<p>You can enable the <strong>Fallback to Any Smart&#160;Proxy</strong> setting to configure Foreman to search for remote execution Smart&#160;Proxies from the list of Smart&#160;Proxies that are assigned to hosts.
+This can be useful if you need to run remote jobs on hosts that have no subnets configured or if the hosts' subnets are assigned to Smart&#160;Proxies that do not have the remote execution feature enabled.</p>
+</div>
+<div class="paragraph">
+<p>If the <strong>Fallback to Any Smart&#160;Proxy</strong> setting is enabled, Foreman adds another set of Smart&#160;Proxies to select the remote execution Smart&#160;Proxy from.
+Foreman also selects the most lightly loaded Smart&#160;Proxy from the set of all Smart&#160;Proxies assigned to the host, such as the following:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>DHCP, DNS and TFTP Smart&#160;Proxies assigned to the host&#8217;s subnets</p>
+</li>
+<li>
+<p>DNS Smart&#160;Proxy assigned to the host&#8217;s domain</p>
+</li>
+<li>
+<p>Realm Smart&#160;Proxy assigned to the host&#8217;s realm</p>
+</li>
+<li>
+<p>Puppet server Smart&#160;Proxy</p>
+</li>
+<li>
+<p>Puppet CA Smart&#160;Proxy</p>
+</li>
+<li>
+<p>OpenSCAP Smart&#160;Proxy</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Administer</strong> &gt; <strong>Settings</strong>.</p>
+</li>
+<li>
+<p>Click <strong>RemoteExecution</strong>.</p>
+</li>
+<li>
+<p>Configure the <strong>Fallback to Any Smart&#160;Proxy</strong> setting.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<div class="title">CLI procedure</div>
+<p>Enter the <code>hammer settings set</code> command on Foreman to configure the <strong>Fallback to Any Smart&#160;Proxy</strong> setting.
+For example, to set the value to <code>true</code>, enter the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># hammer settings set --name=remote_execution_fallback_proxy --value=true</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="configuring-the-global-smartproxy-remote-execution-setting_ansible">3.6. Configuring the Global Smart&#160;Proxy Remote Execution Setting in Foreman</h3>
+<div class="paragraph">
+<p>By default, Foreman searches for remote execution Smart&#160;Proxies in hosts' organizations and locations regardless of whether Smart&#160;Proxies are assigned to hosts' subnets or not.
+You can disable the <strong>Enable Global Smart&#160;Proxy</strong> setting if you want to limit the search to the Smart&#160;Proxies that are assigned to hosts' subnets.</p>
+</div>
+<div class="paragraph">
+<p>If the <strong>Enable Global Smart&#160;Proxy</strong> setting is enabled, Foreman adds another set of Smart&#160;Proxies to select the remote execution Smart&#160;Proxy from.
+Foreman also selects the most lightly loaded remote execution Smart&#160;Proxy from the set of all Smart&#160;Proxies in the host&#8217;s organization and location to execute a remote job.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Administer</strong> &gt; <strong>Settings</strong>.</p>
+</li>
+<li>
+<p>Click <strong>RemoteExection</strong>.</p>
+</li>
+<li>
+<p>Configure the <strong>Enable Global Smart&#160;Proxy</strong> setting.</p>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">CLI procedure</div>
+<ul>
+<li>
+<p>Enter the <code>hammer settings set</code> command on Foreman to configure the <code>Enable Global Smart&#160;Proxy</code> setting.
+For example, to set the value to <code>true</code>, enter the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre># hammer settings set --name=remote_execution_global_proxy --value=true</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="configuring-an-alternative-directory-to-execute-remote-jobs-on-hosts_ansible">3.7. Configuring Foreman to Use an Alternative Directory to Execute Remote Jobs on Hosts</h3>
+<div class="paragraph">
+<p>Ansible puts its own files it requires into the <code>$HOME/.ansible/tmp</code> directory, where <code>$HOME</code> is the home directory of the remote user.
+You have the option to set a different directory if required.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Create a new directory, for example <em>new_place</em>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># mkdir /<em>remote_working_dir</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Copy the SELinux context from the default <code>var</code> directory:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># chcon --reference=/var <em>/remote_working_dir</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Edit the <code>ansible_working_dir</code> setting in the <code>/etc/foreman-proxy/settings.d/ansible.yml</code> file to point to the required directory, for example:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">:ansible_working_dir: <em>/remote_working_dir</em></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="ssh-keys-for-remote-execution-overview_ansible">3.8. Distributing SSH Keys for Remote Execution</h3>
+<div class="paragraph">
+<p>To use SSH keys for authenticating remote execution connections, you must distribute the public SSH key from Smart&#160;Proxy to its attached hosts that you want to manage.
+Ensure that the SSH service is enabled and running on the hosts.
+Configure any network or host-based firewalls to enable access to port 22.</p>
+</div>
+<div class="paragraph">
+<p>Use one of the following methods to distribute the public SSH key from Smart&#160;Proxy to target hosts:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><a href="#distributing-ssh-keys-for-remote-execution-manually_ansible">Distributing SSH Keys for Remote Execution Manually</a>.</p>
+</li>
+<li>
+<p><a href="#using-the-api-to-obtain-ssh-keys-for-remote-execution_ansible">Using the Foreman API to Obtain SSH Keys for Remote Execution</a>.</p>
+</li>
+<li>
+<p><a href="#configuring-a-kickstart-template-to-distribute-ssh-keys-during-provisioning_ansible">Configuring a Kickstart Template to Distribute SSH Keys during Provisioning</a>.</p>
+</li>
+<li>
+<p>For new Foreman hosts, you can deploy SSH keys to Foreman hosts during registration using the global registration template.
+For more information, see <a href="https://docs.theforeman.org/nightly/Managing_Hosts/index-foreman-deb.html#registering-a-host_managing-hosts">Registering a Host to Foreman Using the Global Registration Template</a>.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Foreman distributes SSH keys for the remote execution feature to the hosts provisioned from Foreman by default.</p>
+</div>
+<div class="paragraph">
+<p>If the hosts are running on Amazon Web Services, enable password authentication.
+For more information, see <a href="https://aws.amazon.com/premiumsupport/knowledge-center/new-user-accounts-linux-instance" class="bare">https://aws.amazon.com/premiumsupport/knowledge-center/new-user-accounts-linux-instance</a>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="distributing-ssh-keys-for-remote-execution-manually_ansible">3.9. Distributing SSH Keys for Remote Execution Manually</h3>
+<div class="paragraph">
+<p>To distribute SSH keys manually, complete the following steps:</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Enter the following command on Smart&#160;Proxy.
+Repeat for each target host you want to manage:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ssh-copy-id -i ~foreman-proxy/.ssh/id_rsa_foreman_proxy.pub <em>root@target.example.com</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>To confirm that the key was successfully copied to the target host, enter the following command on Smart&#160;Proxy:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ssh -i ~foreman-proxy/.ssh/id_rsa_foreman_proxy <em>root@target.example.com</em></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="using-the-api-to-obtain-ssh-keys-for-remote-execution_ansible">3.10. Using the Foreman API to Obtain SSH Keys for Remote Execution</h3>
+<div class="paragraph">
+<p>To use the Foreman API to download the public key from Smart&#160;Proxy, complete this procedure on each target host.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On the target host, create the <code>~/.ssh</code> directory to store the SSH key:</p>
+<div class="listingblock">
+<div class="content">
+<pre># mkdir ~/.ssh</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Download the SSH key from Smart&#160;Proxy:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># curl https://<em>smartproxy.example.com</em>:9090/ssh/pubkey &gt;&gt; ~/.ssh/authorized_keys</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Configure permissions for the <code>~/.ssh</code> directory:</p>
+<div class="listingblock">
+<div class="content">
+<pre># chmod 700 ~/.ssh</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Configure permissions for the <code>authorized_keys</code> file:</p>
+<div class="listingblock">
+<div class="content">
+<pre># chmod 600 ~/.ssh/authorized_keys</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="configuring-a-kickstart-template-to-distribute-ssh-keys-during-provisioning_ansible">3.11. Configuring a Kickstart Template to Distribute SSH Keys during Provisioning</h3>
+<div class="paragraph">
+<p>You can add a <code>remote_execution_ssh_keys</code> snippet to your custom kickstart template to deploy SSH Keys to hosts during provisioning.
+Kickstart templates that Foreman ships include this snippet by default.
+Therefore, Foreman copies the SSH key for remote execution to the systems during provisioning.</p>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>To include the public key in newly-provisioned hosts, add the following snippet to the Kickstart template that you use:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">&lt;%= snippet 'remote_execution_ssh_keys' %&gt;</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="configuring-a-keytab-for-kerberos-ticket-granting-tickets_ansible">3.12. Configuring a keytab for Kerberos Ticket Granting Tickets</h3>
+<div class="paragraph">
+<p>Use this procedure to configure Foreman to use a keytab to obtain Kerberos ticket granting tickets.
+If you do not set up a keytab, you must manually retrieve tickets.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Find the ID of the <code>foreman-proxy</code> user:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># id -u foreman-proxy</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Modify the <code>umask</code> value so that new files have the permissions <code>600</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># umask 077</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create the directory for the keytab:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># mkdir -p "/var/kerberos/krb5/user/<em>USER_ID</em>"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create a keytab or copy an existing keytab to the directory:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># cp <em>your_client.keytab</em> /var/kerberos/krb5/user/<em>USER_ID</em>/client.keytab</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Change the directory owner to the <code>foreman-proxy</code> user:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># chown -R foreman-proxy:foreman-proxy "/var/kerberos/krb5/user/<em>USER_ID</em>"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Ensure that the keytab file is read-only:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># chmod -wx "/var/kerberos/krb5/user/<em>USER_ID</em>/client.keytab"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Restore the SELinux context:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># restorecon -RvF /var/kerberos/krb5</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="configuring-kerberos-authentication-for-remote-execution_ansible">3.13. Configuring Kerberos Authentication for Remote Execution</h3>
+<div class="paragraph">
+<p>You can use Kerberos authentication to establish an SSH connection for remote execution on Foreman hosts.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Enroll Foreman&#160;server on the Kerberos server</p>
+</li>
+<li>
+<p>Enroll the Foreman target host on the Kerberos server</p>
+</li>
+<li>
+<p>Configure and initialize a Kerberos user account for remote execution</p>
+</li>
+<li>
+<p>Ensure that the foreman-proxy user on Foreman has a valid Kerberos ticket granting ticket</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>To install and enable Kerberos authentication for remote execution, enter the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer --scenario foreman \
+ --foreman-proxy-plugin-remote-execution-ssh-ssh-kerberos-auth true</pre>
+</div>
+</div>
+</li>
+<li>
+<p>To edit the default user for remote execution, in the Foreman web UI, navigate to <strong>Administer</strong> &gt; <strong>Settings</strong> and click the <strong>RemoteExecution</strong> tab.
+In the <strong>SSH User</strong> row, edit the second column and add the user name for the Kerberos account.</p>
+</li>
+<li>
+<p>Navigate to <strong>remote_execution_effective_user</strong> and edit the second column to add the user name for the Kerberos account.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>To confirm that Kerberos authentication is ready to use, run a remote job on the host.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="setting-up-job-templates_ansible">3.14. Setting up Job Templates</h3>
+<div class="paragraph">
+<p>Foreman provides default job templates that you can use for executing jobs.
+To view the list of job templates, navigate to <strong>Hosts</strong> &gt; <strong>Job templates</strong>.
+If you want to use a template without making changes, proceed to <a href="https://docs.theforeman.org/nightly/Managing_Hosts/index-foreman-deb.html#executing-a-remote-job_managing-hosts">Executing a Remote Job</a>.</p>
+</div>
+<div class="paragraph">
+<p>You can use default templates as a base for developing your own.
+Default job templates are locked for editing.
+Clone the template and edit the clone.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>To clone a template, in the <strong>Actions</strong> column, select <strong>Clone</strong>.</p>
+</li>
+<li>
+<p>Enter a unique name for the clone and click <strong>Submit</strong> to save the changes.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Job templates use the Embedded Ruby (ERB) syntax.
+For more information about writing templates, see the <a href="https://docs.theforeman.org/nightly/Managing_Hosts/index-foreman-deb.html#appe-Managing_Hosts-Template_Writing_Reference">Template Writing Reference</a> in the <em>Managing Hosts</em> guide.</p>
+</div>
+<div class="paragraph">
+<div class="title">Ansible Considerations</div>
+<p>To create an Ansible job template, use the following procedure and instead of ERB syntax, use YAML syntax.
+Begin the template with <code>---</code>.
+You can embed an Ansible playbook YAML file into the job template body.
+You can also add ERB syntax to customize your YAML Ansible template.
+You can also import Ansible playbooks in Foreman.
+For more information, see <a href="https://docs.theforeman.org/nightly/Managing_Hosts/index-foreman-deb.html#Synchronizing_Templates_Repositories">Synchronizing Repository Templates</a> in the <em>Managing Hosts</em> guide.</p>
+</div>
+<div class="paragraph">
+<div class="title">Parameter Variables</div>
+<p>At run time, job templates can accept parameter variables that you define for a host.
+Note that only the parameters visible on the <strong>Parameters</strong> tab at the host&#8217;s edit page can be used as input parameters for job templates.
+If you do not want your Ansible job template to accept parameter variables at run time, in the Foreman web UI, navigate to <strong>Administer</strong> &gt; <strong>Settings</strong> and click the <strong>Ansible</strong> tab.
+In the <strong>Top level Ansible variables</strong> row, change the <strong>Value</strong> parameter to <strong>No</strong>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="executing-a-remote-job_ansible">3.15. Executing a Remote Job</h3>
+<div class="paragraph">
+<p>You can execute a job that is based on a job template against one or more hosts.</p>
+</div>
+<div class="paragraph">
+<p>To use the CLI instead of the Foreman web UI, see the <a href="#cli-executing-a-remote-job_ansible">CLI procedure</a>.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Navigate to <strong>Hosts</strong> &gt; <strong>All Hosts</strong> and select the target hosts on which you want to execute a remote job.
+You can use the search field to filter the host list.</p>
+</li>
+<li>
+<p>From the <strong>Select Action</strong> list, select <strong>Schedule Remote Job</strong>.</p>
+</li>
+<li>
+<p>On the <strong>Job invocation</strong> page, define the main job settings:</p>
+</li>
+<li>
+<p>Select the <strong>Job category</strong> and the <strong>Job template</strong> you want to use.</p>
+</li>
+<li>
+<p>Optional: Select a stored search string in the <strong>Bookmark</strong> list to specify the target hosts.</p>
+</li>
+<li>
+<p>Optional: Further limit the targeted hosts by entering a <strong>Search query</strong>.
+The <strong>Resolves to</strong> line displays the number of hosts affected by your query.
+Use the refresh button to recalculate the number after changing the query.
+The preview icon lists the targeted hosts.</p>
+</li>
+<li>
+<p>The remaining settings depend on the selected job template.
+See <a href="https://docs.theforeman.org/nightly/Managing_Hosts/index-foreman-deb.html#creating-a-job-template_managing-hosts">Creating a Job Template</a> for information on adding custom parameters to a template.</p>
+</li>
+<li>
+<p>Optional: To configure advanced settings for the job, click <strong>Display advanced fields</strong>.
+Some of the advanced settings depend on the job template, the following settings are general:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Effective user</strong> defines the user for executing the job, by default it is the SSH user.</p>
+</li>
+<li>
+<p><strong>Concurrency level</strong> defines the maximum number of jobs executed at once, which can prevent overload of systems' resources in a case of executing the job on a large number of hosts.</p>
+</li>
+<li>
+<p><strong>Timeout to kill</strong> defines time interval in seconds after which the job should be killed, if it is not finished already.
+A task which could not be started during the defined interval, for example, if the previous task took too long to finish, is canceled.</p>
+</li>
+<li>
+<p><strong>Type of query</strong> defines when the search query is evaluated.
+This helps to keep the query up to date for scheduled tasks.</p>
+</li>
+<li>
+<p><strong>Execution ordering</strong> determines the order in which the job is executed on hosts: alphabetical or randomized.</p>
+<div class="paragraph">
+<p><strong>Concurrency level</strong> and <strong>Timeout to kill</strong> settings enable you to tailor job execution to fit your infrastructure hardware and needs.</p>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>To run the job immediately, ensure that <strong>Schedule</strong> is set to <strong>Execute now</strong>.
+You can also define a one-time future job, or set up a recurring job.
+For recurring tasks, you can define start and end dates, number and frequency of runs.
+You can also use cron syntax to define repetition.
+For more information about cron, see the <a href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/system_administrators_guide/ch-automating_system_tasks">Automating System Tasks</a> section of the Red Hat Enterprise Linux 7 <em>System Administrator&#8217;s Guide</em>.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong>.
+This displays the <strong>Job Overview</strong> page, and when the job completes, also displays the status of the job.</p>
+</li>
+</ol>
+</div>
+<div id="cli-executing-a-remote-job_ansible" class="ulist">
+<div class="title">CLI procedure</div>
+<ul>
+<li>
+<p>Enter the following command on Foreman:</p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># hammer settings set --name=remote_execution_global_proxy --value=false</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To execute a remote job with custom parameters, complete the following steps:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Find the ID of the job template you want to use:</p>
+<div class="listingblock">
+<div class="content">
+<pre># hammer job-template list</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Show the template details to see parameters required by your template:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer job-template info --id <em>template_ID</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Execute a remote job with custom parameters:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer job-invocation create \
+--job-template "<em>template_name</em>" \
+--inputs <em>key1</em>="<em>value</em>",<em>key2</em>="<em>value</em>",... \
+--search-query "<em>query</em>"</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Replace <em>query</em> with the filter expression that defines hosts, for example <code>"name ~ rex01"</code>.
+For more information about executing remote commands with hammer, enter <code>hammer job-template --help</code> and <code>hammer job-invocation --help</code>.</p>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="monitoring-remote-jobs_ansible">3.16. Monitoring Jobs</h3>
+<div class="paragraph">
+<p>You can monitor the progress of the job while it is running.
+This can help in any troubleshooting that may be required.</p>
+</div>
+<div class="paragraph">
+<p>Ansible jobs run on batches of 100 hosts, so you cannot cancel a job running on a specific host.
+A job completes only after the Ansible playbook runs on all hosts in the batch.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Navigate to the Job page.
+This page is automatically displayed if you triggered the job with the <code>Execute now</code> setting.
+To monitor scheduled jobs, navigate to <strong>Monitor</strong> &gt; <strong>Jobs</strong> and select the job run you wish to inspect.</p>
+</li>
+<li>
+<p>On the Job page, click the <strong>Hosts</strong> tab.
+This displays the list of hosts on which the job is running.</p>
+</li>
+<li>
+<p>In the <strong>Host</strong> column, click the name of the host that you want to inspect.
+This displays the <strong>Detail of Commands</strong> page where you can monitor the job execution in real time.</p>
+</li>
+<li>
+<p>Click <strong>Back to Job</strong> at any time to return to the <strong>Job Details</strong> page.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<div class="title">CLI procedure</div>
+<p>To monitor the progress of a job while it is running, complete the following steps:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Find the ID of a job:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer job-invocation list</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Monitor the job output:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer job-invocation output \
+--id <em>job_ID</em> \
+--host <em>host_name</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Optional: to cancel a job, enter the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer job-invocation cancel \
+--id <em>job_ID</em></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="integrating-ansible-tower_ansible">4. Integrating Foreman and AWX</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>You can integrate Foreman and AWX to use Foreman&#160;server as a dynamic inventory source for AWX.</p>
+</div>
+<div class="paragraph">
+<p>You can also use the provisioning callback function to run playbooks on hosts managed by Foreman, from either the host or AWX.
+When provisioning new hosts from Foreman&#160;server, you can use the provisioning callback function to trigger playbook runs from AWX.
+The playbook configures the host following Kickstart deployment.</p>
+</div>
+<div class="sect2">
+<h3 id="adding-server-as-a-dynamic-inventory-item_ansible">4.1. Adding Foreman&#160;server to AWX as a Dynamic Inventory Item</h3>
+<div class="paragraph">
+<p>To add Foreman&#160;server to AWX as a dynamic inventory item, you must create a credential for a Foreman&#160;server user on AWX, add an AWX user to the credential, and then configure an inventory source.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>If your Foreman deployment is large, for example, managing tens of thousands of hosts, using a non-admin user can negatively impact performance because of time penalties that accrue during authorization checks.
+For large deployments, consider using an admin user.</p>
+</li>
+<li>
+<p>For non-admin users, you must assign the <code>AWX Inventory Reader</code> role to your Foreman&#160;server user.
+For more information about managing users, roles, and permission filters, see <a href="https://docs.theforeman.org/nightly/Administering_Red_Hat_Satellite/index-foreman-deb.html#sect-Administering-Users_and_Roles-Creating_and_Managing_Roles">Creating and Managing Roles</a> in <em>Administering Foreman</em>.</p>
+</li>
+<li>
+<p>You must host your Foreman&#160;server and AWX on the same network or subnet.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the AWX web UI, create a credential for your Foreman.
+For more information about creating credentials, see <a href="http://docs.ansible.com/ansible-tower/latest/html/userguide/credentials.html#add-a-new-credential">Add a New Credential</a> and <a href="http://docs.ansible.com/ansible-tower/latest/html/userguide/credentials.html#red-hat-satellite-6">Foreman Credentials</a> in the <em>AWX User Guide</em>.</p>
+<table id="tabl-Managing_Hosts-Integrating_Satellite_and_Ansible_Tower-Satellite_Credentials" class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 1. Foreman Credentials</caption>
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 66.6667%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>Credential Type</strong>:</th>
+<th class="tableblock halign-left valign-top"><strong>Foreman</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><strong>Foreman URL</strong>:</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>https://<em>foreman.example.com</em></p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><strong>Username</strong>:</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>The username of the Foreman user with the integration role.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><strong>Password</strong>:</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>The password of the Foreman user.</p>
+</div></div></td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p>Add an AWX user to the new credential.
+For more information about adding a user to a credential, see <a href="http://docs.ansible.com/ansible-tower/latest/html/userguide/credentials.html#getting-started-with-credentials">Getting Started with Credentials</a> in the <em>AWX User Guide</em>.</p>
+</li>
+<li>
+<p>Add a new inventory.
+For more information, see <a href="http://docs.ansible.com/ansible-tower/latest/html/userguide/inventories.html#add-a-new-inventory">Add a new inventory</a> in the <em>AWX User Guide</em>.</p>
+</li>
+<li>
+<p>In the new inventory, add Foreman&#160;server as the inventory source, specifying the following inventory source options.
+For more information, see <a href="https://docs.ansible.com/ansible-tower/latest/html/userguide/inventories.html#add-source">Add Source</a> in the <em>AWX User Guide</em>.</p>
+<table id="tabl-Managing_Hosts-Integrating_Satellite_and_Ansible_Tower-Inventory_Source_Options" class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 2. Inventory Source Options</caption>
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 66.6667%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>Source</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Foreman</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><strong>Credential</strong></p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>The credential you create for Foreman&#160;server.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><strong>Overwrite</strong></p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Select</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><strong>Overwrite Variables</strong></p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Select</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><strong>Update on Launch</strong></p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Select</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><strong>Cache Timeout</strong></p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><em>90</em></p>
+</div></div></td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p>Ensure that you synchronize the source that you add.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="provisioning-a-callback-for-a-host_ansible">4.2. Configuring Provisioning Callback for a Host</h3>
+<div class="paragraph">
+<p>When you create hosts in Foreman, you can use AWX to run playbooks to configure your newly created hosts.
+This is called <em>provisioning callback</em> in AWX.</p>
+</div>
+<div class="paragraph">
+<p>The provisioning callback function triggers a playbook run from AWX as part of the provisioning process.
+The playbook configures the host after Kickstart deployment.</p>
+</div>
+<div class="paragraph">
+<p>For more information about provisioning callbacks, see <a href="http://docs.ansible.com/ansible-tower/latest/html/userguide/job_templates.html#provisioning-callbacks">Provisioning Callbacks</a> in the <em>AWX User Guide</em>.</p>
+</div>
+<div class="paragraph">
+<p>In Foreman&#160;server, the <code>Kickstart Default</code> and <code>Kickstart Default Finish</code> templates include three snippets:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><code>ansible_provisioning_callback</code></p>
+</li>
+<li>
+<p><code>ansible_tower_callback_script</code></p>
+</li>
+<li>
+<p><code>ansible_tower_callback_service</code></p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>You can add parameters to hosts or host groups to provide the credentials that these snippets can use to run Ansible playbooks on your newly created hosts.</p>
+</div>
+<div class="paragraph">
+<div class="title">Prerequisites</div>
+<p>Before you can configure provisioning callbacks, you must add Foreman as a dynamic inventory in AWX.
+For more information, see <a href="https://docs.theforeman.org/nightly/Configuring_Ansible/index-foreman-deb.html#integrating-ansible-tower_ansible">Integrating Foreman and AWX</a>.</p>
+</div>
+<div class="paragraph">
+<p>In the AWX web UI, you must complete the following tasks:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Create a machine credential for your new host.
+Ensure that you enter the same password in the credential that you plan to assign to the host that you create in Foreman.
+For more information, see <a href="https://docs.ansible.com/ansible-tower/latest/html/userguide/credentials.html#add-a-new-credential">Add a New Credential</a> in the <em>AWX User Guide</em>.</p>
+</li>
+<li>
+<p>Create a project.
+For more information, see <a href="https://docs.ansible.com/ansible-tower/latest/html/userguide/projects.html">Projects</a> in the <em>AWX User Guide</em>.</p>
+</li>
+<li>
+<p>Add a job template to your project.
+For more information, see <a href="https://docs.ansible.com/ansible-tower/latest/html/userguide/job_templates.html#create-a-job-template">Job Templates</a> in the <em>AWX User Guide</em>.</p>
+</li>
+<li>
+<p>In your job template, you must enable provisioning callbacks, generate the host configuration key, and note the <em>template_ID</em> of your job template.
+For more information about job templates, see <a href="http://docs.ansible.com/ansible-tower/latest/html/userguide/job_templates.html#">Job Templates</a> in the <em>AWX User Guide</em>.</p>
+</li>
+</ol>
+</div>
+<div id="proc-Managing_Hosts-Integrating_Satellite_and_Ansible_Tower-To_Configure_Provisioning_Callback_for_a_Host" class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Configure</strong> &gt; <strong>Host Group</strong>.</p>
+</li>
+<li>
+<p>Create a host group or edit an existing host group.</p>
+</li>
+<li>
+<p>In the Host Group window, click the <strong>Parameters</strong> tab.</p>
+</li>
+<li>
+<p>Click <strong>Add Parameter</strong>.</p>
+</li>
+<li>
+<p>Enter the following information for each new parameter:</p>
+<table id="tabl-Managing_Hosts-Integrating_Satellite_and_Ansible_Tower-Host_Parameters" class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 3. Host Parameters</caption>
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Value</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><code>ansible_tower_provisioning</code></p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>true</p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Enables Provisioning Callback.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><code>ansible_tower_fqdn</code></p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><em>tower.example.com</em></p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>The fully qualified domain name (FQDN) of your AWX.
+Do not add <code>https</code> because this is appended by AWX.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><code>ansible_job_template_id</code></p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><em>template_ID</em></p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>The ID of your provisioning template that you can find in the URL of the template: <code>/templates/job_template/<em>5</em></code>.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><code>ansible_host_config_key</code></p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p><em>config_KEY</em></p>
+</div></div></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>The host configuration key that your job template generates in AWX.</p>
+</div></div></td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p>Click <strong>Submit</strong>.</p>
+</li>
+<li>
+<p>Create a host using the host group.</p>
+</li>
+<li>
+<p>On the new host, enter the following command to start the <code>ansible-callback</code> service:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl start ansible-callback</pre>
+</div>
+</div>
+</li>
+<li>
+<p>On the new host, enter the following command to output the status of the <code>ansible-callback</code> service:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl status ansible-callback</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Provisioning callback is configured correctly if the command returns the following output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">SAT_host systemd[1]: Started Provisioning callback to AWX...</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<div class="title">Manual Provisioning Callback</div>
+<p>You can use the provisioning callback URL and the host configuration key from a host to call AWX.
+For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># curl -k -s --data curl --insecure --data host_config_key=<em>my_config_key</em> \
+ https://<em>tower.example.com</em>/api/v2/job_templates/<em>8</em>/callback/</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Ensure that you use <code>https</code> when you enter the provisioning callback URL.</p>
+</div>
+<div class="paragraph">
+<p>This triggers the playbook run specified in the template against the host.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="job-template-examples-and-extensions">Appendix A: Job Template Examples and Extensions</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Use this section as a reference to help modify, customize, and extend your job templates to suit your requirements.</p>
+</div>
+<div class="sect2">
+<h3 id="customizing-templates_ansible">A.1. Customizing Job Templates</h3>
+<div class="paragraph">
+<p>When creating a job template, you can include an existing template in the template editor field.
+This way you can combine templates, or create more specific templates from the general ones.</p>
+</div>
+<div class="paragraph">
+<p>The following template combines default templates to install and start the <strong>httpd</strong> service on Red Hat Enterprise Linux systems:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-Ruby" data-lang="Ruby">&lt;%= render_template 'Package Action - SSH Default', :action =&gt; 'install', :package =&gt; 'httpd' %&gt;
+&lt;%= render_template 'Service Action - SSH Default', :action =&gt; 'start', :service_name =&gt; 'httpd' %&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The above template specifies parameter values for the rendered template directly.
+It is also possible to use the <strong>input()</strong> method to allow users to define input for the rendered template on job execution.
+For example, you can use the following syntax:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-Ruby" data-lang="Ruby">&lt;%= render_template 'Package Action - SSH Default', :action =&gt; 'install', :package =&gt; input("package") %&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>With the above template, you have to import the parameter definition from the rendered template.
+To do so, navigate to the <strong>Jobs</strong> tab, click <strong>Add Foreign Input Set</strong>, and select the rendered template from the <strong>Target template</strong> list.
+You can import all parameters or specify a comma separated list.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="default-job-template-categories_ansible">A.2. Default Job Template Categories</h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 30%;">
+<col style="width: 70%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Job template category</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Packages</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Templates for performing package related actions.
+Install, update, and remove actions are included by default.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Puppet</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Templates for executing Puppet runs on target hosts.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Power</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Templates for performing power related actions.
+Restart and shutdown actions are included by default.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Commands</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Templates for executing custom commands on remote hosts.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Services</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Templates for performing service related actions.
+Start, stop, restart, and status actions are included by default.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Katello</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Templates for performing content related actions.
+These templates are used mainly from different parts of the Foreman web UI (for example bulk actions UI for content hosts), but can be used separately to perform operations such as errata installation.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="default-example-restorecon-template_ansible">A.3. Example restorecon Template</h3>
+<div class="paragraph">
+<p>This example shows how to create a template called <strong>Run Command - restorecon</strong> that restores the default <strong>SELinux</strong> context for all files in the selected directory on target hosts.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Navigate to <strong>Hosts</strong> &gt; <strong>Job templates</strong>.
+Click <strong>New Job Template</strong>.</p>
+</li>
+<li>
+<p>Enter <strong>Run Command - restorecon</strong> in the <strong>Name</strong> field.
+Select <strong>Default</strong> to make the template available to all organizations.
+Add the following text to the template editor:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-Ruby" data-lang="Ruby">restorecon -RvF &lt;%= input("directory") %&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>&lt;%= input("directory") %&gt;</code> string is replaced by a user-defined directory during job invocation.</p>
+</div>
+</li>
+<li>
+<p>On the <strong>Job</strong> tab, set <strong>Job category</strong> to <code>Commands</code>.</p>
+</li>
+<li>
+<p>Click <strong>Add Input</strong> to allow job customization.
+Enter <code>directory</code> to the <strong>Name</strong> field.
+The input name must match the value specified in the template editor.</p>
+</li>
+<li>
+<p>Click <strong>Required</strong> so that the command cannot be executed without the user specified parameter.</p>
+</li>
+<li>
+<p>Select <strong>User input</strong> from the <strong>Input type</strong> list.
+Enter a description to be shown during job invocation, for example <code>Target directory for restorecon</code>.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong>.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>See <a href="https://docs.theforeman.org/nightly/Managing_Hosts/index-foreman-deb.html#default-example-of-executing-restorecon-on-multiple-hosts_managing-hosts">Executing a restorecon Template on Multiple Hosts</a> for information on how to execute a job based on this template.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="example-rendering-of-the-restorecon-template_ansible">A.4. Rendering a restorecon Template</h3>
+<div class="paragraph">
+<p>This example shows how to create a template derived from the <strong>Run command - restorecon</strong> template created in <a href="https://docs.theforeman.org/nightly/Managing_Hosts/index-foreman-deb.html#default-example-restorecon-template_managing-hosts">Example restorecon Template</a>.
+This template does not require user input on job execution, it will restore the SELinux context in all files under the <strong>/home/</strong> directory on target hosts.</p>
+</div>
+<div class="paragraph">
+<p>Create a new template as described in <a href="https://docs.theforeman.org/nightly/Managing_Hosts/index-foreman-deb.html#setting-up-job-templates_managing-hosts">Setting up Job Templates</a>, and specify the following string in the template editor:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-Ruby" data-lang="Ruby">&lt;%= render_template("Run Command - restorecon", :directory =&gt; "/home") %&gt;</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="default-example-of-executing-restorecon-on-multiple-hosts_ansible">A.5. Executing a restorecon Template on Multiple Hosts</h3>
+<div class="paragraph">
+<p>This example shows how to run a job based on the template created in <a href="https://docs.theforeman.org/nightly/Managing_Hosts/index-foreman-deb.html#default-example-restorecon-template_managing-hosts">Example restorecon Template</a> on multiple hosts.
+The job restores the SELinux context in all files under the <strong>/home/</strong> directory.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Navigate to <strong>Hosts</strong> &gt; <strong>All hosts</strong> and select target hosts.
+Select <strong>Schedule Remote Job</strong> from the <strong>Select Action</strong> list.</p>
+</li>
+<li>
+<p>In the <strong>Job invocation</strong> page, select the <code>Commands</code> job category and the <code>Run Command - restorecon</code> job template.</p>
+</li>
+<li>
+<p>Type <code>/home</code> in the <strong>directory</strong> field.</p>
+</li>
+<li>
+<p>Set <strong>Schedule</strong> to <code>Execute now</code>.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong>.
+You are taken to the <strong>Job invocation</strong> page where you can monitor the status of job execution.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="example-including-power-actions-in-a-job-template_ansible">A.6. Including Power Actions in Templates</h3>
+<div class="paragraph">
+<p>This example shows how to set up a job template for performing power actions, such as reboot.
+This procedure prevents Foreman from interpreting the disconnect exception upon reboot as an error, and consequently, remote execution of the job works correctly.</p>
+</div>
+<div class="paragraph">
+<p>Create a new template as described in <a href="https://docs.theforeman.org/nightly/Managing_Hosts/index-foreman-deb.html#setting-up-job-templates_managing-hosts">Setting up Job Templates</a>, and specify the following string in the template editor:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-Ruby" data-lang="Ruby">&lt;%= render_template("Power Action - SSH Default", :action =&gt; "restart") %&gt;</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Version Nightly<br>
+Last updated Aug 2021
+</div>
+</div>
+</body>
+</html>
