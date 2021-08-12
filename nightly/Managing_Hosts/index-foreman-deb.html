@@ -21,7 +21,7 @@ if (rl.includes("/master/") || rl.includes("/nightly/") || rl.includes("file://"
 <h1>Managing Hosts</h1>
 <div class="details">
 <span id="revnumber">version 3.0,</span>
-<span id="revdate">published Aug 11 2021</span>
+<span id="revdate">published Aug 12 2021</span>
 </div>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
@@ -117,14 +117,20 @@ if (rl.includes("/master/") || rl.includes("/nightly/") || rl.includes("file://"
 <li><a href="#monitoring-remote-jobs_managing-hosts">10.16. Monitoring Jobs</a></li>
 </ul>
 </li>
-<li><a href="#host-management-without-goferd-and-katello-agent_managing-hosts">11. Host Management Without Goferd and Katello Agent</a></li>
-<li><a href="#Synchronizing_Templates_Repositories">12. Synchronizing Template Repositories</a>
+<li><a href="#host-status-overview_managing-hosts">11. Host Status in Foreman</a>
 <ul class="sectlevel2">
-<li><a href="#_enabling_the_templatesync_plug_in">12.1. Enabling the TemplateSync plug-in</a></li>
-<li><a href="#configuring-the-templatesync-plug-in">12.2. Configuring the TemplateSync plug-in</a></li>
-<li><a href="#_importing_and_exporting_templates">12.3. Importing and Exporting Templates</a></li>
-<li><a href="#_advanced_git_configuration">12.4. Advanced Git Configuration</a></li>
-<li><a href="#_uninstalling_the_plug_in">12.5. Uninstalling the plug-in</a></li>
+<li><a href="#host-global-status-overview_managing-hosts">11.1. Host Global Status Overview</a></li>
+<li><a href="#host-substatus-overview_managing-hosts">11.2. Host Sub-status Overview</a></li>
+</ul>
+</li>
+<li><a href="#host-management-without-goferd-and-katello-agent_managing-hosts">12. Host Management Without Goferd and Katello Agent</a></li>
+<li><a href="#Synchronizing_Templates_Repositories">13. Synchronizing Template Repositories</a>
+<ul class="sectlevel2">
+<li><a href="#_enabling_the_templatesync_plug_in">13.1. Enabling the TemplateSync plug-in</a></li>
+<li><a href="#configuring-the-templatesync-plug-in">13.2. Configuring the TemplateSync plug-in</a></li>
+<li><a href="#_importing_and_exporting_templates">13.3. Importing and Exporting Templates</a></li>
+<li><a href="#_advanced_git_configuration">13.4. Advanced Git Configuration</a></li>
+<li><a href="#_uninstalling_the_plug_in">13.5. Uninstalling the plug-in</a></li>
 </ul>
 </li>
 <li><a href="#appe-Managing_Hosts-Template_Writing_Reference">Appendix A: Template Writing Reference</a>
@@ -4132,7 +4138,179 @@ This displays the <strong>Detail of Commands</strong> page where you can monitor
 </div>
 </div>
 <div class="sect1">
-<h2 id="host-management-without-goferd-and-katello-agent_managing-hosts">11. Host Management Without Goferd and Katello Agent</h2>
+<h2 id="host-status-overview_managing-hosts">11. Host Status in Foreman</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>In Foreman, each host has a global status that indicates which hosts need attention.
+Each host also has sub-statuses that represent status of a particular feature.
+With any change of a sub-status, the global status is recalculated and the result is determined by statuses of all sub-statuses.</p>
+</div>
+<div class="sect2">
+<h3 id="host-global-status-overview_managing-hosts">11.1. Host Global Status Overview</h3>
+<div class="paragraph">
+<p>The global status represents the overall status of a particular host.
+The status can have one of three possible values: <strong>OK</strong>, <strong>Warning</strong>, or <strong>Error</strong>.
+You can find global status on the Hosts Overview page.
+The status displays a small icon next to host name and has a color that corresponds with the status.
+Hovering over the icon renders a tooltip with sub-status information to quickly find out more details.
+To view the global status for a host, in the Foreman web UI, navigate to <strong>Hosts</strong> &gt; <strong>All Hosts</strong>.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">OK</dt>
+<dd>
+<p>No errors were reported by any sub-status.
+This status is highlighted with the color green.</p>
+</dd>
+<dt class="hdlist1">Warning</dt>
+<dd>
+<p>While no error was detected, some sub-status raised a warning.
+For example, there are no configuration management reports for the host even though the host is configured to send reports.
+It is a good practice to investigate any warnings to ensure that your deployment remains healthy.
+This status is highlighted with the color yellow.</p>
+</dd>
+<dt class="hdlist1">Error</dt>
+<dd>
+<p>Some sub-status reports a failure.
+For example, a run contains some failed resources.
+This status is highlighted with the color red.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<div class="title">Search syntax</div>
+<p>If you want to search for hosts according to their status, use the syntax for searching in Foreman that is outlined in the <a href="https://docs.theforeman.org/3.0/Administering_Red_Hat_Satellite/index-foreman-deb.html#chap-Administering-Searching_and_Bookmarking">Searching and Bookmarking</a> chapter of the <em>Administering Foreman</em> guide, and then build your searches out using the following status-related examples:</p>
+</div>
+<div class="paragraph">
+<p>To search for hosts that have an <strong>OK</strong> status:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">global_status = ok</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To search for all hosts that deserve attention:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">global_status = error or global_status = warning</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="host-substatus-overview_managing-hosts">11.2. Host Sub-status Overview</h3>
+<div class="paragraph">
+<p>A sub-status monitors only part of a host&#8217;s capabilities.</p>
+</div>
+<div class="paragraph">
+<p>Currently, Foreman ships only with <strong>Build</strong> and <strong>Configuration</strong> sub-statuses.
+There can be more sub-statuses depending on which plugins you add to your Foreman.</p>
+</div>
+<div class="paragraph">
+<p>The <strong>build</strong> sub-status is relevant for managed hosts and when Foreman runs in unattended mode.</p>
+</div>
+<div class="paragraph">
+<p>The <strong>configuration</strong> sub-status is only relevant if Foreman uses a configuration management system like Ansible, Puppet, or Salt.</p>
+</div>
+<div class="paragraph">
+<p>To view the sub-status for a host, in the Foreman web UI, navigate to <strong>Hosts</strong> &gt; <strong>All Hosts</strong> and click the host whose full status you want to inspect.
+You can also view substatus information in the hover help for each host.</p>
+</div>
+<div class="paragraph">
+<p>In the <strong>Properties</strong> table of the host details' page, you can view both the global host status and all sub-statuses.</p>
+</div>
+<div class="paragraph">
+<p>Each sub-status can define its own set of possible values that are mapped to the three global status values.</p>
+</div>
+<div class="paragraph">
+<p>The <strong>Build</strong> sub-status has two possible values - <strong>pending</strong> and <strong>built</strong> that are both mapped to global <strong>OK</strong> value.</p>
+</div>
+<div class="paragraph">
+<p>The <strong>Configuration</strong> status has more possible values that map to the global status as follows:</p>
+</div>
+<div class="dlist">
+<div class="title">sub-statuses that map to the global <strong>OK</strong> status</div>
+<dl>
+<dt class="hdlist1">Active</dt>
+<dd>
+<p>During the last run, some resources were applied.</p>
+</dd>
+<dt class="hdlist1">Pending</dt>
+<dd>
+<p>During the last run, some resources would be applied but your configuration management integration was configured to run in <code>noop</code> mode.</p>
+</dd>
+<dt class="hdlist1">No changes</dt>
+<dd>
+<p>During the last run, nothing changed.</p>
+</dd>
+<dt class="hdlist1">No reports</dt>
+<dd>
+<p>This can be both a <strong>Warning</strong> or <strong>OK</strong> sub-status.
+This occurs when there are no reports but the host uses, for example, an associated configuration management proxy or <code>always_show_configuration_status</code> setting is set to <code>true</code>, it maps to <strong>Warning</strong>.</p>
+</dd>
+</dl>
+</div>
+<div class="dlist">
+<div class="title">Sub-status that maps to the global <strong>Error</strong> status</div>
+<dl>
+<dt class="hdlist1">Error</dt>
+<dd>
+<p>This indicates an error during configuration, for example, a run failed to install a package.</p>
+</dd>
+</dl>
+</div>
+<div class="dlist">
+<div class="title">sub-statuses that map to the global <strong>Warning</strong> status</div>
+<dl>
+<dt class="hdlist1">Out of sync</dt>
+<dd>
+<p>A configuration report was not received within the expected interval, based on the <code>outofsync_interval</code>.
+Reports are identified by an origin and can have different intervals based upon it.</p>
+</dd>
+<dt class="hdlist1">No reports</dt>
+<dd>
+<p>When your host uses a configuration management system but Foreman does not receive reports, it maps to <strong>Warning</strong>.
+Otherwise it is mapped to OK.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<div class="title">Search syntax</div>
+<p>If you want to search for hosts according to their sub-status, use the syntax for searching in Foreman that is outlined in the <a href="https://docs.theforeman.org/3.0/Administering_Red_Hat_Satellite/index-foreman-deb.html#chap-Administering-Searching_and_Bookmarking">Searching and Bookmarking</a> chapter of the <em>Administering Foreman</em> guide, and then build your searches out using the following status-related examples:</p>
+</div>
+<div class="paragraph">
+<p>You search for hosts' configuration sub-statuses based on their last reported state.</p>
+</div>
+<div class="paragraph">
+<p>For example, to find hosts that have at least one pending resource:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">status.pending &gt; 0</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To find hosts that restarted some service during last run:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">status.restarted &gt; 0</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To find hosts that have an interesting last run that might indicate something has happened:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">status.interesting = true</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="host-management-without-goferd-and-katello-agent_managing-hosts">12. Host Management Without Goferd and Katello Agent</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>The <code>goferd</code> service that is used by the Katello agent to manage packages on content hosts consumes large amount of resources.
@@ -4237,7 +4415,7 @@ Job invocation 24 created
 </div>
 </div>
 <div class="sect1">
-<h2 id="Synchronizing_Templates_Repositories">12. Synchronizing Template Repositories</h2>
+<h2 id="Synchronizing_Templates_Repositories">13. Synchronizing Template Repositories</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>In Foreman, you can synchronize repositories of job templates, provisioning templates, report templates, and partition table templates between Foreman&#160;server and a version control system or local directory.
@@ -4257,7 +4435,7 @@ In this chapter, a Git repository is used for demonstration purposes.</p>
 </ul>
 </div>
 <div class="sect2">
-<h3 id="_enabling_the_templatesync_plug_in">12.1. Enabling the TemplateSync plug-in</h3>
+<h3 id="_enabling_the_templatesync_plug_in">13.1. Enabling the TemplateSync plug-in</h3>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
@@ -4275,7 +4453,7 @@ In this chapter, a Git repository is used for demonstration purposes.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="configuring-the-templatesync-plug-in">12.2. Configuring the TemplateSync plug-in</h3>
+<h3 id="configuring-the-templatesync-plug-in">13.2. Configuring the TemplateSync plug-in</h3>
 <div class="paragraph">
 <p>In the Foreman web UI, navigate to <strong>Administer</strong> &gt; <strong>Settings</strong> &gt; <strong>TemplateSync</strong> to configure the plug-in.
 The following table explains the attributes behavior.
@@ -4420,14 +4598,14 @@ Useful if you want to add metadata manually.</p>
 </table>
 </div>
 <div class="sect2">
-<h3 id="_importing_and_exporting_templates">12.3. Importing and Exporting Templates</h3>
+<h3 id="_importing_and_exporting_templates">13.3. Importing and Exporting Templates</h3>
 <div class="paragraph">
 <p>You can import and export templates using the Foreman web UI, Hammer CLI, or Foreman API.
 Foreman API calls use the role-based access control system, which enables the tasks to be executed as any user.
 You can synchronize templates with a version control system, such as Git, or a local directory.</p>
 </div>
 <div class="sect3">
-<h4 id="_importing_templates">12.3.1. Importing Templates</h4>
+<h4 id="_importing_templates">13.3.1. Importing Templates</h4>
 <div class="paragraph">
 <p>You can import templates from a repository of your choice.
 You can use different protocols to point to your repository, for example <code>/tmp/dir</code>, <code>git://example.com</code>, <code>https://example.com</code>, and <code>ssh://example.com</code>.</p>
@@ -4507,7 +4685,7 @@ For example <code>--filter '.*Ansible Default$'</code> imports various Ansible D
 </div>
 </div>
 <div class="sect3">
-<h4 id="_exporting_templates">12.3.2. Exporting Templates</h4>
+<h4 id="_exporting_templates">13.3.2. Exporting Templates</h4>
 <div class="paragraph">
 <p>You can export templates to a version control server, such as a Git repository.</p>
 </div>
@@ -4569,7 +4747,7 @@ The status is not persistent; if you leave the status page, you cannot return to
 </div>
 </div>
 <div class="sect3">
-<h4 id="_synchronizing_templates_using_the_foreman_api">12.3.3. Synchronizing Templates Using the Foreman API</h4>
+<h4 id="_synchronizing_templates_using_the_foreman_api">13.3.3. Synchronizing Templates Using the Foreman API</h4>
 <div class="ulist">
 <div class="title">Prerequisites</div>
 <ul>
@@ -4676,7 +4854,7 @@ To overwrite this behavior, change the <code>Force import</code> setting in the 
 </div>
 </div>
 <div class="sect3">
-<h4 id="_synchronizing_templates_with_a_local_directory_using_the_foreman_api">12.3.4. Synchronizing Templates with a Local Directory Using the Foreman API</h4>
+<h4 id="_synchronizing_templates_with_a_local_directory_using_the_foreman_api">13.3.4. Synchronizing Templates with a Local Directory Using the Foreman API</h4>
 <div class="paragraph">
 <p>Synchronizing templates with a local directory is useful if you have configured a version control repository in the local directory.
 That way, you can edit templates and track the history of edits in the directory.
@@ -4787,7 +4965,7 @@ The following example exports templates to the <code>git.example.com/templates</
 </div>
 </div>
 <div class="sect2">
-<h3 id="_advanced_git_configuration">12.4. Advanced Git Configuration</h3>
+<h3 id="_advanced_git_configuration">13.4. Advanced Git Configuration</h3>
 <div class="paragraph">
 <p>You can perform additional Git configuration for the TemplateSync plug-in using the command line or editing the <code>.gitconfig</code> file.</p>
 </div>
@@ -4808,7 +4986,7 @@ The following example exports templates to the <code>git.example.com/templates</
 </div>
 </div>
 <div class="sect2">
-<h3 id="_uninstalling_the_plug_in">12.5. Uninstalling the plug-in</h3>
+<h3 id="_uninstalling_the_plug_in">13.5. Uninstalling the plug-in</h3>
 <div class="paragraph">
 <p>To avoid errors after removing the foreman_templates plugin:</p>
 </div>
