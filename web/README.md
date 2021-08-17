@@ -8,7 +8,7 @@ Install `hugo` utility.
 
 ## Building
 
-While the `make` commands outliined in the [guides readme](https://github.com/theforeman/foreman-documentation/blob/master/guides/README.md) output previous of the guides, for a local preview of the full site, and links, do the following:
+While the `make` commands outlined in the [guides readme](https://github.com/theforeman/foreman-documentation/blob/master/guides/README.md) output previous of the guides, for a local preview of the full site, and links, do the following:
 
 ```console
 $ cd web
