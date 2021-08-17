@@ -4,9 +4,7 @@ Landing page for [docs.theforeman.org](https://docs.theforeman.org) is available
 
 ## Preparing the environment
 
-Install `hugo` utility.
-
-On a Fedora system:
+Install `hugo`, for example on a Fedora system:
 
 ```console
 # dnf install hugo
