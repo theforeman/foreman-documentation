@@ -4,9 +4,24 @@ Landing page for [docs.theforeman.org](https://docs.theforeman.org) is available
 
 ## Preparing the environment
 
-Install `hugo` utility.
+Install `hugo`, for example on a Fedora system:
+
+```console
+# dnf install hugo
+```
 
 ## Building
+
+While the `make` commands outlined in the [guides readme](https://github.com/theforeman/foreman-documentation/blob/master/guides/README.md) output previous of the guides, for a local preview of the full site, and links, do the following:
+
+```console
+$ cd web
+$ hugo server
+```
+
+Alternatively, you can use `make server`
+
+Then open the URL it mentions: (http://localhost:1313/).
 
 Use `make` or `hugo` to build contents from markdown and layouts in `public/` directory.
 
