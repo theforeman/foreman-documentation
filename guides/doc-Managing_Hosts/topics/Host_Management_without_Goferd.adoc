@@ -1,10 +1,8 @@
 [id="host-management-without-goferd-and-katello-agent_{context}"]
-= Host Management Without Goferd and Katello Agent
+== Migrating from Katello Agent to Remote Execution
 
-The `goferd` service that is used by the Katello agent to manage packages on content hosts consumes large amount of resources.
-To reduce memory and CPU load on content hosts, you can manage packages through remote execution.
-
-Note that the Katello agent is deprecated and will be removed in a future {Project} version; therefore, using remote execution will be the only way to manage packages on hosts.
+`Remote Execution` is the preferred way to manage package content on hosts. The Katello Agent is deprecated and will be removed in a future {Project} version.
+Follow these steps to switch to Remote Execution.
 
 .Prerequisites
 
@@ -16,16 +14,9 @@ For more information, see {InstallingProjectDocURL}enabling-the-satellite-tools-
 For more information, see {InstallingProjectDocURL}synchronizing-the-satellite-tools-repository_{project-context}[Synchronizing the {project-client-name} Repository] in _{project-installation-guide-title}_.
 endif::[]
 
-* You have enabled the {project-client-name} repository on content hosts.
+* You have previously installed the `katello-agent` package on content hosts.
 
 .Procedure
-
-. Install the `katello-host-tools` package on content hosts:
-+
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
-# {package-install} katello-host-tools
-----
 
 . Stop the goferd service on content hosts:
 +
@@ -50,7 +41,7 @@ WARNING: If your host is installed on {oVirt} version 4.4 or lower, do not remov
 # {package-remove} katello-agent
 ----
 
-. Distribute the SSH keys to the content hosts.
+. Distribute the remote execution SSH keys to the content hosts.
 For more information, see xref:ssh-keys-for-remote-execution-overview_{context}[].
 
 . In the {ProjectWebUI}, navigate to *Administer* > *Settings*.
@@ -59,22 +50,28 @@ For more information, see xref:ssh-keys-for-remote-execution-overview_{context}[
 
 . Set the *Use remote execution by default* parameter to *Yes*.
 
-The {Project} server now uses host management by remote execution instead of goferd.
+The {Project} server now uses host management by remote execution instead of katello-agent.
 
-.Hammer Limitations
+The following table shows the remote execution equivalent commands to perform specific package actions. See `hammer job-invocation create --help` to learn how to specify search queries to determine the target hosts or host collections.
 
-The following applies if you are using the `hammer` command to push errata.
-The `hammer` command is dependent on goferd to manage errata on content hosts.
-As a workaround, use the {Project} remote execution feature to apply errata.
+.Hammer Commands
+[cols="3"]
+|===
+|Action |Katello Agent |Remote Execution
 
-For example, enter the following command to perform a `yum -y update` on _host123.example.org_:
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
-# hammer job-invocation create \
---job-template "Run Command - SSH Default" \
---inputs command="yum -y update" \
---search-query "name ~ host123"
-Job invocation 24 created
-[.........................................] [100%]
-1 task(s), 1 success, 0 fail
-----
+|Install a package |hammer host package install | hammer job-invocation create --feature katello_package_install
+|Install a package (host collection) |hammer host-collection package install| hammer job-invocation create --feature katello_package_install
+|Remove a package |hammer host package remove | hammer job-invocation create --feature katello_package_remove
+|Remove a package (host collection) |hammer host-collection package remove| hammer job-invocation create --feature katello_package_remove
+|Update a package |hammer host package upgrade | hammer job-invocation create --feature katello_package_update
+|Update a package (host collection) |hammer host-collection package update| hammer job-invocation create --feature katello_package_update
+|Update all packages |hammer host package update | hammer job-invocation create --feature katello_package_update
+|Install errata |hammer host errata apply | hammer job-invocation create --feature katello_errata_install
+|Install errata (host collection) |hammer host-collection errata install | hammer job-invocation create --feature katello_errata_install
+|Install a package group |hammer host package-group install | hammer job-invocation create --feature katello_group_install
+|Install a package group (host collection) |hammer host-collection package-group install | hammer job-invocation create --feature katello_group_install
+|Remove a package group |hammer host package-group remove | hammer job-invocation create --feature katello_group_remove
+|Remove a package group (host collection) |hammer host-collection package-group remove | hammer job-invocation create --feature katello_group_remove
+|Update a package group |hammer host package-group update | hammer job-invocation create --feature katello_group_update
+|Update a package group (host collection) |hammer host-collection package-group update | hammer job-invocation create --feature katello_group_update
+|===
