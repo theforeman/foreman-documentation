@@ -37,7 +37,7 @@ When a commit is pushed into `X.Y`:
 
 ## Branching new release
 
-* Create a copy of [/web/content/2.3.md](https://github.com/theforeman/foreman-documentation/tree/master/web/content/version-2.3) (or older version) as `X.Y.md` and edit it accordingly.
+* Create a copy of [/web/content/nightly.md](https://github.com/theforeman/foreman-documentation/tree/master/web/content/nightly.md) as `X.Y.md` and edit it accordingly.
 * Edit [/web/content/versions.md](https://github.com/theforeman/foreman-documentation/blob/master/web/content/versions.md) and add the new version to the menu.
 * Push the changes into `master`.
 * Check the site if links and landing page appeared correctly.
