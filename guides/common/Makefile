@@ -30,7 +30,7 @@ html: prepare $(DEST_DIR)/$(BUILD).css $(IMAGES_TS) $(DEST_HTML)
 pdf: prepare $(DEST_PDF)
 
 prepare:
-	mkdir -p $(BUILD_DIR) $(DEST_DIR) $(IMAGES_DIR) $(IMAGES_DIR) $(DEST_DIR)/common/images
+	mkdir -p $(BUILD_DIR) $(DEST_DIR) $(IMAGES_DIR) $(DEST_DIR)/common/images
 
 clean:
 	@rm -rf "$(DEST_DIR)" "$(DEST_PDF)"
