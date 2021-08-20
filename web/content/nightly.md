@@ -23,7 +23,6 @@ plugins. Official documentation [is available here](https://theforeman.org/manua
 * [Provisioning Guide](/{{< param "path" >}}/Provisioning_Guide/index-foreman-el.html)
 * [Configuring Foreman to use Ansible](/{{< param "path" >}}/Configuring_Ansible/index-foreman-el.html)
 * [Managing Hosts Guide](/{{< param "path" >}}/Managing_Hosts/index-foreman-el.html)
-* [Administering Foreman](/{{< param "path" >}}/Administering_Red_Hat_Satellite/index-foreman-el.html)
 * [Application Centric Deployment](/{{< param "path" >}}/Application_Centric_Deployment/index-foreman-el.html)
 
 ## Foreman on Debian/Ubuntu
@@ -42,7 +41,6 @@ plugins. Official documentation [is available here](https://theforeman.org/manua
 * [Provisioning Guide](/{{< param "path" >}}/Provisioning_Guide/index-foreman-deb.html)
 * [Configuring Foreman to use Ansible](/{{< param "path" >}}/Configuring_Ansible/index-foreman-deb.html)
 * [Managing Hosts Guide](/{{< param "path" >}}/Managing_Hosts/index-foreman-deb.html)
-* [Administering Foreman](/{{< param "path" >}}/Administering_Red_Hat_Satellite/index-foreman-deb.html)
 
 ## Katello on RHEL/CentOS
 
