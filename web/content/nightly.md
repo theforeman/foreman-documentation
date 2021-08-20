@@ -14,7 +14,6 @@ plugins. Official documentation [is available here](https://theforeman.org/manua
 
 ### Basic guides
 
-* [Planning for Foreman](/{{< param "path" >}}/Planning_Guide/index-foreman-el.html)
 * [Quickstart Guide](/{{< param "path" >}}/Quickstart_Guide/index-foreman-el.html)
 * [Installing Foreman](/{{< param "path" >}}/Installing_Server_on_Red_Hat/index-foreman-el.html)
 * [Upgrading and Updating](/{{< param "path" >}}/Upgrading_and_Updating/index-foreman-el.html)
@@ -36,7 +35,6 @@ plugins. Official documentation [is available here](https://theforeman.org/manua
 
 ### Basic guides
 
-* [Planning for Foreman](/{{< param "path" >}}/Planning_Guide/index-foreman-deb.html)
 * [Quickstart Guide](/{{< param "path" >}}/Quickstart_Guide/index-foreman-deb.html)
 * [Installing Foreman](/{{< param "path" >}}/Installing_Server_on_Debian/index-foreman-deb.html)
 * [Upgrading and Updating](/{{< param "path" >}}/Upgrading_and_Updating/index-foreman-deb.html)
