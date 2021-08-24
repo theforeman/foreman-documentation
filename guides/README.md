@@ -11,7 +11,7 @@ Contributions are welcome. Please read the [Contribution guidelines](#contributi
 Install the required tools.
 In Fedora perform:
 
-    dnf -y install ruby asciidoctor asciidoctor-pdf make linkchecker
+    dnf -y install rubygem-asciidoctor rubygem-asciidoctor-pdf make linkchecker
 
 In MacOS required tools can be installed via brew but instead "make" call "gmake":
 
@@ -66,6 +66,24 @@ Note that GNU Makefile tracks changes and only builds relevant artifacts, to tri
 It's also possible to check links; the following command will check all links except example.com domain:
 
 	make linkchecker
+
+## Building Locally Using a Container
+
+You can build Foreman documentation locally using a container image.
+This requires the cloned git repository plus an application such as Podman or Docker to build and run container images.
+
+1. Build container image:
+
+       podman build --tag foreman_documentation .
+
+2. Build Foreman documentation.
+   Run this command in your `foreman-documentation` repository:
+
+       rm -rf guides/build && podman run --rm -v $(pwd):/foreman-documentation foreman_documentation make html
+
+   On SELinux enabled systems, run this command:
+
+       rm -rf guides/build && podman run --rm -v $(pwd):/foreman-documentation:Z foreman_documentation make html
 
 ## Reading or Publishing
 
