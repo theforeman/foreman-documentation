@@ -1,0 +1,60 @@
+[id="salt_guide_configuring_salt_master_{context}"]
+= Configuring Salt Master
+
+Configure your Salt Master to configure managed hosts using Salt.
+
+.Procedure
+. Connect to your Salt Master using SSH:
++
+[options="nowrap" subs="attributes"]
+----
+# ssh root@salt-master.example.com
+----
+. Set {Project} as an external node classifier in `/etc/salt/master` for Salt:
++
+[options="nowrap" subs="attributes"]
+----
+master_tops:
+  ext_nodes: /usr/bin/foreman-node
+----
+. Enable Salt Pillar data for use with {Project}:
++
+[options="nowrap" subs="attributes"]
+----
+ext_pillar:
+  - puppet: /usr/bin/foreman-node
+----
+. Add a Salt Environment called `base` which is associated with the `/srv/salt` directory:
++
+[options="nowrap" subs="attributes"]
+----
+file_roots:
+  base:
+    - /srv/salt
+----
+. Use the `saltuser` user for the Salt API and specify the connection settings in `/etc/salt/master`:
++
+[options="nowrap" subs="attributes"]
+----
+external_auth:
+  pam:
+    saltuser:
+      - '@runner'
+
+rest_cherrypy:
+  port: 9191
+  host: 0.0.0.0
+  ssl_key: /etc/puppetlabs/puppet/ssl/private_keys/{foreman-example-com}.pem
+  ssl_crt: /etc/puppetlabs/puppet/ssl/certs/{foreman-example-com}.pem
+----
+. Optional: Use Salt as remote execution provider.
++
+You can run arbitrary commands on managed hosts relying on the connection to the Salt Minion.
+Configure the `foreman-proxy` user to run Salt commands in `/etc/salt/master`:
++
+[options="nowrap" subs="attributes"]
+----
+publisher_acl:
+  foreman-proxy:
+    - state.template_str
+----

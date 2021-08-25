@@ -1,0 +1,56 @@
+[id="salt_guide_authenticating_salt_minions_using_salt_autosign_grains_{context}"]
+= Authenticating Salt Minions Using Salt Autosign Grains
+
+Configure {Project} to automatically accept Salt Minions using Salt autosign Grains.
+
+.Procedure
+. Configure the Grains key file on the Salt Master and add a reactor in the `/etc/salt/master` file:
++
+[options="nowrap" subs="attributes"]
+----
+autosign_grains_dir: /var/lib/foreman-proxy/salt/grains
+
+reactor:
+  - 'salt/auth':
+    - /var/lib/foreman-proxy/salt/reactors/foreman_minion_auth.sls
+----
++
+The Grains file holds the acceptable keys when you deploy Salt Minions.
+The reactor initiates an interaction with the Salt plugin if the Salt Minion is successfully authenticated.
+. Add the reactor to the `salt/auth` event.
+. Copy the Salt runners into your `file_roots` runners directory.
+The directory depends on your `/etc/salt/master` config.
+If it is configured to use `/srv/salt`, create the runners folder `/srv/salt/_runners` and copy the Salt runners into it.
++
+[options="nowrap" subs="attributes"]
+----
+# mkdir -p /srv/salt/_runners
+# cp /var/lib/foreman-proxy/salt/runners/* /srv/salt/_runners/
+----
+. Set the host name of your {ProjectServer} in `/var/lib/foreman-proxy/salt/reactors/foreman_minion_auth.sls`:
++
+[options="nowrap" subs="attributes"]
+----
+[...]
+remove_autosign_key_custom_runner:
+  runner.foreman_https.query_cert:
+    - method: PUT
+    - host: {foreman-example-com}
+    - path: /salt/api/v2/salt_autosign_auth?name={{ data['id'] }}
+    - cert: /etc/pki/katello/puppet/puppet_client.crt
+    - key: /etc/pki/katello/puppet/puppet_client.key
+    - port: 443
+[...]
+----
+. Restart the Salt Master service:
++
+[options="nowrap" subs="attributes"]
+----
+# systemctl restart salt-master
+----
+. Enable the Salt reactors and runners in your Salt Environment:
++
+[options="nowrap" subs="attributes"]
+----
+# salt-run saltutil.sync_all
+----
