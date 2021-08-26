@@ -21,7 +21,7 @@ if (rl.includes("/master/") || rl.includes("/nightly/") || rl.includes("file://"
 <h1>Managing Hosts</h1>
 <div class="details">
 <span id="revnumber">version 3.0,</span>
-<span id="revdate">published Aug 24 2021</span>
+<span id="revdate">published Aug 26 2021</span>
 </div>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
@@ -44,6 +44,7 @@ if (rl.includes("/master/") || rl.includes("/nightly/") || rl.includes("file://"
 <li><a href="#registering-a-host_managing-hosts">3. Registering a Host to Foreman</a>
 <ul class="sectlevel2">
 <li><a href="#customizing-the-registration-templates_managing-hosts">3.1. Customizing the Registration Templates</a></li>
+<li><a href="#migrating-from-katello-agent-to-remote-execution_managing-hosts">3.2. Migrating from Katello Agent to Remote Execution</a></li>
 </ul>
 </li>
 <li><a href="#Adding_Network_Interfaces">4. Adding Network Interfaces</a>
@@ -123,14 +124,13 @@ if (rl.includes("/master/") || rl.includes("/nightly/") || rl.includes("file://"
 <li><a href="#host-substatus-overview_managing-hosts">11.2. Host Sub-status Overview</a></li>
 </ul>
 </li>
-<li><a href="#host-management-without-goferd-and-katello-agent_managing-hosts">12. Host Management Without Goferd and Katello Agent</a></li>
-<li><a href="#Synchronizing_Templates_Repositories">13. Synchronizing Template Repositories</a>
+<li><a href="#Synchronizing_Templates_Repositories">12. Synchronizing Template Repositories</a>
 <ul class="sectlevel2">
-<li><a href="#_enabling_the_templatesync_plug_in">13.1. Enabling the TemplateSync plug-in</a></li>
-<li><a href="#configuring-the-templatesync-plug-in">13.2. Configuring the TemplateSync plug-in</a></li>
-<li><a href="#_importing_and_exporting_templates">13.3. Importing and Exporting Templates</a></li>
-<li><a href="#_advanced_git_configuration">13.4. Advanced Git Configuration</a></li>
-<li><a href="#_uninstalling_the_plug_in">13.5. Uninstalling the plug-in</a></li>
+<li><a href="#_enabling_the_templatesync_plug_in">12.1. Enabling the TemplateSync plug-in</a></li>
+<li><a href="#configuring-the-templatesync-plug-in">12.2. Configuring the TemplateSync plug-in</a></li>
+<li><a href="#_importing_and_exporting_templates">12.3. Importing and Exporting Templates</a></li>
+<li><a href="#_advanced_git_configuration">12.4. Advanced Git Configuration</a></li>
+<li><a href="#_uninstalling_the_plug_in">12.5. Uninstalling the plug-in</a></li>
 </ul>
 </li>
 <li><a href="#appe-Managing_Hosts-Template_Writing_Reference">Appendix A: Template Writing Reference</a>
@@ -1123,6 +1123,173 @@ This template renders when hosts access the <code>/register</code> endpoint.</p>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>@registration_url</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">none</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">URL for the <code>/register</code> endpoint.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="migrating-from-katello-agent-to-remote-execution_managing-hosts">3.2. Migrating from Katello Agent to Remote Execution</h3>
+<div class="paragraph">
+<p><code>Remote Execution</code> is the preferred way to manage package content on hosts. The Katello Agent is deprecated and will be removed in a future Foreman version.
+Follow these steps to switch to Remote Execution.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>You have previously installed the <code>katello-agent</code> package on content hosts.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Stop the goferd service on content hosts:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl stop goferd.service</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Disable the goferd service on content hosts:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl disable goferd.service</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Remove the Katello agent on content hosts:</p>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Warning</div>
+</td>
+<td class="content">
+If your host is installed on oVirt version 4.4 or lower, do not remove the <code>katello-agent</code> package because the removed dependencies corrupt the host.
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># yum remove katello-agent</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Distribute the remote execution SSH keys to the content hosts.
+For more information, see <a href="#ssh-keys-for-remote-execution-overview_managing-hosts">Distributing SSH Keys for Remote Execution</a>.</p>
+</li>
+<li>
+<p>In the Foreman web UI, navigate to <strong>Administer</strong> &gt; <strong>Settings</strong>.</p>
+</li>
+<li>
+<p>Select the <strong>Content</strong> tab.</p>
+</li>
+<li>
+<p>Set the <strong>Use remote execution by default</strong> parameter to <strong>Yes</strong>.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>The Foreman server now uses host management by remote execution instead of katello-agent.</p>
+</div>
+<div class="paragraph">
+<p>The following table shows the remote execution equivalent commands to perform specific package actions. See <code>hammer job-invocation create --help</code> to learn how to specify search queries to determine the target hosts or host collections.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 2. Hammer Commands</caption>
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Action</th>
+<th class="tableblock halign-left valign-top">Katello Agent</th>
+<th class="tableblock halign-left valign-top">Remote Execution</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Install a package</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hammer host package install</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hammer job-invocation create --feature katello_package_install</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Install a package (host collection)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hammer host-collection package install</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hammer job-invocation create --feature katello_package_install</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Remove a package</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hammer host package remove</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hammer job-invocation create --feature katello_package_remove</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Remove a package (host collection)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hammer host-collection package remove</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hammer job-invocation create --feature katello_package_remove</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Update a package</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hammer host package upgrade</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hammer job-invocation create --feature katello_package_update</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Update a package (host collection)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hammer host-collection package update</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hammer job-invocation create --feature katello_package_update</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Update all packages</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hammer host package update</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hammer job-invocation create --feature katello_package_update</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Install errata</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hammer host errata apply</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hammer job-invocation create --feature katello_errata_install</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Install errata (host collection)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hammer host-collection errata install</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hammer job-invocation create --feature katello_errata_install</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Install a package group</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hammer host package-group install</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hammer job-invocation create --feature katello_group_install</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Install a package group (host collection)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hammer host-collection package-group install</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hammer job-invocation create --feature katello_group_install</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Remove a package group</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hammer host package-group remove</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hammer job-invocation create --feature katello_group_remove</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Remove a package group (host collection)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hammer host-collection package-group remove</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hammer job-invocation create --feature katello_group_remove</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Update a package group</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hammer host package-group update</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hammer job-invocation create --feature katello_group_update</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Update a package group (host collection)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hammer host-collection package-group update</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hammer job-invocation create --feature katello_group_update</p></td>
 </tr>
 </tbody>
 </table>
@@ -3290,10 +3457,6 @@ For more information, see <a href="https://docs.theforeman.org/3.0/Managing_Host
 <p>Several job templates for shell scripts and Ansible are included by default.
 For more information, see <a href="https://docs.theforeman.org/3.0/Managing_Hosts/index-foreman-el.html#setting-up-job-templates_managing-hosts">Setting up Job Templates</a>.</p>
 </div>
-<div class="paragraph">
-<p>By default, Foreman&#160;server is configured to use the Katello Agent rather than remote execution.
-To change this setting, navigate to <strong>Administer</strong> &gt; <strong>Settings</strong>, click <strong>Content</strong>, and change the <strong>Use remote execution by default</strong> setting.</p>
-</div>
 <div class="admonitionblock note">
 <table>
 <tr>
@@ -4310,112 +4473,7 @@ Otherwise it is mapped to OK.</p>
 </div>
 </div>
 <div class="sect1">
-<h2 id="host-management-without-goferd-and-katello-agent_managing-hosts">12. Host Management Without Goferd and Katello Agent</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>The <code>goferd</code> service that is used by the Katello agent to manage packages on content hosts consumes large amount of resources.
-To reduce memory and CPU load on content hosts, you can manage packages through remote execution.</p>
-</div>
-<div class="paragraph">
-<p>Note that the Katello agent is deprecated and will be removed in a future Foreman version; therefore, using remote execution will be the only way to manage packages on hosts.</p>
-</div>
-<div class="ulist">
-<div class="title">Prerequisites</div>
-<ul>
-<li>
-<p>You have enabled the <a href="https://yum.theforeman.org/client/3.0/" class="bare">https://yum.theforeman.org/client/3.0/</a> repository on content hosts.</p>
-</li>
-</ul>
-</div>
-<div class="olist arabic">
-<div class="title">Procedure</div>
-<ol class="arabic">
-<li>
-<p>Install the <code>katello-host-tools</code> package on content hosts:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># yum install katello-host-tools</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Stop the goferd service on content hosts:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># systemctl stop goferd.service</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Disable the goferd service on content hosts:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># systemctl disable goferd.service</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Remove the Katello agent on content hosts:</p>
-<div class="admonitionblock warning">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Warning</div>
-</td>
-<td class="content">
-If your host is installed on oVirt version 4.4 or lower, do not remove the <code>katello-agent</code> package because the removed dependencies corrupt the host.
-</td>
-</tr>
-</table>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># yum remove katello-agent</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Distribute the SSH keys to the content hosts.
-For more information, see <a href="#ssh-keys-for-remote-execution-overview_managing-hosts">Distributing SSH Keys for Remote Execution</a>.</p>
-</li>
-<li>
-<p>In the Foreman web UI, navigate to <strong>Administer</strong> &gt; <strong>Settings</strong>.</p>
-</li>
-<li>
-<p>Select the <strong>Content</strong> tab.</p>
-</li>
-<li>
-<p>Set the <strong>Use remote execution by default</strong> parameter to <strong>Yes</strong>.</p>
-</li>
-</ol>
-</div>
-<div class="paragraph">
-<p>The Foreman server now uses host management by remote execution instead of goferd.</p>
-</div>
-<div class="paragraph">
-<div class="title">Hammer Limitations</div>
-<p>The following applies if you are using the <code>hammer</code> command to push errata.
-The <code>hammer</code> command is dependent on goferd to manage errata on content hosts.
-As a workaround, use the Foreman remote execution feature to apply errata.</p>
-</div>
-<div class="paragraph">
-<p>For example, enter the following command to perform a <code>yum -y update</code> on <em>host123.example.org</em>:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># hammer job-invocation create \
---job-template "Run Command - SSH Default" \
---inputs command="yum -y update" \
---search-query "name ~ host123"
-Job invocation 24 created
-[.........................................] [100%]
-1 task(s), 1 success, 0 fail</pre>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="Synchronizing_Templates_Repositories">13. Synchronizing Template Repositories</h2>
+<h2 id="Synchronizing_Templates_Repositories">12. Synchronizing Template Repositories</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>In Foreman, you can synchronize repositories of job templates, provisioning templates, report templates, and partition table templates between Foreman&#160;server and a version control system or local directory.
@@ -4435,7 +4493,7 @@ In this chapter, a Git repository is used for demonstration purposes.</p>
 </ul>
 </div>
 <div class="sect2">
-<h3 id="_enabling_the_templatesync_plug_in">13.1. Enabling the TemplateSync plug-in</h3>
+<h3 id="_enabling_the_templatesync_plug_in">12.1. Enabling the TemplateSync plug-in</h3>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
@@ -4453,14 +4511,14 @@ In this chapter, a Git repository is used for demonstration purposes.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="configuring-the-templatesync-plug-in">13.2. Configuring the TemplateSync plug-in</h3>
+<h3 id="configuring-the-templatesync-plug-in">12.2. Configuring the TemplateSync plug-in</h3>
 <div class="paragraph">
 <p>In the Foreman web UI, navigate to <strong>Administer</strong> &gt; <strong>Settings</strong> &gt; <strong>TemplateSync</strong> to configure the plug-in.
 The following table explains the attributes behavior.
 Note that some attributes are used only for importing or exporting tasks.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 2. Synchronizing Templates Plug-in configuration</caption>
+<caption class="title">Table 3. Synchronizing Templates Plug-in configuration</caption>
 <colgroup>
 <col style="width: 25%;">
 <col style="width: 25%;">
@@ -4598,14 +4656,14 @@ Useful if you want to add metadata manually.</p>
 </table>
 </div>
 <div class="sect2">
-<h3 id="_importing_and_exporting_templates">13.3. Importing and Exporting Templates</h3>
+<h3 id="_importing_and_exporting_templates">12.3. Importing and Exporting Templates</h3>
 <div class="paragraph">
 <p>You can import and export templates using the Foreman web UI, Hammer CLI, or Foreman API.
 Foreman API calls use the role-based access control system, which enables the tasks to be executed as any user.
 You can synchronize templates with a version control system, such as Git, or a local directory.</p>
 </div>
 <div class="sect3">
-<h4 id="_importing_templates">13.3.1. Importing Templates</h4>
+<h4 id="_importing_templates">12.3.1. Importing Templates</h4>
 <div class="paragraph">
 <p>You can import templates from a repository of your choice.
 You can use different protocols to point to your repository, for example <code>/tmp/dir</code>, <code>git://example.com</code>, <code>https://example.com</code>, and <code>ssh://example.com</code>.</p>
@@ -4685,7 +4743,7 @@ For example <code>--filter '.*Ansible Default$'</code> imports various Ansible D
 </div>
 </div>
 <div class="sect3">
-<h4 id="_exporting_templates">13.3.2. Exporting Templates</h4>
+<h4 id="_exporting_templates">12.3.2. Exporting Templates</h4>
 <div class="paragraph">
 <p>You can export templates to a version control server, such as a Git repository.</p>
 </div>
@@ -4747,7 +4805,7 @@ The status is not persistent; if you leave the status page, you cannot return to
 </div>
 </div>
 <div class="sect3">
-<h4 id="_synchronizing_templates_using_the_foreman_api">13.3.3. Synchronizing Templates Using the Foreman API</h4>
+<h4 id="_synchronizing_templates_using_the_foreman_api">12.3.3. Synchronizing Templates Using the Foreman API</h4>
 <div class="ulist">
 <div class="title">Prerequisites</div>
 <ul>
@@ -4854,7 +4912,7 @@ To overwrite this behavior, change the <code>Force import</code> setting in the 
 </div>
 </div>
 <div class="sect3">
-<h4 id="_synchronizing_templates_with_a_local_directory_using_the_foreman_api">13.3.4. Synchronizing Templates with a Local Directory Using the Foreman API</h4>
+<h4 id="_synchronizing_templates_with_a_local_directory_using_the_foreman_api">12.3.4. Synchronizing Templates with a Local Directory Using the Foreman API</h4>
 <div class="paragraph">
 <p>Synchronizing templates with a local directory is useful if you have configured a version control repository in the local directory.
 That way, you can edit templates and track the history of edits in the directory.
@@ -4965,7 +5023,7 @@ The following example exports templates to the <code>git.example.com/templates</
 </div>
 </div>
 <div class="sect2">
-<h3 id="_advanced_git_configuration">13.4. Advanced Git Configuration</h3>
+<h3 id="_advanced_git_configuration">12.4. Advanced Git Configuration</h3>
 <div class="paragraph">
 <p>You can perform additional Git configuration for the TemplateSync plug-in using the command line or editing the <code>.gitconfig</code> file.</p>
 </div>
@@ -4986,7 +5044,7 @@ The following example exports templates to the <code>git.example.com/templates</
 </div>
 </div>
 <div class="sect2">
-<h3 id="_uninstalling_the_plug_in">13.5. Uninstalling the plug-in</h3>
+<h3 id="_uninstalling_the_plug_in">12.5. Uninstalling the plug-in</h3>
 <div class="paragraph">
 <p>To avoid errors after removing the foreman_templates plugin:</p>
 </div>
@@ -5292,7 +5350,7 @@ Select <strong>Review</strong> from the list next to the selected template to vi
 <p>You can use the macros listed in the following table across all kinds of templates.</p>
 </div>
 <table id="tabl-Managing_Hosts-Generic_Macros" class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 3. Generic Macros</caption>
+<caption class="title">Table 4. Generic Macros</caption>
 <colgroup>
 <col style="width: 50%;">
 <col style="width: 50%;">
@@ -5480,7 +5538,7 @@ You can also enable and define arguments that you want to pass to the template.<
 Note that job templates accept only <code>@host</code> variables.</p>
 </div>
 <table id="tabl-Managing_Hosts-Variables" class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 4. Host Specific Variables and Macros</caption>
+<caption class="title">Table 5. Host Specific Variables and Macros</caption>
 <colgroup>
 <col style="width: 50%;">
 <col style="width: 50%;">
@@ -5738,7 +5796,7 @@ For example, to extract the last segment of the host&#8217;s IP address, you can
 <p>The following variables are designed to be used within kickstart provisioning templates.</p>
 </div>
 <table id="tabl-Managing_Hosts-Kickstart_Variables" class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 5. Kickstart Specific Variables</caption>
+<caption class="title">Table 6. Kickstart Specific Variables</caption>
 <colgroup>
 <col style="width: 50%;">
 <col style="width: 50%;">
