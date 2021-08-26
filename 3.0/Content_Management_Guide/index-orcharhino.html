@@ -4644,7 +4644,7 @@ If you want unlimited hosts to register with the activation key, ensure the <str
 </li>
 <li>
 <p>From the <strong>Content View</strong> list, select a Content View to use.
-If you want to use this activation key to register hosts, the Content View must contain the orcharhino client repository because it is required to install the <code>katello-agent</code>.</p>
+If you intend to use the deprecated <code>Katello Agent</code> instead of <code>Remote Execution</code>, the Content View must contain the orcharhino client repository because it contains the <code>katello-agent</code> package.</p>
 </li>
 <li>
 <p>Click <strong>Save</strong>.</p>
@@ -4887,17 +4887,6 @@ For example, for a orcharhino server with the host name <code>orcharhino.example
 <div class="content">
 <pre class="nowrap"># hammer host list --organization "<em>My_Organization</em>"</pre>
 </div>
-</div>
-</li>
-<li>
-<p>After registering a host to orcharhino server, install the <code>katello-agent</code> package on the host so that it can report back to orcharhino server:</p>
-<div class="listingblock">
-<div class="content">
-<pre># yum install katello-agent</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>The orcharhino client repository provides this package.</p>
 </div>
 </li>
 </ol>
@@ -5273,10 +5262,7 @@ For more information, see <a href="https://docs.theforeman.org/3.0/Administering
 <div class="sect2">
 <h3 id="Managing_Errata-Limitations_to_Repository_Dependency_Resolution">10.3. Limitations to Repository Dependency Resolution</h3>
 <div class="paragraph">
-<p>There are a number of challenges to solving repository dependencies in orcharhino.
-This is a known issue.
-For more information, see <a href="https://bugzilla.redhat.com/show_bug.cgi?id=1508169">BZ#1508169</a>, <a href="https://bugzilla.redhat.com/show_bug.cgi?id=1640420">BZ#1640420</a>, <a href="https://bugzilla.redhat.com/show_bug.cgi?id=1508169">BZ#1508169</a>, and <a href="https://bugzilla.redhat.com/show_bug.cgi?id=1629462">BZ#1629462</a>.
-With orcharhino, using incremental updates to your Content Views solves some repository dependency problems.
+<p>With orcharhino, using incremental updates to your Content Views solves some repository dependency problems.
 However, dependency resolution at a repository level still remains problematic on occasion.</p>
 </div>
 <div class="paragraph">
@@ -5564,20 +5550,25 @@ For more information, see <a href="#Importing_Content-Synchronizing_Repositories
 For more information, see <a href="https://docs.theforeman.org/3.0/Managing_Hosts/index-foreman-el.html#Registering_Hosts">Registering Hosts</a> in the <em>Managing Hosts</em> guide.</p>
 </li>
 <li>
-<p>For RHEL 7 hosts, ensure that you install the <code>katello-agent</code> package.
-For more information, see <a href="https://docs.theforeman.org/3.0/Managing_Hosts/index-foreman-el.html#installing-the-katello-agent_managing-hosts">Installing the Katello Agent</a> in the <em>Managing Hosts</em> guide.</p>
-<div class="paragraph">
-<p>Note that the Katello agent is deprecated and will be removed in a future orcharhino version.
-Migrate your workloads to use the remote execution feature to update clients remotely.
-For more information, see <a href="https://docs.theforeman.org/3.0/Managing_Hosts/index-foreman-el.html#host-management-without-goferd-and-katello-agent_managing-hosts">Host Management Without Goferd and Katello Agent</a> in the <em>Managing Hosts Guide</em>.</p>
-</div>
+<p>Configure the host for remote execution.
+For more information about running remote execution jobs, see <a href="https://docs.theforeman.org/3.0/Managing_Hosts/index-foreman-el.html#configuring-and-setting-up-remote-jobs_managing-hosts">Configuring and Setting up Remote Jobs</a> in the  <em>Managing Hosts</em> guide.</p>
 </li>
 </ul>
 </div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
 <div class="paragraph">
-<div class="title">For Red&#160;Hat Enterprise Linux 8</div>
-<p>To apply an erratum to a RHEL 8 host, you can run a remote execution job on orcharhino server or update the host.
-For more information about running remote execution jobs, see <a href="https://docs.theforeman.org/3.0/Managing_Hosts/index-foreman-el.html#configuring-and-setting-up-remote-jobs_managing-hosts">Configuring and Setting up Remote Jobs</a> in the  <em>Managing Hosts</em> guide.</p>
+<p>If the host is already configured to receive content updates with the deprecated Katello Agent, migrate to remote execution instead.
+For more information, see <a href="https://docs.theforeman.org/3.0/Managing_Hosts/index-foreman-el.html#migrating-from-katello-agent-to-remote-execution_managing-hosts">Migrating from Katello Agent to Remote Execution</a> in the <em>Managing Hosts</em> guide.</p>
+</div>
+</td>
+</tr>
+</table>
 </div>
 <div class="paragraph">
 <p>To apply an erratum to a RHEL 8 host, complete the following steps:</p>
@@ -5649,10 +5640,24 @@ In the confirmation window, click <strong>Apply</strong>.</p>
 </li>
 <li>
 <p>Apply the most recent erratum to the host.
-Identify the erratum to apply using the erratum ID:</p>
+Identify the erratum to apply using the erratum ID.</p>
+<div class="paragraph">
+<p>Using <code>Remote Execution</code></p>
+</div>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># hammer host errata apply --host "<em>Host Name</em>" \
+<pre class="nowrap"># hammer job-invocation create \
+--feature katello_errata_install \
+--inputs errata=<em>ERRATUM_ID1</em>,<em>ERRATUM_ID2</em> \
+--search-query "name = client.example.com"</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Using <code>Katello Agent</code> (deprecated)</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer host errata apply --host "client.example.com" \
 --errata-ids <em>ERRATUM_ID1</em>,<em>ERRATUM_ID2</em>...</pre>
 </div>
 </div>
@@ -5677,15 +5682,25 @@ For more information, see <a href="#Importing_Content-Synchronizing_Repositories
 For more information, see <a href="https://docs.theforeman.org/3.0/Managing_Hosts/index-foreman-el.html#Registering_Hosts">Registering Hosts</a> in the <em>Managing Hosts</em> guide.</p>
 </li>
 <li>
-<p>Install the <code>katello-agent</code> package on hosts.
-For more information, see <a href="https://docs.theforeman.org/3.0/Managing_Hosts/index-foreman-el.html#installing-the-katello-agent_managing-hosts">Installing the Katello Agent</a> in the <em>Managing Hosts</em> guide.</p>
-<div class="paragraph">
-<p>Note that the Katello agent is deprecated and will be removed in a future orcharhino version.
-Migrate your workloads to use the remote execution feature to update clients remotely.
-For more information, see <a href="https://docs.theforeman.org/3.0/Managing_Hosts/index-foreman-el.html#host-management-without-goferd-and-katello-agent_managing-hosts">Host Management Without Goferd and Katello Agent</a> in the <em>Managing Hosts Guide</em>.</p>
-</div>
+<p>Configure the host for remote execution.
+For more information about running remote execution jobs, see <a href="https://docs.theforeman.org/3.0/Managing_Hosts/index-foreman-el.html#configuring-and-setting-up-remote-jobs_managing-hosts">Configuring and Setting up Remote Jobs</a> in the <em>Managing Hosts</em> guide.</p>
 </li>
 </ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If the host is already configured to receive content updates with the deprecated Katello Agent, migrate to remote execution instead.
+For more information, see <a href="https://docs.theforeman.org/3.0/Managing_Hosts/index-foreman-el.html#migrating-from-katello-agent-to-remote-execution_managing-hosts">Migrating from Katello Agent to Remote Execution</a> in the <em>Managing Hosts</em> guide.</p>
+</div>
+</td>
+</tr>
+</table>
 </div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
@@ -5724,7 +5739,24 @@ For more information, see <a href="https://docs.theforeman.org/3.0/Managing_Host
 </div>
 </li>
 <li>
-<p>Select the erratum you want to use and list the hosts that this erratum is applicable to:</p>
+<p>Apply one of the errata to multiple hosts:</p>
+<div class="paragraph">
+<p>Using <code>Remote Execution</code></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer job-invocation create \
+--feature katello_errata_install \
+--inputs errata=<em>ERRATUM_ID</em> \
+--search-query "applicable_errata = <em>ERRATUM_ID</em>"</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Using <code>Katello Agent</code> (deprecated)</p>
+</div>
+<div class="paragraph">
+<p>Identify the erratum you want to use and list the hosts that this erratum is applicable to:</p>
+</div>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># hammer host list \
@@ -5732,20 +5764,9 @@ For more information, see <a href="https://docs.theforeman.org/3.0/Managing_Host
 --organization "<em>Default Organization</em>"</pre>
 </div>
 </div>
-</li>
-<li>
-<p>Apply the errata to a single host:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># hammer host errata apply \
---host <em>client.example.com</em> \
---organization "<em>Default Organization</em>" \
---errata-ids <em>ERRATUM_ID1</em>,<em>ERRATUM_ID2</em>...</pre>
-</div>
-</div>
-</li>
-<li>
+<div class="paragraph">
 <p>The following Bash script applies an erratum to each host for which this erratum is available:</p>
+</div>
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code class="language-Bash" data-lang="Bash">for HOST in <code>hammer --csv --csv-separator "|" host list --search "applicable_errata = ERRATUM_ID" --organization "Default Organization" | tail -n+2 | awk -F "|" '{ print $2 }'</code> ;
@@ -5780,7 +5801,18 @@ done</code></pre>
 <div class="sect2">
 <h3 id="Managing_Errata-Applying_Errata_to_a_Host_Collection">10.8. Applying Errata to a Host Collection</h3>
 <div class="paragraph">
-<p>To apply selected errata to a host collection, enter the following command:</p>
+<p>Using <code>Remote Execution</code></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer job-invocation create \
+--feature katello_errata_install \
+--inputs errata=<em>ERRATUM_ID1</em>,<em>ERRATUM_ID2</em>,... \
+--search-query "host_collection = <em>HOST_COLLECTION_NAME</em>"</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Using <code>Katello Agent</code> (deprecated)</p>
 </div>
 <div class="listingblock">
 <div class="content">
