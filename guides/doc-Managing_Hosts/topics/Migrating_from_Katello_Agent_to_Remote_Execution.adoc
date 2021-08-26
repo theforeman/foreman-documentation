@@ -1,0 +1,77 @@
+[id="migrating-from-katello-agent-to-remote-execution_{context}"]
+== Migrating from Katello Agent to Remote Execution
+
+`Remote Execution` is the preferred way to manage package content on hosts. The Katello Agent is deprecated and will be removed in a future {Project} version.
+Follow these steps to switch to Remote Execution.
+
+.Prerequisites
+
+ifdef::satellite[]
+* You have enabled the {project-client-name} repository on {ProjectServer}.
+For more information, see {InstallingProjectDocURL}enabling-the-satellite-tools-repository_{project-context}[Enabling the {project-client-name} Repository] in _{project-installation-guide-title}_.
+
+* You have synchronized the {project-client-name} repository on {ProjectServer}.
+For more information, see {InstallingProjectDocURL}synchronizing-the-satellite-tools-repository_{project-context}[Synchronizing the {project-client-name} Repository] in _{project-installation-guide-title}_.
+endif::[]
+
+* You have previously installed the `katello-agent` package on content hosts.
+
+.Procedure
+
+. Stop the goferd service on content hosts:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# systemctl stop goferd.service
+----
+
+. Disable the goferd service on content hosts:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# systemctl disable goferd.service
+----
+
+. Remove the Katello agent on content hosts:
++
+WARNING: If your host is installed on {oVirt} version 4.4 or lower, do not remove the `katello-agent` package because the removed dependencies corrupt the host.
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {package-remove} katello-agent
+----
+
+. Distribute the remote execution SSH keys to the content hosts.
+For more information, see xref:ssh-keys-for-remote-execution-overview_{context}[].
+
+. In the {ProjectWebUI}, navigate to *Administer* > *Settings*.
+
+. Select the *Content* tab.
+
+. Set the *Use remote execution by default* parameter to *Yes*.
+
+The {Project} server now uses host management by remote execution instead of katello-agent.
+
+The following table shows the remote execution equivalent commands to perform specific package actions. See `hammer job-invocation create --help` to learn how to specify search queries to determine the target hosts or host collections.
+
+.Hammer Commands
+[cols="3"]
+|===
+|Action |Katello Agent |Remote Execution
+
+|Install a package |hammer host package install | hammer job-invocation create --feature katello_package_install
+|Install a package (host collection) |hammer host-collection package install| hammer job-invocation create --feature katello_package_install
+|Remove a package |hammer host package remove | hammer job-invocation create --feature katello_package_remove
+|Remove a package (host collection) |hammer host-collection package remove| hammer job-invocation create --feature katello_package_remove
+|Update a package |hammer host package upgrade | hammer job-invocation create --feature katello_package_update
+|Update a package (host collection) |hammer host-collection package update| hammer job-invocation create --feature katello_package_update
+|Update all packages |hammer host package update | hammer job-invocation create --feature katello_package_update
+|Install errata |hammer host errata apply | hammer job-invocation create --feature katello_errata_install
+|Install errata (host collection) |hammer host-collection errata install | hammer job-invocation create --feature katello_errata_install
+|Install a package group |hammer host package-group install | hammer job-invocation create --feature katello_group_install
+|Install a package group (host collection) |hammer host-collection package-group install | hammer job-invocation create --feature katello_group_install
+|Remove a package group |hammer host package-group remove | hammer job-invocation create --feature katello_group_remove
+|Remove a package group (host collection) |hammer host-collection package-group remove | hammer job-invocation create --feature katello_group_remove
+|Update a package group |hammer host package-group update | hammer job-invocation create --feature katello_group_update
+|Update a package group (host collection) |hammer host-collection package-group update | hammer job-invocation create --feature katello_group_update
+|===
