@@ -141,9 +141,6 @@ For more information, see {AdministeringDocURL}email-notifications_admin[Configu
 [[Managing_Errata-Limitations_to_Repository_Dependency_Resolution]]
 === Limitations to Repository Dependency Resolution
 
-There are a number of challenges to solving repository dependencies in {ProjectX}.
-This is a known issue.
-For more information, see https://bugzilla.redhat.com/show_bug.cgi?id=1508169[BZ#1508169], https://bugzilla.redhat.com/show_bug.cgi?id=1640420[BZ#1640420], https://bugzilla.redhat.com/show_bug.cgi?id=1508169[BZ#1508169], and https://bugzilla.redhat.com/show_bug.cgi?id=1629462[BZ#1629462].
 With {Project}, using incremental updates to your Content Views solves some repository dependency problems.
 However, dependency resolution at a repository level still remains problematic on occasion.
 
@@ -325,16 +322,14 @@ For more information, see xref:Importing_Content-Synchronizing_Repositories[].
 * Register the host to an environment and Content View on {ProjectServer}.
 For more information, see {ManagingHostsDocURL}Registering_Hosts[Registering Hosts] in the _Managing Hosts_ guide.
 
-* For RHEL 7 hosts, ensure that you install the `katello-agent` package.
-For more information, see {ManagingHostsDocURL}installing-the-katello-agent_managing-hosts[Installing the Katello Agent] in the _Managing Hosts_ guide.
-+
-Note that the Katello agent is deprecated and will be removed in a future {Project} version.
-Migrate your workloads to use the remote execution feature to update clients remotely.
-For more information, see {ManagingHostsDocURL}host-management-without-goferd-and-katello-agent_managing-hosts[Host Management Without Goferd and Katello Agent] in the _Managing Hosts Guide_.
-
-.For Red{nbsp}Hat Enterprise Linux 8
-To apply an erratum to a RHEL 8 host, you can run a remote execution job on {ProjectServer} or update the host.
+* Configure the host for remote execution.
 For more information about running remote execution jobs, see {ManagingHostsDocURL}configuring-and-setting-up-remote-jobs_managing-hosts[Configuring and Setting up Remote Jobs] in the  _Managing Hosts_ guide.
+
+[NOTE]
+====
+If the host is already configured to receive content updates with the deprecated Katello Agent, migrate to remote execution instead.
+For more information, see {ManagingHostsDocURL}migrating-from-katello-agent-to-remote-execution_managing-hosts[Migrating from Katello Agent to Remote Execution] in the _Managing Hosts_ guide.
+====
 
 To apply an erratum to a RHEL 8 host, complete the following steps:
 
@@ -381,11 +376,23 @@ To apply an erratum to a RHEL 7 host, complete the following steps:
 ----
 
 . Apply the most recent erratum to the host.
-Identify the erratum to apply using the erratum ID:
+Identify the erratum to apply using the erratum ID.
++
+Using `Remote Execution`
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# hammer job-invocation create \
+--feature katello_errata_install \
+--inputs errata=_ERRATUM_ID1_,_ERRATUM_ID2_ \
+--search-query "name = client.example.com"
+----
++
+Using `Katello Agent` (deprecated)
 +
 [options="nowrap" subs="+quotes"]
 ----
-# hammer host errata apply --host "_Host Name_" \
+# hammer host errata apply --host "client.example.com" \
 --errata-ids _ERRATUM_ID1_,_ERRATUM_ID2_...
 ----
 
@@ -402,13 +409,14 @@ For more information, see xref:Importing_Content-Synchronizing_Repositories[].
 * Register the hosts to an environment and Content View on {ProjectServer}.
 For more information, see {ManagingHostsDocURL}Registering_Hosts[Registering Hosts] in the _Managing Hosts_ guide.
 
-* Install the `katello-agent` package on hosts.
-For more information, see {ManagingHostsDocURL}installing-the-katello-agent_managing-hosts[Installing the Katello Agent] in the _Managing Hosts_ guide.
-+
-Note that the Katello agent is deprecated and will be removed in a future {Project} version.
-Migrate your workloads to use the remote execution feature to update clients remotely.
-For more information, see {ManagingHostsDocURL}host-management-without-goferd-and-katello-agent_managing-hosts[Host Management Without Goferd and Katello Agent] in the _Managing Hosts Guide_.
+* Configure the host for remote execution.
+For more information about running remote execution jobs, see {ManagingHostsDocURL}configuring-and-setting-up-remote-jobs_managing-hosts[Configuring and Setting up Remote Jobs] in the  _Managing Hosts_ guide.
 
+[NOTE]
+====
+If the host is already configured to receive content updates with the deprecated Katello Agent, migrate to remote execution instead.
+For more information, see {ManagingHostsDocURL}migrating-from-katello-agent-to-remote-execution_managing-hosts[Migrating from Katello Agent to Remote Execution] in the _Managing Hosts_ guide.
+====
 .Procedure
 
 . Navigate to *Content* > *Errata*.
@@ -430,7 +438,21 @@ Although the CLI does not have the same tools as the Web UI, you can replicate a
 --organization "_Default Organization_"
 ----
 
-. Select the erratum you want to use and list the hosts that this erratum is applicable to:
+. Apply one of the errata to multiple hosts:
++
+Using `Remote Execution`
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# hammer job-invocation create \
+--feature katello_errata_install \
+--inputs errata=_ERRATUM_ID_ \
+--search-query "applicable_errata = _ERRATUM_ID_"
+----
++
+Using `Katello Agent` (deprecated)
++
+Identify the erratum you want to use and list the hosts that this erratum is applicable to:
 +
 [options="nowrap" subs="+quotes"]
 ----
@@ -438,18 +460,7 @@ Although the CLI does not have the same tools as the Web UI, you can replicate a
 --search "applicable_errata = _ERRATUM_ID_" \
 --organization "_Default Organization_"
 ----
-
-. Apply the errata to a single host:
-+
-[options="nowrap" subs="+quotes"]
-----
-# hammer host errata apply \
---host _client.example.com_ \
---organization "_Default Organization_" \
---errata-ids _ERRATUM_ID1_,_ERRATUM_ID2_...
-----
-
-. The following Bash script applies an erratum to each host for which this erratum is available:
+The following Bash script applies an erratum to each host for which this erratum is available:
 +
 [source, Bash, subs="+quotes"]
 ----
@@ -477,9 +488,15 @@ This command identifies all hosts with _erratum_IDs_ as an applicable erratum an
 
 [[Managing_Errata-Applying_Errata_to_a_Host_Collection]]
 === Applying Errata to a Host Collection
-
-To apply selected errata to a host collection, enter the following command:
-
+Using `Remote Execution`
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# hammer job-invocation create \
+--feature katello_errata_install \
+--inputs errata=_ERRATUM_ID1_,_ERRATUM_ID2_,... \
+--search-query "host_collection = _HOST_COLLECTION_NAME_"
+----
+Using `Katello Agent` (deprecated)
 [options="nowrap" subs="+quotes"]
 ----
 # hammer host-collection erratum install \
