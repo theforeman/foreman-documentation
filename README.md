@@ -1,8 +1,9 @@
 # Foreman documentation
 
-THIS IS A WORK IN PROGRESS. VISIT THE OFFICIAL [FOREMAN OR KATELLO DOCUMENTATION](https://theforeman.org/documentation.html) IF YOU ARE SEEKING HELP.
-
-This git repository contains PoC of improving Foreman documentation.
+This repository and `docs.theforeman.org` site contains work in progress content.
+Some guides, specifically those marked with a `DRAFT` ribbon in the top-right corner, may contain irrelevant or incorrect information.
+If you see such guide, please visit the official [Foreman documentation](https://theforeman.org/documentation.html).
+Feel free to open a PR or issue on Github.
 
 ## Foreman Guides
 
