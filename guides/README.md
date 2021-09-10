@@ -11,19 +11,19 @@ Contributions are welcome. Please read the [Contribution guidelines](#contributi
 Install the required tools.
 In Fedora perform:
 
-    dnf -y install rubygem-asciidoctor rubygem-asciidoctor-pdf make linkchecker
+    dnf -y install make linkchecker
 
 In MacOS required tools can be installed via brew but instead "make" call "gmake":
 
-    brew install asciidoctor make
+    brew install make
 
 Alternatively, XCode development environment can be installed to have make utility available on PATH, however this takes about an hour to download and install and requires several gigabytes of HDD space:
 
 		xcode-select --install
 
-If AsciiDoctor is not available in repositories or under RVM/rbenv, simply install it from rubygems:
+Install ruby gems in `foreman-documentation` folder:
 
-		gem install asciidoctor asciidoctor-pdf --pre
+		bundle install
 
 Then simply run `make` or `make html` which builds HTML artifacts.
 Generating PDF output is slow, therefore command `make pdf` must be used separately.
@@ -90,15 +90,6 @@ This requires the cloned git repository plus an application such as Podman or Do
 We do not publish the content yet to prevent users confusion, however this section will cover steps required to publish the content.
 We should make sure that only the last stable version of the HTML document is indexed by search engines, old and nightly builds should not be indexed.
 All PDFs should be available for download though.
-
-## Styling
-
-CSS styles are based on the official AsciiDoctor styles with some small modifications.
-To generate the stylesheet:
-
-	git clone https://github.com/lzap/asciidoctor-stylesheet-factory
-	git checkout foreman-css
-	compass compile
 
 ## Contribution guidelines
 

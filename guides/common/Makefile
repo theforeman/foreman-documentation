@@ -9,6 +9,7 @@ DEST_HTML = $(DEST_DIR)/index-$(BUILD).html
 DEST_PDF = $(BUILD_DIR)/$(subst doc-,,$(NAME))-$(BUILD).pdf
 IMAGES_DIR = $(DEST_DIR)/images
 IMAGES_TS = $(DEST_DIR)/.timestamp-images
+CSS_SOURCES = $(shell find $(COMMON_DIR)/sass -type f)
 SOURCES = master.adoc $(shell find . -type f -name \*.adoc)
 DEPENDENCIES = $(shell find $(COMMON_DIR) -type f -name \*.adoc)
 IMAGES = $(shell find ./images ./common/images -type f 2>/dev/null || true)
@@ -47,7 +48,10 @@ linkchecker: html
 open-pdf: pdf
 	${BROWSER_OPEN} "$(realpath $(ROOTDIR)/$(DEST_PDF))"
 
-$(DEST_DIR)/$(BUILD).css: $(COMMON_DIR)/$(BUILD).css
+$(BUILD_DIR)/default.css: $(CSS_SOURCES)
+	bundle exec compass compile --force -c $(COMMON_DIR)/sass_config.rb --sass-dir $(COMMON_DIR)/sass --css-dir $(BUILD_DIR)
+
+$(DEST_DIR)/$(BUILD).css: $(BUILD_DIR)/default.css
 	cp $< $@
 
 $(IMAGES_TS): $(IMAGES)
@@ -56,9 +60,9 @@ $(IMAGES_TS): $(IMAGES)
 	touch $(IMAGES_TS)
 
 $(DEST_HTML): $(SOURCES) $(DEPENDENCIES)
-	asciidoctor -a build=$(BUILD) -a docinfo=shared -a date_mdy="$(DATE_MDY)" -a date_my="$(DATE_MY)" -a docdatetime="$(DATE_MY)" -a stylesheet=$(BUILD).css -a linkcss=true -b html5 -d book --trace -o $@ $< 2>&1 | tee $@.log
+	bundle exec asciidoctor -a build=$(BUILD) -a docinfo=shared -a date_mdy="$(DATE_MDY)" -a date_my="$(DATE_MY)" -a docdatetime="$(DATE_MY)" -a stylesheet=$(BUILD).css -a linkcss=true -b html5 -d book --trace -o $@ $< 2>&1 | tee $@.log
 	@! grep -Eq "^asciidoctor: (ERROR|WARNING)" $@.log
 
 $(DEST_PDF): $(SOURCES) $(IMAGES) $(DEPENDENCIES)
-	asciidoctor-pdf -a build=$(BUILD) -d book --trace -o $@ $< 2>&1 | tee $@.log
+	bundle exec asciidoctor-pdf -a build=$(BUILD) -d book --trace -o $@ $< 2>&1 | tee $@.log
 	@! grep -Eq "^asciidoctor: (ERROR|WARNING)" $@.log
