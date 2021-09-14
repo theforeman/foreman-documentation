@@ -1,0 +1,55 @@
+[id="salt_guide_salt_example_{context}"]
+= Salt Example
+
+This example uses a Salt State to manage the `/etc/motd` file on one or more Salt Minions.
+It demonstrates the use of {Project} as an external node classifier and the use of Salt Grains.
+
+.Procedure
+. Create a global parameter called `vendor_name` with the string `{Project}` as its value.
+. Add a new Salt State called `motd` to your Salt Master.
+. Create the `/srv/salt/motd/` directory:
++
+[options="nowrap" subs="attributes"]
+----
+# mkdir -p /srv/salt/motd/
+----
+. Create `/srv/salt/motd/init.sls` as a Salt State file:
++
+[options="nowrap" subs="attributes"]
+----
+/etc/motd:
+  file.managed:
+    - user: root
+    - group: root
+    - mode: 0644
+    - source: salt://motd/motd.template
+    - template: jinja
+----
+. Create `/srv/salt/motd/motd.template` as a template referenced by the Salt State file:
++
+[options="nowrap" subs="attributes"]
+----
+Welcome to {{ grains['fqdn'] }} Powered by {{ salt['pillar.get']('vendor_name') }}
+----
++
+Access the `fqdn` Salt Grain from within this template and retrieve the `vendor_name` parameter from the Salt Pillar.
+. Import the `motd` {ManagingHostsDocURL}salt_guide_importing_salt_states_{context}[Salt State] into {Project}.
+. Verify that Salt has been given access to the `vendor_name` parameter by running either of the following commands on your Salt Master:
++
+[options="nowrap" subs="attributes"]
+----
+# salt '*' pillar.items | grep -A 1 vendor_name
+# salt '*' pillar.get vendor_name
+----
++
+If the output does not include the value of the `vendor_name` parameter, you must refresh the Salt Pillar data first:
++
+[options="nowrap" subs="attributes"]
+----
+# salt '*' saltutil.refresh_pillar
+----
++
+For information about how to refresh Salt Pillar data, see {ManagingHostsDocURL}salt_guide_viewing_enc_parameters_{context}[Salt ENC parameters].
+. Add the `motd` Salt State to your Salt Minions or a host group.
+. Apply the Salt State by {ManagingHostsDocURL}salt_guide_running_salt_{context}[running] `state.highstate`.
+. Optional: Verify the contents of `/etc/motd` on a Salt Minion.
