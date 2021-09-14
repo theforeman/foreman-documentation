@@ -7,12 +7,14 @@ Foreman can be deployed on Enterprise Linux (RHEL, CentOS and other RHEL clones)
 
 Katello is a plugin to add content management (such as RPMs and debs). Unlike other Foreman plugins, it can't be installed after the initial installation.
 
+<div class="row">
+<div class="col-md-4">
+
 ## Foreman on RHEL/CentOS
 
-This is work-in-progress documentation site for <a href="https://www.theforeman.org">Foreman</a> open-source software and its
-plugins. Official documentation [is available here](https://theforeman.org/manuals/latest/index.html).
+This is work-in-progress documentation. Official documentation [is available here](https://theforeman.org/manuals/latest/index.html).
 
-### Basic guides
+### Getting started
 
 * [Quickstart Guide](/{{< param "path" >}}/Quickstart_Guide/index-foreman-el.html)
 * [Installing Foreman](/{{< param "path" >}}/Installing_Server_on_Red_Hat/index-foreman-el.html)
@@ -24,13 +26,15 @@ plugins. Official documentation [is available here](https://theforeman.org/manua
 * [Configuring Foreman to use Ansible](/{{< param "path" >}}/Configuring_Ansible/index-foreman-el.html)
 * [Managing Hosts Guide](/{{< param "path" >}}/Managing_Hosts/index-foreman-el.html)
 * [Application Centric Deployment](/{{< param "path" >}}/Application_Centric_Deployment/index-foreman-el.html)
+</div>
+
+<div class="col-md-4">
 
 ## Foreman on Debian/Ubuntu
 
-This is work-in-progress documentation site for <a href="https://www.theforeman.org">Foreman</a> open-source software and its
-plugins. Official documentation [is available here](https://theforeman.org/manuals/latest/index.html).
+This is work-in-progress documentation. Official documentation [is available here](https://theforeman.org/manuals/latest/index.html).
 
-### Basic guides
+### Getting started
 
 * [Quickstart Guide](/{{< param "path" >}}/Quickstart_Guide/index-foreman-deb.html)
 * [Installing Foreman](/{{< param "path" >}}/Installing_Server_on_Debian/index-foreman-deb.html)
@@ -41,10 +45,13 @@ plugins. Official documentation [is available here](https://theforeman.org/manua
 * [Provisioning Guide](/{{< param "path" >}}/Provisioning_Guide/index-foreman-deb.html)
 * [Configuring Foreman to use Ansible](/{{< param "path" >}}/Configuring_Ansible/index-foreman-deb.html)
 * [Managing Hosts Guide](/{{< param "path" >}}/Managing_Hosts/index-foreman-deb.html)
+</div>
+
+<div class="col-md-4">
 
 ## Katello on RHEL/CentOS
 
-### Basic guides
+### Getting started
 
 * [Planning for Katello](/{{< param "path" >}}/Planning_Guide/index-katello.html)
 * [Quickstart Guide](/{{< param "path" >}}/Quickstart_Guide/index-katello.html)
@@ -62,3 +69,5 @@ plugins. Official documentation [is available here](https://theforeman.org/manua
 * [Managing Hosts Guide](/{{< param "path" >}}/Managing_Hosts/index-katello.html)
 * [Administering Foreman](/{{< param "path" >}}/Administering_Red_Hat_Satellite/index-katello.html)
 * [Application Centric Deployment](/{{< param "path" >}}/Application_Centric_Deployment/index-katello.html)
+</div>
+</div>
