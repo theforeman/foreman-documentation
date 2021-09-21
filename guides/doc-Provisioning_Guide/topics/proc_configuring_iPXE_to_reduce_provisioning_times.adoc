@@ -1,18 +1,26 @@
 [[Configuring_Networking-Configuring_gPXE_to_Reduce_Provisioning_Times]]
 == Configuring iPXE to Reduce Provisioning Times
 
-You can use {Project} to configure PXELinux to chainboot iPXE and boot using the HTTP protocol if you have the following restrictions that prevent you from using PXE:
+You can use {Project} to configure PXELinux to chainboot iPXE in BIOS mode and boot using the HTTP protocol if you have the following restrictions that prevent you from using PXE:
 
 * A network with unmanaged DHCP servers.
 * A PXE service that is blacklisted on your network or restricted by a firewall.
 * An unreliable TFTP UDP-based protocol because of, for example, a low-bandwidth network.
+
+ifndef::satellite[]
+Only BIOS systems are known to work reliably.
+For configuring iPXE with *some* EFI hosts, read a https://community.theforeman.org/t/discovery-ipxe-efi-workflow-in-foreman-1-20/13026[separate tutorial].
+endif::[]
+ifdef::satellite[]
+For more information about iPXE support, see https://access.redhat.com/solutions/2674001[Supported architectures for provisioning] article.
+endif::[]
 
 .iPXE Workflow Overview
 
 The provisioning process using iPXE follows this workflow:
 
 * A discovered host boots over PXE.
-* The host loads either `ipxe.efi` or `undionly.0`.
+* The host loads `undionly.0`.
 * The host initializes again on the network using DHCP.
 * The DHCP server detects the iPXE firmware and returns the iPXE template URL with the bootstrap flag.
 * The host requests iPXE template.
@@ -28,7 +36,7 @@ The provisioning process using iPXE follows this workflow:
 Note that the workflow uses the discovery process, which is optional.
 To set up the discovery service, see xref:setting_up_the_discovery_service_for_iPXE[].
 
-With {Project}, you can set up hosts to download either the `ipxe.efi` or `undionly.kpxe` over TFTP.
+With {Project}, you can set up hosts to download `undionly.kpxe` over TFTP.
 When the file downloads, all communication continues using HTTP.
 {Project} uses the iPXE provisioning script either to load an operating system installer or the next entry in the boot order.
 
@@ -42,7 +50,6 @@ There are three methods of using iPXE with {ProjectName}:
 
 The iPXE binary in {RHEL} is built without some security features.
 For this reason, you can only use HTTP, and cannot use HTTPS.
-+
 ifndef::satellite[]
 Recompile iPXE from source to use security features like HTTPS.
 endif::[]
@@ -121,12 +128,6 @@ If you want to change the default values in the template, clone the template and
 
 . Copy a boot file to the TFTP directory on your {ProjectServer}:
 +
-* For EFI systems, copy the `ipxe.efi` file:
-+
-----
-# cp /usr/share/ipxe/ipxe.efi /var/lib/tftpboot/
-----
-+
 * For BIOS systems, copy the `undionly.kpxe` file:
 +
 ----
@@ -155,12 +156,6 @@ If you want to change the default values in the template, clone the template and
 ----
 if exists user-class and option user-class = "iPXE" {
   filename "http://{foreman-example-com}/unattended/iPXE?bootstrap=1";
-} elsif option architecture = 00:06 {
-  filename "ipxe.efi";
-} elsif option architecture = 00:07 {
-  filename "ipxe.efi";
-} elsif option architecture = 00:09 {
-  filename "ipxe.efi";
 } else {
   filename "undionly.0";
 }
@@ -234,12 +229,6 @@ Click the *Operating system* tab and click the Provisioning Template *Resolve* b
 ----
 if exists user-class and option user-class = "iPXE" {
   filename "http://{foreman-example-com}/unattended/iPXE?bootstrap=1";
-} elsif option architecture = 00:06 {
-  filename "ipxe.efi";
-} elsif option architecture = 00:07 {
-  filename "ipxe.efi";
-} elsif option architecture = 00:09 {
-  filename "ipxe.efi";
 } else {
   filename "undionly.0";
 }
@@ -274,12 +263,6 @@ ifdef::foreman-el,katello[]
 endif::[]
 . Copy the iPXE firmware to the TFTP server's root directory.
 Do not use symbolic links because TFTP runs in the `chroot` environment.
-+
-* For EFI systems, copy the `ipxe.efi` file:
-+
-----
-# cp /usr/share/ipxe/ipxe.lkrn /var/lib/tftpboot/
-----
 +
 * For BIOS systems, copy the `undionly.kpxe` file:
 +
