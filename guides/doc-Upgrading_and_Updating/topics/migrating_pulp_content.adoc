@@ -1,0 +1,71 @@
+[[id="migrating_pulp_content"]]
+
+= Migrating Content to Pulp 3
+
+The time to prepare content for Pulp 3 depends on the amount of content and the number of content views.
+For large systems, this can mean several days of downtime.
+To prevent this, pre-migrate Pulp content while running the latest version of {ProjectServer} {ProjectVersionPrevious}.
+This reduces the overall upgrade downtime.
+
+Use this procedure to begin migrating content from Pulp 2 to Pulp 3.
+
+.Procedure
+. View details of the content you are pre-migrating using the following command:
++
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+# {foreman-maintain} content migration-stats
+----
++
+Use this command as often as necessary during the migration process to determine how long the process will take.
+It also identifies corrupted or missing content that might cause the migration to fail.
+Output is similar to the following:
++
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+Running Retrieve Pulp 2 to Pulp 3 migration statistics
+============================================
+Retrieve Pulp 2 to Pulp 3 migration statistics:
+============Migration Summary================
+Migrated/Total RPMs: 0/367633
+Migrated/Total errata: 0/20780140
+Migrated/Total repositories: 0/33924
+Estimated migration time based on yum content: 47 hours, 23 minutes
+Note: ensure there is sufficient storage space for /var/lib/pulp/published to
+double in size before starting the migration process.
+Check the size of /var/lib/pulp/published with 'du -sh /var/lib/pulp/published/'
+[OK]
+----
+. Update the file permissions before upgrading {ProjectServer} using the following:
++
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+# {foreman-maintain} prep-{TargetVersion}-upgrade
+----
++
+This might take some time on high latency systems.
+. Prepare your content for Pulp migration using the following command:
++
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+# {foreman-maintain} content prepare
+----
++
+You cannot use `*Ctrl*` *+* `*C*` to terminate this process.
+If a user attempts to halt the process using CTRL + C or by disconnecting their SSH session, the process does not terminate but continues in the background.
+You can use the following command to terminate the process gracefully, whenever necessary, so that you can continue later.
++
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+# {foreman-maintain} content prepare-abort
+----
++
+Note that `{foreman-maintain} content-prepare abort` can take several minutes to terminate the process.
+. Continue the migration process using `{foreman-maintain} content-prepare` whenever it is convenient.
+. If problems occur, you can restart the pre-migration process from the beginning:
++
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+# {foreman-maintain} content migration-reset
+----
+. The migration process is not fully complete until the upgrade of {ProjectServer} from {ProjectVersionPrevious} to {ProjectVersion} is complete.
