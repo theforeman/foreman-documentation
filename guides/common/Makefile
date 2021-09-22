@@ -38,6 +38,9 @@ clean:
 browser: html
 	${BROWSER_OPEN} "file://$(realpath $(ROOTDIR)/$(DEST_HTML))"
 
+serve: html
+	python -m http.server --directory "$(realpath $(DEST_DIR))" 8813
+
 linkchecker: html
 	linkchecker -r1 -f $(COMMON_DIR)/linkchecker.ini --check-extern "file://$(realpath $(ROOTDIR)/$(DEST_HTML))"
 
