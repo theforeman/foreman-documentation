@@ -31,7 +31,7 @@ html: prepare $(DEST_DIR)/$(BUILD).css $(IMAGES_TS) $(DEST_HTML)
 pdf: prepare $(DEST_PDF)
 
 prepare:
-	mkdir -p $(BUILD_DIR) $(DEST_DIR) $(IMAGES_DIR) $(IMAGES_DIR) $(DEST_DIR)/common/images
+	@mkdir -p $(BUILD_DIR) $(DEST_DIR) $(IMAGES_DIR) $(IMAGES_DIR) $(DEST_DIR)/common/images
 
 clean:
 	@rm -rf "$(DEST_DIR)" "$(DEST_PDF)"
@@ -56,13 +56,17 @@ $(DEST_DIR)/$(BUILD).css: $(BUILD_DIR)/default.css
 
 $(IMAGES_TS): $(IMAGES)
 	cp $? $(IMAGES_DIR)/
-	pushd "$(IMAGES_DIR)" && for IMG in *.*; do ln -s ../../images/$$IMG ../common/images/$$IMG; done && popd
-	touch $(IMAGES_TS)
+	pushd "$(IMAGES_DIR)" >/dev/null && for IMG in *.*; do ln -s ../../images/$$IMG ../common/images/$$IMG; done && popd >/dev/null
+	@touch $(IMAGES_TS)
 
 $(DEST_HTML): $(SOURCES) $(DEPENDENCIES)
 	bundle exec asciidoctor -a build=$(BUILD) -a docinfo=shared -a date_mdy="$(DATE_MDY)" -a date_my="$(DATE_MY)" -a docdatetime="$(DATE_MY)" -a stylesheet=$(BUILD).css -a linkcss=true -b html5 -d book --trace -o $@ $< 2>&1 | tee $@.log
+	@echo CHECKING FOR ASCIIDOCTOR ERRORS AND WARNINGS
 	@! grep -Eq "^asciidoctor: (ERROR|WARNING)" $@.log
+	@echo CHECKING FOR ORPHAN XREFS HTML LINKS
+	@! grep -RE '<a href="#[a-zA-Z0-9_-]+">\[[a-zA-Z0-9_-]+\]</a>' $@
 
 $(DEST_PDF): $(SOURCES) $(IMAGES) $(DEPENDENCIES)
 	bundle exec asciidoctor-pdf -a build=$(BUILD) -d book --trace -o $@ $< 2>&1 | tee $@.log
+	@echo CHECKING FOR ASCIIDOCTOR-PDF ERRORS AND WARNINGS
 	@! grep -Eq "^asciidoctor: (ERROR|WARNING)" $@.log
