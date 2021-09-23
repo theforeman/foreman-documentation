@@ -1,0 +1,114 @@
+[id="Creating_an_Activation_Key_{context}"]
+= Creating an Activation Key
+
+You can use activation keys to define a specific set of subscriptions to attach to hosts during registration.
+The subscriptions that you add to an activation key must be available within the associated Content View.
+
+Subscription Manager attaches subscriptions differently depending on the following factors:
+
+* Are there any subscriptions associated with the activation key?
+* Is the auto-attach option enabled?
+* For Red{nbsp}Hat Enterprise Linux 8 hosts: Is there system purpose set on the activation key?
+
+Note that {Project} automatically attaches subscriptions only for the products installed on a host.
+For subscriptions that do not list products installed on Red{nbsp}Hat Enterprise Linux by default, such as the Extended Update Support (EUS) subscription, use an activation key specifying the required subscriptions and with the auto-attach disabled.
+
+Based on the previous factors, there are three possible scenarios for subscribing with activation keys:
+
+. Activation key that attaches subscriptions automatically.
++
+With no subscriptions specified and auto-attach enabled, hosts using the activation key search for the best fitting subscription from the ones provided by the Content View associated with the activation key.
+This is similar to entering the `subscription-manager --auto-attach` command.
+For Red{nbsp}Hat Enterprise Linux 8 hosts, you can configure the activation key to set system purpose on hosts during registration to enhance the automatic subscriptions attachment.
++
+. Activation key providing a custom set of subscription for auto-attach.
++
+If there are subscriptions specified and auto-attach is enabled, hosts using the activation key select the best fitting subscription from the list specified in the activation key.
+Setting system purpose on the activation key does not affect this scenario.
++
+. Activation key with the exact set of subscriptions.
++
+If there are subscriptions specified and auto-attach is disabled, hosts using the activation key are associated with all subscriptions specified in the activation key.
+Setting system purpose on the activation key does not affect this scenario.
+
+.{customproducttitle}s
+If a {customproduct}, typically containing content not provided by Red Hat, is assigned to an activation key, this product is always enabled for the registered content host regardless of the auto-attach setting.
+
+.Procedure
+
+To create an activation key, complete the following steps.
+To use the CLI instead of the {ProjectWebUI}, see the xref:cli-creating-an-activation-key_{context}[].
+
+. In the {ProjectWebUI}, navigate to *Content* > *Activation keys* and click *Create Activation Key*.
+. In the *Name* field, enter the name of the activation key.
+. If you want to set a limit, clear the *Unlimited hosts* check box, and in the *Limit* field, enter the maximum number of systems you can register with the activation key.
+If you want unlimited hosts to register with the activation key, ensure the *Unlimited Hosts* check box is selected.
+. In the *Description* field, enter a description for the activation key.
+. From the *Environment* list, select the environment to use.
+. From the *Content View* list, select a Content View to use.
+If you intend to use the deprecated `Katello Agent` instead of `Remote Execution`, the Content View must contain the {project-client-name} repository because it contains the `katello-agent` package.
+. Click *Save*.
+. Optional: For Red{nbsp}Hat Enterprise Linux 8 hosts, in the *System Purpose* section, you can configure the activation key with system purpose to set on hosts during registration to enhance subscriptions auto attachment.
+
+[id="cli-creating-an-activation-key_{context}"]
+.CLI procedure
+
+. Create the activation key:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer activation-key create \
+--name "_My_Activation_Key_" \
+--unlimited-hosts \
+--description "_Example Stack in the Development Environment_" \
+--lifecycle-environment "_Development_" \
+--content-view "_Stack_" \
+--organization "_My_Organization_"
+----
+. Optional: For Red{nbsp}Hat Enterprise Linux 8 hosts, enter the following command to configure the activation key with system purpose to set on hosts during registration to enhance subscriptions auto attachment.
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer activation-key update \
+--organization "_My_Organization_" \
+--name "_My_Activation_Key_" \
+--service-level "_Standard_" \
+--purpose-usage "_Development/Test_" \
+--purpose-role "_Red Hat Enterprise Linux Server_" \
+--purpose-addons "_addons_"
+----
+. Obtain a list of your subscription IDs:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer subscription list --organization "_My_Organization_"
+----
+. Attach the Red Hat Enterprise Linux subscription UUID to the activation key:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer activation-key add-subscription \
+--name "_My_Activation_Key_" \
+--subscription-id _ff808181533518d50152354246e901aa_ \
+--organization "_My_Organization_"
+----
+. List the product content associated with the activation key:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer activation-key product-content \
+--name "_My_Activation_Key_" \
+--organization "_My_Organization_"
+----
+. Override the default auto-enable status for the {project-client-name} repository.
+The default status is set to disabled.
+To enable, enter the following command:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# hammer activation-key content-override \
+--name "_My_Activation_Key_" \
+--content-label {project-client-RHEL7-url} \
+--value 1 \
+--organization "_My_Organization_"
+----
