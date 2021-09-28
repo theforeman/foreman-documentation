@@ -1,0 +1,80 @@
+[[Applying_Errata_to_Multiple_Hosts]]
+= Applying Errata to Multiple Hosts
+
+Use these procedures to review and apply errata to multiple RHEL 7 hosts.
+
+.Prerequisites
+* Synchronize {ProjectName} repositories with the latest errata available from Red{nbsp}Hat.
+For more information, see xref:Synchronizing_Repositories[].
+* Register the hosts to an environment and Content View on {ProjectServer}.
+For more information, see {ManagingHostsDocURL}Registering_Hosts[Registering Hosts] in the _Managing Hosts_ guide.
+* Configure the host for remote execution.
+For more information about running remote execution jobs, see {ManagingHostsDocURL}configuring-and-setting-up-remote-jobs_managing-hosts[Configuring and Setting up Remote Jobs] in the _Managing Hosts_ guide.
+
+[NOTE]
+====
+If the host is already configured to receive content updates with the deprecated Katello Agent, migrate to remote execution instead.
+For more information, see {ManagingHostsDocURL}migrating-from-katello-agent-to-remote-execution_managing-hosts[Migrating from Katello Agent to Remote Execution] in the _Managing Hosts_ guide.
+====
+
+.Procedure
+. Navigate to *Content* > *Errata*.
+. Click the name of an erratum you want to apply.
+. Click to *Content Hosts* tab.
+. Select the hosts you want to apply errata to and click *Apply to Hosts*.
+. Click *Confirm*.
+
+.CLI procedure
+. List all installable errata:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer erratum list \
+--errata-restrict-installable true \
+--organization "_Default Organization_"
+----
+. Apply one of the errata to multiple hosts:
++
+Using `Remote Execution`
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# hammer job-invocation create \
+--feature katello_errata_install \
+--inputs errata=_ERRATUM_ID_ \
+--search-query "applicable_errata = _ERRATUM_ID_"
+----
++
+Using `Katello Agent` (deprecated)
++
+Identify the erratum you want to use and list the hosts that this erratum is applicable to:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer host list \
+--search "applicable_errata = _ERRATUM_ID_" \
+--organization "_Default Organization_"
+----
+The following Bash script applies an erratum to each host for which this erratum is available:
++
+[source, Bash, subs="+quotes"]
+----
+for HOST in `hammer --csv --csv-separator "|" host list --search "applicable_errata = ERRATUM_ID" --organization "Default Organization" | tail -n+2 | awk -F "|" '{ print $2 }'` ;
+do
+  echo "== Applying to $HOST ==" ; hammer host errata apply --host $HOST --errata-ids ERRATUM_ID1,ERRATUM_ID2 ;
+done
+----
++
+This command identifies all hosts with _erratum_IDs_ as an applicable erratum and then applies the erratum to each host.
+. To see if an erratum is applied successfully, find the corresponding task in the output of the following command:
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+# hammer task list
+----
+. View the state of a selected task:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer task progress --id _task_ID_
+----
