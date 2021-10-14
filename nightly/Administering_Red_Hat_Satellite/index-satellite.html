@@ -7864,7 +7864,407 @@ Here you can create an entry by clicking <strong>New</strong> or delete one by c
 </div>
 </div>
 <div class="sect1">
-<h2 id="chap-Administering-Searching_and_Bookmarking">15. Searching and Bookmarking</h2>
+<h2 id="using-foreman-webhooks_admin">15. Using Webhooks</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A webhook is a way for a web page or web application to provide other applications with information in real time.
+Webhooks are only triggered after an event occurs.
+The request usually contains details of the event.
+An event triggers callbacks, such as sending an e-mail confirming a host has been provisioned.
+Webhooks enable you to define a call to an external API based on Satellite internal event using a fire-and-forget message exchange pattern.
+The application sending the request does not wait for the response, or ignores it.</p>
+</div>
+<div class="paragraph">
+<p>Because webhooks use HTTP, no new infrastructure needs be added to existing web services.</p>
+</div>
+<div class="paragraph">
+<p>The typical use case for webhooks in Satellite is making a call to a monitoring system when a host is created or deleted.</p>
+</div>
+<div class="paragraph">
+<p>Webhooks are useful where the action you want to perform in the external system can be achieved through its API.
+Where it is necessary to run additional commands or edit files, the shellhooks plugin for Capsules is available.
+The shellhooks plugin enables you to define a shell script on the Capsule that can be executed through the API.</p>
+</div>
+<div class="paragraph">
+<p>You can use webhooks successfully without installing the shellhooks plugin.</p>
+</div>
+<div class="paragraph">
+<p>For a list of available events, see <a href="#webhooks-available-events_admin">Available webhook events</a>.</p>
+</div>
+<div class="sect2">
+<h3 id="migrating-to-webhooks_admin">15.1. Migrating to Webhooks</h3>
+<div class="paragraph">
+<p>The legacy <code>foreman_hooks</code> plugin provided full access to model objects that the webhooks plugin does not intentionally provide.</p>
+</div>
+<div class="paragraph">
+<p>The scope of what is available is limited by the safemode and all objects and macros are both subject to an API stability promise and are fully documented.</p>
+</div>
+<div class="paragraph">
+<p>The number of events triggered by webhooks is substantially fewer than with <code>foreman_hooks</code>.</p>
+</div>
+<div class="paragraph">
+<p>Webhooks are processed asynchronously so there is minimal risk of tampering with internals of the system.
+It is not possible to migrate from <code>foreman_hooks</code> without creating payloads for each individual webhook script.
+However, the webhooks plugin comes with several example payload templates.
+You can also use the example payloads with shellhooks to simplify migration.</p>
+</div>
+<div class="paragraph">
+<p>Both script and payload templates must be customized to achieve similar results.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="installing-webhooks-plugin_admin">15.2. Installing Webhooks</h3>
+<div class="paragraph">
+<p>Use the following procedure to install webhooks.
+After installing webhooks, you can configure Satellite&#160;Server to send webhook requests.</p>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>Install webhooks using the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-installer --enable-foreman-plugin-webhooks</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Optionally, you can install the CLI plugin using the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># yum install tfm-rubygem-hammer_cli_foreman_webhooks</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="creating-a-webhook-template_admin">15.3. Creating a Webhook Template</h3>
+<div class="paragraph">
+<p>Use the following procedure to create a webhook template in the Foreman web UI.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Administer</strong> <strong>&gt;</strong> <strong>Webhooks Templates</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Clone an existing template</strong> or <strong>Create Template</strong>.</p>
+</li>
+<li>
+<p>Enter a name for the template.</p>
+</li>
+<li>
+<p>Use the editor to make changes to the template payload.</p>
+<div class="paragraph">
+<p>A webhook HTTP payload must be created using Satellite template syntax.
+The webhook template can use a special variable called <code>@object</code> that can represent the main object of the event.</p>
+</div>
+<div class="paragraph">
+<p>For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.10-beta/html-single/managing_hosts/index#appe-Managing_Hosts-Template_Writing_Reference">Template Writing Reference</a> in <em>Managing Hosts</em> and for available template macros and methods, visit <code>/templates_doc</code> on Satellite&#160;Server.</p>
+</div>
+</li>
+<li>
+<p>Optional: Enter the description and audit comment.</p>
+</li>
+<li>
+<p>Assign organizations and locations.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="creating-a-webhook_admin">15.4. Creating a Webhook</h3>
+<div class="paragraph">
+<p>You can customize events, payloads, HTTP authentication, content type, and headers through the Foreman web UI.</p>
+</div>
+<div class="paragraph">
+<p>Use the following procedure to create a webhook in the Foreman web UI.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, click <strong>Administer</strong> <strong>&gt;</strong> <strong>Webhooks</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Create Webhook</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Subscribe to</strong> to select an event.</p>
+</li>
+<li>
+<p>Enter a name.</p>
+</li>
+<li>
+<p>Enter a target URL.
+Webhooks make HTTP requests to pre-configured URLs.
+The target URL can be a dynamic URL.
+When using the shellhooks plugin, the URL should be in the form <code>https://capsule.example.com:9090/shellhooks/my_script</code>.</p>
+</li>
+<li>
+<p>Click <strong>Template</strong> to select a template.</p>
+</li>
+<li>
+<p>Enter an HTTP method.</p>
+</li>
+<li>
+<p>Check the <strong>Enabled</strong> flag if you want to create an active webhook.</p>
+</li>
+<li>
+<p>Click the <strong>Credentials</strong> tab.</p>
+</li>
+<li>
+<p>Optional: If HTTP authentication is required, enter the username and password.</p>
+</li>
+<li>
+<p>Select <strong>Verify SSL</strong> if the server certificate should be verified against the system certificate store or Satellite CA.</p>
+</li>
+<li>
+<p>Select <strong>Proxy Authorization</strong> when using shellhooks, otherwise clear this box.</p>
+</li>
+<li>
+<p>On the <strong>Additional</strong> tab, enter the HTTP Content Type.
+For example, <code>application/json</code>, <code>application/xml</code> or <code>text/plain</code> on the payload you define.
+The application does not attempt to convert the content to match the specified content type.</p>
+</li>
+<li>
+<p>Optional: Provide HTTP headers as JSON.
+ERB is also allowed.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>When configuring webhooks with endpoints with non-standard HTTP or HTTPS ports, an SELinux port must be assigned, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.10-beta/html-single/installing_satellite_server_from_a_connected_network/index#configuring-selinux-to-ensure-access-on-custom-ports_admin">Configuring SELinux to Ensure Access to Satellite on Custom Ports</a> in <em>Installing Satellite Server from a Connected Network</em>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="webhooks-available-events_admin">15.5. Available Webhook Events</h3>
+<div class="paragraph">
+<p>The following table contains a list of webhook events that are available from the Foreman web UI.
+<code>Action</code> events trigger webhooks only on <code>success</code>, so if an action fails, a webhook is not triggered.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Event name</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions Katello Content View Promote Succeeded</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A content view was successfully promoted.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions Katello Content View Publish Succeeded</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A repository was successfully synchronized.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Succeeded</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A generic remote execution job succeeded for a host.
+This event is emitted for all Remote Execution jobs, when complete.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Katello Errata Install Succeeded</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Install errata using the Katello interface.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Katello Group Install Succeeded</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Install package group using the Katello interface.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Katello Package Install Succeeded</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Install package using the Katello interface.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Katello Group Remove</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Remove package group using the Katello interface.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Katello Package Remove Succeeded</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Remove package using the Katello interface.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Katello Service Restart Succeeded</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Restart Services using the Katello interface.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Katello Group Update Succeeded</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Update package group using the Katello interface.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Katello Package Update Succeeded</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Update package using the Katello interface.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Foreman OpenSCAP Run Scans Succeeded</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Run OpenSCAP scan.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Ansible Run Host Succeeded</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Runs an Ansible playbook containing all the roles defined for a host.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Ansible Run Capsule Upgrade Succeeded</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Upgrade Capsules on given Capsule server hosts.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Ansible Configure Cloud Connector Succeeded</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Configure Cloud Connector on given hosts.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Ansible Run Insights Plan Succeeded</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Runs a given maintenance plan from Red Hat Access Insights given an ID.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Ansible Run Playbook Succeeded</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Run an Ansible playbook against given hosts.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Ansible Enable Web Console Succeeded</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Run an Ansible playbook to enable the web console on given hosts.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Puppet Run Host Succeeded</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Perform a single Puppet run.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Katello Module Stream Action Succeeded</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Perform a module stream action using the Katello interface.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Leapp Pre-upgrade Succeeded</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Upgradeability check for RHEL 7 host.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Leapp Remediation Plan Succeeded</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Run Remediation plan with Leapp.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Leapp Upgrade Succeeded</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Run Leapp upgrade job for RHEL 7 host.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Build Entered</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A host entered the build mode.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Build Exited</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A host build mode was canceled, either it was successfully provisioned or the user canceled the build manually.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Content View Created/Updated/Destroyed</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Common database operations on a content view.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Domain Created/Updated/Destroyed</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Common database operations on a domain.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Host Created/Updated/Destroyed</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Common database operations on a host.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Hostgroup Created/Updated/Destroyed</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Common database operations on a hostgroup.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Model Created/Updated/Destroyed</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Common database operations on a model.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Status Changed</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Global host status of a host changed.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Subnet Created/Updated/Destroyed</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Common database operations on a subnet.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Template Render Performed</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A report template was rendered.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">User Created/Updated/Destroyed</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Common database operations on a user.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="shellhooks_admin">15.6. Shellhooks</h3>
+<div class="paragraph">
+<p>With webhooks, one Satellite event can only be mapped to one API call.
+For advanced integrations, where a single shell script can contain multiple commands, you can install a Capsule shellhooks plugin that exposes executables using a REST HTTP API.</p>
+</div>
+<div class="paragraph">
+<p>A webhook can then be configured to reach out to a Capsule API to run a predefined shellhook, which, for example, can contain commands or edit files.</p>
+</div>
+<div class="paragraph">
+<p>Scripts must be placed in <code>/var/lib/foreman-proxy/shellhooks</code> as executables with only alphanumeric characters and underscores in the name.</p>
+</div>
+<div class="paragraph">
+<p>The HTTPS payload is passed using standard input, optional command line arguments can be provided using X-Shellhook-Arg-1 <em>to</em> N.</p>
+</div>
+<div class="paragraph">
+<p>The HTTP method must be POST.
+An example URL would be: <code>https://capsule.example.com:9090/shellhooks/my_script</code>.</p>
+</div>
+<div class="paragraph">
+<p>You must enable <strong>Proxy Authorization</strong> for each webhook that is connected to a shellhook, to enable it to authorize a call.</p>
+</div>
+<div class="paragraph">
+<p>Standard output and error are redirected to the Capsule log as messages with debug or warning levels respectively.</p>
+</div>
+<div class="paragraph">
+<p>There is no return value from shellhook HTTPS calls.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="installing-shellhooks-plugin_admin">15.7. Installing the Shellhooks Plugin</h3>
+<div class="paragraph">
+<p>Optionally, you can install and enable the shellhooks plugin on each Capsule used for shellhooks, using the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-installer --enable-foreman-proxy-plugin-shellhooks</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="using-shellhook_argumentsadmin">15.8. Using Shellhook Arguments</h3>
+<div class="paragraph">
+<div class="title">Procedure</div>
+<p>To pass arguments into a shellhook script, create the following HTTP headers:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">{
+  "X-Shellhook-Arg-1": "&lt;%= @object.content_view_version_id %&gt;,
+  "X-Shellhook-Arg-2": "&lt;%= @object.content_view_name %&gt;
+}</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Ensure the content renders to a valid JSON.
+Also, only pass safe fields like database ID, name, or labels which do not include new lines or quote characters.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="chap-Administering-Searching_and_Bookmarking">16. Searching and Bookmarking</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>The Foreman web UI features powerful search functionality which is available on most pages of the web UI.
@@ -7873,14 +8273,14 @@ Searches accept both free text and syntax-based queries, which can be built usin
 Search queries can be saved as bookmarks for future reuse.</p>
 </div>
 <div class="sect2">
-<h3 id="sect-Administering-Searching_and_Bookmarking-Building_Search_Queries">15.1. Building Search Queries</h3>
+<h3 id="sect-Administering-Searching_and_Bookmarking-Building_Search_Queries">16.1. Building Search Queries</h3>
 <div class="paragraph">
 <p>As you start typing a search query, a list of valid options to complete the current part of the query appears.
 You can either select an option from the list and keep building the query using the prediction, or continue typing.
 To learn how free text is interpreted by the search engine, see <a href="#sect-Administering-Searching_and_Bookmarking-Using_Free_Text_Search">Using Free Text Search</a>.</p>
 </div>
 <div class="sect3">
-<h4 id="sect-Administering-Query_Syntax">15.1.1. Query Syntax</h4>
+<h4 id="sect-Administering-Query_Syntax">16.1.1. Query Syntax</h4>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"><em>parameter</em> <em>operator</em> <em>value</em></pre>
@@ -7895,7 +8295,7 @@ For descriptions of value formats, see <a href="#sect-Administering-Values">Valu
 </div>
 </div>
 <div class="sect3">
-<h4 id="sect-Administering-Operators">15.1.2. Operators</h4>
+<h4 id="sect-Administering-Operators">16.1.2. Operators</h4>
 <div class="paragraph">
 <p>All operators that can be used between <em>parameter</em> and <em>value</em> are listed in the following table.
 Other symbols and special characters that might appear in a prediction-built query, such as colons, do not have special meaning and are treated as free text.</p>
@@ -8052,7 +8452,7 @@ Alternative notations of the operators are also accepted:</p>
 </table>
 </div>
 <div class="sect3">
-<h4 id="sect-Administering-Values">15.1.3. Values</h4>
+<h4 id="sect-Administering-Values">16.1.3. Values</h4>
 <div id="varl-Administering-Values-Text_Values" class="dlist">
 <dl>
 <dt class="hdlist1"><strong>Text Values</strong></dt>
@@ -8124,7 +8524,7 @@ A whitespace is otherwise interpreted as the AND operator.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="sect-Administering-Searching_and_Bookmarking-Using_Free_Text_Search">15.2. Using Free Text Search</h3>
+<h3 id="sect-Administering-Searching_and_Bookmarking-Using_Free_Text_Search">16.2. Using Free Text Search</h3>
 <div class="paragraph">
 <p>When you enter free text, it will be searched for across multiple fields.
 For example, if you type "64", the search will return all hosts that have that number in their name, IP address, MAC address, and architecture.</p>
@@ -8149,7 +8549,7 @@ For this reason, we recommend that you avoid free text and use more specific, sy
 </div>
 </div>
 <div class="sect2">
-<h3 id="sect-Administering-Searching_and_Bookmarking-Bookmarking">15.3. Managing Bookmarks</h3>
+<h3 id="sect-Administering-Searching_and_Bookmarking-Bookmarking">16.3. Managing Bookmarks</h3>
 <div class="paragraph">
 <p>You can save search queries as bookmarks for reuse.
 You can also delete or modify a bookmark.</p>
@@ -8159,7 +8559,7 @@ You can also delete or modify a bookmark.</p>
 On some pages, there are default bookmarks available for the common searches, for example, all <code>active</code> or <code>disabled</code> hosts.</p>
 </div>
 <div class="sect3">
-<h4 id="sect-Administering-Searching_and_Bookmarking-Creating_Bookmarks">15.3.1. Creating Bookmarks</h4>
+<h4 id="sect-Administering-Searching_and_Bookmarking-Creating_Bookmarks">16.3.1. Creating Bookmarks</h4>
 <div class="paragraph">
 <p>This section details how to save a search query as a bookmark.
 You must save the search query on the relevant page to create a bookmark for that page, for example, saving a host related search query on the Hosts page.</p>
@@ -8205,7 +8605,7 @@ You must save the search query on the relevant page to create a bookmark for tha
 </div>
 </div>
 <div class="sect3">
-<h4 id="sect-Administering-Searching_and_Bookmarking-Deleting_Bookmarks">15.3.2. Deleting Bookmarks</h4>
+<h4 id="sect-Administering-Searching_and_Bookmarking-Deleting_Bookmarks">16.3.2. Deleting Bookmarks</h4>
 <div class="paragraph">
 <p>You can delete bookmarks on the Bookmarks page.</p>
 </div>
