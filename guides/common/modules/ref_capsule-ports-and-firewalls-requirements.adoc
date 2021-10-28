@@ -31,34 +31,37 @@ The following tables indicate the destination port and the direction of network 
 [cols="15%,15%,15%,15%,20%,20%",options="header"]
 |====
 | Destination Port | Protocol | Service |Source| Required For | Function
-| 53 | TCP and UDP | DNS | DNS Server | {SmartProxy} registration | DNS records
-| 67 | UDP | DHCP | Client | PXE Boot | DHCP
-| 69 | UDP | TFTP | Client | TFTP Server |
+| 53 | TCP and UDP | DNS | DNS Server | {SmartProxy} registration | Name resolution
+| 67 | UDP | TFTP (optional) | Client | PXE Boot | DHCP (optional)
+| 67 | UDP | DHCP | Client | Dynamic IP | DHCP (optional)
+| 69 | UDP | TFTP (optional) | Client | TFTP Server |
 ifdef::katello,satellite,orcharhino[]
 | 80 | TCP | HTTP | Client | Content Host registration | {SmartProxy} CA RPM registration
-| 80 | TCP | HTTP | Client | PXEBoot | Installation
 | 80 | TCP | HTTP | Client | Package Installation | Content
-endif::[]
 | 443, 80 | TCP | HTTPS, HTTP | Client | Content Host Registration | {SmartProxy} CA RPM installation
-| 443, 80 | TCP | HTTPS, HTTP | Client | PXE Boot | Installation
 | 443, 80 | TCP | HTTPS, HTTP | Client | Package installation | yum extension
+endif::[]
 | 443 | TCP | HTTPS | {Smartproxy} | {SmartProxy} registration |  Installation/ removal/ update
 | 443 | TCP | HTTPS | {Smartproxy} | Power management | iPXE chained template retrieval
 | 443 | TCP | HTTPS | {Smartproxy} | Telemetry data upload | Send data to Red{nbsp}Hat portal
-| 443 | TCP | HTTPS | {Smartproxy} | OpenSCAP | Configure Client
-| 443 | TCP | HTTPS | {Smartproxy} | Remote Execution Upload |
+
 | 443 | TCP | HTTPS | {ProjectServer}|Content Mirroring | Initiation
 ifdef::katello,satellite,orcharhino[]
 | 5647 (optional) | TCP | AMQP | Client | goferd message bus | Forward message to client
 
 Katello agent to communicate with Qpid dispatcher
 | 8000 | TCP | HTTPS | Client | Bootdisk | iPXE chained template retrieval
+| 8000 | TCP | HTTPS | Client | PXE Boot | Installation
 | 8140 | TCP | HTTPS | Client | Puppet |
 | 8443 | TCP | HTTPS | Client | Content Host registration | Initiation
 
 Uploading facts
 
 Sending installed packages and traces
+endif::[]
+| 8443 | TCP | HTTPS | Client | OpenSCAP | Configure Client
+ifdef::katello,satellite,orcharhino[]
+| 9090 | TCP | HTTPS | Client | OpenSCAP | Configure Client
 | 9090 | TCP | HTTPS | Discovered Node|Discovery |Host discovery and provisioning
 | 9090 | TCP | HTTPS | {ProjectServer} | Provisioning | {SmartProxy} API requirement to configure TFTP, DHCP and others
 | 9090 | TCP | HTTPS | {ProjectServer} | Remote execution | Run job on VM
@@ -78,9 +81,10 @@ This behavior can be turned off using `{foreman-installer} --foreman-proxy-dhcp-
 
 |====
 | Destination Port | Protocol | Service |Source| Required For | Function
-| 7 (optional) | ICMP and TCP | ping and echo | {ProjectServer} | DHCP | {SmartProxy} API requirement to configure TFTP, DHCP and others
-| 22 | TCP | SSH | Target host | Remote execution |Run jobs
-| 53 | TCP and UDP | DNS | DNS Server | {SmartProxy} registration | DNS records
+| 7 | ICMP | ping  | {ProjectServer} | DHCP | Free IP checking
+|- (optional) | TCP | echo | {ProjectServer} | DHCP | Free IP checking
+| 22 | TCP | SSH | Target host | Remote execution | Run jobs
+| 53 | TCP and UDP | DNS | DNS Server | {SmartProxy} registration | Name resolution
 | 443 | TCP | HTTPS | {SmartProxy} | {SmartProxy} registration | (smart host, {SmartProxy})
 
 Content Mirroring
@@ -92,17 +96,16 @@ External Node Classification
 Run Report
 
 Template retrieval
-| 443 | TCP | HTTPS | {SmartProxy} | Power Management | iPXE chained template retrieval
-| 443 | TCP | HTTPS | {SmartProxy} | goferd message bus | Send report to {ProjectServer}
+| 443 | TCP | HTTPS | {Project} | Power Management | iPXE chained template retrieval
+| 443 | TCP | HTTPS | {Project} | goferd message bus | Send report to {ProjectServer}
 
 Initiation
-| 443 | TCP | HTTPS | {SmartProxy} | Telemetry Data Upload | Send data to Red{nbsp}Hat Portal
-| 443 | TCP | HTTPS | {SmartProxy} | OpenSCAP | Send report from {SmartProxy} to {Project}
-| 443 | TCP | HTTPS | {SmartProxy} | Content promotion | Initiation
-| 443 | TCP | HTTPS | {SmartProxy} | Content Sync | Initiation
-
-Red{nbsp}Hat CDN
-| 443 | TCP | HTTPS | {SmartProxy} | Remote Execution result upload |
+| 443 | TCP | HTTPS | {Project} | Telemetry Data Upload | Send data to Red{nbsp}Hat Portal
+| 443 | TCP | HTTPS | {Project} | OpenSCAP | Send report from {SmartProxy} to {Project}
+| 443 | TCP | HTTPS | {Project} | Content promotion | Initiation
+| 443 | TCP | HTTPS | {Project} | Content Sync | Initiation
+| 443 | TCP | HTTPS | {Project} | Content Sync | Red{nbsp}Hat CDN
+| 443 | TCP | HTTPS | {Project} | Remote Execution result upload |
 | 623 |  |  | Client | Power management | BMC On/Off/Cycle/Status
 ifdef::katello,satellite,orcharhino[]
 | 5646 | TCP | AMQP | {ProjectServer} | Power management for Katello agent | Forward message to Qpid dispatch router on {SmartProxy}
