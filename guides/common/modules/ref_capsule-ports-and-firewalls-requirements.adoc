@@ -21,10 +21,6 @@ For more information on {Project} Topology, see {PlanningDocURL}sect-Documentati
 
 Required ports can change based on your configuration.
 
-ifdef::katello,satellite,orcharhino[]
-A matrix table of ports is available in the Red{nbsp}Hat Knowledgebase solution https://access.redhat.com/solutions/5627751[Red Hat Satellite List of Network Ports].
-endif::[]
-
 The following tables indicate the destination port and the direction of network traffic:
 
 .{SmartProxy} incoming traffic
@@ -35,10 +31,9 @@ The following tables indicate the destination port and the direction of network 
 | 67 | UDP | DHCP | Client | Dynamic IP | DHCP (optional)
 | 69 | UDP | TFTP | Client | TFTP Server (optional) |
 ifdef::katello,satellite,orcharhino[]
-| 80 | TCP | HTTP | Client | Content Retrieval | Content
-| 443, 80 | TCP | HTTPS, HTTP | Client | Package installation | yum extension
-| 443 | TCP | HTTPS, HTTP | Client | Content Host Registration | {SmartProxy} CA RPM installation
-| 443 | TCP | HTTPS | {ProjectServer} |Content Mirroring | Management
+| 443, 80 | TCP | HTTPS, HTTP | Client | Content Retrieval | Content
+| 443, 80 | TCP | HTTPS, HTTP| Client | Content Host Registration | {SmartProxy} CA RPM installation
+| 443 | TCP | HTTPS | {ProjectName} |Content Mirroring | Management
 | 443 | TCP | HTTPS | {ProjectName} | {SmartProxy} API | Smart Proxy functionality
 | 5647 | TCP | AMQP | Client | goferd message bus | Forward message to client (optional)
 
@@ -47,16 +42,16 @@ endif::[]
 | 8000 | TCP | HTTP | Client | Provisioning templates | Template retrieval for client installers, iPXE or UEFI HTTP Boot
 | 8000 | TCP | HTTPS | Client | PXE Boot | Installation
 | 8140 | TCP | HTTPS | Client | Puppet agent | Client updates (optional)
-| 8443 | TCP | HTTPS | Client | Content Host registration | Initiation
-
-Uploading facts
-
-Sending installed packages and traces
 ifndef::katello,satellite,orcharhino[]
 | 8443 | TCP | HTTPS | Client | OpenSCAP | Configure Client
 | 8443 | TCP | HTTPS | {ProjectName} | {SmartProxy} API | Smart Proxy functionality
 endif::[]
 ifdef::katello,satellite,orcharhino[]
+| 8443 | TCP | HTTPS | Client | Content Host registration | Initiation
+
+Uploading facts
+
+Sending installed packages and traces
 | 9090 | TCP | HTTPS | Client | OpenSCAP | Configure Client
 | 9090 | TCP | HTTPS | Discovered Node|Discovery |Host discovery and provisioning
 | 9090 | TCP | HTTPS | {ProjectName} | {SmartProxy} API | {SmartProxy} functionality
@@ -73,46 +68,39 @@ This behavior can be turned off using `{foreman-installer} --foreman-proxy-dhcp-
 [cols="15%,15%,15%,15%,20%,20%",options="header"]
 
 |====
-| Destination Port | Protocol | Service |Source| Required For | Function
-| 7 | ICMP | ping  | {ProjectServer} | DHCP | Free IP checking (optional)
-| | TCP | echo | {ProjectServer} | DHCP | Free IP checking (optional)
+| Destination Port | Protocol | Service | Destination | Required For | Function
+| | ICMP | ping  | Client | DHCP | Free IP checking (optional)
+| 7 | TCP | echo | Client | DHCP |Free IP checking (optional)
 | 22 | TCP | SSH | Target host | Remote execution | Run jobs
-| 53 | TCP and UDP | DNS | DNS Server | {SmartProxy} registration | Validation of DNS conflicts
-| 67 | UDP | DHCP | Client | Dynamic IP | DHCP (optional)
-| 443 | TCP | HTTPS | {SmartProxy} | {SmartProxy} registration | (smart host, {SmartProxy})
+| 53 | TCP and UDP | DNS | DNS Servers on the Internet | DNS Server | Resolve DNS records (optional)
+| 53 | TCP and UDP | DNS | DNS Server | {SmartProxy} DNS | Validation of DNS conflicts (optional)
+| 68 | UDP | DHCP | Client | Dynamic IP | DHCP (optional)
+| 443 | TCP | HTTPS | {Project} | {SmartProxy} | {SmartProxy}
 
-Content Mirroring
-
-Forward Request to {Project}
-
-External Node Classification
-
-Run Report
+Configuration management
 
 Template retrieval
-| 443 | TCP | HTTPS | {Project} | Power Management | iPXE chained template retrieval
-| 443 | TCP | HTTPS | {Project} | goferd message bus | Send report to {ProjectServer}
 
-Initiation
-| 443 | TCP | HTTPS | {Project} | Telemetry Data Upload | Send data to Red{nbsp}Hat Portal
-| 443 | TCP | HTTPS | {Project} | OpenSCAP | Send report from {SmartProxy} to {Project}
-| 443 | TCP | HTTPS | {Project} | Content promotion | Initiation
-| 443 | TCP | HTTPS | {Project} | Content Sync | Initiation
-| 443 | TCP | HTTPS | {Project} | Content Sync | Red{nbsp}Hat CDN
-| 443 | TCP | HTTPS | {Project}te | Remote Execution result upload |
+OpenSCAP
+
+Remote Execution result upload
+ifdef::satellite[]
+| 443 | TCP | HTTPS | Red{nbsp}Hat Portal | Sos report | Assisting support cases (optional
+endif::[]
+ifdef::katello,satellite,orcharhino[]
+| 443 | TCP | HTTPS | {Project} | Content | Sync
+| 443 | TCP | HTTPS | {Project} | Client communication | Forward requests from Client to {Project}
+endif::[]
 | 623 |  |  | Client | Power management | BMC On/Off/Cycle/Status
 ifdef::katello,satellite,orcharhino[]
-| 5646 | TCP | AMQP | {ProjectServer} | Power management for Katello agent | Forward message to Qpid dispatch router on {SmartProxy}
+| 5646 | TCP | AMQP | {ProjectServer} | Katello agent | Forward message to Qpid dispatch router on {SmartProxy}
 endif::[]
 | 7911 | TCP | DHCP, OMAPI | DHCP Server| DHCP | The DHCP target is configured using `--foreman-proxy-dhcp-server` and defaults to localhost
 
 ISC and `remote_isc` use a configurable port that defaults to 7911 and uses OMAPI
 
 Infoblox always uses port 443 and HTTPS
-ifdef::katello,satellite,orcharhino[]
-| 8443 | TCP | HTTPS | Discovered Node|Power management | {SmartProxy} sends reboot command to the discovered host
-| 8443 | TCP | HTTPS | cert-api.access.redhat.com |Telemetry data upload and report | Send and read data to and from the Red{nbsp}Hat portal
-endif::[]
+| 8443 | TCP | HTTPS | Client | Discovery | {SmartProxy} sends reboot command to the discovered host
 |====
 
 NOTE: ICMP to Port 7 UDP and TCP must not be rejected, but can be dropped.
