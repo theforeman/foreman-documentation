@@ -1,0 +1,70 @@
+= Pulp 3
+
+== Installation layout
+
+Pulpcore doesn't mandate a specific layout so this module creates and manages this.
+There are some constraints, mostly due to SELinux support.
+
+As part of the installation, it creates a user (default `pulp`) and group (default `pulp`).
+This user gets a home directory (default `/var/lib/pulp`).
+There is also a config dir (default `/etc/pulp`) under which a `settings.py` file is created.
+
+The media root (default `/var/lib/pulp/media`) refers to the https://docs.djangoproject.com/en/2.2/ref/settings/#media-root[MEDIA_ROOT setting].
+In Pulp this should not be served by Apache.
+Instead of https://docs.djangoproject.com/en/2.2/ref/settings/#media-url[MEDIA_URL] Pulp has a dedicated `pulpcore-content` service which can also perform permission checks.
+Only the Pulp services need to read the files so directory permissions are set to `0750`.
+A subdirectory of the home directory allows a stricter lockdown and avoids any risk of uploading media files into the wrong directory.
+
+There are also the https://docs.djangoproject.com/en/2.2/ref/settings/#std:setting-STATIC_ROOT[STATIC_ROOT] and https://docs.djangoproject.com/en/2.2/ref/settings/#static-url[STATIC_URL] settings.
+These serve the static assets used by Pulp.
+This includes CSS and Javascript for the HTML pages.
+The assets must be generated for the application to function, and should be served to make browsing the API more convenient.
+
+These is also the `cache_dir` which is used to configure https://docs.pulpproject.org/settings.html#working-directory[WORKING_DIRECTORY] and https://docs.djangoproject.com/en/2.2/ref/settings/#file-upload-temp-dir[FILE_UPLOAD_TEMP_DIR].
+This defaults to `/var/lib/pulp/tmp`.
+It is strongly recommended that this is on the same filesystem as `MEDIA_ROOT`.
+
+Apache is configured to use an empty directory as docroot (`$apache_docroot`, default `/var/lib/pulp/pulpcore_static`).
+Doing so prevents Apache from bypassing the Pulp content app.
+When Apache is not managed, this directory is not managed.
+
+While Pulp can create most of these directories at runtime, they're explicitly managed to set the correct permissions and, if pulpcore-selinux is installed, enforce the correct labels.
+
+This results into the following structure, using `tree -pug`:
+
+----
+/
+├── [drwxr-xr-x root     root    ]  etc
+│   └── [drwxr-xr-x root     pulp    ]  pulp ($config_dir)
+│       └── [-rw-r----- root     pulp    ]  settings.py
+└── [drwxr-xr-x root     root    ]  var
+    └── [drwxr-xr-x root     root    ]  lib
+        └── [drwxrwxr-x pulp     pulp    ]  pulp ($user_home)
+            ├── [drwxr-xr-x pulp     pulp    ]  assets ($static_root)
+            ├── [drwxr-xr-x pulp     pulp    ]  pulpcore_static ($apache_docroot)
+            ├── [drwxr-x--- pulp     pulp    ]  media ($media_root)
+            └── [drwxr-x--- pulp     pulp    ]  tmp ($cache_dir)
+----
+
+== Service setup
+
+The module deploys a few systemd services:
+
+* `pulpcore-api.socket` - A unix socket that listens on `$api_socket_path` (default: `/run/pulpcore-api.sock`).
+It is owned by the Apache user.
+* `pulpcore-api.service` - The actual content service.
+It is using systemd socket activation.
+* `pulpcore-content.socket` - A unix socket that listens on `$content_socket_path` (default: `/run/pulpcore-content.sock`).
+It is owned by the Apache user.
+* `pulpcore-content.service` - The actual content service.
+It is using systemd socket activation.
+* `pulpcore-worker@.service` - A service template allowing multiple workers to be started.
+Actual workers will be named `pulpcore-worker@%i` where %i is a number starting at 1 and ending at `$worker_count`.
+
+The https://www.freedesktop.org/software/systemd/man/systemd.socket.html[systemd socket activated] services bind to a unix socket.
+They are always owned by the Apache user.
+To find this out this username, it always pulls in the https://github.com/puppetlabs/puppetlabs-apache[apache] module, even if the vhosts are unmanaged (`$apache_http_vhost` and `$apache_https_vhost` both set to `false`).
+
+Binding to a unix socket with minimal permissions is the most secure since only Apache can connect to Pulp's services.
+This forces the authentication to happen and prevents https://en.wikipedia.org/wiki/Man-in-the-middle_attack[MITM attacks].
+Binding on TCP ports is not supported for this reason.
