@@ -1,6 +1,7 @@
 SHELL := /bin/bash
 BUILD = foreman-el
 BUILD_DIR = ../build
+BUILD_DIRA = $(realpath $(BUILD_DIR))/
 COMMON_DIR = ../common
 ROOTDIR = $(realpath .)
 NAME = $(notdir $(ROOTDIR))
@@ -22,6 +23,10 @@ BROWSER_OPEN = xdg-open
 endif
 ifeq ($(UNAME), Darwin)
 BROWSER_OPEN = open
+endif
+
+ifeq ($(LINKS), LOCAL)
+BASEURL_ATTR = "-a BaseURL=file://$(BUILD_DIRA)"
 endif
 
 all: html
@@ -60,7 +65,7 @@ $(IMAGES_TS): $(IMAGES)
 	@touch $(IMAGES_TS)
 
 $(DEST_HTML): $(SOURCES) $(DEPENDENCIES)
-	bundle exec asciidoctor -a build=$(BUILD) -a docinfo=shared -a date_mdy="$(DATE_MDY)" -a date_my="$(DATE_MY)" -a docdatetime="$(DATE_MY)" -a stylesheet=$(BUILD).css -a linkcss=true -b html5 -d book --trace -o $@ $< 2>&1 | tee $@.log
+	bundle exec asciidoctor -a build=$(BUILD) $(BASEURL_ATTR) -a docinfo=shared -a date_mdy="$(DATE_MDY)" -a date_my="$(DATE_MY)" -a docdatetime="$(DATE_MY)" -a stylesheet=$(BUILD).css -a linkcss=true -b html5 -d book --trace -o $@ $< 2>&1 | tee $@.log
 	@echo CHECKING FOR ASCIIDOCTOR ERRORS AND WARNINGS
 	@! grep -Eq "^asciidoctor: (ERROR|WARNING)" $@.log
 	@echo CHECKING FOR ORPHAN XREFS HTML LINKS
