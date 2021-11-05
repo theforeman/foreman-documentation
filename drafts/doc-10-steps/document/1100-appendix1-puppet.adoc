@@ -1,0 +1,487 @@
+<<<
+
+== Appendix I - Sample Puppet Modules used inside
+
+
+This sections lists all Puppet modules used in the solution guide including a short description what they configure and which parameters they require.
+
+==== Sample Puppet module for ntp configuration
+
+
+*Configures:*
+
+* Installation of ntp rpm package
+* Starting ntp daemon
+* Enabling ntp daemon for autostart
+** Will be restarted automatically if configuration is changed
+* Configure ntp to synchronize from a single or list of servers
+** Configuration through template
+** Uses “pool.ntp.org” as default, can be overridden through Smart Class Parameter
+
+*Manifest(init.pp):*
+|===
+|class ntp (
+
+|===
+
+*Template(ntp.erb):*
+
+|===
+|# For more information about this file, see the man pages
+
+|===
+
+
+Required Smart Class Parameter:
+
+|===
+|*Parameter*|*Comment*
+
+|ntpServers|can be a string (single server) or array (multiple servers)
+|===
+
+For Smart Class Parameter configuration see sectionhttps://docs.google.com/document/d/1Eyf5cRLYL00WxxXyX31525sMONhoxIkoeHsqeBnAnac/edit#heading=h.aihpavy8f5q0[https://docs.google.com/document/d/1Eyf5cRLYL00WxxXyX31525sMONhoxIkoeHsqeBnAnac/edit#heading=h.aihpavy8f5q0[ ]]https://docs.google.com/document/d/1Eyf5cRLYL00WxxXyX31525sMONhoxIkoeHsqeBnAnac/edit#heading=h.aihpavy8f5q0[Smart Class Parameters].
+
+ntp tree: +
+ntp/ +
+|-- checksums.json +
+|-- manifests +
+|   `-- init.pp +
+|-- metadata.json +
+|-- Rakefile +
+|-- README.md +
+|-- spec +
+|   |-- classes +
+|   |   `-- init_spec.rb +
+|   `-- spec_helper.rb +
+|-- templates +
+|   `-- ntp.erb +
+`-- tests +
+   `-- init.pp
+
+==== Sample Puppet Module for Zabbix Monitoring agent configuration
+
+
+*Configures:*
+
+* Install zabbix-agent package
+** Latest available by default
+* Start zabbix-agent daemon
+* Enable zabbix-agent daemon for autostart
+** Will be restarted automatically if configuration is changed
+* Configure
+** Configuration through template
+
+*Manifest(init.pp):*
+|===
+|class zabbix (
+
+|===
+
+*Template(zabbix_agent.erb):*
+
+|===
+|# This is a config file for the Zabbix agent daemon (Unix)
+
+|===
+
+
+Required Smart Class Parameter:
+
+* version
+** default is latest, package inclusive version could be added here to pin to a specific version
+* server
+** add the Zabbix monitoring server IP/Name
+* package
+** monitoring package name (default: zabbix-agent)
+* cfgfile
+** configuration file for monitoring agent (default: /etc/zabbix/zabbix_agent.conf)
+
+zabbix tree: +
+zabbix/ +
+|-- checksums.json +
+|-- manifests +
+|   `-- init.pp +
+|-- metadata.json +
+|-- Rakefile +
+|-- README.md +
+|-- spec +
+|   |-- classes +
+|   |   `-- init_spec.rb +
+|   `-- spec_helper.rb +
+|-- templates +
+|   `-- zabbix_agentd.erb +
+`-- tests +
+   `-- init.pp
+
+
+==== Sample Puppet Module for rsyslog configuration (both client and server)
+
+
+*Manifest(init.pp):*
+
+|===
+|class loghost (
+
+|===
+
+Template(loghost_server.erb):
+
+|===
+|# rsyslog configuration file
+
+|===
+
+Template(loghost_client.erb):
+
+|===
+|rsyslog configuration file
+
+|===
+
+Required Smart Class Parameter:
+
+* mode
+** default: client, set to server to configure rsyslog for server use
+* server
+** empty by default, remote log server server has to be added by IP or name (to be used when mode is set to client)
+* serverPort
+** default: 514
+* package
+** default: rsyslog
+* cfgfile
+** default: /etc/rsyslog.conf
+
+Loghost tree:
+
+loghost/ +
+|-- checksums.json +
+|-- manifests +
+|   `--init.pp +
+|-- metadata.json +
+|-- Rakefile +
+|-- README.md +
+|-- spec +
+|   |-- classes +
+|   |   `-- init_spec.rb +
+|   `-- spec_helper.rb +
+|-- templates +
+|   |-- loghost_client.erb +
+|   `-- loghost_server.erb +
+`-- tests +
+   `-- init.pp
+
+
+*Sample Puppet Module for additional rpm packages: corebuildpackages*
+
+Manifest:
+|===
+|class corebuildpackages (
+
+|===
+
+
+Required Smart Class Parameter:
+
+* pkgs
+** default: array, installing: vim-enhanced, screen, strace, tree
+
+corebuildpackage tree:
+
+corebuildpackages/ +
+|-- manifests +
+|   `-- init.pp +
+|-- metadata.json +
+|-- Rakefile +
+|-- README.md +
+|-- spec +
+|   |-- classes +
+|   |   `-- init_spec.rb +
+|   `-- spec_helper.rb +
+`-- tests +
+   `-- init.pp
+
+==== Sample Puppet Module for Docker configuration
+
+
+manifest(init.pp):
+|===
+|class docker (
+
+|===
+
+
+file(docker):
+
+|===
+|# /etc/sysconfig/docker
+
+|===
+
+Required Smart Class Parameter:
+
+* version
+** default: latest, can be used to pin Docker to a specific package version
+
+docker tree: +
+docker +
+|-- checksums.json +
+|-- files +
+|   `-- docker +
+|-- manifests +
+|   `-- init.pp +
+|-- metadata.json +
+|-- Rakefile +
+|-- README.md +
+|-- spec +
+|   |-- classes +
+|   |   `-- init_spec.rb +
+|   `-- spec_helper.rb +
+`-- tests +
+   `-- init.pp
+
+==== Sample Puppet Module for git configuration (both client and server)
+
+
+*Manifest(init.pp):* +
+Class is empty, it is a “meta class” to be able to directly choose subclass git::client or git::server.
+|===
+|class git {
+
+|===
+
+
+*git::server*
+
+Manifest(server.pp):
+|===
+|class git::server (
+
+|===
+
+Files(post-receive):
+|===
+|#!/usr/bin/env bash
+
+|===
+
+Files(sclgit.sh):
+|===
+|#!/bin/bash
+
+|===
+
+Required Smart Class Parameter:
+
+*  repo
+** Repository name,  default: ‘puppet-modules'
+*  repodir
+** Directory where the “repo” is placed, default: ‘/srv/git’
+*  gitpackage
+** Red Hat Software Collection git package version, default: 'git19-git'
+*  package_ensure
+** Define wether package should be installed or removed, default: 'installed'
+
+*git::client* +
+Manifest(client.pp):
+|===
+|class git::client (
+
+|===
+
+
+Required Smart Class Parameter:
+
+* gitpackage
+** “git” by default, could be replaced for example with Red Hat Software Collections git version
+* package_ensure
+** default: installed, could be changed to “absent” to remove at any time.
+
+Git tree:
+
+git +
+|-- checksums.json +
+|-- files +
+|   |-- post-receive +
+|   `-- sclgit.sh +
+|-- manifests +
+|   |-- client.pp +
+|   |-- init.pp +
+|   `-- server.pp +
+|-- metadata.json +
+|-- Rakefile +
+|-- README.md +
+|-- spec +
+|   |-- classes +
+|   |   `-- init_spec.rb +
+|   `-- spec_helper.rb +
+`-- tests +
+   `-- init.pp
+
+==== Sample Puppet Module for rhevagent
+
+
+* Install rhevm-guest-agent package only if the system is running on RHEV Hypervisor, therefore it can be assigned to absolutely every host.
+* Sets the package name to_ rhevm-guest-agent-common _for RHEL7__ __and _rhevm-guest-agent _for RHEL6.
+* Enables and starts the service
+
+Manifest(init.pp):
+|===
+|class rhevagent {
+
+|===
+
+rhevagent tree:
+
+rhevagent +
+|-- checksums.json +
+|-- manifests +
+|   `-- init.pp +
+|-- metadata.json +
+|-- Rakefile +
+|-- README.md +
+|-- spec +
+|   |-- classes +
+|   |   `-- init_spec.rb +
+|   `-- spec_helper.rb +
+`-- tests +
+   `-- init.pp
+
+==== Sample Puppet Module for vmwaretools
+
+
+* Install vmware tools package only if the system is running on vmware, therefore it can be assigned to absolutely every host.
+* Sets the package name to_ open-vm-tools _for RHEL7__ __and _vmware-tools _for RHEL6.
+* Enables and starts the service
+
+Manifest(init.pp):
+|===
+|class vmwaretools {
+
+|===
+
+vmwaretools tree: +
+vmwaretools +
+|-- checksums.json +
+|-- manifests +
+|   `-- init.pp +
+|-- metadata.json +
+|-- Rakefile +
+|-- README.md +
+|-- spec +
+|   |-- classes +
+|   |   `-- init_spec.rb +
+|   `-- spec_helper.rb +
+`-- tests +
+   `-- init.pp
+
+==== Sample Puppet Module for acmeweb (frontend and backend)
+
+
+* Installs and configures the acme website, distributed on two hosts, one for the frontend (apache+php) and one for the backend (mysql/mariadb)
+** Frontend:
+*** Installs apache + php packages
+*** Extracts the currently latest WordPress version shipped as a file through puppet module (version: 4.2.2)
+*** Copies the WordPress files to /var/www/html/ if they do not already exist there
+*** Configures _/var/www/html/wp-config.php _with backend connection parameter
+**** Mandatory to set smart class parameter for backend connection
+** Backend:
+*** Installs mysql/mariadb
+*** Configures backend database (database name, user and password) based on smart class parameter
+**** Mandatory to set smart class parameter for backend configuration
+
+Manifest(init.pp): +
+Class is empty, it is a “meta class” to be able to directly choose subclass acmeweb::frontend or acmeweb::backend.
+|===
+|class acmeweb {
+
+|===
+
+Manifest(frontend.pp):
+|===
+|class acmeweb::frontend (
+
+|===
+
+Required Smart Class Parameter:
+
+* db_name
+** default: wordpress, set to override default database name
+* db_host
+** default: empty, set the ip address or fqdn of the database backend
+* db_user
+** default: wp, set to override default user to connect to the database backend
+* db_user_password
+** default: empty, set the password to connect to the database backend
+
+Manifest(web.pp):
+|===
+|class acmeweb::web {
+
+|===
+
+Manifest(backend.pp):
+|===
+|class acmeweb::backend (
+
+|===
+
+Required Smart Class Parameter:
+
+* root_password
+** default: empty, set the root password
+* db_name
+** default: wordpress, set to override default database name
+* db_host
+** default: empty, set the ip address or fqdn of the database backend
+* db_user
+** default: wp, set to override default user to connect to the database backend
+* db_user_password
+** default: empty, set the password for database connection
+
+
+|===
+|*Note:*
+
+|===
+
+
+Manifest(params.pp):
+|===
+|class acmeweb::params {
+
+|===
+
+
+Templates(wp-config.php.erb):
+|===
+|<?php
+
+|===
+
+Files(latest.tar.gz):
+
+* WordPress Version 4.2.2:  latest.tar.gz
+
+acmeweb tree: +
+acmeweb +
+|-- checksums.json +
+|-- files +
+|   `-- latest.tar.gz +
+|-- manifests +
+|   |-- backend.pp +
+|   |-- frontend.pp +
+|   |-- init.pp +
+|   |-- params.pp +
+|   `-- web.pp +
+|-- metadata.json +
+|-- Rakefile +
+|-- README.md +
+|-- spec +
+|   |-- classes +
+|   |   `-- init_spec.rb +
+|   `-- spec_helper.rb +
+|-- templates +
+|   `-- wp-config.php.erb +
+`-- tests +
+   `-- init.pp

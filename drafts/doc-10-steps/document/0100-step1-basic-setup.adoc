@@ -1,0 +1,284 @@
+<<<
+== Step 1: Set up your System Management Infrastructure
+
+
+First we need to set up the basic components required to begin our setup. In most customer environments, some of these components already exist.
+
+=== Installing  Red Hat Satellite 6.1
+
+
+To install and configure Red Hat Satellite, follow the instructions in chapter 2 of the Red Hat Satellite 6 Installation Guide:
+
+https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html/Installation_Guide/chap-Red_Hat_Satellite-Installation_Guide-Installing_Red_Hat_Satellite_Server.html[https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html/Installation_Guide/chap-Red_Hat_Satellite-Installation_Guide-Installing_Red_Hat_Satellite_Server.html]
+
+The Installation Guide lists the hardware and software requirements recommended for running Red Hat Satellite.
+
+==== How We Have Satellite 6 Set Up in Our Lab
+
+In our lab setup we’re using these components:
+
+* Satellite 6 on top of Red Hat Enterprise Linux 7 as a Virtual Machine running on top of Red Hat Enterprise Virtualization
+* XFS as a file system (especially for pulp), because of an automatically increasing number of inodes.
+We made these decisions based on the key recommendations in the *Performance Tuning Guide for Satellite 6 and Capsules,* which you can find here:https://access.redhat.com/articles/1380493[https://access.redhat.com/articles/1380493[ ]]https://access.redhat.com/articles/1380493[https://access.redhat.com/articles/1380493]
+
+This table summarizes the system characteristics.
+
+|===
+|*Item*|*Specification*
+
+|Satellite Server Release|6.1 Beta
+|Operating Systems Release|Red Hat Enterprise Linux 7.1 x86_64
+|Underlying Virt Platform Release|Red Hat Enterprise Linux Virtualization 3.4
+|Memory|16384 MB
+|CPU|4 vCPU
+|Disk Size|200 GB
+|===
+=== Satellite 6 Installation
+
+
+The assumption made is that a Red Hat Satellite Server 6 is already installed.
+
+*Note:* +
+If Red Hat Satellite Server 6 is not installed yet, just follow the instructions inside the Getting Started Guide which could be found here:https://access.redhat.com/products/red-hat-satellite/get-started[https://access.redhat.com/products/red-hat-satellite/get-started[ ]]https://access.redhat.com/products/red-hat-satellite/get-started[https://access.redhat.com/products/red-hat-satellite/get-started]
+
+*Note:* +
+For network communication between Satellite, Capsule and Hosts see: +
+https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html/Installation_Guide/sect-Red_Hat_Satellite-Installation_Guide-Prerequisites.html#form-Red_Hat_Satellite-Installation_Guide-Prerequisites-Required_Network_Ports[https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html/Installation_Guide/sect-Red_Hat_Satellite-Installation_Guide-Prerequisites.html#form-Red_Hat_Satellite-Installation_Guide-Prerequisites-Required_Network_Ports] +
+and +
+https://access.redhat.com/articles/1447533[https://access.redhat.com/articles/1447533]
+
+
+==== DNS, DHCP, and TFTP Recommendations
+
+This solution guide uses the built-in *DNS*, *DHCP*, and *TFTP *features, which can be configured on any Red Hat Satellite Capsule (Satellite Server 6 has an embedded Capsule).
+
+If you have not configured the *DNS*, *DHCP*, and *TFTP* capabilities of Satellite Server 6.1, we recommend that you do.
+
+Satellite Server is installed and configured through _Puppet_. Because of this configuration, the _katello-installer _can be safely executed again.
+
+
+|===
+|katello-installer \
+
+|===
+
+*Note:* +
+Replace <...> with valid values.
+
+*Example:* +
+(In this example the IP address of the Satellite Server 6 is: 192.168.0.50)
+
+|===
+|katello-installer \
+
+|===
+
+
+*Caution:* +
+Before you activate the dhcp daemon on your network, make sure it does not conflict with any other dhcp daemons on the same network.
+
+If there is no dhcp server (allowed) in your network, you can use Satellite 6 to create boot isos. It is also possible to leverage an already existing PXE infrastructure (but we do not cover that procedure in detail in this document).
+
+If you need to use multiple dhcp server on the same network, you can limit your dhcp offers to the clients managed by this capsule. Use this option in your subnet definitions:
+
+|===
+|ignore unknown-clients;
+
+|===
+
+*Note:* +
+Do not use this option if you need to assign ip addresses dynamically for clients that are not already configured on your dhcp server.
+
+*Warning:* +
+Since the “ignore unknown-clients;” stanza in the _dhcpd.conf_ configuration file is not part of the Puppet template being used when running the katello-installer, _ignore unknown-clients;_ is removed from the _dhcpd.conf_ file when the katello-installer is executed a second time.
+
+*Example:* +
+/etc/dhcp/dhcpd.conf:
+
+|===
+|...
+
+|===
+
+
+==== Red Hat Content Delivery Network (CDN)
+
+The Content Delivery Network (CDN) is the mechanism that delivers Red Hat content in a geographically co-located fashion. For example, content synchronized by a Satellite in Europe would pull content from a source in Europe.
+
+In most enterprise environments, server systems have limited access to the internet. They can only reach the specific endpoints to which they have access.
+
+You need to access the following domains via port 443, so that you can synchronize content from the Red Hat CDN to your Satellite Server:
+
+
+|===
+|*Domain*|*Port*|*Protocol*
+
+|subscription.rhn.redhat.com|443|https
+|cdn.redhat.com|443|https
+|*.akamaiedge.net|443|https
+|===
+
+*Note:* +
+We recommend that you do not specify the IP addresses, because the packages are distributed through the Akamai network, and the IP addresses can change. However, if your firewall cannot use hostname filtering, Red Hat provides a pool of IP addresses for CDN delivery. For further details see here:https://access.redhat.com/documentation/en-US/Red_Hat_Subscription_Management/1/html/RHSM/location-aware.html[https://access.redhat.com/documentation/en-US/Red_Hat_Subscription_Management/1/html/RHSM/location-aware.html[ ]]https://access.redhat.com/documentation/en-US/Red_Hat_Subscription_Management/1/html/RHSM/location-aware.html[https://access.redhat.com/documentation/en-US/Red_Hat_Subscription_Management/1/html/RHSM/location-aware.html]
+
+If Satellite Server 6 has to use a Proxy Server to reach the Red Hat CDN, re-run the katello-installer with the following options:
+
+|===
+|katello-installer \
+
+|===
+
+
+*Note:* +
+For more configuration options see:
+
+|===
+|katello-installer --help
+
+|===
+
+    or
+
+https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html-single/Installation_Guide/index.html#sect-Red_Hat_Satellite-Installation_Guide-Installing_Red_Hat_Satellite_Server-Running_the_Installation_and_Configuration_Program-Other_Configuration_Options[https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.1/html-single/Installation_Guide/index.html#sect-Red_Hat_Satellite-Installation_Guide-Installing_Red_Hat_Satellite_Server-Running_the_Installation_and_Configuration_Program-Other_Configuration_Options]
+
+=== Hammer Command Line Interface
+
+
+Hammer is the Command Line Interface (CLI) for managing the Red Hat Satellite Server 6 from the shell.
+
+Hammer can be installed on any Red Hat Enterprise Linux Server to connect to the Red Hat Satellite Server 6 remotely via terminal. Hammer is installed on the Red Hat Satellite Server 6 during installation by default.
+
+Hammer has an interactive shell that uses the bash-completion feature for convenient interactive usage as well as  the history function.
+
+Red Hat Satellite also provides a *Representational State Transfer* (*REST*) API. The API gives software developers and system administrators control of their Red Hat Satellite environment outside of the standard web interface. The REST API is useful for developers and administrators who want to integrate Red Hat Satellite with custom scripts or external applications that access the API via the standard Hypertext Transfer Protocol (HTTP).
+
+For more information see: +
+https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.0/html/API_Guide/index.html[https://access.redhat.com/documentation/en-US/Red_Hat_Satellite/6.0/html/API_Guide/index.html]
+
+*Note:* +
+This solution guide includes instructions for using the Hammer Command Line Interface for each step.
+
+==== Install and Configure Hammer on a Remote Host
+
+
+|===
+|yum -y install rubygem-hammer_cli.noarch
+
+|===
+
+|===
+|/root/.hammer/cli_config.yml
+
+|===
+
+=== Creating a New Satellite 6 Organization
+
+Satellite 6 uses organizations to divide hosts into logical groups based on ownership, purpose, content, security level, or other divisions. You can view, create, and manage multiple organizations by using either the web interface or the Hammer command line interface. Software and host entitlements can be allocated across many organizations, and access to those organizations controlled.
+
+Each organization must be created and used by a single Red Hat customer account, but each account can manage multiple organizations. Subscription manifests can only be imported into a single organization.
+
+*Warning:* +
+Satellite will *not* upload a manifest that has already been uploaded into a different organization.
+
+By default, Red Hat Satellite creates one organization (called Default Organization), which you can modify to suit your own installation or delete. In our solution guide setup, we have deleted the default organization created during Satellite 6 installation and created a new organization “ACME.”  Note that we are not using Satellite 6’s *multi-org feature* in this solution guide.
+
+To create a new Satellite 6 organization:
+
+. Login as the Satellite admin or a user with the corresponding role.
+. Click on “Administer -> Organizations -> New Organization”
+. Enter a name, label and description.
+. Click Submit.
+
+
+After clicking the Submit button, you can also:
+
+* Select existing hosts to become part of this new organization (tab “Select Hosts”).
+* Configure additional properties, like users, capsules, subnets, media, and templates.
+
+
+
+We are leaving the default configuration for all these items unchanged. We will configure them in later sections of this solution guide.
+
+*Via Hammer* +
+You can also use a simple hammer CLI command to create a new organization:
+
+|===
+|hammer organization create --name "ACME" --label "ACME" --description "SOE Reference Architecture example org"
+
+|===
+
+=== Importing your Red Hat Subscription Manifest
+
+
+Red Hat Satellite 6 includes subscription management capabilities for all Satellite-managed systems. In contrast to Satellite 5, each organization administrator can now maintain all subscriptions within the designated  Satellite 6 organization.
+
+Satellite Server requires a source for Red Hat content. The content is configured by uploading a subscription manifest file to the Satellite. You can obtain this file through the Red Hat Customer Portal, or by contacting Red Hat Support. Manifests provide subscriptions to client hosts through the Red Hat Satellite rather than through Red Hat Network.
+
+To obtain the subscription manifest from the Customer Portal:
+
+. Log in to the Customer Portal.
+. Click Subscriptions.
+. On the Red Hat Subscription Management Page, scroll down and click Subscription Management Applications, and then click Satellite.
+. On the upper right corner of the Subscriptions Management Applications page, click Register a Satellite.
+. Create a name to distinguish your Satellite from the other Satellite systems in your account.
+. Select Satellite 6.0 from the drop-down menu as the Satellite version. It is important to select the correct version as each version requires a certain subset of packages.
+. Click Register.
+. Click Attach a subscription, add the subscriptions required for Red Hat Satellite, and then click Attach Selected.
+*Note:* +
+The minimum requirements for generating a manifest are:
+
+* A valid Red Hat Satellite subscription on your Customer Portal account
+* At least one Red Hat Enterprise Linux subscription to attach to the manifest
+. Click Download manifest to generate an archive in .zip format that contains the manifest for Red Hat Satellite.
+
+Now you can upload the subscription manifest into Red Hat Satellite 6. Because subscription manifests are assigned to an organization, *select an organization before* uploading a subscription manifest.
+
+. Log in to the Satellite server.
+. Click Any Context → Any Organization, and select the organization to which you want to assign the subscription manifest.
+. Click Content → Red Hat Subscriptions, and click Manage Manifest in the upper right corner of the page.
+. In the Subscription Manifest section, click Actions.
+. Under the Upload New Manifest subsection, click Browse.
+. Select the manifest file to upload, and click Upload.
+
+Upload the subscription manifest using Hammer CLI via the following command:
+
+|===
+|# hammer subscription upload --organization "ACME" --file "/tmp/manifest.zip"
+
+|===
+
+In the solution guide implementation, the following subscription manifest is used:
+
+
+|===
+|*Subscriptions*|*Number*
+
+|Red Hat Enterprise Linux with Smart Virtualization, Premium (2-socket)|30
+|Red Hat Satellite Capsule Server|2
+|===
+
+*Note:* +
+The Red Hat Satellite Server 6 subscription itself does not have to be added to the manifest. The subscription manifest imported to Satellite 6  includes only the subscriptions for the products managed by a particular Satellite 6 organization as long as Satellite 6 itself is not registered to itself which would require that the corresponding Satellite 6 subscriptions are part of the subscription manifest as well.
+
+After successfully importing the manifest, verify and manage your subscriptions by clicking on Content -> Red Hat Subscriptions.
+
+=== Setting Up Your Revision Control Server (git)
+
+
+To put content under revision control, we use a dedicated git server as a centralized revision control system. We store the following content items in our git repository:
+
+* All Puppet sources, including files, templates, and modules
+* All custom software, including spec files, source rpms, and binary rpms
+* All scripts used in this solution guide
+
+*Note:* +
+Though this solution guide uses git, other revision control systems can be used as well (for example, cvs, subversions and others).
+
+If you do not have a revision control server in your environment yet, all required configurations to set up a git-based RCS server are explained in this document.
+
+=== Setting Up Your Monitoring Server
+
+
+In our solution guide setup, we use Zabbix as the monitoring application. The Zabbix server itself is already in place, so we do not cover the installation and configuration procedure here.
+
+For a typical sample setup, follow the installation documentation:https://www.zabbix.com/documentation/3.0/manual/installation/install_from_packages[https://www.zabbix.com/documentation/3.0/manual/installation/install_from_packages[]]https://www.zabbix.com/documentation/3.0/manual/installation/install_from_packages[https://www.zabbix.com/documentation/3.0/manual/installation/install_from_packages]
