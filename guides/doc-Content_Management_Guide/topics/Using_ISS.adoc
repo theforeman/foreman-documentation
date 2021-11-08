@@ -1,23 +1,133 @@
 [[Using_ISS]]
 == Synchronizing Content Between {ProjectServer}s
 
-{ProjectName} uses Inter-{Project} Synchronization (ISS) to synchronize content {ProjectServer}s, or between organizations on {ProjectServer}.
+{ProjectName} uses Inter-{Project} Synchronization (ISS) to synchronize content between two {ProjectServer}s including those that are airgapped.
 
-You can use ISS in the following scenarios:
 
-ifdef::satellite[]
-* If you have both connected and disconnected {ProjectServer}s, and want to copy content from the connected servers to the disconnected servers.
-For example, you require complete isolation of management infrastructure for security or other purposes.
-endif::[]
-
+=== Scenarios
 * If you want to copy some but not all content from your {ProjectServer} to other {ProjectServer}s.
-For example, you have Content Views that your IT department validates on {ProjectServer}, and you want to copy content from those Content Views to other {ProjectServer}s.
+For example, you have Content Views that your IT department consumes content from {ProjectServer}, and you want to copy content from those Content Views to other {ProjectServer}s.
 
-* If you want to clone a Content View from one organization to another organization on {ProjectServer}.
+* If you want to copy all library content from your {ProjectServer} to another {ProjectServer}s.
+For example, you have Products and repositories that your IT department consumes content from {ProjectServer} in the Library, and you want to copy all Products and repositories in that organization to another {ProjectServer}s.
+
+* If you have both connected and disconnected {ProjectServer}s, and want to copy content from the connected servers to the disconnected servers.
+For example, you require complete isolation of your management infrastructure for security or other purposes.
+
+These scenarios require at least two {ProjectServer}s: one {ProjectServer} that is connected to the outside world and contains content to export, and another {ProjectServer} that is disconnected that you want to import content to.
+
+[[img-disconnected]]
+
+ifndef::satellite[]
+image::Disconnected.png[title="The {Project} ISS use cases", alt="The {Project} ISS use cases"]
+endif::[]
 
 You cannot use ISS to synchronize content from {ProjectServer} to {SmartProxyServer}.
 {SmartProxyServer} supports synchronization natively.
 For more information, see {PlanningDocURL}chap-Documentation-Architecture_Guide-Capsule_Server_Overview[{SmartProxyServer} Overview] in _Planning for {ProjectNameX}_.
+
+=== Configuration Definitions
+There are different ways of using ISS to synchronize content between two {ProjectServer}s.
+
+.Connected
+In a connected scenario, two {ProjectServer}s are able to communicate with each other.
+
+ifndef::satellite[]
+image::Connected.png[title="The {Project} ISS Connected use case", alt="The {Project} ISS Connected use case"]
+endif::[]
+
+.Disconnected
+In a disconnected scenario, there is the following setup:
+
+* Two {ProjectServer}s are connected to each other.
+* One {ProjectServer} is connected to the Internet while the other {ProjectServer} is not connected to the Internet.
+** This is referred to as the disconnected {ProjectServer}.
+* The disconnected {ProjectServer} is completely isolated from all external networks but can communicate with a connected {ProjectServer}.
+
+ifndef::satellite[]
+image::Non-Airgapped-Disconnected.png[title="The {Project} ISS Non Airgapped Disconnected use case", alt="The {Project} ISS Airgapped Disconnected use case"]
+endif::[]
+
+
+.Air-gapped Disconnected
+In this setup, both {ProjectServer}s are isolated from each other.
+The only way for air-gapped {ProjectServer}s to receive content updates is through the import/export workflow.
+
+ifndef::satellite[]
+image::Airgapped-Disconnected.png[title="The {Project} ISS Airgapped Disconnected use case", alt="The {Project} ISS Airgapped Disconnected use case"]
+endif::[]
+
+=== Exporting from a Connected {ProjectServer}
+
+==== Connected {ProjectServer} as a Content Store
+
+In this scenario, you have one connected {ProjectServer} that is receiving content from an external source like the CDN.
+The rest of your infrastructure is completely isolated, including another disconnected {ProjectServer}.
+The connected {ProjectServer} is mainly used as a content store for updates.
+The disconnected {ProjectServer} serves as the main {ProjectServer} for managing content for all infrastructure behind the isolated network.
+
+.On the connected {ProjectServer}
+
+. Ensure that repositories are using the immediate download policy, either by:
+.. For existing repos using *On Demand*, change their download policy on the repository details page to *Immediate*.
+.. For new repositories, ensure that the *Default Red Hat Repository download policy* setting is set to *Immediate* before enabling Red Hat repositories, and that the *Default download policy* is set to *Immediate* for custom repositories
+.. see xref:Importing_Content-Configuring_Download_Policies[] for more information.
+. Enable the content that you want to use (refer to xref:Importing_Content-Selecting_Red_Hat_Repositories_to_Synchronize[].)
+. Synchronize the enabled content.
+. For the first export, perform a `complete Library` export so that all the synchronized content are exported.
+This  generates content archives that you can later import into one or more disconnected {ProjectServer}s.
+For more information on performing a complete Library export, see xref:Using_ISS-Exporting-Library[].
+. Export all future updates in the connected {ProjectServer}s incrementally.
+This generates leaner content archives that contain changes only from the recent set of updates.
+For example, if you enable and synchronize a new repository, the next exported content archive contains content only from the newly enabled repository.
+For more information on performing an incremental Library export, see xref:Using_ISS-Exporting-Library-Incremental[].
+
+
+.On the disconnected {ProjectServer}
+
+. Copy the exported content archive that you want from the connected {ProjectServer}.
+. Import content to an organization using the procedure outlined in xref:Using_ISS-Importing-Library[].
+You can then manage content using Content Views or Lifecycle Environments as you require on the disconnected {ProjectServer}.
+
+==== Connected {ProjectServer} for managing Content View Versions
+
+In this scenario, your connected {ProjectServer} is receiving content from an external source like the CDN. The rest of your infrastructure is completely isolated, including a disconnected {ProjectServer}.
+However, the connected {ProjectServer} is not only used as a content store, but also is used to manage content.
+Updates coming from the CDN are curated into Content Views and Lifecycle Environments.
+Once the content has been promoted to a designated Lifecycle Environment, the content can be exported and imported into the disconnected {ProjectServer}.
+
+.On the connected {ProjectServer}
+. Ensure that repositories are using the immediate download policy, either by:
+.. For existing repos using *On Demand* change their download policy on the repository details page to *Immediate*.
+.. For new repositories, ensure that the *Default Red Hat Repository download policy* setting is set to *Immediate* before enabling RH repos, and *Default download policy* is set to *Immediate* for custom repositories
+see xref:Importing_Content-Configuring_Download_Policies[] for more information.
+. Enable any content that you want to use (refer to xref:Importing_Content-Selecting_Red_Hat_Repositories_to_Synchronize[].)
+. Synchronize the enabled content.
+. When you have new content republish the Content Views that include this content (see xref:Managing_Content_Views[].) This should create a new Content View Version with the appropriate content to export.
+. For the first export, perform a `complete version` export on the Content View Version that you want to export.
+For more information see, xref:Using_ISS-Exporting-a-Content-View-Version[].
+This generates content archives that you can import into one or more disconnected {ProjectServer}s.
+. Export all future updates in the connected {ProjectServer}s incrementally.
+This generates leaner content archives that contain changes only from the recent set of updates.
+For example, if your Content View has a new repository, this exported content archive  contains only the latest changes.
+For more information on performing an incremental export on Content View Versions, see xref:Using_ISS-Exporting-a-Content-View-Version-Incremental[].
+
+.On the disconnected {ProjectServer}
+
+. Copy the exported content archive from the connected {ProjectServer}.
+. Import the content to the organization that you want.
+For more information, see xref:Using_ISS-Importing-Content-View-Version[].
+This will create a content view version from the exported content archives and them import  content appropriately.
+
+=== Keeping track of your exports
+
+If you are exporting content to several disconnected {ProjectServer}s then using a `--destination-server` option  provides a way to organize or maintain a record of what versions got exported to a given destination.
+For more information, see xref:Using_ISS-Destination-Server[].
+
+This option is available for all content-export operations. You can use the `destination-server` to
+
+* Query what was previously exported to a given destination.
+* Generate incremental exports automatically to the given destination server.
 
 [[Using_ISS-Exporting-a-Content-View-Version]]
 === Exporting a Content View Version
@@ -32,9 +142,7 @@ The exported archive file contains the following data:
 {ProjectServer} exports only RPM and kickstart files added to a version of a Content View.
 {Project} does not export the following content:
 
-* Puppet content
 * Docker content
-* OSTree content
 * Content View definitions and metadata, such as package filters.
 
 .Prerequisites
@@ -46,6 +154,7 @@ To export a Content View, ensure that {ProjectServer} where you want to export m
 * Ensure that you set download policy to *Immediate* for all repositories within the Content View you export.
 For more information, see xref:Importing_Content-Configuring_Download_Policies[].
 * Ensure that you synchronize Products that you export to the required date.
+* Ensure that the user exporting the content has the `Content Exporter` role.
 
 .To Export a Content View Version:
 
@@ -54,7 +163,10 @@ For more information, see xref:Importing_Content-Configuring_Download_Policies[]
 [subs="+quotes"]
 ----
 
-# hammer content-view version list --organization=export-org --content-view=view
+# hammer content-view version list \
+--organization=export-org \
+ --content-view=view
+
 ---|----------|---------|-------------|-----------------------
 ID | NAME     | VERSION | DESCRIPTION | LIFECYCLE ENVIRONMENTS
 ---|----------|---------|-------------|-----------------------
@@ -70,7 +182,9 @@ Get the version number of desired version. The following example targets version
 
 [options="nowrap" subs="+quotes"]
 ----
-# hammer content-export complete version --content-view=view --version=1.0 --organization=export-21527
+# hammer content-export complete version \
+--content-view=view --version=1.0 \
+--organization=export-21527
 ----
 
 . Verify that the archive containing the exported version of a Content View is located in the export directory:
@@ -87,14 +201,35 @@ Get the version number of desired version. The following example targets version
 
 In many cases, the exported archive content can be several gigabytes in size. You might want to split it smaller sizes or chunks. You can use the `--chunk-size-gb` option with in the `hammer content-export` command to handle this. The following example uses the `--chunk-size-gb=2` to split the archives into `2 GB` chunks.
 
+
 [options="nowrap" subs="+quotes"]
 ----
-# hammer content-export complete version --content-view=view --version=1.0 --organization=export-21527 --chunk-size-mb=10
+# hammer content-export complete version --content-view=view --version=1.0 --organization=export-21527 --chunk-size-gb=2
 
 # ls -lh  /var/lib/pulp/exports/export-21527/view/1.0/2021-02-25T21-15-22-00-00/
 ----
 
+[[Using_ISS-Destination-Server]]
+=== Keeping track of your exports
 
+When importing content to several {ProjectServer}s, the --destination-server option is especially useful for keeping track of which content was exported and to where.
+
+You can use this flag to let the exporting {ProjectServer} keep track of content in specific servers.
+The `--destination-server` option functions to indicate the destination server that your content is imported to.
+The following example uses `--destination-server=mirror1` to export content to `mirror1`.
+The archive is created on the exporting {ProjectServer}.
+However, a record of each export is also maintained.
+This can be very useful when incrementally exporting.
+
+[options="nowrap" subs="+quotes"]
+----
+# hammer content-export complete version \
+--content-view=view --version=1.0 \
+--organization=export-21527 \
+--destination-server=mirror1
+----
+
+[[Using_ISS-Exporting-a-Content-View-Version-Incremental]]
 .Incremental Export
 
 Exporting complete versions can be a very expensive operation on storage space and resources. Content View versions that have multiple {RHEL} trees can occupy several gigabytes of the space on {ProjectServer}.
@@ -106,7 +241,10 @@ ln the following example, since version `1.0` has already been exported and the 
 To use incremental export, complete the following steps.
 
 ----
-# hammer content-export incremental version --content-view=view --version=2.0 --organization=export-21527
+# hammer content-export incremental version \
+ --content-view=view \
+ --version=2.0 \
+ --organization=export-21527
 
 # ls -lh /var/lib/pulp/exports/export-21527/view/2.0/2021-02-25T21-45-34-00-00/
 ----
@@ -117,6 +255,7 @@ You can query on the exports that you previously have created via the `hammer co
 
 ----
 hammer content-export list --organization=export-21527
+
 ---|--------------------|-----------------------------------------------------------------------|-------------|----------------------|-------------------------|-------------------------|------------------------
 ID | DESTINATION SERVER | PATH                                                                  | TYPE        | CONTENT VIEW VERSION | CONTENT VIEW VERSION ID | CREATED AT              | UPDATED AT
 ---|--------------------|-----------------------------------------------------------------------|-------------|----------------------|-------------------------|-------------------------|------------------------
@@ -126,14 +265,14 @@ ID | DESTINATION SERVER | PATH                                                  
 ---|--------------------|-----------------------------------------------------------------------|-------------|----------------------|-------------------------|-------------------------|------------------------
 ----
 
-
+[[Using_ISS-Importing-Content-View-Version]]
 === Importing a Content View Version
 
 You can use the archive that the `hammer content-export` command outputs to create a version of a Content View with the same content as the exported Content View version.
 For more information about exporting a Content View version, see xref:Using_ISS-Exporting-a-Content-View-Version[].
 
 When you import a Content View version, it has the same major and minor version numbers and contains the same repositories with the same packages and errata.
-You can customize the version numbers by changing the `major` and `minor` settings in the `json` file that is located in the exported archive.
+The Custom Repositories, Products and Content Views are automatically created if they do not exist in the importing organization.
 
 .Prerequisites
 
@@ -141,50 +280,33 @@ To import a Content View, ensure that {ProjectServer} where you want to import m
 
 . The exported archive must be in a directory under `/var/lib/pulp/imports`.
 . The directory must have `pulp:pulp` permissions so that Pulp can read and write the `.json` files in that directory.
+. If there are any Red Hat repositories in the export archive, the importing organization's manifest must contain subscriptions for the products contained within the export.
 . The user importing the content view version must have the 'Content Importer' Role.
+
 
 .Procedure
 
 . Copy the archived file with the exported Content View version to the `/var/lib/pulp/imports` directory on {ProjectServer} where you want to import.
-. Set the SELinux permission of the archive files to `pulp:pulp`.
+. Set the user:group permission of the archive files to `pulp:pulp`.
 +
 [subs="+quotes"]
 ----
 # chown -R pulp:pulp /var/lib/pulp/imports/2021-02-25T21-15-22-00-00/
 ----
 +
-. Verify that the SELinux permission change occurs:
+. Verify that the permission change occurs:
 +
 [subs="+quotes"]
 ----
 # ls -lh  /var/lib/pulp/imports/2021-02-25T21-15-22-00-00/
 
 ----
-+
-. On {ProjectServer} where you want to import, create a Content View with the same name and label as the exported Content View with the `Import Only` option set.
-For more information, see xref:Managing_Content_Views-Creating_a_Simple_Content_View[].
-. Ensure that you enable the repositories that the Products in the exported Content View version include.
-For more information, see xref:Importing_Content-Selecting_Red_Hat_Repositories_to_Synchronize[].
-. In the {Project} web UI, navigate to *Content* > *Products*, click the *Yum content* tab and add the same `Yum` content that the exported Content View version includes.
-. Identify the Content View that you want to import
-+
-[subs="+quotes"]
-----
-# hammer content-view list --organization=import-20639
-----------------|---------------------------|--------------------------------------|-----------|---------------------|---------------
-CONTENT VIEW ID | NAME                      | LABEL                                | COMPOSITE | LAST PUBLISHED      | REPOSITORY IDS
-----------------|---------------------------|--------------------------------------|-----------|---------------------|---------------
-4               | Default Organization View | 6e13cfca-cfb3-4870-9d8b-3bdc0caf97c9 | false     | 2021/03/01 22:50:10 |
-5               | view                      | view                                 | false     |                     |
-----------------|---------------------------|--------------------------------------|-----------|---------------------|---------------
-+
-----
+
 . To import the Content View version to {ProjectServer}, enter the following command:
 +
 [subs="+quotes"]
 ----
-# hammer content-import version --content-view=view \
-                                --organization=import-20639 \
+# hammer content-import version --organization=import-20639 \
                                 --path=/var/lib/pulp/imports/2021-02-25T21-15-22-00-00/
 ----
 +
@@ -207,7 +329,7 @@ ID | NAME     | VERSION | DESCRIPTION | LIFECYCLE ENVIRONMENTS
 
 
 [[Using_ISS-Exporting-Library]]
-=== Exporting a Content View Version
+=== Exporting the Library Environment
 
 You can export contents of all Yum repositories in the Library environment of an organization to an archive file from {ProjectServer} and use this archive file to create the same repositories in another {ProjectServer} or in another {ProjectServer} organization.
 The exported archive file contains the following data:
@@ -218,9 +340,7 @@ The exported archive file contains the following data:
 {ProjectServer} exports only RPM and kickstart files included in a Content View  version.
 {Project} does not export the following content:
 
-* Puppet content
 * Docker content
-* OSTree content
 
 .Prerequisites
 
@@ -257,27 +377,21 @@ total 68M
 
 .Export with chunking
 
-In many cases the exported archive content may be several gigabytes in size. We may want to split it smaller sizes or chunks. We can use the `--chunk-size-mb` flag directly in the export command to handle this. In the example below we specify `--chunk-size-mb=10` to split the archives in `10 MB` chunks.
+In many cases the exported archive content may be several gigabytes in size.
+If you want to split it into smaller sizes or chunks.
+You can use the `--chunk-size-gb` flag directly in the export command to handle this.
+In the following example, you can see how to specify `--chunk-size-gb=2` to split the archives in `2 GB` chunks.
 
 [options="nowrap" subs="+quotes"]
 ----
-# hammer content-export complete library --organization=export-21527 --chunk-size-mb=10
+# hammer content-export complete library --organization=export-21527 --chunk-size-gb=2
 [.....................................................................................................................................................................................................................................] [100%]
 Generated /var/lib/pulp/exports/export-21527/Export-Library/2.0/2021-03-02T04-01-25-00-00/metadata.json
 
 # ls -lh /var/lib/pulp/exports/export-21527/Export-Library/2.0/2021-03-02T04-01-25-00-00/
-total 68M
--rw-r--r--. 1 pulp pulp  10M Mar  2 04:01 export-fa948a08-b307-492e-86f0-39cd41c87958-20210302_0401.tar.gz.0000
--rw-r--r--. 1 pulp pulp  10M Mar  2 04:01 export-fa948a08-b307-492e-86f0-39cd41c87958-20210302_0401.tar.gz.0001
--rw-r--r--. 1 pulp pulp  10M Mar  2 04:01 export-fa948a08-b307-492e-86f0-39cd41c87958-20210302_0401.tar.gz.0002
--rw-r--r--. 1 pulp pulp  10M Mar  2 04:01 export-fa948a08-b307-492e-86f0-39cd41c87958-20210302_0401.tar.gz.0003
--rw-r--r--. 1 pulp pulp  10M Mar  2 04:01 export-fa948a08-b307-492e-86f0-39cd41c87958-20210302_0401.tar.gz.0004
--rw-r--r--. 1 pulp pulp  10M Mar  2 04:01 export-fa948a08-b307-492e-86f0-39cd41c87958-20210302_0401.tar.gz.0005
--rw-r--r--. 1 pulp pulp 7.7M Mar  2 04:01 export-fa948a08-b307-492e-86f0-39cd41c87958-20210302_0401.tar.gz.0006
--rw-r--r--. 1 pulp pulp 1.2K Mar  2 04:01 export-fa948a08-b307-492e-86f0-39cd41c87958-20210302_0401-toc.json
--rw-r--r--. 1 root root  443 Mar  2 04:01 metadata.json
 ----
 
+[[Using_ISS-Exporting-Library-Incremental]]
 .Incremental Export
 
 Exporting Library content can be a very expensive operation in terms of space and resources. Organization that have multiple RHEL trees may occupy several gigabytes of the space on {ProjectServer}.
@@ -300,7 +414,8 @@ total 172K
 ----
 . Since nothing changed between the previous export and now in the Organization's library environment the change files are really small.
 
-=== Importing a Content View Version
+[[Using_ISS-Importing-Library]]
+=== Importing into the Library Environment
 
 You can use the archive that the `hammer content-export` command outputs to import into the Library lifecycle environment of another organization
 For more information about exporting contents from the Library environment, see xref:Using_ISS-Exporting-Library[].
@@ -309,7 +424,11 @@ For more information about exporting contents from the Library environment, see 
 
 To import in to an Organization's library lifecycle environment  ensure that {ProjectServer} where you want to import meets the following conditions:
 
-* The products and repositories in the organization need to match the product/repository structure in the content archive being imported.
+. The exported archive must be in a directory under `/var/lib/pulp/imports`.
+. The directory must have `pulp:pulp` permissions so that Pulp can read and write the `.json` files in that directory.
+. If there are any Red Hat repositories in the export archive, the importing organization's manifest must contain subscriptions for the products contained
+within the export.
+. The user importing the content must have the 'Content Importer' Role.
 
 .Procedure
 
@@ -345,7 +464,6 @@ Note you must enter the full path `/var/lib/pulp/imports/<path>`. Relative paths
 A new Content View called `Import-Library` is created in the target organization.
 This Content View is used to facilitate the library content import.
 
-
 === Import/Export Cheat Sheet
 
 .Export
@@ -362,7 +480,7 @@ This Content View is used to facilitate the library content import.
 
 |Export a content view version promoted  to the Dev Environment|`hammer content-export complete version --content-view=view --organization="Default_Organization" --lifecycle-environment=’Dev’`
 
-|Export a content view in smaller chunks (200 mb slabs)|`hammer content-export complete version --content-view=view --version=1.0 --organization="Default_Organization" --chunk-size-mb=200`
+|Export a content view in smaller chunks (2 gb slabs)|`hammer content-export complete version --content-view=view --version=1.0 --organization="Default_Organization" --chunk-size-gb=2`
 
 |Get a list of exports|`hammer content-export list --content-view=view --organization="Default_Organization"`
 
@@ -373,7 +491,7 @@ This Content View is used to facilitate the library content import.
 |=========================================================
 |Intent | Command
 
-|Import to a content view version (view is a `import_only` content view)| `hammer content-import version --content-view=view --organization="Default_Organization" --path=’/var/lib/pulp/imports/dump_dir’`
+|Import to a content view version | `hammer content-import version --organization="Default_Organization" --path=’/var/lib/pulp/imports/dump_dir’`
 
 |Import to an Organization's Library| `hammer content-import library --organization="Default_Organization" --path=’/var/lib/pulp/imports/dump_dir’`
 |=========================================================
