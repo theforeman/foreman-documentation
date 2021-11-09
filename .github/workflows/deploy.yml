@@ -10,9 +10,12 @@ on:
     branches:
       - master
       - "[0-9]+.[0-9]+"
+env:
+  RUBY_VERSION: 2.7
+  PYTHON_VERSION: 2.x
 
 jobs:
-  build-html:
+  check-html:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -32,15 +35,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Set up Ruby 2.6
+      - name: Setup Ruby
         uses: actions/setup-ruby@v1
         with:
-          ruby-version: 2.6.x
+          ruby-version: ${{ env.RUBY_VERSION }}
 
-      - name: Setup Python 2.x
+      - name: Setup Python
         uses: actions/setup-python@v2
         with:
-          python-version: '2.x'
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install dependencies
         run: bundle install --jobs=3 --retry=3
@@ -64,22 +67,7 @@ jobs:
         run: |
           make linkchecker-tryer
 
-      - name: Rebuild HTML with real links
-        run: |
-          make clean
-          make html BUILD=foreman-el
-          make html BUILD=foreman-deb
-          make html BUILD=katello
-          make html BUILD=satellite
-          make html BUILD=orcharhino
-
-      - name: Upload HTML
-        uses: actions/upload-artifact@v2
-        with:
-          name: foreman-docs-html-${{ env.BRANCH_NAME }}
-          path: guides/build/
-
-  build-pdf:
+  build-html:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -99,10 +87,59 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Set up Ruby 2.6
+      - name: Setup Ruby
         uses: actions/setup-ruby@v1
         with:
-          ruby-version: 2.6.x
+          ruby-version: ${{ env.RUBY_VERSION }}
+
+      - name: Install dependencies
+        run: bundle install --jobs=3 --retry=3
+        working-directory: .
+
+      - name: Build HTML with real links
+        run: |
+          make clean
+          make html BUILD=foreman-el
+          make html BUILD=foreman-deb
+          make html BUILD=katello
+          make html BUILD=satellite
+          make html BUILD=orcharhino
+
+      - name: Upload HTML
+        uses: actions/upload-artifact@v2
+        with:
+          name: foreman-docs-html-${{ env.BRANCH_NAME }}
+          path: guides/build/
+
+  build-pdf:
+    if: >
+      github.repository_owner == 'theforeman' &&
+      (github.ref == 'refs/heads/master' ||
+      startsWith(github.ref, 'refs/heads/2.') ||
+      startsWith(github.ref, 'refs/heads/3.'))
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: guides
+    steps:
+      - name: Get branch name (merge)
+        if: github.event_name != 'pull_request'
+        run: echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/} | tr / -)" >> $GITHUB_ENV
+        working-directory: .
+
+      - name: Get branch name (pull request)
+        if: github.event_name == 'pull_request'
+        run: echo "BRANCH_NAME=$(echo ${GITHUB_HEAD_REF} | tr / -)" >> $GITHUB_ENV
+        working-directory: .
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Ruby
+        uses: actions/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
 
       - name: Install dependencies
         run: bundle install --jobs=3 --retry=3
@@ -152,8 +189,13 @@ jobs:
           path: web/public/
 
   publish:
-    if: github.repository_owner == 'theforeman' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/2.') || startsWith(github.ref, 'refs/heads/3.') || startsWith(github.ref, 'refs/heads/4.'))
+    if: >
+      github.repository_owner == 'theforeman' &&
+      (github.ref == 'refs/heads/master' ||
+      startsWith(github.ref, 'refs/heads/2.') ||
+      startsWith(github.ref, 'refs/heads/3.'))
     needs:
+      - check-html
       - build-html
       - build-web
     runs-on: ubuntu-latest
