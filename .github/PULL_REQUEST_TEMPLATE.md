@@ -2,7 +2,7 @@
 Cherry-pick into:
 
 * [ ] Foreman 3.0
-* [ ] Foreman 2.5 (Satellite 6.10)
+* For Foreman 2.5, file a separate PR request
 
 <!---
 Thank you for contributing to Foreman documentation. Make sure to read README
