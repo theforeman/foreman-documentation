@@ -22,66 +22,43 @@ endif::[]
 
 Required ports can change based on your configuration.
 
-ifdef::satellite[]
-A matrix table of ports is available in the Red{nbsp}Hat Knowledgebase solution https://access.redhat.com/solutions/5627751[Red Hat Satellite List of Network Ports].
-endif::[]
-
 The following tables indicate the destination port and the direction of network traffic:
 
-ifdef::satellite[]
-ifeval::["{mode}" == "connected"]
-.Ports for {Project} to Red Hat CDN Communication
-[cols="24%,20%,18%,38%",options="header"]
-|====
-| Port | Protocol | Service | Required For
-| 443 | TCP | HTTPS | Subscription Management Services (access.redhat.com) and connecting to the Red{nbsp}Hat CDN (cdn.redhat.com).
-|====
+.{ProjectServer} incoming traffic
+[cols="15%,15%,15%,15%,20%,20%",options="header]
+|===
+| Destination Port | Protocol | Service |Source| Required For | Description
+| 53 | TCP and UDP | DNS | DNS Servers and clients | Name resolution | DNS (optional)
+| 67 | UDP | DHCP | Client | Dynamic IP | DHCP (optional)
+| 69 | UDP | TFTP | Client | TFTP Server (optional) |
+| 443 | TCP | HTTPS | {SmartProxy} | {ProjectName} API | Communication from {SmartProxy}
+ifdef::katello,satellite,orcharhino[]
+| 443, 80 | TCP | HTTPS, HTTP | Client | Content Retrieval | Content
+| 443, 80 | TCP | HTTPS, HTTP | {SmartProxy} | Content Retrieval | Content
+| 443, 80 | TCP | HTTPS, HTTP| Client | Content Host Registration | {SmartProxy} CA RPM installation
+| 443 | TCP | HTTPS | {ProjectName} |Content Mirroring | Management
+| 443 | TCP | HTTPS | {ProjectName} | {SmartProxy} API | Smart Proxy functionality
+| 5646 | TCP | AMQP |{SmartProxy}| Katello agent | Forward message to Qpid dispatch router on {Project} (optional)
 endif::[]
+| 5910 - 5930 | TCP | HTTPS | Browsers | Compute Resource's virtual console |
+| 8000 | TCP | HTTP | Client | Provisioning templates | Template retrieval for client installers, iPXE or UEFI HTTP Boot
+| 8000 | TCP | HTTPS | Client | PXE Boot | Installation
+| 8140 | TCP | HTTPS | Client | Puppet agent | Client updates (optional)
+ifndef::katello,satellite,orcharhino[]
+| 8443 | TCP | HTTPS | Client | OpenSCAP | Configure Client
+| 8443 | TCP | HTTPS | {ProjectName} | {SmartProxy} API | Smart Proxy functionality
 endif::[]
+ifdef::katello,satellite,orcharhino[]
+| 8443 | TCP | HTTPS | Client | Content Host registration | Initiation
 
-ifdef::satellite[]
-ifeval::["{mode}" == "connected"]
-{ProjectServer} needs access to the Red{nbsp}Hat CDN.
-For a list of IP addresses used by the Red{nbsp}Hat CDN (cdn.redhat.com), see the Knowledgebase article https://access.redhat.com/articles/1525183[Public CIDR Lists for Red Hat] on the Red{nbsp}Hat Customer Portal.
-endif::[]
-endif::[]
+Uploading facts
 
-ifdef::katello[]
-ifeval::["{mode}" == "connected"]
-If you plan to use Red{nbsp}Hat services, {ProjectServer} needs access to the Red{nbsp}Hat CDN.
-For a list of IP addresses used by the Red{nbsp}Hat CDN (cdn.redhat.com), see the Knowledgebase article https://access.redhat.com/articles/1525183[Public CIDR Lists for Red Hat] on the Red{nbsp}Hat Customer Portal.
+Sending installed packages and traces
+| 9090 | TCP | HTTPS | Client | OpenSCAP | Configure Client
+| 9090 | TCP | HTTPS | Discovered Node|Discovery |Host discovery and provisioning
+| 9090 | TCP | HTTPS | {ProjectName} | {SmartProxy} API | {SmartProxy} functionality
 endif::[]
-endif::[]
-
-.Ports for Browser-based User Interface Access to {Project}
-[cols="24%,20%,18%,38%",options="header"]
-|====
-| Port | Protocol | Service | Required For
-| 443 | TCP | HTTPS | Browser-based UI access to {Project}
-| 80 | TCP | HTTP | Redirection to HTTPS for web UI access to {Project} (Optional)
-|====
-
-.Ports for Client to {Project} Communication
-[cols="24%,20%,18%,38%",options="header"]
-|====
-| Port | Protocol | Service | Required For
-| 80 | TCP | HTTP | Anaconda, yum, for obtaining Katello certificates, templates, and for downloading iPXE firmware
-| 443 | TCP | HTTPS | Subscription Management Services, yum, Telemetry Services and client connections
-ifdef::katello,satellite[]
-| 5646 | TCP | AMQP | The {SmartProxy} Qpid dispatch router to the Qpid dispatch router in {Project}
-| 5647 | TCP | AMQP | Katello Agent to communicate with {Project}'s Qpid dispatch router
-endif::[]
-| 8000 | TCP | HTTP | Anaconda to download kickstart templates to hosts, and for downloading iPXE firmware
-| 8140 | TCP | HTTPS | Puppet agent to Puppet master connections
-| 9090 | TCP | HTTPS | Sending SCAP reports to the integrated {SmartProxy}, for the discovery image during provisioning, and for communicating with {ProjectServer} to copy the SSH keys for Remote Execution (Rex) configuration
-ifeval::["{mode}" == "connected"]
-| - | ICMP | ping | DHCP {SmartProxy} to Client network, to verify non-active IP address (Optional)
-| 7 | TCP | echo | DHCP {SmartProxy} to Client network, to verify non-active IP address (Optional)
-endif::[]
-| 53 | TCP and UDP | DNS | Client DNS queries to a {Project}'s integrated {SmartProxy} DNS service (Optional)
-| 67 | UDP | DHCP | Client to {Project}'s integrated {SmartProxy} broadcasts, DHCP broadcasts for Client provisioning from a {Project}'s integrated {SmartProxy} (Optional)
-| 69 | UDP |TFTP | Clients downloading PXE boot image files from a {Project}s' integrated {SmartProxy} for provisioning (Optional)
-|====
+|===
 
 Any managed host that is directly connected to {ProjectServer} is a client in this context because it is a client of the integrated {SmartProxy}.
 This includes the base operating system on which a {SmartProxyServer} is running.
@@ -89,24 +66,61 @@ This includes the base operating system on which a {SmartProxyServer} is running
 A DHCP {SmartProxy} performs ICMP ping or TCP echo connection attempts to hosts in subnets with DHCP IPAM set to find out if an IP address considered for use is free.
 This behavior can be turned off using `{foreman-installer} --foreman-proxy-dhcp-ping-free-ip=false`.
 
-.Ports for {Project} to {SmartProxy} Communication
-[cols="24%,20%,18%,38%",options="header"]
-|====
-| Port | Protocol | Service | Required for
-| 443 |  TCP | HTTPS | Connections to the Pulp server in the {SmartProxy}
-| 9090 | TCP | HTTPS | Connections to the proxy in the {SmartProxy}
-| 80 | TCP | HTTP | Downloading a bootdisk (Optional)
-|====
+.{ProjectServer} outgoing traffic
+[cols="15%,15%,15%,15%,20%,20%",options="header]
+|===
+| Destination Port | Protocol | Service | Destination | Required For | Description
+| | ICMP | ping  | Client | DHCP | Free IP checking (optional)
+| 7 | TCP | echo | Client | DHCP |Free IP checking (optional)
+| 22 | TCP | SSH | Target host | Remote execution | Run jobs
+| 22, 16514 | TCP | SSH SSH/TLS | Compute Resource | {Project} originated communications, for compute resources in libvirt |
+| 53 | TCP and UDP | DNS | DNS Servers on the Internet | DNS Server | Resolve DNS records (optional)
+| 53 | TCP and UDP | DNS | DNS Server | {SmartProxy} DNS | Validation of DNS conflicts (optional)
+| 53 | TCP and UDP | DNS | DNS Server | Orchestration | Validation of DNS conflicts
+| 68 | UDP | DHCP | Client | Dynamic IP | DHCP (optional)
+| 80 | TCP | HTTP | Remote repository | Content Sync | Remote yum repository
+| 389, 636 | TCP | LDAP, LDAPS | External LDAP Server | LDAP | LDAP authenticatiion, necessary only if external authentication is enabled.
+The port can be customized when `LDAPAuthSource` is defined
+| 443 | TCP | HTTPS | {Project} | {SmartProxy} | {SmartProxy}
 
+Configuration management
 
-.Optional Network Ports
-[cols="24%,20%,18%,38%a",options="header"]
-|====
-| Port | Protocol | Service | Required For
-| 22 | TCP | SSH | {Project} and {SmartProxy} originated communications, for Remote Execution (Rex) and Ansible.
-| 443 | TCP | HTTPS | {Project} originated communications, for vCenter compute resource.
-| 5000 | TCP | HTTP | {Project} originated communications, for compute resources in OpenStack or for running containers.
-| 22, 16514 | TCP | SSH, SSL/TLS | {Project} originated communications, for compute resources in libvirt.
-| 389, 636 | TCP | LDAP, LDAPS | {Project} originated communications, for LDAP and secured LDAP authentication sources.
-| 5900 to 5930 | TCP | SSL/TLS | {Project} originated communications, for NoVNC console in web UI to hypervisors.
-|====
+Template retrieval
+
+OpenSCAP
+
+Remote Execution result upload
+| 443 | TCP | HTTPS | Amazon EC2, Azure, Google GCE | Compute resources | Virtual machine interactions (query/create/destroy) (optional)
+ifdef::satellite[]
+ifeval::["{mode}" == "connected"]
+| 443 | TCP | HTTPS | cloud.redhat.com | Red{nbsp}Hat Cloud plugin API calls |
+| 443 | TCP | HTTPS | Red{nbsp}Hat Portal | SOS report | Assisting support cases (optional)
+| 443 | TCP | HTTPS | Red{nbsp}Hat CDN | Content Sync | Red{nbsp}Hat CDN
+| 443 | TCP | HTTPS | cert-api.access.redhat.com | Telemetry data upload and report |
+endif::[]
+endif::[]
+ifdef::katello,satellite,orcharhino[]
+| 443 | TCP | HTTPS | {SmartProxy} | Content mirroring | Initiation
+endif::[]
+| 443 | TCP | HTTPS | Infoblox DHCP Server| DHCP management | When using Infoblox for DHCP, management of the DHCP leases (optional)
+| 623 |  |  | Client | Power management | BMC On/Off/Cycle/Status
+| 5000 | TCP | HTTPS | OpenStack Compute Resource | Compute resources | Virtual machine interactions (query/create/destroy) (optional)
+ifdef::katello,satellite,orcharhino[]
+| 5646 | TCP | AMQP | {ProjectServer} | Katello agent | Forward message to Qpid dispatch router on {SmartProxy} (optional)
+| 5671 |  |  | Qpid |Remote install | Send install command to  client
+| 5671 |  |  | Dispatch router (hub) | Remote install | Forward message to dispatch router on {Project}
+| 5671 | | | {ProjectServer} | Remote install for Katello agent | Send install command to client
+| 5671 | | | {ProjectServer} | Remote install for Katello agent | Forward message to dispatch router on {Project}
+endif::[]
+| 5900 - 5930 | TCP | SSL/TLS | Hypervisor | noVNC console | Launch noVNC console
+| 7911 | TCP | DHCP, OMAPI | DHCP Server| DHCP | The DHCP target is configured using `--foreman-proxy-dhcp-server` and defaults to localhost
+
+ISC and `remote_isc` use a configurable port that defaults to 7911 and uses OMAPI
+| 8443 | TCP | HTTPS | Client | Discovery | {SmartProxy} sends reboot command to the discovered host (optional)
+ifndef::katello,satellite,orcharhino[]
+| 8443 | TCP | HTTPS | {SmartProxy}| {SmartProxy} API | Management of {SmartProxies}
+endif::[]
+ifdef::katello,satellite,orcharhino[]
+| 9090 | TCP | HTTPS | {SmartProxy}| {SmartProxy} API | Management of {SmartProxies}
+endif::[]
+|===
