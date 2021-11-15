@@ -350,24 +350,53 @@ endif::[]
 # yum -y install cloud-init open-vm-tools perl
 ----
 +
-. Create a configuration file for `cloud-init`:
+. Disable network configuration by `cloud-init`:
 +
 [options="nowrap" subs="+quotes"]
 ----
-# vi /etc/cloud/cloud.cfg.d/_example_cloud-init_config_.cfg
+# cat << EOM > /etc/cloud/cloud.cfg.d/01_network.cfg
+network:
+  config: disabled
+EOM
 ----
 +
-. Add the following information to the `_example_cloud_init_config_.cfg` file:
+. Configure `cloud-init` to fetch data from {Project}:
 +
 [options="nowrap" subs="+attributes"]
 ----
+# cat << EOM > /etc/cloud/cloud.cfg.d/10_datasource.cfg
 datasource_list: [NoCloud]
 datasource:
   NoCloud:
     seedfrom: https://{foreman-example-com}/userdata/
-EOF
+EOM
 ----
+. Configure modules to use in `cloud-init`:
 +
+[options="nowrap" subs="+quotes"]
+----
+# cat << EOM > /etc/cloud/cloud.cfg
+cloud_init_modules:
+ - bootcmd
+
+cloud_config_modules:
+ - runcmd
+
+cloud_final_modules:
+ - scripts-per-once
+ - scripts-per-boot
+ - scripts-per-instance
+ - scripts-user
+ - phone-home
+
+system_info:
+  distro: rhel
+  paths:
+    cloud_dir: /var/lib/cloud
+    templates_dir: /etc/cloud/templates
+  ssh_svcname: sshd
+EOM
+----
 . Enable the CA certificates for the image:
 +
 ----
