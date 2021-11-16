@@ -1,0 +1,1407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 2.0.16">
+<title>Foreman 5.9 Release Notes</title>
+<link rel="stylesheet" href="./orcharhino.css">
+<script>
+const rl = document.location.toString();
+if (rl.includes("/master/") || rl.includes("/nightly/") || rl.includes("file://")) {
+  document.open();
+  document.write("<span id=\"ribbon\"><a href=\"https://github.com/theforeman/foreman-documentation/tree/master/guides\">Nightly</a></span>");
+  document.close();
+}
+</script>
+</head>
+<body id="foreman-release-notes" class="book toc2 toc-left">
+<div id="header">
+<h1>Foreman 5.9 Release Notes</h1>
+<div id="toc" class="toc2">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#foreman-headline-features">1. Headline Features</a>
+<ul class="sectlevel2">
+<li><a href="#_puppet_enc_functionality_extracted_to_foreman_puppet_plugin">1.1. Puppet ENC functionality extracted to foreman_puppet plugin</a></li>
+<li><a href="#_kerberos_authentication_using_mod_auth_gssapi">1.2. Kerberos authentication using mod_auth_gssapi</a></li>
+<li><a href="#_fact_parsers_are_included_in_core">1.3. Fact parsers are included in core</a></li>
+</ul>
+</li>
+<li><a href="#foreman-upgrade-warnings">2. Upgrade Warnings</a></li>
+<li><a href="#foreman-deprecations">3. Deprecations</a>
+<ul class="sectlevel2">
+<li><a href="#_running_foreman_on_ubuntu_18_04">3.1. Running Foreman on Ubuntu 18.04</a></li>
+<li><a href="#_running_foreman_on_el7">3.2. Running Foreman on EL7</a></li>
+</ul>
+</li>
+<li><a href="#_foreman_3_0_1">4. Foreman 3.0.1</a>
+<ul class="sectlevel2">
+<li><a href="#_foreman">4.1. Foreman</a></li>
+<li><a href="#_installer">4.2. Installer</a></li>
+<li><a href="#_packaging">4.3. Packaging</a></li>
+</ul>
+</li>
+<li><a href="#_foreman_3_0_0">5. Foreman 3.0.0</a>
+<ul class="sectlevel2">
+<li><a href="#_foreman_2">5.1. Foreman</a></li>
+<li><a href="#_installer_2">5.2. Installer</a></li>
+<li><a href="#_packaging_3">5.3. Packaging</a></li>
+<li><a href="#_smart_proxy">5.4. Smart Proxy</a></li>
+</ul>
+</li>
+<li><a href="#foreman-contributors">Appendix A: Foreman Contributors</a></li>
+</ul>
+</div>
+</div>
+<div id="content">
+<div class="sect1">
+<h2 id="foreman-headline-features">1. Headline Features</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_puppet_enc_functionality_extracted_to_foreman_puppet_plugin">1.1. Puppet ENC functionality extracted to foreman_puppet plugin</h3>
+<div class="paragraph">
+<p>Foreman without the plugin no longer includes Puppet environments, config groups, Puppet classes and smart class parameters.
+It is still possible to assign Puppet environment to a host using the <code>puppet_environment</code> parameter. This is also the case for setting Puppet server and Puppet CA server for provisioning, which can be defined using the <code>puppet_server</code> and <code>puppet_ca_server</code>. A rake task will be provided to allow automatically migrating these values to parameters for users who do not wish to continue using the plugin.
+By default, this plugin is still installed in 3.0 both on fresh installs and upgrades, but will default to off in future releases.
+More information can be found on our Discourse in thread <a href="https://community.theforeman.org/t/puppet-enc-plugin-development/20687">Puppet ENC plugin development</a> and <a href="https://community.theforeman.org/t/puppet-in-3-0-release/24429">Puppet in 3.0 release</a>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_kerberos_authentication_using_mod_auth_gssapi">1.2. Kerberos authentication using mod_auth_gssapi</h3>
+<div class="paragraph">
+<p>The installer will now deploy <code>mod_auth_gssapi</code> instead of <code>mod_auth_kerb</code> if called with <code>--foreman-ipa-authentication=true</code>.
+Existing installations will be upgraded to use <code>mod_auth_gssapi</code> too.
+This allows deploying Kerberos authentication on CentOS 8, which lacks <code>mod_auth_kerb</code>.
+Debian and Ubuntu also provide <code>mod_auth_gssapi</code> and the installer can now deploy Kerberos authentication there too.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_fact_parsers_are_included_in_core">1.3. Fact parsers are included in core</h3>
+<div class="paragraph">
+<p>Fact parsers for Ansible, Chef, Salt and Subscription Manager were moved to the Foreman core. This is the first step in refactoring fact handling in Foreman to be simpler, faster and easily extendable. Thanks to that it&#8217;s now possible to upload facts from these tools even if the respective plugin is not installed.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="foreman-upgrade-warnings">2. Upgrade Warnings</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>The <code>view_bookmarks</code> permission has been removed. All users are able to see their own bookmarks and any public bookmark defined by others.</p>
+</li>
+<li>
+<p>The <code>enable-epel</code> parameter now defaults to <code>false</code>. If you still want to enable EPEL at provisioning time, you will need to explicitly set the parameter to <code>true</code>.</p>
+</li>
+<li>
+<p>The <code>host_param_true?</code> and <code>host_param_false?</code> macros changed the meaning of the <code>default_value</code> parameter. The value is now used for the comparison if the parameter is not set on the host, instead of returing the value directly. Please update your templates accordingly.</p>
+</li>
+<li>
+<p>The Debian packages are signed with a new key <a href="https://theforeman.org/static/keys/5B7C3E5A735BCB4D615829DC0BDDA991FD7AAC8A.pub">5B7C3E5A735BCB4D615829DC0BDDA991FD7AAC8A</a>. Please import it to verify the packages.</p>
+</li>
+<li>
+<p>Foreman 2.5 for Debian/Ubuntu had briefly wrong versioned Ansible and Remote Execution plugins published, please read our <a href="https://theforeman.org/2021/08/please-manually-upgrade-ansible-and-remote-execution-plugins-on-25.html">blog post how to properly upgrade these</a>.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="foreman-deprecations">3. Deprecations</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_running_foreman_on_ubuntu_18_04">3.1. Running Foreman on Ubuntu 18.04</h3>
+<div class="paragraph">
+<p>Foreman 2.5 introduced support to run on Ubuntu 20.04. Foreman 3.0 deprecates support for running on Ubuntu 18.04 and Foreman 3.1 will drop it.
+Users are encouraged to upgrade to Ubuntu 20.04 either on Foreman 2.5 or 3.0 but Ubuntu 18.04 will remain supported until Foreman 2.5 and 3.0 are end of life.</p>
+</div>
+<div class="paragraph">
+<p>Note that this is only support to run Foreman and Foreman Proxy themselves on Ubuntu 18.04. Managing Ubuntu 18.04 systems remains supported. See <a href="https://community.theforeman.org/t/deprecation-plans-for-foreman-on-el7-debian-10-and-ubuntu-18-04/25008">the RFC</a> for more information.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_running_foreman_on_el7">3.2. Running Foreman on EL7</h3>
+<div class="paragraph">
+<p>Foreman 2.1 introduced EL8 support and Katello 4.0 (on Foreman 2.4) followed.
+While it&#8217;s currently undecided when EL7 support will be dropped exactly, this is an early notice given the considerable number of EL7 deployments.
+For fresh installations, EL8 should considered the preferred target.
+Existing installations should start thinking about a migration plan.</p>
+</div>
+<div class="paragraph">
+<p>Note that this is only support to run Foreman and Foreman Proxy themselves on EL7. Managing EL7 systems remains supported. See <a href="https://community.theforeman.org/t/deprecation-plans-for-foreman-on-el7-debian-10-and-ubuntu-18-04/25008">the RFC</a> for more information.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_foreman_3_0_1">4. Foreman 3.0.1</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A full list of changes is available via <a href="https://projects.theforeman.org/issues?set_filter=1&amp;sort=id%3Adesc&amp;status_id=closed&amp;f%5B%5D=cf_12&amp;op%5Bcf_12%5D=%3D&amp;v%5Bcf_12%5D%5B%5D=1489">Redmine</a></p>
+</div>
+<div class="sect2">
+<h3 id="_foreman">4.1. Foreman</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>The new host detail page enhancements tracker - <a href="https://projects.theforeman.org/issues/33499">#33499</a></p>
+</li>
+<li>
+<p>app/models/concerns/orchestration/compute.rb:93 rescue ends up with error (ArgumentError): too few arguments - <a href="https://projects.theforeman.org/issues/32273">#32273</a></p>
+</li>
+</ul>
+</div>
+<div class="sect3">
+<h4 id="_settings">4.1.1. Settings</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Improve caching of SettingRegistry#load_values - <a href="https://projects.theforeman.org/issues/33640">#33640</a></p>
+</li>
+<li>
+<p>Settings search is broken in hammer - <a href="https://projects.theforeman.org/issues/33347">#33347</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_facts">4.1.2. Facts</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Reduce allocations in FactImporter#update_facts - <a href="https://projects.theforeman.org/issues/33639">#33639</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_web_interface">4.1.3. Web Interface</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Remove experimental host wizard page - <a href="https://projects.theforeman.org/issues/33621">#33621</a></p>
+</li>
+<li>
+<p>"All audits" link in host details page doesnt workt work - <a href="https://projects.theforeman.org/issues/33617">#33617</a></p>
+</li>
+<li>
+<p>Adding a banner for the experimental host details page - <a href="https://projects.theforeman.org/issues/33597">#33597</a></p>
+</li>
+<li>
+<p>There should be buttons to link in between the old host page and the new host detail page - <a href="https://projects.theforeman.org/issues/33507">#33507</a></p>
+</li>
+<li>
+<p>The new host detail page audits card gets misaligned - <a href="https://projects.theforeman.org/issues/33505">#33505</a></p>
+</li>
+<li>
+<p>The new host detail page hostname should never be split to two lines - <a href="https://projects.theforeman.org/issues/33504">#33504</a></p>
+</li>
+<li>
+<p>Mac Address label should have capital letters in the word MAC on the new host detail page - <a href="https://projects.theforeman.org/issues/33503">#33503</a></p>
+</li>
+<li>
+<p>The host owner name should be expanded to the full width as it typically takes more than a one line - <a href="https://projects.theforeman.org/issues/33502">#33502</a></p>
+</li>
+<li>
+<p>New host detail page MAC should remain on one line if theres a long host group next to its a long host group next to it - <a href="https://projects.theforeman.org/issues/33501">#33501</a></p>
+</li>
+<li>
+<p>Experimental host page kebab menu buttons do nothing - <a href="https://projects.theforeman.org/issues/33491">#33491</a></p>
+</li>
+<li>
+<p>Edit button in experimental host page doesnt workt work - <a href="https://projects.theforeman.org/issues/33490">#33490</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_templates">4.1.4. Templates</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Provisioning of EL no longer writes to tty3 - <a href="https://projects.theforeman.org/issues/33426">#33426</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_compute_resources_vmware">4.1.5. Compute resources - VMware</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Compute Resource cannot list the VMs if any VMs in the datacenter has config.instanceUuid set to ' - <a href="https://projects.theforeman.org/issues/33396">#33396</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_host_registration">4.1.6. Host registration</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Use PF4 styling for warning in registration form - <a href="https://projects.theforeman.org/issues/33390">#33390</a></p>
+</li>
+<li>
+<p>Make the registration form more compact - <a href="https://projects.theforeman.org/issues/33389">#33389</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_reporting">4.1.7. Reporting</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Improve job invocation report template - <a href="https://projects.theforeman.org/issues/33223">#33223</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_tests">4.1.8. Tests</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>capybara 3.32.1 breaks ReportTemplateJSIntegrationTest - <a href="https://projects.theforeman.org/issues/29481">#29481</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_installer">4.2. Installer</h3>
+<div class="sect3">
+<h4 id="_foreman_installer_script">4.2.1. foreman-installer script</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Foreman Puppet plugin is enabled in the migration even if Foreman is disabled - <a href="https://projects.theforeman.org/issues/33577">#33577</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_packaging">4.3. Packaging</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>katello-agent on EL7 depends on python2-qpid from the qpid copr - <a href="https://projects.theforeman.org/issues/33497">#33497</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_foreman_3_0_0">5. Foreman 3.0.0</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>A full list of changes is available via <a href="https://projects.theforeman.org/issues?set_filter=1&amp;sort=id%3Adesc&amp;status_id=closed&amp;f%5B%5D=cf_12&amp;op%5Bcf_12%5D=%3D&amp;v%5Bcf_12%5D%5B%5D=1408">Redmine</a></p>
+</div>
+<div class="sect2">
+<h3 id="_foreman_2">5.1. Foreman</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>provide a list of JavaScript dependencies that can be ignored during package building - <a href="https://projects.theforeman.org/issues/33318">#33318</a></p>
+</li>
+</ul>
+</div>
+<div class="sect3">
+<h4 id="_javascript_stack">5.1.1. JavaScript stack</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>don&#8217;t run npm-fix-foreman-stories.sh on every npm install - <a href="https://projects.theforeman.org/issues/33319">#33319</a></p>
+</li>
+<li>
+<p>Toast message is hidden - <a href="https://projects.theforeman.org/issues/33316">#33316</a></p>
+</li>
+<li>
+<p>Add useCallback to RegistrationCommandsPage - <a href="https://projects.theforeman.org/issues/33161">#33161</a></p>
+</li>
+<li>
+<p>Slot registry isn&#8217;t singleton  - <a href="https://projects.theforeman.org/issues/33153">#33153</a></p>
+</li>
+<li>
+<p>Refactor FactChart to use slice pattern - <a href="https://projects.theforeman.org/issues/33003">#33003</a></p>
+</li>
+<li>
+<p>Slot warning is not explicit  - <a href="https://projects.theforeman.org/issues/32948">#32948</a></p>
+</li>
+<li>
+<p>update js vendor to 8.6 - <a href="https://projects.theforeman.org/issues/32904">#32904</a></p>
+</li>
+<li>
+<p>Add Redux toolkit  - <a href="https://projects.theforeman.org/issues/32899">#32899</a></p>
+</li>
+<li>
+<p>trigger toast notification from the root of the app - <a href="https://projects.theforeman.org/issues/32860">#32860</a></p>
+</li>
+<li>
+<p>PF4 Toast alerts - <a href="https://projects.theforeman.org/issues/32756">#32756</a></p>
+</li>
+<li>
+<p>Drop flot charts - <a href="https://projects.theforeman.org/issues/32584">#32584</a></p>
+</li>
+<li>
+<p>storybook failed to compile - <a href="https://projects.theforeman.org/issues/32505">#32505</a></p>
+</li>
+<li>
+<p>API redux&#8217;s store cannot be altered - <a href="https://projects.theforeman.org/issues/31781">#31781</a></p>
+</li>
+<li>
+<p>Implement timseries area chart in React - <a href="https://projects.theforeman.org/issues/31596">#31596</a></p>
+</li>
+<li>
+<p>deprecate flot_chart (timeseries area chart) - <a href="https://projects.theforeman.org/issues/31595">#31595</a></p>
+</li>
+<li>
+<p>CSS files need optimizations (removing duplicates, minifying)  - <a href="https://projects.theforeman.org/issues/31277">#31277</a></p>
+</li>
+<li>
+<p>Use Patternfly charts in Runtime - <a href="https://projects.theforeman.org/issues/23665">#23665</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_web_interface_2">5.1.2. Web Interface</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>host details overview cards grid isn&#8217;t aligned nor responsive  - <a href="https://projects.theforeman.org/issues/33311">#33311</a></p>
+</li>
+<li>
+<p>Host details page - react warnings should be cleaned  - <a href="https://projects.theforeman.org/issues/33110">#33110</a></p>
+</li>
+<li>
+<p>Menu::Item doesn&#8217;t use the ':if' option - <a href="https://projects.theforeman.org/issues/32883">#32883</a></p>
+</li>
+<li>
+<p>The new host details page should support secondary tabs - <a href="https://projects.theforeman.org/issues/32828">#32828</a></p>
+</li>
+<li>
+<p>Recent audits card needs a design  - <a href="https://projects.theforeman.org/issues/32820">#32820</a></p>
+</li>
+<li>
+<p>Update all freenode references to point to <a href="https://theforeman.org/support.html#IRClivechat" class="bare">https://theforeman.org/support.html#IRClivechat</a> or libera.chat - <a href="https://projects.theforeman.org/issues/32809">#32809</a></p>
+</li>
+<li>
+<p>Host details cards should support  dropdown menu - <a href="https://projects.theforeman.org/issues/32692">#32692</a></p>
+</li>
+<li>
+<p>card props in host details page should be overridable   - <a href="https://projects.theforeman.org/issues/32691">#32691</a></p>
+</li>
+<li>
+<p>Webpack DEV server minimal logs - <a href="https://projects.theforeman.org/issues/32499">#32499</a></p>
+</li>
+<li>
+<p>Host Add-Parameter button should not float down page as new params are added. - <a href="https://projects.theforeman.org/issues/32013">#32013</a></p>
+</li>
+<li>
+<p>Documentation Button on the Error Page needs correct alignment - <a href="https://projects.theforeman.org/issues/31915">#31915</a></p>
+</li>
+<li>
+<p>Add host&#8217;s statuses including sub-statuses to the host details page  - <a href="https://projects.theforeman.org/issues/31444">#31444</a></p>
+</li>
+<li>
+<p>Replace the new host details properties card with pf4 extension component - <a href="https://projects.theforeman.org/issues/31128">#31128</a></p>
+</li>
+<li>
+<p>Create PF4 Bookmarks dropdown - <a href="https://projects.theforeman.org/issues/31100">#31100</a></p>
+</li>
+<li>
+<p>Drop jquery-ui spinners in favor of React imlementation - <a href="https://projects.theforeman.org/issues/21641">#21641</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_host_registration_2">5.1.3. Host registration</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>The katello-ca-consumer is not being removed when the force option is checked in the 'Advanced' tab under Hosts -&gt; Register Host  - <a href="https://projects.theforeman.org/issues/33305">#33305</a></p>
+</li>
+<li>
+<p>Hammer --setup-insights false | no|0 is not working - <a href="https://projects.theforeman.org/issues/33121">#33121</a></p>
+</li>
+<li>
+<p>Content host registration using command generated from global registration form fails if activation key name contains ' (single quote) in it. - <a href="https://projects.theforeman.org/issues/33033">#33033</a></p>
+</li>
+<li>
+<p>Refresh subscription data - <a href="https://projects.theforeman.org/issues/33004">#33004</a></p>
+</li>
+<li>
+<p>Registration migration - Unassign OS from registration templates - <a href="https://projects.theforeman.org/issues/32959">#32959</a></p>
+</li>
+<li>
+<p>Update packages - <a href="https://projects.theforeman.org/issues/32918">#32918</a></p>
+</li>
+<li>
+<p>Default packages are overridden by host package even if not specified registration form - <a href="https://projects.theforeman.org/issues/32780">#32780</a></p>
+</li>
+<li>
+<p>Missing validation in API for OS &amp; host_init_config template when creating command - <a href="https://projects.theforeman.org/issues/32625">#32625</a></p>
+</li>
+<li>
+<p>Support Oracle Linux registration - <a href="https://projects.theforeman.org/issues/32589">#32589</a></p>
+</li>
+<li>
+<p>Normally Inherited fields are not inherited upon host registreation - <a href="https://projects.theforeman.org/issues/32457">#32457</a></p>
+</li>
+<li>
+<p>Parent host groups are not respected in the registration form - <a href="https://projects.theforeman.org/issues/32456">#32456</a></p>
+</li>
+<li>
+<p>The host registration form uses host group names which don&#8217;t contain parent names - <a href="https://projects.theforeman.org/issues/32452">#32452</a></p>
+</li>
+<li>
+<p>Global Registration: Build status gets set to Pending installation when running script from Registration Tab - <a href="https://projects.theforeman.org/issues/32322">#32322</a></p>
+</li>
+<li>
+<p>Add support for AlmaLinux 8 as a client - <a href="https://projects.theforeman.org/issues/31787">#31787</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_bmc">5.1.4. BMC</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>undefined method `bmc' for nil:NilClass - <a href="https://projects.theforeman.org/issues/33229">#33229</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_compute_resources_vmware_2">5.1.5. Compute resources - VMware</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Creating compute resource (VMware) with incorrect credentials claims successfull test connection - <a href="https://projects.theforeman.org/issues/33197">#33197</a></p>
+</li>
+<li>
+<p>API available_networks by cluster no longer working - <a href="https://projects.theforeman.org/issues/32855">#32855</a></p>
+</li>
+<li>
+<p>MAC Adress gets removed when using VM Import - <a href="https://projects.theforeman.org/issues/32842">#32842</a></p>
+</li>
+<li>
+<p>Can not modify associated hosts if connection to vCenter is down - <a href="https://projects.theforeman.org/issues/31307">#31307</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_puppet_integration">5.1.6. Puppet integration</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Add task to set host parameters from Puppet data - <a href="https://projects.theforeman.org/issues/33180">#33180</a></p>
+</li>
+<li>
+<p>Drop puppet_host_overview_fields - <a href="https://projects.theforeman.org/issues/32091">#32091</a></p>
+</li>
+<li>
+<p>Extract Puppet Classes tab to a plugin - <a href="https://projects.theforeman.org/issues/31160">#31160</a></p>
+</li>
+<li>
+<p>Extract Environments change multiple host action - <a href="https://projects.theforeman.org/issues/31136">#31136</a></p>
+</li>
+<li>
+<p>Extract Puppetclass parameter filter - <a href="https://projects.theforeman.org/issues/31130">#31130</a></p>
+</li>
+<li>
+<p>Extract Puppetclass API - <a href="https://projects.theforeman.org/issues/31129">#31129</a></p>
+</li>
+<li>
+<p>Extract Environment parameters filter - <a href="https://projects.theforeman.org/issues/31114">#31114</a></p>
+</li>
+<li>
+<p>Extract ConfigGroup Controllers - <a href="https://projects.theforeman.org/issues/31106">#31106</a></p>
+</li>
+<li>
+<p>Extract ConfigGroup API - <a href="https://projects.theforeman.org/issues/31094">#31094</a></p>
+</li>
+<li>
+<p>Extract ConfigGroup UI - <a href="https://projects.theforeman.org/issues/31093">#31093</a></p>
+</li>
+<li>
+<p>Extract Puppetclass UI controllers - <a href="https://projects.theforeman.org/issues/31092">#31092</a></p>
+</li>
+<li>
+<p>Extract Puppetclass views+helpers - <a href="https://projects.theforeman.org/issues/31089">#31089</a></p>
+</li>
+<li>
+<p>Remove puppet bits from non puppet related tests - <a href="https://projects.theforeman.org/issues/31073">#31073</a></p>
+</li>
+<li>
+<p>Extract Environments API - <a href="https://projects.theforeman.org/issues/31062">#31062</a></p>
+</li>
+<li>
+<p>Extract Environments UI view+helpers - <a href="https://projects.theforeman.org/issues/31058">#31058</a></p>
+</li>
+<li>
+<p>Extract Environments UI logic - <a href="https://projects.theforeman.org/issues/31057">#31057</a></p>
+</li>
+<li>
+<p>Extract puppet from SmartProxy integration - <a href="https://projects.theforeman.org/issues/31056">#31056</a></p>
+</li>
+<li>
+<p>Extract LookupValue puppet extension - <a href="https://projects.theforeman.org/issues/31013">#31013</a></p>
+</li>
+<li>
+<p>Extract PuppetLookupKey UI - <a href="https://projects.theforeman.org/issues/31009">#31009</a></p>
+</li>
+<li>
+<p>Extract SmartClassParameters API - <a href="https://projects.theforeman.org/issues/31007">#31007</a></p>
+</li>
+<li>
+<p>Extract puppet from Host(group) form and details - <a href="https://projects.theforeman.org/issues/30913">#30913</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_compute_resources">5.1.7. Compute resources</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Drop Spice XPI support - <a href="https://projects.theforeman.org/issues/33155">#33155</a></p>
+</li>
+<li>
+<p>Add Associate VM to virtual machine dropdown - <a href="https://projects.theforeman.org/issues/33048">#33048</a></p>
+</li>
+<li>
+<p>Spice connection with websockets encryption - <a href="https://projects.theforeman.org/issues/22801">#22801</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_api">5.1.8. API</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Add GraphQL type and queries for permissions - <a href="https://projects.theforeman.org/issues/33123">#33123</a></p>
+</li>
+<li>
+<p>bmc_avialable should be visible in API host show   - <a href="https://projects.theforeman.org/issues/33038">#33038</a></p>
+</li>
+<li>
+<p>Add graphql types for permissions - <a href="https://projects.theforeman.org/issues/32825">#32825</a></p>
+</li>
+<li>
+<p>Add types and queries for Lookup Values - <a href="https://projects.theforeman.org/issues/32782">#32782</a></p>
+</li>
+<li>
+<p>Correctly resolve global id when primary key is not integer - <a href="https://projects.theforeman.org/issues/32767">#32767</a></p>
+</li>
+<li>
+<p>hammer user list --help has invalid --order example - <a href="https://projects.theforeman.org/issues/32703">#32703</a></p>
+</li>
+<li>
+<p>API has inconsistent behavior with taxable parameters - <a href="https://projects.theforeman.org/issues/32695">#32695</a></p>
+</li>
+<li>
+<p>Add 'resource_type' for the role filter in API - <a href="https://projects.theforeman.org/issues/32650">#32650</a></p>
+</li>
+<li>
+<p>Add descendants field to hostgroup graphql type - <a href="https://projects.theforeman.org/issues/32645">#32645</a></p>
+</li>
+<li>
+<p>Wrong error message when one attempts to create second primary/provision interface via API - <a href="https://projects.theforeman.org/issues/10236">#10236</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_packaging_2">5.1.9. Packaging</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Update fog-libvirt to 0.9.0 - <a href="https://projects.theforeman.org/issues/33098">#33098</a></p>
+</li>
+<li>
+<p>bundler warns /usr/share/foreman is not writable - <a href="https://projects.theforeman.org/issues/33013">#33013</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_development_tools">5.1.10. Development tools</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>container builds are broken - <a href="https://projects.theforeman.org/issues/33093">#33093</a></p>
+</li>
+<li>
+<p>JS sprintf mock does not correctly handle string interpolation - <a href="https://projects.theforeman.org/issues/32843">#32843</a></p>
+</li>
+<li>
+<p>Webpack-dev-server doesn&#8217;t support http2 - <a href="https://projects.theforeman.org/issues/32437">#32437</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_templates_2">5.1.11. Templates</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>AIX PXE attributes loading does not work - <a href="https://projects.theforeman.org/issues/33090">#33090</a></p>
+</li>
+<li>
+<p>Install salt-minion is done twice - <a href="https://projects.theforeman.org/issues/33042">#33042</a></p>
+</li>
+<li>
+<p>Latest preseed_networking_setup template snippet does not work Ubuntu 18.04+ with multiple nics  - <a href="https://projects.theforeman.org/issues/32981">#32981</a></p>
+</li>
+<li>
+<p>Allow templates to hide preview button - <a href="https://projects.theforeman.org/issues/32928">#32928</a></p>
+</li>
+<li>
+<p>Allow using host comment in the safe mode - <a href="https://projects.theforeman.org/issues/32858">#32858</a></p>
+</li>
+<li>
+<p>Add parameter to provisioning templates to run attach --auto after registering - <a href="https://projects.theforeman.org/issues/32852">#32852</a></p>
+</li>
+<li>
+<p>Add the ability to add custom steps to the Default Finish template at early and late stages - <a href="https://projects.theforeman.org/issues/32715">#32715</a></p>
+</li>
+<li>
+<p>Avoid echo statements without quotes in Grub - <a href="https://projects.theforeman.org/issues/32681">#32681</a></p>
+</li>
+<li>
+<p>Link to templates_doc  - <a href="https://projects.theforeman.org/issues/32674">#32674</a></p>
+</li>
+<li>
+<p>Clean up host_param_(true|false)? - <a href="https://projects.theforeman.org/issues/32540">#32540</a></p>
+</li>
+<li>
+<p>kickstart_kernel_options doesn&#8217;t handle properly tagged vlan over bond device - <a href="https://projects.theforeman.org/issues/32497">#32497</a></p>
+</li>
+<li>
+<p>Ansible callback doesn&#8217;t run because the file is not executable - <a href="https://projects.theforeman.org/issues/32490">#32490</a></p>
+</li>
+<li>
+<p>Fedora 34 / RHEL 9 - Ignore Anaconda kernel boot parameters without 'inst.' prefix - <a href="https://projects.theforeman.org/issues/32486">#32486</a></p>
+</li>
+<li>
+<p>Do not use upstream repos for Ubuntu and Debian hosts that use Katello for content - <a href="https://projects.theforeman.org/issues/32290">#32290</a></p>
+</li>
+<li>
+<p>Automated Fedora provisioning fails with Kickstart default due to the missing redhat-lsb-core - <a href="https://projects.theforeman.org/issues/31978">#31978</a></p>
+</li>
+<li>
+<p>The default kickstart template installs EPEL by default - <a href="https://projects.theforeman.org/issues/31751">#31751</a></p>
+</li>
+<li>
+<p>Remove spaces from snapshot tests - <a href="https://projects.theforeman.org/issues/31407">#31407</a></p>
+</li>
+<li>
+<p>Template snapshot multi-host render tests - <a href="https://projects.theforeman.org/issues/31370">#31370</a></p>
+</li>
+<li>
+<p>Foreman doesn&#8217;t support Netplan on Ubuntu - <a href="https://projects.theforeman.org/issues/30748">#30748</a></p>
+</li>
+<li>
+<p>Search in Template editor doesn&#8217;t work at all - <a href="https://projects.theforeman.org/issues/29614">#29614</a></p>
+</li>
+<li>
+<p>Snippet template may render incorrect result when non-default scope class is used to render the main template - <a href="https://projects.theforeman.org/issues/28221">#28221</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_inventory">5.1.12. Inventory</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Make name_column helper defensive with displaying statuses - <a href="https://projects.theforeman.org/issues/33049">#33049</a></p>
+</li>
+<li>
+<p>Add visual Amazon support - <a href="https://projects.theforeman.org/issues/32808">#32808</a></p>
+</li>
+<li>
+<p>Host api request fails when thin=true and per_page=all - <a href="https://projects.theforeman.org/issues/32776">#32776</a></p>
+</li>
+<li>
+<p>API - ISE when using invalid status type - <a href="https://projects.theforeman.org/issues/32536">#32536</a></p>
+</li>
+<li>
+<p>Add Rocky Linux support to Foreman - <a href="https://projects.theforeman.org/issues/32516">#32516</a></p>
+</li>
+<li>
+<p>Interface modal - incorrect alignment for error message</p>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://projects.theforeman.org/issues/32391">#32391</a></p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_users_roles_and_permissions">5.1.13. Users, Roles and Permissions</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Navigation doesn&#8217;t display Host Wizard (within Lab Features) without admin rights - <a href="https://projects.theforeman.org/issues/33011">#33011</a></p>
+</li>
+<li>
+<p>wrong error message when failing to create an external user - <a href="https://projects.theforeman.org/issues/32942">#32942</a></p>
+</li>
+<li>
+<p>Non-admin user can not revoke user access token, attempt ends with 404  - <a href="https://projects.theforeman.org/issues/32826">#32826</a></p>
+</li>
+<li>
+<p>Revoking Personal Access token should ask for confirmation - <a href="https://projects.theforeman.org/issues/32770">#32770</a></p>
+</li>
+<li>
+<p>The /api/usergroups/:usergroup_id/external_usergroups API is not accepting 1-group as the name of usergroup - <a href="https://projects.theforeman.org/issues/32704">#32704</a></p>
+</li>
+<li>
+<p>50/50 chance to create role filter with non-admin user and enough permissions - <a href="https://projects.theforeman.org/issues/30394">#30394</a></p>
+</li>
+<li>
+<p>User can view bookmarks without assigning view_bookmarks permission in a role - <a href="https://projects.theforeman.org/issues/30387">#30387</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_database">5.1.14. Database</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>switch to sql schema in order to better support custom types - <a href="https://projects.theforeman.org/issues/33008">#33008</a></p>
+</li>
+<li>
+<p>PG::AmbiguousColumn when listing domains - <a href="https://projects.theforeman.org/issues/32641">#32641</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_settings_2">5.1.15. Settings</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Load only core setting values the first time we load them - <a href="https://projects.theforeman.org/issues/32963">#32963</a></p>
+</li>
+<li>
+<p>Fix the creation of missing settings - <a href="https://projects.theforeman.org/issues/32953">#32953</a></p>
+</li>
+<li>
+<p>Add strong typing to Setting DSL - <a href="https://projects.theforeman.org/issues/32894">#32894</a></p>
+</li>
+<li>
+<p>Setting values have duplicate tooltips in Firefox - <a href="https://projects.theforeman.org/issues/32840">#32840</a></p>
+</li>
+<li>
+<p>Overwrite outofsync_interval in host parameters - <a href="https://projects.theforeman.org/issues/32805">#32805</a></p>
+</li>
+<li>
+<p>CVE-2021-3584: Remote code execution through Sendmail configuration - <a href="https://projects.theforeman.org/issues/32753">#32753</a></p>
+</li>
+<li>
+<p>clicking on a read-only setting still opens an edit dialog - <a href="https://projects.theforeman.org/issues/32752">#32752</a></p>
+</li>
+<li>
+<p>Setting registry doesn&#8217;t reload properly on autoreload - <a href="https://projects.theforeman.org/issues/32489">#32489</a></p>
+</li>
+<li>
+<p>Use only SettingRegistry to read and update the settings - <a href="https://projects.theforeman.org/issues/32415">#32415</a></p>
+</li>
+<li>
+<p>Load Setting index page from memory registry - <a href="https://projects.theforeman.org/issues/32287">#32287</a></p>
+</li>
+<li>
+<p>Create a new setting definition DSL - <a href="https://projects.theforeman.org/issues/32286">#32286</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_tests_2">5.1.16. Tests</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>setting lower version of rake to avoid test failures - <a href="https://projects.theforeman.org/issues/32952">#32952</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_host_groups">5.1.17. Host groups</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>It is possible to specify a compute profile without any attributes in a hostgroup - <a href="https://projects.theforeman.org/issues/32924">#32924</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_tftp">5.1.18. TFTP</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>DHCP next-server option is "false" when tftp-servername was not provided - <a href="https://projects.theforeman.org/issues/32921">#32921</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_proxy_gateway">5.1.19. Proxy gateway</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Drop unwanted URI parsing from NetHttpExtension - <a href="https://projects.theforeman.org/issues/32837">#32837</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_facts_2">5.1.20. Facts</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>reported.virtual in scoped search not working properly - <a href="https://projects.theforeman.org/issues/32833">#32833</a></p>
+</li>
+<li>
+<p>Move Chef parser to core - <a href="https://projects.theforeman.org/issues/32558">#32558</a></p>
+</li>
+<li>
+<p>Move Salt parser to Core - <a href="https://projects.theforeman.org/issues/32548">#32548</a></p>
+</li>
+<li>
+<p>Move Ansible Parser to Core - <a href="https://projects.theforeman.org/issues/32518">#32518</a></p>
+</li>
+<li>
+<p>Move RHSM parser to Core - <a href="https://projects.theforeman.org/issues/32517">#32517</a></p>
+</li>
+<li>
+<p>Unify excluded_facts and ignored_interface_identifiers - <a href="https://projects.theforeman.org/issues/32166">#32166</a></p>
+</li>
+<li>
+<p>puppet facts exclude filter star wildcard not working as expected - <a href="https://projects.theforeman.org/issues/29681">#29681</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_audit_log">5.1.21. Audit Log</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Documentation button on Audits page opens in same tab - <a href="https://projects.theforeman.org/issues/32821">#32821</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_parameters">5.1.22. Parameters</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>add merge-option for variables of type "yaml" (Ansible/Salt/Puppet) - <a href="https://projects.theforeman.org/issues/32741">#32741</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_db_migrations">5.1.23. DB migrations</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Migrations fail with 'could not create unique index "index_lookup_values_on_lookup_key_id_and_match"' error - <a href="https://projects.theforeman.org/issues/32673">#32673</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_search">5.1.24. Search</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Editing an existing bookmark should respect the current visibility - <a href="https://projects.theforeman.org/issues/32662">#32662</a></p>
+</li>
+<li>
+<p>Allow searching hosts by attributes of the reported data facet - <a href="https://projects.theforeman.org/issues/32140">#32140</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_logging">5.1.25. Logging</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Allow relative values in filename log setting - <a href="https://projects.theforeman.org/issues/32636">#32636</a></p>
+</li>
+<li>
+<p>Warning message during startup: already initialized constant Facets::SUPPORTED_CORE_OBJECTS - <a href="https://projects.theforeman.org/issues/32635">#32635</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_internationalization">5.1.26. Internationalization</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>The Settings page tooltip texts are untranslated - <a href="https://projects.theforeman.org/issues/32484">#32484</a></p>
+</li>
+<li>
+<p>FastGettext initialization is slow - <a href="https://projects.theforeman.org/issues/31717">#31717</a></p>
+</li>
+<li>
+<p>Localized string broken into two separate lines, at Hosts -&gt; All Hosts. - <a href="https://projects.theforeman.org/issues/30047">#30047</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_host_creation">5.1.27. Host creation</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Confirming interface modal by enter causes whole Host form to get confirmed - <a href="https://projects.theforeman.org/issues/32397">#32397</a></p>
+</li>
+<li>
+<p>MAC address should be normalized - <a href="https://projects.theforeman.org/issues/31132">#31132</a></p>
+</li>
+<li>
+<p>Create Host password field should indicate if a password is already set globally or in a Hostgroup - <a href="https://projects.theforeman.org/issues/27812">#27812</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_network">5.1.28. Network</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>When creating a HTTP proxy the username and password is used verbatim, leading to issues if they contain special characters - <a href="https://projects.theforeman.org/issues/32192">#32192</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_reporting_2">5.1.29. Reporting</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>As a user I should receive a notification after a report generation is complete - <a href="https://projects.theforeman.org/issues/32141">#32141</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_e_mail">5.1.30. E-Mail</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Add instance title to the subject and body of the email notifications - <a href="https://projects.theforeman.org/issues/32139">#32139</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_unattended_installations">5.1.31. Unattended installations</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Support RedHat CoreOS and Fedora CoreOS as operating systems - <a href="https://projects.theforeman.org/issues/27604">#27604</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_compute_resources_ec2">5.1.32. Compute resources - EC2</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Add support for ec2 tags during instance creation - <a href="https://projects.theforeman.org/issues/2170">#2170</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_installer_2">5.2. Installer</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Determine if puppet user should be in foreman user groups dynamically - <a href="https://projects.theforeman.org/issues/32885">#32885</a></p>
+</li>
+<li>
+<p>Support Puppet 7 - <a href="https://projects.theforeman.org/issues/32659">#32659</a></p>
+</li>
+<li>
+<p>Add puppet provider and types in puppet-certs - <a href="https://projects.theforeman.org/issues/32506">#32506</a></p>
+</li>
+<li>
+<p>Use Foreman client certificates for communication with Artemis broker in Candlepin - <a href="https://projects.theforeman.org/issues/32382">#32382</a></p>
+</li>
+</ul>
+</div>
+<div class="sect3">
+<h4 id="_foreman_modules">5.2.1. Foreman modules</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Change Puma defaults to match recommendations from Puma documentation - <a href="https://projects.theforeman.org/issues/33277">#33277</a></p>
+</li>
+<li>
+<p>Roles imported from a collection installed to /etc/ansible/collections are not found when run on hosts - <a href="https://projects.theforeman.org/issues/33162">#33162</a></p>
+</li>
+<li>
+<p>Move more variables from in puppet-foreman to globals.pp - <a href="https://projects.theforeman.org/issues/33106">#33106</a></p>
+</li>
+<li>
+<p>Don&#8217;t store plugin_prefix (and hammer_plugin_prefix) in answers - <a href="https://projects.theforeman.org/issues/33089">#33089</a></p>
+</li>
+<li>
+<p>support remove_old_repodata options in yum_distributor for puppet-pulp - <a href="https://projects.theforeman.org/issues/32966">#32966</a></p>
+</li>
+<li>
+<p>IPA Authentication is not properly deployed on Debian - <a href="https://projects.theforeman.org/issues/32947">#32947</a></p>
+</li>
+<li>
+<p>Provide ability to configure content caching in Pulpcore - <a href="https://projects.theforeman.org/issues/32910">#32910</a></p>
+</li>
+<li>
+<p>puppet-pulpcore should support enabling and disabling the new tasking system - <a href="https://projects.theforeman.org/issues/32891">#32891</a></p>
+</li>
+<li>
+<p>Set sendmail location and arguments via puppet/installer - <a href="https://projects.theforeman.org/issues/32827">#32827</a></p>
+</li>
+<li>
+<p>Disable SSLInsecureRenegotiation by default - <a href="https://projects.theforeman.org/issues/32762">#32762</a></p>
+</li>
+<li>
+<p>Tftp support for Rocky Linux and AlmaLinux - <a href="https://projects.theforeman.org/issues/32710">#32710</a></p>
+</li>
+<li>
+<p>Additional RPMs in /pub directory break latest symlink - <a href="https://projects.theforeman.org/issues/32700">#32700</a></p>
+</li>
+<li>
+<p>Password diffs from puppet-certs should not show up in Puppet logs - <a href="https://projects.theforeman.org/issues/32647">#32647</a></p>
+</li>
+<li>
+<p>Add Puppet provider to manage a truststore - <a href="https://projects.theforeman.org/issues/32637">#32637</a></p>
+</li>
+<li>
+<p>Add keystore certificate puppet provider - <a href="https://projects.theforeman.org/issues/32631">#32631</a></p>
+</li>
+<li>
+<p>Add a function to extract the certificate subject DN to determine artemis client DN programmatically - <a href="https://projects.theforeman.org/issues/32585">#32585</a></p>
+</li>
+<li>
+<p>If bootstrap RPM symlink is removed the installer does not repair it - <a href="https://projects.theforeman.org/issues/32567">#32567</a></p>
+</li>
+<li>
+<p>remove md5 from allowed content types for pulpcore - <a href="https://projects.theforeman.org/issues/32553">#32553</a></p>
+</li>
+<li>
+<p>The installer does not update the katello-ca-consumer-latest symlink to the latest RPM once the bootstrap RPM&#8217;s release is greater than 9. - <a href="https://projects.theforeman.org/issues/32529">#32529</a></p>
+</li>
+<li>
+<p>Add puppet type to manage an nssdb - <a href="https://projects.theforeman.org/issues/32511">#32511</a></p>
+</li>
+<li>
+<p>Use Foreman client certificates to communicate with Pulp - <a href="https://projects.theforeman.org/issues/32383">#32383</a></p>
+</li>
+<li>
+<p>mod_auth_kerb has been replaced by mod_auth_gssapi - <a href="https://projects.theforeman.org/issues/32352">#32352</a></p>
+</li>
+<li>
+<p>The system does not seem to be IPA-enrolled - <a href="https://projects.theforeman.org/issues/29649">#29649</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_foreman_installer_script_2">5.2.2. foreman-installer script</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Support automatic reinstallation of puppet-agent-oauth on Debian - <a href="https://projects.theforeman.org/issues/33191">#33191</a></p>
+</li>
+<li>
+<p>Add puppet plugin to answer files - <a href="https://projects.theforeman.org/issues/32914">#32914</a></p>
+</li>
+<li>
+<p>Drop Puppet 5 from version check - <a href="https://projects.theforeman.org/issues/32610">#32610</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_packaging_3">5.3. Packaging</h3>
+<div class="sect3">
+<h4 id="_rpms">5.3.1. RPMs</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Add a logrotate entry for /var/log/foreman-maintain - <a href="https://projects.theforeman.org/issues/33193">#33193</a></p>
+</li>
+<li>
+<p>katello-change-hostname assumes answers file location - <a href="https://projects.theforeman.org/issues/32743">#32743</a></p>
+</li>
+<li>
+<p>katello-change-hostname should handle --no-enable-puppet properly - <a href="https://projects.theforeman.org/issues/32725">#32725</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_smart_proxy">5.4. Smart Proxy</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Trusted hosts test fails with IPv6 address with interface - <a href="https://projects.theforeman.org/issues/32164">#32164</a></p>
+</li>
+</ul>
+</div>
+<div class="sect3">
+<h4 id="_tftp_2">5.4.1. TFTP</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Download of OS specific kernel and initrd files should verify certificates - <a href="https://projects.theforeman.org/issues/18936">#18936</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="foreman-contributors">Appendix A: Foreman Contributors</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>Adam Ruzicka</p>
+</li>
+<li>
+<p>Adi Abramovich</p>
+</li>
+<li>
+<p>Adi Abramovitch</p>
+</li>
+<li>
+<p>Amir Fefer</p>
+</li>
+<li>
+<p>Amit Upadhye</p>
+</li>
+<li>
+<p>Andrea Perotti</p>
+</li>
+<li>
+<p>Artur Obolewicz</p>
+</li>
+<li>
+<p>Bas Roos</p>
+</li>
+<li>
+<p>Bernhard Suttner</p>
+</li>
+<li>
+<p>Chris Roberts</p>
+</li>
+<li>
+<p>Dominik Matoulek</p>
+</li>
+<li>
+<p>Dominique Quatravaux</p>
+</li>
+<li>
+<p>Eric D. Helms</p>
+</li>
+<li>
+<p>Evgeni Golov</p>
+</li>
+<li>
+<p>Ewoud Kohl van Wijngaarden</p>
+</li>
+<li>
+<p>Greg Cox</p>
+</li>
+<li>
+<p>Hao Yu</p>
+</li>
+<li>
+<p>Ian Ballou</p>
+</li>
+<li>
+<p>James Jeffers</p>
+</li>
+<li>
+<p>Jaskaran</p>
+</li>
+<li>
+<p>Jaskaran Singh Narula</p>
+</li>
+<li>
+<p>Jeremy Lenz</p>
+</li>
+<li>
+<p>Jonas Trüstedt</p>
+</li>
+<li>
+<p>Jonathon Turel</p>
+</li>
+<li>
+<p>Justin Sherrill</p>
+</li>
+<li>
+<p>Karl vollmer</p>
+</li>
+<li>
+<p>Learloj</p>
+</li>
+<li>
+<p>Leos Stejskal</p>
+</li>
+<li>
+<p>Lucy Fu</p>
+</li>
+<li>
+<p>Lukáš Zapletal</p>
+</li>
+<li>
+<p>Manfred Pusch</p>
+</li>
+<li>
+<p>Marek Hulán</p>
+</li>
+<li>
+<p>Maria Agaphontzev</p>
+</li>
+<li>
+<p>Markus Bucher</p>
+</li>
+<li>
+<p>Martin Schlossarek</p>
+</li>
+<li>
+<p>Maximilian</p>
+</li>
+<li>
+<p>Maximilian Kolb</p>
+</li>
+<li>
+<p>Melanie Corr</p>
+</li>
+<li>
+<p>Nacho Barrientos</p>
+</li>
+<li>
+<p>Oleh Fedorenko</p>
+</li>
+<li>
+<p>Ondřej Ezr</p>
+</li>
+<li>
+<p>Ondřej Pražák</p>
+</li>
+<li>
+<p>Peter Bray</p>
+</li>
+<li>
+<p>Rahul Bajaj</p>
+</li>
+<li>
+<p>Ranjan Kumar</p>
+</li>
+<li>
+<p>Ron Lavi</p>
+</li>
+<li>
+<p>Samuli Seppänen</p>
+</li>
+<li>
+<p>Scott Lindeneau</p>
+</li>
+<li>
+<p>Shimon Shtein</p>
+</li>
+<li>
+<p>Shira Maximov</p>
+</li>
+<li>
+<p>Simon Peeters</p>
+</li>
+<li>
+<p>Spencer</p>
+</li>
+<li>
+<p>Stefan Lasiewski</p>
+</li>
+<li>
+<p>Sureshkumar Thirugnanasambandan</p>
+</li>
+<li>
+<p>Tim Meusel</p>
+</li>
+<li>
+<p>Tomer Brisker</p>
+</li>
+<li>
+<p>Vitaly Pyslar</p>
+</li>
+<li>
+<p>William Clark</p>
+</li>
+<li>
+<p>Yifat Makias</p>
+</li>
+<li>
+<p>Zach Huntington-Meath</p>
+</li>
+<li>
+<p>aabramov</p>
+</li>
+<li>
+<p>mzima</p>
+</li>
+<li>
+<p>nadjaheitmann</p>
+</li>
+<li>
+<p>pheeeter</p>
+</li>
+<li>
+<p>sandstrom</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated Nov 2021
+</div>
+</div>
+</body>
+</html>
