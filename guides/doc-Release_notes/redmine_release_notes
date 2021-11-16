@@ -1,0 +1,120 @@
+#!/usr/bin/env ruby
+
+# Find the ""Release notes"" in said version
+# Pull all the release info from Redmine
+
+require 'uri'
+require 'net/http'
+require 'json'
+
+HOST = 'projects.theforeman.org'
+
+def build_uri(path, query = nil)
+  URI::HTTPS.build(host: HOST, path: path, query: query ? URI.encode_www_form(query) : nil)
+end
+
+def url_to_json(path, query = nil)
+  uri = build_uri(path, query)
+  response = Net::HTTP.get(uri)
+  JSON.parse(response)
+end
+
+# Determine version
+def get_version_id(project, release_name)
+  release_name = "Katello #{release_name}" if project == 'katello'
+
+  result = url_to_json("/projects/#{project}/versions.json")
+  return nil if result['versions'].nil?
+  result = result['versions'].detect{|v| v['name'] == release_name }
+  return nil if result.nil?
+  result['id']
+rescue StandardError => e
+  puts "Error getting version list from #{path}: #{e}"
+  exit 1
+end
+
+def gather_issues(release_id, offset = 0)
+  query = {'status_id' => 'closed', 'offset' => offset, 'limit' => 100, 'f[]' => 'cf_12', 'op[cf_12]' => '=', 'v[cf_12][]' => release_id}.to_a
+  result = url_to_json('/issues.json', query)
+  raise StandardError, result['errors'] if result['errors']
+
+  if result['total_count'].to_i - offset - 100 <= 0
+    result['issues']
+  else
+    result['issues'] += gather_issues(release_id, offset + 100)
+  end
+end
+
+def category_from_issue(issue)
+  category_name = issue.dig('category', 'name')
+
+  return unless category_name
+
+  case issue['project']['name']
+  when 'Smart Proxy'
+    return if category_name == 'Core'
+  when 'SELinux'
+    return if category == 'General Foreman'
+  end
+
+  category_name
+end
+
+def format_issue(issue)
+  subject = issue['subject'].gsub('`','\\\`').gsub('<','&lt;').gsub('>','&gt;').gsub('*','\\\*').gsub("'", "\\\'")
+  link = build_uri("/issues/#{issue['id']}")
+  "* #{subject} - #{link}[##{issue['id']}]"
+end
+
+if ARGV.size != 2
+  STDERR.puts "Usage: #{$0} PROJECT RELEASE_NAME"
+  STDERR.puts "Example: #{$0} foreman 3.0.0"
+  exit 1
+end
+
+project = ARGV[0]
+release_name = ARGV[1]
+
+release_id = get_version_id(project, release_name)
+
+if release_id.nil?
+  STDERR.puts "Release #{release_name} not found in any of the project #{project}"
+  exit 1
+end
+
+redmine_link = build_uri('/issues', [['set_filter', '1'], ['sort', 'id:desc'], ['status_id', 'closed'], ['f[]', 'cf_12'], ['op[cf_12]', '='], ['v[cf_12][]', release_id]])
+
+puts "= #{project.capitalize} #{release_name}"
+puts
+puts "A full list of changes is available via #{redmine_link}[Redmine]"
+
+projects = Hash.new { |hash, key| hash[key] = {issues: [], categories: Hash.new { |c, k| c[k] = [] }} }
+
+gather_issues(release_id).each do |issue|
+  project = projects[issue['project']['name']]
+
+  if (category = category_from_issue(issue))
+    project[:categories][category] << issue
+  else
+    project[:issues] << issue
+  end
+end
+
+projects.sort.each do |name, project|
+  puts
+  puts "== #{name}"
+
+  puts if project[:issues].any?
+  project[:issues].each do |issue|
+    puts format_issue(issue)
+  end
+
+  project[:categories].each do |category, issues|
+    puts
+    puts "=== #{category}"
+    puts
+    issues.each do |issue|
+      puts format_issue(issue)
+    end
+  end
+end
