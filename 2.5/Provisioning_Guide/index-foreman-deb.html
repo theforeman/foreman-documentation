@@ -6243,22 +6243,54 @@ This procedure includes steps to clean the virtual machine so that no unwanted i
 </div>
 </li>
 <li>
-<p>Create a configuration file for <code>cloud-init</code>:</p>
+<p>Disable network configuration by <code>cloud-init</code>:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># vi /etc/cloud/cloud.cfg.d/<em>example_cloud-init_config</em>.cfg</pre>
+<pre class="nowrap"># cat &lt;&lt; EOM &gt; /etc/cloud/cloud.cfg.d/01_network.cfg
+network:
+  config: disabled
+EOM</pre>
 </div>
 </div>
 </li>
 <li>
-<p>Add the following information to the <code><em>example_cloud_init_config</em>.cfg</code> file:</p>
+<p>Configure <code>cloud-init</code> to fetch data from Foreman:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap">datasource_list: [NoCloud]
+<pre class="nowrap"># cat &lt;&lt; EOM &gt; /etc/cloud/cloud.cfg.d/10_datasource.cfg
+datasource_list: [NoCloud]
 datasource:
   NoCloud:
     seedfrom: https://foreman.example.com/userdata/
-EOF</pre>
+EOM</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Configure modules to use in <code>cloud-init</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># cat &lt;&lt; EOM &gt; /etc/cloud/cloud.cfg
+cloud_init_modules:
+ - bootcmd
+
+cloud_config_modules:
+ - runcmd
+
+cloud_final_modules:
+ - scripts-per-once
+ - scripts-per-boot
+ - scripts-per-instance
+ - scripts-user
+ - phone-home
+
+system_info:
+  distro: rhel
+  paths:
+    cloud_dir: /var/lib/cloud
+    templates_dir: /etc/cloud/templates
+  ssh_svcname: sshd
+EOM</pre>
 </div>
 </div>
 </li>
@@ -6321,13 +6353,11 @@ EOF</pre>
 </div>
 </li>
 <li>
-<p>Remove the <code>uuid</code> from <code>ifcfg</code> scripts:</p>
+<p>Remove the <code>ifcfg</code> scripts related to existing network configurations:</p>
 <div class="listingblock">
 <div class="content">
-<pre># cat &gt; /etc/sysconfig/network-scripts/ifcfg-ens192 &lt;&lt;EOM
-DEVICE=ens192
-ONBOOT=yes
-EOM</pre>
+<pre># rm -f /etc/sysconfig/network-scripts/ifcfg-ens*
+# rm -f /etc/sysconfig/network-scripts/ifcfg-eth*</pre>
 </div>
 </div>
 </li>
@@ -6340,19 +6370,19 @@ EOM</pre>
 </div>
 </li>
 <li>
+<p>Remove root user&#8217;s SSH history:</p>
+<div class="listingblock">
+<div class="content">
+<pre># rm -rf ~root/.ssh/known_hosts</pre>
+</div>
+</div>
+</li>
+<li>
 <p>Remove root user&#8217;s shell history:</p>
 <div class="listingblock">
 <div class="content">
 <pre># rm -f ~root/.bash_history
 # unset HISTFILE</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Remove root user&#8217;s SSH history:</p>
-<div class="listingblock">
-<div class="content">
-<pre># rm -rf ~root/.ssh/known_hosts</pre>
 </div>
 </div>
 </li>
