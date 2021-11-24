@@ -1,64 +1,75 @@
-[id="installing-and-configuring-the-puppet-agent"]
+[id="Installing_and_Configuring_the_Puppet_Agent_{context}"]
 = Installing and Configuring the Puppet Agent
 
 Use this procedure to install and configure the Puppet agent on a host.
+ifndef::orcharhino[]
 For more information about Puppet, see the https://access.redhat.com/documentation/en-us/red_hat_satellite/{AccessRedHatComVersion}/html/puppet_guide/[_Puppet Guide_].
+endif::[]
 
 .Prerequisites
-
-* The host must be registered to {ProjectName}.
 * The host must have a Puppet environment assigned to it.
-* The Red{nbsp}Hat {project-client-name} repository must be enabled and synchronized on {ProjectServer}, and enabled on the host.
+ifdef::satellite,orcharhino[]
+* The {Team} {project-client-name} repository must be enabled and synchronized to {ProjectServer}, and enabled on the host.
+endif::[]
+ifdef::katello[]
+* Ensure a repository containing the Puppet Agent is enabled on the host, for example https://apt.puppet.com/[apt.puppet.com] or https://yum.puppet.com/[yum.puppet.com].
+endif::[]
 
 .Procedure
-
 . Log in to the host as the `root` user.
-
-. Install the Puppet agent package:
+. Install the Puppet agent package.
+ifdef::satellite[]
+* On hosts running {RHEL}:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 # yum install puppet-agent
 ----
-
-. Configure the Puppet agent to start on boot:
-* On Red{nbsp}Hat Enterprise{nbsp}Linux{nbsp}6:
+endif::[]
+ifndef::satellite[]
+* On hosts running Enterprise Linux:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-# chkconfig puppet on
+# yum install puppet-agent
 ----
-+
-* On Red{nbsp}Hat Enterprise{nbsp}Linux{nbsp}7:
+* On hosts running Debian:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-# systemctl enable puppet
+# apt-get install puppet-agent
 ----
-
+* On hosts running SUSE Linux Enterprise Server:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# zypper install puppet-agent
+----
+endif::[]
 . Append the following server and environment settings to the `/etc/puppetlabs/puppet/puppet.conf` file.
 Set the `environment` parameter to the name of the Puppet environment to which the host belongs:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-environment = _My_Example_Org_Library_
+environment = _My_Lifecycle_Environment_
 server = _{foreman-example-com}_
-ca_server = _{foreman-example-com}_
 ----
+. Configure the Puppet agent to start on boot:
 +
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# systemctl enable --now puppet
+----
 . Run the Puppet agent on the host:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-# puppet agent -t
+# puppet ssl bootstrap
 ----
-+
 . In the {ProjectWebUI}, navigate to *Infrastructure* > *{SmartProxies}*.
 . From the list in the *Actions* column for the required {SmartProxyServer}, select *Certificates*.
 . Click *Sign* to the right of the required host to sign the SSL certificate for the Puppet client.
-. Enter the `puppet agent` command again:
-+
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
-# puppet agent -t
-----
+
+ifndef::satellite[]
+You can continue to use {ManagingHostsDocURL}using-puppet-for-configuration-management_managing-hosts[Puppet for Configuration Management].
+endif::[]
