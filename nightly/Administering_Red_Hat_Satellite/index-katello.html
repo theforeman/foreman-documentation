@@ -119,13 +119,16 @@ if (rl.includes("/master/") || rl.includes("/nightly/") || rl.includes("file://"
 <li><a href="#reclaiming-postgresql-space-after-an-upgrade_admin">12.5. Reclaiming PostgreSQL Space</a></li>
 </ul>
 </li>
-<li><a href="#chap-Administering-Logging_and_Reporting_Problems">13. Logging and Reporting Problems</a>
+<li><a href="#Logging_and_Reporting_Problems_admin">13. Logging and Reporting Problems</a>
 <ul class="sectlevel2">
-<li><a href="#enabling-debug-logging_admin">13.1. Enabling Debug Logging</a></li>
-<li><a href="#_enabling_individual_loggers">13.2. Enabling Individual Loggers</a></li>
-<li><a href="#configuring-logging-to-journal">13.3. Configuring Logging to Journal</a></li>
-<li><a href="#log-file-directories-provided-by-satellite_admin">13.4. Log File Directories Provided by Foreman</a></li>
-<li><a href="#utilities-for-collecting-log-information_admin">13.5. Utilities for Collecting Log Information</a></li>
+<li><a href="#Enabling_Debug_Logging_admin">13.1. Enabling Debug Logging</a></li>
+<li><a href="#Increasing_Log_Levels_admin">13.2. Increasing Log Levels</a></li>
+<li><a href="#Retrieving_the_Status_of_Services_admin">13.3. Retrieving the Status of Services</a></li>
+<li><a href="#Restarting_Services_admin">13.4. Restarting Services</a></li>
+<li><a href="#Enabling_Individual_Loggers_admin">13.5. Enabling Individual Loggers</a></li>
+<li><a href="#Configuring_Logging_to_Journal_admin">13.6. Configuring Logging to Journal</a></li>
+<li><a href="#Log_File_Directories_admin">13.7. Log File Directories Provided by Foreman</a></li>
+<li><a href="#Utilities_for_Collecting_Log_Information_admin">13.8. Utilities for Collecting Log Information</a></li>
 </ul>
 </li>
 <li><a href="#Configuring_External_Authentication_admin">14. Configuring External Authentication</a>
@@ -4564,7 +4567,7 @@ Use this procedure to reclaim some of this disk space on Foreman.</p>
 </div>
 </div>
 <div class="sect1">
-<h2 id="chap-Administering-Logging_and_Reporting_Problems"><a class="anchor" href="#chap-Administering-Logging_and_Reporting_Problems"></a>13. Logging and Reporting Problems</h2>
+<h2 id="Logging_and_Reporting_Problems_admin"><a class="anchor" href="#Logging_and_Reporting_Problems_admin"></a>13. Logging and Reporting Problems</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>This chapter provides information on how to log and report problems in Foreman&#160;server, including information on relevant log files, how to enable debug logging, how to open a support case and attach the relevant log tar files, and how to access support cases within the Foreman web UI.</p>
@@ -4581,21 +4584,16 @@ Use this procedure to reclaim some of this disk space on Foreman.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="enabling-debug-logging_admin"><a class="anchor" href="#enabling-debug-logging_admin"></a>13.1. Enabling Debug Logging</h3>
+<h3 id="Enabling_Debug_Logging_admin"><a class="anchor" href="#Enabling_Debug_Logging_admin"></a>13.1. Enabling Debug Logging</h3>
 <div class="paragraph">
-<p>Debug logging provides the most detailed log information and can help with troubleshooting issues that can arise with Foreman and its components.</p>
-</div>
-<div class="paragraph">
-<p>In the Foreman CLI, enable debug logging to log detailed debugging information for Foreman.</p>
-</div>
-<div class="paragraph">
-<div class="title">Procedure</div>
-<p>To enable debug logging, complete the following steps on your Foreman&#160;server.</p>
+<p>Debug logging provides the most detailed log information and can help with troubleshooting issues that can arise with Foreman and its components.
+In the Foreman CLI, enable debug logging to log detailed debugging information for Foreman.</p>
 </div>
 <div class="olist arabic">
+<div class="title">Procedure</div>
 <ol class="arabic">
 <li>
-<p>To enable debug logging, enter the following command :</p>
+<p>To enable debug logging, enter the following command:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># foreman-installer --foreman-logging-level debug</pre>
@@ -4614,7 +4612,500 @@ Use this procedure to reclaim some of this disk space on Foreman.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_enabling_individual_loggers"><a class="anchor" href="#_enabling_individual_loggers"></a>13.2. Enabling Individual Loggers</h3>
+<h3 id="Increasing_Log_Levels_admin"><a class="anchor" href="#Increasing_Log_Levels_admin"></a>13.2. Increasing Log Levels</h3>
+<div class="paragraph">
+<p>By default, Foreman comes with <code>:INFO</code> level logging enabled.
+You can increase or decrease the log levels on your Foreman.</p>
+</div>
+<div class="listingblock">
+<div class="title">Enabling debug level logging on all components</div>
+<div class="content">
+<pre class="nowrap"># hammer admin logging --all --level-debug
+# {foreman-maintain} service restart</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Enabling debug level logging for a specific component</div>
+<div class="content">
+<pre class="nowrap"># hammer admin logging --components "<em>Component</em>" --level-debug</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Reverting debug level logging to <code>INFO</code></div>
+<div class="content">
+<pre class="nowrap"># hammer admin logging --all --level-production
+# {foreman-maintain} service restart</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Listing all components and changed configuration files</div>
+<div class="content">
+<pre># hammer admin logging --list
+-----------|-------------------------------------|-------------------------------------
+COMPONENT  | AUTO-DETECTED BY EXISTENCE OF       | DESTINATIONS
+-----------|-------------------------------------|-------------------------------------
+dhcpd      | /etc/dhcp/dhcpd.conf                | syslog /var/log/dhcpd-debug.log
+postgresql | /var/lib/pgsql/data/postgresql.conf | syslog /var/lib/pgsql/data/pg_log/
+proxy      | /etc/foreman-proxy/settings.yml     | /var/log/foreman-proxy/proxy.log
+qpidd      | /etc/qpid/qpidd.conf                | syslog
+rails      | /etc/foreman/settings.yaml          | /var/log/foreman/production.log
+tomcat     | /etc/candlepin/candlepin.conf       | /var/log/candlepin/ /var/log/tomcat/
+virt-who   | /etc/sysconfig/virt-who             | syslog
+-----------|-------------------------------------|-------------------------------------</pre>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_hammer"><a class="anchor" href="#_hammer"></a>13.2.1. Hammer</h4>
+<div class="paragraph">
+<p>You can find the log for Hammer in <code>~/.hammer/log/hammer.log</code>.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Changing the log level</div>
+<ol class="arabic">
+<li>
+<p>Edit <code>/etc/hammer/cli_config.yml</code> and set the <code>:log_level:</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre>:log_level: 'debug'</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_smartproxy"><a class="anchor" href="#_smartproxy"></a>13.2.2. Smart&#160;Proxy</h4>
+<div class="paragraph">
+<p>You can find the log for Smart&#160;Proxy in <code>/var/log/foreman-proxy/proxy.log</code>.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Changing the log level</div>
+<ol class="arabic">
+<li>
+<p>Uncomment the <code>DEBUG</code> line in <code>/etc/foreman-proxy/settings.yml</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre>:log_level: DEBUG</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Restart the <code>foreman-proxy</code> service:</p>
+<div class="listingblock">
+<div class="content">
+<pre># systemctl restart foreman-proxy</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="admonitionblock caution">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Caution</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Running the installer will revert this change back.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_candlepin"><a class="anchor" href="#_candlepin"></a>13.2.3. Candlepin</h4>
+<div class="paragraph">
+<p>You can find the log for Candlepin in <code>/var/log/candlepin/candlepin.log</code>.
+Errors are also logged to a seperate file for easier debugging <code>/var/log/candlepin/error.log</code></p>
+</div>
+<div class="olist arabic">
+<div class="title">Changing the log level</div>
+<ol class="arabic">
+<li>
+<p>Extend <code>/etc/candlepin/candlepin.conf</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre>log4j.logger.org.candlepin=DEBUG</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Restart the <code>tomcat</code> service:</p>
+<div class="listingblock">
+<div class="content">
+<pre># systemctl restart tomcat</pre>
+</div>
+</div>
+</li>
+<li>
+<p>If the candlepin log files are too verbose, you can decrease the default debug level:</p>
+<div class="listingblock">
+<div class="content">
+<pre>log4j.logger.org.candlepin.resource.ConsumerResource=WARN
+log4j.logger.org.candlepin.resource.HypervisorResource=WARN</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_foreman"><a class="anchor" href="#_foreman"></a>13.2.4. Foreman</h4>
+<div class="paragraph">
+<p>You can find the log for Foreman in <code>/var/log/foreman/production.log</code>.</p>
+</div>
+<div class="paragraph">
+<p>Foreman stores logs for Apache in:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>/var/log/httpd/foreman_error.log</code></p>
+</li>
+<li>
+<p><code>/var/log/httpd/foreman_access.log</code></p>
+</li>
+<li>
+<p><code>/var/log/httpd/foreman_ssl_error.log</code></p>
+</li>
+<li>
+<p><code>/var/log/httpd/foreman_ssl_access.log</code></p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Changing the log level</div>
+<ol class="arabic">
+<li>
+<p>Set the logging level in <code>/etc/foreman/settings.yaml</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre>:logging:
+  :production:
+    :type: file
+    :layout: pattern
+    :level: debug</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Enable selected loggers in <code>/etc/foreman/settings.yaml</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre>:loggers:
+  :ldap:
+    :enabled: true
+  :permissions:
+    :enabled: true
+  :sql:
+    :enabled: true</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note that to see logging from some area, debug logging has to be set.</p>
+</div>
+</li>
+<li>
+<p>Restart the Foreman services:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># {foreman-maintain} service restart</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>You can find the complete list of loggers with their default values in <code>/usr/share/foreman/config/application.rb</code> in the <code>Foreman::Logging.add_loggers</code> command.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_qpid_dispatch_router"><a class="anchor" href="#_qpid_dispatch_router"></a>13.2.5. Qpid Dispatch Router</h4>
+<div class="paragraph">
+<p>Qpid logs to syslog and can be viewed in <code>/var/log/messages</code> or with <code>journalctl</code>.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Changing the log level</div>
+<ol class="arabic">
+<li>
+<p>Enable debug logging in <code>/etc/qpid-dispatch/qdrouterd.conf</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre>enable: debug+</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Restart the Qpid Dispatch Router:</p>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># systemctl restart qdrouterd</pre>
+</div>
+</div>
+<div class="admonitionblock caution">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Caution</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Running the installer will revert this change back.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_qpid_broker"><a class="anchor" href="#_qpid_broker"></a>13.2.6. Qpid Broker</h4>
+<div class="paragraph">
+<p>Qpid logs to syslog and can be viewed in <code>/var/log/messages</code> or with <code>journalctl</code></p>
+</div>
+<div class="olist arabic">
+<div class="title">Changing the log level</div>
+<ol class="arabic">
+<li>
+<p>Set the log level in <code>/etc/qpid/qpidd.conf</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre>log-enable=debug+</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Restart the Qpid Broker</p>
+<div class="listingblock">
+<div class="content">
+<pre># systemctl restart qpidd`</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="admonitionblock caution">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Caution</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Running the installer will revert this change.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_redis"><a class="anchor" href="#_redis"></a>13.2.7. Redis</h4>
+<div class="paragraph">
+<p>You can find the log for Redis in <code>/var/log/redis/redis.log</code>.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Changing the log level</div>
+<ol class="arabic">
+<li>
+<p>Set the log level in <code>/etc/opt/rh/rh-redis5/redis.conf</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre>loglevel debug</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Restart the Redis service:</p>
+<div class="listingblock">
+<div class="content">
+<pre># systemctl restart rh-redis5-redis</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_postgres"><a class="anchor" href="#_postgres"></a>13.2.8. Postgres</h4>
+<div class="paragraph">
+<p>You can find the log for Postgres in <code>/var/opt/rh/rh-postgresql12/lib/pgsql/data/log/</code>.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Changing the log level</div>
+<ol class="arabic">
+<li>
+<p>Uncomment the <code>log_statement</code> in <code>/var/opt/rh/rh-postgresql12/lib/pgsql/data/postgresql.conf</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre>log_statement = 'all'</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Restart the Foreman services:</p>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># {foreman-maintain} service restart</pre>
+</div>
+</div>
+<div class="admonitionblock caution">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Caution</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Based on the size of your Foreman installation, this can cause disk space to fill up very quickly.
+Only turn this on if absolutely needed.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>For other debug log settings, refer to the <a href="https://www.postgresql.org/docs/current/runtime-config-logging.html">Postgresql documentation</a>.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_foreman_installer"><a class="anchor" href="#_foreman_installer"></a>13.2.9. Foreman Installer</h4>
+<div class="paragraph">
+<p>You can find the log files in <code>/var/log/foreman-installer/</code>.</p>
+</div>
+<div class="listingblock">
+<div class="title">To increase the log level of the Foreman Installer during an install</div>
+<div class="content">
+<pre class="nowrap"># {foreman-installer} --verbose-log-level debug</pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_pulp"><a class="anchor" href="#_pulp"></a>13.2.10. Pulp</h4>
+<div class="paragraph">
+<p>By default, Pulp logs to syslog and can be viewed in <code>/var/log/messages</code> or with <code>journalctl</code>.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Changing the log level</div>
+<ol class="arabic">
+<li>
+<p>Add the following config to the <code>/etc/pulp/settings.py</code> file:</p>
+<div class="listingblock">
+<div class="content">
+<pre>LOGGING = {"dynaconf_merge": True, "loggers": {'': {'handlers': ['console'], 'level': 'DEBUG'}}}</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Restart the Pulp services:</p>
+<div class="listingblock">
+<div class="content">
+<pre># systemctl restart \
+pulpcore-api \
+pulpcore-content \
+pulpcore-resource-manager \
+pulpcore-worker@1 \
+pulpcore-worker@2 \
+rh-redis5-redis</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Retrieving_the_Status_of_Services_admin"><a class="anchor" href="#Retrieving_the_Status_of_Services_admin"></a>13.3. Retrieving the Status of Services</h3>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Administer &gt; About</strong>.</p>
+</li>
+<li>
+<p>On the <strong>Smart Proxies</strong> tab, you can view the status of all Smart&#160;Proxies.</p>
+</li>
+<li>
+<p>On the <strong>Compute Resources</strong> tab, you can view the status of attached compute resource providers.</p>
+</li>
+<li>
+<p>In the <strong>Backend System Status</strong> table, you can view the status of all back-end services.</p>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">CLI procedure</div>
+<ul>
+<li>
+<p>Run <code>hammer ping</code> to get information from the database and Foreman services:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer ping</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Use <code>foreman-maintain</code> to check the status of the services running in systemd:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># {foreman-maintain} service status</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Use <code>foreman-maintain</code> to perform a health check:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ foreman-maintain health check</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Restarting_Services_admin"><a class="anchor" href="#Restarting_Services_admin"></a>13.4. Restarting Services</h3>
+<div class="paragraph">
+<p>Foreman uses a set of back-end services to perform tasks.
+You you experience an issue with your Foreman, check the status of the Foreman services.</p>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>Use <code>foreman-maintain</code> to restart Foreman services:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-maintain service restart</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Tip</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Run <code>foreman-maintain --help</code> for more information.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Enabling_Individual_Loggers_admin"><a class="anchor" href="#Enabling_Individual_Loggers_admin"></a>13.5. Enabling Individual Loggers</h3>
 <div class="paragraph">
 <p>You can enable individual loggers for selective logging.
 Foreman uses the following loggers:</p>
@@ -4648,18 +5139,17 @@ Default value: false.</p>
 </dd>
 </dl>
 </div>
-<div class="paragraph">
-<div class="title">Procedure</div>
-<p>To enable individual loggers, complete the following steps.</p>
-</div>
 <div class="olist arabic">
+<div class="title">Procedure</div>
 <ol class="arabic">
 <li>
 <p>Enable the individual loggers that you want.
 For example, to enable <code>sql</code> and <code>ldap</code> loggers, enter the following command:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># foreman-installer --foreman-loggers sql:true --foreman-loggers ldap:true</pre>
+<pre class="nowrap"># foreman-installer \
+--foreman-loggers ldap:true \
+--foreman-loggers sql:true</pre>
 </div>
 </div>
 </li>
@@ -4675,7 +5165,7 @@ For example, to enable <code>sql</code> and <code>ldap</code> loggers, enter the
 </div>
 </div>
 <div class="sect2">
-<h3 id="configuring-logging-to-journal"><a class="anchor" href="#configuring-logging-to-journal"></a>13.3. Configuring Logging to Journal</h3>
+<h3 id="Configuring_Logging_to_Journal_admin"><a class="anchor" href="#Configuring_Logging_to_Journal_admin"></a>13.6. Configuring Logging to Journal</h3>
 <div class="paragraph">
 <p>You can configure Foreman to manage logging with Journal.
 Journal then forwards log messages to <code>rsyslog</code> and <code>rsyslog</code> writes the log messages to <code>/var/log/messages</code>.
@@ -4684,19 +5174,18 @@ Note that after this change the log messages do not appear in <code>/var/log/for
 <div class="paragraph">
 <p>For more information about Journal, see <a href="https://github.com/lzap/foreman-elasticsearch" class="bare">https://github.com/lzap/foreman-elasticsearch</a>.</p>
 </div>
-<div class="paragraph">
-<div class="title">Procedure</div>
-<p>To configure Foreman&#160;server logging with Journal, complete the following steps:</p>
-</div>
 <div class="olist arabic">
+<div class="title">Procedure</div>
 <ol class="arabic">
 <li>
 <p>Enter the following <code>foreman-installer</code> command to configure logging to <code>journald</code>:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># foreman-installer --foreman-logging-level info \
+<pre class="nowrap"># foreman-installer \
+--foreman-logging-layout pattern \
+--foreman-logging-level info \
 --foreman-logging-type journald \
---foreman-logging-layout pattern --foreman-proxy-log JOURNAL</pre>
+--foreman-proxy-log JOURNAL</pre>
 </div>
 </div>
 </li>
@@ -4712,11 +5201,11 @@ Note that after this change the log messages do not appear in <code>/var/log/for
 </div>
 </div>
 <div class="sect2">
-<h3 id="log-file-directories-provided-by-satellite_admin"><a class="anchor" href="#log-file-directories-provided-by-satellite_admin"></a>13.4. Log File Directories Provided by Foreman</h3>
+<h3 id="Log_File_Directories_admin"><a class="anchor" href="#Log_File_Directories_admin"></a>13.7. Log File Directories Provided by Foreman</h3>
 <div class="paragraph">
 <p>Foreman provides system information in the form of notifications and log files.</p>
 </div>
-<table id="tabl-Administering-Logging_and_Reporting-Log_Files_for_Reporting_and_Troubleshooting" class="tableblock frame-all grid-all stretch">
+<table class="tableblock frame-all grid-all stretch">
 <caption class="title">Table 4. Log File Directories for Reporting and Troubleshooting</caption>
 <colgroup>
 <col style="width: 50%;">
@@ -4734,23 +5223,27 @@ Note that after this change the log messages do not appear in <code>/var/log/for
 <td class="tableblock halign-left valign-top"><p class="tableblock">Subscription management</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>/var/log/foreman</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Foreman</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>/var/log/foreman-installer</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Installer</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>/var/log/foreman-proxy</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Foreman proxy</p></td>
 </tr>
 <tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>/var/log/foreman</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Foreman</p></td>
+</tr>
+<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>/var/log/httpd</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Apache HTTP server</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>/var/log/foreman-installer</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Installer</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>/var/log/messages</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Various other log messages</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>/var/log/puppet</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>/var/log/puppetlabs/puppet</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Configuration management</p></td>
 </tr>
 <tr>
@@ -4761,10 +5254,6 @@ Note that after this change the log messages do not appear in <code>/var/log/for
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>/var/log/tomcat</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Candlepin webservice logs</p></td>
 </tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>/var/log/messages</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Various other log messages</p></td>
-</tr>
 </tbody>
 </table>
 <div class="paragraph">
@@ -4773,45 +5262,20 @@ You can run <code>foreman-tail -l</code> to list the processes and services that
 </div>
 </div>
 <div class="sect2">
-<h3 id="utilities-for-collecting-log-information_admin"><a class="anchor" href="#utilities-for-collecting-log-information_admin"></a>13.5. Utilities for Collecting Log Information</h3>
+<h3 id="Utilities_for_Collecting_Log_Information_admin"><a class="anchor" href="#Utilities_for_Collecting_Log_Information_admin"></a>13.8. Utilities for Collecting Log Information</h3>
 <div class="paragraph">
-<p>There are two utilities available to collect information from log files.</p>
+<p>You can collect information from log files to troubleshoot Foreman.</p>
 </div>
-<table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 5. Log Collecting Utilities</caption>
-<colgroup>
-<col style="width: 22.2222%;">
-<col style="width: 77.7778%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">Command</th>
-<th class="tableblock halign-left valign-top">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>foreman-debug</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">The <code>foreman-debug</code> command collects configuration and log file data for Foreman, its back-end services, and system information.
-This information is collected and written to a tar file.
-By default, the output tar file is located at <code>/tmp/<em>foreman-debug-xxx.tar.xz</em></code>.</p>
-<p class="tableblock">Additionally, the <code>foreman-debug</code> command exports tasks run during the last 60 days.
-By default, the output tar file is located at <code>/tmp/<em>task-export-xxx.tar.xz</em></code>.
-If the file is missing, see the file <code>/tmp/task-export.log</code> to learn why task export was unsuccessful.</p>
-<p class="tableblock">For more information, run <code>foreman-debug --help</code>.</p>
-<p class="tableblock">There is no timeout when running this command.</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>sosreport</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">The <code>sosreport</code> command is a tool that collects configuration and diagnostic information from a Red&#160;Hat Enterprise&#160;Linux system, such as the running kernel version, loaded modules, and system and service configuration files.
-The command also runs external programs (for example: <code>foreman-debug -g</code>) to collect Foreman-specific information, and stores this output in a tar file.</p>
-<p class="tableblock">By default, the output tar file is located at <code>/var/tmp/<em>sosreport-XXX-20171002230919.tar.xz</em></code>.
+<div class="dlist">
+<dl>
+<dt class="hdlist1">sosreport</dt>
+<dd>
+<p>The <code>sosreport</code> command collects configuration and diagnostic information from a Linux system, such as the running Kernel version, loaded modules, running services, and system and service configuration files.
+This output is stored in a tar file located at <code>/var/tmp/<em>sosreport-XXX-20171002230919.tar.xz</em></code>.
 For more information, run <code>sosreport --help</code> or see <a href="https://access.redhat.com/solutions/3592"><em>What is a sosreport and how can I create one?</em></a>.</p>
-<p class="tableblock">The <code>sosreport</code> command calls the <code>foreman-debug -g</code> and times out after 500 seconds.
-If your Foreman&#160;server has large log files or many Foreman tasks, support engineers may require the output of <code>sosreport</code> and <code>foreman-debug</code> when you open a support case.</p></td>
-</tr>
-</tbody>
-</table>
+</dd>
+</dl>
+</div>
 <div class="admonitionblock important">
 <table>
 <tr>
@@ -4820,9 +5284,9 @@ If your Foreman&#160;server has large log files or many Foreman tasks, support e
 </td>
 <td class="content">
 <div class="paragraph">
-<p>Both <code>foreman-debug</code> and <code>sosreport</code> remove security information such as passwords, tokens, and keys while collecting information.
+<p>The collection process removes security information such as passwords, tokens, and keys while collecting information.
 However, the tar files can still contain sensitive information about the Foreman&#160;server.
-Red&#160;Hat recommends that you send this information directly to the intended recipient and not to a public target.</p>
+Foreman developers recommends that you send this information directly to the intended recipient and not to a public target.</p>
 </div>
 </td>
 </tr>
@@ -4896,7 +5360,7 @@ Foreman has a realm feature that automatically manages the life cycle of any sys
 For more information, see <a href="#sect-Administering-Configuring_External_Authentication-External_Authentication_for_Provisioned_Hosts">External Authentication for Provisioned Hosts</a>.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 6. Authentication Overview</caption>
+<caption class="title">Table 5. Authentication Overview</caption>
 <colgroup>
 <col style="width: 33.3333%;">
 <col style="width: 33.3333%;">
@@ -5090,7 +5554,7 @@ See <a href="#assigning-roles-to-a-user_admin">Assigning Roles to a User</a> to 
 <p>The following table provides a description for each setting in the <strong>Account</strong> tab.</p>
 </div>
 <table id="tabl-Administering-Description_of_Account_Tab_Settings_for_Active_Directory_LDAP_Connection" class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 7. Account Tab Settings</caption>
+<caption class="title">Table 6. Account Tab Settings</caption>
 <colgroup>
 <col style="width: 22.2222%;">
 <col style="width: 77.7778%;">
@@ -5175,7 +5639,7 @@ The example below uses a dedicated service account called <em>redhat</em> that h
 Note that LDAP attribute names are case sensitive.</p>
 </div>
 <table id="tabl-Administering-Using_LDAP-Example_Settings_for_Active_Directory_LDAP_Connection" class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 8. Example Settings for Active Directory, Free IPA or Red&#160;Hat Identity Management and POSIX LDAP Connections</caption>
+<caption class="title">Table 7. Example Settings for Active Directory, Free IPA or Red&#160;Hat Identity Management and POSIX LDAP Connections</caption>
 <colgroup>
 <col style="width: 14.2857%;">
 <col style="width: 28.5714%;">
@@ -5269,7 +5733,7 @@ The login name attribute <code>sAMAccountName</code> (which is not listed in the
 <p>As an administrator, you can create LDAP filters to restrict the access of specific users to Foreman.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 9. Example filters for allowing specific users to login</caption>
+<caption class="title">Table 8. Example filters for allowing specific users to login</caption>
 <colgroup>
 <col style="width: 25%;">
 <col style="width: 75%;">
@@ -8066,7 +8530,7 @@ The following widgets are available:</p>
 <p>An overview of the configuration states and the number of hosts associated with it during the last reporting interval.
 The following table shows the descriptions of the possible configuration states.</p>
 <table id="tabl-Administering-Host_Configuration_Status-Host_Configuration_Status" class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 10. Host Configuration States</caption>
+<caption class="title">Table 9. Host Configuration States</caption>
 <colgroup>
 <col style="width: 11.1111%;">
 <col style="width: 33.3333%;">
@@ -8219,7 +8683,7 @@ All products that are in the queue for synchronization, are unsynchronized or ha
 A subscription is a purchased certificate that unlocks access to software, upgrades, and security fixes for hosts.
 The following table shows the possible states of subscriptions.</p>
 <table id="tabl-Administering-Host_Subscription_Status-Host_Subscription_States" class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 11. Host Subscription States</caption>
+<caption class="title">Table 10. Host Subscription States</caption>
 <colgroup>
 <col style="width: 11.1111%;">
 <col style="width: 33.3333%;">
@@ -8281,7 +8745,7 @@ These hosts should be monitored to ensure they are configured as expected.</p></
 <p>An overview of the status of reports received from the <code>virt-who</code> daemon running on hosts in the environment.
 The following table shows the possible states.</p>
 <table id="tabl-Administering-Virt-who_Configuration_Status-Virt-who_Configuration_States" class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 12. Virt-who Configuration States</caption>
+<caption class="title">Table 11. Virt-who Configuration States</caption>
 <colgroup>
 <col style="width: 22.2222%;">
 <col style="width: 77.7778%;">
@@ -9066,7 +9530,7 @@ For descriptions of value formats, see <a href="#sect-Administering-Values">Valu
 Other symbols and special characters that might appear in a prediction-built query, such as colons, do not have special meaning and are treated as free text.</p>
 </div>
 <table id="tabl-Administering-Operators-Comparison_Operators" class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 13. Comparison Operators Accepted by Search</caption>
+<caption class="title">Table 12. Comparison Operators Accepted by Search</caption>
 <colgroup>
 <col style="width: 16.6666%;">
 <col style="width: 16.6666%;">
@@ -9170,7 +9634,7 @@ On the Dashboard with an overview of hosts, the search will return all hosts tha
 Alternative notations of the operators are also accepted:</p>
 </div>
 <table id="tabl-Administering-Query_Syntax-Logical_Operators" class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 14. Logical Operators Accepted by Search</caption>
+<caption class="title">Table 13. Logical Operators Accepted by Search</caption>
 <colgroup>
 <col style="width: 20%;">
 <col style="width: 10%;">
@@ -9402,7 +9866,7 @@ You must save the search query on the relevant page to create a bookmark for tha
 <p>This section contains noteworthy information or known issues about settings that you can edit in the Foreman web UI by navigating to <code>Administer</code> &gt; <code>Settings</code>.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 15. General Settings Information</caption>
+<caption class="title">Table 14. General Settings Information</caption>
 <colgroup>
 <col style="width: 50%;">
 <col style="width: 50%;">
@@ -9422,7 +9886,7 @@ When set to <code>Yes</code>, Foreman recreates this cache on the next restart.<
 </tbody>
 </table>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 16. Provisioning Settings Information</caption>
+<caption class="title">Table 15. Provisioning Settings Information</caption>
 <colgroup>
 <col style="width: 50%;">
 <col style="width: 50%;">
