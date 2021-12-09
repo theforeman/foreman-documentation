@@ -1,0 +1,42 @@
+[id="PostgreSQL_Tuning_{context}"]
+= PostgreSQL Tuning
+
+PostgreSQL is the primary SQL based database that is used by {Project} for the storage of persistent context across a wide variety of tasks that {Project} does.
+The database sees an extensive usage is usually working on to provide the {Project} with the data which it needs for its smooth functioning.
+This makes PostgreSQL a heavily used process which if tuned can have a number of benefits on the overall operational response of {Project}.
+
+The below set of tunings can be applied to PostgreSQL to improve its response times (see `how to use custom-hiera.yaml` file; this will modify `/var/lib/pgsql/data/postgresql.conf` file):
+
+----
+File: /etc/foreman-installer/custom-hiera.yaml
+postgresql::server::config_entries:
+  max_connections: 1000
+  shared_buffers: 2GiB
+  work_mem: 8MB
+  autovacuum_vacuum_cost_limit: 2000
+----
+
+In the above tuning configuration, there are a certain set of keys which we have altered:
+
+`max_connections`: The key defines the maximum number of connections that can be accepted by the PostgreSQL processes that are running.
+An optimal value for the parameter will be equal to the nearest multiple of 100 of the ServerLimit value of Apache httpd2 multiplied by 2.
+For example, if ServerLimit is set to 582, we can set the max_connections to 1000.
+
+`shared_buffers`: The shared buffers define the memory used by all the active connections inside postgresql to store the data for the different database operations.
+An optimal value for this will vary between 2 GiB to a maximum of 25% of your total system memory depending upon the frequency of the operations being conducted on {Project}.
+
+`work_mem`: The work_mem is the memory that is allocated on per process basis for Postgresql and is used to store the intermediate results of the operations that are being performed by the process.
+Setting this value to 8 MB should be more than enough for most of the intensive operations on {Project}.
+
+`autovacuum_vacuum_cost_limit`: The key defines the cost limit value for the vacuuming operation inside the autovacuum process to clean up the dead tuples inside the database relations.
+The cost limit defines the number of tuples that can be processed in a single run by the process.
+An optimal value for this is 2000 based on the general load that {Project} pushes on the PostgreSQL server process.
+
+[NOTE]
+====
+With the upgrade to Postgres 12, `checkpoint_segments` configuration is not supported.
+====
+
+ifndef::orcharhino[]
+For more details, please refer to this https://bugzilla.redhat.com/show_bug.cgi?id=1867311#c12[bugzilla].
+endif::[]
