@@ -1,0 +1,32 @@
+[id="Configuring_the_qpid_mgmt_pub_interval_Parameter_{context}"]
+= Configuring the QPID mgmt-pub-interval Parameter
+
+You might see the following error in journal (use `journalctl` command to access it) in {RHEL} 7:
+
+[options="nowrap" subs="+quotes,attributes"]
+----
+{foreman-example-com} qpidd[92464]: [Broker] error Channel exception: not-attached: Channel 2 is not attached(/builddir/build/BUILD/qpid-cpp-0.30/src/qpid/amqp_0_10/SessionHandler.cpp: 39
+{foreman-example-com} qpidd[92464]: [Protocol] error Connectionqpid.10.1.10.1:5671-10.1.10.1:53790 timed out: closing
+----
+
+This error message appears because qpid maintains management objects for queues, sessions, and connections and recycles them every ten seconds by default.
+The same object with the same ID is created, deleted, and created again.
+The old management object is not yet purged, which is why qpid throws this error.
+
+.Procedure
+. Set the `mgmt-pub-interval` parameter in `/etc/qpid/qpidd.conf`:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+mgmt-pub-interval=5
+----
+. Restart the `qpidd` service:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foreman-maintain} service restart --only qpidd
+----
+ifndef::orcharhino[]
++
+For more information, see https://bugzilla.redhat.com/show_bug.cgi?id=1335694[BZ 1335694] comment 7.
+endif::[]
