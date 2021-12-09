@@ -1,0 +1,28 @@
+[id="Configuring_how_many_processes_can_be_launched_by_Apache_httpd_{context}"]
+= Configuring how many processes can be launched by Apache httpd
+
+By default, HTTPD uses prefork request handling mechanism.
+With the prefork model of handling the requests, httpd launches a new process to handle the incoming connection by the client.
+
+When the number of requests to the apache exceed the maximum number of child processes that can be launched to handle the incoming connections, an HTTP 503 Service Unavailable Error is raised by httpd.
+Amidst httpd running out of processes to handle, the incoming connections can also result in multiple component failure on your {Project} side due to the dependency of components like Pulp on the availability of httpd processes.
+
+You can adapt the configuration of HTTPD prefork to handle more concurrent requests based on your expected peak load.
+
+// What does this mean? Can we shorten this?
+An example modification to the prefork configuration for a server which may desire to handle 150 concurrent content host registrations to {Project} may look like the configuration file example that follows (see how to use `custom-hiera.yaml` file; this will modify config file `/etc/httpd/conf.modules.d/prefork.conf`):
+
+You can modify `/etc/foreman-installer/custom-hiera.yaml`:
+
+[options="nowrap" subs="+quotes,attributes"]
+----
+apache::mod::prefork::serverlimit: 582
+apache::mod::prefork::maxclients: 582
+apache::mod::prefork::startservers: 10
+----
+
+* Set the *ServerLimit* parameter to raise MaxClients value.
+* Set the *MaxClients* parameter to limit the the maximum number of child processes that httpd can launch to handle the incoming requests.
++
+For more information, see `MaxRequestWorker` which is a new name in Apache documentation.
+* Set the *StartServers* parameter to define how many server processes are launched by default when the httpd process is started.
