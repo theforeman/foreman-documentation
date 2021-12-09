@@ -1,0 +1,43 @@
+[id="Configuring_Puma_DB_Pool_{context}"]
+= Configuring Puma DB Pool
+
+The effective value of `$db_pool` is automatically set to equal `$foreman::foreman_service_puma_threads_max`.
+It is the maximum of `$foreman::db_pool` and `$foreman::foreman_service_puma_threads_max` but both have default value 5, so any increase to the max threads above 5 automatically increases the database connection pool by the same amount
+
+// Do we really want to reference a single git commit?
+// Can we explain -in our own words- the what and why?
+For details of how that is implemented, https://github.com/theforeman/puppet-foreman/commit/026d47434316b8ae318c5e42936edc12859ab475[check set DB pool size dynamically.]
+
+Reasoning behind these numbers:
+
+Use 16 threads with all the tuning profiles - we have seen up to 23% performance increase with 16 threads when compared to 5 threads (14% for 8 compared to 4 and 10% for 32 compared to 4) - see table below:
+
+[width="100%",cols="17%,21%,20%,21%,21%",options="header",]
+|===
+| |4 workers, 4 threads |4 workers, 8 threads |4 workers, 16 threads |4 workers, 32 threads
+|Improvement| 0%| 14%| 23%| 10%
+|===
+
+Use 4 - 6 workers on a default setup (4 CPUs) - we have seen about 25% higher performance with 5 workers when compared to 2 workers, but 8% lower performance with 8 workers when compared to 2 workers - see table below:
+
+[width="100%",cols="17%,21%,20%,21%,21%",options="header",]
+|===
+| |2 workers, 16 threads |4 workers, 16 threads |6 workers, 16 threads |8 workers, 16 threads
+|Improvement |0% |26% |22% |-8%
+|===
+
+Use 8 - 12 workers on a medium setup (8 CPUs) - see table below:
+
+[width="100%",cols="16%,17%,16%,17%,17%,17%",options="header",]
+|===
+| |2 workers, 16 threads |4 workers, 16 threads |8 workers, 16 threads |12 workers, 16 threads |16 workers, 16 threads
+|Improvement |0% |51% |52% |52% |42%
+|===
+
+Use 16 - 24 workers on a 32 CPUs setup (this was tested on a 90 GiB RAM machine and memory turned out to be a factor here as system started swapping - proper _extra-large_ should have 128GiB), higher number of workers was problematic for higher registration concurrency levels we tested, so we can not recommend it.
+
+[width="100%",cols="13%,14%,14%,14%,15%,15%,15%",options="header",]
+|===
+| |4 workers, 16 threads |8 workers, 16 threads |16 workers, 16 threads |24 workers, 16 threads |32 workers, 16 threads |48 workers, 16 threads
+|Improvement |0% |37% |44% |52% |too many failures |too many failures
+|===
