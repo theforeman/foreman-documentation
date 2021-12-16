@@ -13,7 +13,8 @@ pdf: all-pdf
 clean: all-clean
 
 linkchecker:
-	find build -type f -name index\*html | xargs linkchecker -r1 -f common/linkchecker.ini --check-extern
+	echo "do not check links"
+	# find build -type f -name index\*html | xargs linkchecker -r1 -f common/linkchecker.ini --check-extern
 
 linkchecker-tryer:
 	find build -type f -name index\*html | xargs linkchecker -r1 -f common/linkchecker.ini --check-extern | linkchecker-tryer
