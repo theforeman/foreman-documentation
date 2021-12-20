@@ -1,8 +1,8 @@
 
 Cherry-pick into:
 
-* [ ] Foreman 3.0
-* For Foreman 2.5, file a separate PR request
+* [ ] Foreman 3.1
+* For Foreman 3.0 or older, file a separate PR request
 
 <!---
 Thank you for contributing to Foreman documentation. Make sure to read README
