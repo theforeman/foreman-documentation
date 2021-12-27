@@ -1,0 +1,138 @@
+[id="Writing_ERB_Templates_{context}"]
+= Writing ERB Templates
+
+The following tags are the most important and commonly used in ERB templates:
+
+.<%  %>
+
+All Ruby code is enclosed within `<%  %>` in an ERB template.
+The code is executed when the template is rendered.
+It can contain Ruby control flow structures as well as {Project}-specific macros and variables.
+For example:
+
+----
+<% if @host.operatingsystem.family == "Redhat" && @host.operatingsystem.major.to_i > 6 -%>
+systemctl <%= input("action") %> <%= input("service") %>
+<% else -%>
+service <%= input("service") %> <%= input("action") %>
+<% end -%>
+----
+
+Note that this template silently performs an action with a service and returns nothing at the output.
+
+.<%=  %>
+
+This provides the same functionality as `<%  %>`  but when the template is executed, the code output is inserted into the template.
+This is useful for variable substitution, for example:
+
+Example input:
+----
+echo <%= @host.name %>
+----
+
+Example rendering:
+
+[options="nowrap", subs="+quotes,attributes"]
+----
+_host.example.com_
+----
+
+Example input:
+
+----
+<% server_name = @host.fqdn %>
+<%= server_name %>
+----
+
+Example rendering:
+
+[options="nowrap", subs="+quotes,attributes"]
+----
+_host.example.com_
+----
+
+Note that if you enter an incorrect variable, no output is returned.
+However, if you try to call a method on an incorrect variable, the following error message returns:
+
+Example input:
+[options="nowrap", subs="+quotes,attributes"]
+----
+<%= @_example_incorrect_variable_.fqdn -%>
+----
+
+Example rendering:
+----
+undefined method `fqdn' for nil:NilClass
+----
+
+.<%  -%>, <%=  -%>
+
+By default, a newline character is inserted after a Ruby block if it is closed at the end of a line:
+
+Example input:
+----
+<%= "line1" %>
+<%= "line2" %>
+----
+
+Example rendering:
+----
+line1
+line2
+----
+
+To change the default behavior, modify the enclosing mark with `-%>`:
+
+Example input:
+----
+<%= "line1" -%>
+<%= "line2" %>
+----
+
+Example rendering:
+----
+line1line2
+----
+
+This is used to reduce the number of lines, where Ruby syntax permits, in rendered templates.
+White spaces in ERB tags are ignored.
+
+An example of how this would be used in a report template to remove unnecessary newlines between a FQDN and IP address:
+
+Example input:
+----
+<%= @host.fqdn -%>
+<%= @host.ip -%>
+----
+
+Example rendering:
+
+[options="nowrap", subs="+quotes,attributes"]
+----
+_host.example.com10.10.181.216_
+----
+
+.<%#  %>
+
+Encloses a comment that is ignored during template rendering:
+
+Example input:
+----
+<%# A comment %>
+----
+
+This generates no output.
+
+.Indentation in ERB templates
+
+Because of the varying lengths of the ERB tags, indenting the ERB syntax might seem messy.
+ERB syntax ignore white space.
+One method of handling the indentation is to declare the ERB tag at the beginning of each new line and then use white space within the ERB tag to outline the relationships within the syntax, for example:
+
+----
+<%- load_hosts.each do |host| -%>
+<%-   if host.build? %>
+<%=     host.name %> build is in progress
+<%-   end %>
+<%- end %>
+----
