@@ -1,0 +1,71 @@
+[id="Implementing_PXE_less_Discovery_{context}"]
+= Implementing PXE-less Discovery
+
+{Project} provides a PXE-less Discovery service that operates without the need for PXE-based services (DHCP and TFTP).
+You accomplish this using {ProjectServer}'s Discovery image.
+Once a discovered node is scheduled for installation, it uses `kexec` command to reload Linux kernel with OS installer without rebooting the node.
+
+ifdef::satellite[]
+[IMPORTANT]
+====
+Discovery `kexec` is a Technology Preview feature only.
+Technology Preview features are not supported with Red Hat production service level agreements (SLAs) and might not be functionally complete.
+Red Hat does not recommend using them in production.
+These features provide early access to upcoming product features, enabling customers to test functionality and provide feedback during the development process.
+For more information about the support scope of Red Hat Technology Preview features, see https://access.redhat.com/support/offerings/techpreview/.
+====
+endif::[]
+
+.Known Issues
+The console might freeze during the process.
+On some hardware, you might experience graphical hardware problems.
+
+ifdef::satellite[]
+image::PXEless-mode.png[]
+endif::[]
+
+ifdef::foreman-el,foreman-deb,katello[]
+image::PXEless-mode.svg[]
+endif::[]
+
+If you have not yet installed the Discovery service or image, see xref:Building_a_Discovery_Image_{context}[].
+
+ifdef::satellite[]
+The ISO for the Discovery service resides at `/usr/share/foreman-discovery-image/` and is installed using the `foreman-discovery-image` package.
+endif::[]
+
+.Attended Use
+. Copy this media to either a CD, DVD, or a USB stick.
+For example, to copy to a USB stick at `/dev/sdb`:
++
+[options="nowrap" subs="+quotes"]
+----
+# dd bs=4M \
+if=/usr/share/foreman-discovery-image/foreman-discovery-image-3.4.4-5.iso \
+of=/dev/sdb
+----
+. Insert the Discovery boot media into a bare metal host, start the host, and boot from the media.
+The Discovery Image displays an option for either *Manual network setup* or *Discovery with DHCP*:
++
+If you select *Manual network setup*, the Discovery image requests a set of network options.
+This includes the primary network interface that connects to {ProjectServer}.
+This Discovery image also asks for network interface configuration options, such as an *IPv4 Address*, *IPv4 Gateway*, and an *IPv4 DNS* server.
+. After entering these details, select *Next*.
+. If you select *Discovery with DHCP*, the Discovery image requests only the primary network interface that connects to {ProjectServer}.
+It attempts to automatically configure the network interface using a DHCP server, such as one that a {SmartProxyServer} provides.
+. After the primary interface configuration, the Discovery image requests the *Server URL*, which is the URL of {ProjectServer} or {SmartProxyServer} offering the Discovery service.
+For example, to use the integrated {SmartProxy} on {ProjectServer}, use the following URL:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+https://{foreman-example-com}:{smartproxy_port}
+----
+. Set the *Connection type* to `Proxy`, then select *Next*.
+. Optional: The Discovery image also provides a set of fields to input *Custom facts* for the Facter tool to relay back to {ProjectServer}.
+These are entered in a *name*-*value* format.
+Provide any custom facts you require and select *Confirm* to continue.
+
+{Project} reports a successful communication with {ProjectServer}'s Discovery service.
+In the {ProjectWebUI}, navigate to *Hosts* > *Discovered Hosts* and view the newly discovered host.
+
+For more information about provisioning discovered hosts, see xref:Creating_Hosts_from_Discovered_Hosts_{context}[].

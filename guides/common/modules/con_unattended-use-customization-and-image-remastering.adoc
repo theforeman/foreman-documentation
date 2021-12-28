@@ -1,0 +1,118 @@
+[id="Unattended_Use_Customization_and_Image_Remastering_{context}"]
+= Unattended Use, Customization, and Image Remastering
+
+You can create a customized Discovery ISO to automate the image configuration process after booting.
+The Discovery image uses a Linux kernel for the operating system, which passes kernel parameters to configure the discovery service.
+These kernel parameters include the following entries:
+
+proxy.url::
+  The URL of {SmartProxyServer} or {ProjectServer} providing the Discovery service.
+
+proxy.type::
+  The proxy type.
+This is usually set to `proxy` to connect to {SmartProxyServer}.
+This parameter also supports a legacy `foreman` option, where communication goes directly to {ProjectServer} instead of a {SmartProxyServer}.
+
+fdi.pxmac::
+  The MAC address of the primary interface in the format of `AA:BB:CC:DD:EE:FF`.
+This is the interface you aim to use for communicating with {SmartProxyServer}.
+In automated mode, the first NIC (using network identifiers in alphabetical order) with a link is used.
+In semi-automated mode, a screen appears and requests you to select the correct interface.
+
+fdi.pxip, fdi.pxgw, fdi.pxdns::
+  Manually configures IP address (`fdi.pxip`), the gateway (`fdi.pxgw`), and the DNS (`fdi.pxdns`) for the primary network interface.
+If your omit these parameters, the image uses DHCP to configure the network interface.
+
+fdi.pxfactname1, fdi.pxfactname2 ... fdi.pxfactnameN::
+  Use to specify custom fact names.
+
+fdi.pxfactvalue1, fdi.pxfactvalue2 ... fdi.pxfactvalueN::
+  The values for each custom fact.
+Each value corresponds to a fact name.
+For example, `fdi.pxfactvalue1` sets the value for the fact named with `fdi.pxfactname1`.
+
+fdi.pxauto::
+  To set automatic or semi-automatic mode.
+If set to 0, the image uses semi-automatic mode, which allows you to confirm your choices through a set of dialog options.
+If set to 1, the image uses automatic mode and proceeds without any confirmation.
+
+fdi.initnet::
+  By default, the image initializes all network interfaces (value `all`).
+When this setting is set to `bootif`, only the network interface it was network-booted from will be initialized.
+
+fdi.rootpw::
+  By default, the `root` account is locked.
+Use this option to set a root password.
+You can enter both clear and encrypted passwords.
+
+fdi.ssh::
+  By default, the SSH service is disabled.
+Set this to `1` or `true` to enable SSH access.
+
+fdi.ipv4.method::
+  By default, NetworkManager IPv4 method setting is set to `auto`.
+This option overrides it, set it to `ignore` to disable the IPv4 stack.
+This option works only in DHCP mode.
+
+fdi.ipv6.method::
+  By default, NetworkManager IPv6 method setting is set to `auto`.
+This option overrides it, set it to `ignore` to disable the IPv6 stack.
+This option only works in DHCP mode.
+
+fdi.zips::
+  Filenames with extensions to be downloaded and started during boot.
+For more information, see see xref:Extending_the_Discovery_Image_{context}[].
+
+fdi.zipserver::
+  TFTP server to use to download extensions from.
+For more information, see see xref:Extending_the_Discovery_Image_{context}[].
+
+fdi.countdown::
+  Number of seconds to wait until the text-user interface is refreshed after the initial discovery attempt.
+This value defaults to 45 seconds.
+Increase this value if the status page reports the IP address as `N/A`.
+
+fdi.dhcp_timeout::
+  NetworkManager DHCP timeout.
+The default value is 300 seconds.
+
+fdi.vlan.primary::
+  VLAN tagging ID to set for the primary interface.
+
+.Using the `discovery-remaster` Tool to Remaster an OS Image
+
+ifdef::satellite[]
+{ProjectServer} provides the `discovery-remaster` tool in the `foreman-discovery-image` package.
+This tool remasters the image to include these kernel parameters.
+To remaster the image, run the `discovery-remaster` tool.
+For example:
+endif::[]
+
+ifdef::foreman-el,katello[]
+{ProjectServer} provides the `discovery-remaster` tool.
+This tool remasters the image to include these kernel parameters.
+To remaster the image, run the `discovery-remaster` tool.
+For example:
+endif::[]
+
+[options="nowrap" subs="+quotes,attributes"]
+----
+# discovery-remaster ~/iso/foreman-discovery-image-3.4.4-5.iso \
+"fdi.pxip=192.168.140.20/24 fdi.pxgw=192.168.140.1 \
+fdi.pxdns=192.168.140.2 proxy.url=https://_{foreman-example-com}_:{smartproxy_port} \
+proxy.type=proxy fdi.pxfactname1=_customhostname_ fdi.pxfactvalue1=_myhost_ fdi.pxmac=52:54:00:be:8e:8c fdi.pxauto=1"
+----
+
+Copy this media to either a CD, DVD, or a USB stick.
+For example, to copy to a USB stick at `/dev/sdb`:
+
+[options="nowrap" subs="+quotes"]
+----
+# dd bs=4M \
+if=/usr/share/foreman-discovery-image/foreman-discovery-image-3.4.4-5.iso \
+of=/dev/sdb
+----
+
+Insert the Discovery boot media into a bare metal host, start the host, and boot from the media.
+
+For more information about provisioning discovered hosts, see xref:Creating_Hosts_from_Discovered_Hosts_{context}[].
