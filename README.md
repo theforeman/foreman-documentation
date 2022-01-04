@@ -37,15 +37,17 @@ When a commit is pushed into `X.Y`:
 
 ## Branching new release
 
-* Create a copy of [/web/content/nightly.md](https://github.com/theforeman/foreman-documentation/tree/master/web/content/nightly.md) as `X.Y.md` and edit it accordingly.
-* Edit [/web/content/versions.md](https://github.com/theforeman/foreman-documentation/blob/master/web/content/versions.md) and add the new version to the menu.
-* Push the changes into `master`.
-* Check the site if links and landing page appeared correctly.
 * Create a new `X.Y` branch.
-* Update `TargetVersion` and `TargetVersionMaintainUpgrade` in `guides/common/attributes.adoc`
-* Push into `X.Y` branch.
-* HTML guildes should be deployed into `/X.Y`
-* Set `DocState` to `unsupported` in `guides/common/attributes.adoc`
+  * Update `guides/common/attributes.adoc`
+    * Set `DocState` to `unsupported`
+    * Set `ProjectVersion` to `X.Y` and set the matching `KatelloVersion`
+  * Push into `X.Y` branch.
+* Update master
+  * Update `ProjectVersionPrevious` to `X.Y` in `guides/common/attributes.adoc`
+  * Create a copy of [/web/content/nightly.md](https://github.com/theforeman/foreman-documentation/tree/master/web/content/nightly.md) as `X.Y.md` and edit it accordingly.
+  * Edit [/web/content/versions.md](https://github.com/theforeman/foreman-documentation/blob/master/web/content/versions.md) and add the new version to the menu.
+  * Push the changes into `master`.
+* Check the site if links and landing page appeared correctly. HTML guides should be deployed into `/X.Y`
 
 ## License
 
