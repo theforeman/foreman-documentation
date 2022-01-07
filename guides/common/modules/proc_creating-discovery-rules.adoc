@@ -1,0 +1,68 @@
+[id="Creating_Discovery_Rules_{context}"]
+= Creating Discovery Rules
+
+As a method of automating the provisioning process for discovered hosts, {Project} provides a feature to create discovery rules.
+These rules define how discovered hosts automatically provision themselves, based on the assigned host group.
+For example, you can automatically provision hosts with a high CPU count as hypervisors.
+Likewise, you can provision hosts with large hard disks as storage servers.
+
+To use the CLI instead of the {ProjectWebUI}, see the xref:cli-creating-discovery-rules_{context}[].
+
+.NIC Considerations
+Auto provisioning does not currently allow configuring NICs; all systems are being provisioned with the NIC configuration that was detected during discovery.
+However, you can set the NIC in the `{provision-script}` scriplet, using a script, or using configuration management at a later stage.
+
+.Procedure
+. In the {ProjectWebUI}, navigate to *Configure* > *Discovery rules*, and select *Create Rule*.
+. In the *Name* field, enter a name for the rule.
+. In the *Search* field, enter the rules to determine whether to provision a host.
+This field provides suggestions for values you enter and allows operators for multiple rules.
+For example: `cpu_count  > 8`.
+. From the *Host Group* list, select the host group to use as a template for this host.
+. In the *Hostname* field, enter the pattern to determine host names for multiple hosts.
+This uses the same ERB syntax that provisioning templates use.
+The host name can use the `@host` attribute for host-specific values and the `rand` macro for a random number or the `sequence_hostgroup_param_next` macro for incrementing the value.
+For more information about provisioning templates, see xref:provisioning-templates_provisioning[] and the API documentation.
++
+* `myhost-<%= sequence_hostgroup_param_next("EL7/MyHostgroup", 10, "discovery_host") %>`
+* `myhost-<%= rand(99999) %>`
+* `abc-<%= @host.facts['bios_vendor'] %>-<%= rand(99999) %>`
+* `xyz-<%= @host.hostgroup.name %>`
+* `srv-<%= @host.discovery_rule.name %>`
+* `server-<%= @host.ip.gsub('.','-') +  '-' + @host.hostgroup.subnet.name %>`
++
+When creating host name patterns, ensure that the resulting host names are unique, do not start with numbers, and do not contain underscores or dots.
+A good approach is to use unique information provided by Facter, such as the MAC address, BIOS, or serial ID.
++
+. In the *Hosts limit* field, enter the maximum number of hosts that you can provision with the rule.
+Enter `0` for unlimited.
+. In the *Priority* field, enter a number to set the precedence the rule has over other rules.
+Rules with lower values have a higher priority.
+. From the *Enabled* list, select whether you want to enable the rule.
+. To set a different provisioning context for the rule, click the *Organizations* and *Locations* tabs and select the contexts you want to use.
+. Click *Submit* to save your rule.
+. In the {ProjectWebUI}, navigate to *Hosts* > *Discovered Host* and select one of the following two options:
++
+* From the *Discovered hosts* list on the right, select *Auto-Provision* to automatically provisions a single host.
+* On the upper right of the window, click *Auto-Provision All* to automatically provisions all hosts.
+
+[id="cli-creating-discovery-rules_{context}"]
+.CLI procedure
+. Create the rule with the `hammer discovery-rule create` command:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer discovery-rule create \
+--enabled true \
+--hostgroup "_My_Host_Group_" \
+--hostname "hypervisor-<%= rand(99999) %>" \
+--hosts-limit 5 \
+--name "_My_Hypervisor_" \
+--priority 5 \
+--search "cpu_count  > 8"
+----
+. Automatically provision a host with the `hammer discovery auto-provision` command:
++
+----
+# hammer discovery auto-provision --name "macabcdef123456"
+----

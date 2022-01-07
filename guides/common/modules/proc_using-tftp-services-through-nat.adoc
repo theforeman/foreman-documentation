@@ -1,0 +1,44 @@
+[id="Using_TFTP_Services_Through_NAT_{context}"]
+= Using TFTP Services Through NAT
+
+You can use {Project} TFTP services through NAT.
+To do this, on all NAT routers or firewalls, you must enable a TFTP service on UDP port 69 and enable the TFTP state tracking feature.
+For more information, see the documentation for your NAT device.
+
+ifdef::satellite[]
+.Using NAT on {RHEL} 7:
+endif::[]
+ifndef::satellite[]
+.Using NAT on Linux with `firewalld`:
+endif::[]
+* Use the following command to allow TFTP service on UDP port 69, load the kernel TFTP state tracking module, and make the changes persistent:
++
+----
+# firewall-cmd --add-service=tftp && firewall-cmd --runtime-to-permanent
+----
+
+ifdef::satellite[]
+.Using NAT on {RHEL} 6:
+endif::[]
+ifndef::satellite[]
+.Using NAT on linux with `iptables`:
+endif::[]
+. Configure the firewall to allow TFTP service UDP on port 69:
++
+----
+# iptables \
+--sport 69 \
+--state ESTABLISHED \
+-A OUTPUT \
+-i eth0 \
+-j ACCEPT \
+-m state \
+-p udp
+# service iptables save
+----
+. Load the `ip_conntrack_tftp` kernel TFTP state module.
+In the `/etc/sysconfig/iptables-config` file, locate `IPTABLES_MODULES` and add `ip_conntrack_tftp` as follows:
++
+----
+IPTABLES_MODULES="ip_conntrack_tftp"
+----

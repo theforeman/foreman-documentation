@@ -1,0 +1,43 @@
+[id="Network_Resources_{context}"]
+= Network Resources
+
+{Project} contains networking resources that you must set up and configure to create a host.
+It includes the following networking resources:
+
+Domain::
+You must assign every host that is managed by {Project} to a domain.
+Using the domain, {Project} can manage A, AAAA, and PTR records.
+Even if you do not want {Project} to manage your DNS servers, you still must create and associate at least one domain.
+Domains are included in the naming conventions {Project} hosts, for example, a host with the name `test123` in the `example.com` domain has the fully qualified domain name `test123.example.com`.
+
+Subnet::
+You must assign every host managed by {Project} to a subnet.
+Using subnets, {Project} can then manage IPv4 reservations.
+If there are no reservation integrations, you still must create and associate at least one subnet.
+When you manage a subnet in {Project}, you cannot create DHCP records for that subnet outside of {Project}.
+In {Project}, you can use IP Address Management (IPAM) to manage IP addresses with one of the following options:
++
+* *DHCP*: DHCP {SmartProxy} manages the assignment of IP addresses by finding the next available IP address starting from the first address of the range and skipping all addresses that are reserved.
+Before assigning an IP address, {SmartProxy} sends an ICMP and TCP pings to check whether the IP address is in use.
+Note that if a host is powered off, or has a firewall configured to disable connections, {Project} makes a false assumption that the IP address is available.
+This check does not work for hosts that are turned off, therefore, the *DHCP* option can only be used with subnets that {Project} controls and that do not have any hosts created externally.
++
+The {SmartProxy} DHCP module retains the offered IP addresses for a short period of time to prevent collisions during concurrent access, so some IP addresses in the IP range might remain temporarily unused.
+* *Internal DB*: {Project} finds the next available IP address from the Subnet range by excluding all IP addresses from the {Project} database in sequence.
+The primary source of data is the database, not DHCP reservations.
+This IPAM is not safe when multiple hosts are being created in parallel; in that case, use *DHCP* or *Random DB* IPAM instead.
+* *Random DB*: {Project} finds the next available IP address from the Subnet range by excluding all IP addresses from the {Project} database randomly.
+The primary source of data is the database, not DHCP reservations.
+This IPAM is safe to use with concurrent host creation as IP addresses are returned in random order, minimizing the chance of a conflict.
+* *EUI-64*: Extended Unique Identifier (EUI) 64bit IPv6 address generation, as per RFC2373, is obtained through the 48-bit MAC address.
+* *External IPAM*: Delegates IPAM to an external system through {SmartProxy} feature.
+{Project} currently does not ship with any external IPAM implementations, but several plug-ins are in development.
+* *None*: IP address for each host must be entered manually.
++
+Options DHCP, Internal DB and Random DB can lead to DHCP conflicts on subnets with records created externally.
+These subnets must be under exclusive {Project} control.
++
+For more information about adding a subnet, see xref:Adding_a_Subnet_to_Server_{context}[].
+
+DHCP Ranges::
+You can define the same DHCP range in {ProjectServer} for both discovered and provisioned systems, but use a separate range for each service within the same subnet.

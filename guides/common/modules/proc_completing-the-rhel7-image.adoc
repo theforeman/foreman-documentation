@@ -1,0 +1,67 @@
+[id="Completing_the_RHEL7_Image_{context}"]
+= Completing the {RHEL} 7 Image
+
+.Procedure
+. Update the system:
++
+-----------
+# {package-update}
+-----------
+. Install the `cloud-init` packages:
++
+[options="nowrap" subs="+quotes,attributes"]
+-----------
+# {package-install} cloud-utils-growpart cloud-init
+-----------
+. Open the `/etc/cloud/cloud.cfg` configuration file:
++
+-----------
+# vi /etc/cloud/cloud.cfg
+-----------
+. Under the heading `cloud_init_modules`, add:
++
+-----------
+- resolv-conf
+-----------
++
+The `resolv-conf` option automatically configures the `resolv.conf` when an instance boots for the first time.
+This file contains information related to the instance such as `nameservers`, `domain` and other options.
+. Open the `/etc/sysconfig/network` file:
++
+-----------
+# vi /etc/sysconfig/network
+-----------
+. Add the following line to avoid problems accessing the EC2 metadata service:
++
+-----------
+NOZEROCONF=yes
+-----------
+. Un-register the virtual machine so that the resulting image does not contain the same subscription details for every instance cloned based on it:
++
+------------
+# subscription-manager repos --disable=*
+# subscription-manager unregister
+------------
+. Power off the instance:
++
+-----------
+# poweroff
+-----------
+. On your {RHEL} Workstation, connect to the terminal as the root user and navigate to the `/var/lib/libvirt/images/` directory:
++
+-----------
+# cd /var/lib/libvirt/images/
+-----------
+. Reset and clean the image using the `virt-sysprep` command so it can be used to create instances without issues:
++
+-----------
+# virt-sysprep -d rhel7
+-----------
+. Reduce image size using the `virt-sparsify` command.
+This command converts any free space within the disk image back to free space within the host:
++
+-----------
+# virt-sparsify --compress rhel7.qcow2 rhel7-cloud.qcow2
+-----------
++
+This creates a new `rhel7-cloud.qcow2` file in the location where you enter the command.

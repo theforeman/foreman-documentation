@@ -1,0 +1,134 @@
+[id="Creating_Hosts_with_UEFI_HTTP_Boot_Provisioning_{context}"]
+= Creating Hosts with UEFI HTTP Boot Provisioning
+
+You can provision hosts from {Project} using the UEFI HTTP Boot.
+This is the only method with which you can provision hosts in IPv6 network.
+
+To use the CLI instead of the {ProjectWebUI}, see the xref:cli-creating-hosts-with-uefi-http-boot-provisioning_{context}[].
+
+.Prerequisites
+* Ensure that you meet the requirements for HTTP booting.
+For more information, see {PlanningDocURL}http-booting-requirements[HTTP Booting Requirements] in _Planning for {Project}_.
+
+.Procedure
+. On {SmartProxy} that you use for provisioning, update the `grub2-efi` package to the latest version:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {package-install-project} grub2-efi
+----
+. Enable `foreman-proxy-http`, `foreman-proxy-httpboot`, and `foreman-proxy-tftp` features.
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {installer-scenario} \
+--foreman-proxy-httpboot true \
+--foreman-proxy-http true \
+--foreman-proxy-tftp true
+----
+. In the {ProjectWebUI}, navigate to *Hosts* > *Create Host*.
+. In the *Name* field, enter a name for the host.
+. Click the *Organization* and *Location* tabs and change the context to match your requirements.
+. From the *Host Group* list, select a host group that you want to use to populate the form.
+. Click the *Interface* tab, and on the host's interface, click *Edit*.
+. Verify that the fields are populated with values.
+Note in particular:
++
+* The *Name* from the *Host* tab becomes the *DNS name*.
+* {ProjectServer} automatically assigns an IP address for the new host.
++
+. In the *MAC address* field, enter a MAC address of the host's provisioning interface.
+This ensures the identification of the host during the PXE boot process.
+. Ensure that {ProjectServer} automatically selects the *Managed*, *Primary*, and *Provision* options for the first interface on the host.
+If not, select them.
+. Click *OK* to save.
+To add another interface, click *Add Interface*.
+You can select only one interface for *Provision* and *Primary*.
+. Click the *Operating System* tab, and verify that all fields contain values.
+Confirm each aspect of the operating system.
+. From the *PXE Loader* list, select *Grub2 UEFI HTTP*.
+. Optional: Click *Resolve* in *Provisioning template* to check the new host can identify the right provisioning templates to use.
++
+For more information about associating provisioning templates, see xref:creating-provisioning-templates_provisioning[].
+ifdef::satellite,orcharhino[]
+. Click the *Parameters* tab, and ensure that a parameter exists that provides an activation key.
+If not, add an activation key.
+endif::[]
+ifdef::foreman-el,katello[]
+. If you use the Katello plugin, click the *Parameters* tab, and ensure that a parameter exists that provides an activation key.
+If not, add an activation key.
+endif::[]
+. Click *Submit* to save the host details.
++
+For more information about network interfaces, see {ManagingHostsDocURL}Adding_Network_Interfaces[Adding network interfaces].
+. Set the host to boot in UEFI mode from network.
+. Start the host.
+. From the boot menu, select *Kickstart default PXEGrub2*.
+
+This creates the host entry and the relevant provisioning settings.
+This also includes creating the necessary directories and files for UEFI booting the bare metal host.
+When you start the physical host and set its boot mode to UEFI HTTP, the host detects the defined DHCP service, receives HTTP endpoint of {SmartProxy} with the Kickstart tree and installs the operating system.
+
+ifdef::satellite,orcharhino[]
+When the installation completes, the host also registers to {ProjectServer} using the activation key and installs the necessary configuration and management tools from the {project-client-name} repository.
+endif::[]
+
+ifdef::foreman-el,katello[]
+If you use the Katello plug-in, when the installation completes, the host also registers to {ProjectServer} using the activation key and installs the necessary configuration and management tools from the {project-client-name} repository.
+endif::[]
+
+[id="cli-creating-hosts-with-uefi-http-boot-provisioning_{context}"]
+.CLI procedure
+. On {SmartProxy} that you use for provisioning, update the `grub2-efi` package to the latest version:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {package-install-project} grub2-efi
+----
+. Enable `foreman-proxy-http`, `foreman-proxy-httpboot`, and `foreman-proxy-tftp true` features:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {installer-scenario} \
+--foreman-proxy-httpboot true \
+--foreman-proxy-http true \
+--foreman-proxy-tftp true
+----
+. Create the host with the `hammer host create` command.
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer host create --name "_My_Host_" \
+--organization "_My_Organization_" \
+--location "_My_Location_" \
+--hostgroup "_My_Host_Group_" \
+--mac "_aa:aa:aa:aa:aa:aa_" \
+--build true \
+--enabled true \
+--managed true \
+--pxe-loader "Grub2 UEFI HTTP"
+----
+. Ensure the network interface options are set using the `hammer host interface update` command:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer host interface update --host "_My_Host_" \
+--managed true \
+--primary true \
+--provision true
+----
+. Set the host to boot in UEFI mode from network.
+. Start the host.
+. From the boot menu, select *Kickstart default PXEGrub2*.
+
+This creates the host entry and the relevant provisioning settings.
+This also includes creating the necessary directories and files for UEFI booting the bare metal host.
+When you start the physical host and set its boot mode to UEFI HTTP, the host detects the defined DHCP service, receives HTTP endpoint of {SmartProxy} with the Kickstart tree and installs the operating system.
+
+ifdef::satellite,orcharhino[]
+When the installation completes, the host also registers to {ProjectServer} using the activation key and installs the necessary configuration and management tools from the {project-client-name} repository.
+endif::[]
+
+ifdef::foreman-el,katello[]
+If you use the Katello plug-in, when the installation completes, the host also registers to {ProjectServer} using the activation key and installs the necessary configuration and management tools from the {project-client-name} repository.
+endif::[]

@@ -1,0 +1,100 @@
+[id="Configuring_iPXE_to_Reduce_Provisioning_Times_{context}"]
+= Configuring iPXE to Reduce Provisioning Times
+
+You can use {Project} to configure PXELinux to chainboot iPXE in BIOS mode and boot using the HTTP protocol if you have the following restrictions that prevent you from using PXE:
+
+* A network with unmanaged DHCP servers.
+* A PXE service that is blacklisted on your network or restricted by a firewall.
+* An unreliable TFTP UDP-based protocol because of, for example, a low-bandwidth network.
+
+ifndef::satellite[]
+Only BIOS systems are known to work reliably.
+For configuring iPXE with *some* EFI hosts, read a https://community.theforeman.org/t/discovery-ipxe-efi-workflow-in-foreman-1-20/13026[separate tutorial].
+endif::[]
+ifdef::satellite[]
+For more information about iPXE support, see https://access.redhat.com/solutions/2674001[Supported architectures for provisioning] article.
+endif::[]
+
+.iPXE Overview
+iPXE is an open source network boot firmware.
+It provides a full PXE implementation enhanced with additional features, including booting from HTTP server.
+For more information, see https://ipxe.org[ipxe.org].
+
+There are three methods of using iPXE with {ProjectName}:
+
+. Booting virtual machines using hypervisors that use iPXE as primary firmware.
+. Using PXELinux through TFTP to chainload iPXE directly on bare metal hosts.
+. Using PXELinux through UNDI, which uses HTTP to transfer the kernel and the initial RAM disk on bare-metal hosts.
+
+.Security Information
+The iPXE binary in {RHEL} is built without some security features.
+For this reason, you can only use HTTP, and cannot use HTTPS.
+ifndef::satellite[]
+Recompile iPXE from source to use security features like HTTPS.
+endif::[]
+ifdef::satellite[]
+All security-related features of iPXE in {RHEL} are not supported.
+For more information, see https://access.redhat.com/solutions/3483601[Red Hat Enterprise Linux HTTPS support in iPXE].
+endif::[]
+
+.Prerequisites
+* A host exists on {ProjectName} to use.
+* The MAC address of the provisioning interface matches the host configuration.
+* The provisioning interface of the host has a valid DHCP reservation.
+* The NIC is capable of PXE booting.
+For more information, see https://ipxe.org/appnote/hardware_drivers[supported hardware on ipxe.org] for a list of hardware drivers expected to work with an iPXE-based boot disk.
+* The NIC is compatible with iPXE.
+
+To prepare iPXE environment, you must perform this procedure on all {SmartProxies}.
+
+.Procedure
+. Enable the *tftp* and *httpboot* services:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foreman-installer} --foreman-proxy-httpboot true --foreman-proxy-tftp true
+----
+. Install the `ipxe-bootimgs` RPM package:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {package-install} ipxe-bootimgs
+----
+ifdef::foreman-el,katello[]
+. On Debian/Ubuntu, install the `ipxe` .deb package:
++
+----
+# {package-install} ipxe
+----
+endif::[]
+ifdef::foreman-el,katello[]
+. On systems with SELinux, correct the file contexts:
++
+----
+# restorecon -RvF /var/lib/tftpboot/
+----
+endif::[]
+ifdef::satellite,orcharhino[]
+. Correct the SELinux file contexts:
++
+----
+# restorecon -RvF /var/lib/tftpboot/
+----
+endif::[]
+
+* Copy the iPXE firmware with the Linux kernel header to the TFTP directory:
++
+----
+# cp /usr/share/ipxe/ipxe.lkrn /var/lib/tftpboot/
+----
+
+* Copy the UNDI iPXE firmware to the TFTP directory:
++
+----
+# cp /usr/share/ipxe/undionly.kpxe /var/lib/tftpboot/undionly-ipxe.0
+----
+
+. Optionally, configure Foreman discovery.
+For more information, see xref:Configuring_the_Discovery_Service_{context}[].
+* In the {ProjectWebUI}, navigate to *Administer* > *Settings*, and click the *Provisioning* tab.
+* Locate the *Default PXE global template entry* row and in the *Value* column, change the value to *discovery*.

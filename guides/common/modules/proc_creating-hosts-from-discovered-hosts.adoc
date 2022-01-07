@@ -1,0 +1,74 @@
+[id="Creating_Hosts_from_Discovered_Hosts_{context}"]
+= Creating Hosts from Discovered Hosts
+
+Provisioning discovered hosts follows a provisioning process that is similar to PXE provisioning.
+The main difference is that instead of manually entering the host's MAC address, you can select the host to provision from the list of discovered hosts.
+
+To use the CLI instead of the {ProjectWebUI}, see the xref:cli-creating-hosts-from-discovered-hosts_{context}[].
+
+.Prerequisites
+* Configure a domain and subnet on {Project}.
+For more information about networking requirements, see xref:Configuring_Networking_{context}[].
+* Configure the discovery service on {Project}.
+For more information, see xref:Installing_the_Discovery_Service_{context}[].
+* A bare metal host or a blank VM.
+include::snip_common-compute-resource-prereqs.adoc[]
+
+For information about the security tokens, see xref:Configuring_the_Security_Token_Validity_Duration_{context}[].
+
+.Procedure
+. In the {ProjectWebUI}, navigate to *Hosts* > *Discovered host*.
+Select the host you want to use and click *Provision* to the right of the list.
+. Select from one of the two following options:
+* To provision a host from a host group, select a host group, organization, and location, and then click *Create Host*.
+* To provision a host with further customization, click *Customize Host* and enter the additional details you want to specify for the new host.
+. Verify that the fields are populated with values.
+Note in particular:
++
+* The *Name* from the *Host* tab becomes the *DNS name*.
+* {ProjectServer} automatically assigns an IP address for the new host.
+* {ProjectServer} automatically populates the MAC address from the Discovery results.
++
+. Ensure that {ProjectServer} automatically selects the *Managed*, *Primary*, and *Provision* options for the first interface on the host.
+If not, select them.
+. Click the *Operating System* tab, and verify that all fields contain values.
+Confirm each aspect of the operating system.
+. Click *Resolve* in *Provisioning template* to check the new host can identify the right provisioning templates to use.
+The host must resolve to the following provisioning templates:
++
+* *kexec Template:* `Discovery Red Hat kexec`
+* *provision Template:* `{Project} Kickstart Default`
++
+For more information about associating provisioning templates, see xref:provisioning-templates_provisioning[].
+. Click *Submit* to save the host details.
+
+When the host provisioning is complete, the discovered host becomes a content host.
+To view the host, navigate to *Hosts* > *Content Hosts*.
+
+[id="cli-creating-hosts-from-discovered-hosts_{context}"]
+.CLI procedure
+. Identify the discovered host to use for provisioning:
++
+----
+# hammer discovery list
+----
+. Select a host and provision it using a host group.
+Set a new host name with the `--new-name` option:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer discovery provision \
+--build true \
+--enabled true \
+--hostgroup "_My_Host_Group_" \
+--location "_My_Location_" \
+--managed true \
+--name "_My_Host_Name_" \
+--new-name "_My_New_Host_Name_" \
+--organization "_My_Organization_"
+----
++
+This removes the host from the discovered host listing and creates a host entry with the provisioning settings.
+The Discovery image automatically resets the host so that it can boot to PXE.
+The host detects the DHCP service on {ProjectServer}'s integrated {SmartProxy} and starts installing the operating system.
+The rest of the process is identical to normal PXE workflow described in xref:Creating_Hosts_with_Unattended_Provisioning_{context}[].
