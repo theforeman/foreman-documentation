@@ -1,0 +1,98 @@
+[id="Parsing_Arrays_{context}"]
+= Parsing Arrays
+
+While writing or modifying templates, you might encounter variables that return arrays.
+For example, host variables related to network interfaces, such as `@host.interfaces` or `@host.bond_interfaces`, return interface data grouped in an array.
+To extract a parameter value of a specific interface, use Ruby methods to parse the array.
+
+.Finding the Correct Method to Parse an Array
+The following procedure is an example that you can use to find the relevant methods to parse arrays in your template.
+In this example, a report template is used, but the steps are applicable to other templates.
+
+. To retrieve the NIC of a content host, in this example, using the `@host.interfaces` variable returns class values that you can then use to find methods to parse the array.
++
+.Example input:
++
+----
+<%= @host.interfaces -%>
+----
++
+.Example rendering:
+----
+<Nic::Base::ActiveRecord_Associations_CollectionProxy:0x00007f734036fbe0>
+----
+. In the Create Template window, click the *Help* tab and search for the `ActiveRecord_Associations_CollectionProxy` and `Nic::Base` classes.
+. For `ActiveRecord_Associations_CollectionProxy`, in the *Allowed methods or members* column, you can view the following methods to parse the array:
++
+----
+[] each find_in_batches first map size to_a
+----
+. For `Nic::Base`, in the *Allowed methods or members* column, you can view the following method to parse the array:
++
+----
+alias? attached_devices attached_devices_identifiers attached_to bond_options children_mac_addresses domain fqdn identifier inheriting_mac ip ip6 link mac managed? mode mtu nic_delay physical? primary provision shortname subnet subnet6 tag virtual? vlanid
+----
+. To iterate through an interface array, add the relevant methods to the ERB syntax:
++
+.Example input:
++
+----
+<% load_hosts().each_record do |host| -%>
+<%    host.interfaces.each do |iface| -%>
+  iface.alias?: <%= iface.alias? %>
+  iface.attached_to: <%= iface.attached_to %>
+  iface.bond_options: <%= iface.bond_options %>
+  iface.children_mac_addresses: <%= iface.children_mac_addresses %>
+  iface.domain: <%= iface.domain %>
+  iface.fqdn: <%= iface.fqdn %>
+  iface.identifier: <%= iface.identifier %>
+  iface.inheriting_mac: <%= iface.inheriting_mac %>
+  iface.ip: <%= iface.ip %>
+  iface.ip6: <%= iface.ip6 %>
+  iface.link: <%= iface.link %>
+  iface.mac: <%= iface.mac %>
+  iface.managed?: <%= iface.managed? %>
+  iface.mode: <%= iface.mode %>
+  iface.mtu: <%= iface.mtu %>
+  iface.physical?: <%= iface.physical? %>
+  iface.primary: <%= iface.primary %>
+  iface.provision: <%= iface.provision %>
+  iface.shortname: <%= iface.shortname %>
+  iface.subnet: <%= iface.subnet %>
+  iface.subnet6: <%= iface.subnet6 %>
+  iface.tag: <%= iface.tag %>
+  iface.virtual?: <%= iface.virtual? %>
+  iface.vlanid: <%= iface.vlanid %>
+<%- end -%>
+----
++
+.Example rendering:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+_host1.example.com_
+  iface.alias?: false
+  iface.attached_to:
+  iface.bond_options:
+  iface.children_mac_addresses: []
+  iface.domain:
+  iface.fqdn: _host1.example.com_
+  iface.identifier: ens192
+  iface.inheriting_mac: 00:50:56:8d:4c:cf
+  iface.ip: 10.10.181.13
+  iface.ip6:
+  iface.link: true
+  iface.mac: 00:50:56:8d:4c:cf
+  iface.managed?: true
+  iface.mode: balance-rr
+  iface.mtu:
+  iface.physical?: true
+  iface.primary: true
+  iface.provision: true
+  iface.shortname: _host1.example.com_
+  iface.subnet:
+  iface.subnet6:
+  iface.tag:
+  iface.virtual?: false
+  iface.vlanid:
+----

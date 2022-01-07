@@ -1,0 +1,82 @@
+[id="Synchronizing_Templates_with_a_Local_Directory_Using_the_API_{context}"]
+= Synchronizing Templates with a Local Directory Using the {Project} API
+
+Synchronizing templates with a local directory is useful if you have configured a version control repository in the local directory.
+That way, you can edit templates and track the history of edits in the directory.
+You can also synchronize changes to {ProjectServer} after editing the templates.
+
+.Prerequisites
+* Each template must contain the location and organization that the template belongs to.
+This applies to all template types.
+Before you import a template, ensure that you add the following section to the template:
++
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+<%#
+kind: provision
+name: _My_Provisioning_Template_
+oses:
+- _My_first_OS_
+- _My_second_OS_
+locations:
+- _My_first_Location_
+- _My_second_Location_
+organizations:
+- _My_first_Organization_
+- _My_second_Organization_
+%>
+----
+
+.Procedure
+. Create the directory where templates are stored and apply appropriate permissions and SELinux context:
++
+[subs="+quotes"]
+----
+# mkdir -p _/usr/share/templates_dir/_
+# chown foreman _/usr/share/templates_dir/_
+# chcon -t httpd_sys_rw_content_t _/usr/share/templates_dir/_ -R
+----
+. Change the *Repo* setting on the *TemplateSync* tab to match the export directory `/usr/share/templates_dir/`.
+. Export templates from your {ProjectServer} to a local directory:
++
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+$ curl -H "Accept:application/json,version=2" \
+-H "Content-Type:application/json" \
+-u _login_:__password__ \
+-k https://_{foreman-example-com}/api/v2/templates/export \
+-X POST \
+
+{"message":"Success"}
+----
+. Import templates to {ProjectServer} after their content was changed:
++
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+$ curl -H "Accept:application/json,version=2" \
+-H "Content-Type:application/json" \
+-u _login_:__password__ \
+-k https://_{foreman-example-com}/api/v2/templates/import \
+-X POST
+
+{“message”:”Success”}
+----
++
+Note that templates provided by {Project} are locked and you cannot import them by default.
+To overwrite this behavior, change the `Force import` setting in the *TemplateSync* menu to `yes` or add the `force` parameter `-d '{ "force": "true" }’` to the import command.
+
+[NOTE]
+====
+You can override default API settings by specifying them in the request with the `-d` parameter.
+The following example exports templates to the `git.example.com/templates` repository:
+
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+$ curl -H "Accept:application/json,version=2" \
+-H "Content-Type:application/json" \
+-u login:password \
+-k https://{foreman-example-com}/api/v2/templates/export \
+-X POST \
+-d "{\"repo\":\"git.example.com/templates\"}"
+----
+====

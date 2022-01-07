@@ -1,0 +1,74 @@
+[id="Example_Template_Snippets_{context}"]
+= Example Template Snippets
+
+.Checking if a Host Has Puppet and Puppetlabs Enabled
+The following example checks if the host has the Puppet and Puppetlabs repositories enabled:
+
+----
+<%
+pm_set = @host.puppetmaster.empty? ? false : true
+puppet_enabled = pm_set || host_param_true?('force-puppet')
+puppetlabs_enabled = host_param_true?('enable-puppetlabs-repo')
+%>
+----
+
+.Capturing Major and Minor Versions of a Host's Operating System
+The following example shows how to capture the minor and major version of the host's operating system, which can be used for package related decisions:
+
+----
+<%
+os_major = @host.operatingsystem.major.to_i
+os_minor = @host.operatingsystem.minor.to_i
+%>
+
+<% if ((os_minor < 2) && (os_major < 14)) -%>
+...
+<% end -%>
+----
+
+.Importing Snippets to a Template
+The following example imports the *subscription_manager_registration* snippet to the template and indents it by four spaces:
+
+----
+<%= indent 4 do
+snippet 'subscription_manager_registration'
+end %>
+----
+
+.Conditionally Importing a Kickstart Snippet
+The following example imports the `kickstart_networking_setup` snippet if the host's subnet has the DHCP boot mode enabled:
+
+----
+<% subnet = @host.subnet %>
+<% if subnet.respond_to?(:dhcp_boot_mode?) -%>
+<%= snippet 'kickstart_networking_setup' %>
+<% end -%>
+----
+
+.Parsing Values from Host Custom Facts
+You can use the `host.facts` variable to parse values from a host's facts and custom facts.
+In this example `luks_stat` is a custom fact that you can parse in the same manner as `dmi::system::serial_number`, which is a host fact:
+
+----
+'Serial': host.facts['dmi::system::serial_number'],
+'Encrypted': host.facts['luks_stat'],
+----
+
+In this example, you can customize the Applicable Errata report template to parse for custom information about the kernel version of each host:
+
+----
+<%-     report_row(
+          'Host': host.name,
+          'Operating System': host.operatingsystem,
+          'Kernel': host.facts['uname::release'],
+          'Environment': host.lifecycle_environment,
+          'Erratum': erratum.errata_id,
+          'Type': erratum.errata_type,
+          'Published': erratum.issued,
+          'Applicable since': erratum.created_at,
+          'Severity': erratum.severity,
+          'Packages': erratum.package_names,
+          'CVEs': erratum.cves,
+          'Reboot suggested': erratum.reboot_suggested,
+        ) -%>
+----
