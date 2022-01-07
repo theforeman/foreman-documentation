@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="generator" content="Asciidoctor 2.0.16">
+<meta name="generator" content="Asciidoctor 2.0.17">
 <title>Administering Foreman</title>
 <link rel="stylesheet" href="./foreman-deb.css">
 </head>
@@ -8515,6 +8515,30 @@ Webhooks enable you to define a call to an external API based on Foreman interna
 The application sending the request does not wait for the response, or ignores it.</p>
 </div>
 <div class="paragraph">
+<p>Payload of a webhook is created from webhook templates.
+Webhook templates use the same ERB syntax as Provisioning templates.
+Available variables:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>@event_name</code>: Name of an event.</p>
+</li>
+<li>
+<p><code>@webhook_id</code>: Unique event ID.</p>
+</li>
+<li>
+<p><code>@payload</code>: Payload data, different for each event type. To access individual fields, use <code>@payload[:key_name]</code> Ruby hash syntax.</p>
+</li>
+<li>
+<p><code>@payload[:object]</code>: Database object for events triggered by database actions (create, update, delete). Not available for custom events.</p>
+</li>
+<li>
+<p><code>@payload[:context]</code>: Additional information as hash like request and session UUID, remote IP address, user, organization and location.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
 <p>Because webhooks use HTTP, no new infrastructure needs be added to existing web services.</p>
 </div>
 <div class="paragraph">
@@ -8646,7 +8670,7 @@ The webhook template can use a special variable called <code>@object</code> that
 <p>Enter a target URL.
 Webhooks make HTTP requests to pre-configured URLs.
 The target URL can be a dynamic URL.
-When using the shellhooks plugin, the URL should be in the form <code>https://smartproxy.example.com:8443/shellhooks/my_script</code>.</p>
+When using the shellhooks plugin, the URL should be in the form <code>https://smartproxy.example.com:8443/shellhook/my_script</code>.</p>
 </li>
 <li>
 <p>Click <strong>Template</strong> to select a template.</p>
@@ -8690,150 +8714,188 @@ ERB is also allowed.</p>
 <p>The following table contains a list of webhook events that are available from the Foreman web UI.
 <code>Action</code> events trigger webhooks only on <code>success</code>, so if an action fails, a webhook is not triggered.</p>
 </div>
+<div class="paragraph">
+<p>For more information about payload, go to <strong>Administer</strong> &gt; <strong>About</strong> &gt; <strong>Support</strong> &gt; <strong>Templates DSL</strong>.
+Some events are marked as <strong>custom</strong>, in that case, the payload is an ad-hoc object (key-value data structure) and a list of available keys is provided in the following table:</p>
+</div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
-<col style="width: 50%;">
-<col style="width: 50%;">
+<col style="width: 40%;">
+<col style="width: 30%;">
+<col style="width: 30%;">
 </colgroup>
 <thead>
 <tr>
 <th class="tableblock halign-left valign-top">Event name</th>
 <th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">Payload</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Actions Katello Content View Promote Succeeded</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">A content view was successfully promoted.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions::Katello::ContentView::Promote</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Actions Katello Content View Publish Succeeded</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">A repository was successfully synchronized.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions::Katello::ContentView::Publish</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Succeeded</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">A generic remote execution job succeeded for a host.
-This event is emitted for all Remote Execution jobs, when complete.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A generic remote execution job succeeded for a host. This event is emitted for all Remote Execution jobs, when complete.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions::RemoteExecution::RunHostJob</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Katello Errata Install Succeeded</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Install errata using the Katello interface.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions::RemoteExecution::RunHostJob</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Katello Group Install Succeeded</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Install package group using the Katello interface.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions::RemoteExecution::RunHostJob</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Katello Package Install Succeeded</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Install package using the Katello interface.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions::RemoteExecution::RunHostJob</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Katello Group Remove</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Remove package group using the Katello interface.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions::RemoteExecution::RunHostJob</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Katello Package Remove Succeeded</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Remove package using the Katello interface.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions::RemoteExecution::RunHostJob</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Katello Service Restart Succeeded</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Restart Services using the Katello interface.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions::RemoteExecution::RunHostJob</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Katello Group Update Succeeded</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Update package group using the Katello interface.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions::RemoteExecution::RunHostJob</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Katello Package Update Succeeded</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Update package using the Katello interface.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions::RemoteExecution::RunHostJob</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Foreman OpenSCAP Run Scans Succeeded</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Run OpenSCAP scan.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions::RemoteExecution::RunHostJob</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Ansible Run Host Succeeded</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Runs an Ansible playbook containing all the roles defined for a host.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions::RemoteExecution::RunHostJob</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Ansible Run Capsule Upgrade Succeeded</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Upgrade Capsules on given Capsule server hosts.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions::RemoteExecution::RunHostJob</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Ansible Configure Cloud Connector Succeeded</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Configure Cloud Connector on given hosts.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions::RemoteExecution::RunHostJob</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Ansible Run Playbook Succeeded</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Run an Ansible playbook against given hosts.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions::RemoteExecution::RunHostJob</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Ansible Enable Web Console Succeeded</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Run an Ansible playbook to enable the web console on given hosts.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions::RemoteExecution::RunHostJob</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Puppet Run Host Succeeded</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Perform a single Puppet run.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions::RemoteExecution::RunHostJob</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Katello Module Stream Action Succeeded</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Perform a module stream action using the Katello interface.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions::RemoteExecution::RunHostJob</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Leapp Pre-upgrade Succeeded</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Upgradeability check for RHEL 7 host.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions::RemoteExecution::RunHostJob</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Leapp Remediation Plan Succeeded</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Run Remediation plan with Leapp.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions::RemoteExecution::RunHostJob</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Actions Remote Execution Run Host Job Leapp Upgrade Succeeded</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Run Leapp upgrade job for RHEL 7 host.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actions::RemoteExecution::RunHostJob</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Build Entered</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">A host entered the build mode.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Custom event: @payload.id (host id), @payload.hostname (host name).</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Build Exited</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">A host build mode was canceled, either it was successfully provisioned or the user canceled the build manually.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Custom event: @payload.id (host id), @payload.hostname (host name).</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Content View Created/Updated/Destroyed</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Common database operations on a content view.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Katello::ContentView</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Domain Created/Updated/Destroyed</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Common database operations on a domain.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Domain</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Host Created/Updated/Destroyed</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Common database operations on a host.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Host</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Hostgroup Created/Updated/Destroyed</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Common database operations on a hostgroup.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Hostgroup</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Model Created/Updated/Destroyed</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Common database operations on a model.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Model</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Status Changed</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Global host status of a host changed.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Custom event: @payload.id (host id), @payload.hostname, @payload.global_status (hash)</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Subnet Created/Updated/Destroyed</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Common database operations on a subnet.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Subnet</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Template Render Performed</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">A report template was rendered.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Template</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">User Created/Updated/Destroyed</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Common database operations on a user.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">User</p></td>
 </tr>
 </tbody>
 </table>
@@ -8855,7 +8917,7 @@ For advanced integrations, where a single shell script can contain multiple comm
 </div>
 <div class="paragraph">
 <p>The HTTP method must be POST.
-An example URL would be: <code>https://smartproxy.example.com:8443/shellhooks/my_script</code>.</p>
+An example URL would be: <code>https://smartproxy.example.com:8443/shellhook/my_script</code>.</p>
 </div>
 <div class="paragraph">
 <p>You must enable <strong>Proxy Authorization</strong> for each webhook that is connected to a shellhook, to enable it to authorize a call.</p>
