@@ -1,0 +1,76 @@
+[id="Importing_Report_Templates_Using_the_API_{context}"]
+= Importing Report Templates Using the {Project} API
+
+You can use the {Project} API to import report templates into {Project}.
+Importing report templates using the {Project} API automatically parses the report template metadata and assigns organizations and locations.
+ifndef::orcharhino[]
+For more information about using the {Project} API, see the https://access.redhat.com/documentation/en-us/red_hat_satellite/{AccessRedHatComVersion}/html/api_guide/index[API Guide].
+endif::[]
+
+.Prerequisites
+* Create a template using `.erb` syntax or export a template from another {Project}.
++
+For more information about writing templates, see xref:Template_Writing_Reference_{context}[].
++
+For more information about exporting templates from {Project}, see xref:Exporting_Report_Templates_Using_the_API_{context}[].
+
+.Procedure
+. Use the following example to format the template that you want to import to a `.json` file:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# cat _Example_Template_.json
+{
+    "name": "_Example Template Name_",
+    "template": "
+    _Enter ERB Code Here_
+"
+}
+----
++
+.Example JSON File with ERB Template:
++
+----
+{
+    "name": "Hosts - complete list",
+    "template": "
+<%#
+name: Hosts - complete list
+snippet: false
+template_inputs:
+- name: host
+  required: false
+  input_type: user
+  advanced: false
+  value_type: plain
+  resource_type: Katello::ActivationKey
+model: ReportTemplate
+-%>
+<% load_hosts(search: input('host')).each_record do |host| -%>
+<%
+      report_row(
+          'Server FQND': host.name
+      )
+-%>
+<%  end -%>
+<%= report_render %>
+"
+}
+----
++
+. Use the following request to import the template:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+$ curl --insecure --user admin:redhat \
+--data @_Example_Template_.json --header "Content-Type:application/json" \
+--request POST --config https://_{foreman-example-com}_/api/report_templates/import
+----
++
+. Use the following request to retrieve a list of report templates and validate that you can view the template in {Project}:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+$ curl --insecure --user admin:redhat \
+ --request GET --config https://_{foreman-example-com}_/api/report_templates | json_reformat
+----

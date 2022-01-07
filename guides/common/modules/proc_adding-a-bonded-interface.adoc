@@ -1,0 +1,88 @@
+[id="Adding_a_Bonded_Interface_{context}"]
+= Adding a Bonded Interface
+
+Use this procedure to configure a bonded interface for a host.
+To use the CLI instead of the {ProjectWebUI}, see the xref:cli-adding-a-bonded-interface_{context}[].
+
+.Procedure
+. In the {ProjectWebUI}, navigate to *Hosts* > *All hosts*.
+. Click *Edit* next to the host you want to edit.
+. On the *Interfaces* tab, click *Add Interface*.
+. Select *Bond* from the *Type* list.
+Additional type-specific configuration options are appended to the form.
+. Specify the general interface settings.
+The applicable configuration options are the same as for the physical interfaces described in xref:Adding_a_Physical_Interface_{context}[].
++
+Bonded interfaces use IDs in the form of *bond0* in the *Device Identifier* field.
++
+A single *MAC address* is sufficient.
+. Specify the configuration options specific to bonded interfaces:
+
+* *Mode*: Select the bonding mode that defines a policy for fault tolerance and load balancing.
+See xref:Bonding_Modes_Available_{context}[] for a brief description of each bonding mode.
+
+* *Attached devices*: Specify a comma-separated list of identifiers of attached devices.
+These can be physical interfaces or VLANs.
+
+* *Bond options*: Specify a space-separated list of configuration options, for example *miimon=100*.
+ifndef::orcharhino[]
+See the https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/networking_guide/index[Red{nbsp}Hat Enterprise Linux 7 Networking Guide] for details of the configuration options you can specify for the bonded interface.
+endif::[]
+
+. Click *OK* to save the interface configuration.
+. Click *Submit* to apply the changes to the host.
+
+[id="cli-adding-a-bonded-interface_{context}"]
+.CLI procedure
+
+* To create a host with a bonded interface, enter the following command:
++
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+# hammer host create --name bonded_interface \
+--hostgroup-id _1_ \
+--ip=_192.168.100.123_ \
+--mac=_52:54:00:14:92:2a_ \
+--subnet-id=_1_ \
+--managed true \
+   --interface="identifier=_eth1_, \
+               mac=_52:54:00:62:43:06_, \
+               managed=true, \
+               type=Nic::Managed, \
+               domain_id=_1_, \
+               subnet_id=_1_" \
+   --interface="identifier=_eth2_, \
+               mac=_52:54:00:d3:87:8f_, \
+               managed=true, \
+               type=Nic::Managed, \
+               domain_id=_1_, \
+               subnet_id=_1_" \
+   --interface="identifier=_bond0_, \
+               ip=_172.25.18.123_, \
+               type=Nic::Bond, \
+               mode=active-backup, \
+               attached_devices=[_eth1,eth2_], \
+               managed=true, \
+               domain_id=_1_, \
+               subnet_id=_1_" \
+--organization "_Your_Organization_" \
+--location "_Your_Location_" \
+--ask-root-password yes
+----
+
+[id="Bonding_Modes_Available_{context}"]
+.Bonding Modes Available in {Project}
+[options="header"]
+|====
+|Bonding Mode |Description
+| balance-rr | Transmissions are received and sent sequentially on each bonded interface.
+| active-backup | Transmissions are received and sent through the first available bonded interface.
+Another bonded interface is only used if the active bonded interface fails.
+| balance-xor | Transmissions are based on the selected hash policy.
+In this mode, traffic destined for specific peers is always sent over the same interface.
+| broadcast | All transmissions are sent on all bonded interfaces.
+| 802.a3 | Creates aggregation groups that share the same settings.
+Transmits and receives on all interfaces in the active group.
+| balance-tlb | The outgoing traffic is distributed according to the current load on each bonded interface.
+| balance-alb | Receive load balancing is achieved through Address Resolution Protocol (ARP) negotiation.
+|====
