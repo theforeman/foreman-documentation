@@ -1,0 +1,197 @@
+[id="Using_VMware_Cloud_Init_and_Userdata_Templates_for_Provisioning_{context}"]
+= Using VMware Cloud-init and Userdata Templates for Provisioning
+
+You can use VMware with the `Cloud-init` and `Userdata` templates to insert user data into the new virtual machine, to make further VMware customization, and to enable the VMware-hosted virtual machine to call back to {Project}.
+
+You can use the same procedures to set up a VMware compute resource within {Project}, with a few modifications to the work flow.
+
+.VMware cloud-init Provisioning Overview
+ifdef::satellite[]
+image:user-data-sequence-satellite.png[]
+endif::[]
+ifdef::foreman-el,foreman-deb,katello[]
+image:user-data-sequence-foreman.svg[]
+endif::[]
+
+When you set up the compute resource and images for VMware provisioning in {Project}, the following sequence of provisioning events occur:
+
+* The user provisions one or more virtual machines using the {ProjectWebUI}, API, or hammer
+* {Project} calls the VMware vCenter to clone the virtual machine template
+* {Project} `userdata` provisioning template adds customized identity information
+* When provisioning completes, the `Cloud-init` provisioning template instructs the virtual machine to call back to {SmartProxy} when `cloud-init` runs
+* VMware vCenter clones the template to the virtual machine
+* VMware vCenter applies customization for the virtual machine's identity, including the host name, IP, and DNS
+* The virtual machine builds, `cloud-init` is invoked and calls back {Project} on port `80`, which then redirects to `443`
+
+.Port and Firewall Requirements
+Because of the `cloud-init` service, the virtual machine always calls back to {Project} even if you register the virtual machine to {SmartProxy}.
+Ensure that you configure port and firewall settings to open any necessary connections.
+
+For more information about port and firewall requirements, see {InstallingProjectDocURL}satellite-ports-and-firewalls-requirements_{project-context}[Port and Firewall Requirements] in the _Installing {Project}_ and {InstallingSmartProxyDocURL}capsule-ports-and-firewalls-requirements_{smart-proxy-context}[Ports and Firewalls Requirements] in _Installing {SmartProxyServer}_.
+
+.Associating the `userdata` and `Cloud-init` Templates with the Operating System
+. In the {ProjectWebUI}, navigate to *Hosts* > *Operating Systems*, and select the operating system that you want to use for provisioning.
+. Click the *Template* tab.
+. From the *Cloud-init template* list, select *Cloudinit default*.
+. From the *User data template* list, select *UserData open-vm-tools*.
+. Click *Submit* to save the changes.
+
+.Preparing an Image to use the cloud-init Template
+
+To prepare an image, you must first configure the settings that you require on a virtual machine that you can then save as an image to use in {Project}.
+
+To use the `cloud-init` template for provisioning, you must configure a virtual machine so that `cloud-init` is installed, enabled, and configured to call back to {ProjectServer}.
+
+For security purposes, you must install a CA certificate to use HTTPs for all communication.
+This procedure includes steps to clean the virtual machine so that no unwanted information transfers to the image you use for provisioning.
+
+If you have an image with `cloud-init`, you must still follow this procedure to enable `cloud-init` to communicate with {Project} because `cloud-init` is disabled by default.
+
+ifndef::satellite[]
+These instructions are for Red Hat Enterprise Linux or Fedora OS, follow similar steps for other Linux distributions.
+endif::[]
+
+.Procedure
+. On the virtual machine that you use to create the image, install `cloud-init`, `open-vm-tools`, and `perl`:
++
+[options="nowrap" subs="+quotes"]
+----
+# yum -y install cloud-init open-vm-tools perl
+----
+. Disable network configuration by `cloud-init`:
++
+[options="nowrap" subs="+quotes"]
+----
+# cat << EOM > /etc/cloud/cloud.cfg.d/01_network.cfg
+network:
+  config: disabled
+EOM
+----
+. Configure `cloud-init` to fetch data from {Project}:
++
+[options="nowrap" subs="+attributes"]
+----
+# cat << EOM > /etc/cloud/cloud.cfg.d/10_datasource.cfg
+datasource_list: [NoCloud]
+datasource:
+  NoCloud:
+    seedfrom: https://{foreman-example-com}/userdata/
+EOM
+----
+. Configure modules to use in `cloud-init`:
++
+[options="nowrap" subs="+quotes"]
+----
+# cat << EOM > /etc/cloud/cloud.cfg
+cloud_init_modules:
+ - bootcmd
+
+cloud_config_modules:
+ - runcmd
+
+cloud_final_modules:
+ - scripts-per-once
+ - scripts-per-boot
+ - scripts-per-instance
+ - scripts-user
+ - phone-home
+
+system_info:
+  distro: rhel
+  paths:
+    cloud_dir: /var/lib/cloud
+    templates_dir: /etc/cloud/templates
+  ssh_svcname: sshd
+EOM
+----
+. Enable the CA certificates for the image:
++
+[options="nowrap" subs="+quotes"]
+----
+# update-ca-trust enable
+----
+. Download the `katello-server-ca.crt` file from {ProjectServer}:
+ifdef::foreman-el,katello[]
+You must have the Katello plugin installed to complete this step.
+For {ProjectServer} deployments, copy the CA certificate from the Apache configuration.
+endif::[]
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# wget -O /etc/pki/ca-trust/source/anchors/cloud-init-ca.crt http://_{foreman-example-com}_/pub/katello-server-ca.crt
+----
+. To update the record of certificates, enter the following command:
++
+[options="nowrap" subs="+quotes"]
+----
+# update-ca-trust extract
+----
+. Use the following commands to clean the image:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# systemctl stop rsyslog
+# systemctl stop auditd
+# package-cleanup --oldkernels --count=1
+# {package-clean} all
+----
+. Use the following commands to reduce logspace, remove old logs, and truncate logs:
++
+----
+# logrotate -f /etc/logrotate.conf
+# rm -f /var/log/*-???????? /var/log/*.gz
+# rm -f /var/log/dmesg.old
+# rm -rf /var/log/anaconda
+# cat /dev/null > /var/log/audit/audit.log
+# cat /dev/null > /var/log/wtmp
+# cat /dev/null > /var/log/lastlog
+# cat /dev/null > /var/log/grubby
+----
+. Remove `udev` hardware rules:
++
+[options="nowrap" subs="+quotes"]
+----
+# rm -f /etc/udev/rules.d/70*
+----
+. Remove the `ifcfg` scripts related to existing network configurations:
++
+----
+# rm -f /etc/sysconfig/network-scripts/ifcfg-ens*
+# rm -f /etc/sysconfig/network-scripts/ifcfg-eth*
+----
+. Remove the SSH host keys:
++
+[options="nowrap" subs="+quotes"]
+----
+# rm -f /etc/ssh/_SSH_keys_
+----
+. Remove root user's SSH history:
++
+[options="nowrap" subs="+quotes"]
+----
+# rm -rf ~root/.ssh/known_hosts
+----
+. Remove root user's shell history:
++
+[options="nowrap" subs="+quotes"]
+----
+# rm -f ~root/.bash_history
+# unset HISTFILE
+----
++
+
+You can now create an image from this virtual machine.
+You can use the xref:Adding_VMware_Images_to_Server_{context}[] section to add the image to {Project}.
+
+.Configuring {SmartProxy} to Forward the user data Template
+If you deploy {Project} with the {SmartProxy} templates feature, you must configure {Project} to recognize hosts' IP addresses forwarded over the X-Forwarded-For HTTP header to serve correct template payload.
+
+For security reasons, {Project} recognizes this HTTP header only from localhost.
+For each individual {SmartProxy}, you must configure a regular expression to recognize hosts' IP addresses.
+From the {ProjectWebUI}, you can do this by navigating to *Administer* > *Settings* > *Provisioning*, and changing the *Remote address* setting.
+From the CLI, you can do this by entering the following command:
+
+[options="nowrap" subs="+quotes,attributes"]
+----
+# hammer settings set --name remote_addr --value '(localhost(4|6|4to6)?|192.168.122.(1|2|3))'
+----
