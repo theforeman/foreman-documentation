@@ -1,0 +1,103 @@
+[id="Renaming_Server_{context}"]
+= Renaming {ProjectServer}
+
+The host name of {ProjectServer} is used by {ProjectServer} components, all {SmartProxyServer}s, and hosts registered to it for communication.
+This procedure ensures that you update all references to the new host name.
+
+If you use external authentication, you must reconfigure {ProjectServer} for external authentication after you run the `{project-change-hostname}` script.
+The `{project-change-hostname}` script breaks external authentication for {ProjectServer}.
+For more information about configuring external authentication, see xref:Configuring_External_Authentication_{context}[].
+
+If you use virt-who, you must update the virt-who configuration files with the new host name after you run the `{project-change-hostname}` script.
+ifndef::orcharhino[]
+For more information, see https://access.redhat.com/documentation/en-us/red_hat_satellite/{AccessRedHatComVersion}/html/configuring_virtual_machine_subscriptions_in_red_hat_satellite/troubleshooting-virt-who#modifying-virt-who-configuration_vm-subs-satellite[Modifying a virt-who Configuration] in _Configuring Virtual Machine Subscriptions in {ProjectName}_.
+endif::[]
+
+.Prerequisites
+* Both the `hostname` and `hostname -f` commands must return the FQDN of {ProjectServer} or the `{project-change-hostname}` script will fail to complete.
+If the `hostname` command returns the shortname of {ProjectServer} instead of the FQDN, use `hostnamectl set-hostname _old_fqdn_` to set the old FQDN correctly before attempting to use the `{project-change-hostname}` script.
+
+* Perform a backup of {ProjectServer} before changing a host name.
+If the renaming process is not successful, you must restore it from a backup.
+For more information, see xref:Backing_Up_Server_and_Proxy_{context}[].
+
+* Optional: If {ProjectServer} has a custom SSL certificate installed, a new certificate must be obtained for the host's new name.
+For more information, see {InstallingProjectDocURL}configuring-satellite-custom-server-certificate_{project-context}[Configuring {ProjectServer} with a Custom SSL Certificate] in _Installing {ProjectServer} from a Connected Network_.
+
+.Procedure
+. On {ProjectServer}, choose the appropriate method to run the `{project-change-hostname}` script, providing the new host name and {Project} credentials:
++
+* If your {ProjectServer} is installed with default self-signed SSL certificates, enter the following command:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {project-change-hostname} _new-{project-context}_ \
+--username _admin_ \
+--password _password_
+----
+* If your {ProjectServer} is installed with custom SSL certificates:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {project-change-hostname} _new-{project-context}_ \
+--username _admin_ \
+--password _password_ \
+--custom-cert "/root/ownca/test.com/test.com.crt" \
+--custom-key "/root/ownca/test.com/test.com.key"
+----
+. Optional: If you have created a custom SSL certificate for the new {ProjectServer} host name, run the {Project} installation script to install the certificate.
+For more information about installing a custom SSL certificate, see {InstallingProjectDocURL}Deploying_a_Custom_SSL_Certificate_to_Server_{project-context}[Deploying a Custom SSL Certificate to {ProjectServer}] in _Installing {ProjectServer} from a Connected Network_.
+. On all {Project} clients, enter the following commands to reinstall the bootstrap RPM, reregister clients, and refresh their subscriptions.
++
+You can use remote execution feature to perform this step.
+For more information, see {ManagingHostsDocURL}configuring-and-setting-up-remote-jobs_managing-hosts[Configuring and Setting up Remote Jobs] in _Managing Hosts_.
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# yum remove -y katello-ca-consumer*
+
+# rpm -Uvh http://_new-{foreman-example-com}_/pub/katello-ca-consumer-latest.noarch.rpm
+
+# subscription-manager register \
+--org="_My_Organization_" \
+--environment="_Library_" \
+--force
+
+# subscription-manager refresh
+----
+. On all {SmartProxyServer}s, run the {Project} installation script to update references to the new host name:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {foreman-installer} \
+--foreman-proxy-content-parent-fqdn _new-{foreman-example-com}_ \
+--foreman-proxy-foreman-base-url https://_new-{foreman-example-com}_ \
+--foreman-proxy-trusted-hosts _new-{foreman-example-com}_ \
+--puppet-server-foreman-url _new-{foreman-example-com}_
+----
+. On {ProjectServer}, list all {SmartProxyServer}s:
++
+ifdef::satellite[]
+----
+# hammer capsule list
+----
+. On {ProjectServer}, synchronize content for each {SmartProxyServer}:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# hammer capsule content synchronize \
+--id _capsule_id_number_
+----
+endif::[]
+ifndef::satellite[]
+----
+# hammer proxy list
+----
+. On {ProjectServer}, synchronize content for each {SmartProxyServer}:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# hammer proxy_content synchronize \
+--id _proxy_id_number_
+----
+endif::[]

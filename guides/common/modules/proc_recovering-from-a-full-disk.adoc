@@ -1,0 +1,46 @@
+[id="Recovering_from_a_Full_Disk_{context}"]
+= Recovering from a Full Disk
+
+The following procedure describes how to resolve the situation when a logical volume (LV) with the Pulp database on it has no free space.
+
+.Procedure
+. Let running Pulp tasks finish but do not trigger any new ones as they can fail due to the full disk.
+. Ensure that the LV with the `/var/lib/pulp` directory on it has sufficient free space.
+Here are some ways to achieve that:
+.. Remove orphaned content:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# foreman-rake katello:delete_orphaned_content RAILS_ENV=production
+----
++
+This is run weekly so it will not free much space.
+.. Change the download policy from *Immediate* to *On Demand* for as many repositories as possible and remove already downloaded packages.
+ifndef::orcharhino[]
+See the Red{nbsp}Hat Knowledgebase solution https://access.redhat.com/solutions/2785021[How to change syncing policy for Repositories on Satellite from "Immediate" to "On-Demand"] on the Red{nbsp}Hat Customer Portal for instructions.
+endif::[]
+.. Grow the file system on the LV with the `/var/lib/pulp` directory on it.
+ifndef::orcharhino[]
+For more information, see https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/logical_volume_manager_administration/fsgrow_overview[Growing a File System on a Logical Volume] in the _Red{nbsp}Hat Enterprise Linux 7 Logical Volume Manager Administration Guide_.
+endif::[]
++
+[NOTE]
+====
+If you use an untypical file system (other than for example ext3, ext4, or xfs), you might need to unmount the file system so that it is not in use.
+In that case, complete the following steps:
+
+. Stop the `{foreman-maintain}` services:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foreman-maintain} service stop
+----
+. Grow the file system on the LV.
+. Start the `{foreman-maintain}` services:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foreman-maintain} service start
+----
+====
+. If some Pulp tasks failed due to the full disk, run them again.

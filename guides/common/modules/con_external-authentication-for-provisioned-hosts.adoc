@@ -1,0 +1,155 @@
+[id="External_Authentication_for_Provisioned_Hosts_{context}"]
+= External Authentication for Provisioned Hosts
+
+Use this section to configure {ProjectServer} or {SmartProxyServer} for {FreeIPA} realm support, then add hosts to the {FreeIPA} realm group.
+
+.Prerequisites
+* {ProjectServer} that is registered to the Content Delivery Network or an external {SmartProxyServer} that is registered to {ProjectServer}.
+* A deployed realm or domain provider such as {FreeIPA}.
+
+[id="Configuring_IdM_Realm_Support_{context}"]
+.To install and configure {FreeIPA} packages on {ProjectServer} or {SmartProxyServer}:
+
+To use {FreeIPA} for provisioned hosts, complete the following steps to install and configure {FreeIPA} packages on {ProjectServer} or {SmartProxyServer}:
+
+. Install the `ipa-client` package on {ProjectServer} or {SmartProxyServer}:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {package-install-project} ipa-client
+----
+. Configure the server as a {FreeIPA} client:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# ipa-client-install
+----
+. Create a realm proxy user, `realm-{smart-proxy-context}`, and the relevant roles in {FreeIPA}:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# foreman-prepare-realm admin realm-{smart-proxy-context}
+----
++
+Note the principal name that returns and your {FreeIPA} server configuration details because you require them for the following procedure.
+
+.To configure {ProjectServer} or {SmartProxyServer} for {FreeIPA} Realm Support:
+
+Complete the following procedure on {Project} and every {SmartProxy} that you want to use:
+
+. Copy the `/root/freeipa.keytab` file to any {SmartProxyServer} that you want to include in the same principal and realm:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# scp /root/freeipa.keytab root@_{smartproxy-example-com}_:/etc/foreman-proxy/freeipa.keytab
+----
+. Move the `/root/freeipa.keytab` file to the `/etc/foreman-proxy` directory and set the ownership settings to the `foreman-proxy` user:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# mv /root/freeipa.keytab /etc/foreman-proxy
+# chown foreman-proxy:foreman-proxy /etc/foreman-proxy/freeipa.keytab
+----
+. Enter the following command on all {SmartProxies} that you want to include in the realm.
+If you use the integrated {SmartProxy} on {Project}, enter this command on {ProjectServer}:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {foreman-installer} --foreman-proxy-realm true \
+--foreman-proxy-realm-keytab /etc/foreman-proxy/freeipa.keytab \
+--foreman-proxy-realm-principal _realm-{smart-proxy-context}@EXAMPLE.COM_ \
+--foreman-proxy-realm-provider freeipa
+----
++
+You can also use these options when you first configure the {ProjectServer}.
+. Ensure that the most updated versions of the ca-certificates package is installed and trust the {FreeIPA} Certificate Authority:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# cp /etc/ipa/ca.crt /etc/pki/ca-trust/source/anchors/ipa.crt
+# update-ca-trust enable
+# update-ca-trust
+----
+. Optional: If you configure {FreeIPA} on an existing {ProjectServer} or {SmartProxyServer}, complete the following steps to ensure that the configuration changes take effect:
+.. Restart the *foreman-proxy* service:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# systemctl restart foreman-proxy
+----
+.. In the {ProjectWebUI}, navigate to *Infrastructure* > *{SmartProxies}*.
+.. Locate the {SmartProxy} you have configured for {FreeIPA} and from the list in the *Actions* column, select *Refresh*.
+
+.To create a realm for the {FreeIPA}-enabled {SmartProxy}
+
+After you configure your integrated or external {SmartProxy} with {FreeIPA}, you must create a realm and add the {FreeIPA}-configured {SmartProxy} to the realm.
+
+.Procedure
+. In the {ProjectWebUI}, navigate to *Infrastructure* > *Realms* and click *Create Realm*.
+. In the *Name* field, enter a name for the realm.
+. From the *Realm Type* list, select the type of realm.
+. From the *Realm {SmartProxy}* list, select {SmartProxyServer} where you have configured {FreeIPA}.
+. Click the *Locations* tab and from the *Locations* list, select the location where you want to add the new realm.
+. Click the *Organizations* tab and from the *Organizations* list, select the organization where you want to add the new realm.
+. Click *Submit*.
+
+.Updating Host Groups with Realm Information
+You must update any host groups that you want to use with the new realm information.
+
+. In the {ProjectWebUI}, navigate to *Configure* > *Host Groups*, select the host group that you want to update, and click the *Network* tab.
+. From the *Realm* list, select the realm you create as part of this procedure, and then click *Submit*.
+
+.Adding Hosts to a {FreeIPA} Host Group
+
+{FreeIPA} supports the ability to set up automatic membership rules based on a system's attributes.
+{ProjectName}'s realm feature provides administrators with the ability to map the {ProjectName} host groups to the {FreeIPA} parameter `userclass` which allow administrators to configure automembership.
+
+When nested host groups are used, they are sent to the {FreeIPA} server as they are displayed in the {ProjectName} User Interface.
+For example, "Parent/Child/Child".
+
+{ProjectServer} or {SmartProxyServer} sends updates to the {FreeIPA} server, however automembership rules are only applied at initial registration.
+
+.To Add Hosts to a {FreeIPA} Host Group:
+. On the {FreeIPA} server, create a host group:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# ipa hostgroup-add _hostgroup_name_ --desc=_hostgroup_description_
+----
+. Create an `automembership` rule:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# ipa automember-add --type=hostgroup _hostgroup_name_ _automember_rule_
+----
++
+Where you can use the following options:
++
+* `automember-add` flags the group as an automember group.
+* `--type=hostgroup` identifies that the target group is a host group, not a user group.
+* `_automember_rule_` adds the name you want to identify the automember rule by.
+. Define an automembership condition based on the `userclass` attribute:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# ipa automember-add-condition --key=userclass --type=hostgroup --inclusive-regex=_^webserver_ _hostgroup_name_
+----------------------------------
+Added condition(s) to "_hostgroup_name_"
+----------------------------------
+Automember Rule: _automember_rule_
+Inclusive Regex: userclass=_^webserver_
+----------------------------
+Number of conditions added 1
+----------------------------
+----
++
+Where you can use the following options:
++
+* `automember-add-condition` adds regular expression conditions to identify group members.
+* `--key=userclass` specifies the key attribute as `userclass`.
+* `--type=hostgroup` identifies that the target group is a host group, not a user group.
+* `--inclusive-regex=` _^webserver_ identifies matching values with a regular expression pattern.
+* _hostgroup_name_ - identifies the target host group's name.
+
+When a system is added to {ProjectServer}'s _hostgroup_name_ host group, it is added automatically to the {FreeIPA} server's "_hostgroup_name_" host group.
+{FreeIPA} host groups allow for Host-Based Access Controls (HBAC), sudo policies and other {FreeIPA} functions.

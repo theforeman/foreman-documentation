@@ -1,0 +1,92 @@
+[id="Renaming_Smart_Proxy_{context}"]
+= Renaming {SmartProxyServer}
+
+The host name of {SmartProxyServer} is referenced by {ProjectServer} components, and all hosts registered to it.
+This procedure ensures that you update all references to the new host name.
+
+[NOTE]
+====
+* Both the `hostname` and `hostname -f` commands must return the FQDN of {SmartProxyServer} or the `{project-change-hostname}` script will fail to complete.
+
+* If the `hostname` command returns the shortname of {SmartProxyServer} instead of the FQDN, use `hostnamectl set-hostname _old_fqdn_` to set the old FQDN correctly before attempting to use the `{project-change-hostname}` script.
+====
+
+.Prerequisites
+* Backup {SmartProxyServer}.
+The `{project-change-hostname}` script makes irreversible changes to {SmartProxyServer}.
+If the renaming process is not successful, you must restore it from a backup.
++
+Perform a backup before changing a host name.
+For more information, see xref:Backing_Up_Server_and_Proxy_{context}[].
+
+[WARNING]
+====
+Until https://bugzilla.redhat.com/show_bug.cgi?id=1829115[BZ#1829115] is resolved, you must edit the `usr/share/katello/hostname-change.rb` file on {SmartProxyServer} and comment out the following lines before attempting to rename {SmartProxyServer}:
+
+[options='nowrap', subs="+quotes,verbatim,attributes"]
+----
+STDOUT.puts "updating hostname in hammer configuration"
+self.run_cmd("sed -i.bak -e 's/\#_{@old_hostname}_ \
+/_#{@new_hostname}_/g' _\#\{hammer_root_config_path}_/\*.yml")
+self.run_cmd("sed -i.bak -e 's/#_{@old_hostname}_ \
+/#_{@new_hostname>_/g' #_\{hammer_config_path}_/*.yml")
+----
+====
+
+.Procedure
+. On {ProjectServer}, generate a new certificates archive file for {SmartProxyServer}.
++
+* If you are using the default SSL certificate, enter the following command:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {certs-generate} \
+--foreman-proxy-fqdn _new-{smartproxy-example-com}_ \
+--certs-tar /root/_new-{smartproxy-example-com}-certs.tar_
+----
++
+Ensure that you enter the full path to the `.tar` file.
++
+* If you are using a custom SSL certificate, create a new SSL certificate for {SmartProxyServer}.
+For more information, see {InstallingSmartProxyDocURL}configuring-capsule-custom-server-certificate_{smart-proxy-context}[Configuring {SmartProxyServer} with a Custom SSL Certificate] in _Installing {SmartProxyServer}_.
+. On {ProjectServer}, copy the certificates archive file to {SmartProxyServer}, providing the `root` user’s password when prompted.
+In this example the archive file is copied to the `root` user’s home directory, but you may prefer to copy it elsewhere.
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# scp /root/_new-{smartproxy-example-com}-certs.tar_ root@_{smartproxy-example-com}_:
+----
+. On {SmartProxyServer}, run the `{project-change-hostname}` script and provide the host's new name, {Project} credentials, and certificates archive filename.
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {project-change-hostname} _new-{smart-proxy-context}_ --username _admin_ \
+--password _password_ \
+--certs-tar /root/_new-{smartproxy-example-com}-certs.tar_
+----
++
+Ensure that you enter the full path to the `.tar` file.
+. Optional: If you have created a custom certificate for {SmartProxyServer}, on {SmartProxyServer}, to deploy the certificate, enter the `{foreman-installer}` command that the `{certs-generate}` command returns.
+For more information, see {InstallingSmartProxyDocURL}deploying-a-custom-ssl-certificate-to-capsule-server_{smart-proxy-context}[Deploying a Custom SSL Certificate to {SmartProxyServer}] in _Installing {SmartProxyServer}_.
+. On all {SmartProxy} clients, enter the following commands to reinstall the bootstrap RPM, reregister clients, and refresh their subscriptions.
++
+You can use remote execution feature to perform this step.
+For more information, see {ManagingHostsDocURL}configuring-and-setting-up-remote-jobs_managing-hosts[Configuring and Setting up Remote Jobs] in _Managing Hosts_.
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# yum remove -y katello-ca-consumer*
+
+# rpm -Uvh http://_new-{smartproxy-example-com}_/pub/katello-ca-consumer-latest.noarch.rpm
+
+# subscription-manager register --org="_Default_Organization_" \
+--environment="_Library_" \
+--force
+
+# subscription-manager refresh
+----
++
+. In the {ProjectWebUI}, navigate to *Infrastructure* > *{SmartProxies}*.
+. Locate {SmartProxyServer} in the list, and click *Edit* to the right of it.
+. Edit the *Name* and *URL* fields to match {SmartProxyServer}'s new host name, then click *Submit*.
+. On your DNS server, add a record for {SmartProxyServer}'s new host name, and delete the record for the previous host name.
