@@ -61,7 +61,7 @@ $(DEST_DIR)/$(BUILD).css: $(BUILD_DIR)/default.css
 
 $(IMAGES_TS): $(IMAGES)
 	cp $? $(IMAGES_DIR)/
-	pushd "$(IMAGES_DIR)" >/dev/null && for IMG in *.*; do ln -s ../../images/$$IMG ../common/images/$$IMG; done && popd >/dev/null
+	pushd "$(IMAGES_DIR)" >/dev/null && for IMG in *.*; do ln -fs ../../images/$$IMG ../common/images/$$IMG; done && popd >/dev/null
 	@touch $(IMAGES_TS)
 
 $(DEST_HTML): $(SOURCES) $(DEPENDENCIES)
