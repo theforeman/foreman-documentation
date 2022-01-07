@@ -1,0 +1,72 @@
+[id="Troubleshooting_DHCP_Problems_{context}"]
+= Troubleshooting DHCP Problems in {Project}
+
+{Project} can manage an ISC DHCP server on internal or external DHCP {SmartProxy}.
+{Project} can list, create, and delete DHCP reservations and leases.
+However, there are a number of problems that you might encounter on occasions.
+
+.Out of sync DHCP records
+When an error occurs during DHCP orchestration, DHCP records in the {Project} database and the DHCP server might not match.
+To fix this, you must add missing DHCP records from the {Project} database to the DHCP server and then remove unwanted records from the DHCP server as per the following steps:
+
+.Procedure
+. To preview the DHCP records that are going to be added to the DHCP server, enter the following command:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# foreman-rake orchestration:dhcp:add_missing subnet_name=NAME
+----
+. If you are satisfied by the preview changes in the previous step, apply them by entering the above command with the `perform=1` argument:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# foreman-rake orchestration:dhcp:add_missing subnet_name=NAME perform=1
+----
+. To keep DHCP records in {Project} and in the DHCP server synchronized, you can remove unwanted DHCP records from the DHCP server.
+Note that {Project} assumes that all managed DHCP servers do not contain third-party records, therefore, this step might delete those unexpected records.
+To preview what records are going to be removed from the DHCP server, enter the following command:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# foreman-rake orchestration:dhcp:remove_offending subnet_name=NAME
+----
+. If you are satisfied by the preview changes in the previous step, apply them by entering the above command with the `perform=1` argument:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# foreman-rake orchestration:dhcp:remove_offending subnet_name=NAME perform=1
+----
+
+.PXE loader option change
+When the PXE loader option is changed for an existing host, this causes a DHCP conflict.
+The only workaround is to overwrite the DHCP entry.
+
+ifndef::satellite,orcharhino[]
+This is a known issue.
+Until https://projects.theforeman.org/issues/27877[Issue 27877] is fixed, the only workaround is to overwrite the DHCP entry.
+endif::[]
+
+.Incorrect permissions on DHCP files
+An operating system update can update the `dhcpd` package.
+This causes the permissions of important directories and files to reset so that the DHCP {SmartProxy} cannot read the required information.
+
+ifdef::satellite[]
+For more information, see https://access.redhat.com/solutions/2952061[DHCP error while provisioning host from Satellite server Error ERF12-6899 ProxyAPI::ProxyException: Unable to set DHCP entry RestClient::ResourceNotFound 404 Resource Not Found] on Red{nbsp}Hat Knowledgebase.
+endif::[]
+
+ifndef::satellite,orcharhino[]
+For more information, see https://projects.theforeman.org/projects/foreman/wiki/ERF12-6899[ERF12-6899 - Unable to set DHCP entry].
+endif::[]
+
+.Changing the DHCP {SmartProxy} entry
+{Project} manages DHCP records only for hosts that are assigned to subnets with a DHCP {SmartProxy} set.
+If you create a host and then clear or change the DHCP {SmartProxy}, when you attempt to delete the host, the action fails.
+
+If you create a host without setting the DHCP {SmartProxy} and then try to set the DHCP {SmartProxy}, this causes DHCP conflicts.
+
+.Deleted hosts entries in the dhcpd.leases file
+Any changes to a DHCP lease are appended to the end of the `dhcpd.leases` file.
+Because entries are appended to the file, it is possible that two or more entries of the same lease can exist in the `dhcpd.leases` file at the same time.
+When there are two or more entries of the same lease, the last entry in the file takes precedence.
+Group, subgroup and host declarations in the lease file are processed in the same manner.
+If a lease is deleted, `{ deleted; }` is appended to the declaration.

@@ -1,0 +1,47 @@
+[id="Extending_the_Discovery_Image_{context}"]
+= Extending the Discovery Image
+
+You can extend the {Project} Discovery image with custom facts, software, or device drivers.
+You can also provide a compressed archive file containing extra code for the image to use.
+
+.Procedure
+. Create the following directory structure:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+.
+├── autostart.d
+│   └── 01_zip.sh
+├── bin
+│   └── ntpdate
+├── facts
+│   └── test.rb
+└── lib
+    ├── libcrypto.so.1.0.0
+    └── ruby
+        └── test.rb
+----
++
+* The `autostart.d` directory contains scripts that are executed in POSIX order by the image when it starts, but before the host is registered to {Project}.
+* The `bin` directory is added to the `$PATH` variable; you can place binary files in this directory and use them in the `autostart` scripts.
+* The `facts` directory is added to the `FACTERLIB` variable so that custom facts can be configured and sent to {Project}.
+* The `lib` directory is added to the `LD_LIBRARY_PATH` variable and `lib/ruby` is added to the `RUBYLIB` variable, so that binary files in `/bin` can be executed correctly.
+. After creating the directory structure, create a `.zip` file archive with the following command:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# zip -r my_extension.zip .
+----
+. To inform the Discovery image of the extensions it must use, place your zip files on your TFTP server with the Discovery image, and then update the `APPEND` line of the PXELinux template with the `fdi.zips` option where the paths are relative to the TFTP root.
+For example, if you have two archives at `$TFTP/zip1.zip` and `$TFTP/boot/zip2.zip`, use the following syntax:
++
+[options="nowrap" subs="+quotes,verbatim"]
+----
+fdi.zips=zip1.zip,boot/zip2.zip
+----
+
+You can append new directives and options to the existing environment variables (`PATH`, `LD_LIBRARY_PATH`, `RUBYLIB` and `FACTERLIB`).
+If you want to specify the path explicitly in your scripts, the `.zip` file contents are extracted to the `/opt/extension` directory on the image.
+
+You can create multiple `.zip` files but be aware that they are extracted to the same location on the Discovery image.
+Files extracted from in later `.zip` files overwrite earlier versions if they have the same file name.

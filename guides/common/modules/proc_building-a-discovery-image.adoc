@@ -1,0 +1,151 @@
+[id="Building_a_Discovery_Image_{context}"]
+= Building a Discovery Image
+
+The Discovery image is a minimal operating system that is PXE-booted on hosts to acquire initial hardware information and to check in with {Project}.
+Discovered hosts keep running the Discovery image until they are rebooted into Anaconda, which then initiates the provisioning process.
+
+ifdef::satellite[]
+The operating system image is based on {RHEL} 7.
+endif::[]
+ifndef::satellite[]
+The operating system image is based on Cent OS.
+endif::[]
+
+ifdef::satellite[]
+The `foreman-discovery-image` package contains this image.
+You must install the package on the {SmartProxy} that provides TFTP services.
+endif::[]
+
+Use this procedure to build a {Project} discovery image or rebuild an image if you change configuration files.
+
+Do not use this procedure on your production {Project} or {SmartProxy}.
+Use either a dedicated environment or copy the synchronized repositories and a kickstart file to a separate server.
+
+.Prerequisites
+* Install the `livecd-tools` package:
++
+ifdef::foreman-el,katello,orcharhino[]
+----
+# yum install livecd-tools
+----
+endif::[]
+ifdef::satellite[]
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {package-install-project} livecd-tools
+----
+endif::[]
+
+ifdef::satellite[]
+* For the following {RHEL} 7 repositories required to build the Discovery image, change the download policy to *Immediate*.
+This is required because {Project} downloads all packages only during synchronization of repositories with the immediate download policy.
++
+** The latest *Red Hat Enterprise Linux 7 Server (Kickstart)* repository.
+For example, *Red Hat Enterprise Linux 7 Server Kickstart x86_64 7.7*.
+** *Red Hat Satellite Capsule {ProductVersion} for RHEL 7 Server RPMs x86_64*.
+
++
+For more information about changing download policies, see {ContentManagementDocURL}changing_the_download_policy_for_a_repository[Changing the Download Policy for a Repository] in the _Content Management Guide_.
+
+* Synchronize the following {RHEL} 7 repositories required to build the Discovery image:
++
+** The latest *Red Hat Enterprise Linux 7 Server (Kickstart)* repository.
+For example, *Red Hat Enterprise Linux 7 Server Kickstart x86_64 7.7*.
+** *Red Hat Satellite Capsule {ProductVersion} for RHEL 7 Server RPMs x86_64*.
+
++
+For more information about synchronizing repositories, see {ContentManagementDocURL}Synchronizing_Repositories[Syncing Repositories] in the _Content Management Guide_.
+endif::[]
+
+.Procedure
+. Open the `/usr/share/foreman-discovery-image/foreman-discovery-image.ks` file for editing:
++
+[options="nowrap" subs="+quotes"]
+----
+# vim /usr/share/foreman-discovery-image/foreman-discovery-image.ks
+----
+. Replace the `repo` lines in the kickstart file with the repository URLs:
++
+[options="nowrap" subs="quotes,attributes"]
+----
+ifdef::satellite[]
+repo --name=rhel --baseurl=file:///var/lib/pulp/published/yum/https/repos/Default_Organization/Library/content/dist/rhel/server/7/7.7/x86_64
+repo --name=sat --baseurl=file:///var/lib/pulp/published/yum/https/repos/Default_Organization/Library/content/dist/rhel/server/7/7Server/x86_64/sat-capsule/{ProductVersion}/os
+endif::[]
+ifdef::foreman-el,katello,orcharhino[]
+repo --name=centos --mirrorlist=http://mirrorlist.centos.org/?release=7&arch=$basearch&repo=os
+repo --name=centos-updates --mirrorlist=http://mirrorlist.centos.org/?release=7&arch=$basearch&repo=updates
+repo --name=epel7 --mirrorlist=https://mirrors.fedoraproject.org/metalink?repo=epel-7&arch=$basearch
+repo --name=centos-sclo-rh --mirrorlist=http://mirrorlist.centos.org/?release=7&arch=x86_64&repo=sclo-rh
+repo --name=foreman-el7 --baseurl=http://yum.theforeman.org/{ProductVersion}/el7/$basearch/
+repo --name=foreman-plugins-el7 --baseurl=http://yum.theforeman.org/plugins/{ProductVersion}/el7/$basearch/
+endif::[]
+----
+. Run the `livecd-creator` tool:
++
+[options="nowrap" subs="+quotes"]
+----
+# livecd-creator \
+--cache=var/cache/build-fdi \
+--compression-type=xz \
+--config /usr/share/foreman-discovery-image/foreman-discovery-image.ks \
+--fslabel fdi \
+--title="_My_Discovery_Image_" \
+--tmpdir /var/tmp
+----
++
+If you change `fdi` in the `--fslabel` option, you must also change the root label on the kernel command line when loading the image.
+`fdi` or the alternative name is appended to the `.iso` file that is created as part of this procedure.
+The PXE Discovery tool uses this name when converting from `.iso` to PXE.
++
+Use `/var/tmp` because this process requires close to 3GB of space and `/tmp` might have problems if the system is low on swap space.
+. Verify that your `fdi.iso` file is created:
++
+[options="nowrap" subs="+quotes"]
+----
+# ls -h *.iso
+----
+
+When you create the `.iso` file, you can boot the `.iso` file over a network or locally.
+Complete one of the following procedures.
+
+If you want to boot the `.iso` file over a network, complete the following steps:
+
+.Procedure
+. To extract the initial ramdisk and kernel files from the `.iso` file over a network, enter the following command:
++
+[options="nowrap" subs="+quotes"]
+----
+# discovery-iso-to-pxe fdi.iso
+----
+. Create a directory to store your boot files:
++
+[options="nowrap" subs="+quotes"]
+----
+# mkdir /var/lib/tftpboot/boot/_myimage_
+----
+. Copy the `initrd0.img` and `vmlinuz0` files to your new directory.
+. Edit the `KERNEL` and `APPEND` entries in the `/var/lib/tftpboot/pxelinux.cfg` file to add the information about your own initial ramdisk and kernel files.
+
+If you want to create a hybrid `.iso` file for booting locally, complete the following steps:
+
+.Procedure
+. To convert the `.iso` file to an `.iso` hybrid file for PXE provisioning, enter the following command:
++
+[options="nowrap" subs="+quotes"]
+----
+# isohybrid --partok fdi.iso
+----
++
+If you have `grub2` packages installed, you can also use the following command to install a `grub2` bootloader:
++
+[options="nowrap" subs="+quotes"]
+----
+# isohybrid --partok --uefi fdi.iso
+----
+. To add `md5` checksum to the `.iso` file so it can pass installation media validation tests in {Project}, enter the following command:
++
+[options="nowrap" subs="+quotes"]
+----
+# implantisomd5 fdi.iso
+----

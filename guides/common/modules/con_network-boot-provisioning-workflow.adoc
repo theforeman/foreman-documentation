@@ -1,0 +1,89 @@
+[id="Network_Boot_Provisioning_Workflow_{context}"]
+= Network Boot Provisioning Workflow
+
+PXE booting assumes that a host, either physical or virtual, is configured to boot from network as the first booting device, and from the hard drive as the second booting device.
+
+The provisioning process follows a basic PXE workflow:
+
+. You create a host and select a domain and subnet.
+{Project} requests an available IP address from the DHCP {SmartProxyServer} that is associated with the subnet or from the PostgreSQL database in {Project}.
+{Project} loads this IP address into the *IP address* field in the Create Host window.
+When you complete all the options for the new host, submit the new host request.
+. Depending on the configuration specifications of the host and its domain and subnet, {Project} creates the following settings:
+* A DHCP record on {SmartProxyServer} that is associated with the subnet.
+* A forward DNS record on {SmartProxyServer} that is associated with the domain.
+* A reverse DNS record on the DNS {SmartProxyServer} that is associated with the subnet.
+* PXELinux, Grub, Grub2, and iPXE configuration files for the host in the TFTP {SmartProxyServer} that is associated with the subnet.
+* A Puppet certificate on the associated Puppet server.
+* A realm on the associated identity server.
+. The host is configured to boot from the network as the first device and HDD as the second device.
+. The new host requests a DHCP reservation from the DHCP server.
+. The DHCP server responds to the reservation request and returns TFTP `next-server` and `filename` options.
+. The host requests the boot loader and menu from the TFTP server according to the PXELoader setting.
+. A boot loader is returned over TFTP.
+. The boot loader fetches configuration for the host through its provisioning interface MAC address.
+. The boot loader fetches the operating system installer kernel, init RAM disk, and boot parameters.
+. The installer requests the provisioning template from {Project}.
+. {Project} renders the provision template and returns the result to the host.
+. The installer performs installation of the operating system.
+ifdef::foreman-el,katello[]
+* When Katello plugin is installed, the installer registers the host to {Project} using Subscription Manager.
+* When Katello plugin is installed, management tools such as `katello-agent` and `puppet` are installed.
+endif::[]
+ifdef::satellite[]
+* The installer registers the host to {Project} using Subscription Manager.
+* The installer installs management tools such as `katello-agent` and `puppet`.
+endif::[]
+ifdef::orcharhino[]
+* The installer registers the host to {Project} using orcharhino client.
+* The installer installs management tools such as `katello-agent` and `puppet`.
+endif::[]
+* The installer notifies {Project} of a successful build in the `postinstall` script.
+. The PXE configuration files revert to a local boot template.
+. The host reboots.
+. The new host requests a DHCP reservation from the DHCP server.
+. The DHCP server responds to the reservation request and returns TFTP `next-server` and `filename` options.
+. The host requests the bootloader and menu from the TFTP server according to the PXELoader setting.
+. A boot loader is returned over TFTP.
+. The boot loader fetches the configuration for the host through its provision interface MAC address.
+. The boot loader initiates boot from the local drive.
+. If you configured the host to use any Puppet classes, the host configures itself using the modules.
+
+The fully provisioned host performs the following workflow:
+
+. The host is configured to boot from the network as the first device and HDD as the second device.
+. The new host requests a DHCP reservation from the DHCP server.
+. The DHCP server responds to the reservation request and returns TFTP `next-server` and `filename` options.
+. The host requests the boot loader and menu from the TFTP server according to the PXELoader setting.
+. A boot loader is returned over TFTP.
+. The boot loader fetches the configuration settings for the host through its provisioning interface MAC address.
+. For BIOS hosts:
+* The boot loader returns non-bootable device so BIOS skips to the next device (boot from HDD).
+. For EFI hosts:
+* The boot loader finds Grub2 on a ESP partition and chainboots it.
+. If the host is unknown to {Project}, a default bootloader configuration is provided. When Discovery service is enabled, it boots into discovery, otherwise it boots from HDD.
+
+This workflow differs depending on custom options.
+For example:
+
+Discovery::
+If you use the discovery service, {Project} automatically detects the MAC address of the new host and restarts the host after you submit a request.
+Note that TCP port 8443 must be reachable by the {SmartProxy} to which the host is attached for {Project} to restart the host.
+
+PXE-less Provisioning::
+After you submit a new host request, you must boot the specific host with the boot disk that you download from {Project} and transfer using a USB port of the host.
+
+Compute Resources::
+{Project} creates the virtual machine and retrieves the MAC address and stores the MAC address in {Project}.
+If you use image-based provisioning, the host does not follow the standard PXE boot and operating system installation.
+The compute resource creates a copy of the image for the host to use.
+Depending on image settings in {Project}, seed data can be passed in for initial configuration, for example using `cloud-init`.
+{Project} can connect using SSH to the host and execute a template to finish the customization.
++
+[NOTE]
+====
+By default, deleting the provisioned profile host from {Project} does not destroy the actual VM on the external compute resource.
+To destroy the VM when deleting the host entry on {Project}, navigate to *Administer* > *Settings* > *Provisioning* and configure this behavior using the *destroy_vm_on_host_delete* setting.
+If you do not destroy the associated VM and attempt to create a new VM with the same resource name later, it will fail because that VM name already exists in the external compute resource.
+You can still register the existing VM to {Project} using the standard host registration workflow you would use for any already provisioned host.
+====
