@@ -11,6 +11,11 @@ on:
       - master
       - "[0-9]+.[0-9]+"
 
+env:
+  RUBY_VERSION: 2.7
+  PYTHON_VERSION: 2.x
+  BUNDLE_WITHOUT: "nanoc"
+
 jobs:
   build-html:
     runs-on: ubuntu-latest
@@ -96,10 +101,6 @@ jobs:
       - name: Build PDFs
         run: |
           make pdf BUILD=foreman-el
-          make pdf BUILD=foreman-deb
-          make pdf BUILD=katello
-          make pdf BUILD=satellite
-          make pdf BUILD=orcharhino
 
       - name: Upload PDFs
         uses: actions/upload-artifact@v2
@@ -109,29 +110,28 @@ jobs:
 
   build-web:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash
     steps:
       - name: Checkout
         uses: actions/checkout@v2
         with:
           ref: master
 
-      - name: Setup Hugo
-        uses: peaceiris/actions-hugo@v2
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
         with:
-          hugo-version: '0.79.1'
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+          working-directory: ./web
 
-      - name: Build via Hugo
-        run: hugo -v --ignoreCache
-        working-directory: web
+      - name: Build site with nanoc
+        run: bundle exec nanoc
+        working-directory: ./web
 
       - name: Upload web
         uses: actions/upload-artifact@v2
         with:
           name: foreman-docs-web-master
-          path: web/public/
+          path: web/output/
 
   publish:
     if: github.repository_owner == 'theforeman' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/2.') || startsWith(github.ref, 'refs/heads/3.') || startsWith(github.ref, 'refs/heads/4.'))
