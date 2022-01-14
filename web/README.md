@@ -1,31 +1,42 @@
-# Static Site
+# Foreman documentation site
 
-Landing page for [docs.theforeman.org](https://docs.theforeman.org) is available as a [Hugo](https://gohugo.io/) project.
+Uses [nanoc](https://nanoc.app) site generator.
 
-## Preparing the environment
+Synopsis:
 
-Install `hugo`, for example on a Fedora system:
+	$ bundle config set --local path 'vendor/bundle'
+	$ bundle install
+	$ bundle exec nanoc compile
 
-```console
-# dnf install hugo
-```
+For auto-reloading do:
 
-## Building
+	$ bundle exec nanoc live
 
-While the `make` commands outlined in the [guides readme](https://github.com/theforeman/foreman-documentation/blob/master/guides/README.md) output previous of the guides, for a local preview of the full site, and links, do the following:
+When executed with "dev" environment, content of guides/build is also symlinked
+as /nightly so all built nightly guides are also available through nano:
 
-```console
-$ cd web
-$ hugo server
-```
+	$ bundle exec nanoc live --env=dev
 
-Alternatively, you can use `make server`
+To listen on all interfaces:
 
-Then open the URL it mentions: (http://localhost:1313/).
+	$ bundle exec nanoc live -o \*
 
-Use `make` or `hugo` to build contents from markdown and layouts in `public/` directory.
+To perform a HTML validation check:
 
-## Deployment
+	$ bundle exec nanoc check
 
-Do not commit directory public/ into git, site is generated via Github Actions.
-The site is built from `master` branch.
+To build the whole site and nightly guides for a full experience:
+
+	$ cd guides/
+	$ make clean
+	$ make BUILD=foreman-el
+	$ make BUILD=foreman-deb
+	$ make BUILD=katello
+	$ cd ../web
+	$ bundle exec nanoc live -o \* --env=dev
+
+Navigate to `http://localhost:3000` to test the result.
+
+To edit the main menu, navigate to content/js/nav.js and edit the file, publish
+the changes and all guides and pages will dynamically load the menu from the
+data structure.
