@@ -16,59 +16,6 @@ env:
   BUNDLE_WITHOUT: "nanoc"
 
 jobs:
-  check-html:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash
-        working-directory: guides
-    steps:
-      - name: Get branch name (merge)
-        if: github.event_name != 'pull_request'
-        run: echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/} | tr / -)" >> $GITHUB_ENV
-        working-directory: .
-
-      - name: Get branch name (pull request)
-        if: github.event_name == 'pull_request'
-        run: echo "BRANCH_NAME=$(echo ${GITHUB_HEAD_REF} | tr / -)" >> $GITHUB_ENV
-        working-directory: .
-
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: ${{ env.RUBY_VERSION }}
-          bundler-cache: true
-
-      - name: Setup Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
-        run: bundle install --jobs=3 --retry=3
-        working-directory: .
-
-      - name: Install linkchecker and tryer
-        run: pip install linkchecker linkchecker-tryer
-
-      - name: Clean the environment
-        run: make clean
-
-      - name: Build HTML with local links
-        run: |
-          make html BUILD=foreman-el LINKS=LOCAL
-          make html BUILD=foreman-deb LINKS=LOCAL
-          make html BUILD=katello LINKS=LOCAL
-          make html BUILD=satellite LINKS=LOCAL
-          make html BUILD=orcharhino LINKS=LOCAL
-
-      - name: Check HTML links of all builds
-        run: |
-          make linkchecker-tryer
-
   build-html:
     runs-on: ubuntu-latest
     defaults:
