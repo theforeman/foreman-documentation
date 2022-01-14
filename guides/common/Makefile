@@ -10,13 +10,15 @@ DEST_HTML = $(DEST_DIR)/index-$(BUILD).html
 DEST_PDF = $(BUILD_DIR)/$(subst doc-,,$(NAME))-$(BUILD).pdf
 IMAGES_DIR = $(DEST_DIR)/images
 IMAGES_TS = $(DEST_DIR)/.timestamp-images
-CSS_SOURCES = $(shell find $(COMMON_DIR)/sass -type f)
+CSS_SOURCES = $(shell find $(COMMON_DIR)/css -type f)
+DOCINFO_SOURCES = $(shell find $(COMMON_DIR)/ -type f -name docinfo\*.html)
 SOURCES = master.adoc $(shell find . -type f -name \*.adoc)
 DEPENDENCIES = $(shell find $(COMMON_DIR) -type f -name \*.adoc)
 IMAGES = $(shell find ./images ./common/images -type f 2>/dev/null || true)
 UNAME = $(shell uname)
 DATE_MDY = $(shell LC_ALL=C date "+%b %d %Y")
 DATE_MY = $(shell LC_ALL=C date "+%b %Y")
+CSS_STYLE = compressed
 
 ifeq ($(UNAME), Linux)
 BROWSER_OPEN = xdg-open
@@ -31,15 +33,17 @@ endif
 
 all: html
 
-html: prepare $(DEST_DIR)/$(BUILD).css $(IMAGES_TS) $(DEST_HTML)
-
-pdf: prepare $(DEST_PDF)
-
 prepare:
 	@mkdir -p $(BUILD_DIR) $(DEST_DIR) $(IMAGES_DIR) $(IMAGES_DIR) $(DEST_DIR)/common/images
 
+css: prepare $(DEST_DIR)/$(BUILD).css
+
+html: css $(IMAGES_TS) $(DEST_HTML)
+
+pdf: prepare $(DEST_PDF)
+
 clean:
-	@rm -rf "$(DEST_DIR)" "$(DEST_PDF)"
+	@rm -rf "$(DEST_DIR)" "$(DEST_PDF)" "$(BUILD_DIR)/default.css"
 
 browser: html
 	${BROWSER_OPEN} "file://$(realpath $(ROOTDIR)/$(DEST_HTML))"
@@ -54,7 +58,7 @@ open-pdf: pdf
 	${BROWSER_OPEN} "$(realpath $(ROOTDIR)/$(DEST_PDF))"
 
 $(BUILD_DIR)/default.css: $(CSS_SOURCES)
-	bundle exec compass compile --force -c $(COMMON_DIR)/sass_config.rb --sass-dir $(COMMON_DIR)/sass --css-dir $(BUILD_DIR)
+	bundle exec sass -C --style $(CSS_STYLE) -I $(COMMON_DIR)/css $(COMMON_DIR)/css/default.scss $@
 
 $(DEST_DIR)/$(BUILD).css: $(BUILD_DIR)/default.css
 	cp $< $@
@@ -64,8 +68,8 @@ $(IMAGES_TS): $(IMAGES)
 	pushd "$(IMAGES_DIR)" >/dev/null && for IMG in *.*; do ln -fs ../../images/$$IMG ../common/images/$$IMG; done && popd >/dev/null
 	@touch $(IMAGES_TS)
 
-$(DEST_HTML): $(SOURCES) $(DEPENDENCIES)
-	bundle exec asciidoctor -a build=$(BUILD) $(BASEURL_ATTR) -a docinfo=shared -a date_mdy="$(DATE_MDY)" -a date_my="$(DATE_MY)" -a docdatetime="$(DATE_MY)" -a stylesheet=$(BUILD).css -a linkcss=true -b html5 -d book --trace -o $@ $< 2>&1 | tee $@.log
+$(DEST_HTML): $(SOURCES) $(DEPENDENCIES) $(DOCINFO_SOURCES)
+	bundle exec asciidoctor -a build=$(BUILD) $(BASEURL_ATTR) -a docinfo=shared -a docinfodir=common -a date_mdy="$(DATE_MDY)" -a date_my="$(DATE_MY)" -a docdatetime="$(DATE_MY)" -a stylesheet=$(BUILD).css -a linkcss=true -b html5 -d book --trace -o $@ $< 2>&1 | tee $@.log
 	@echo CHECKING FOR ASCIIDOCTOR ERRORS AND WARNINGS
 	@! grep -Eq "^asciidoctor: (ERROR|WARNING)" $@.log
 	@echo CHECKING FOR ORPHAN XREFS HTML LINKS

@@ -13,6 +13,7 @@ on:
 env:
   RUBY_VERSION: 2.7
   PYTHON_VERSION: 2.x
+  BUNDLE_WITHOUT: "nanoc"
 
 jobs:
   check-html:
@@ -164,29 +165,28 @@ jobs:
 
   build-web:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash
     steps:
       - name: Checkout
         uses: actions/checkout@v2
         with:
           ref: master
 
-      - name: Setup Hugo
-        uses: peaceiris/actions-hugo@v2
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
         with:
-          hugo-version: '0.79.1'
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+          working-directory: ./web
 
-      - name: Build via Hugo
-        run: hugo -v --ignoreCache
-        working-directory: web
+      - name: Build site with nanoc
+        run: bundle exec nanoc
+        working-directory: ./web
 
       - name: Upload web
         uses: actions/upload-artifact@v2
         with:
           name: foreman-docs-web-master
-          path: web/public/
+          path: web/output/
 
   publish:
     if: >
