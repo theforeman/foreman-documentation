@@ -19,37 +19,22 @@ let navVersions = [
 
 let navItems = [
 {
-	title: "Foreman documentation", items: [
+	title: "Foreman on EL", items: [
 	{
-		title: "Planning for Foreman",
-		href: "/Planning_Guide/index-foreman-el.html"
+		title: "Release Notes",
+		href: "/Release_notes/index-foreman-el.html"
 	},{
-		title: "Quickstart Guide on RHEL/CentOS",
+		title: "Quickstart Guide",
 		href: "/Quickstart_Guide/index-foreman-el.html"
 	},{
-		title: "Quickstart Guide on Debian/Ubuntu",
-		href: "/Quickstart_Guide/index-foreman-deb.html"
-	},{
-		title: "Installing on RHEL/CentOS",
+		title: "Installing Foreman Server",
 		href: "/Installing_Server_on_Red_Hat/index-foreman-el.html"
 	},{
-		title: "Installing Smart Proxy on RHEL/CentOS",
+		title: "Installing Smart Proxy",
 		href: "/Installing_Proxy_on_Red_Hat/index-foreman-el.html"
-	},{
-		title: "Installing on Debian/Ubuntu",
-		href: "/Installing_Server_on_Debian/index-foreman-deb.html"
-	},{
-		title: "Installing Smart Proxy on Debian/Ubuntu",
-		href: "/Installing_Proxy_on_Debian/index-foreman-deb.html"
-	},{
-		title: "Upgrading and Updating",
-		href: "/Upgrading_and_Updating/index-foreman-el.html"
 	},{
 		title: "Deploying Foreman on AWS",
 		href: "/Deploying_on_AWS/index-foreman-el.html"
-	},{
-		title: "Configuring Smart Proxies with a Load Balancer",
-		href: "/Configuring_Load_Balancer/index-foreman-el.html"
 	},{
 		title: "Provisioning Guide",
 		href: "/Provisioning_Guide/index-foreman-el.html"
@@ -67,22 +52,76 @@ let navItems = [
 		href: "/Application_Centric_Deployment/index-foreman-el.html"
 	}]
 },{
-	title: "Katello documentation", items: [
+	title: "Foreman on Debian", items: [
 	{
-		title: "Quickstart Guide on RHEL/CentOS",
+		title: "Release Notes",
+		href: "/Release_notes/index-foreman-deb.html"
+	},{
+		title: "Quickstart Guide",
+		href: "/Quickstart_Guide/index-foreman-deb.html"
+	},{
+		title: "Installing Foreman Server",
+		href: "/Installing_Server_on_Red_Hat/index-foreman-deb.html"
+	},{
+		title: "Deploying Foreman on AWS",
+		href: "/Deploying_on_AWS/index-foreman-deb.html"
+	},{
+		title: "Provisioning Guide",
+		href: "/Provisioning_Guide/index-foreman-deb.html"
+	},{
+		title: "Configuring Foreman to use Ansible",
+		href: "/Configuring_Ansible/index-foreman-deb.html"
+	},{
+		title: "Administering Foreman",
+		href: "/Administering_Red_Hat_Satellite/index-foreman-deb.html"
+	},{
+		title: "Application Centric Deployment",
+		href: "/Application_Centric_Deployment/index-foreman-deb.html"
+	}]
+},{
+	title: "Katello on EL", items: [
+	{
+		title: "Release Notes",
+		href: "/Release_notes/index-foreman-el.html"
+	},{
+		title: "Planning Guide",
+		href: "/Planning_Guide/index-katello.html"
+	},{
+		title: "Quickstart Guide",
 		href: "/Quickstart_Guide/index-katello.html"
 	},{
-		title: "Installing on RHEL/CentOS",
+		title: "Installing Katello Server",
 		href: "/Installing_Server_on_Red_Hat/index-katello.html"
 	},{
-		title: "Installing Smart Proxy with Content on RHEL/CentOS",
+		title: "Installing Smart Proxy with Content",
 		href: "/Installing_Proxy_on_Red_Hat/index-katello.html"
 	},{
 		title: "Upgrading and Updating",
 		href: "/Upgrading_and_Updating/index-katello.html"
 	},{
+		title: "Configuring Smart Proxies with a Load Balancer",
+		href: "/Configuring_Load_Balancer/index-katello.html"
+	},{
 		title: "Content Management Guide",
 		href: "/Content_Management_Guide/index-katello.html"
+	},{
+		title: "Deploying Foreman on AWS",
+		href: "/Deploying_on_AWS/index-katello.html"
+	},{
+		title: "Provisioning Guide",
+		href: "/Provisioning_Guide/index-katello.html"
+	},{
+		title: "Configuring Foreman to use Ansible",
+		href: "/Configuring_Ansible/index-katello.html"
+	},{
+		title: "Managing Hosts Guide",
+		href: "/Managing_Hosts/index-katello.html"
+	},{
+		title: "Administering Foreman",
+		href: "/Administering_Red_Hat_Satellite/index-katello.html"
+	},{
+		title: "Application Centric Deployment",
+		href: "/Application_Centric_Deployment/index-katello.html"
 	}]
     }
 ]
