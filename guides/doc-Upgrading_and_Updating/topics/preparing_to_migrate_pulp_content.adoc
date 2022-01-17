@@ -18,6 +18,14 @@ A rough estimation of the space you require is 2-3 times the size of the MongoDB
 Use this procedure to begin migrating content from Pulp 2 to Pulp 3.
 
 .Procedure
+. Update the file permissions before upgrading {ProjectServer} using the following command:
++
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+# {foreman-maintain} prep-{TargetVersion}-upgrade
+----
++
+This might take some time on high latency systems.
 . View details of the content you are pre-migrating using the following command:
 +
 [options="nowrap", subs="verbatim,quotes,attributes"]
@@ -49,21 +57,55 @@ ifdef::satellite[]
 +
 [options="nowrap", subs="verbatim,quotes,attributes"]
 ----
-# {foreman-maintain} prep-{TargetVersion}-upgrade
+# {foreman-maintain} content prepare
 ----
 endif::[]
 +
-This might take some time on high latency systems.
-. Prepare your content for Pulp migration using the following command:
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+============Missing/Corrupted Content Summary================
+  WARNING: MISSING OR CORRUPTED CONTENT DETECTED
+  Corrupted or Missing Rpm: 1000/104583
+  Corrupted or missing content has been detected, you can examine the list of content in /tmp/unmigratable_content-20211025-74422-16cxfae and take action by either:
+  1. Performing a 'Verify Checksum' sync under Advanced Sync Options, let it complete, and re-running the migration
+  2. Deleting/disabling the affected repositories and running orphan cleanup (foreman-rake katello:delete_orphaned_content) and re-running the migration.
+  3. Manually correcting files on the filesystem in /var/lib/pulp/content/ and re-running the migration
+  4. Mark currently corrupted or missing content as skipped (foreman-rake katello:approve_corrupted_migration_content). This will skip migration of missing or corrupted content.
+----
++
+There are several causes of corrupted or missing content:
+
+  * A Repository synchronization or Content View publish or promotion occurred during the migration.
+  * Files on disk in `/var/lib/pulp/content/` became corrupted due to disk rot.
+  * Files in `/var/lib/pulp/content/` are missing due to past events such as disk loss with a partial restore.
+  * There is some mismatch between subsystems in {Project} such as Katello and Pulp.
+  This can happen if a repository or content view is improperly deleted by skipping steps in a paused Foreman Task.
+  Running `foreman-rake katello:correct_repositories COMMIT=true` can correct this.
++
+You can review the list of corrupt or missing RPMs written to disk as part of the `{foreman-maintain} content migration-stats command`, `/tmp/unmigratable_content-20211025-74422-16cxfae20211120-2149-1j4pmfae` in the example above.
++
+If there are a large percentage of missing or corrupted RPMs, for example, more than 5-10%, {Team} recommends that you review the list generated and contact support for guidance.
++
+In most cases, where the number of missing or corrupt RPMs is low, you can mark these as skipped using the following command:
 +
 [options="nowrap", subs="verbatim,quotes,attributes"]
 ----
-# {foreman-maintain} content prepare
+  # foreman-rake katello:approve_corrupted_migration_content
 ----
++
+If you approve corrupted or missing content and proceed with the upgrade, that content will not appear in the repositories or content view versions after upgrade.
++
+If these packages exist in the upstream repositories, they are added again when you re-synchronize the repositories after upgrade.
+They are not restored to the Content Views unless you republish those Content Views.
+As these packages are likely unusable, the upgrade process only detects that fact.
++
+If you suspect a Repository synchronization or Content View publish or promotion occurred during the migration, re-running `{foreman-maintain} content prepare` migrates the remaining content.
+If this is the first time you have run `{foreman-maintain} content prepare`, {Team} recommends running it a second time to try to reduce the number of corrupt or missing RPMs.
+Migrating the remaining content then takes less time.
 +
 [NOTE]
 ====
-You cannot use *`Ctrl` + `C`* to terminate this process.
+You cannot use *`Ctrl` + `C`* to terminate the `{foreman-maintain} content prepare` process.
 If you attempt to halt the process using *`Ctrl` + `C`* or by disconnecting your SSH session, the process does not terminate but continues in the background.
 You can use the following command to terminate the process gracefully, whenever necessary, so that you can continue later.
 
@@ -75,9 +117,9 @@ You can use the following command to terminate the process gracefully, whenever 
 Note that `{foreman-maintain} content-prepare abort` can take several minutes to terminate the process.
 You can continue the migration process using `{foreman-maintain} content-prepare` whenever it is convenient.
 ====
-
++
 . The process does not confirm that migration is complete.
-You can determine how near the process is to completion by using:
+You can determine how near the process is to completion by using the following command:
 +
 [options="nowrap", subs="verbatim,quotes,attributes"]
 ----
@@ -96,3 +138,5 @@ If problems occur, you can restart the pre-migration process from the beginning 
 # {foreman-maintain} content migration-reset
 ----
 ====
++
+. The final steps of Pulp content migration are completed when upgrading {ProjectServer} from {ProjectVersionPrevious} to {ProjectVersion}.
