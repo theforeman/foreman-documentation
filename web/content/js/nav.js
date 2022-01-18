@@ -74,9 +74,6 @@ let navItems = [
 	},{
 		title: "Administering Foreman",
 		href: "/Administering_Red_Hat_Satellite/index-foreman-deb.html"
-	},{
-		title: "Application Centric Deployment",
-		href: "/Application_Centric_Deployment/index-foreman-deb.html"
 	}]
 },{
 	title: "Katello on EL", items: [
