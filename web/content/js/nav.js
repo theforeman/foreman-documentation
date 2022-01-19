@@ -82,7 +82,7 @@ let navItems = [
 	title: "Katello on EL", items: [
 	{
 		title: "Release Notes",
-		href: "/Release_notes/index-foreman-el.html"
+		href: "/Release_notes/index-katello.html"
 	},{
 		title: "Planning Guide",
 		href: "/Planning_Guide/index-katello.html"
