@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 2.0.17">
+<title>Converting a Host to RHEL</title>
+<link rel="stylesheet" href="./katello.css">
+<!-- docinfo -->
+</head>
+<body class="book toc2 toc-left">
+<!--
+	vim: set noai ts=2 sts=2 sw=2 et ft= syn=html
+-->
+<div id="wrap">
+<script src="/js/nav.js"></script>
+<script>
+const versionRe = new RegExp(`/(nightly|\\d+.\\d+)/`);
+var currentVer = document.location.toString().match(versionRe);
+if (currentVer && currentVer.length > 1) {
+  currentVer = currentVer[1];
+} else {
+  currentVer = "nightly";
+}
+var navId = 1;
+var Navbar = `<nav>
+<img class="logo" src="/img/helmet.svg" />
+<button type="button" class="btn-hamburger" data-action="nav-toggle">
+  <span></span>
+  <span></span>
+  <span></span>
+  <span></span>
+  <span></span>
+</button>
+<ul class="nav-menu">
+  <li class="nav-item"><a href="/">Home</a></li>`
+  + navItems.map(function(navItem){ return(
+    `<li id="nav-id-`+ navId++ +`" class="nav-item dropdown">
+        <a href="#" data-action="dropdown-toggle">`+ navItem.title + `</a>
+        <div class="dropdown-menu">`
+        + navItem.items.map(function(item){ return(
+            `<div class="dropdown-div"><a class="dropdown-item" href=/`+currentVer+item.href+`>`+item.title+`</a></div>`
+        )}).join("")
+        +`</div>
+    </li>`
+    )}).join("")
+  + navVersions.map(function(navItem){ return(
+    `<li id="nav-id-`+ navId++ +`" class="nav-item dropdown">
+        <a href="#" data-action="dropdown-toggle">Version `+currentVer+`</a>
+        <div class="dropdown-menu dropdown-menu-left">`
+        + navItem.items.map(function(item){
+            if (document.location.pathname == "/") {
+                var dl = "/release/" + item.href;
+            } else {
+                var dl = document.location.toString().replace(versionRe, "/"+item.href+"/");
+            }
+            return(`<div class="dropdown-div"><a class="dropdown-item" href=`+dl+`>`+item.title+`</a></div>`
+        )}).join("")
+        +`</div>
+    </li>`
+    )}).join("")
++`</ul>
+</nav>`;
+
+function toggleElement(dropdown) {
+  if (dropdown.classList.contains("show")) {
+    dropdown.classList.remove("show");
+  } else {
+    dropdown.classList.add("show");
+  }
+}
+
+function closeAll(except) {
+  for (let i = 1; i <= navItems.length + 1; i++) {
+    let elem = document.getElementById("nav-id-" + i)
+    if (elem != except) {
+      elem.classList.remove("show");
+    }
+  }
+}
+
+var addNavbarListeners = () => {
+  let nav = document.querySelector("nav");
+  let navId = 1;
+  nav.querySelectorAll("[data-action='dropdown-toggle']").forEach((dropdownToggle) => {
+    let dropdown = document.getElementById("nav-id-" + navId++);
+    dropdownToggle.addEventListener("click", () => {
+      closeAll(dropdown);
+      toggleElement(dropdown);
+    });
+  });
+
+  nav.querySelector("[data-action='nav-toggle']").addEventListener("click", () => {
+    if (nav.classList.contains("opened")) {
+      nav.classList.remove("opened");
+    } else {
+      nav.classList.add("opened");
+    }
+  });
+}
+document.open();
+document.write(Navbar)
+addNavbarListeners();
+document.close();
+</script>
+</div>
+<div id="header">
+<h1>Converting a Host to RHEL</h1>
+<div id="toc" class="toc2">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#assembly_converting-a_host-with-convert2rhel_convert-to-rhel">1. Converting a Host to Red&#160;Hat Enterprise Linux with Convert2RHEL</a>
+<ul class="sectlevel2">
+<li><a href="#installing-convert2rhel_convert-to-rhel">1.1. Installing Convert2RHEL</a></li>
+<li><a href="#Creating_an_Activation_Key_convert-to-rhel">1.2. Creating an Activation Key</a></li>
+<li><a href="#preparing-the-host-group_convert-to-rhel">1.3. Preparing the Host Group</a></li>
+<li><a href="#registering-hosts-for-conversion_convert-to-rhel">1.4. Registering Hosts for Conversion</a></li>
+<li><a href="#converting-hosts-with-convert2rhel_convert-to-rhel">1.5. Converting Hosts with Convert2RHEL</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div id="content">
+<div class="sect1">
+<h2 id="assembly_converting-a_host-with-convert2rhel_convert-to-rhel"><a class="anchor" href="#assembly_converting-a_host-with-convert2rhel_convert-to-rhel"></a>1. Converting a Host to Red&#160;Hat Enterprise Linux with Convert2RHEL</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Convert2RHEL enables the conversion of Red&#160;Hat Enterprise Linux derivative distributions into a supportable Red&#160;Hat Enterprise Linux state while retaining existing applications and configurations.</p>
+</div>
+<div class="paragraph">
+<p>The conversion process is similar to a minor release upgrade of Red&#160;Hat Enterprise Linux in which every RPM package on the system is replaced.
+Third-party packages and non-Foreman developers packages not available in Red&#160;Hat Enterprise Linux are not replaced.</p>
+</div>
+<div class="paragraph">
+<p>Convert2RHEL removes unnecessary packages such as logos, or packages known to cause issues during the conversion, and replaces the <code>CentOS-release</code> package with the <code>rhel-release</code> package.
+It subscribes the system to Foreman and replaces all packages signed by CentOS.</p>
+</div>
+<div class="paragraph">
+<p>The amount of time taken to do this can vary depending on how many packages need to be replaced, network speed, storage speed, and similar variables.</p>
+</div>
+<div class="paragraph">
+<p>Use the global registration template to register and subscribe your system before the conversion.
+For more information, see <a href="https://docs.theforeman.org/3.1/Managing_Hosts/index-foreman-el.html#registering-a-host_managing-hosts">Registering a Host to Foreman Using the Global Registration Template</a> in the <em>Managing Hosts</em> guide.</p>
+</div>
+<div class="paragraph">
+<p>To convert hosts to Red&#160;Hat Enterprise Linux with convert2RHEL, you must complete the following procedures:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><a href="#installing-convert2rhel_convert-to-rhel">Installing Convert2RHEL</a>.</p>
+</li>
+<li>
+<p><a href="#Creating_an_Activation_Key_convert-to-rhel">Creating an Activation Key</a>.</p>
+</li>
+<li>
+<p><a href="#preparing-the-host-group_convert-to-rhel">Preparing the Host Group</a>.</p>
+</li>
+<li>
+<p><a href="#registering-hosts-for-conversion_convert-to-rhel">Registering Hosts for Conversion</a>.</p>
+</li>
+<li>
+<p><a href="#converting-hosts-with-convert2rhel_convert-to-rhel">Converting Hosts with Convert2RHEL</a></p>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>You must have completed the steps listed in <a href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html-single/converting_from_an_rpm-based_linux_distribution_to_rhel/index#proc_preparing-for-a-rhel-conversion_converting-from-a-linux-distribution-to-rhel">Preparing for a RHEL conversion</a>.</p>
+</li>
+<li>
+<p>If you are providing the organization ID and activation key to register and subscribe your system, you must have created an activation key in Foreman.
+For more information, see <a href="https://docs.theforeman.org/3.1/Content_Management_Guide/index-foreman-el.html#Managing_Activation_Keys_content-management">Managing Activation Keys</a> in this guide, and <a href="https://access.redhat.com/documentation/en-us/red_hat_subscription_management/1/html-single/using_red_hat_subscription_management/index#activation_keys_con">Understanding activation keys</a> in Subscription Manager documentation.</p>
+</li>
+<li>
+<p>Ensure you have a subscription manifest uploaded to your Foreman and that there are sufficient Red&#160;Hat Enterprise Linux subscriptions for the conversion.</p>
+</li>
+<li>
+<p>If you are providing the organization ID and activation key to register and subscribe your system, you must have created an activation key in Foreman or Subscription Manager.
+For more information, see <a href="https://docs.theforeman.org/3.1/Content_Management_Guide/index-foreman-el.html#Managing_Activation_Keys_content-management">Managing Activation Keys</a> in this guide, and <a href="https://access.redhat.com/documentation/en-us/red_hat_subscription_management/1/html-single/using_red_hat_subscription_management/index#activation_keys_con">Understanding activation keys</a> in Subscription Manager documentation.</p>
+</li>
+<li>
+<p>Ensure you have a subscription manifest uploaded to your Foreman and that there are sufficient Red&#160;Hat Enterprise Linux subscriptions for the conversion.</p>
+</li>
+<li>
+<p>If you are accessing Red&#160;Hat Enterprise Linux packages using Foreman&#160;server, you must use the organization ID and activation key to run the <code>convert2rhel</code> command.</p>
+</li>
+</ul>
+</div>
+<div class="sect2">
+<h3 id="installing-convert2rhel_convert-to-rhel"><a class="anchor" href="#installing-convert2rhel_convert-to-rhel"></a>1.1. Installing Convert2RHEL</h3>
+<div class="paragraph">
+<p>The following procedure makes Convert2RHEL available to the hosts you are converting.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Content</strong> <strong>&gt;</strong> <strong>Products</strong> and click <strong>Create Product</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter the name of the product.
+Foreman automatically completes the <strong>Label</strong> field based on your entry for <strong>Name</strong>.</p>
+</li>
+<li>
+<p>Optional: From the <strong>GPG Key</strong> list, select the GPG key for the product.</p>
+</li>
+<li>
+<p>Optional: From the <strong>SSL CA Cert</strong> list, select the SSL CA certificate for the product.</p>
+</li>
+<li>
+<p>You do not need to complete <strong>SSL Client Cert</strong> or <strong>SSL Client Key</strong>.</p>
+</li>
+<li>
+<p>Optional: From the <strong>Sync Plan</strong> list, select an existing sync plan or click <strong>Create Sync Plan</strong> to create a sync plan for your product requirements.</p>
+</li>
+<li>
+<p>Optional: In the <strong>Description</strong> field, enter a description of the product.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Click the <strong>Repositories</strong> tab.</p>
+</li>
+<li>
+<p>To add a repository, click <strong>New Repository</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter the name of the repository.</p>
+</li>
+<li>
+<p>From the <strong>Type</strong> list, set the content type to Yum.</p>
+</li>
+<li>
+<p>Do not restrict the architecture or the OS version.</p>
+</li>
+<li>
+<p>Use <code>https://cdn.redhat.com/content/public/convert2rhel/7/x86_64/os/</code> as the <strong>Upstream URL</strong>.</p>
+</li>
+<li>
+<p>Disable the <strong>Verify SSL</strong> checkbox.</p>
+</li>
+<li>
+<p>Optional: From the <strong>GPG Key</strong> list, select the GPG key for the product.</p>
+</li>
+<li>
+<p>Optional: From the <strong>SSL CA Cert</strong> list, select the SSL CA certificate for the product.</p>
+<div class="paragraph">
+<p>You do not need to complete <strong>SSL Client Cert</strong> or <strong>SSL Client Key</strong>.</p>
+</div>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Click the checkbox next to the new repository, then click <strong>Sync Now</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Creating_an_Activation_Key_convert-to-rhel"><a class="anchor" href="#Creating_an_Activation_Key_convert-to-rhel"></a>1.2. Creating an Activation Key</h3>
+<div class="paragraph">
+<p>You can use activation keys to define a specific set of subscriptions to attach to hosts during registration.
+The subscriptions that you add to an activation key must be available within the associated Content View.</p>
+</div>
+<div class="paragraph">
+<p>Subscription Manager attaches subscriptions differently depending on the following factors:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Are there any subscriptions associated with the activation key?</p>
+</li>
+<li>
+<p>Is the auto-attach option enabled?</p>
+</li>
+<li>
+<p>For Red&#160;Hat Enterprise Linux 8 hosts: Is there system purpose set on the activation key?</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Note that Foreman automatically attaches subscriptions only for the products installed on a host.
+For subscriptions that do not list products installed on Red&#160;Hat Enterprise Linux by default, such as the Extended Update Support (EUS) subscription, use an activation key specifying the required subscriptions and with the auto-attach disabled.</p>
+</div>
+<div class="paragraph">
+<p>Based on the previous factors, there are three possible scenarios for subscribing with activation keys:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Activation key that attaches subscriptions automatically.</p>
+<div class="paragraph">
+<p>With no subscriptions specified and auto-attach enabled, hosts using the activation key search for the best fitting subscription from the ones provided by the Content View associated with the activation key.
+This is similar to entering the <code>subscription-manager --auto-attach</code> command.
+For Red&#160;Hat Enterprise Linux 8 hosts, you can configure the activation key to set system purpose on hosts during registration to enhance the automatic subscriptions attachment.</p>
+</div>
+</li>
+<li>
+<p>Activation key providing a custom set of subscription for auto-attach.</p>
+<div class="paragraph">
+<p>If there are subscriptions specified and auto-attach is enabled, hosts using the activation key select the best fitting subscription from the list specified in the activation key.
+Setting system purpose on the activation key does not affect this scenario.</p>
+</div>
+</li>
+<li>
+<p>Activation key with the exact set of subscriptions.</p>
+<div class="paragraph">
+<p>If there are subscriptions specified and auto-attach is disabled, hosts using the activation key are associated with all subscriptions specified in the activation key.
+Setting system purpose on the activation key does not affect this scenario.</p>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<div class="title">Products</div>
+<p>If a product, typically containing content not provided by Red Hat, is assigned to an activation key, this product is always enabled for the registered content host regardless of the auto-attach setting.</p>
+</div>
+<div class="paragraph">
+<p>To use the CLI instead of the Foreman web UI, see the <a href="#cli-creating-an-activation-key_convert-to-rhel">CLI procedure</a>.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Content</strong> &gt; <strong>Activation keys</strong> and click <strong>Create Activation Key</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter the name of the activation key.</p>
+</li>
+<li>
+<p>If you want to set a limit, clear the <strong>Unlimited hosts</strong> check box, and in the <strong>Limit</strong> field, enter the maximum number of systems you can register with the activation key.
+If you want unlimited hosts to register with the activation key, ensure the <strong>Unlimited Hosts</strong> check box is selected.</p>
+</li>
+<li>
+<p>Optional: In the <strong>Description</strong> field, enter a description for the activation key.</p>
+</li>
+<li>
+<p>From the <strong>Environment</strong> list, select the environment to use.</p>
+</li>
+<li>
+<p>From the <strong>Content View</strong> list, select a Content View to use.
+If you intend to use the deprecated <code>Katello Agent</code> instead of <code>Remote Execution</code>, the Content View must contain the <a href="https://yum.theforeman.org/client/3.1/" class="bare">https://yum.theforeman.org/client/3.1/</a> repository because it contains the <code>katello-agent</code> package.</p>
+</li>
+<li>
+<p>If Simple Content Access (SCA) is not enabled:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Click the <strong>Subscriptions</strong> tab, then click the <strong>Add</strong> submenu.</p>
+</li>
+<li>
+<p>Click the checkbox under the subscription you created before.</p>
+</li>
+<li>
+<p>Click <strong>Add Selected</strong>.</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>If SCA is enabled:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>In the <strong>Repository Sets</strong> tab, ensure only your named repository is enabled.</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Optional: For Red&#160;Hat Enterprise Linux 8 hosts, in the <strong>System Purpose</strong> section, you can configure the activation key with system purpose to set on hosts during registration to enhance subscriptions auto attachment.</p>
+</li>
+</ol>
+</div>
+<div id="cli-creating-an-activation-key_convert-to-rhel" class="olist arabic">
+<div class="title">CLI procedure</div>
+<ol class="arabic">
+<li>
+<p>Create the activation key:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer activation-key create \
+--name "<em>My_Activation_Key</em>" \
+--unlimited-hosts \
+--description "<em>Example Stack in the Development Environment</em>" \
+--lifecycle-environment "<em>Development</em>" \
+--content-view "<em>Stack</em>" \
+--organization "<em>My_Organization</em>"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Optional: For Red&#160;Hat Enterprise Linux 8 hosts, enter the following command to configure the activation key with system purpose to set on hosts during registration to enhance subscriptions auto attachment.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer activation-key update \
+--organization "<em>My_Organization</em>" \
+--name "<em>My_Activation_Key</em>" \
+--service-level "<em>Standard</em>" \
+--purpose-usage "<em>Development/Test</em>" \
+--purpose-role "<em>{RHELServer}</em>" \
+--purpose-addons "<em>addons</em>"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Obtain a list of your subscription IDs:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer subscription list --organization "<em>My_Organization</em>"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Attach the Red&#160;Hat Enterprise Linux subscription UUID to the activation key:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer activation-key add-subscription \
+--name "<em>My_Activation_Key</em>" \
+--subscription-id <em>My_Subscription_ID</em> \
+--organization "<em>My_Organization</em>"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>List the product content associated with the activation key:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer activation-key product-content \
+--name "<em>My_Activation_Key</em>" \
+--organization "<em>My_Organization</em>"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Override the default auto-enable status for the <a href="https://yum.theforeman.org/client/3.1/" class="bare">https://yum.theforeman.org/client/3.1/</a> repository.
+The default status is set to disabled.
+To enable, enter the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer activation-key content-override \
+--name "<em>My_Activation_Key</em>" \
+--content-label https://yum.theforeman.org/client/3.1/el7/x86_64/foreman-client-release.rpm \
+--value 1 \
+--organization "<em>My_Organization</em>"</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="preparing-the-host-group_convert-to-rhel"><a class="anchor" href="#preparing-the-host-group_convert-to-rhel"></a>1.3. Preparing the Host Group</h3>
+<div class="paragraph">
+<p>Use this procedure to prepare a host group to convert CentOS 7 machines.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Configure</strong> <strong>&gt;</strong> <strong>Host groups</strong> and click <strong>Create Host Group</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter a name for the host group.</p>
+</li>
+<li>
+<p>In the <strong>Description</strong> field, enter a description of the host group.</p>
+</li>
+<li>
+<p>In the <strong>Lifecycle Environment</strong> field, select <code>Library</code>.</p>
+</li>
+<li>
+<p>Optional: In the <strong>Content view</strong> field enter a value for the Content view.</p>
+</li>
+<li>
+<p>For Steps 7 - 10, Foreman developers does not recommend setting values for this scenario as they might modify the host in ways that are not intended.</p>
+</li>
+<li>
+<p>Optional: In the <strong>Puppet Environment</strong> field, select value the Puppet Environment.</p>
+</li>
+<li>
+<p>The <strong>Deploy on</strong> field can be safely ignored.</p>
+</li>
+<li>
+<p>Optional: In the <strong>Puppet Proxy</strong> field, select the name of the Puppet server configured for this smart-proxy.</p>
+</li>
+<li>
+<p>Optional: In the <strong>Puppet CA Proxy</strong> field, select the Puppet Server CA configured for this smart-proxy.</p>
+</li>
+<li>
+<p>Switch to the <strong>Activation Keys</strong> tab.</p>
+</li>
+<li>
+<p>Optional: In the <strong>OpenSCAP Proxy</strong> field, select the OpenSCAP Smart&#160;Proxy to use for fetching SCAP content and uploading ARF reports.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong>.</p>
+</li>
+<li>
+<p>Switch to the <strong>Activation Keys</strong> tab.</p>
+</li>
+<li>
+<p>In the <strong>Activation Keys</strong> field, enter the name of the product activation key.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="registering-hosts-for-conversion_convert-to-rhel"><a class="anchor" href="#registering-hosts-for-conversion_convert-to-rhel"></a>1.4. Registering Hosts for Conversion</h3>
+<div class="paragraph">
+<p>Use this procedure to register CentOS hosts to Foreman.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Hosts</strong> <strong>&gt;</strong> <strong>All Hosts</strong> and click <strong>Register Host</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Host Group</strong> field, select the Host Group you want to use as a template for the conversion.</p>
+</li>
+<li>
+<p>Optional, In the <strong>Operating System</strong> field, select the Operating System you are converting from.</p>
+</li>
+<li>
+<p>Optional: In the <strong>Smart&#160;Proxy</strong> field, select the required Smart&#160;Proxy.</p>
+</li>
+<li>
+<p>Optional: Use the <strong>Setup Insights</strong> field to select whether to install Red&#160;Hat Insights on converted hosts.</p>
+</li>
+<li>
+<p>Optional: Use the <strong>Remote execution</strong> field to select whether to install SSH on converted hosts.</p>
+</li>
+<li>
+<p>Optional: In the <strong>Token lifetime (hours)</strong> field, set the lifetime.
+The default value is four hours.
+If you require more time to run the command on your hosts, increase the value of the Token Lifetime.</p>
+</li>
+<li>
+<p>Optional: Check the <strong>Insecure</strong> box if the hosts might not trust the Foreman CA.</p>
+</li>
+<li>
+<p>Optional: In the <strong>Remote Execution Interface</strong> field, if the host has multiple interfaces and remote execution must use a single one, select the appropriate network interface.</p>
+</li>
+<li>
+<p>In the <strong>Activation Key(s)</strong> field, enter the name of the content activation key.</p>
+</li>
+<li>
+<p>Click <strong>Generate Command</strong>.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>When you run the command on the hosts you want to convert, it is registered in <strong>Hosts</strong> <strong>&gt;</strong> <strong>All Hosts</strong>.
+If the host subscription status warns of Unknown subscription status, it can be ignored.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="converting-hosts-with-convert2rhel_convert-to-rhel"><a class="anchor" href="#converting-hosts-with-convert2rhel_convert-to-rhel"></a>1.5. Converting Hosts with Convert2RHEL</h3>
+<div class="paragraph">
+<p>Use the following procedure to perform the conversion.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Hosts</strong> <strong>&gt;</strong> <strong>All Hosts</strong> and select the target hosts you want to convert.
+You can use the <strong>Search</strong> field to filter the host list.</p>
+</li>
+<li>
+<p>From the <strong>Select Action</strong> list, select <strong>Schedule Remote Job</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Job category</strong> field, select <code>Convert to RHEL</code>.</p>
+</li>
+<li>
+<p>In the <strong>Job template</strong> field, verify that the Job Template is set to <code>Convert to RHEL</code>.</p>
+</li>
+<li>
+<p>On the <strong>Job Invocation</strong> page, define the main job settings.</p>
+<div class="paragraph">
+<p>The <strong>Search Query</strong> field displays the name of any search you have performed, or the list of hosts you have selected.</p>
+</div>
+</li>
+<li>
+<p>In the <strong>Activation Key</strong> field, enter the host activation key.</p>
+</li>
+<li>
+<p>Optional: Click <strong>Show Advanced Fields</strong> if you want to configure further aspects.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong>.</p>
+</li>
+<li>
+<p>Note that:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>The conversion can take some time.</p>
+</li>
+<li>
+<p>During the conversion, the host reboots.</p>
+</li>
+<li>
+<p>After the reboot, new OS facts are sent to Foreman.</p>
+</li>
+<li>
+<p>When complete, the OS for the host changes to Red&#160;Hat Enterprise Linux and the subscription status turns green.</p>
+</li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated Jan 2022
+</div>
+</div>
+</body>
+</html>
