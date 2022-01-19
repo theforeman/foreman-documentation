@@ -10,6 +10,10 @@ on:
     branches:
       - master
       - "[0-9]+.[0-9]+"
+env:
+  RUBY_VERSION: 3.1
+  PYTHON_VERSION: 2.x
+  BUNDLE_WITHOUT: "nanoc"
 
 jobs:
   build-html:
@@ -32,24 +36,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Set up Ruby 2.6
-        uses: actions/setup-ruby@v1
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
         with:
-          ruby-version: 2.6.x
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
 
-      - name: Setup Python 2.x
-        uses: actions/setup-python@v2
-        with:
-          python-version: '2.x'
-
-      - name: Install AsciiDoctor
-        run: gem install asciidoctor
-
-      - name: Clean the environment
-        run: make clean
-
-      - name: Build HTML
+      - name: Build HTML with real links
         run: |
+          make clean
           make html BUILD=foreman-el
           make html BUILD=foreman-deb
           make html BUILD=katello
@@ -63,6 +58,11 @@ jobs:
           path: guides/build/
 
   build-pdf:
+    if: >
+      github.repository_owner == 'theforeman' &&
+      (github.ref == 'refs/heads/master' ||
+      startsWith(github.ref, 'refs/heads/2.') ||
+      startsWith(github.ref, 'refs/heads/3.'))
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -82,13 +82,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Set up Ruby 2.6
-        uses: actions/setup-ruby@v1
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
         with:
-          ruby-version: 2.6.x
-
-      - name: Install AsciiDoctor
-        run: gem install asciidoctor asciidoctor-pdf --pre
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
 
       - name: Clean the environment
         run: make clean
@@ -96,10 +94,6 @@ jobs:
       - name: Build PDFs
         run: |
           make pdf BUILD=foreman-el
-          make pdf BUILD=foreman-deb
-          make pdf BUILD=katello
-          make pdf BUILD=satellite
-          make pdf BUILD=orcharhino
 
       - name: Upload PDFs
         uses: actions/upload-artifact@v2
@@ -109,38 +103,35 @@ jobs:
 
   build-web:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash
     steps:
-      - name: Get branch name (merge)
-        if: github.event_name != 'pull_request'
-        run: echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/} | tr / -)" >> $GITHUB_ENV
-
-      - name: Get branch name (pull request)
-        if: github.event_name == 'pull_request'
-        run: echo "BRANCH_NAME=$(echo ${GITHUB_HEAD_REF} | tr / -)" >> $GITHUB_ENV
-
       - name: Checkout
         uses: actions/checkout@v2
-
-      - name: Setup Hugo
-        uses: peaceiris/actions-hugo@v2
         with:
-          hugo-version: '0.79.1'
+          ref: master
 
-      - name: Build via Hugo
-        run: hugo -v --ignoreCache
-        working-directory: web
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+          working-directory: ./web
+
+      - name: Build site with nanoc
+        run: bundle exec nanoc
+        working-directory: ./web
 
       - name: Upload web
         uses: actions/upload-artifact@v2
         with:
-          name: foreman-docs-web-${{ env.BRANCH_NAME }}
-          path: web/public/
+          name: foreman-docs-web-master
+          path: web/output/
 
   publish:
-    if: github.repository_owner == 'theforeman' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/2.') || startsWith(github.ref, 'refs/heads/3.') || startsWith(github.ref, 'refs/heads/4.'))
+    if: >
+      github.repository_owner == 'theforeman' &&
+      (github.ref == 'refs/heads/master' ||
+      startsWith(github.ref, 'refs/heads/2.') ||
+      startsWith(github.ref, 'refs/heads/3.'))
     needs:
       - build-html
       - build-web

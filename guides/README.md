@@ -11,19 +11,19 @@ Contributions are welcome. Please read the [Contribution guidelines](#contributi
 Install the required tools.
 In Fedora perform:
 
-    dnf -y install ruby asciidoctor asciidoctor-pdf make linkchecker
+    dnf -y install make linkchecker
 
 In MacOS required tools can be installed via brew but instead "make" call "gmake":
 
-    brew install asciidoctor make
+    brew install make
 
 Alternatively, XCode development environment can be installed to have make utility available on PATH, however this takes about an hour to download and install and requires several gigabytes of HDD space:
 
 		xcode-select --install
 
-If AsciiDoctor is not available in repositories or under RVM/rbenv, simply install it from rubygems:
+Install ruby gems in `foreman-documentation` folder:
 
-		gem install asciidoctor asciidoctor-pdf --pre
+		bundle install
 
 Then simply run `make` or `make html` which builds HTML artifacts.
 Generating PDF output is slow, therefore command `make pdf` must be used separately.
@@ -56,7 +56,7 @@ Currently there are three different versions:
 
 `make BUILD=katello` - this generates a katello build of the guide
 
-`make BUILD=foreman-deb` - This generates  a version for Foreman installed on Debian.
+`make BUILD=foreman-deb` - This generates a version for Foreman installed on Debian.
 
 `make BUILD=orcharhino` - This generates a downstream preview of the guide for orcharhino.
 
@@ -67,20 +67,29 @@ It's also possible to check links; the following command will check all links ex
 
 	make linkchecker
 
+## Building Locally Using a Container
+
+You can build Foreman documentation locally using a container image.
+This requires the cloned git repository plus an application such as Podman or Docker to build and run container images.
+
+1. Build container image:
+
+       podman build --tag foreman_documentation .
+
+2. Build Foreman documentation.
+   Run this command in your `foreman-documentation` repository:
+
+       rm -rf guides/build && podman run --rm -v $(pwd):/foreman-documentation foreman_documentation make html
+
+   On SELinux enabled systems, run this command:
+
+       rm -rf guides/build && podman run --rm -v $(pwd):/foreman-documentation:Z foreman_documentation make html
+
 ## Reading or Publishing
 
 We do not publish the content yet to prevent users confusion, however this section will cover steps required to publish the content.
 We should make sure that only the last stable version of the HTML document is indexed by search engines, old and nightly builds should not be indexed.
 All PDFs should be available for download though.
-
-## Styling
-
-CSS styles are based on the official AsciiDoctor styles with some small modifications.
-To generate the stylesheet:
-
-	git clone https://github.com/lzap/asciidoctor-stylesheet-factory
-	git checkout foreman-css
-	compass compile
 
 ## Contribution guidelines
 
@@ -91,19 +100,15 @@ Please read these guidelines before opening a Pull Request. For more information
 The content in this repository is shared between the upstream Foreman community and branded downstream products such as Red Hat Satellite and orcharhino by ATIX.
 Therefore, never write "Foreman", "Satellite", or "orcharhino" words directly, but use the following variables:
 
-| Variable | Upstream value | Downstream value |
-| -------- | -------------- | ---------------- |
-| {ProjectNameXY} | Foreman 1.22 | Red Hat Satellite 6.5 |
-| {ProjectNameX} | Foreman | Red Hat Satellite 6 |
-| {ProjectName} | Foreman | Red Hat Satellite |
-| {ProjectXY} | Foreman 1.22 | Satellite 6.5 |
-| {ProjectX} | Foreman | Satellite 6 |
-| {Project} | Foreman | Satellite |
-| {SmartProxyServer} | Smart Proxy server | Capsule Server |
-| {SmartProxy} | Smart Proxy | Capsule |
+| Variable | Upstream value | Downstream by Red Hat | Downstream by ATIX |
+| -------- | -------------- | --------------------- | ------------------ |
+| {Project} | Foreman | Satellite | orcharhino |
+| {ProjectName} | Foreman | Red Hat Satellite | orcharhino |
+| {ProjectServer} | Foreman server | Satellite Server | orcharhino server |
+| {SmartProxy} | Smart Proxy | Capsule | orcharhino Proxy |
+| {SmartProxyServer} | Smart Proxy server | Capsule Server | orcharhino Proxy |
 
-The table only covers the most frequent terms.
-The rest are defined in the attribute files:
+Every build uses common base attributes, more are defined in the build specific attribute files:
 
 * [attributes.adoc](common/attributes.adoc): version definitions and includes for other attribute files.
 * [attributes-base.adoc](common/attributes-base.adoc): base attributes common for all builds.
@@ -111,8 +116,9 @@ The rest are defined in the attribute files:
 * [attributes-foreman-deb.adoc](common/attributes-foreman-deb.adoc): base overrides for foreman-deb build.
 * [attributes-katello.adoc](common/attributes-katello.adoc): base overrides for katello build.
 * [attributes-satellite.adoc](common/attributes-satellite.adoc): base overrides for satellite build.
+* [attributes-orcharhino.adoc](common/attributes-orcharhino.adoc): base overrides for orcharhino build.
 
-Variables cannot be used in shell or code examples.
+By default, variables cannot be used in shell or code examples.
 To use them, use "attributes" keyword:
 
 	[options="nowrap" subs="+quotes,attributes"]

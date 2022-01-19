@@ -37,32 +37,18 @@ When a commit is pushed into `X.Y`:
 
 ## Branching new release
 
-* Create a copy of [/web/content/2.3.md](https://github.com/theforeman/foreman-documentation/tree/master/web/content/version-2.3) (or older version) as `X.Y.md` and edit it accordingly.
-* Edit [/web/content/versions.md](https://github.com/theforeman/foreman-documentation/blob/master/web/content/versions.md) and add the new version to the menu.
-* Push the changes into `master`.
-* Check the site if links and landing page appeared correctly.
 * Create a new `X.Y` branch.
-* Update `attributes.adoc`: DocState, Version attributes
-* Push into `X.Y` branch.
-* HTML guildes should be deployed into `/X.Y`
-* Update `attributes.adoc` in old version to "unsupported".
+  * Update `guides/common/attributes.adoc`
+    * Set `DocState` to `unsupported`
+    * Set `ProjectVersion` to `X.Y` and set the matching `KatelloVersion`
+  * Push into `X.Y` branch.
+* Update master
+  * Update `ProjectVersionPrevious` to `X.Y` in `guides/common/attributes.adoc`
+  * Create a copy of [/web/content/nightly.md](https://github.com/theforeman/foreman-documentation/tree/master/web/content/nightly.md) as `X.Y.md` and edit it accordingly.
+  * Edit [/web/content/versions.md](https://github.com/theforeman/foreman-documentation/blob/master/web/content/versions.md) and add the new version to the menu.
+  * Push the changes into `master`.
+* Check the site if links and landing page appeared correctly. HTML guides should be deployed into `/X.Y`
 
 ## License
 
 See LICENSE files in individual subdirectories.
-
-## The process (TODO)
-
-This is what we are working on right now:
-
-* [x] Initial import of Provisioning Guide
-* [x] Provide Makefiles and Travis integration
-* [x] Replace Satellite 6 with Foreman term
-* [ ] Modularize content
-* [ ] Hide irrelevant chapters
-* [ ] [Incorporate parts from upstream docs](https://community.theforeman.org/t/foreman-manual-reboot/22606)
-* [ ] Incorporate https://community.theforeman.org/t/discovery-ipxe-efi-workflow-in-foreman-1-20/13026
-* [ ] Write a better introduction
-* [ ] Add Anaconda-image based provisioning workflow
-* [ ] Update with PXE Grub2 steps
-* [ ] Discuss with Foreman community if to continue with other guides
