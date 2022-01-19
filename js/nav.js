@@ -5,14 +5,17 @@ let navVersions = [
 		title: "Nightly",
 		href: "nightly"
 	},{
-		title: "3.1 (stable)",
+		title: "Foreman 3.1 - Katello 4.3 (stable)",
 		href: "3.1"
 	},{
-		title: "3.0 (supported)",
+		title: "Foreman 3.0 - Katello 4.2 (supported)",
 		href: "3.0"
 	},{
-		title: "2.5 (unsupported)",
+		title: "Foreman 2.5 - Katello 4.1 (unsupported)",
 		href: "2.5"
+	},{
+		title: "Foreman 2.4 - Katello 4.0 (unsupported)",
+		href: "2.4"
 	}]
     }
 ]
