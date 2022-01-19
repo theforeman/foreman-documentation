@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 2.0.17">
+<title>Installing orcharhino</title>
+<link rel="stylesheet" href="./orcharhino.css">
+<!-- docinfo -->
+</head>
+<body class="book">
+<!--
+	vim: set noai ts=2 sts=2 sw=2 et ft= syn=html
+-->
+<div id="wrap">
+<script src="/js/nav.js"></script>
+<script>
+const versionRe = new RegExp(`/(nightly|\\d+.\\d+)/`);
+var currentVer = document.location.toString().match(versionRe);
+if (currentVer && currentVer.length > 1) {
+  currentVer = currentVer[1];
+} else {
+  currentVer = "nightly";
+}
+var navId = 1;
+var Navbar = `<nav>
+<img class="logo" src="/img/helmet.svg" />
+<button type="button" class="btn-hamburger" data-action="nav-toggle">
+  <span></span>
+  <span></span>
+  <span></span>
+  <span></span>
+  <span></span>
+</button>
+<ul class="nav-menu">
+  <li class="nav-item"><a href="/">Home</a></li>`
+  + navItems.map(function(navItem){ return(
+    `<li id="nav-id-`+ navId++ +`" class="nav-item dropdown">
+        <a href="#" data-action="dropdown-toggle">`+ navItem.title + `</a>
+        <div class="dropdown-menu">`
+        + navItem.items.map(function(item){ return(
+            `<div class="dropdown-div"><a class="dropdown-item" href=/`+currentVer+item.href+`>`+item.title+`</a></div>`
+        )}).join("")
+        +`</div>
+    </li>`
+    )}).join("")
+  + navVersions.map(function(navItem){ return(
+    `<li id="nav-id-`+ navId++ +`" class="nav-item dropdown">
+        <a href="#" data-action="dropdown-toggle">Version `+currentVer+`</a>
+        <div class="dropdown-menu dropdown-menu-left">`
+        + navItem.items.map(function(item){
+            if (document.location.pathname == "/") {
+                var dl = "/release/" + item.href;
+            } else {
+                var dl = document.location.toString().replace(versionRe, "/"+item.href+"/");
+            }
+            return(`<div class="dropdown-div"><a class="dropdown-item" href=`+dl+`>`+item.title+`</a></div>`
+        )}).join("")
+        +`</div>
+    </li>`
+    )}).join("")
++`</ul>
+</nav>`;
+
+function toggleElement(dropdown) {
+  if (dropdown.classList.contains("show")) {
+    dropdown.classList.remove("show");
+  } else {
+    dropdown.classList.add("show");
+  }
+}
+
+function closeAll(except) {
+  for (let i = 1; i <= navItems.length + 1; i++) {
+    let elem = document.getElementById("nav-id-" + i)
+    if (elem != except) {
+      elem.classList.remove("show");
+    }
+  }
+}
+
+var addNavbarListeners = () => {
+  let nav = document.querySelector("nav");
+  let navId = 1;
+  nav.querySelectorAll("[data-action='dropdown-toggle']").forEach((dropdownToggle) => {
+    let dropdown = document.getElementById("nav-id-" + navId++);
+    dropdownToggle.addEventListener("click", () => {
+      closeAll(dropdown);
+      toggleElement(dropdown);
+    });
+  });
+
+  nav.querySelector("[data-action='nav-toggle']").addEventListener("click", () => {
+    if (nav.classList.contains("opened")) {
+      nav.classList.remove("opened");
+    } else {
+      nav.classList.add("opened");
+    }
+  });
+}
+document.open();
+document.write(Navbar)
+addNavbarListeners();
+document.close();
+</script>
+</div>
+<div id="header">
+<h1>Installing orcharhino</h1>
+</div>
+<div id="content">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>The Foreman installer is a collection of Puppet modules that installs everything required for a full working Foreman setup. It uses native OS packaging (e.g. RPM and .deb packages) and adds necessary configuration for the complete installation.</p>
+</div>
+<div class="paragraph">
+<p>Components include the Foreman web UI, Smart Proxy, a Puppet server, and optionally Passenger, TFTP, DNS and DHCP servers. It is configurable and the Puppet modules can be read or run in “no-op” mode to see what changes it will make.</p>
+</div>
+</div>
+</div>
+<h1 id="supported-operating-systems_orcharhino" class="sect0">Supported Operating Systems</h1>
+<div class="openblock partintro">
+<div class="content">
+<div class="paragraph">
+<p>The following operating systems are supported by the installer, have packages, and are tested for deploying orcharhino:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 1. Operating Systems supported by foreman-installer</caption>
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Operating System</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Architecture</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Notes</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Before you install orcharhino, apply all operating system updates if possible.</p>
+</div>
+<div class="paragraph">
+<p>Install orcharhino server on a freshly provisioned system.</p>
+</div>
+<div class="paragraph">
+<p>The installation will require 4GB of memory, see <a href="sources/installation_and_maintenance/orcharhino_installation_guide.html#system-requirements_orcharhino">System Requirements</a> for more information.</p>
+</div>
+<div class="paragraph">
+<p>The Foreman installer uses Puppet (5 or later required) to install Foreman. This guide assumes that you have a newly installed operating system, on which the installer will setup Foreman, a Puppet server, and the Smart Proxy by default. It’s not advisable to follow the steps below on an existing system, since the installer will affect the configuration of several components.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="configuring-repositories_orcharhino">1. Configuring Repositories</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Use this procedure to enable the repositories that are required to install orcharhino server. Choose from the available list which operating system and version you are installing on:</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="installing-the-satellite-server-packages_orcharhino">2. Installing orcharhino server Packages</h2>
+<div class="sectionbody">
+
+</div>
+</div>
+<div class="sect1">
+<h2 id="_running_the_installer">3. Running the Installer</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<div class="title">Procedure</div>
+<p>The installation run is non-interactive, but the configuration can be customized by supplying any of the options listed in foreman-installer --help, or by running foreman-installer -i for interactive mode. More examples are given in the Installation Options section. Adding -v will disable the progress bar and display all changes.</p>
+</div>
+<div class="paragraph">
+<p>To run the installer, execute:</p>
+</div>
+<div class="paragraph">
+<p>When the installer has completed, details will be printed about where to find Foreman and the Smart Proxy.</p>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated Jan 2022
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 2.0.17">
+<title>Installing Satellite Server from a Connected Network</title>
+<link rel="stylesheet" href="./satellite.css">
+<!-- docinfo -->
+</head>
+<body class="book">
+<!--
+	vim: set noai ts=2 sts=2 sw=2 et ft= syn=html
+-->
+<div id="wrap">
+<script src="/js/nav.js"></script>
+<script>
+const versionRe = new RegExp(`/(nightly|\\d+.\\d+)/`);
+var currentVer = document.location.toString().match(versionRe);
+if (currentVer && currentVer.length > 1) {
+  currentVer = currentVer[1];
+} else {
+  currentVer = "nightly";
+}
+var navId = 1;
+var Navbar = `<nav>
+<img class="logo" src="/img/helmet.svg" />
+<button type="button" class="btn-hamburger" data-action="nav-toggle">
+  <span></span>
+  <span></span>
+  <span></span>
+  <span></span>
+  <span></span>
+</button>
+<ul class="nav-menu">
+  <li class="nav-item"><a href="/">Home</a></li>`
+  + navItems.map(function(navItem){ return(
+    `<li id="nav-id-`+ navId++ +`" class="nav-item dropdown">
+        <a href="#" data-action="dropdown-toggle">`+ navItem.title + `</a>
+        <div class="dropdown-menu">`
+        + navItem.items.map(function(item){ return(
+            `<div class="dropdown-div"><a class="dropdown-item" href=/`+currentVer+item.href+`>`+item.title+`</a></div>`
+        )}).join("")
+        +`</div>
+    </li>`
+    )}).join("")
+  + navVersions.map(function(navItem){ return(
+    `<li id="nav-id-`+ navId++ +`" class="nav-item dropdown">
+        <a href="#" data-action="dropdown-toggle">Version `+currentVer+`</a>
+        <div class="dropdown-menu dropdown-menu-left">`
+        + navItem.items.map(function(item){
+            if (document.location.pathname == "/") {
+                var dl = "/release/" + item.href;
+            } else {
+                var dl = document.location.toString().replace(versionRe, "/"+item.href+"/");
+            }
+            return(`<div class="dropdown-div"><a class="dropdown-item" href=`+dl+`>`+item.title+`</a></div>`
+        )}).join("")
+        +`</div>
+    </li>`
+    )}).join("")
++`</ul>
+</nav>`;
+
+function toggleElement(dropdown) {
+  if (dropdown.classList.contains("show")) {
+    dropdown.classList.remove("show");
+  } else {
+    dropdown.classList.add("show");
+  }
+}
+
+function closeAll(except) {
+  for (let i = 1; i <= navItems.length + 1; i++) {
+    let elem = document.getElementById("nav-id-" + i)
+    if (elem != except) {
+      elem.classList.remove("show");
+    }
+  }
+}
+
+var addNavbarListeners = () => {
+  let nav = document.querySelector("nav");
+  let navId = 1;
+  nav.querySelectorAll("[data-action='dropdown-toggle']").forEach((dropdownToggle) => {
+    let dropdown = document.getElementById("nav-id-" + navId++);
+    dropdownToggle.addEventListener("click", () => {
+      closeAll(dropdown);
+      toggleElement(dropdown);
+    });
+  });
+
+  nav.querySelector("[data-action='nav-toggle']").addEventListener("click", () => {
+    if (nav.classList.contains("opened")) {
+      nav.classList.remove("opened");
+    } else {
+      nav.classList.add("opened");
+    }
+  });
+}
+document.open();
+document.write(Navbar)
+addNavbarListeners();
+document.close();
+</script>
+</div>
+<div id="header">
+<h1>Installing Satellite Server from a Connected Network</h1>
+</div>
+<div id="content">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>The Foreman installer is a collection of Puppet modules that installs everything required for a full working Foreman setup. It uses native OS packaging (e.g. RPM and .deb packages) and adds necessary configuration for the complete installation.</p>
+</div>
+<div class="paragraph">
+<p>Components include the Foreman web UI, Smart Proxy, a Puppet server, and optionally Passenger, TFTP, DNS and DHCP servers. It is configurable and the Puppet modules can be read or run in “no-op” mode to see what changes it will make.</p>
+</div>
+</div>
+</div>
+<h1 id="supported-operating-systems_satellite" class="sect0">Supported Operating Systems</h1>
+<div class="openblock partintro">
+<div class="content">
+<div class="paragraph">
+<p>You can install the operating system from a disc, local ISO image, kickstart, or any other method that Red&#160;Hat supports.
+Red&#160;Hat Satellite&#160;Server is supported only on the latest versions of Red&#160;Hat Enterprise Linux 7 Server that is available at the time when Satellite&#160;Server 6.9 is installed.
+Previous versions of Red&#160;Hat Enterprise Linux including EUS or z-stream are not supported.</p>
+</div>
+<div class="paragraph">
+<p>The following operating systems are supported by the installer, have packages, and are tested for deploying Satellite:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 1. Operating Systems supported by satellite-installer</caption>
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Operating System</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Architecture</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Notes</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Red&#160;Hat Enterprise Linux 7</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">x86_64 only</p></td>
+<td class="tableblock halign-left valign-top"></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Before you install Satellite, apply all operating system updates if possible.</p>
+</div>
+<div class="paragraph">
+<p>Red&#160;Hat Satellite&#160;Server requires a Red&#160;Hat Enterprise Linux installation with the <code>@Base</code> package group with no other package-set modifications, and without third-party configurations or software not directly necessary for the direct operation of the server.
+This restriction includes hardening and other non-Red&#160;Hat security software.
+If you require such software in your infrastructure, install and verify a complete working Satellite&#160;Server first, then create a backup of the system before adding any non-Red&#160;Hat software.</p>
+</div>
+<div class="paragraph">
+<p>Install Satellite&#160;Server on a freshly provisioned system.</p>
+</div>
+<div class="paragraph">
+<p>Red&#160;Hat does not support using the system for anything other than running Satellite&#160;Server.</p>
+</div>
+<div class="paragraph">
+<p>The installation will require 4GB of memory, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.9/html-single/installing_satellite_server_from_a_connected_network/index#system-requirements_satellite">System Requirements</a> for more information.</p>
+</div>
+<div class="paragraph">
+<p>The Foreman installer uses Puppet (5 or later required) to install Foreman. This guide assumes that you have a newly installed operating system, on which the installer will setup Foreman, a Puppet server, and the Smart Proxy by default. It’s not advisable to follow the steps below on an existing system, since the installer will affect the configuration of several components.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="configuring-repositories_satellite">1. Configuring Repositories</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Use this procedure to enable the repositories that are required to install Satellite&#160;Server. Choose from the available list which operating system and version you are installing on:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="#repositories-rhel-7">Red Hat Enterprise Linux 7</a></p>
+</li>
+</ul>
+</div>
+<div class="sect2">
+<h3 id="_red_hat_enterprise_linux_7">1.1. <a id="repositories-rhel-7"></a>Red Hat Enterprise Linux 7</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Disable all repositories:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># subscription-manager repos --disable "*"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Enable the following repositories:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># subscription-manager repos --enable=rhel-7-server-rpms \
+--enable=rhel-server-7-satellite-6.9-rpms \
+--enable=rhel-7-server-satellite-maintenance-6-rpms \
+--enable=rhel-server-rhscl-7-rpms \
+--enable=rhel-7-server-ansible-2.9-rpms</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+If you are installing Satellite&#160;Server as a virtual machine hosted on Red&#160;Hat&#160;Virtualization, you must also enable the <strong>Red&#160;Hat Common</strong> repository, and install Red&#160;Hat&#160;Virtualization guest agents and drivers.
+For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_virtualization/4.3/html/virtual_machine_management_guide/installing_guest_agents_and_drivers_linux#Installing_the_Guest_Agents_and_Drivers_on_Red_Hat_Enterprise_Linux">Installing the Guest Agents and Drivers on Red Hat Enterprise Linux</a> in the <em>Virtual Machine Management Guide</em> for more information.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="installing-the-satellite-server-packages_satellite">2. Installing Satellite&#160;Server Packages</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p><a href="#rhel-7">Red Hat Enterprise Linux 7</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_running_the_installer">3. Running the Installer</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<div class="title">Procedure</div>
+<p>The installation run is non-interactive, but the configuration can be customized by supplying any of the options listed in foreman-installer --help, or by running foreman-installer -i for interactive mode. More examples are given in the Installation Options section. Adding -v will disable the progress bar and display all changes.</p>
+</div>
+<div class="paragraph">
+<p>To run the installer, execute:</p>
+</div>
+<div class="paragraph">
+<p>When the installer has completed, details will be printed about where to find Foreman and the Smart Proxy.</p>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated Jan 2022
+</div>
+</div>
+</body>
+</html>
