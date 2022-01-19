@@ -86,6 +86,9 @@ let navItems = [
 	},{
 		title: "Content Management Guide",
 		href: "/Content_Management_Guide/index-katello.html"
+	},{
+		title: "Converting a Host to RHEL",
+		href: "/Converting_a_Host_to_RHEL/index-katello.html"
 	}]
     }
 ]
