@@ -58,7 +58,7 @@ open-pdf: pdf
 	${BROWSER_OPEN} "$(realpath $(ROOTDIR)/$(DEST_PDF))"
 
 $(BUILD_DIR)/default.css: $(CSS_SOURCES)
-	sass -C --style $(CSS_STYLE) -I $(COMMON_DIR)/css $(COMMON_DIR)/css/default.scss $@
+	bundle exec sass -C --style $(CSS_STYLE) -I $(COMMON_DIR)/css $(COMMON_DIR)/css/default.scss $@
 
 $(DEST_DIR)/$(BUILD).css: $(BUILD_DIR)/default.css
 	cp $< $@
@@ -69,7 +69,7 @@ $(IMAGES_TS): $(IMAGES)
 	@touch $(IMAGES_TS)
 
 $(DEST_HTML): $(SOURCES) $(DEPENDENCIES) $(DOCINFO_SOURCES)
-	asciidoctor -a build=$(BUILD) $(BASEURL_ATTR) -a docinfo=shared -a docinfodir=common -a date_mdy="$(DATE_MDY)" -a date_my="$(DATE_MY)" -a docdatetime="$(DATE_MY)" -a stylesheet=$(BUILD).css -a linkcss=true -b html5 -d book --trace -o $@ $< 2>&1 | tee $@.log
+	bundle exec asciidoctor -a build=$(BUILD) $(BASEURL_ATTR) -a docinfo=shared -a docinfodir=common -a date_mdy="$(DATE_MDY)" -a date_my="$(DATE_MY)" -a docdatetime="$(DATE_MY)" -a stylesheet=$(BUILD).css -a linkcss=true -b html5 -d book --trace -o $@ $< 2>&1 | tee $@.log
 
 $(DEST_PDF): $(SOURCES) $(IMAGES) $(DEPENDENCIES)
-	asciidoctor-pdf -a build=$(BUILD) -d book --trace -o $@ $< 2>&1 | tee $@.log
+	bundle exec asciidoctor-pdf -a build=$(BUILD) -d book --trace -o $@ $< 2>&1 | tee $@.log
