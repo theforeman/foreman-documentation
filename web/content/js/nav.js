@@ -31,10 +31,10 @@ let navItems = [
 		href: "/Quickstart_Guide/index-foreman-el.html"
 	},{
 		title: "Installing Foreman Server",
-		href: "/Installing_Server_on_Red_Hat/index-foreman-el.html"
+		href: "/Installing_Server/index-foreman-el.html"
 	},{
 		title: "Installing Smart Proxy",
-		href: "/Installing_Proxy_on_Red_Hat/index-foreman-el.html"
+		href: "/Installing_Proxy/index-foreman-el.html"
 	},{
 		title: "Deploying Foreman on AWS",
 		href: "/Deploying_on_AWS/index-foreman-el.html"
@@ -64,7 +64,7 @@ let navItems = [
 		href: "/Quickstart_Guide/index-foreman-deb.html"
 	},{
 		title: "Installing Foreman Server",
-		href: "/Installing_Server_on_Red_Hat/index-foreman-deb.html"
+		href: "/Installing_Server/index-foreman-deb.html"
 	},{
 		title: "Deploying Foreman on AWS",
 		href: "/Deploying_on_AWS/index-foreman-deb.html"
@@ -91,10 +91,10 @@ let navItems = [
 		href: "/Quickstart_Guide/index-katello.html"
 	},{
 		title: "Installing Katello Server",
-		href: "/Installing_Server_on_Red_Hat/index-katello.html"
+		href: "/Installing_Server/index-katello.html"
 	},{
 		title: "Installing Smart Proxy with Content",
-		href: "/Installing_Proxy_on_Red_Hat/index-katello.html"
+		href: "/Installing_Proxy/index-katello.html"
 	},{
 		title: "Upgrading and Updating",
 		href: "/Upgrading_and_Updating/index-katello.html"
