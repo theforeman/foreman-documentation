@@ -1,16 +1,23 @@
 SHELL := /bin/bash
-ALL_DIRS = $(shell ls -d doc-*)
-GUIDES-HTML = $(ALL_DIRS)
+SUBDIRS = $(shell ls -d doc-*)
 
-.PHONY: all html pdf linkchecker all-html all-pdf clean all-clean linkchecker-tryer $(GUIDES-HTML)
+.PHONY: all clean html pdf linkchecker linkchecker-tryer serve subdirs $(SUBDIRS)
 
 all: html
 
-html: all-html
+html: subdirs
 
-pdf: all-pdf
+pdf: subdirs
 
-clean: all-clean
+subdirs: $(SUBDIRS)
+
+$(SUBDIRS):
+	$(MAKE) -C "$@" $(MAKECMDGOALS)
+
+clean:
+	@for DIR in $(SUBDIRS) ; do \
+		$(MAKE) -s --directory="$$DIR" clean ; \
+	done
 
 linkchecker:
 	find build -type f -name index\*html | xargs linkchecker -r1 -f common/linkchecker.ini --check-extern
@@ -18,20 +25,5 @@ linkchecker:
 linkchecker-tryer:
 	find build -type f -name index\*html | xargs linkchecker -r1 -f common/linkchecker.ini --check-extern | linkchecker-tryer
 
-all-html: $(GUIDES-HTML)
-
-$(GUIDES-HTML):
-	$(MAKE) --directory=$@ html
-
-all-pdf:
-	for DIR in $(ALL_DIRS) ; do \
-		$(MAKE) --directory="$$DIR" pdf ; \
-	done
-
-$(GUIDES-PDF):
-	$(MAKE) --directory=$@ pdf
-
-all-clean:
-	for DIR in $(ALL_DIRS) ; do \
-		$(MAKE) --directory="$$DIR" clean ; \
-	done
+serve:
+	python -m http.server --directory ./build 8813
