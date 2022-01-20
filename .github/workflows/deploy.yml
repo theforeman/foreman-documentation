@@ -14,6 +14,7 @@ env:
   RUBY_VERSION: 3.1
   PYTHON_VERSION: 2.x
   BUNDLE_WITHOUT: "nanoc"
+  MAKE_J: 3
 
 jobs:
   check-html:
@@ -55,11 +56,11 @@ jobs:
 
       - name: Build HTML with local links
         run: |
-          make html BUILD=foreman-el LINKS=LOCAL
-          make html BUILD=foreman-deb LINKS=LOCAL
-          make html BUILD=katello LINKS=LOCAL
-          make html BUILD=satellite LINKS=LOCAL
-          make html BUILD=orcharhino LINKS=LOCAL
+          make -j ${{ env.MAKE_J }} html BUILD=foreman-el LINKS=LOCAL
+          make -j ${{ env.MAKE_J }} html BUILD=foreman-deb LINKS=LOCAL
+          make -j ${{ env.MAKE_J }} html BUILD=katello LINKS=LOCAL
+          make -j ${{ env.MAKE_J }} html BUILD=satellite LINKS=LOCAL
+          make -j ${{ env.MAKE_J }} html BUILD=orcharhino LINKS=LOCAL
 
       - name: Check HTML links of all builds
         run: |
@@ -94,11 +95,11 @@ jobs:
       - name: Build HTML with real links
         run: |
           make clean
-          make html BUILD=foreman-el
-          make html BUILD=foreman-deb
-          make html BUILD=katello
-          make html BUILD=satellite
-          make html BUILD=orcharhino
+          make -j ${{ env.MAKE_J }} html BUILD=foreman-el
+          make -j ${{ env.MAKE_J }} html BUILD=foreman-deb
+          make -j ${{ env.MAKE_J }} html BUILD=katello
+          make -j ${{ env.MAKE_J }} html BUILD=satellite
+          make -j ${{ env.MAKE_J }} html BUILD=orcharhino
 
       - name: Upload HTML
         uses: actions/upload-artifact@v2
@@ -107,11 +108,6 @@ jobs:
           path: guides/build/
 
   build-pdf:
-    if: >
-      github.repository_owner == 'theforeman' &&
-      (github.ref == 'refs/heads/master' ||
-      startsWith(github.ref, 'refs/heads/2.') ||
-      startsWith(github.ref, 'refs/heads/3.'))
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -140,13 +136,21 @@ jobs:
       - name: Clean the environment
         run: make clean
 
-      - name: Build PDFs
+      - name: Build PDFs (master/stable)
         run: |
-          make pdf BUILD=foreman-el
-          make pdf BUILD=foreman-deb
-          make pdf BUILD=katello
-          make pdf BUILD=satellite
-          make pdf BUILD=orcharhino
+          make -j ${{ env.MAKE_J }} pdf BUILD=foreman-el
+
+      - name: Build PDFs (PR)
+        if: >
+          github.repository_owner == 'theforeman' &&
+          (github.ref == 'refs/heads/master' ||
+          startsWith(github.ref, 'refs/heads/2.') ||
+          startsWith(github.ref, 'refs/heads/3.'))
+        run: |
+          make -j ${{ env.MAKE_J }} pdf BUILD=foreman-deb
+          make -j ${{ env.MAKE_J }} pdf BUILD=katello
+          make -j ${{ env.MAKE_J }} pdf BUILD=satellite
+          make -j ${{ env.MAKE_J }} pdf BUILD=orcharhino
 
       - name: Upload PDFs
         uses: actions/upload-artifact@v2
