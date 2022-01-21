@@ -192,6 +192,12 @@ See the [reference template](https://raw.githubusercontent.com/redhat-documentat
 * [`snip`](https://redhat-documentation.github.io/modular-docs/#using_text_snippets_or_text_fragments_writing-mod-docs): Files starting with `snip_` contain snippets that are reused throughout multiple guides, e.g. admonitions.
 Snippets do not require an ID.
 
-Images that are used in more than one guide are kept in the common/images/ subdirectory.
+### Images
+
+Each guide must have an `images/` subdirectory with `images/common` symlink into the `common/images` directory.
+Images local to the guide shall be kept in the `images/` directory.
+Images which are supposed to be reused across guides shall be kept in the `images/common` directory.
+Subdirectories can be created and are actually recommended.
+To insert an image, use `image::common/global_image.png` or `image::local_image.png`.
 
 For more information, see the [Modular Documentation Reference Guide](https://redhat-documentation.github.io/modular-docs/).
