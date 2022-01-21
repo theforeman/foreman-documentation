@@ -32,16 +32,14 @@ BASEURL_ATTR = "-a BaseURL=file://$(BUILD_DIRA)"
 endif
 
 .SHELLFLAGS = -o pipefail -c
-.PHONY = all prepare css html pdf clean browser server linkchecker open-pdf
+.PHONY = all prepare html pdf clean browser server linkchecker open-pdf
 
 all: html
 
 prepare:
 	@mkdir -p $(BUILD_DIR) $(DEST_DIR) $(IMAGES_DIR) $(DEST_DIR)/sass-cache
 
-css: prepare $(DEST_DIR)/$(BUILD).css
-
-html: css $(IMAGES_TS) $(DEST_HTML)
+html: prepare $(IMAGES_TS) $(DEST_HTML)
 
 pdf: prepare $(IMAGES_TS) $(DEST_PDF)
 
@@ -67,8 +65,8 @@ $(IMAGES_TS): $(IMAGES)
 	cp -lrf $? $(IMAGES_DIR)
 	@touch $(IMAGES_TS)
 
-$(DEST_HTML): $(SOURCES) $(DEPENDENCIES) $(DOCINFO_SOURCES)
-	bundle exec asciidoctor -a build=$(BUILD) $(BASEURL_ATTR) -a docinfo=shared -a docinfodir=common -a date_mdy="$(DATE_MDY)" -a date_my="$(DATE_MY)" -a docdatetime="$(DATE_MY)" -a stylesheet=$(BUILD).css -a linkcss=true -b html5 -d book --trace -o $@ $< 2>&1 | tee $@.log
+$(DEST_HTML): $(SOURCES) $(DEPENDENCIES) $(DOCINFO_SOURCES) $(DEST_DIR)/$(BUILD).css
+	bundle exec asciidoctor -a build=$(BUILD) $(BASEURL_ATTR) -a docinfo=shared -a docinfodir=common -a date_mdy="$(DATE_MDY)" -a date_my="$(DATE_MY)" -a docdatetime="$(DATE_MY)" -a stylesheet=$(DEST_DIR)/$(BUILD).css -b html5 -d book --trace -o $@ $< 2>&1 | tee $@.log
 	@echo CHECKING FOR ASCIIDOCTOR ERRORS AND WARNINGS
 	@! grep -Eq "^asciidoctor: (ERROR|WARNING)" $@.log
 	@echo CHECKING FOR ORPHAN XREFS HTML LINKS
