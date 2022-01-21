@@ -28,7 +28,13 @@ BROWSER_OPEN = open
 endif
 
 ifeq ($(LINKS), LOCAL)
-BASEURL_ATTR = "-a BaseURL=file://$(BUILD_DIRA)"
+# The Satellite build uses links which do not resolve. This does mean the link
+# checker has issues with verification of guides that have not yet been built
+# by downstream, but there really isn't a way around this unless we start
+# building with downstream filenames.
+ifneq ($(BUILD), satellite)
+BASEURL_ATTR = -a "BaseURL=file://$(BUILD_DIRA)"
+endif
 endif
 
 .SHELLFLAGS = -o pipefail -c
