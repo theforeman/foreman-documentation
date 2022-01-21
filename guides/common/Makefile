@@ -37,14 +37,14 @@ endif
 all: html
 
 prepare:
-	@mkdir -p $(BUILD_DIR) $(DEST_DIR) $(IMAGES_DIR) $(IMAGES_DIR) $(DEST_DIR)/common/images
+	@mkdir -p $(BUILD_DIR) $(DEST_DIR) $(IMAGES_DIR) $(DEST_DIR)/sass-cache
 
 html: prepare $(IMAGES_TS) $(DEST_HTML)
 
-pdf: prepare $(DEST_PDF)
+pdf: prepare $(IMAGES_TS) $(DEST_PDF)
 
 clean:
-	@rm -rf "$(DEST_DIR)" "$(DEST_PDF)" "$(BUILD_DIR)/default.css"
+	@rm -rf "$(DEST_DIR)" "$(DEST_PDF)"
 
 browser: html
 	${BROWSER_OPEN} "file://$(realpath $(ROOTDIR)/$(DEST_HTML))"
@@ -58,15 +58,11 @@ linkchecker: html
 open-pdf: pdf
 	${BROWSER_OPEN} "$(realpath $(ROOTDIR)/$(DEST_PDF))"
 
-$(BUILD_DIR)/default.css: $(CSS_SOURCES)
-	bundle exec sass -C --style $(CSS_STYLE) -I $(COMMON_DIR)/css $(COMMON_DIR)/css/default.scss $@
-
-$(DEST_DIR)/$(BUILD).css: $(BUILD_DIR)/default.css
-	cp $< $@
+$(DEST_DIR)/$(BUILD).css: $(CSS_SOURCES)
+	bundle exec sass --cache-location $(DEST_DIR)/sass-cache --style $(CSS_STYLE) -I $(COMMON_DIR)/css $(COMMON_DIR)/css/default.scss $@
 
 $(IMAGES_TS): $(IMAGES)
-	cp $? $(IMAGES_DIR)/
-	pushd "$(IMAGES_DIR)" >/dev/null && for IMG in *.*; do ln -fs ../../images/$$IMG ../common/images/$$IMG; done && popd >/dev/null
+	cp -lrf $? $(IMAGES_DIR)
 	@touch $(IMAGES_TS)
 
 $(DEST_HTML): $(SOURCES) $(DEPENDENCIES) $(DOCINFO_SOURCES) $(DEST_DIR)/$(BUILD).css
@@ -77,6 +73,6 @@ $(DEST_HTML): $(SOURCES) $(DEPENDENCIES) $(DOCINFO_SOURCES) $(DEST_DIR)/$(BUILD)
 	@! grep -RE '<a href="#[a-zA-Z0-9_-]+">\[[a-zA-Z0-9_-]+\]</a>' $@
 
 $(DEST_PDF): $(SOURCES) $(IMAGES) $(DEPENDENCIES)
-	bundle exec asciidoctor-pdf -a build=$(BUILD) -d book --trace -o $@ $< 2>&1 | tee $@.log
+	bundle exec asciidoctor-pdf -a build=$(BUILD) -a imagesdir=$(IMAGES_DIR) -d book --trace -o $@ $< 2>&1 | tee $@.log
 	@echo CHECKING FOR ASCIIDOCTOR-PDF ERRORS AND WARNINGS
 	@! grep -Eq "^asciidoctor: (ERROR|WARNING)" $@.log

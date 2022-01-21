@@ -14,6 +14,7 @@ env:
   RUBY_VERSION: 3.1
   PYTHON_VERSION: 2.x
   BUNDLE_WITHOUT: "nanoc"
+  MAKE_J: 3
 
 jobs:
   build-ccutil:
@@ -79,11 +80,11 @@ jobs:
 
       - name: Build HTML with local links
         run: |
-          make html BUILD=foreman-el LINKS=LOCAL
-          make html BUILD=foreman-deb LINKS=LOCAL
-          make html BUILD=katello LINKS=LOCAL
-          make html BUILD=satellite LINKS=LOCAL
-          make html BUILD=orcharhino LINKS=LOCAL
+          make -j ${{ env.MAKE_J }} html BUILD=foreman-el LINKS=LOCAL
+          make -j ${{ env.MAKE_J }} html BUILD=foreman-deb LINKS=LOCAL
+          make -j ${{ env.MAKE_J }} html BUILD=katello LINKS=LOCAL
+          make -j ${{ env.MAKE_J }} html BUILD=satellite LINKS=LOCAL
+          make -j ${{ env.MAKE_J }} html BUILD=orcharhino LINKS=LOCAL
 
       - name: Check HTML links of all builds
         run: |
@@ -118,11 +119,11 @@ jobs:
       - name: Build HTML with real links
         run: |
           make clean
-          make html BUILD=foreman-el
-          make html BUILD=foreman-deb
-          make html BUILD=katello
-          make html BUILD=satellite
-          make html BUILD=orcharhino
+          make -j ${{ env.MAKE_J }} html BUILD=foreman-el
+          make -j ${{ env.MAKE_J }} html BUILD=foreman-deb
+          make -j ${{ env.MAKE_J }} html BUILD=katello
+          make -j ${{ env.MAKE_J }} html BUILD=satellite
+          make -j ${{ env.MAKE_J }} html BUILD=orcharhino
 
       - name: Upload HTML
         uses: actions/upload-artifact@v2
@@ -131,11 +132,6 @@ jobs:
           path: guides/build/
 
   build-pdf:
-    if: >
-      github.repository_owner == 'theforeman' &&
-      (github.ref == 'refs/heads/master' ||
-      startsWith(github.ref, 'refs/heads/2.') ||
-      startsWith(github.ref, 'refs/heads/3.'))
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -164,15 +160,52 @@ jobs:
       - name: Clean the environment
         run: make clean
 
-      - name: Build PDFs
+      - name: Build PDFs (master/stable)
         run: |
-          make pdf BUILD=foreman-el
+          make -j ${{ env.MAKE_J }} pdf BUILD=foreman-el
+
+      - name: Build PDFs (PR)
+        if: >
+          github.repository_owner == 'theforeman' &&
+          (github.ref == 'refs/heads/master' ||
+          startsWith(github.ref, 'refs/heads/2.') ||
+          startsWith(github.ref, 'refs/heads/3.'))
+        run: |
+          make -j ${{ env.MAKE_J }} pdf BUILD=foreman-deb
+          make -j ${{ env.MAKE_J }} pdf BUILD=katello
+          make -j ${{ env.MAKE_J }} pdf BUILD=satellite
+          make -j ${{ env.MAKE_J }} pdf BUILD=orcharhino
 
       - name: Upload PDFs
         uses: actions/upload-artifact@v2
         with:
           name: foreman-docs-pdf-${{ env.BRANCH_NAME }}
           path: guides/build/*.pdf
+
+  build-web:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: master
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+          working-directory: ./web
+
+      - name: Build site with nanoc
+        run: bundle exec nanoc
+        working-directory: ./web
+
+      - name: Upload web
+        uses: actions/upload-artifact@v2
+        with:
+          name: foreman-docs-web-master
+          path: web/output/
 
   publish:
     if: >
@@ -200,6 +233,13 @@ jobs:
 
       - name: Create public directory
         run: mkdir -p public/${{ env.BRANCH_NAME }}
+
+      - name: Download web (only for master)
+        if: github.ref == 'refs/heads/master'
+        uses: actions/download-artifact@v2
+        with:
+          name: foreman-docs-web-${{ env.BRANCH_NAME }}
+          path: public
 
       - name: Download HTML
         uses: actions/download-artifact@v2
