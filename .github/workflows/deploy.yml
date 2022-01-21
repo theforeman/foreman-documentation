@@ -16,6 +16,30 @@ env:
   BUNDLE_WITHOUT: "nanoc"
 
 jobs:
+  build-ccutil:
+    runs-on: ubuntu-latest
+    container:
+      image: quay.io/ivanhorvath/ccutil:amazing
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Compile html-single
+        run: |
+          for DIR in guides/doc-*; do
+            pushd $DIR &>/dev/null
+            if [[ -f docinfo.xml ]]; then
+              echo "Running ccutil in $DIR"
+              [[ -d images/ ]] || mkdir images
+              cp -rl common/images/* images/
+              sed -i "1 i:build: satellite\n" master.adoc
+              ccutil compile --lang=en-US --format html-single
+            else
+              echo "Skipping ccutil in $DIR (no docinfo.xml)"
+            fi
+            popd &>/dev/null
+          done
+
   check-html:
     runs-on: ubuntu-latest
     defaults:
@@ -159,6 +183,8 @@ jobs:
     needs:
       - check-html
       - build-html
+      - build-web
+      - build-ccutil
     runs-on: ubuntu-latest
     defaults:
       run:
