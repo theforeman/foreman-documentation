@@ -41,7 +41,7 @@ prepare:
 
 html: prepare $(IMAGES_TS) $(DEST_HTML)
 
-pdf: prepare $(IMAGES_TS) $(DEST_PDF)
+pdf: prepare $(DEST_PDF)
 
 clean:
 	@rm -rf "$(DEST_DIR)" "$(DEST_PDF)"
@@ -62,17 +62,17 @@ $(DEST_DIR)/$(BUILD).css: $(CSS_SOURCES)
 	bundle exec sass --cache-location $(DEST_DIR)/sass-cache --style $(CSS_STYLE) -I $(COMMON_DIR)/css $(COMMON_DIR)/css/default.scss $@
 
 $(IMAGES_TS): $(IMAGES)
-	cp -lrf $? $(IMAGES_DIR)
+	cp -lLrf ./images/* $(IMAGES_DIR)
 	@touch $(IMAGES_TS)
 
-$(DEST_HTML): $(SOURCES) $(DEPENDENCIES) $(DOCINFO_SOURCES) $(DEST_DIR)/$(BUILD).css
-	bundle exec asciidoctor -a build=$(BUILD) $(BASEURL_ATTR) -a docinfo=shared -a docinfodir=common -a date_mdy="$(DATE_MDY)" -a date_my="$(DATE_MY)" -a docdatetime="$(DATE_MY)" -a stylesheet=$(DEST_DIR)/$(BUILD).css -b html5 -d book --trace -o $@ $< 2>&1 | tee $@.log
+$(DEST_HTML): $(SOURCES) $(DEPENDENCIES) $(DOCINFO_SOURCES) $(DEST_DIR)/$(BUILD).css $(IMAGES_TS)
+	bundle exec asciidoctor -a build=$(BUILD) $(BASEURL_ATTR) -a docinfo=shared -a docinfodir=common -a date_mdy="$(DATE_MDY)" -a date_my="$(DATE_MY)" -a docdatetime="$(DATE_MY)" -a stylesheet=$(DEST_DIR)/$(BUILD).css -b html5 -d book --trace -o $@ $< 2>&1 | tee $@.log 1>&2
 	@echo CHECKING FOR ASCIIDOCTOR ERRORS AND WARNINGS
 	@! grep -Eq "^asciidoctor: (ERROR|WARNING)" $@.log
 	@echo CHECKING FOR ORPHAN XREFS HTML LINKS
 	@! grep -RE '<a href="#[a-zA-Z0-9_-]+">\[[a-zA-Z0-9_-]+\]</a>' $@
 
-$(DEST_PDF): $(SOURCES) $(IMAGES) $(DEPENDENCIES)
-	bundle exec asciidoctor-pdf -a build=$(BUILD) -a imagesdir=$(IMAGES_DIR) -d book --trace -o $@ $< 2>&1 | tee $@.log
+$(DEST_PDF): $(SOURCES) $(DEPENDENCIES)
+	bundle exec asciidoctor-pdf -a build=$(BUILD) -a imagesdir=./images -d book --trace -o $@ $< 2>&1 | tee $@.log 1>&2
 	@echo CHECKING FOR ASCIIDOCTOR-PDF ERRORS AND WARNINGS
 	@! grep -Eq "^asciidoctor: (ERROR|WARNING)" $@.log
