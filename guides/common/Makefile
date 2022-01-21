@@ -67,7 +67,7 @@ $(IMAGES_TS): $(IMAGES)
 	cp -lrf $? $(IMAGES_DIR)
 	@touch $(IMAGES_TS)
 
-$(DEST_HTML): $(SOURCES) $(DEPENDENCIES) $(DOCINFO_SOURCES)
+$(DEST_HTML): $(SOURCES) $(DEPENDENCIES) $(DOCINFO_SOURCES) $(DEST_DIR)/$(BUILD).css
 	bundle exec asciidoctor -a build=$(BUILD) $(BASEURL_ATTR) -a docinfo=shared -a docinfodir=common -a date_mdy="$(DATE_MDY)" -a date_my="$(DATE_MY)" -a docdatetime="$(DATE_MY)" -a stylesheet=$(BUILD).css -a linkcss=true -b html5 -d book --trace -o $@ $< 2>&1 | tee $@.log
 	@echo CHECKING FOR ASCIIDOCTOR ERRORS AND WARNINGS
 	@! grep -Eq "^asciidoctor: (ERROR|WARNING)" $@.log
