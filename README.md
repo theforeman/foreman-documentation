@@ -14,7 +14,7 @@ See README in the guides/ subdirectory for more information.
 
 ## Static Site
 
-The landing page for [docs.theforeman.org](https://docs.theforeman.org) is available as a Hugo project.
+The landing page for [docs.theforeman.org](https://docs.theforeman.org) is available as a generated static site.
 See README in the web/ subdirectory for more information.
 
 * [web](web/README.md)
