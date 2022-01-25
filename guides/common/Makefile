@@ -68,6 +68,7 @@ $(DEST_DIR)/$(BUILD).css: $(CSS_SOURCES)
 	bundle exec sass --cache-location $(DEST_DIR)/sass-cache --style $(CSS_STYLE) -I $(COMMON_DIR)/css $(COMMON_DIR)/css/default.scss $@
 
 $(IMAGES_TS): $(IMAGES)
+	@[[ -h ./images/common ]] || echo "FAILURE: Missing ./images dir with ./images/common symlink to commons!"
 	cp -lLrf ./images/* $(IMAGES_DIR)
 	@touch $(IMAGES_TS)
 
