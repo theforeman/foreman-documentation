@@ -112,7 +112,7 @@ document.close();
 <h1>Managing Hosts</h1>
 <div class="details">
 <span id="revnumber">version 5.11,</span>
-<span id="revdate">published Jan 24 2022</span>
+<span id="revdate">published Jan 26 2022</span>
 </div>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
@@ -182,17 +182,12 @@ document.close();
 </li>
 <li><a href="#Using_Puppet_for_Configuration_Management_managing-hosts">9. Using Puppet for Configuration Management</a>
 <ul class="sectlevel2">
-<li><a href="#puppet_guide_introduction_managing-hosts">9.1. Introduction to Puppet</a></li>
-<li><a href="#puppet_guide_installing_a_puppet_module_from_puppet_forge_managing-hosts">9.2. Installing a Puppet Module from Puppet Forge</a></li>
-<li><a href="#puppet_guide_updating_a_puppet_module_managing-hosts">9.3. Updating a Puppet Module</a></li>
-<li><a href="#puppet_guide_importing_a_puppet_module_managing-hosts">9.4. Importing a Puppet Module</a></li>
-<li><a href="#puppet_guide_configuring_a_puppet_class_managing-hosts">9.5. Configuring a Puppet Class</a></li>
-<li><a href="#puppet_guide_managing_puppet_modules_with_r10k_managing-hosts">9.6. Managing Puppet Modules with r10k</a></li>
-<li><a href="#puppet_guide_using_puppet_classes_managing-hosts">9.7. Using Puppet Classes</a></li>
-<li><a href="#puppet_guide_puppet_parameter_hierarchy_managing-hosts">9.8. Puppet Parameter Hierarchy</a></li>
-<li><a href="#puppet_guide_puppet_run_once_using_ssh_managing-hosts">9.9. Puppet Run Once Using SSH</a></li>
-<li><a href="#puppet_guide_setting_out_of_sync_time_for_puppet_managed_hosts_managing-hosts">9.10. Setting Out of Sync Time for Puppet Managed Hosts</a></li>
-<li><a href="#puppet_guide_additional_resources_managing-hosts">9.11. Additional Resources for Puppet</a></li>
+<li><a href="#introducing-puppet_managing-hosts">9.1. Introducing Puppet</a></li>
+<li><a href="#managing-puppet-modules_managing-hosts">9.2. Managing Puppet Modules</a></li>
+<li><a href="#using-puppet-classes_managing-hosts">9.3. Using Puppet Classes</a></li>
+<li><a href="#using-puppet-smart-parameters_managing-hosts">9.4. Using Puppet Smart Class Parameters</a></li>
+<li><a href="#enforcing-puppet-configuration-from-project-on-managed-hosts_managing-hosts">9.5. Enforcing Puppet Configuration from orcharhino on Managed Hosts</a></li>
+<li><a href="#puppet_guide_additional_resources_managing-hosts">9.6. Additional Resources for Puppet</a></li>
 </ul>
 </li>
 <li><a href="#Using_Salt_for_Configuration_Management_managing-hosts">10. Using Salt for Configuration Management</a>
@@ -1346,7 +1341,7 @@ This template renders when hosts access the <code>/register</code> endpoint.</p>
 <p>The <code>insights</code> snippet downloads and installs the Red&#160;Hat Insights client when global parameter <code>host_registration_insights</code> is set to true.</p>
 </li>
 <li>
-<p>The <code>puppetlabs_repo</code> and <code>puppet_setup</code> snippets downloads and installs puppet agent on the host (only when puppet master is present)</p>
+<p>The <code>puppetlabs_repo</code> and <code>puppet_setup</code> snippets download and install Puppet agent on the host (only when a Puppet server is assigned)</p>
 </li>
 <li>
 <p>The <code>host_init_config_post</code> is empty snippet for user&#8217;s custom actions on during host initial configuration.</p>
@@ -3893,13 +3888,13 @@ To make the changes take effect immediately, on the host, enter the following co
 <p>Use this section as a guide to configuring orcharhino to use Puppet for configuration management on managed hosts.</p>
 </div>
 <div class="sect2">
-<h3 id="puppet_guide_introduction_managing-hosts"><a class="anchor" href="#puppet_guide_introduction_managing-hosts"></a>9.1. Introduction to Puppet</h3>
+<h3 id="introducing-puppet_managing-hosts"><a class="anchor" href="#introducing-puppet_managing-hosts"></a>9.1. Introducing Puppet</h3>
 <div class="paragraph">
 <p>Puppet is a configuration management tool using a declarative language to describe the state of managed hosts.</p>
 </div>
 <div class="paragraph">
 <p>Puppet increases your productivity as you can administer multiple hosts simultaneously.
-At the same time, it decreases your configuration effort as Puppet makes it easy to verify and possibly correct the state hosts are in.</p>
+At the same time, it decreases your configuration effort as Puppet makes it easy to verify and possibly correct the state of the hosts.</p>
 </div>
 <div class="sect3">
 <h4 id="puppet_guide_puppet_architecture_managing-hosts"><a class="anchor" href="#puppet_guide_puppet_architecture_managing-hosts"></a>9.1.1. Puppet Architecture</h4>
@@ -3933,8 +3928,10 @@ They are collected by the Puppet agent and reported to the Puppet server on each
 For more information, see <a href="#Enabling_Puppet_Integration_managing-hosts">Enabling Puppet Integration with orcharhino</a>.</p>
 </li>
 <li>
-<p>Sync the Puppet agent from <a href="https://puppet.com/docs/puppet/6.21/install_puppet.html#enable_the_puppet_platform_repository">puppet.com</a>.
-For example, <a href="https://yum.puppet.com/puppet6/el/7/x86_64/">Puppet 6 for CentOS 7 on x86_64</a> or <a href="https://apt.puppet.com/">Puppet 6 for Ubuntu 20.04</a> with release <code>focal</code>, component <code>puppet6</code>, and architecture <code>amd64</code>.</p>
+<p>Sync the Puppet agent from <a href="https://puppet.com/docs/puppet/6.21/install_puppet.html#enable_the_puppet_platform_repository">puppet.com</a>.</p>
+<div class="paragraph">
+<p>For example, <a href="https://yum.puppet.com/puppet6/el/7/x86_64/">Puppet 6 for CentOS 7 on x86_64</a> or <a href="https://apt.puppet.com/">Puppet 6 for Ubuntu 20.04</a> with release <code>focal</code>, component <code>puppet6</code>, and architecture <code>amd64</code>.</p>
+</div>
 <div class="paragraph">
 <p>Manage these repositories by using products, sync plans, content views, composite content views, and lifecycle environments.</p>
 </div>
@@ -4002,7 +3999,46 @@ Additionally, Puppet server can be deployed externally to orcharhino and integra
 </div>
 </div>
 <div class="sect3">
-<h4 id="Installing_Puppet_Agent_during_Host_Provisioning_managing-hosts"><a class="anchor" href="#Installing_Puppet_Agent_during_Host_Provisioning_managing-hosts"></a>9.1.4. Installing Puppet Agent during Host Provisioning</h4>
+<h4 id="Disabling_Puppet_Integration_managing-hosts"><a class="anchor" href="#Disabling_Puppet_Integration_managing-hosts"></a>9.1.4. Disabling Puppet Integration with orcharhino</h4>
+<div class="paragraph">
+<p>To discontinue using Puppet in your orcharhino, follow this procedure.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisite</div>
+<ul>
+<li>
+<p>Puppet is enabled on orcharhino.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Disable Puppet server on all external orcharhino Proxies before you disable it on orcharhino Server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-maintain plugin purge-puppet</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Disable Puppet server on orcharhino Server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-maintain plugin purge-puppet [--remove-all-data]</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The command without arguments will remove all Puppet-related data in orcharhino.
+To remove Puppet server data files, including Puppet environments, add the <code>--remove-all-data</code> argument to the command.</p>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="Installing_Puppet_Agent_during_Host_Provisioning_managing-hosts"><a class="anchor" href="#Installing_Puppet_Agent_during_Host_Provisioning_managing-hosts"></a>9.1.5. Installing Puppet Agent during Host Provisioning</h4>
 <div class="paragraph">
 <p>You can install Puppet Agent during the host provisioning process.</p>
 </div>
@@ -4038,7 +4074,7 @@ Only use this if you don&#8217;t provide Puppet Agent to the host using its acti
 </div>
 </div>
 <div class="sect3">
-<h4 id="Installing_and_Configuring_the_Puppet_Agent_managing-hosts"><a class="anchor" href="#Installing_and_Configuring_the_Puppet_Agent_managing-hosts"></a>9.1.5. Installing and Configuring the Puppet Agent</h4>
+<h4 id="Installing_and_Configuring_the_Puppet_Agent_managing-hosts"><a class="anchor" href="#Installing_and_Configuring_the_Puppet_Agent_managing-hosts"></a>9.1.6. Installing and Configuring the Puppet Agent</h4>
 <div class="paragraph">
 <p>Use this procedure to install and configure the Puppet agent on a host.</p>
 </div>
@@ -4133,9 +4169,12 @@ server = <em>orcharhino.example.com</em></pre>
 </div>
 </div>
 <div class="sect2">
-<h3 id="puppet_guide_installing_a_puppet_module_from_puppet_forge_managing-hosts"><a class="anchor" href="#puppet_guide_installing_a_puppet_module_from_puppet_forge_managing-hosts"></a>9.2. Installing a Puppet Module from Puppet Forge</h3>
+<h3 id="managing-puppet-modules_managing-hosts"><a class="anchor" href="#managing-puppet-modules_managing-hosts"></a>9.2. Managing Puppet Modules</h3>
+<div class="sect3">
+<h4 id="installing_a_puppet_module_managing-hosts"><a class="anchor" href="#installing_a_puppet_module_managing-hosts"></a>9.2.1. Installing a Puppet Module on orcharhino Server</h4>
 <div class="paragraph">
-<p>The Puppet Forge is a repository for pre-built Puppet modules.
+<p>You can install a pre-built Puppet module from the Puppet Forge.
+The Puppet Forge is a repository that provides Puppet modules contributed by the community.
 Puppet modules flagged as <em>supported</em> are officially supported and tested by Puppet Inc.</p>
 </div>
 <div class="paragraph">
@@ -4180,8 +4219,8 @@ Notice: Installing -- do not interrupt ...
 Ensure to resolve its dependencies manually.</p>
 </div>
 </div>
-<div class="sect2">
-<h3 id="puppet_guide_updating_a_puppet_module_managing-hosts"><a class="anchor" href="#puppet_guide_updating_a_puppet_module_managing-hosts"></a>9.3. Updating a Puppet Module</h3>
+<div class="sect3">
+<h4 id="puppet_guide_updating_a_puppet_module_managing-hosts"><a class="anchor" href="#puppet_guide_updating_a_puppet_module_managing-hosts"></a>9.2.2. Updating a Puppet Module</h4>
 <div class="paragraph">
 <p>You can update an existing Puppet module using the <code>puppet</code> command.</p>
 </div>
@@ -4215,8 +4254,42 @@ Ensure to resolve its dependencies manually.</p>
 </ol>
 </div>
 </div>
+<div class="sect3">
+<h4 id="puppet_guide_managing_puppet_modules_with_r10k_managing-hosts"><a class="anchor" href="#puppet_guide_managing_puppet_modules_with_r10k_managing-hosts"></a>9.2.3. Managing Puppet Modules with r10k</h4>
+<div class="paragraph">
+<p>You can manage Puppet modules and environments using <a href="https://github.com/puppetlabs/r10k">r10k</a>.
+r10k uses a list of Puppet roles from a <code>Puppetfile</code> to download Puppet modules from the Puppet Forge or git repositories.
+It does not handle dependencies between Puppet modules.</p>
+</div>
+<div class="paragraph">
+<p>A <em>Puppetfile</em> looks as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-ruby" data-lang="ruby">forge "https://forge.puppet.com"
+
+mod "puppet-nginx",
+  :git =&gt; "https://github.com/voxpupuli/puppet-nginx.git",
+  :ref =&gt; "master"
+
+mod "puppetlabs/apache"
+mod "puppetlabs/ntp", "8.3.0"</code></pre>
+</div>
+</div>
+</div>
+</div>
 <div class="sect2">
-<h3 id="puppet_guide_importing_a_puppet_module_managing-hosts"><a class="anchor" href="#puppet_guide_importing_a_puppet_module_managing-hosts"></a>9.4. Importing a Puppet Module</h3>
+<h3 id="using-puppet-classes_managing-hosts"><a class="anchor" href="#using-puppet-classes_managing-hosts"></a>9.3. Using Puppet Classes</h3>
+<div class="paragraph">
+<p>There are three different ways to use Puppet classes within orcharhino.
+You can assign Puppet classes to either a single host or multiple hosts using host groupings such as a location based context or Puppet config groups in combination with host groups.</p>
+</div>
+<div class="paragraph">
+<p>A Puppet module typically consists of several Puppet classes.
+You can only assign Puppet classes to hosts.</p>
+</div>
+<div class="sect3">
+<h4 id="puppet_guide_importing_a_puppet_module_managing-hosts"><a class="anchor" href="#puppet_guide_importing_a_puppet_module_managing-hosts"></a>9.3.1. Importing a Puppet Module into orcharhino</h4>
 <div class="paragraph">
 <p>Import the Puppet module to orcharhino or any attached orcharhino Proxy before you assign any of its classes to managed hosts.
 Ensure to select <strong>Any Organization</strong> and <strong>Any Location</strong> as context, otherwise the import might fail.</p>
@@ -4255,8 +4328,37 @@ You may typically choose between your orcharhino Server or any attached orcharhi
 </ol>
 </div>
 </div>
-<div class="sect2">
-<h3 id="puppet_guide_configuring_a_puppet_class_managing-hosts"><a class="anchor" href="#puppet_guide_configuring_a_puppet_class_managing-hosts"></a>9.5. Configuring a Puppet Class</h3>
+<div class="sect3">
+<h4 id="Creating_a_Puppet_Environment_managing-hosts"><a class="anchor" href="#Creating_a_Puppet_Environment_managing-hosts"></a>9.3.2. Creating a Puppet Environment</h4>
+<div class="paragraph">
+<p>You can create a Puppet Environment within your orcharhino.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the orcharhino management UI, navigate to <strong>Configure &gt; Puppet Environments</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Create Puppet Environment</strong> to create a Puppet Environment.</p>
+</li>
+<li>
+<p>Enter a <strong>Name</strong>, alphanumeric characters and underscores are allowed, such as <code>example_environment</code>.</p>
+</li>
+<li>
+<p>Optional: Set a location context.</p>
+</li>
+<li>
+<p>Optional: Set an organization context.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong> to create the Puppet Environment.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="puppet_guide_configuring_a_puppet_class_managing-hosts"><a class="anchor" href="#puppet_guide_configuring_a_puppet_class_managing-hosts"></a>9.3.3. Configuring a Puppet Class</h4>
 <div class="paragraph">
 <p>You can configure a Puppet class after you have imported it to orcharhino Server.
 This example overrides the default list of ntp servers.</p>
@@ -4302,99 +4404,79 @@ This changes the default configuration of the Puppet module <code>ntp</code>.</p
 </ol>
 </div>
 </div>
-<div class="sect2">
-<h3 id="puppet_guide_managing_puppet_modules_with_r10k_managing-hosts"><a class="anchor" href="#puppet_guide_managing_puppet_modules_with_r10k_managing-hosts"></a>9.6. Managing Puppet Modules with r10k</h3>
-<div class="paragraph">
-<p>You can manage Puppet modules and environments using <a href="https://github.com/puppetlabs/r10k">r10k</a>.
-r10k uses a list of Puppet roles from a <code>Puppetfile</code> to download Puppet modules from the Puppet Forge or git repositories.
-It does not handle dependencies between Puppet modules.</p>
-</div>
-<div class="paragraph">
-<p>A <em>Puppetfile</em> looks as follows:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-ruby" data-lang="ruby">forge "https://forge.puppet.com"
-
-mod "puppet-nginx",
-  :git =&gt; "https://github.com/voxpupuli/puppet-nginx.git",
-  :ref =&gt; "master"
-
-mod "puppetlabs/apache"
-mod "puppetlabs/ntp", "8.3.0"</code></pre>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="puppet_guide_using_puppet_classes_managing-hosts"><a class="anchor" href="#puppet_guide_using_puppet_classes_managing-hosts"></a>9.7. Using Puppet Classes</h3>
-<div class="paragraph">
-<p>There are three different ways to use Puppet classes within orcharhino.
-You can assign Puppet classes to either a single host or multiple hosts using host groupings such as a location based context or Puppet config groups in combination with host groups.</p>
-</div>
-<div class="paragraph">
-<p>A Puppet module typically consists of several Puppet classes.
-You can only assign Puppet classes to hosts.</p>
-</div>
 <div class="sect3">
-<h4 id="Editing_Puppet_Classes_managing-hosts"><a class="anchor" href="#Editing_Puppet_Classes_managing-hosts"></a>9.7.1. Editing Puppet Classes</h4>
+<h4 id="creating-a-puppet-config-group_managing-hosts"><a class="anchor" href="#creating-a-puppet-config-group_managing-hosts"></a>9.3.4. Creating a Puppet Config Group</h4>
 <div class="paragraph">
-<p>You can edit Puppet Classes within your orcharhino.</p>
+<p>A Puppet config group is a named list of Puppet classes that allows you to combine their capabilities and assign them to managed hosts at a click.
+This is equivalent to the concept of profiles in pure Puppet.</p>
 </div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
 <ol class="arabic">
 <li>
-<p>In the orcharhino management UI, navigate to <strong>Configure &gt; Puppet Classes</strong>.</p>
+<p>In the orcharhino management UI, navigate to <strong>Configure &gt; Config Groups</strong> and select the <strong>New Config Group</strong> button.</p>
 </li>
 <li>
-<p>Select a Puppet Class from the list of Puppet Classes.</p>
+<p>Select the classes you want to add to the config group.</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Choose a meaningful <strong>Name</strong> for the Puppet config group.</p>
 </li>
 <li>
-<p>On the <strong>Puppet Class</strong> tab, assign the Puppet Class to one or multiple host groups.</p>
+<p>Add selected Puppet classes to the <strong>Included Classes</strong> field.</p>
+</li>
+</ol>
+</div>
 </li>
 <li>
-<p>On the <strong>Smart Class Parameter</strong> tab, select the <strong>Override</strong> check box to change the default parameter.</p>
-</li>
-<li>
-<p>Set a <strong>Parameter Type</strong> and <strong>Default Value</strong> to overwrite the default value from the Puppet Class.</p>
-</li>
-<li>
-<p>Click <strong>Submit</strong> to save your changes.</p>
+<p>Click <strong>Submit</strong> to save the changes.</p>
 </li>
 </ol>
 </div>
 </div>
 <div class="sect3">
-<h4 id="Creating_Puppet_Environments_managing-hosts"><a class="anchor" href="#Creating_Puppet_Environments_managing-hosts"></a>9.7.2. Creating Puppet Environments</h4>
+<h4 id="assigning-a-puppet-class-to-a-host-group_managing-hosts"><a class="anchor" href="#assigning-a-puppet-class-to-a-host-group_managing-hosts"></a>9.3.5. Assigning a Puppet Class to a Host Group</h4>
 <div class="paragraph">
-<p>You can create a Puppet Environment within your orcharhino.</p>
+<p>Use a host group to assign the <em>ntp</em> Puppet class to multiple hosts at once.
+Every host you deploy based on this host group has this Puppet class installed.</p>
 </div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
 <ol class="arabic">
 <li>
-<p>In the orcharhino management UI, navigate to <strong>Configure &gt; Puppet Environments</strong>.</p>
+<p>In the orcharhino management UI, navigate to <strong>Configure &gt; Host Groups</strong> to create a host group or edit an existing one.</p>
 </li>
 <li>
-<p>Click <strong>Create Puppet Environment</strong> to create a Puppet Environment.</p>
+<p>Set the following parameters:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>The <strong>Lifecycle Environment</strong> describes the stage in which certain versions of content are available to hosts.</p>
 </li>
 <li>
-<p>Enter a <strong>Name</strong>.</p>
+<p>The <strong>Content View</strong> is comprised of products and allows for version control of content repositories.</p>
 </li>
 <li>
-<p>Optional: Set a location context.</p>
+<p>The <strong>Environment</strong> allows you to supply a group of hosts with their own dedicated configuration.</p>
+</li>
+</ol>
+</div>
 </li>
 <li>
-<p>Optional: Set an organization context.</p>
+<p>In the orcharhino management UI, navigate to <strong>Configure &gt; Classes</strong>.</p>
 </li>
 <li>
-<p>Click <strong>Submit</strong> to create the Puppet Environment.</p>
+<p>Add the Puppet class to the <em>included classes</em> or to the <em>included config groups</em> if a Puppet config group is configured.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong> to save the changes.</p>
 </li>
 </ol>
 </div>
 </div>
 <div class="sect3">
-<h4 id="puppet_guide_using_puppet_classes_individual_host_managing-hosts"><a class="anchor" href="#puppet_guide_using_puppet_classes_individual_host_managing-hosts"></a>9.7.3. Assigning a Puppet Class to Individual Hosts</h4>
+<h4 id="assigning-a-puppet-class-to-an-individual-host_managing-hosts"><a class="anchor" href="#assigning-a-puppet-class-to-an-individual-host_managing-hosts"></a>9.3.6. Assigning a Puppet Class to an Individual Host</h4>
 <div class="olist arabic">
 <div class="title">Procedure</div>
 <ol class="arabic">
@@ -4417,7 +4499,7 @@ You can only assign Puppet classes to hosts.</p>
 </td>
 <td class="content">
 <div class="paragraph">
-<p>If the <em>Puppet classes</em> tab of an individual host is empty, check if it&#8217;s assigned to the proper Puppet environment.</p>
+<p>If the <em>Puppet classes</em> tab of an individual host is empty, check if it is assigned to the proper Puppet environment.</p>
 </div>
 </td>
 </tr>
@@ -4490,80 +4572,11 @@ server 3.de.pool.ntp.org</pre>
 <p>You now have a working ntp module which you can add to a host or group of hosts to roll out your ntp configuration automatically.</p>
 </div>
 </div>
-<div class="sect3">
-<h4 id="puppet_guide_using_puppet_classes_host_group_managing-hosts"><a class="anchor" href="#puppet_guide_using_puppet_classes_host_group_managing-hosts"></a>9.7.4. Assigning a Puppet Class to a Host Group</h4>
-<div class="paragraph">
-<p>Use a host group to assign the <em>ntp</em> Puppet class to multiple hosts at once.
-Every host you deploy based on this host group has this Puppet class installed.</p>
-</div>
-<div class="olist arabic">
-<div class="title">Procedure</div>
-<ol class="arabic">
-<li>
-<p>In the orcharhino management UI, navigate to <strong>Configure &gt; Host Groups</strong> to create a host group or edit an existing one.</p>
-</li>
-<li>
-<p>Set the following parameters:</p>
-<div class="olist loweralpha">
-<ol class="loweralpha" type="a">
-<li>
-<p>The <strong>Lifecycle Environment</strong> describes the stage in which certain versions of content are available to hosts.</p>
-</li>
-<li>
-<p>The <strong>Content View</strong> is comprised of products and allows for version control of content repositories.</p>
-</li>
-<li>
-<p>The <strong>Environment</strong> allows you to supply a group of hosts with their own dedicated configuration.</p>
-</li>
-</ol>
-</div>
-</li>
-<li>
-<p>In the orcharhino management UI, navigate to <strong>Configure &gt; Classes</strong>.</p>
-</li>
-<li>
-<p>Add the Puppet class to the <em>included classes</em> or to the <em>included config groups</em> if a Puppet config group is configured.</p>
-</li>
-<li>
-<p>Click <strong>Submit</strong> to save the changes.</p>
-</li>
-</ol>
-</div>
-</div>
-<div class="sect3">
-<h4 id="puppet_guide_using_puppet_classes_puppet_config_groups_managing-hosts"><a class="anchor" href="#puppet_guide_using_puppet_classes_puppet_config_groups_managing-hosts"></a>9.7.5. Creating a Puppet Config Group</h4>
-<div class="paragraph">
-<p>A Puppet config group is a named list of Puppet classes that allows you to combine their capabilities and assign them to managed hosts at a click.
-This is equivalent to the concept of profiles in pure Puppet.</p>
-</div>
-<div class="olist arabic">
-<div class="title">Procedure</div>
-<ol class="arabic">
-<li>
-<p>In the orcharhino management UI, navigate to <strong>Configure &gt; Config Groups</strong> and select the <strong>New Config Group</strong> button.</p>
-</li>
-<li>
-<p>Select the classes you want to add to the config group.</p>
-<div class="olist loweralpha">
-<ol class="loweralpha" type="a">
-<li>
-<p>Choose a meaningful <strong>Name</strong> for the Puppet config group.</p>
-</li>
-<li>
-<p>Add selected Puppet classes to the <strong>Included Classes</strong> field.</p>
-</li>
-</ol>
-</div>
-</li>
-<li>
-<p>Click <strong>Submit</strong> to save the changes.</p>
-</li>
-</ol>
-</div>
-</div>
 </div>
 <div class="sect2">
-<h3 id="puppet_guide_puppet_parameter_hierarchy_managing-hosts"><a class="anchor" href="#puppet_guide_puppet_parameter_hierarchy_managing-hosts"></a>9.8. Puppet Parameter Hierarchy</h3>
+<h3 id="using-puppet-smart-parameters_managing-hosts"><a class="anchor" href="#using-puppet-smart-parameters_managing-hosts"></a>9.4. Using Puppet Smart Class Parameters</h3>
+<div class="sect3">
+<h4 id="puppet_guide_puppet_parameter_hierarchy_managing-hosts"><a class="anchor" href="#puppet_guide_puppet_parameter_hierarchy_managing-hosts"></a>9.4.1. Puppet Parameter Hierarchy</h4>
 <div class="paragraph">
 <p>Puppet parameters are structured hierarchically.
 Parameters with a higher placement override parameters with lower placements:</p>
@@ -4591,73 +4604,9 @@ Parameters with a higher placement override parameters with lower placements:</p
 <p>For example, host specific parameters override any other parameter and location parameters only override any organization or global parameters.
 This feature is especially useful when grouping hosts with location or organization contexts.</p>
 </div>
-<div class="sect3">
-<h4 id="puppet_guide_overriding_puppet_parameters_on_individual_hosts_managing-hosts"><a class="anchor" href="#puppet_guide_overriding_puppet_parameters_on_individual_hosts_managing-hosts"></a>9.8.1. Overriding Puppet Parameters on Individual Hosts</h4>
-<div class="paragraph">
-<p>You can override parameters on individual hosts.
-This is recommended if you have multiple hosts and only want to make changes to a single one.</p>
-</div>
-<div class="olist arabic">
-<div class="title">Procedure</div>
-<ol class="arabic">
-<li>
-<p>In the orcharhino management UI, navigate to <strong>Hosts &gt; All Hosts</strong> and select a host.</p>
-</li>
-<li>
-<p>Click <strong>Edit</strong> and select the <strong>Parameters</strong> tab.</p>
-</li>
-<li>
-<p>Click the <strong>Override</strong> button to edit the Puppet parameter.</p>
-</li>
-<li>
-<p>Click <strong>Submit</strong> to save the changes.</p>
-</li>
-</ol>
-</div>
 </div>
 <div class="sect3">
-<h4 id="puppet_guide_overriding_puppet_parameters_location_based_managing-hosts"><a class="anchor" href="#puppet_guide_overriding_puppet_parameters_location_based_managing-hosts"></a>9.8.2. Overriding Puppet Parameters Location Based</h4>
-<div class="paragraph">
-<p>You can use groups of hosts to override Puppet parameters for multiple hosts at once.
-The following examples chooses the <em>location</em> context to illustrate setting context based parameters.</p>
-</div>
-<div class="olist arabic">
-<div class="title">Procedure</div>
-<ol class="arabic">
-<li>
-<p>In the orcharhino management UI, navigate to <strong>Configure &gt; Classes</strong> and select the <strong>Smart Class Parameter</strong> tab.</p>
-</li>
-<li>
-<p>Choose a parameter.</p>
-</li>
-<li>
-<p>Use the <strong>Order</strong> list to define the hierarchy of the Puppet parameters.
-The individual host (<code>fqdn</code>) marks the most and the location context (<code>location</code>) the least relevant.</p>
-</li>
-<li>
-<p>Check <strong>Merge Overrides</strong> if you want to add all further matched parameters after finding the first match.</p>
-</li>
-<li>
-<p>Check <strong>Merge Default</strong> if you want to also include the default value even if there are more specific values defined.</p>
-</li>
-<li>
-<p>Check <strong>Avoid Duplicates</strong> if you want to create a list of unique values for the selected parameter.</p>
-</li>
-<li>
-<p>The <strong>matcher</strong> field requires an <em>attribute type</em> from the <em>order</em> list.
-For example, you can choose <code>Paris</code> as <em>location</em> context and set the value to French ntp servers.</p>
-</li>
-<li>
-<p>Use the <strong>Add Matcher</strong> button to add more matchers.</p>
-</li>
-<li>
-<p>Click <strong>Submit</strong> to save the changes.</p>
-</li>
-</ol>
-</div>
-</div>
-<div class="sect3">
-<h4 id="puppet_guide_overriding_puppet_parameters_organization_based_managing-hosts"><a class="anchor" href="#puppet_guide_overriding_puppet_parameters_organization_based_managing-hosts"></a>9.8.3. Overriding Puppet Parameters Organization Based</h4>
+<h4 id="puppet_guide_overriding_puppet_parameters_organization_based_managing-hosts"><a class="anchor" href="#puppet_guide_overriding_puppet_parameters_organization_based_managing-hosts"></a>9.4.2. Overriding Puppet Parameters Organization Based</h4>
 <div class="paragraph">
 <p>You can use groups of hosts to override Puppet parameters for multiple hosts at once.
 The following example chooses the <em>organization</em> context to illustrate setting context based parameters.</p>
@@ -4699,9 +4648,79 @@ The individual host (<code>fqdn</code>) marks the most and the organization cont
 </ol>
 </div>
 </div>
+<div class="sect3">
+<h4 id="puppet_guide_overriding_puppet_parameters_location_based_managing-hosts"><a class="anchor" href="#puppet_guide_overriding_puppet_parameters_location_based_managing-hosts"></a>9.4.3. Overriding Puppet Parameters Location Based</h4>
+<div class="paragraph">
+<p>You can use groups of hosts to override Puppet parameters for multiple hosts at once.
+The following examples chooses the <em>location</em> context to illustrate setting context based parameters.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the orcharhino management UI, navigate to <strong>Configure &gt; Classes</strong> and select the <strong>Smart Class Parameter</strong> tab.</p>
+</li>
+<li>
+<p>Choose a parameter.</p>
+</li>
+<li>
+<p>Use the <strong>Order</strong> list to define the hierarchy of the Puppet parameters.
+The individual host (<code>fqdn</code>) marks the most and the location context (<code>location</code>) the least relevant.</p>
+</li>
+<li>
+<p>Check <strong>Merge Overrides</strong> if you want to add all further matched parameters after finding the first match.</p>
+</li>
+<li>
+<p>Check <strong>Merge Default</strong> if you want to also include the default value even if there are more specific values defined.</p>
+</li>
+<li>
+<p>Check <strong>Avoid Duplicates</strong> if you want to create a list of unique values for the selected parameter.</p>
+</li>
+<li>
+<p>The <strong>matcher</strong> field requires an <em>attribute type</em> from the <em>order</em> list.
+For example, you can choose <code>Paris</code> as <em>location</em> context and set the value to French ntp servers.</p>
+</li>
+<li>
+<p>Use the <strong>Add Matcher</strong> button to add more matchers.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong> to save the changes.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="puppet_guide_overriding_puppet_parameters_on_individual_hosts_managing-hosts"><a class="anchor" href="#puppet_guide_overriding_puppet_parameters_on_individual_hosts_managing-hosts"></a>9.4.4. Overriding Puppet Parameters on Individual Hosts</h4>
+<div class="paragraph">
+<p>You can override parameters on individual hosts.
+This is recommended if you have multiple hosts and only want to make changes to a single one.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the orcharhino management UI, navigate to <strong>Hosts &gt; All Hosts</strong> and select a host.</p>
+</li>
+<li>
+<p>Click <strong>Edit</strong> and select the <strong>Parameters</strong> tab.</p>
+</li>
+<li>
+<p>Click the <strong>Override</strong> button to edit the Puppet parameter.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong> to save the changes.</p>
+</li>
+</ol>
+</div>
+</div>
 </div>
 <div class="sect2">
-<h3 id="puppet_guide_puppet_run_once_using_ssh_managing-hosts"><a class="anchor" href="#puppet_guide_puppet_run_once_using_ssh_managing-hosts"></a>9.9. Puppet Run Once Using SSH</h3>
+<h3 id="enforcing-puppet-configuration-from-project-on-managed-hosts_managing-hosts"><a class="anchor" href="#enforcing-puppet-configuration-from-project-on-managed-hosts_managing-hosts"></a>9.5. Enforcing Puppet Configuration from orcharhino on Managed Hosts</h3>
+<div class="paragraph">
+<p>You can enforce configuration from orcharhino either manually on demand (run once) or automatically in configurable intervals.</p>
+</div>
+<div class="sect3">
+<h4 id="running-puppet-once-using-ssh_managing-hosts"><a class="anchor" href="#running-puppet-once-using-ssh_managing-hosts"></a>9.5.1. Running Puppet Once Using SSH</h4>
 <div class="paragraph">
 <p>Assign the proper job template to the <em>Run Puppet Once</em> feature to run Puppet on managed hosts.</p>
 </div>
@@ -4724,21 +4743,22 @@ The individual host (<code>fqdn</code>) marks the most and the organization cont
 Alternatively, click the <strong>Run Puppet Once</strong> button in the <strong>Schedule Remote Job</strong> drop down menu on the host details page.</p>
 </div>
 </div>
-<div class="sect2">
-<h3 id="puppet_guide_setting_out_of_sync_time_for_puppet_managed_hosts_managing-hosts"><a class="anchor" href="#puppet_guide_setting_out_of_sync_time_for_puppet_managed_hosts_managing-hosts"></a>9.10. Setting Out of Sync Time for Puppet Managed Hosts</h3>
+<div class="sect3">
+<h4 id="understanding-intervals-of-automatic-enforcement_managing-hosts"><a class="anchor" href="#understanding-intervals-of-automatic-enforcement_managing-hosts"></a>9.5.2. Understanding Intervals of Automatic Enforcement</h4>
 <div class="paragraph">
-<p>orcharhino considers hosts managed by Puppet to be out of sync if the last Puppet report is older than the combined values of <code>outofsync_interval</code> and <code>puppet_interval</code> set in minutes.
-By default, the Puppet agent on managed hosts runs every 30 minutes.
-The <code>puppet_interval</code> is set to 35 minutes and the global <code>outofsync_interval</code> is set to 30 minutes.</p>
+<p>orcharhino considers hosts to be out of sync if the last Puppet report is older than the combined values of <code>outofsync_interval</code> and <code>puppet_interval</code> set in minutes.
+By default, the Puppet agent on managed hosts runs every 30 minutes,
+the <code>puppet_interval</code> is set to 35 minutes and the global <code>outofsync_interval</code> is set to 30 minutes.</p>
 </div>
 <div class="paragraph">
 <p>The effective time after which hosts are considered out of sync is the sum of <code>outofsync_interval</code> and <code>puppet_interval</code>.
-Setting the global <code>outofsync_interval</code> to 30 and the <code>puppet_interval</code> to 60 results in a total of 90 minutes after which the host status changes to <code>out of sync</code>.</p>
+For example, setting the global <code>outofsync_interval</code> to 30 and the <code>puppet_interval</code> to 60 results in a total of 90 minutes after which the host status changes to <code>out of sync</code>.</p>
+</div>
 </div>
 <div class="sect3">
-<h4 id="puppet_guide_setting_the_puppet_agent_run_intervalmanaging-hosts"><a class="anchor" href="#puppet_guide_setting_the_puppet_agent_run_intervalmanaging-hosts"></a>9.10.1. Setting the Puppet Agent Run Interval</h4>
+<h4 id="setting-the-puppet-agent-run-interval_managing-hosts"><a class="anchor" href="#setting-the-puppet-agent-run-interval_managing-hosts"></a>9.5.3. Setting the Puppet Agent Run Interval on a Host</h4>
 <div class="paragraph">
-<p>Set the interval when the Puppet Agent runs and sends reports to orcharhino.</p>
+<p>Set the interval when the Puppet agent runs and sends reports to orcharhino.</p>
 </div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
@@ -4747,28 +4767,13 @@ Setting the global <code>outofsync_interval</code> to 30 and the <code>puppet_in
 <p>Connect to your managed host using SSH.</p>
 </li>
 <li>
-<p>Add the Puppet Agent run interval to <code>/etc/puppetlabs/puppet/puppet.conf</code>, for example <code>runinterval = 1h</code>.</p>
+<p>Add the Puppet agent run interval to <code>/etc/puppetlabs/puppet/puppet.conf</code>, for example <code>runinterval = 1h</code>.</p>
 </li>
 </ol>
 </div>
 </div>
 <div class="sect3">
-<h4 id="puppet_guide_setting_the_puppet_interval_managing-hosts"><a class="anchor" href="#puppet_guide_setting_the_puppet_interval_managing-hosts"></a>9.10.2. Setting the Puppet Interval</h4>
-<div class="olist arabic">
-<div class="title">Procedure</div>
-<ol class="arabic">
-<li>
-<p>In the orcharhino management UI, navigate to <strong>Administer &gt; Settings</strong>, and click the <strong>Puppet</strong> tab.</p>
-</li>
-<li>
-<p>In the <strong>Puppet interval</strong> field, edit the value to the duration, in minutes, after which hosts reporting using Puppet are considered to be out of sync.
-Set a duration in minutes after which hosts reporting using Puppet are considered to be out of sync.</p>
-</li>
-</ol>
-</div>
-</div>
-<div class="sect3">
-<h4 id="puppet_guide_setting_the_out_of_sync_interval_managing-hosts"><a class="anchor" href="#puppet_guide_setting_the_out_of_sync_interval_managing-hosts"></a>9.10.3. Setting the Out of Sync Interval</h4>
+<h4 id="setting-the-global-out-of-sync-interval_managing-hosts"><a class="anchor" href="#setting-the-global-out-of-sync-interval_managing-hosts"></a>9.5.4. Setting the Global Out-of-Sync Interval</h4>
 <div class="olist arabic">
 <div class="title">Procedure</div>
 <ol class="arabic">
@@ -4777,36 +4782,30 @@ Set a duration in minutes after which hosts reporting using Puppet are considere
 </li>
 <li>
 <p>On the <strong>General</strong> tab, edit <strong>Out of sync interval</strong>.
-Set a duration in minutes after which hosts are considered to be out of sync.</p>
+Set a duration, in minutes, after which hosts are considered to be out of sync.</p>
 <div class="paragraph">
-<p>You can also overwrite this on individual hosts or host groups by adding the <code>outofsync_interval</code> parameter.</p>
+<p>You can also override this interval on <a href="#overriding-out-of-sync-interval-for-a-host-group_managing-hosts">host groups</a> or <a href="#overriding-out-of-sync-interval-for-an-individual-host_managing-hosts">individual hosts</a> by adding the <code>outofsync_interval</code> parameter.</p>
 </div>
 </li>
 </ol>
 </div>
 </div>
 <div class="sect3">
-<h4 id="puppet_guide_setting_of_of_sync_interval_for_individual_hosts_managing-hosts"><a class="anchor" href="#puppet_guide_setting_of_of_sync_interval_for_individual_hosts_managing-hosts"></a>9.10.4. Setting Out of Sync Interval for Individual Hosts</h4>
+<h4 id="setting-the-puppet-out-of-sync-interval_managing-hosts"><a class="anchor" href="#setting-the-puppet-out-of-sync-interval_managing-hosts"></a>9.5.5. Setting the Puppet Out-of-Sync Interval</h4>
 <div class="olist arabic">
 <div class="title">Procedure</div>
 <ol class="arabic">
 <li>
-<p>In the orcharhino management UI, navigate to <strong>Hosts &gt; All Hosts</strong>.</p>
+<p>In the orcharhino management UI, navigate to <strong>Administer &gt; Settings</strong>, and click the <strong>Config Management</strong> tab.</p>
 </li>
 <li>
-<p>Click <strong>Edit</strong> for a selected host.</p>
-</li>
-<li>
-<p>On the <strong>Parameters</strong> tab, click <strong>Add Parameter</strong>.</p>
-</li>
-<li>
-<p>In the <strong>Name</strong> field, enter <code>outofsync_interval</code>.</p>
+<p>In the <strong>Puppet interval</strong> field, set the value to the duration, in minutes, after which hosts reporting using Puppet are considered to be out of sync.</p>
 </li>
 </ol>
 </div>
 </div>
 <div class="sect3">
-<h4 id="puppet_guide_setting_out_of_sync_interval_for_host_groups_managing-hosts"><a class="anchor" href="#puppet_guide_setting_out_of_sync_interval_for_host_groups_managing-hosts"></a>9.10.5. Setting Out of Sync Interval for Host Groups</h4>
+<h4 id="overriding-out-of-sync-interval-for-a-host-group_managing-hosts"><a class="anchor" href="#overriding-out-of-sync-interval-for-a-host-group_managing-hosts"></a>9.5.6. Overriding Out-of-Sync Interval for a Host Group</h4>
 <div class="olist arabic">
 <div class="title">Procedure</div>
 <ol class="arabic">
@@ -4822,12 +4821,50 @@ Set a duration in minutes after which hosts are considered to be out of sync.</p
 <li>
 <p>In the <strong>Name</strong> field, enter <code>outofsync_interval</code>.</p>
 </li>
+<li>
+<p>From the <strong>Type</strong> dropdown menu, select <code>integer</code>.</p>
+</li>
+<li>
+<p>In the <strong>Value</strong> field, enter the new interval in minutes.</p>
+</li>
+<li>
+<p>Click the <strong>Submit</strong> button.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="overriding-out-of-sync-interval-for-an-individual-host_managing-hosts"><a class="anchor" href="#overriding-out-of-sync-interval-for-an-individual-host_managing-hosts"></a>9.5.7. Overriding Out-of-Sync Interval for an Individual Host</h4>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the orcharhino management UI, navigate to <strong>Hosts &gt; All Hosts</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Edit</strong> for a selected host.</p>
+</li>
+<li>
+<p>On the <strong>Parameters</strong> tab, click <strong>Add Parameter</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter <code>outofsync_interval</code>.</p>
+</li>
+<li>
+<p>From the <strong>Type</strong> dropdown menu, select <code>integer</code>.</p>
+</li>
+<li>
+<p>In the <strong>Value</strong> field, enter the new interval in minutes.</p>
+</li>
+<li>
+<p>Click the <strong>Submit</strong> button.</p>
+</li>
 </ol>
 </div>
 </div>
 </div>
 <div class="sect2">
-<h3 id="puppet_guide_additional_resources_managing-hosts"><a class="anchor" href="#puppet_guide_additional_resources_managing-hosts"></a>9.11. Additional Resources for Puppet</h3>
+<h3 id="puppet_guide_additional_resources_managing-hosts"><a class="anchor" href="#puppet_guide_additional_resources_managing-hosts"></a>9.6. Additional Resources for Puppet</h3>
 <div class="ulist">
 <ul>
 <li>
