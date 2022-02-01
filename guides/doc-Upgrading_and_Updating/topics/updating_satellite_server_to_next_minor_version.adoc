@@ -73,91 +73,184 @@ If you lose connection to the command shell where the upgrade command is running
 ifdef::satellite[]
 = Updating Disconnected {ProjectServer}
 
-.Prerequisites
+This section describes the steps needed to update in an Air-gapped Disconnected setup where the connected {ProjectServer} (which synchronizes content from CDN) is air gapped from a disconnected {ProjectServer}.
 
-* Before syncing the following repositories, set the download policy to *Immediate*.
-This is required because {Project} downloads all packages only during synchronization of repositories with the immediate download policy.
-+
-* Ensure that you have synchronized the following {ProjectServer} repositories for {Project}, {SmartProxy}, and {project-client-name}:
-** rhel-7-server-rpms
-** rhel-7-server-satellite-6.8-rpms
-** rhel-7-server-satellite-maintenance-6-rpms
-** rhel-server-rhscl-7-rpms
-** rhel-7-server-ansible-2.9-rpms
-+
-For more information about configuring download policies, see {ContentManagementDocURL}changing_the_download_policy_for_a_repository[Changing a download policy for a repository] in the _Content Management guide_.
-+
-* Ensure no Red Hat repositories are enabled by entering the command:
-+
-----
-# yum repolist
-----
+Complete the following steps on the connected {ProjectServer}.
 
-.Updating Disconnected {ProjectServer} to the Next Minor Version
-
-. Create a new configuration file as follows:
+. Ensure that you have synchronized the following repositories in your connected {ProjectServer}.
 +
 [options="nowrap" subs="attributes"]
 ----
-# vi /etc/yum.repos.d/redhat-local.repo
-
+{RepoRHEL7ServerAnsible}
+{RepoRHEL7Server}
+{RepoRHEL7ServerSatelliteServerProductVersion}
+{RepoRHEL7ServerSatelliteMaintenanceProductVersion}
+{RepoRHEL7ServerSoftwareCollections}
+----
++
+. Download the debug certificate of the organization and store it locally at, for example, `/etc/pki/katello/certs/org-debug-cert.pem` or a location of your choosing.
+. Create a Yum configuration file under `/etc/yum.repos.d` with the following repository information:
++
+[options="nowrap" subs="attributes"]
+----
 [{RepoRHEL7ServerAnsible}]
 name=Ansible {SatelliteAnsibleVersion} RPMs for Red Hat Enterprise Linux 7 Server x86_64
-baseurl=file:///var/lib/pulp/published/yum/https/repos/Default_Organization/Library/content/dist/rhel/server/7/7Server/x86_64/ansible/2.9/os/
+baseurl=https://{foreman-example-com}/pulp/content/My_Organization/Library/content/dist/rhel/server/7/$releasever/$basearch/ansible/{SatelliteAnsibleVersion}/os/
+enabled=1
+sslclientcert = /etc/pki/katello/certs/org-debug-cert.pem
+sslclientkey = /etc/pki/katello/certs/org-debug-cert.pem
+sslcacert = /etc/pki/katello/certs/katello-server-ca.crt
+sslverify = 1
+
+[{RepoRHEL7Server}]
+name=Red Hat Enterprise Linux 7 Server RPMs x86_64
+baseurl=https://{foreman-example-com}/pulp/content/My_Organization/Library/content/dist/rhel/server/7/7Server/x86_64/os/
+enabled=1
+sslclientcert = /etc/pki/katello/certs/org-debug-cert.pem
+sslclientkey = /etc/pki/katello/certs/org-debug-cert.pem
+sslcacert = /etc/pki/katello/certs/katello-server-ca.crt
+sslverify = 1
+
+[{RepoRHEL7ServerSatelliteServerProductVersion}]
+name={ProjectNameX} for RHEL 7 Server RPMs x86_64
+baseurl=https://{foreman-example-com}/pulp/content/My_Organization/Library/content/dist/rhel/server/7/7Server/x86_64/satellite/{ProjectVersion}/os/
+enabled=1
+sslclientcert = /etc/pki/katello/certs/org-debug-cert.pem
+sslclientkey = /etc/pki/katello/certs/org-debug-cert.pem
+sslcacert = /etc/pki/katello/certs/katello-server-ca.crt
+
+[{RepoRHEL7ServerSatelliteMaintenanceProductVersion}]
+name={ProjectName} Maintenance 6 for RHEL 7 Server RPMs x86_64
+baseurl=https://{foreman-example-com}/pulp/content/My_Organization/Library/content/dist/rhel/server/7/7Server/x86_64/sat-maintenance/6/os/
+enabled=1
+sslclientcert = /etc/pki/katello/certs/org-debug-cert.pem
+sslclientkey = /etc/pki/katello/certs/org-debug-cert.pem
+sslcacert = /etc/pki/katello/certs/katello-server-ca.crt
+sslverify = 1
+
+[{RepoRHEL7ServerSoftwareCollections}]
+name=Red Hat Software Collections RPMs for Red Hat Enterprise Linux 7 Server x86_64
+baseurl=https://{foreman-example-com}/pulp/content/My_Organization/Library/content/dist/rhel/server/7/7Server/x86_64/rhscl/1/os/
+enabled=1
+sslclientcert = /etc/pki/katello/certs/org-debug-cert.pem
+sslclientkey = /etc/pki/katello/certs/org-debug-cert.pem
+sslcacert = /etc/pki/katello/certs/katello-server-ca.crt
+sslverify = 1
+----
++
+. In the configuration file, replace `/etc/pki/katello/certs/org-debug-cert.pem` in `sslclientcert` and `sslclientkey` with the location of the downloaded organization debug certificate.
+. Update `{foreman-example-com}` with correct FQDN for your deployment.
+. Replace `My_Organization` with the correct organization label in the `baseurl`.
+To obtain the organization label, enter the command:
++
+----
+# hammer organization list
+----
+
+. Enter the `reposync` command:
++
+[options="nowrap" subs="attributes"]
+----
+# reposync --delete --download-metadata -p ~/{Project}-repos -n \
+ -r {RepoRHEL7ServerAnsible} \
+ -r {RepoRHEL7Server} \
+ -r {RepoRHEL7ServerSatelliteServerProductVersion} \
+ -r {RepoRHEL7ServerSatelliteMaintenanceProductVersion} \
+ -r {RepoRHEL7ServerSoftwareCollections}
+----
++
+This downloads the contents of the repositories from the connected {ProjectServer} and stores them in the directory `~/{Project}-repos`.
+The `reposync` command in {RHEL} 7 downloads the RPMs but not the Yum metadata.
++
+Because of this, you must manually run `createrepo` in each sub-directory of `{Project}-repos`. Make sure you have the `createrepo` rpm installed. If not use the following command to install it.
++
+[options="nowrap" subs="attributes"]
+----
+# {package-install-project} createrepo
+----
++
+Run the following command to create repodata in each sub-directory of `~/{Project}-repos`. :
++
+[options="nowrap" subs="attributes"]
+----
+# cd ~/{Project}-repos
+# for directory in */
+do
+  echo "Processing $directory"
+  cd $directory
+  createrepo .
+  cd ..
+done
+----
++
+. Verify that the RPMs have been downloaded and the repository data directory is generated in each of the sub-directories of `~/{Project}-repos`.
+. Archive the contents of the directory
++
+[options="nowrap" subs="attributes"]
+----
+# cd ~
+# tar czf {Project}-repos.tgz {Project}-repos
+----
+. Use the generated `{Project}-repos.tgz` file to upgrade in the disconnected {ProjectServer}.
+
+Perform the following steps on the disconnected {ProjectServer}
+
+. Copy the generated `{Project}-repos.tgz` file to your disconnected {ProjectServer}
+. Extract the archive to anywhere accessible by the `root` user.
+In the following example `/root` is the extraction location.
++
+[options="nowrap" subs="attributes"]
+----
+# cd /root
+# tar zxf {Project}-repos.tgz
+----
+. Create a Yum configuration file under `/etc/yum.repos.d` with the following repository information:
++
+[options="nowrap" subs="attributes"]
+----
+[{RepoRHEL7ServerAnsible}]
+name=Ansible {SatelliteAnsibleVersion} RPMs for Red Hat Enterprise Linux 7 Server x86_64
+baseurl=file:///root/{Project}-repos/{RepoRHEL7ServerAnsible}
 enabled=1
 
 [{RepoRHEL7Server}]
 name=Red Hat Enterprise Linux 7 Server RPMs x86_64
-baseurl=file:///var/lib/pulp/published/yum/https/repos/Default_Organization/Library/content/dist/rhel/server/7/7Server/x86_64/os/
+baseurl=file:///root/{Project}-repos/{RepoRHEL7Server}
 enabled=1
 
 [{RepoRHEL7ServerSatelliteServerProductVersion}]
 name={ProjectNameX} for RHEL 7 Server RPMs x86_64
-baseurl=file:///var/lib/pulp/published/yum/https/repos/Default_Organization/Library/content/dist/rhel/server/7/7Server/x86_64/satellite/{ProjectVersion}/os/
+baseurl=file:///root/{Project}-repos/{RepoRHEL7ServerSatelliteServerProductVersion}
 enabled=1
 
 [{RepoRHEL7ServerSatelliteMaintenanceProductVersion}]
 name={ProjectName} Maintenance 6 for RHEL 7 Server RPMs x86_64
-baseurl=file:///var/lib/pulp/published/yum/https/repos/Default_Organization/Library/content/dist/rhel/server/7/7Server/x86_64/sat-maintenance/6/os/
+baseurl=file:///root/{Project}-repos/{RepoRHEL7ServerSatelliteMaintenanceProductVersion}
 enabled=1
 
 [{RepoRHEL7ServerSoftwareCollections}]
 name=Red Hat Software Collections RPMs for Red Hat Enterprise Linux 7 Server x86_64
-baseurl=file:///var/lib/pulp/published/yum/https/repos/Default_Organization/Library/content/dist/rhel/server/7/7Server/x86_64/rhscl/1/os/
+baseurl=file:///root/{Project}-repos/{RepoRHEL7ServerSoftwareCollections}
 enabled=1
 ----
 +
-. In the configuration file, replace `Default_Organization` in the `baseurl` with the correct organization label.
-To obtain the organization label, enter the command:
-+
-----
-# ls /var/lib/pulp/published/yum/https/repos/
-----
-+
-
-. Ensure that the `rubygem-foreman_maintain` package that provides `{foreman-maintain}` is installed and up to date:
-+
-[options="nowrap"]
-----
-# yum install rubygem-foreman_maintain
-----
-
+. In the configuration file, replace the `/root/{Project}-repos` with the extracted location.
 . Check the available versions to confirm the next minor version is listed:
 +
-[options="nowrap" subs="+quotes,attributes"]
+[options="nowrap" subs="attributes"]
 ----
 # {foreman-maintain} upgrade list-versions
 ----
-
-. Use the health check option to determine if the system is ready for the upgrade.
-On the first use of this command, `{foreman-maintain}` prompts you to enter the hammer admin user credentials and saves them in the `/etc/foreman-maintain/foreman-maintain-hammer.yml` file.
++
+. Use the health check option to determine if the system is ready for upgrade.
+On first use of this command, `{foreman-maintain}` prompts you to enter the hammer admin user credentials and saves them in the `/etc/foreman-maintain/foreman-maintain-hammer.yml` file.
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
-# {foreman-maintain} upgrade check --target-version {ProjectVersion}.__z__
+# {foreman-maintain} upgrade check --whitelist="check-upstream-repository,repositories-validate" --target-version {ProductVersion}.__z__
 ----
 +
-Review the results and address any highlighted error conditions before performing the upgrade.
+. Review the results and address any highlighted error conditions before performing the upgrade.
 
 . Because of the lengthy update time, use a utility such as `screen` to suspend and reattach a communication session.
 You can then check the upgrade progress without staying connected to the command shell continuously.
@@ -169,7 +262,7 @@ If you lose connection to the command shell where the upgrade command is running
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
-# {foreman-maintain} upgrade run --target-version {ProjectVersion}.__z__
+# {foreman-maintain} upgrade run --whitelist="check-upstream-repository,repositories-validate" --target-version {ProductVersion}.__z__
 ----
 
 . Check when the kernel packages were last updated:
@@ -178,7 +271,7 @@ If you lose connection to the command shell where the upgrade command is running
 ----
 # rpm -qa --last | grep kernel
 ----
-
++
 . Optional: If a kernel update occurred since the last reboot, stop the `{foreman-maintain}` services and reboot the system:
 +
 [options="nowrap" subs="attributes"]
