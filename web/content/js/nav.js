@@ -5,6 +5,9 @@ let navVersions = [
 		title: "Nightly",
 		href: "nightly"
 	},{
+		title: "Foreman 3.2 - Katello 4.4 (stable)"
+		href: "3.2"
+	},{
 		title: "Foreman 3.1 - Katello 4.3 (stable)",
 		href: "3.1"
 	},{
