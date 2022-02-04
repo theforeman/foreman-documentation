@@ -403,6 +403,17 @@ A rough estimation of the space you require is 2-3 times the size of the MongoDB
 <div class="title">Procedure</div>
 <ol class="arabic">
 <li>
+<p>Update the file permissions before upgrading Foreman&#160;server using the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-maintain prep-6.10-upgrade</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This might take some time on high latency systems.</p>
+</div>
+</li>
+<li>
 <p>View details of the content you are pre-migrating using the following command:</p>
 <div class="listingblock">
 <div class="content">
@@ -430,16 +441,62 @@ Check the size of /var/lib/pulp/published with 'du -sh /var/lib/pulp/published/'
 [OK]</pre>
 </div>
 </div>
-<div class="paragraph">
-<p>This might take some time on high latency systems.</p>
-</div>
-</li>
-<li>
-<p>Prepare your content for Pulp migration using the following command:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># foreman-maintain content prepare</pre>
+<pre class="nowrap">============Missing/Corrupted Content Summary================
+  WARNING: MISSING OR CORRUPTED CONTENT DETECTED
+  Corrupted or Missing Rpm: 1000/104583
+  Corrupted or missing content has been detected, you can examine the list of content in /tmp/unmigratable_content-20211025-74422-16cxfae and take action by either:
+  1. Performing a 'Verify Checksum' sync under Advanced Sync Options, let it complete, and re-running the migration
+  2. Deleting/disabling the affected repositories and running orphan cleanup (foreman-rake katello:delete_orphaned_content) and re-running the migration.
+  3. Manually correcting files on the filesystem in /var/lib/pulp/content/ and re-running the migration
+  4. Mark currently corrupted or missing content as skipped (foreman-rake katello:approve_corrupted_migration_content). This will skip migration of missing or corrupted content.</pre>
 </div>
+</div>
+<div class="paragraph">
+<p>There are several causes of corrupted or missing content:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>A Repository synchronization or Content View publish or promotion occurred during the migration.</p>
+</li>
+<li>
+<p>Files on disk in <code>/var/lib/pulp/content/</code> became corrupted due to disk rot.</p>
+</li>
+<li>
+<p>Files in <code>/var/lib/pulp/content/</code> are missing due to past events such as disk loss with a partial restore.</p>
+</li>
+<li>
+<p>There is some mismatch between subsystems in Foreman such as Katello and Pulp.
+This can happen if a repository or content view is improperly deleted by skipping steps in a paused Foreman Task.
+Running <code>foreman-rake katello:correct_repositories COMMIT=true</code> can correct this.</p>
+<div class="paragraph">
+<p>You can review the list of corrupt or missing RPMs written to disk as part of the <code>foreman-maintain content migration-stats command</code>, <code>/tmp/unmigratable_content-20211025-74422-16cxfae20211120-2149-1j4pmfae</code> in the example above.</p>
+</div>
+<div class="paragraph">
+<p>If there is a large percentage of missing or corrupted RPMs, for example, more than 5-10%, Foreman developers recommends that you review the list generated and contact support for guidance.</p>
+</div>
+<div class="paragraph">
+<p>In most cases, where the number of missing or corrupt RPMs is low, you can mark these as skipped using the following command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-rake katello:approve_corrupted_migration_content</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you approve corrupted or missing content and proceed with the upgrade, that content will not appear in the repositories or content view versions after upgrade.</p>
+</div>
+<div class="paragraph">
+<p>If these packages exist in the upstream repositories, they are added again when you re-synchronize the repositories after upgrade.
+They are not restored to the Content Views unless you republish those Content Views.
+As these packages are likely unusable, the upgrade process only detects that fact.</p>
+</div>
+<div class="paragraph">
+<p>If you suspect a Repository synchronization or Content View publish or promotion occurred during the migration, re-running <code>foreman-maintain content prepare</code> migrates the remaining content.
+If this is the first time you have run <code>foreman-maintain content prepare</code>, Foreman developers recommends running it as often as necessary to try to reduce the number of corrupt or missing RPMs.
+Migrating the remaining content then takes less time.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -449,7 +506,7 @@ Check the size of /var/lib/pulp/published with 'du -sh /var/lib/pulp/published/'
 </td>
 <td class="content">
 <div class="paragraph">
-<p>You cannot use <strong><code>Ctrl</code> + <code>C</code></strong> to terminate this process.
+<p>You cannot use <strong><code>Ctrl</code> + <code>C</code></strong> to terminate the <code>foreman-maintain content prepare</code> process.
 If you attempt to halt the process using <strong><code>Ctrl</code> + <code>C</code></strong> or by disconnecting your SSH session, the process does not terminate but continues in the background.
 You can use the following command to terminate the process gracefully, whenever necessary, so that you can continue later.</p>
 </div>
@@ -467,9 +524,12 @@ You can continue the migration process using <code>foreman-maintain content-prep
 </table>
 </div>
 </li>
+</ul>
+</div>
+</li>
 <li>
 <p>The process does not confirm that migration is complete.
-You can determine how near the process is to completion by using:</p>
+You can determine how near to completion the process is by using the following command:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># foreman-maintain content migration-stats</pre>
@@ -502,6 +562,10 @@ You can determine how near the process is to completion by using:</p>
 </td>
 </tr>
 </table>
+</div>
+<div class="paragraph">
+<p>+
+. The final steps of Pulp content migration are completed when upgrading Foreman&#160;server from 2.4 to 2.5.</p>
 </div>
 </div>
 <div class="sect3">
