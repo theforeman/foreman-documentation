@@ -9,6 +9,8 @@ html: subdirs
 
 pdf: subdirs
 
+reduced: subdirs
+
 subdirs: $(SUBDIRS)
 
 $(SUBDIRS):

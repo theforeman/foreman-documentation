@@ -12,7 +12,7 @@ IMAGES_DIR = $(DEST_DIR)/images
 IMAGES_TS = $(DEST_DIR)/.timestamp-images
 CSS_SOURCES = $(shell find $(COMMON_DIR)/css -type f)
 DOCINFO_SOURCES = $(shell find $(COMMON_DIR)/ -type f -name docinfo\*.html)
-SOURCES = master.adoc $(shell find . -type f -name \*.adoc)
+SOURCES = master.adoc $(shell find . -type f -name \*.adoc -and ! -name master-\*.adoc)
 DEPENDENCIES = $(shell find $(COMMON_DIR) -type f -name \*.adoc)
 IMAGES = $(shell find ./images ./common/images -type f 2>/dev/null || true)
 UNAME = $(shell uname)
@@ -50,7 +50,7 @@ html: prepare $(IMAGES_TS) $(DEST_HTML)
 pdf: prepare $(DEST_PDF)
 
 clean:
-	@rm -rf "$(DEST_DIR)" "$(DEST_PDF)"
+	@rm -rf "$(DEST_DIR)" "$(DEST_PDF)" master-*.adoc
 
 browser: html
 	${BROWSER_OPEN} "file://$(realpath $(ROOTDIR)/$(DEST_HTML))"
@@ -64,6 +64,8 @@ linkchecker: html
 open-pdf: pdf
 	${BROWSER_OPEN} "$(realpath $(ROOTDIR)/$(DEST_PDF))"
 
+reduced: master-$(BUILD).adoc
+
 $(DEST_DIR)/$(BUILD).css: $(CSS_SOURCES)
 	bundle exec sass --cache-location $(DEST_DIR)/sass-cache --style $(CSS_STYLE) -I $(COMMON_DIR)/css $(COMMON_DIR)/css/default.scss $@
 
@@ -71,6 +73,9 @@ $(IMAGES_TS): $(IMAGES)
 	@[[ -h ./images/common ]] || echo "FAILURE: Missing ./images dir with ./images/common symlink to commons!"
 	cp -lLrf ./images/* $(IMAGES_DIR)
 	@touch $(IMAGES_TS)
+
+master-$(BUILD).adoc: $(SOURCES) $(DEPENDENCIES)
+	bundle exec asciidoctor-reducer -a build=$(BUILD) -a imagesdir=./images -o $@ $<
 
 $(DEST_HTML): $(SOURCES) $(DEPENDENCIES) $(DOCINFO_SOURCES) $(DEST_DIR)/$(BUILD).css $(IMAGES_TS)
 	bundle exec asciidoctor -a build=$(BUILD) $(BASEURL_ATTR) -a docinfo=shared -a docinfodir=common -a date_mdy="$(DATE_MDY)" -a date_my="$(DATE_MY)" -a docdatetime="$(DATE_MY)" -a stylesheet=$(DEST_DIR)/$(BUILD).css -b html5 -d book --trace -o $@ $< 2>&1 | tee $@.log 1>&2
