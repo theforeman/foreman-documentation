@@ -19,13 +19,11 @@ clean:
 		$(MAKE) -s --directory="$$DIR" clean ; \
 	done
 
-linkchecker:
-	echo "do not check links"
-	# find build -type f -name index\*html | xargs linkchecker -r1 -f common/linkchecker.ini --check-extern
+linkchecker:	
+	find build -type f -name index\*html | xargs linkchecker -r1 -f common/linkchecker.ini --check-extern
 
 linkchecker-tryer:
-	echo "do not check links"
-	# find build -type f -name index\*html | xargs linkchecker -r1 -f common/linkchecker.ini --check-extern | linkchecker-tryer
+	find build -type f -name index\*html | xargs linkchecker -r1 -f common/linkchecker.ini --check-extern | linkchecker-tryer
 
 serve:
 	python -m http.server --directory ./build 8813
