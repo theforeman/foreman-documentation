@@ -48,6 +48,9 @@ let navItems = [
 		title: "Managing Hosts Guide",
 		href: "/Managing_Hosts/index-foreman-el.html"
 	},{
+		title: "Configuring Hosts Using Puppet",
+		href: "/Managing_Configurations_Puppet/index-foreman-el.html"
+	},{
 		title: "Administering Foreman",
 		href: "/Administering_Red_Hat_Satellite/index-foreman-el.html"
 	},{
@@ -74,6 +77,9 @@ let navItems = [
 	},{
 		title: "Configuring Foreman to use Ansible",
 		href: "/Configuring_Ansible/index-foreman-deb.html"
+	},{
+		title: "Configuring Hosts Using Puppet",
+		href: "/Managing_Configurations_Puppet/index-foreman-deb.html"
 	},{
 		title: "Administering Foreman",
 		href: "/Administering_Red_Hat_Satellite/index-foreman-deb.html"
@@ -119,6 +125,9 @@ let navItems = [
 	},{
 		title: "Managing Hosts Guide",
 		href: "/Managing_Hosts/index-katello.html"
+	},{
+		title: "Configuring Hosts Using Puppet",
+		href: "/Managing_Configurations_Puppet/index-katello.html"
 	},{
 		title: "Administering Foreman",
 		href: "/Administering_Red_Hat_Satellite/index-katello.html"
