@@ -113,14 +113,15 @@ document.close();
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#introducing-puppet_managing-configurations-puppet">1. Introducing Puppet</a>
+<li><a href="#introducing-configuration-management-using-puppet_managing-configurations-puppet">1. Introducing Configuration Management Using Puppet</a>
 <ul class="sectlevel2">
-<li><a href="#puppet_guide_puppet_architecture_managing-configurations-puppet">1.1. Puppet Architecture</a></li>
-<li><a href="#Prerequisites_for_Puppet_Agent_managing-configurations-puppet">1.2. Prerequisites for Puppet Agent</a></li>
-<li><a href="#Enabling_Puppet_Integration_managing-configurations-puppet">1.3. Enabling Puppet Integration with Satellite</a></li>
-<li><a href="#Disabling_Puppet_Integration_managing-configurations-puppet">1.4. Disabling Puppet Integration with Satellite</a></li>
+<li><a href="#Puppet_architecture_managing-configurations-puppet">1.1. Puppet Architecture</a></li>
+<li><a href="#planning-for-puppet-deployment_managing-configurations-puppet">1.2. Planning for Puppet Deployment</a></li>
+<li><a href="#performing-configuration-management_managing-configurations-puppet">1.3. Performing Configuration Management</a></li>
+<li><a href="#Enabling_Puppet_Integration_managing-configurations-puppet">1.4. Enabling Puppet Integration with Satellite</a></li>
 <li><a href="#Installing_Puppet_Agent_during_Host_Provisioning_managing-configurations-puppet">1.5. Installing Puppet Agent during Host Provisioning</a></li>
-<li><a href="#Installing_and_Configuring_the_Puppet_Agent_managing-configurations-puppet">1.6. Installing and Configuring the Puppet Agent</a></li>
+<li><a href="#Installing_and_Configuring_the_Puppet_Agent_on_a_Host_Manually_managing-configurations-puppet">1.6. Installing and Configuring Puppet Agent on a Host Manually</a></li>
+<li><a href="#Disabling_Puppet_Integration_managing-configurations-puppet">1.7. Disabling Puppet Integration with Satellite</a></li>
 </ul>
 </li>
 <li><a href="#managing-puppet-modules_managing-configurations-puppet">2. Managing Puppet Modules</a>
@@ -159,90 +160,184 @@ document.close();
 <li><a href="#overriding-out-of-sync-interval-for-an-individual-host_managing-configurations-puppet">5.7. Overriding Out-of-Sync Interval for an Individual Host</a></li>
 </ul>
 </li>
-<li><a href="#puppet_guide_additional_resources_managing-configurations-puppet">6. Additional Resources for Puppet</a></li>
 </ul>
 </div>
 </div>
 <div id="content">
 <div class="sect1">
-<h2 id="introducing-puppet_managing-configurations-puppet"><a class="anchor" href="#introducing-puppet_managing-configurations-puppet"></a>1. Introducing Puppet</h2>
+<h2 id="introducing-configuration-management-using-puppet_managing-configurations-puppet"><a class="anchor" href="#introducing-configuration-management-using-puppet_managing-configurations-puppet"></a>1. Introducing Configuration Management Using Puppet</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Puppet is a configuration management tool using a declarative language to describe the state of managed hosts.</p>
+<p>You can use Puppet to manage and automate configurations of hosts.
+Puppet uses a declarative language to describe the state of managed hosts.</p>
 </div>
 <div class="paragraph">
 <p>Puppet increases your productivity as you can administer multiple hosts simultaneously.
 At the same time, it decreases your configuration effort as Puppet makes it easy to verify and possibly correct the state of the hosts.</p>
 </div>
-<div class="sect2">
-<h3 id="puppet_guide_puppet_architecture_managing-configurations-puppet"><a class="anchor" href="#puppet_guide_puppet_architecture_managing-configurations-puppet"></a>1.1. Puppet Architecture</h3>
-<div class="paragraph">
-<p>Puppet uses a server-client architecture with managed hosts running the Puppet agent and Satellite or any Capsules acting as a Puppet server.
-The Puppet agent enforces the declared state on managed hosts.
-It sends facts to the Puppet server, receives catalogs that are compiled from Puppet manifests, and sends reports to your Satellite.
-Differences between the declared state and the actual state are called <em>drifts</em> in Puppet terminology.</p>
-</div>
-<div class="paragraph">
-<p>Puppet facts are information about the hosts running the Puppet agent.
-Running <code>puppet facts</code> on a host displays Puppet facts in JSON format.
-They are collected by the Puppet agent and reported to the Puppet server on each run.</p>
-</div>
-<div class="paragraph">
-<p>Satellite users can define Puppet parameters as <em>key-value</em> pairs which behave similar to host parameters or Ansible variables.</p>
-</div>
-<div class="paragraph">
-<p>This section is set out to use a Puppet module to install, configure, and manage the <em>ntp</em> service.</p>
-</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="https://puppet.com/docs/puppet/">Official Puppet documentation</a></p>
+</li>
+<li>
+<p><a href="https://forge.puppet.com/">Puppet Forge</a>&#8201;&#8212;&#8201;a repository of pre-built Puppet modules</p>
+</li>
+</ul>
 </div>
 <div class="sect2">
-<h3 id="Prerequisites_for_Puppet_Agent_managing-configurations-puppet"><a class="anchor" href="#Prerequisites_for_Puppet_Agent_managing-configurations-puppet"></a>1.2. Prerequisites for Puppet Agent</h3>
+<h3 id="Puppet_architecture_managing-configurations-puppet"><a class="anchor" href="#Puppet_architecture_managing-configurations-puppet"></a>1.1. Puppet Architecture</h3>
 <div class="paragraph">
-<p>There are the following requirements to run the Puppet agent on managed hosts:</p>
+<p>Puppet uses a server-client architecture.
+The Puppet server is the central component, where the configuration definitions live.
+Satellite&#160;Server or any Capsules are typically deployed with the Puppet server and Satellite acts as an <a href="https://puppet.com/docs/puppet/7/nodes_external.html">External Node Classifier (ENC)</a> for such Puppet server.
+Managed hosts run the Puppet agent as a client that communicates with the Puppet server.</p>
+</div>
+<div class="paragraph">
+<p>The Puppet agent collects <em>facts</em> about a host and reports them to the Puppet server on each run.
+You can display the Puppet <em>facts</em> in JSON format by running <code>puppet facts</code> on a host.</p>
+</div>
+<div class="paragraph">
+<p>The Puppet server forwards <em>facts</em> to Satellite and Satellite stores them for later use.
+Based on the <em>facts</em> and other definitions, Satellite constructs the ENC answer to the Puppet server.
+The Puppet server compiles a <em>catalog</em> based on the ENC answer and sends the <em>catalog</em> to the Puppet agent.</p>
+</div>
+<div class="paragraph">
+<p>The Puppet agent evaluates the system state on the host.
+If the Puppet agent finds differences, known as <em>drifts</em>, between the defined state in the <em>catalog</em> and the actual state, it enforces correction of the host&#8217;s state.
+The Puppet agent then reports correction results back to the Puppet server, which reports them to Satellite.</p>
+</div>
+<div class="paragraph">
+<div class="title">Puppet modules</div>
+<p>The system state of a host is defined in a <em>catalog</em>.
+The <em>catalog</em> is compiled from Puppet manifests of one or more Puppet modules assigned to the host.
+A Puppet module is a collection of classes, manifests, resources, files, and templates.
+The Puppet modules work as components of host configuration definitions.</p>
+</div>
+<div class="paragraph">
+<div class="title">Smart Class parameters</div>
+<p>You can parametrize a Puppet module using Smart Class parameters if the module supports the use of parameters.
+You can define the parameters in your Satellite as <em>key-value</em> pairs, which behave similar to host parameters or Ansible variables.</p>
+</div>
+<div class="paragraph">
+<div class="title">Puppet environments</div>
+<p>You can also create multiple Puppet environments to control versions of configuration definitions or to manage variants of the definitions, and to test the definitions before you deploy them on production.</p>
+</div>
+<div class="paragraph">
+<p>The following procedures outline how to use a Puppet module to install, configure, and manage the <em>ntp</em> service to provide examples.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="planning-for-puppet-deployment_managing-configurations-puppet"><a class="anchor" href="#planning-for-puppet-deployment_managing-configurations-puppet"></a>1.2. Planning for Puppet Deployment</h3>
+<div class="paragraph">
+<p>Consider the following aspects when planning to deploy Puppet in Satellite or when you are considering whether you should start using Puppet.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Supported Puppet Versions</dt>
+<dd>
+<div class="ulist">
+<ul>
+<li>
+<p>Puppet 7</p>
+</li>
+</ul>
+</div>
+</dd>
+<dt class="hdlist1">System Requirements</dt>
+<dd>
+<p>See the <a href="https://puppet.com/docs/puppet/7/system_requirements.html">System Requirements for Puppet 7</a>
+in the <em>Open Source Puppet</em> documentation.</p>
+</dd>
+<dt class="hdlist1">High-Level Deployment Steps</dt>
+<dd>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><a href="#Enabling_Puppet_Integration_managing-configurations-puppet">Enabling Puppet Integration with Satellite</a></p>
+</li>
+<li>
+<p>Importing Puppet agent packages into Satellite.
+Puppet agent packages can be managed like any other content with Katello
+by <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.10/html-single/content_management_guide/index#Enabling_Red_Hat_Repositories_content-management">enabling Red Hat Repositories</a>
+and by using <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.10/html-single/content_management_guide/index#Managing_Activation_Keys_content-management">Activation Keys</a> and <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.10/html-single/content_management_guide/index#Managing_Content_Views_content-management">Content Views</a>.</p>
+</li>
+<li>
+<p>Installing Puppet agent on hosts during <a href="#Installing_Puppet_Agent_during_Host_Provisioning_managing-configurations-puppet">provisioning</a>, registration, <a href="#Installing_and_Configuring_the_Puppet_Agent_on_a_Host_Manually_managing-configurations-puppet">manually</a>, or by remote job execution.</p>
+</li>
+</ol>
+</div>
+</dd>
+</dl>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.10/html-single/content_management_guide/index#">Content Management Guide</a></p>
+</li>
+<li>
+<p><a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.10/html-single/managing_hosts/index#Registering_Hosts_managing-hosts">Registering Hosts</a> in the <em>Managing Hosts Guide</em></p>
+</li>
+<li>
+<p><a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.10/html-single/managing_hosts/index#Configuring_and_Setting_Up_Remote_Jobs_managing-hosts">Configuring and Setting Up Remote Jobs</a> in the <em>Managing Hosts Guide</em></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="performing-configuration-management_managing-configurations-puppet"><a class="anchor" href="#performing-configuration-management_managing-configurations-puppet"></a>1.3. Performing Configuration Management</h3>
+<div class="paragraph">
+<p>Once you deployed Puppet agent on a host, you can start performing configuration management with Puppet.
+This involves the following high-level steps:</p>
 </div>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>Enable Puppet integration in your Satellite.
-For more information, see <a href="#Enabling_Puppet_Integration_managing-configurations-puppet">Enabling Puppet Integration with Satellite</a>.</p>
+<p>Managing Puppet modules on the Puppet server, that is installing and updating them.</p>
 </li>
 <li>
-<p>Sync the Puppet agent from <a href="https://puppet.com/docs/puppet/6.21/install_puppet.html#enable_the_puppet_platform_repository">puppet.com</a>.</p>
-<div class="paragraph">
-<p>For example, <a href="https://yum.puppet.com/puppet6/el/7/x86_64/">Puppet 6 for CentOS 7 on x86_64</a> or <a href="https://apt.puppet.com/">Puppet 6 for Ubuntu 20.04</a> with release <code>focal</code>, component <code>puppet6</code>, and architecture <code>amd64</code>.</p>
-</div>
-<div class="paragraph">
-<p>Manage these repositories by using products, sync plans, Content Views, composite Content Views, and Lifecycle Environments.</p>
-</div>
+<p>Importing Puppet classes and environments from Puppet modules into Satellite.</p>
 </li>
 <li>
-<p>Provide the Puppet agent to the managed host using their activation key.</p>
+<p>Optional: Creating config groups.</p>
 </li>
 <li>
-<p>Add either <code>enable-puppet5</code> or <code>enable-puppet6</code> as parameter to your host or host group.
-Set the parameter type to <code>boolean</code> and its value to <code>true</code>.</p>
+<p>Configuring overrides of Smart Class parameters on various levels.</p>
 </li>
 <li>
-<p>Set a Puppet environment, Puppet server, and Puppet CA when provisioning a host.</p>
+<p>Assigning Puppet classes, modules, or config groups to host groups or individual hosts.</p>
+</li>
+<li>
+<p>Configuring intervals for runs of the Puppet agent on hosts and for configuration enforcement runs of the Puppet server.</p>
+</li>
+<li>
+<p>Monitoring configuration management using reports in the Satellite web UI.</p>
+</li>
+<li>
+<p>Configuring email notifications.
+See <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.10/html-single/administering_red_hat_satellite/index#Configuring_Email_Notifications_admin">Configuring Email Notifications</a> in <em>Administering Red&#160;Hat Satellite</em>.</p>
 </li>
 </ol>
 </div>
 <div class="paragraph">
-<p>Continue either with <a href="#Installing_and_Configuring_the_Puppet_Agent_managing-configurations-puppet">installing the Puppet agent manually</a> or by using the <code>puppet_setup</code> snippet to <a href="#Installing_Puppet_Agent_during_Host_Provisioning_managing-configurations-puppet">install the Puppet agent automatically during provisioning</a>.</p>
+<p>After assigning Puppet modules and configuring the intervals, Satellite runs configuration management automatically in the configured intervals to enforce Puppet configuration on the managed hosts, or you can initiate it manually on demand with the <a href="#running-puppet-once-using-ssh_managing-configurations-puppet"><strong>Run Puppet Once</strong> feature</a>.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="Enabling_Puppet_Integration_managing-configurations-puppet"><a class="anchor" href="#Enabling_Puppet_Integration_managing-configurations-puppet"></a>1.3. Enabling Puppet Integration with Satellite</h3>
+<h3 id="Enabling_Puppet_Integration_managing-configurations-puppet"><a class="anchor" href="#Enabling_Puppet_Integration_managing-configurations-puppet"></a>1.4. Enabling Puppet Integration with Satellite</h3>
 <div class="paragraph">
 <p>By default, Satellite does not have any Puppet integration configured.
 You need to enable the integration as is appropriate for your situation.
-Satellite can be configured to manage and deploy Puppet server on Satellite&#160;Server or on Capsule.
-Additionally, Puppet server can be deployed externally to Satellite and integrated for reporting, facts and external node classification (ENC).</p>
+This means that you can configure Satellite to manage and deploy Puppet server on Satellite&#160;Server or on Capsule.
+Additionally, you can deploy Puppet server to Satellite externally and integrate it with Satellite for reporting, facts, and external node classification (ENC).</p>
 </div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
 <ol class="arabic">
 <li>
-<p>Enable Puppet server on Satellite&#160;Server before you enable it on Capsules:</p>
+<p>Enable Puppet integration and install Puppet server on Satellite&#160;Server before you enable it on Capsules:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># satellite-installer --enable-foreman-plugin-puppet \
@@ -259,7 +354,7 @@ Additionally, Puppet server can be deployed externally to Satellite and integrat
 </div>
 </li>
 <li>
-<p>Enable Puppet server on Capsules:</p>
+<p>Enable Puppet integration and install Puppet server on Capsules:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># satellite-installer --foreman-proxy-puppet true \
@@ -277,7 +372,135 @@ Additionally, Puppet server can be deployed externally to Satellite and integrat
 </div>
 </div>
 <div class="sect2">
-<h3 id="Disabling_Puppet_Integration_managing-configurations-puppet"><a class="anchor" href="#Disabling_Puppet_Integration_managing-configurations-puppet"></a>1.4. Disabling Puppet Integration with Satellite</h3>
+<h3 id="Installing_Puppet_Agent_during_Host_Provisioning_managing-configurations-puppet"><a class="anchor" href="#Installing_Puppet_Agent_during_Host_Provisioning_managing-configurations-puppet"></a>1.5. Installing Puppet Agent during Host Provisioning</h3>
+<div class="paragraph">
+<p>Install the Puppet agent during the host provisioning process.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Navigate to <strong>Hosts &gt; Provisioning Templates</strong>.</p>
+</li>
+<li>
+<p>Select a provisioning template depending on your host provisioning method.
+For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.10/html-single/provisioning_guide/index#types-of-provisioning-templates_provisioning">Types of Provisioning Templates</a> in the <em>Provisioning</em> guide.</p>
+</li>
+<li>
+<p>Ensure the <code>puppet_setup</code> snippet is included as follows:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">&lt;%= snippet 'puppet_setup' %&gt;</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Enable Puppet using a host parameter for a single host or host group:</p>
+<div class="paragraph">
+<p>Add a host parameter named <code>enable-puppet7</code> for Puppet 7
+as type boolean set to <code>true</code>.</p>
+</div>
+</li>
+<li>
+<p>Optional: To install the Puppet agent directly from <a href="https://yum.puppet.com/">yum.puppet.com</a>, add a host parameter named <code>enable-puppetlabs-puppet7-repo</code> for Puppet 7
+as type boolean set to <code>true</code>.
+Only use this if you don&#8217;t provide Puppet agent to the host using its activation key.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Installing_and_Configuring_the_Puppet_Agent_on_a_Host_Manually_managing-configurations-puppet"><a class="anchor" href="#Installing_and_Configuring_the_Puppet_Agent_on_a_Host_Manually_managing-configurations-puppet"></a>1.6. Installing and Configuring Puppet Agent on a Host Manually</h3>
+<div class="paragraph">
+<p>Install and configure the Puppet agent on a host manually.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>The host must have a Puppet environment assigned to it.</p>
+</li>
+<li>
+<p>The Red&#160;Hat Satellite Client Puppet 7.0 repository must be enabled and synchronized to Satellite&#160;Server, and enabled on the host.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Log in to the host as the <code>root</code> user.</p>
+</li>
+<li>
+<p>Install the Puppet agent package.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>On hosts running Red&#160;Hat Enterprise Linux:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># yum install puppet-agent</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Append the following server and environment settings to the <code>/etc/puppetlabs/puppet/puppet.conf</code> file.
+Set the <code>environment</code> parameter to the name of the Puppet environment to which the host belongs:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">environment = <em>My_Puppet_Environment</em>
+server = <em>satellite.example.com</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Configure the Puppet agent to start at boot:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>On Red&#160;Hat Enterprise Linux 6:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># chkconfig puppet on</pre>
+</div>
+</div>
+</li>
+<li>
+<p>On Red&#160;Hat Enterprise Linux 7 and 8:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl enable --now puppet</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Run the Puppet agent on the host:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># puppet ssl bootstrap</pre>
+</div>
+</div>
+</li>
+<li>
+<p>In the Satellite web UI, navigate to <strong>Infrastructure</strong> &gt; <strong>Capsules</strong>.</p>
+</li>
+<li>
+<p>From the list in the <strong>Actions</strong> column for the required Capsule&#160;Server, select <strong>Certificates</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Sign</strong> to the right of the required host to sign the SSL certificate for the Puppet agent.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Disabling_Puppet_Integration_managing-configurations-puppet"><a class="anchor" href="#Disabling_Puppet_Integration_managing-configurations-puppet"></a>1.7. Disabling Puppet Integration with Satellite</h3>
 <div class="paragraph">
 <p>To discontinue using Puppet in your Satellite, follow this procedure.</p>
 </div>
@@ -311,118 +534,6 @@ Additionally, Puppet server can be deployed externally to Satellite and integrat
 <p>The command without arguments will remove all Puppet-related data in Satellite.
 To remove Puppet server data files, including Puppet environments, add the <code>--remove-all-data</code> argument to the command.</p>
 </div>
-</li>
-</ol>
-</div>
-</div>
-<div class="sect2">
-<h3 id="Installing_Puppet_Agent_during_Host_Provisioning_managing-configurations-puppet"><a class="anchor" href="#Installing_Puppet_Agent_during_Host_Provisioning_managing-configurations-puppet"></a>1.5. Installing Puppet Agent during Host Provisioning</h3>
-<div class="paragraph">
-<p>You can install Puppet Agent during the host provisioning process.</p>
-</div>
-<div class="olist arabic">
-<div class="title">Procedure</div>
-<ol class="arabic">
-<li>
-<p>Navigate to <strong>Hosts &gt; Provisioning Templates</strong>.</p>
-</li>
-<li>
-<p>Select a provisioning template depending on your host provisioning method.
-For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.10/html-single/provisioning_guide/index#types-of-provisioning-templates_provisioning">Types of Provisioning Templates</a> in the <em>Provisioning</em> guide.</p>
-</li>
-<li>
-<p>Ensure the <code>puppet_setup</code> snippet is included as follows:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">&lt;%= snippet 'puppet_setup' %&gt;</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Enable Puppet using a host parameter for a single host or host group:</p>
-<div class="paragraph">
-<p>Add a host parameter named <code>enable-puppet6</code> as type boolean set to <code>true</code>.</p>
-</div>
-</li>
-<li>
-<p>Optional: To install the Puppet Agent directly from <a href="https://yum.puppet.com/">yum.puppet.com</a>, add a host parameter named <code>enable-puppetlabs-puppet6-repo</code> as type boolean set to <code>true</code>.
-Only use this if you don&#8217;t provide Puppet Agent to the host using its activation key.</p>
-</li>
-</ol>
-</div>
-</div>
-<div class="sect2">
-<h3 id="Installing_and_Configuring_the_Puppet_Agent_managing-configurations-puppet"><a class="anchor" href="#Installing_and_Configuring_the_Puppet_Agent_managing-configurations-puppet"></a>1.6. Installing and Configuring the Puppet Agent</h3>
-<div class="paragraph">
-<p>Use this procedure to install and configure the Puppet agent on a host.
-For more information about Puppet, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.10/html-single/managing_configurations_using_puppet_integration/index#">Managing Configurations Using Puppet Integration in Satellite</a>.</p>
-</div>
-<div class="ulist">
-<div class="title">Prerequisites</div>
-<ul>
-<li>
-<p>The host must have a Puppet environment assigned to it.</p>
-</li>
-<li>
-<p>The Red&#160;Hat Satellite Tools 6.10 repository must be enabled and synchronized to Satellite&#160;Server, and enabled on the host.</p>
-</li>
-</ul>
-</div>
-<div class="olist arabic">
-<div class="title">Procedure</div>
-<ol class="arabic">
-<li>
-<p>Log in to the host as the <code>root</code> user.</p>
-</li>
-<li>
-<p>Install the Puppet agent package.</p>
-<div class="ulist">
-<ul>
-<li>
-<p>On hosts running Red&#160;Hat Enterprise Linux:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># yum install puppet-agent</pre>
-</div>
-</div>
-</li>
-</ul>
-</div>
-</li>
-<li>
-<p>Append the following server and environment settings to the <code>/etc/puppetlabs/puppet/puppet.conf</code> file.
-Set the <code>environment</code> parameter to the name of the Puppet environment to which the host belongs:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">environment = <em>My_Lifecycle_Environment</em>
-server = <em>satellite.example.com</em></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Configure the Puppet agent to start on boot:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># systemctl enable --now puppet</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Run the Puppet agent on the host:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># puppet ssl bootstrap</pre>
-</div>
-</div>
-</li>
-<li>
-<p>In the Satellite web UI, navigate to <strong>Infrastructure</strong> &gt; <strong>Capsules</strong>.</p>
-</li>
-<li>
-<p>From the list in the <strong>Actions</strong> column for the required Capsule&#160;Server, select <strong>Certificates</strong>.</p>
-</li>
-<li>
-<p>Click <strong>Sign</strong> to the right of the required host to sign the SSL certificate for the Puppet client.</p>
 </li>
 </ol>
 </div>
@@ -1132,21 +1243,6 @@ Set a duration, in minutes, after which hosts are considered to be out of sync.<
 </li>
 </ol>
 </div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="puppet_guide_additional_resources_managing-configurations-puppet"><a class="anchor" href="#puppet_guide_additional_resources_managing-configurations-puppet"></a>6. Additional Resources for Puppet</h2>
-<div class="sectionbody">
-<div class="ulist">
-<ul>
-<li>
-<p>The <a href="https://puppet.com/docs/puppet/">official Puppet documentation</a> is a good starting point.</p>
-</li>
-<li>
-<p>The <a href="https://forge.puppet.com/">Puppet Forge</a> is a repository for pre-built Puppet modules.</p>
-</li>
-</ul>
 </div>
 </div>
 </div>
