@@ -1,6 +1,7 @@
 
 Cherry-pick into:
 
+* [ ] Foreman 3.2
 * [ ] Foreman 3.1
 * For Foreman 3.0 or older, file a separate PR request
 
