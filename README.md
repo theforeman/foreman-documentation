@@ -44,8 +44,10 @@ When a commit is pushed into `X.Y`:
   * Push into `X.Y` branch.
 * Update master
   * Update `ProjectVersionPrevious` to `X.Y` in `guides/common/attributes.adoc`
-  * Create a copy of [/web/content/nightly.md](https://github.com/theforeman/foreman-documentation/tree/master/web/content/nightly.md) as `X.Y.md` and edit it accordingly.
-  * Edit [/web/content/versions.md](https://github.com/theforeman/foreman-documentation/blob/master/web/content/versions.md) and add the new version to the menu.
+  * Create a copy of [/web/content/release-nightly.md](https://github.com/theforeman/foreman-documentation/tree/master/web/content/release-nightly.md) as `release-X.Y.md` and edit it accordingly.
+  * Add the new release versions to the site's index page and navigation bar by editing [/web/content/index.adoc](https://github.com/theforeman/foreman-documentation/blob/master/web/content/index.adoc) and [/web/content/js/nav.js](https://github.com/theforeman/foreman-documentation/blob/master/web/content/js/nav.js).
+  * Test the changes by following the instructions in [/web/README.md](https://github.com/theforeman/foreman-documentation/tree/master/web/README.md) to deploy the website locally.
+  * Add the new Foreman version to [/.github/PULL_REQUEST_TEMPLATE.md](https://github.com/theforeman/foreman-documentation/blob/master/.github/PULL_REQUEST_TEMPLATE.md).
   * Push the changes into `master`.
 * Check the site if links and landing page appeared correctly. HTML guides should be deployed into `/X.Y`
 
