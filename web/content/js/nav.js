@@ -1,92 +1,89 @@
-let navVersions = [
-{
-	title: "Version", items: [
-	{
-		title: "Nightly",
-		href: "nightly"
-	},{
-		title: "Foreman 3.1 - Katello 4.3 (stable)",
-		href: "3.1"
-	},{
-		title: "Foreman 3.0 - Katello 4.2 (supported)",
-		href: "3.0"
-	},{
-		title: "Foreman 2.5 - Katello 4.1 (unsupported)",
-		href: "2.5"
-	},{
-		title: "Foreman 2.4 - Katello 4.0 (unsupported)",
-		href: "2.4"
-	}]
-    }
-]
+function buildNavigation() {
+  const versionRe = new RegExp(`/(nightly|\\d+.\\d+)/`);
+  var currentVer = document.location.toString().match(versionRe);
+  if (currentVer && currentVer.length > 1) {
+    currentVer = currentVer[1];
+  } else {
+    currentVer = "nightly";
+  }
+  const navBuilds = navVersions.find(function(version) {
+    return version['path'] == currentVer;
+  }).builds;
 
-let navItems = [
-{
-	title: "Foreman documentation", items: [
-	{
-		title: "Planning for Foreman",
-		href: "/Planning_Guide/index-foreman-el.html"
-	},{
-		title: "Quickstart Guide on RHEL/CentOS",
-		href: "/Quickstart_Guide/index-foreman-el.html"
-	},{
-		title: "Quickstart Guide on Debian/Ubuntu",
-		href: "/Quickstart_Guide/index-foreman-deb.html"
-	},{
-		title: "Installing on RHEL/CentOS",
-		href: "/Installing_Server_on_Red_Hat/index-foreman-el.html"
-	},{
-		title: "Installing Smart Proxy on RHEL/CentOS",
-		href: "/Installing_Proxy_on_Red_Hat/index-foreman-el.html"
-	},{
-		title: "Installing on Debian/Ubuntu",
-		href: "/Installing_Server_on_Debian/index-foreman-deb.html"
-	},{
-		title: "Installing Smart Proxy on Debian/Ubuntu",
-		href: "/Installing_Proxy_on_Debian/index-foreman-deb.html"
-	},{
-		title: "Upgrading and Updating",
-		href: "/Upgrading_and_Updating/index-foreman-el.html"
-	},{
-		title: "Deploying Foreman on AWS",
-		href: "/Deploying_on_AWS/index-foreman-el.html"
-	},{
-		title: "Configuring Smart Proxies with a Load Balancer",
-		href: "/Configuring_Load_Balancer/index-foreman-el.html"
-	},{
-		title: "Provisioning Guide",
-		href: "/Provisioning_Guide/index-foreman-el.html"
-	},{
-		title: "Configuring Foreman to use Ansible",
-		href: "/Configuring_Ansible/index-foreman-el.html"
-	},{
-		title: "Managing Hosts Guide",
-		href: "/Managing_Hosts/index-foreman-el.html"
-	},{
-		title: "Administering Foreman",
-		href: "/Administering_Red_Hat_Satellite/index-foreman-el.html"
-	},{
-		title: "Application Centric Deployment",
-		href: "/Application_Centric_Deployment/index-foreman-el.html"
-	}]
-},{
-	title: "Katello documentation", items: [
-	{
-		title: "Quickstart Guide on RHEL/CentOS",
-		href: "/Quickstart_Guide/index-katello.html"
-	},{
-		title: "Installing on RHEL/CentOS",
-		href: "/Installing_Server_on_Red_Hat/index-katello.html"
-	},{
-		title: "Installing Smart Proxy with Content on RHEL/CentOS",
-		href: "/Installing_Proxy_on_Red_Hat/index-katello.html"
-	},{
-		title: "Upgrading and Updating",
-		href: "/Upgrading_and_Updating/index-katello.html"
-	},{
-		title: "Content Management Guide",
-		href: "/Content_Management_Guide/index-katello.html"
-	}]
-    }
-]
+  return `<nav>
+  <a href="/">
+    <img class="logo" src="/img/helmet.svg" alt="Home">
+  </a>
+<button type="button" class="btn-hamburger" data-action="nav-toggle">
+  <span></span>
+  <span></span>
+  <span></span>
+  <span></span>
+  <span></span>
+</button>
+<ul class="nav-menu">
+  <li class="nav-item"><a href="/">Home</a></li>`
+    + navBuilds.map(function(build){
+      return(
+        `<li class="nav-item dropdown">
+          <a href="#" data-action="dropdown-toggle">${build.title}</a>
+            <div class="dropdown-menu">`
+            + build.guides.map(function(guide){
+              const url = `/${currentVer}/${guide.path}/${build.filename}`;
+              return `<div class="dropdown-div"><a class="dropdown-item" href="${url}">${guide.title}</a></div>`;
+            }).join("")
+            +`</div>
+        </li>`
+      )}).join("")
+    + `<li class="nav-item dropdown">
+        <a href="#" data-action="dropdown-toggle">Version ${currentVer}</a>
+        <div class="dropdown-menu dropdown-menu-left">`
+    + navVersions.map(function(version) {
+      if (document.location.pathname == "/") {
+        var dl = `/release/${version.path}`;
+      } else {
+        var dl = document.location.toString().replace(versionRe, `/${version.path}/`);
+      }
+      return(`<div class="dropdown-div"><a class="dropdown-item" href=${dl}>${version.title}</a></div>`
+      )}).join("")
+    +`</div>
+    </li>
+  </ul>
+</nav>`;
+}
 
+function toggleElement(dropdown) {
+  if (dropdown.classList.contains("show")) {
+    dropdown.classList.remove("show");
+  } else {
+    dropdown.classList.add("show");
+  }
+}
+
+function closeAll(except) {
+  const elems = document.getElementsByClassName("nav-item");
+  for (let i = 0; i < elems.length; i++) {
+    const elem = elems[i];
+    if (elem != except) {
+      elem.classList.remove("show");
+    }
+  };
+}
+
+var addNavbarListeners = () => {
+  const nav = document.querySelector("nav");
+  nav.querySelectorAll("[data-action='dropdown-toggle']").forEach((dropdownToggle) => {
+    dropdownToggle.addEventListener("click", () => {
+      closeAll(dropdownToggle.parentElement);
+      toggleElement(dropdownToggle.parentElement);
+    });
+  });
+
+  nav.querySelector("[data-action='nav-toggle']").addEventListener("click", () => {
+    if (nav.classList.contains("opened")) {
+      nav.classList.remove("opened");
+    } else {
+      nav.classList.add("opened");
+    }
+  });
+}
