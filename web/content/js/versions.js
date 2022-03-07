@@ -164,7 +164,7 @@ const navVersions = [
     ]
   },
   {
-    title: "Foreman 3.2 - Katello 4.4 (stable)",
+    title: "Foreman 3.2 - Katello 4.4 (RC-phase)",
     path: "3.2",
     builds: [
       {
