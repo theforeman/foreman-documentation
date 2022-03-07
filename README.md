@@ -15,9 +15,23 @@ See README in the guides/ subdirectory for more information.
 ## Static Site
 
 The landing page for [docs.theforeman.org](https://docs.theforeman.org) is available as a generated static site.
+The static content is always built from the `master` branch.
 See README in the web/ subdirectory for more information.
 
 * [web](web/README.md)
+
+## Testing locally
+
+To build both static site and guides for easy local testing, there is the global `Makefile` in the root directory with the following targets:
+
+* `html`: builds HTML guides with all contexts (foreman, debian, katello)
+* `web`: builds static site using the `nanoc` tool
+* `compile`: compiles all content into a single directory `./result`
+* `serve`: serves the result directory via a python web server (the default target)
+
+To test the whole site locally, perform `make` command and open up `http://localhost:5000`.
+It builds all contexts so the initial build can be slow, make sure to use `-j` option for faster builds on modern multi-core machines.
+Stable versions are symlink to the nightly (current) version, this can cause issues for deleted (or renamed) guides.
 
 ## Deployment
 
@@ -48,6 +62,7 @@ When a commit is pushed into `X.Y`:
   * Add the new release versions to the site's index page and navigation bar by editing [/web/content/index.adoc](https://github.com/theforeman/foreman-documentation/blob/master/web/content/index.adoc) and [/web/content/js/nav.js](https://github.com/theforeman/foreman-documentation/blob/master/web/content/js/nav.js).
   * Test the changes by following the instructions in [/web/README.md](https://github.com/theforeman/foreman-documentation/tree/master/web/README.md) to deploy the website locally.
   * Add the new Foreman version to [/.github/PULL_REQUEST_TEMPLATE.md](https://github.com/theforeman/foreman-documentation/blob/master/.github/PULL_REQUEST_TEMPLATE.md).
+  * Update `SYMLINK_VERSIONS` in the root `Makefile`.
   * Push the changes into `master`.
 * Check the site if links and landing page appeared correctly. HTML guides should be deployed into `/X.Y`
 
