@@ -4,6 +4,8 @@ THIS IS A WORK IN PROGRESS. VISIT THE OFFICIAL [FOREMAN OR KATELLO DOCUMENTATION
 
 This git repository contains PoC of improving Foreman documentation.
 
+BLA
+
 ## Foreman Guides
 
 This is a tree of documentation based on Red Hat Satellite 6 official books.
