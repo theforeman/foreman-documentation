@@ -1,0 +1,68 @@
+[id="Exporting_the_Repository_{context}"]
+= Exporting a Repository
+
+You can export contents of a Yum repository in the Library environment of an organization to an archive file from {ProjectServer} and use this archive file to create the same repository in another {ProjectServer} or in another {ProjectServer} organization.
+The exported archive file contains the following data:
+
+* A JSON file containing repository metadata
+* An archive file containing the contents of the repository from the Library environment of the organization.
+
+{ProjectServer} exports only RPM and kickstart repositories.
+{Project} does not export the following content:
+
+* Docker content
+
+.Prerequisites
+
+To export the contents of a repository, ensure that {ProjectServer} where you want to export meets the following conditions:
+
+* Ensure that the export directory has free storage space to accommodate the export.
+* Ensure that the `/var/lib/pulp/exports` directory has free storage space equivalent to the size of the repositories being exported for temporary files created during the export process.
+* Ensure that you set download policy to *Immediate* for the repository within the Library lifecycle environment you export.
+For more information, see xref:Download_Policies_Overview_{context}[].
+* Ensure that you synchronize Products that you export to the required date.
+
+.To Export Contents of a Repository:
+
+Use the repository  name or ID to export.
+
+[options="nowrap" subs="+quotes"]
+----
+# hammer content-export complete repository \
+ --organization="_My_Organization_" \
+ --product="_My_Product_" \
+ --name="_My_Repository"
+----
+
+. Verify that the archive containing the exported version of the repository is located in the export directory:
++
+[options="nowrap" subs="+quotes"]
+----
+# ls -lh /var/lib/pulp/exports/_My_Organization_/Export-_My_Repository-9/1.0/2021-03-02T03-35-24-00-00
+total 68M
+-rw-r--r--. 1 pulp pulp 68M Mar  2 03:35 export-1e25417c-6d09-49d4-b9a5-23df4db3d52a-20210302_0335.tar.gz
+-rw-r--r--. 1 pulp pulp 333 Mar  2 03:35 export-1e25417c-6d09-49d4-b9a5-23df4db3d52a-20210302_0335-toc.json
+-rw-r--r--. 1 root root 443 Mar  2 03:35 metadata.json
+----
+
+. You require all three files, for example, the `tar.gz`, the `toc.json` and the `metadata.json` file to be able to import.
+
+.Export with chunking
+
+In many cases the exported archive content may be several gigabytes in size.
+If you want to split it into smaller sizes or chunks.
+You can use the `--chunk-size-gb` flag directly in the export command to handle this.
+In the following example, you can see how to specify `--chunk-size-gb=2` to split the archives in `2 GB` chunks.
+
+[options="nowrap" subs="+quotes"]
+----
+# hammer content-export complete repository \
+--chunk-size-gb=2 \
+--organization="_My_Organization_"
+ --product="_My_Product_" \
+ --name="_My_Repository"
+
+Generated /var/lib/pulp/exports/_My_Organization_/Export-_My_Repository-9/1.0/2021-03-02T03-35-24-00-00/metadata.json
+
+# ls -lh /var/lib/pulp/exports/_My_Organization_/Export-_My_Repository-9/1.0/2021-03-02T03-35-24-00-00/
+----
