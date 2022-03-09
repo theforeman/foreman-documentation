@@ -337,11 +337,11 @@ const navVersions = [
           },
           {
             title: "Installing Katello Server",
-            path: "Installing_Server_on_Red_Hat"
+            path: "Installing_Server"
           },
           {
             title: "Installing Smart Proxy with Content",
-            path: "Installing_Proxy_on_Red_Hat"
+            path: "Installing_Proxy"
           },
           {
             title: "Upgrading and Updating",
@@ -405,11 +405,11 @@ const navVersions = [
           },
           {
             title: "Installing Katello Server",
-            path: "Installing_Server_on_Red_Hat"
+            path: "Installing_Server"
           },
           {
             title: "Installing Smart Proxy with Content",
-            path: "Installing_Proxy_on_Red_Hat"
+            path: "Installing_Proxy"
           },
           {
             title: "Upgrading and Updating",
@@ -473,11 +473,11 @@ const navVersions = [
           },
           {
             title: "Installing Katello Server",
-            path: "Installing_Server_on_Red_Hat"
+            path: "Installing_Server"
           },
           {
             title: "Installing Smart Proxy with Content",
-            path: "Installing_Proxy_on_Red_Hat"
+            path: "Installing_Proxy"
           },
           {
             title: "Upgrading and Updating",
