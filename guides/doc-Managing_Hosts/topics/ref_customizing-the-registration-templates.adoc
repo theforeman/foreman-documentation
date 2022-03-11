@@ -1,0 +1,124 @@
+[id="customizing-the-registration-templates_{context}"]
+= Customizing the Registration Templates
+
+Use information in this section if you want to customize the registration process.
+
+Note that all default templates in {Project} are locked.
+If you want to customize the registration process, you need to clone the default templates and edit the clones.
+Then, in *Administer* > *Settings* > *Provisioning* change the *Default Global registration template* and *Default 'Host initial configuration' template* settings to point to your custom templates.
+
+.Templates
+The registration process uses the following registration templates:
+
+* The *Global Registration* template contains steps for registering hosts to {Project}.
+This template renders when hosts access the `/register` endpoint.
+* The *Linux host_init_config default* template contains steps for initial configuration of hosts after they are registered.
+
+.Global Parameters
+You can configure the following global parameters by navigating to *Configure* > *Global Parameters*:
+
+* The `host_registration_remote_execution` parameter is used in the `remote_execution_ssh_keys` snippet, the default value is `true`.
+
+ifndef::satellite[]
+* The `host_registration_insights` parameter is used in the `insights` snippet, the default value is `false`.
+endif::[]
+
+ifdef::satellite[]
+* The `host_registration_insights` parameter is used in the `insights` snippet, the default value is `true`.
+endif::[]
+
+* The `host_packages` parameter is for installing packages on the host.
+* The `remote_execution_ssh_keys`, `remote_execution_ssh_user`, `remote_execution_create_user` and `remote_execution_effective_user_method` parameters are used in the `remote_execution_ssh_keys`. For more details se the details of the snippet.
+* The `encrypt_grub` parameter is to enable setting of an encrypted bootloader password for the host, the default value is `false`.
++
+To actually set the password, use the `grub_pass` macro in your template.
+
+.Snippets
+Snippet is used in the *Linux host_init_config default* template:
+
+* The `remote_execution_ssh_keys` snippet deploys SSH keys to the host only when the `host_registration_remote_execution` parameter is `true`.
+* The `insights` snippet downloads and installs the Red{nbsp}Hat Insights client when global parameter `host_registration_insights` is set to true.
+* The `puppetlabs_repo` and `puppet_setup` snippets downloads and installs puppet agent on the host (only when puppet master is present)
+* The `host_init_config_post` is empty snippet for user's custom actions on during host initial configuration.
+
+.Variables
+This table describes what variables are used in the `Global Registration` template.
+
+.The Global Registration Template Variables
+[cols=3*,options=header]
+|===
+|Variable
+|Command argument
+|Description
+
+|`@user`
+|none
+|Current authenticated user object.
+
+|`@organization`
+|`organization_id`
+|If `organization_id` is not set, then user's default organization is set, or the first organization from user's organizations list.
+
+|`@location`
+|`location_id`
+|If `location_id` is not set, user's default location is set, or the first location from user's locations list.
+
+|`@hostgroup`
+|`hostgroup_id`
+|Host group of the host.
+
+|`@operatingsystem`
+|`operatingsystem_id`
+|Host operating system.
+
+|`@setup_insights`
+|`setup_insights`
+|Override the value of the `host_registration_insights` global parameter for the registered host and install insights client.
+
+|`@setup_remote_execution`
+|`setup_remote_execution`
+|Override the value of `host_registration_remote_execution` global parameter for the registered host and deploy SSH keys for remote execution.
+
+|`@setup_remote_execution`
+|`setup_remote_execution`
+|Set default interface of host for the remote execution.
+
+|`@packages`
+|`packages`
+|Packages to install
+
+|`@repo`
+|`repo`
+|Add repository on the host
+
+|`@repo_gpg_key_url`
+|`repo_gpg_key_url`
+|Set repository GPG key form URL
+
+|`@activation_keys`
+|`activation_keys`
+ifdef::satellite,orcharhino[]
+|Host activation keys.
+endif::[]
+ifdef::foreman-el,foreman-deb,katello[]
+|The Host activation keys snippet is for Katello users only.
+endif::[]
+
+ifdef::satellite,orcharhino[]
+|`@force`
+|`force`
+|Remove any `katello-ca-consumer*` rpms and run `subscription-manager register` command with `--force` argument.
+
+|`@ignore_subman_errors`
+|`ignore_subman_errors`
+|Ignore subscription-manager errors
+
+|`@lifecycle_environment_id`
+|`lifecycle_environment_id`
+|Life cycle environment id
+endif::[]
+
+|`@registration_url`
+|none
+|URL for the `/register` endpoint.
+|===
