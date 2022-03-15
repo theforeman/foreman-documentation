@@ -34,12 +34,12 @@
 <ul class="sectlevel1">
 <li><a href="#introducing-configuration-management-using-puppet_managing-configurations-puppet">1. Introducing Configuration Management Using Puppet</a>
 <ul class="sectlevel2">
-<li><a href="#Puppet_architecture_managing-configurations-puppet">1.1. Puppet Architecture</a></li>
-<li><a href="#planning-for-puppet-deployment_managing-configurations-puppet">1.2. Planning for Puppet Deployment</a></li>
-<li><a href="#performing-configuration-management_managing-configurations-puppet">1.3. Performing Configuration Management</a></li>
-<li><a href="#Enabling_Puppet_Integration_managing-configurations-puppet">1.4. Enabling Puppet Integration with Foreman</a></li>
-<li><a href="#Installing_Puppet_Agent_during_Host_Provisioning_managing-configurations-puppet">1.5. Installing Puppet Agent during Host Provisioning</a></li>
-<li><a href="#Installing_and_Configuring_the_Puppet_Agent_on_a_Host_Manually_managing-configurations-puppet">1.6. Installing and Configuring Puppet Agent on a Host Manually</a></li>
+<li><a href="#How_Puppet_Integrates_With_Project_managing-configurations-puppet">1.1. How Puppet Integrates With Foreman</a></li>
+<li><a href="#supported-puppet-versions-and-system-requirements_managing-configurations-puppet">1.2. Supported Puppet Versions And System Requirements</a></li>
+<li><a href="#Enabling_Puppet_Integration_managing-configurations-puppet">1.3. Enabling Puppet Integration with Foreman</a></li>
+<li><a href="#Installing_Puppet_Agent_during_Host_Provisioning_managing-configurations-puppet">1.4. Installing Puppet Agent during Host Provisioning</a></li>
+<li><a href="#Installing_and_Configuring_the_Puppet_Agent_on_a_Host_Manually_managing-configurations-puppet">1.5. Installing and Configuring Puppet Agent on a Host Manually</a></li>
+<li><a href="#performing-configuration-management_managing-configurations-puppet">1.6. Performing Configuration Management</a></li>
 <li><a href="#Disabling_Puppet_Integration_managing-configurations-puppet">1.7. Disabling Puppet Integration with Foreman</a></li>
 </ul>
 </li>
@@ -88,7 +88,7 @@
 <div class="sectionbody">
 <div class="paragraph">
 <p>You can use Puppet to manage and automate configurations of hosts.
-Puppet uses a declarative language to describe the state of managed hosts.</p>
+Puppet uses a declarative language to describe the <em>desired state</em> of managed hosts.</p>
 </div>
 <div class="paragraph">
 <p>Puppet increases your productivity as you can administer multiple hosts simultaneously.
@@ -98,7 +98,7 @@ At the same time, it decreases your configuration effort as Puppet makes it easy
 <div class="title">Additional resources</div>
 <ul>
 <li>
-<p><a href="https://puppet.com/docs/puppet/">Official Puppet documentation</a></p>
+<p><a href="https://puppet.com/docs/puppet/">Open Source Puppet documentation</a></p>
 </li>
 <li>
 <p><a href="https://forge.puppet.com/">Puppet Forge</a>&#8201;&#8212;&#8201;a repository of pre-built Puppet modules</p>
@@ -106,12 +106,12 @@ At the same time, it decreases your configuration effort as Puppet makes it easy
 </ul>
 </div>
 <div class="sect2">
-<h3 id="Puppet_architecture_managing-configurations-puppet"><a class="anchor" href="#Puppet_architecture_managing-configurations-puppet"></a>1.1. Puppet Architecture</h3>
+<h3 id="How_Puppet_Integrates_With_Project_managing-configurations-puppet"><a class="anchor" href="#How_Puppet_Integrates_With_Project_managing-configurations-puppet"></a>1.1. How Puppet Integrates With Foreman</h3>
 <div class="paragraph">
-<p>Puppet uses a server-client architecture.
-The Puppet server is the central component, where the configuration definitions live.
+<p>Puppet uses a server-agent architecture.
+The Puppet server is the central component that stores configuration definitions.
 Foreman&#160;server or any Smart&#160;Proxies are typically deployed with the Puppet server and Foreman acts as an <a href="https://puppet.com/docs/puppet/7/nodes_external.html">External Node Classifier (ENC)</a> for such Puppet server.
-Managed hosts run the Puppet agent as a client that communicates with the Puppet server.</p>
+Managed hosts run the Puppet agent that communicates with the Puppet server.</p>
 </div>
 <div class="paragraph">
 <p>The Puppet agent collects <em>facts</em> about a host and reports them to the Puppet server on each run.
@@ -124,19 +124,19 @@ The Puppet server compiles a <em>catalog</em> based on the ENC answer and sends 
 </div>
 <div class="paragraph">
 <p>The Puppet agent evaluates the system state on the host.
-If the Puppet agent finds differences, known as <em>drifts</em>, between the defined state in the <em>catalog</em> and the actual state, it enforces correction of the host&#8217;s state.
+If the Puppet agent finds differences, known as <em>drifts</em>, between the <em>desired state</em> defined in the <em>catalog</em> and the actual state, it enforces correction of the state of the host.
 The Puppet agent then reports correction results back to the Puppet server, which reports them to Foreman.</p>
 </div>
 <div class="paragraph">
 <div class="title">Puppet modules</div>
-<p>The system state of a host is defined in a <em>catalog</em>.
+<p>The <em>desired state</em> of a host is defined in a <em>catalog</em>.
 The <em>catalog</em> is compiled from Puppet manifests of one or more Puppet modules assigned to the host.
 A Puppet module is a collection of classes, manifests, resources, files, and templates.
 The Puppet modules work as components of host configuration definitions.</p>
 </div>
 <div class="paragraph">
 <div class="title">Smart Class parameters</div>
-<p>You can parametrize a Puppet module using Smart Class parameters if the module supports the use of parameters.
+<p>You can override parameters of a Puppet module using Smart Class parameters if the module supports the use of parameters.
 You can define the parameters in your Foreman as <em>key-value</em> pairs, which behave similar to host parameters or Ansible variables.</p>
 </div>
 <div class="paragraph">
@@ -144,55 +144,24 @@ You can define the parameters in your Foreman as <em>key-value</em> pairs, which
 <p>You can also create multiple Puppet environments to control versions of configuration definitions or to manage variants of the definitions, and to test the definitions before you deploy them on production.</p>
 </div>
 <div class="paragraph">
-<p>The following procedures outline how to use a Puppet module to install, configure, and manage the <em>ntp</em> service to provide examples.</p>
+<div class="title">High-Level Integration Steps</div>
+<p>Puppet integration with Foreman involves the following high-level steps:</p>
 </div>
-</div>
-<div class="sect2">
-<h3 id="planning-for-puppet-deployment_managing-configurations-puppet"><a class="anchor" href="#planning-for-puppet-deployment_managing-configurations-puppet"></a>1.2. Planning for Puppet Deployment</h3>
-<div class="paragraph">
-<p>Consider the following aspects when planning to deploy Puppet in Foreman or when you are considering whether you should start using Puppet.</p>
-</div>
-<div class="dlist">
-<dl>
-<dt class="hdlist1">Supported Puppet Versions</dt>
-<dd>
-<div class="ulist">
-<ul>
-<li>
-<p>Puppet 7</p>
-</li>
-<li>
-<p>Puppet 6</p>
-</li>
-</ul>
-</div>
-</dd>
-<dt class="hdlist1">System Requirements</dt>
-<dd>
-<p>See the <a href="https://puppet.com/docs/puppet/7/system_requirements.html">System Requirements for Puppet 7</a>
-or <a href="https://puppet.com/docs/puppet/6/system_requirements.html">System Requirements for Puppet 6</a>
-in the <em>Open Source Puppet</em> documentation.</p>
-</dd>
-<dt class="hdlist1">High-Level Deployment Steps</dt>
-<dd>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p><a href="#Enabling_Puppet_Integration_managing-configurations-puppet">Enabling Puppet Integration with Foreman</a></p>
+<p><a href="#Enabling_Puppet_Integration_managing-configurations-puppet">Enable Puppet integration</a>.</p>
 </li>
 <li>
-<p>Importing Puppet agent packages into Foreman.
-Puppet agent packages can be managed like any other content with Katello
+<p>Import Puppet agent packages into Foreman.
+Puppet agent packages can be managed like any other content with Foreman
 by syncing repositories in custom products
 and by using <a href="https://docs.theforeman.org/nightly/Content_Management_Guide/index-katello.html#Managing_Activation_Keys_content-management">Activation Keys</a> and <a href="https://docs.theforeman.org/nightly/Content_Management_Guide/index-katello.html#Managing_Content_Views_content-management">Content Views</a>.</p>
 </li>
 <li>
-<p>Installing Puppet agent on hosts during <a href="#Installing_Puppet_Agent_during_Host_Provisioning_managing-configurations-puppet">provisioning</a>, registration, <a href="#Installing_and_Configuring_the_Puppet_Agent_on_a_Host_Manually_managing-configurations-puppet">manually</a>, or by remote job execution.</p>
+<p>Install Puppet agent on hosts during <a href="#Installing_Puppet_Agent_during_Host_Provisioning_managing-configurations-puppet">provisioning</a>, registration, <a href="#Installing_and_Configuring_the_Puppet_Agent_on_a_Host_Manually_managing-configurations-puppet">manually</a>, or by remote job execution.</p>
 </li>
 </ol>
-</div>
-</dd>
-</dl>
 </div>
 <div class="ulist">
 <div class="title">Additional resources</div>
@@ -208,48 +177,45 @@ and by using <a href="https://docs.theforeman.org/nightly/Content_Management_Gui
 </li>
 </ul>
 </div>
-</div>
-<div class="sect2">
-<h3 id="performing-configuration-management_managing-configurations-puppet"><a class="anchor" href="#performing-configuration-management_managing-configurations-puppet"></a>1.3. Performing Configuration Management</h3>
 <div class="paragraph">
-<p>Once you deployed Puppet agent on a host, you can start performing configuration management with Puppet.
-This involves the following high-level steps:</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Managing Puppet modules on the Puppet server, that is installing and updating them.</p>
-</li>
-<li>
-<p>Importing Puppet classes and environments from Puppet modules into Foreman.</p>
-</li>
-<li>
-<p>Optional: Creating config groups.</p>
-</li>
-<li>
-<p>Configuring overrides of Smart Class parameters on various levels.</p>
-</li>
-<li>
-<p>Assigning Puppet classes, modules, or config groups to host groups or individual hosts.</p>
-</li>
-<li>
-<p>Configuring intervals for runs of the Puppet agent on hosts and for configuration enforcement runs of the Puppet server.</p>
-</li>
-<li>
-<p>Monitoring configuration management using reports in the Foreman web UI.</p>
-</li>
-<li>
-<p>Configuring email notifications.
-See <a href="https://docs.theforeman.org/nightly/Administering_Red_Hat_Satellite/index-katello.html#Configuring_Email_Notifications_admin">Configuring Email Notifications</a> in <em>Administering Foreman</em>.</p>
-</li>
-</ol>
-</div>
-<div class="paragraph">
-<p>After assigning Puppet modules and configuring the intervals, Foreman runs configuration management automatically in the configured intervals to enforce Puppet configuration on the managed hosts, or you can initiate it manually on demand with the <a href="#running-puppet-once-using-ssh_managing-configurations-puppet"><strong>Run Puppet Once</strong> feature</a>.</p>
+<p>The following procedures outline how to use a Puppet module to install, configure, and manage the <em>ntp</em> service to provide examples.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="Enabling_Puppet_Integration_managing-configurations-puppet"><a class="anchor" href="#Enabling_Puppet_Integration_managing-configurations-puppet"></a>1.4. Enabling Puppet Integration with Foreman</h3>
+<h3 id="supported-puppet-versions-and-system-requirements_managing-configurations-puppet"><a class="anchor" href="#supported-puppet-versions-and-system-requirements_managing-configurations-puppet"></a>1.2. Supported Puppet Versions And System Requirements</h3>
+<div class="paragraph">
+<p>Before you begin with the Puppet integration, review the supported Puppet versions and system requirements.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Supported Puppet Versions</dt>
+<dd>
+<p>Foreman supports the following Puppet versions:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Puppet 7</p>
+</li>
+<li>
+<p>Puppet 6</p>
+</li>
+</ul>
+</div>
+</dd>
+<dt class="hdlist1">System Requirements</dt>
+<dd>
+<p>Before you begin integrating Puppet with your Foreman, ensure that you meet the system requirements.
+For details, see
+<a href="https://puppet.com/docs/puppet/7/system_requirements.html">System Requirements for Puppet 7</a>
+or
+<a href="https://puppet.com/docs/puppet/6/system_requirements.html">System Requirements for Puppet 6</a>
+in the <em>Open Source Puppet</em> documentation.</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Enabling_Puppet_Integration_managing-configurations-puppet"><a class="anchor" href="#Enabling_Puppet_Integration_managing-configurations-puppet"></a>1.3. Enabling Puppet Integration with Foreman</h3>
 <div class="paragraph">
 <p>By default, Foreman does not have any Puppet integration configured.
 You need to enable the integration as is appropriate for your situation.
@@ -260,7 +226,7 @@ Additionally, you can deploy Puppet server to Foreman externally and integrate i
 <div class="title">Procedure</div>
 <ol class="arabic">
 <li>
-<p>Enable Puppet integration and install Puppet server on Foreman&#160;server before you enable it on Smart&#160;Proxies:</p>
+<p>Enable Puppet integration and install Puppet server on Foreman&#160;server:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># foreman-installer --enable-foreman-plugin-puppet \
@@ -277,7 +243,7 @@ Additionally, you can deploy Puppet server to Foreman externally and integrate i
 </div>
 </li>
 <li>
-<p>Enable Puppet integration and install Puppet server on Smart&#160;Proxies:</p>
+<p>If you want to use Puppet integration on Smart&#160;Proxies, enable Puppet integration and install Puppet server on Smart&#160;Proxies:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># foreman-installer --foreman-proxy-puppet true \
@@ -295,7 +261,7 @@ Additionally, you can deploy Puppet server to Foreman externally and integrate i
 </div>
 </div>
 <div class="sect2">
-<h3 id="Installing_Puppet_Agent_during_Host_Provisioning_managing-configurations-puppet"><a class="anchor" href="#Installing_Puppet_Agent_during_Host_Provisioning_managing-configurations-puppet"></a>1.5. Installing Puppet Agent during Host Provisioning</h3>
+<h3 id="Installing_Puppet_Agent_during_Host_Provisioning_managing-configurations-puppet"><a class="anchor" href="#Installing_Puppet_Agent_during_Host_Provisioning_managing-configurations-puppet"></a>1.4. Installing Puppet Agent during Host Provisioning</h3>
 <div class="paragraph">
 <p>Install the Puppet agent during the host provisioning process.</p>
 </div>
@@ -334,7 +300,7 @@ as type boolean set to <code>true</code>.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="Installing_and_Configuring_the_Puppet_Agent_on_a_Host_Manually_managing-configurations-puppet"><a class="anchor" href="#Installing_and_Configuring_the_Puppet_Agent_on_a_Host_Manually_managing-configurations-puppet"></a>1.6. Installing and Configuring Puppet Agent on a Host Manually</h3>
+<h3 id="Installing_and_Configuring_the_Puppet_Agent_on_a_Host_Manually_managing-configurations-puppet"><a class="anchor" href="#Installing_and_Configuring_the_Puppet_Agent_on_a_Host_Manually_managing-configurations-puppet"></a>1.5. Installing and Configuring Puppet Agent on a Host Manually</h3>
 <div class="paragraph">
 <p>Install and configure the Puppet agent on a host manually.</p>
 </div>
@@ -440,6 +406,45 @@ server = <em>foreman.example.com</em></pre>
 </div>
 </div>
 <div class="sect2">
+<h3 id="performing-configuration-management_managing-configurations-puppet"><a class="anchor" href="#performing-configuration-management_managing-configurations-puppet"></a>1.6. Performing Configuration Management</h3>
+<div class="paragraph">
+<p>After you deploy Puppet agent on a host, you can start performing configuration management with Puppet.
+This involves the following high-level steps:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Managing Puppet modules on the Puppet server, that is installing and updating them.</p>
+</li>
+<li>
+<p>Importing Puppet classes and environments from Puppet modules into Foreman.</p>
+</li>
+<li>
+<p>Optional: Creating config groups from Puppet classes.</p>
+</li>
+<li>
+<p>Configuring overrides of Smart Class parameters on various levels.</p>
+</li>
+<li>
+<p>Assigning Puppet classes or config groups to host groups or individual hosts.</p>
+</li>
+<li>
+<p>Configuring intervals for runs of the Puppet agent on hosts and for configuration enforcement runs of the Puppet server.</p>
+</li>
+<li>
+<p>Monitoring configuration management using reports in the Foreman web UI.</p>
+</li>
+<li>
+<p>Configuring email notifications.
+See <a href="https://docs.theforeman.org/nightly/Administering_Red_Hat_Satellite/index-katello.html#Configuring_Email_Notifications_admin">Configuring Email Notifications</a> in <em>Administering Foreman</em>.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>After assigning Puppet classes or config groups, Foreman runs configuration management automatically in the configured intervals to enforce Puppet configuration on the managed hosts, or you can initiate it manually on demand with the <a href="#running-puppet-once-using-ssh_managing-configurations-puppet"><strong>Run Puppet Once</strong> feature</a>.</p>
+</div>
+</div>
+<div class="sect2">
 <h3 id="Disabling_Puppet_Integration_managing-configurations-puppet"><a class="anchor" href="#Disabling_Puppet_Integration_managing-configurations-puppet"></a>1.7. Disabling Puppet Integration with Foreman</h3>
 <div class="paragraph">
 <p>To discontinue using Puppet in your Foreman, follow this procedure.</p>
@@ -456,7 +461,7 @@ server = <em>foreman.example.com</em></pre>
 <div class="title">Procedure</div>
 <ol class="arabic">
 <li>
-<p>Disable Puppet server on all external Smart&#160;Proxies before you disable it on Foreman&#160;server:</p>
+<p>If you used Puppet server on external Smart&#160;Proxies, disable Puppet server on all external Smart&#160;Proxies:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># foreman-maintain plugin purge-puppet</pre>
