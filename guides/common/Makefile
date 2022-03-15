@@ -22,7 +22,7 @@ CSS_STYLE = compressed
 
 ifeq ($(UNAME), Linux)
 BROWSER_OPEN = xdg-open
-CP_ARGS = -l
+CP_ARGS = -lL
 endif
 ifeq ($(UNAME), Darwin)
 BROWSER_OPEN = open
@@ -71,7 +71,7 @@ $(DEST_DIR)/$(BUILD).css: $(CSS_SOURCES)
 
 $(IMAGES_TS): $(IMAGES)
 	@[[ -h ./images/common ]] || echo "FAILURE: Missing ./images dir with ./images/common symlink to commons!"
-	cp -Lrf $(CP_ARGS) ./images/* $(IMAGES_DIR)
+	cp -rf $(CP_ARGS) ./images/* $(IMAGES_DIR)
 	@touch $(IMAGES_TS)
 
 $(DEST_HTML): $(SOURCES) $(DEPENDENCIES) $(DOCINFO_SOURCES) $(DEST_DIR)/$(BUILD).css $(IMAGES_TS)
