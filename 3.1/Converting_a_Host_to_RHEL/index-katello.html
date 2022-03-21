@@ -27,18 +27,18 @@
 <h1>Converting a Host to RHEL</h1>
 <div class="details">
 <span id="revnumber">version 3.1,</span>
-<span id="revdate">published Mar 15 2022</span>
+<span id="revdate">published Mar 21 2022</span>
 </div>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
 <li><a href="#converting-a_host-with-convert2rhel_convert-to-rhel">1. Converting a Host to Red&#160;Hat Enterprise Linux with Convert2RHEL</a>
 <ul class="sectlevel2">
-<li><a href="#installing-convert2rhel_convert-to-rhel">1.1. Installing Convert2RHEL</a></li>
-<li><a href="#Creating_an_Activation_Key_convert-to-rhel">1.2. Creating an Activation Key</a></li>
-<li><a href="#preparing-the-host-group_convert-to-rhel">1.3. Preparing the Host Group</a></li>
+<li><a href="#importing_the_convert2rhel-Ansible_role_convert-to-rhel">1.1. Importing the Convert2RHEL Ansible Role and Variables</a></li>
+<li><a href="#assigning_the_convert2rhel_role_to_a_host_convert-to-rhel">1.2. Assigning the Convert2RHEL Role to a Host</a></li>
+<li><a href="#creating_variables_for_ansible_role_convert-to-rhel">1.3. Creating Variables for the Convert2RHEL Role</a></li>
 <li><a href="#registering-hosts-for-conversion_convert-to-rhel">1.4. Registering Hosts for Conversion</a></li>
-<li><a href="#converting-hosts-with-convert2rhel_convert-to-rhel">1.5. Converting Hosts with Convert2RHEL</a></li>
+<li><a href="#running_convert2rhel_ansible_playbook_convert-to-rhel">1.5. Running the Convert2RHEL Ansible Playbook</a></li>
 </ul>
 </li>
 </ul>
@@ -56,8 +56,30 @@
 Third-party packages and non-Foreman developers packages not available in Red&#160;Hat Enterprise Linux are not replaced.</p>
 </div>
 <div class="paragraph">
-<p>Convert2RHEL removes unnecessary packages such as logos, or packages known to cause issues during the conversion, and replaces the <code>CentOS-release</code> package with the <code>rhel-release</code> package.
-It subscribes the system to Foreman and replaces all packages signed by CentOS.</p>
+<p>You can convert:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>CentOS 7 to Red&#160;Hat Enterprise Linux 7</p>
+</li>
+<li>
+<p>Oracle 7 to Red&#160;Hat Enterprise Linux 7</p>
+</li>
+<li>
+<p>CentOS 8 to Red&#160;Hat Enterprise Linux 8</p>
+</li>
+<li>
+<p>Oracle 8 to Red&#160;Hat Enterprise Linux 8</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>You cannot convert a version 7 package into Red&#160;Hat Enterprise Linux 8, or a version 8 package into Red&#160;Hat Enterprise Linux 7.</p>
+</div>
+<div class="paragraph">
+<p>Convert2RHEL removes unnecessary packages such as logos, or packages known to cause issues during the conversion, and replaces the <code>CentOS-release</code> or <code>Oracle-release</code> package with the <code>rhel-release</code> package.
+It subscribes the system to Foreman and replaces all packages signed by CentOS or Oracle.</p>
 </div>
 <div class="paragraph">
 <p>The amount of time taken to do this can vary depending on how many packages need to be replaced, network speed, storage speed, and similar variables.</p>
@@ -67,24 +89,32 @@ It subscribes the system to Foreman and replaces all packages signed by CentOS.<
 For more information, see <a href="https://docs.theforeman.org/3.1/Managing_Hosts/index-katello.html#registering-a-host_managing-hosts">Registering a Host to Foreman Using the Global Registration Template</a> in the <em>Managing Hosts</em> guide.</p>
 </div>
 <div class="paragraph">
+<p>Parts of the process can be achieved using the theforeman.foreman.convert2rhel role assigned to the host or host groups.
+The Ansible role prepares data, that is, repositories, certificates, activation keys and host groups required for the host conversion.
+The role enables the <code>rhel-7-server-rpms</code> repository with the 7Server release and x86_64 architecture, as well as <code>rhel-8-for-x86_64-baseos-rpms</code> and <code>rhel-8-for-x86_64-appstream-rpms</code>.</p>
+</div>
+<div class="paragraph">
+<p>Using the Ansible role to automate the Convert2RHEL process generates activation keys.</p>
+</div>
+<div class="paragraph">
 <p>To convert hosts to Red&#160;Hat Enterprise Linux with convert2RHEL, you must complete the following procedures:</p>
 </div>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p><a href="#installing-convert2rhel_convert-to-rhel">Installing Convert2RHEL</a>.</p>
+<p><a href="#importing_the_convert2rhel-Ansible_role_convert-to-rhel">Importing the Convert2RHEL Ansible Role and Variables</a></p>
 </li>
 <li>
-<p><a href="#Creating_an_Activation_Key_convert-to-rhel">Creating an Activation Key</a>.</p>
+<p><a href="#assigning_the_convert2rhel_role_to_a_host_convert-to-rhel">Assigning the Convert2RHEL Role to a Host</a></p>
 </li>
 <li>
-<p><a href="#preparing-the-host-group_convert-to-rhel">Preparing the Host Group</a>.</p>
+<p><a href="#creating_variables_for_ansible_role_convert-to-rhel">Creating Variables for the Convert2RHEL Role</a></p>
 </li>
 <li>
 <p><a href="#registering-hosts-for-conversion_convert-to-rhel">Registering Hosts for Conversion</a>.</p>
 </li>
 <li>
-<p><a href="#converting-hosts-with-convert2rhel_convert-to-rhel">Converting Hosts with Convert2RHEL</a></p>
+<p><a href="#running_convert2rhel_ansible_playbook_convert-to-rhel">Running the Convert2RHEL Ansible Playbook</a></p>
 </li>
 </ol>
 </div>
@@ -107,6 +137,13 @@ For more information, see <a href="https://docs.theforeman.org/3.1/Content_Manag
 </li>
 <li>
 <p>Ensure you have a subscription manifest uploaded to your Foreman and that there are sufficient Red&#160;Hat Enterprise Linux subscriptions for the conversion.</p>
+<div class="paragraph">
+<p>The manifest provides access to all enabled content for the role to work properly.
+You can download the manifest and put it in the correct folder.
+The subscription manifest is retrieved from the specified path on the Ansible target host.
+Optionally, it can be fetched first from the RHSM portal using the provided login credentials and manifest UUID.
+It will be uploaded to the specified organization.</p>
+</div>
 </li>
 <li>
 <p>If you are accessing Red&#160;Hat Enterprise Linux packages using Foreman&#160;server, you must use the organization ID and activation key to run the <code>convert2rhel</code> command.</p>
@@ -114,325 +151,208 @@ For more information, see <a href="https://docs.theforeman.org/3.1/Content_Manag
 </ul>
 </div>
 <div class="sect2">
-<h3 id="installing-convert2rhel_convert-to-rhel"><a class="anchor" href="#installing-convert2rhel_convert-to-rhel"></a>1.1. Installing Convert2RHEL</h3>
+<h3 id="importing_the_convert2rhel-Ansible_role_convert-to-rhel"><a class="anchor" href="#importing_the_convert2rhel-Ansible_role_convert-to-rhel"></a>1.1. Importing the Convert2RHEL Ansible Role and Variables</h3>
 <div class="paragraph">
-<p>The following procedure makes Convert2RHEL available to the hosts you are converting.</p>
+<p>You must have imported Ansible roles to use.
+If you have not, the following procedure imports Ansible Roles for you to assign.</p>
 </div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
 <ol class="arabic">
 <li>
-<p>In the Foreman web UI, navigate to <strong>Content</strong> <strong>&gt;</strong> <strong>Products</strong> and click <strong>Create Product</strong>.</p>
+<p>In the Foreman web UI, navigate to <strong>Configure &gt; Roles</strong>.</p>
 </li>
 <li>
-<p>In the <strong>Name</strong> field, enter the name of the product.
-Foreman automatically completes the <strong>Label</strong> field based on your entry for <strong>Name</strong>.</p>
+<p>If you have not imported Ansible roles, click the Import from button.</p>
 </li>
 <li>
-<p>Optional: From the <strong>GPG Key</strong> list, select the GPG key for the product.</p>
+<p>The Roles page displays the Ansible roles.</p>
 </li>
 <li>
-<p>Optional: From the <strong>SSL CA Cert</strong> list, select the SSL CA certificate for the product.</p>
+<p>Check the <strong>Select All</strong> checkbox.</p>
 </li>
 <li>
-<p>You do not need to complete <strong>SSL Client Cert</strong> or <strong>SSL Client Key</strong>.</p>
-</li>
-<li>
-<p>Optional: From the <strong>Sync Plan</strong> list, select an existing sync plan or click <strong>Create Sync Plan</strong> to create a sync plan for your product requirements.</p>
-</li>
-<li>
-<p>Optional: In the <strong>Description</strong> field, enter a description of the product.</p>
-</li>
-<li>
-<p>Click <strong>Save</strong>.</p>
-</li>
-<li>
-<p>Click the <strong>Repositories</strong> tab.</p>
-</li>
-<li>
-<p>To add a repository, click <strong>New Repository</strong>.</p>
-</li>
-<li>
-<p>In the <strong>Name</strong> field, enter the name of the repository.</p>
-</li>
-<li>
-<p>From the <strong>Type</strong> list, set the content type to Yum.</p>
-</li>
-<li>
-<p>Do not restrict the architecture or the OS version.</p>
-</li>
-<li>
-<p>Use <code>https://cdn.redhat.com/content/public/convert2rhel/7/x86_64/os/</code> as the <strong>Upstream URL</strong>.</p>
-</li>
-<li>
-<p>Disable the <strong>Verify SSL</strong> checkbox.</p>
-</li>
-<li>
-<p>Optional: From the <strong>GPG Key</strong> list, select the GPG key for the product.</p>
-</li>
-<li>
-<p>Optional: From the <strong>SSL CA Cert</strong> list, select the SSL CA certificate for the product.</p>
-<div class="paragraph">
-<p>You do not need to complete <strong>SSL Client Cert</strong> or <strong>SSL Client Key</strong>.</p>
-</div>
-</li>
-<li>
-<p>Click <strong>Save</strong>.</p>
-</li>
-<li>
-<p>Click the checkbox next to the new repository, then click <strong>Sync Now</strong>.</p>
+<p>Click <strong>Submit</strong> to import the roles.</p>
 </li>
 </ol>
 </div>
 </div>
 <div class="sect2">
-<h3 id="Creating_an_Activation_Key_convert-to-rhel"><a class="anchor" href="#Creating_an_Activation_Key_convert-to-rhel"></a>1.2. Creating an Activation Key</h3>
+<h3 id="assigning_the_convert2rhel_role_to_a_host_convert-to-rhel"><a class="anchor" href="#assigning_the_convert2rhel_role_to_a_host_convert-to-rhel"></a>1.2. Assigning the Convert2RHEL Role to a Host</h3>
 <div class="paragraph">
-<p>You can use activation keys to define a specific set of subscriptions to attach to hosts during registration.
-The subscriptions that you add to an activation key must be available within the associated Content View.</p>
-</div>
-<div class="paragraph">
-<p>Subscription Manager attaches subscriptions differently depending on the following factors:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Are there any subscriptions associated with the activation key?</p>
-</li>
-<li>
-<p>Is the auto-attach option enabled?</p>
-</li>
-<li>
-<p>For Red&#160;Hat Enterprise Linux 8 hosts: Is there system purpose set on the activation key?</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>Note that Foreman automatically attaches subscriptions only for the products installed on a host.
-For subscriptions that do not list products installed on Red&#160;Hat Enterprise Linux by default, such as the Extended Update Support (EUS) subscription, use an activation key specifying the required subscriptions and with the auto-attach disabled.</p>
-</div>
-<div class="paragraph">
-<p>Based on the previous factors, there are three possible scenarios for subscribing with activation keys:</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Activation key that attaches subscriptions automatically.</p>
-<div class="paragraph">
-<p>With no subscriptions specified and auto-attach enabled, hosts using the activation key search for the best fitting subscription from the ones provided by the Content View associated with the activation key.
-This is similar to entering the <code>subscription-manager --auto-attach</code> command.
-For Red&#160;Hat Enterprise Linux 8 hosts, you can configure the activation key to set system purpose on hosts during registration to enhance the automatic subscriptions attachment.</p>
-</div>
-</li>
-<li>
-<p>Activation key providing a custom set of subscription for auto-attach.</p>
-<div class="paragraph">
-<p>If there are subscriptions specified and auto-attach is enabled, hosts using the activation key select the best fitting subscription from the list specified in the activation key.
-Setting system purpose on the activation key does not affect this scenario.</p>
-</div>
-</li>
-<li>
-<p>Activation key with the exact set of subscriptions.</p>
-<div class="paragraph">
-<p>If there are subscriptions specified and auto-attach is disabled, hosts using the activation key are associated with all subscriptions specified in the activation key.
-Setting system purpose on the activation key does not affect this scenario.</p>
-</div>
-</li>
-</ol>
-</div>
-<div class="paragraph">
-<div class="title">Products</div>
-<p>If a product, typically containing content not provided by Red Hat, is assigned to an activation key, this product is always enabled for the registered content host regardless of the auto-attach setting.</p>
-</div>
-<div class="paragraph">
-<p>To use the CLI instead of the Foreman web UI, see the <a href="#cli-creating-an-activation-key_convert-to-rhel">CLI procedure</a>.</p>
-</div>
-<div class="olist arabic">
 <div class="title">Procedure</div>
-<ol class="arabic">
-<li>
-<p>In the Foreman web UI, navigate to <strong>Content</strong> &gt; <strong>Activation keys</strong> and click <strong>Create Activation Key</strong>.</p>
-</li>
-<li>
-<p>In the <strong>Name</strong> field, enter the name of the activation key.</p>
-</li>
-<li>
-<p>If you want to set a limit, clear the <strong>Unlimited hosts</strong> check box, and in the <strong>Limit</strong> field, enter the maximum number of systems you can register with the activation key.
-If you want unlimited hosts to register with the activation key, ensure the <strong>Unlimited Hosts</strong> check box is selected.</p>
-</li>
-<li>
-<p>Optional: In the <strong>Description</strong> field, enter a description for the activation key.</p>
-</li>
-<li>
-<p>From the <strong>Environment</strong> list, select the environment to use.</p>
-</li>
-<li>
-<p>From the <strong>Content View</strong> list, select a Content View to use.
-If you intend to use the deprecated <code>Katello Agent</code> instead of <code>Remote Execution</code>, the Content View must contain the <a href="https://yum.theforeman.org/client/3.1/" class="bare">https://yum.theforeman.org/client/3.1/</a> repository because it contains the <code>katello-agent</code> package.</p>
-</li>
-<li>
-<p>If Simple Content Access (SCA) is not enabled:</p>
-<div class="olist loweralpha">
-<ol class="loweralpha" type="a">
-<li>
-<p>Click the <strong>Subscriptions</strong> tab, then click the <strong>Add</strong> submenu.</p>
-</li>
-<li>
-<p>Click the checkbox under the subscription you created before.</p>
-</li>
-<li>
-<p>Click <strong>Add Selected</strong>.</p>
-</li>
-</ol>
-</div>
-</li>
-<li>
-<p>If SCA is enabled:</p>
-<div class="olist loweralpha">
-<ol class="loweralpha" type="a">
-<li>
-<p>In the <strong>Repository Sets</strong> tab, ensure only your named repository is enabled.</p>
-</li>
-</ol>
-</div>
-</li>
-<li>
-<p>Click <strong>Save</strong>.</p>
-</li>
-<li>
-<p>Optional: For Red&#160;Hat Enterprise Linux 8 hosts, in the <strong>System Purpose</strong> section, you can configure the activation key with system purpose to set on hosts during registration to enhance subscriptions auto attachment.</p>
-</li>
-</ol>
-</div>
-<div id="cli-creating-an-activation-key_convert-to-rhel" class="olist arabic">
-<div class="title">CLI procedure</div>
-<ol class="arabic">
-<li>
-<p>Create the activation key:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># hammer activation-key create \
---name "<em>My_Activation_Key</em>" \
---unlimited-hosts \
---description "<em>Example Stack in the Development Environment</em>" \
---lifecycle-environment "<em>Development</em>" \
---content-view "<em>Stack</em>" \
---organization "<em>My_Organization</em>"</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Optional: For Red&#160;Hat Enterprise Linux 8 hosts, enter the following command to configure the activation key with system purpose to set on hosts during registration to enhance subscriptions auto attachment.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># hammer activation-key update \
---organization "<em>My_Organization</em>" \
---name "<em>My_Activation_Key</em>" \
---service-level "<em>Standard</em>" \
---purpose-usage "<em>Development/Test</em>" \
---purpose-role "<em>{RHELServer}</em>" \
---purpose-addons "<em>addons</em>"</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Obtain a list of your subscription IDs:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># hammer subscription list --organization "<em>My_Organization</em>"</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Attach the Red&#160;Hat Enterprise Linux subscription UUID to the activation key:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># hammer activation-key add-subscription \
---name "<em>My_Activation_Key</em>" \
---subscription-id <em>My_Subscription_ID</em> \
---organization "<em>My_Organization</em>"</pre>
-</div>
-</div>
-</li>
-<li>
-<p>List the product content associated with the activation key:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># hammer activation-key product-content \
---name "<em>My_Activation_Key</em>" \
---organization "<em>My_Organization</em>"</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Override the default auto-enable status for the <a href="https://yum.theforeman.org/client/3.1/" class="bare">https://yum.theforeman.org/client/3.1/</a> repository.
-The default status is set to disabled.
-To enable, enter the following command:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># hammer activation-key content-override \
---name "<em>My_Activation_Key</em>" \
---content-label https://yum.theforeman.org/client/3.1/el7/x86_64/foreman-client-release.rpm \
---value 1 \
---organization "<em>My_Organization</em>"</pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
-</div>
-<div class="sect2">
-<h3 id="preparing-the-host-group_convert-to-rhel"><a class="anchor" href="#preparing-the-host-group_convert-to-rhel"></a>1.3. Preparing the Host Group</h3>
-<div class="paragraph">
-<p>Use this procedure to prepare a host group to convert CentOS 7 machines.</p>
+<p>Use this procedure to assign the Ansible Role to the host.</p>
 </div>
 <div class="olist arabic">
-<div class="title">Procedure</div>
 <ol class="arabic">
 <li>
-<p>In the Foreman web UI, navigate to <strong>Configure</strong> <strong>&gt;</strong> <strong>Host groups</strong> and click <strong>Create Host Group</strong>.</p>
+<p>In the Foreman web UI, navigate to <strong>Hosts &gt; All Hosts</strong>.</p>
 </li>
 <li>
-<p>In the <strong>Name</strong> field, enter a name for the host group.</p>
+<p>Select the host you want to assign the Ansible role to, and in the new Host Page click the <strong>Edit</strong> button.</p>
 </li>
 <li>
-<p>In the <strong>Description</strong> field, enter a description of the host group.</p>
+<p>Click the <strong>Ansible Roles</strong> tab and from the <strong>Available Ansible Roles</strong> list, search for the <code>theforeman.foreman.convert2rhel</code> role.</p>
 </li>
 <li>
-<p>In the <strong>Lifecycle Environment</strong> field, select <code>Library</code>.</p>
-</li>
-<li>
-<p>Optional: In the <strong>Content view</strong> field enter a value for the Content view.</p>
-</li>
-<li>
-<p>For Steps 7 - 10, Foreman developers does not recommend setting values for this scenario as they might modify the host in ways that are not intended.</p>
-</li>
-<li>
-<p>Optional: In the <strong>Puppet Environment</strong> field, select value the Puppet Environment.</p>
-</li>
-<li>
-<p>The <strong>Deploy on</strong> field can be safely ignored.</p>
-</li>
-<li>
-<p>Optional: In the <strong>Puppet Proxy</strong> field, select the name of the Puppet server configured for this smart-proxy.</p>
-</li>
-<li>
-<p>Optional: In the <strong>Puppet CA Proxy</strong> field, select the Puppet Server CA configured for this smart-proxy.</p>
-</li>
-<li>
-<p>Switch to the <strong>Activation Keys</strong> tab.</p>
-</li>
-<li>
-<p>Optional: In the <strong>OpenSCAP Proxy</strong> field, select the OpenSCAP Smart&#160;Proxy to use for fetching SCAP content and uploading ARF reports.</p>
+<p>Click the <code>+</code> icon to add it to the <strong>Assigned Ansible Roles</strong> for the host.</p>
 </li>
 <li>
 <p>Click <strong>Submit</strong>.</p>
 </li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="creating_variables_for_ansible_role_convert-to-rhel"><a class="anchor" href="#creating_variables_for_ansible_role_convert-to-rhel"></a>1.3. Creating Variables for the Convert2RHEL Role</h3>
+<div class="paragraph">
+<p>Assigning the Ansible role to a host also installs variables.
+You must create the following additional variables:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 44.4444%;">
+<col style="width: 22.2222%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Default value to set</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">foreman_rhel_wait_for_syncs</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">false</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">foreman_manifest_path</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">path to manifest</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">foreman_organization</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">name of organization</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">foreman_password</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">your admin password</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">foreman_server_url</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">URL of foreman instance</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">foreman_username</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">admin</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">foreman_validate_certs</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">do ansible cert checks?</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Create the relevant variable for the conversion you intend:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 44.4444%;">
+<col style="width: 22.2222%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Default value to set</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">foreman_content_rhel_enable_rhel7</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">true</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">foreman_content_rhel_enable_rhel8</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">true</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">foreman_convert2rel_enable_oracle7</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">true</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">foreman_convert2rel_enable_oracle8</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">true</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Use the following procedure to create variables.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
 <li>
-<p>Switch to the <strong>Activation Keys</strong> tab.</p>
+<p>In the Foreman web UI, navigate to <strong>Configure &gt; Variables</strong>.</p>
 </li>
 <li>
-<p>In the <strong>Activation Keys</strong> field, enter the name of the product activation key.</p>
+<p>Click on the <strong>New Ansible Variable</strong> button.</p>
+</li>
+<li>
+<p>In the <strong>Key</strong> field of the <strong>Create Ansible Variable</strong> page, enter the name of the variable.</p>
+</li>
+<li>
+<p>Optional: In the <strong>Description</strong> field, enter a description of the variable.</p>
+</li>
+<li>
+<p>In the <strong>Ansible Role</strong> field, set the role the variable is assigned to.
+In this case, theforeman.foreman.convert2rhel.</p>
+</li>
+<li>
+<p>Optional: Under <strong>Default Behavior</strong>, select the <strong>Override</strong> check box.</p>
+</li>
+<li>
+<p>Set <strong>Parameter type</strong> to the value type for validation.
+For example, a string or boolean variable.</p>
+<div class="paragraph">
+<p>If you want to create data for Oracle 7 you must change the <strong>Parameter type</strong> for foreman-convert2rhel_enable_oracle7 to boolean, and set the value to <code>true</code>.</p>
+</div>
+<div class="paragraph">
+<p>If you want to create data for Oracle 8 you must change the <strong>Parameter type</strong> for foreman-convert2rhel_enable_oracle8 to boolean, and set the value to <code>true</code>.</p>
+</div>
+</li>
+<li>
+<p>Optional: In the <strong>Default Value</strong> field, enter the default value that you want to use if there is no match for the variable.</p>
+</li>
+<li>
+<p>Optional: Check the <strong>Hidden Values</strong> check box if you do not want to display the Ansible variable in plain text.</p>
+</li>
+<li>
+<p>Optional: Under <strong>Prioritize Attribute Order</strong>, in the <strong>Order</strong> window, list the order of the attributes.</p>
+</li>
+<li>
+<p>Optional: Check <strong>Merge Overrides</strong> if you want to add all further matched parameters after finding the first match.
+Check <strong>Merge Default</strong> if you want to also include the default value even if there are more specific values defined.
+Check <strong>Avoid Duplicates</strong> if you want to create a list of unique values for the selected variable.</p>
+</li>
+<li>
+<p>Optional: The <strong>Specify Matcher</strong> field requires an attribute type from the order list.</p>
+</li>
+<li>
+<p>Optional: Use the <strong>Add Matcher</strong> button to add more matchers.</p>
 </li>
 <li>
 <p>Click <strong>Submit</strong>.</p>
@@ -445,6 +365,31 @@ To enable, enter the following command:</p>
 <div class="paragraph">
 <p>Use this procedure to register CentOS hosts to Foreman.</p>
 </div>
+<div class="paragraph">
+<p>Activation keys produced by the Ansible role are as follows:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>convert2rhel_centos7 - used for registering centos7 hosts.</p>
+</li>
+<li>
+<p>convert2rhel_centos8 - used for registering centos8 hosts.</p>
+</li>
+<li>
+<p>convert2rhel_oracle7 - used for registering oracle7 hosts.</p>
+</li>
+<li>
+<p>convert2rhel_oracle8 - used for registering oracle8 hosts.</p>
+</li>
+<li>
+<p>convert2rhel_rhel7 - used for re-registering a host converted to RHEL 7.</p>
+</li>
+<li>
+<p>convert2rhel_rhel8 - used for re-registering a host converted to RHEL 8.</p>
+</li>
+</ul>
+</div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
 <ol class="arabic">
@@ -452,24 +397,37 @@ To enable, enter the following command:</p>
 <p>In the Foreman web UI, navigate to <strong>Hosts</strong> <strong>&gt;</strong> <strong>All Hosts</strong> and click <strong>Register Host</strong>.</p>
 </li>
 <li>
-<p>In the <strong>Host Group</strong> field, select the Host Group you want to use as a template for the conversion.</p>
+<p>In the <strong>Host Group</strong> field, select the Host Group you want to use as a template for the conversion.
+You can also select one of the following predefined Host groups:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>CentOS7 converting</p>
 </li>
+<li>
+<p>CentOS8 converting</p>
+</li>
+<li>
+<p>Oracle Linux 7 converting</p>
+</li>
+<li>
+<p>Oracle Linux 8 converting</p>
+</li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>The activation keys for these Host groups are automatically applied.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
 <li>
 <p>Optional, In the <strong>Operating System</strong> field, select the Operating System you are converting from.</p>
 </li>
 <li>
 <p>Optional: In the <strong>Smart&#160;Proxy</strong> field, select the required Smart&#160;Proxy.</p>
-</li>
-<li>
-<p>Optional: Use the <strong>Setup Insights</strong> field to select whether to install Red&#160;Hat Insights on converted hosts.</p>
-</li>
-<li>
-<p>Optional: Use the <strong>Remote execution</strong> field to select whether to install SSH on converted hosts.</p>
-</li>
-<li>
-<p>Optional: In the <strong>Token lifetime (hours)</strong> field, set the lifetime.
-The default value is four hours.
-If you require more time to run the command on your hosts, increase the value of the Token Lifetime.</p>
 </li>
 <li>
 <p>Optional: Check the <strong>Insecure</strong> box if the hosts might not trust the Foreman CA.</p>
@@ -491,40 +449,79 @@ If the host subscription status warns of Unknown subscription status, it can be 
 </div>
 </div>
 <div class="sect2">
-<h3 id="converting-hosts-with-convert2rhel_convert-to-rhel"><a class="anchor" href="#converting-hosts-with-convert2rhel_convert-to-rhel"></a>1.5. Converting Hosts with Convert2RHEL</h3>
+<h3 id="running_convert2rhel_ansible_playbook_convert-to-rhel"><a class="anchor" href="#running_convert2rhel_ansible_playbook_convert-to-rhel"></a>1.5. Running the Convert2RHEL Ansible Playbook</h3>
 <div class="paragraph">
-<p>Use the following procedure to perform the conversion.</p>
+<p>Use this procedure to install Convert2RHEL and perform the conversion.</p>
 </div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
 <ol class="arabic">
 <li>
-<p>In the Foreman web UI, navigate to <strong>Hosts</strong> <strong>&gt;</strong> <strong>All Hosts</strong> and select the target hosts you want to convert.
-You can use the <strong>Search</strong> field to filter the host list.</p>
+<p>In the Foreman web UI, navigate to <strong>Hosts &gt; All Hosts</strong> and select the target hosts on which you want to execute the remote job.
+You can use the search field to filter the host list.</p>
 </li>
 <li>
 <p>From the <strong>Select Action</strong> list, select <strong>Schedule Remote Job</strong>.</p>
 </li>
 <li>
-<p>In the <strong>Job category</strong> field, select <code>Convert to RHEL</code>.</p>
+<p>On the <strong>Job invocation page</strong>, define the main job settings:</p>
 </li>
 <li>
-<p>In the <strong>Job template</strong> field, verify that the Job Template is set to <code>Convert to RHEL</code>.</p>
+<p>Select the <strong>Job category</strong> and the <strong>Job template</strong> to use.
+Use Convert2RHEL for both.</p>
 </li>
 <li>
-<p>On the <strong>Job Invocation</strong> page, define the main job settings.</p>
+<p>Optional: Select a stored search string in the <strong>Bookmark</strong> list to specify the target hosts.</p>
+</li>
+<li>
+<p>Optional: Limit the targeted hosts by entering a <strong>Search query</strong>.
+The <strong>Resolves to</strong> line displays the number of hosts affected by your query.
+Use the refresh button to recalculate the number after changing the query.
+The preview icon lists the targeted hosts.</p>
+</li>
+<li>
+<p>In the <strong>Activation Key</strong> field, select the activation key associated with the conversion you are doing.
+you must choose either <code>convert2rhel_rhel7</code> or <code>convert2rhel_rhel8</code>.</p>
+</li>
+<li>
+<p>Check <strong>Restart</strong> if you want to restart the machine after the conversion is complete.
+The remaining settings might not display when you select the Convert2RHEL template.</p>
+</li>
+<li>
+<p>Optional: To configure advanced settings for the job, click <strong>Display advanced fields</strong>.
+Some of the advanced settings depend on the job template, the following settings are general:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Effective user</strong> defines the user for executing the job, by default it is the SSH user.</p>
+</li>
+<li>
+<p><strong>Concurrency level</strong> defines the maximum number of jobs executed at once, which can prevent overload of systems' resources in a case of executing the job on a large number of hosts.</p>
+</li>
+<li>
+<p><strong>Timeout to kill</strong> defines time interval in seconds after which the job should be killed, if it is not finished already. A task which could not be started during the defined interval, for example, if the previous task took too long to finish, is canceled.</p>
 <div class="paragraph">
-<p>The <strong>Search Query</strong> field displays the name of any search you have performed, or the list of hosts you have selected.</p>
+<p><strong>Concurrency level</strong> and <strong>Timeout to kill</strong> settings enable you to tailor job execution to fit your infrastructure hardware and needs.</p>
 </div>
 </li>
 <li>
-<p>In the <strong>Activation Key</strong> field, enter the host activation key.</p>
+<p><strong>Type of query</strong> defines when the search query is evaluated.
+This helps to keep the query up to date for scheduled tasks.</p>
 </li>
 <li>
-<p>Optional: Click <strong>Show Advanced Fields</strong> if you want to configure further aspects.</p>
+<p><strong>Execution ordering</strong> determines the order in which the job is executed on hosts: alphabetical or randomized.</p>
+</li>
+</ul>
+</div>
 </li>
 <li>
-<p>Click <strong>Submit</strong>.</p>
+<p>Optional: From the <strong>Type of query</strong> field, check <strong>Static query</strong> or <strong>Dynamic query</strong>.</p>
+</li>
+<li>
+<p>To run the job immediately, ensure that <strong>Schedule</strong> is set to <strong>Execute now</strong>. You can also define a one-time future job, or set up a recurring job. For recurring tasks, you can define start and end dates, number and frequency of runs.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong>. This displays the <strong>Job Overview</strong> page, and when the job completes, also displays the status of the job.</p>
 </li>
 <li>
 <p>Note that:</p>
