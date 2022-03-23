@@ -6,8 +6,17 @@ Convert2RHEL enables the conversion of {RHEL} derivative distributions into a su
 The conversion process is similar to a minor release upgrade of {RHEL} in which every RPM package on the system is replaced.
 Third-party packages and non-{Team} packages not available in {RHEL} are not replaced.
 
-Convert2RHEL removes unnecessary packages such as logos, or packages known to cause issues during the conversion, and replaces the `CentOS-release` package with the `rhel-release` package.
-It subscribes the system to {ProjectName} and replaces all packages signed by CentOS.
+You can convert:
+
+* CentOS 7 to {RHEL} 7
+* Oracle 7 to {RHEL} 7
+* CentOS 8 to {RHEL} 8
+* Oracle 8 to {RHEL} 8
+
+You cannot convert a version 7 package into {RHEL} 8, or a version 8 package into {RHEL} 7.
+
+Convert2RHEL removes unnecessary packages such as logos, or packages known to cause issues during the conversion, and replaces the `CentOS-release` or `Oracle-release` package with the `rhel-release` package.
+It subscribes the system to {ProjectName} and replaces all packages signed by CentOS or Oracle.
 ifdef::satellite[]
 For {Project}, it also subscribes the system to {Team} Subscription Management.
 endif::[]
@@ -17,13 +26,19 @@ The amount of time taken to do this can vary depending on how many packages need
 Use the global registration template to register and subscribe your system before the conversion.
 For more information, see {ManagingHostsDocURL}registering-a-host_managing-hosts[Registering a Host to {ProjectName} Using the Global Registration Template] in the _Managing Hosts_ guide.
 
+Parts of the process can be achieved using the {ansible-namespace}.convert2rhel role assigned to the host or host groups.
+The Ansible role prepares data, that is, repositories, certificates, activation keys and host groups required for the host conversion.
+The role enables the `rhel-7-server-rpms` repository with the 7Server release and x86_64 architecture, as well as `rhel-8-for-x86_64-baseos-rpms` and `rhel-8-for-x86_64-appstream-rpms`.
+
+Using the Ansible role to automate the Convert2RHEL process generates activation keys.
+
 To convert hosts to {RHEL} with convert2RHEL, you must complete the following procedures:
 
-. xref:installing-convert2rhel_{context}[].
-. xref:Creating_an_Activation_Key_{context}[].
-. xref:preparing-the-host-group_{context}[].
+. xref:importing_the_convert2rhel-Ansible_role_{context}[]
+. xref:assigning_the_convert2rhel_role_to_a_host_{context}[]
+. xref:creating_variables_for_ansible_role_{context}[]
 . xref:registering-hosts-for-conversion_{context}[].
-. xref:converting-hosts-with-convert2rhel_{context}[]
+. xref:running_convert2rhel_ansible_playbook_{context}[]
 
 .Prerequisites
 ifndef::orcharhino[]
@@ -42,4 +57,11 @@ ifndef::orcharhino[]
 For more information, see {ContentManagementDocURL}Managing_Activation_Keys_content-management[Managing Activation Keys] in this guide, and https://access.redhat.com/documentation/en-us/red_hat_subscription_management/1/html-single/using_red_hat_subscription_management/index#activation_keys_con[Understanding activation keys] in Subscription Manager documentation.
 endif::[]
 * Ensure you have a subscription manifest uploaded to your {Project} and that there are sufficient {RHEL} subscriptions for the conversion.
++
+The manifest provides access to all enabled content for the role to work properly.
+You can download the manifest and put it in the correct folder.
+The subscription manifest is retrieved from the specified path on the Ansible target host.
+Optionally, it can be fetched first from the RHSM portal using the provided login credentials and manifest UUID.
+It will be uploaded to the specified organization.
+
 * If you are accessing {RHEL} packages using {ProjectServer}, you must use the organization ID and activation key to run the `convert2rhel` command.
