@@ -117,7 +117,10 @@
 <li><a href="#Using_ISS-Importing-Content-View-Version">8.8. Importing a Content View Version</a></li>
 <li><a href="#Using_ISS-Exporting-Library">8.9. Exporting the Library Environment</a></li>
 <li><a href="#Using_ISS-Importing-Library">8.10. Importing into the Library Environment</a></li>
-<li><a href="#_importexport_cheat_sheet">8.11. Import/Export Cheat Sheet</a></li>
+<li><a href="#Exporting_a_Repository_content-management">8.11. Exporting a Repository</a></li>
+<li><a href="#Exporting_Repository_Incrementally_content-management">8.12. Exporting a Repository Incrementally</a></li>
+<li><a href="#Importing_a_Repository_content-management">8.13. Importing a Repository</a></li>
+<li><a href="#Import_Export_Cheat_Sheet_content-management">8.14. Import/Export Cheat Sheet</a></li>
 </ul>
 </li>
 <li><a href="#Managing_Activation_Keys">9. Managing Activation Keys</a>
@@ -4497,7 +4500,258 @@ This Content View is used to facilitate the library content import.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_importexport_cheat_sheet">8.11. Import/Export Cheat Sheet</h3>
+<h3 id="Exporting_a_Repository_content-management">8.11. Exporting a Repository</h3>
+<div class="paragraph">
+<p>You can export the content of a repository in the Library environment of an organization from Foreman&#160;server.
+You can use this archive file to create the same repository in another Foreman&#160;server or in another Foreman&#160;server organization.</p>
+</div>
+<div class="paragraph">
+<p>You can export the following content from Foreman&#160;server:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>RPM repositories</p>
+</li>
+<li>
+<p>Kickstart repositories</p>
+</li>
+<li>
+<p>Ansible repositories</p>
+</li>
+<li>
+<p>file repositories</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>You cannot export Docker content
+nor DEB repositories
+from Foreman&#160;server.</p>
+</div>
+<div class="paragraph">
+<p>The export contains the following data:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Two JSON files containing repository metadata.</p>
+</li>
+<li>
+<p>One or more archive files containing the contents of the repository from the Library environment of the organization.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>You need all the files, <code>tar.gz</code>, <code>toc.json</code> and <code>metadata.json</code>, to be able to import.</p>
+</div>
+<div class="paragraph">
+<div class="title">Prerequisites</div>
+<p>To export the contents of a repository, ensure that Foreman&#160;server from which you want to export, meets the following conditions:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Ensure that the export directory has enough free storage space to accommodate the export.</p>
+</li>
+<li>
+<p>Ensure that the <code>/var/lib/pulp/exports</code> directory has enough free storage space equivalent to the size of the repositories being exported for temporary files created during the export process.</p>
+</li>
+<li>
+<p>Ensure that you set download policy to <strong>Immediate</strong> for the repository within the Library lifecycle environment you export.
+For more information, see <a href="#Download_Policies_Overview_content-management">[Download_Policies_Overview_content-management]</a>.</p>
+</li>
+<li>
+<p>Ensure that you synchronize Products that you export to the required date.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Export a Repository</div>
+<ol class="arabic">
+<li>
+<p>Use the repository name or ID to export.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer content-export complete repository \
+ --organization="<em>My_Organization</em>" \
+ --product="<em>My_Product</em>" \
+ --name="<em>My_Repository</em>"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Optional: Verify that the exported archive is located in the export directory:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ls -lh /var/lib/pulp/exports/<em>My_Organization</em>/Export-<em>My_Repository</em>/1.0/2021-03-02T03-35-24-00-00
+total 68M
+-rw-r--r--. 1 pulp pulp 68M Mar  2 03:35 export-1e25417c-6d09-49d4-b9a5-23df4db3d52a-20210302_0335.tar.gz
+-rw-r--r--. 1 pulp pulp 333 Mar  2 03:35 export-1e25417c-6d09-49d4-b9a5-23df4db3d52a-20210302_0335-toc.json
+-rw-r--r--. 1 root root 443 Mar  2 03:35 metadata.json</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<div class="title">Export a Repository with Chunking</div>
+<p>In many cases the exported content archive may be several gigabytes in size.
+If you want to split it into chunks of smaller size, you can use the <code>--chunk-size-gb</code> argument in the export command and limit the size by an integer value in gigabytes.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Export content into archive chunks of a limited size, such as 2 GB:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer content-export complete repository \
+--chunk-size-gb=<em>2</em> \
+--organization="<em>My_Organization</em>" \
+--product="<em>My_Product</em>" \
+--name="<em>My_Repository</em>"
+
+Generated /var/lib/pulp/exports/<em>My_Organization</em>/Export-<em>My_Repository</em>/1.0/2021-03-02T03-35-24-00-00/metadata.json</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Optional: View the exported data:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ls -lh /var/lib/pulp/exports/<em>My_Organization</em>/Export-<em>My_Repository</em>/1.0/2021-03-02T03-35-24-00-00/</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Exporting_Repository_Incrementally_content-management">8.12. Exporting a Repository Incrementally</h3>
+<div class="paragraph">
+<p>Exporting a repository can be a very expensive operation in terms of system resources.
+A typical Red&#160;Hat Enterprise Linux tree may occupy several gigabytes of space on Foreman&#160;server.</p>
+</div>
+<div class="paragraph">
+<p>In such cases, you can use <strong>Incremental Export</strong> to export only pieces of content that changed since the previous export.
+Incremental exports typically result in smaller archive files than the full exports.</p>
+</div>
+<div class="paragraph">
+<p>The example below shows incremental export of a repository in the Library lifecycle environment.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Create an incremental export:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer content-export incremental repository \
+ --organization="<em>My_Organization</em>" \
+ --product="<em>My_Product</em>" \
+ --name="<em>My_Repository</em>"
+
+Generated /var/lib/pulp/exports/<em>My_Organization</em>/Export-<em>My_Repository</em>/3.0/2021-03-02T03-35-24-00-00/metadata.json</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Optional: View the exported data:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ls -lh /var/lib/pulp/exports/<em>My_Organization</em>/Export-<em>My_Repository</em>/3.0/2021-03-02T03-35-24-00-00/
+total 172K
+-rw-r--r--. 1 pulp pulp  20M Mar  2 04:22 export-436882d8-de5a-48e9-a30a-17169318f908-20210302_0422.tar.gz
+-rw-r--r--. 1 pulp pulp  333 Mar  2 04:22 export-436882d8-de5a-48e9-a30a-17169318f908-20210302_0422-toc.json
+-rw-r--r--. 1 root root  492 Mar  2 04:22 metadata.json</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Importing_a_Repository_content-management">8.13. Importing a Repository</h3>
+<div class="paragraph">
+<p>You can use the archive that the <code>hammer content-export</code> command outputs to import a repository in another organization.
+For more information about exporting content of a repository, see <a href="#Exporting_a_Repository_content-management">Exporting a Repository</a>.</p>
+</div>
+<div class="paragraph">
+<div class="title">Prerequisites</div>
+<p>To import a repository to an Organization&#8217;s library lifecycle environment ensure that Foreman&#160;server on which you want to import, meets the following conditions:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The export files must be in a directory under <code>/var/lib/pulp/imports</code>.</p>
+</li>
+<li>
+<p>The directory must have <code>pulp:pulp</code> ownership so that Pulp can read and write the <code>.json</code> files in that directory.</p>
+</li>
+<li>
+<p>If the export contains any Red Hat repositories, the manifest of the importing organization must contain subscriptions for the products contained within the export.</p>
+</li>
+<li>
+<p>The user importing the content must have the <em>Content Importer</em> Role.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Copy the export files to the <code>/var/lib/pulp/imports</code> directory on Foreman&#160;server where you want to import.</p>
+</li>
+<li>
+<p>Set the ownership of the export files to <code>pulp:pulp</code>.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># chown -R pulp:pulp /var/lib/pulp/imports/2021-03-02T03-35-24-00-00
+# ls -lh /var/lib/pulp/imports/2021-03-02T03-35-24-00-00
+total 68M
+-rw-r--r--. 1 pulp pulp 68M Mar  2 04:29 export-1e25417c-6d09-49d4-b9a5-23df4db3d52a-20210302_0335.tar.gz
+-rw-r--r--. 1 pulp pulp 333 Mar  2 04:29 export-1e25417c-6d09-49d4-b9a5-23df4db3d52a-20210302_0335-toc.json
+-rw-r--r--. 1 pulp pulp 443 Mar  2 04:29 metadata.json</pre>
+</div>
+</div>
+</li>
+<li>
+<p>On Foreman&#160;server where you want to import, create/enable a repository with the same name and label as the exported content.</p>
+</li>
+<li>
+<p>In the Foreman web UI, navigate to <strong>Content</strong> &gt; <strong>Products</strong>.</p>
+</li>
+<li>
+<p>Click the <strong>Yum content</strong> tab.</p>
+</li>
+<li>
+<p>Add the same <code>Yum</code> content that the exported Content View version includes.</p>
+</li>
+<li>
+<p>Identify the Organization that you wish to import into.</p>
+</li>
+<li>
+<p>To import the Library content to Foreman&#160;server, enter the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre># hammer content-import repository \
+--organization="<em>My_Organization</em>" \
+--path=/var/lib/pulp/imports/<em>2021-03-02T03-35-24-00-00</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note that you must enter the full path <code>/var/lib/pulp/imports/<em>My_Exported_Repo_Dir</em></code>.
+Relative paths do not work.</p>
+</div>
+</li>
+<li>
+<p>To verify that you imported the repository, check the contents of the Product and Repository.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Import_Export_Cheat_Sheet_content-management">8.14. Import/Export Cheat Sheet</h3>
 <table class="tableblock frame-all grid-all stretch">
 <caption class="title">Table 3. Export</caption>
 <colgroup>
@@ -4512,32 +4766,40 @@ This Content View is used to facilitate the library content import.</p>
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Fully Export a content view version</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hammer content-export complete version --content-view=view --version=1.0 --organization="Default_Organization"</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Fully Export a Content View version</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hammer content-export complete version --content-view="<em>My_Content_View</em>" --version=1.0 --organization="<em>My_Organization</em>"</code></p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Incrementally Export a content view version (assuming you have already exported something)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hammer content-export incremental version --content-view=view --version=2.0 --organization="Default_Organization"</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Incrementally Export a Content View version (assuming you have already exported something)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hammer content-export incremental version --content-view="<em>My_Content_View</em>" --version=2.0 --organization="<em>My_Organization</em>"</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Fully Export a Repository</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hammer content-export complete repository --product="<em>My_Product</em>" --name="<em>My_Repository</em>" --organization="<em>My_Organization</em>"</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Incrementally Export a Repository (assuming you have already exported something)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hammer content-export incremental repository --product="<em>My_Product</em>" --name="<em>My_Repository</em>" --organization="<em>My_Organization</em>"</code></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Fully Export an Organization&#8217;s Library</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hammer content-export complete library --organization="Default_Organization"</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hammer content-export complete library --organization="<em>My_Organization</em>"</code></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Incrementally Export an Organization&#8217;s Library (assuming you have already exported something)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hammer content-export incremental library --organization="Default_Organization"</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hammer content-export incremental library --organization="<em>My_Organization</em>"</code></p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Export a content view version promoted  to the Dev Environment</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hammer content-export complete version --content-view=view --organization="Default_Organization" --lifecycle-environment=’Dev’</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Export a Content View version promoted to the Dev Environment</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hammer content-export complete version --content-view="<em>My_Content_View</em>" --organization="<em>My_Organization</em>" --lifecycle-environment="Dev"</code></p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Export a content view in smaller chunks (2 gb slabs)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hammer content-export complete version --content-view=view --version=1.0 --organization="Default_Organization" --chunk-size-gb=2</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Export a Content View in smaller chunks (2-GB slabs)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hammer content-export complete version --content-view="<em>My_Content_View</em>" --version=1.0 --organization="<em>My_Organization</em>" --chunk-size-gb=2</code></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Get a list of exports</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hammer content-export list --content-view=view --organization="Default_Organization"</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hammer content-export list --content-view="<em>My_Content_View</em>" --organization="<em>My_Organization</em>"</code></p></td>
 </tr>
 </tbody>
 </table>
@@ -4555,12 +4817,16 @@ This Content View is used to facilitate the library content import.</p>
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Import to a content view version</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hammer content-import version --organization="Default_Organization" --path=’/var/lib/pulp/imports/dump_dir’</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Import to a Content View version</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hammer content-import version --organization="<em>My_Organization</em>" --path="/var/lib/pulp/imports/<em>My_Exported_Repo_Dir</em>"</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Import a Repository</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hammer content-import repository --organization="<em>My_Organization</em>" --path="/var/lib/pulp/imports/<em>My_Exported_Repo_Dir</em>"</code></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Import to an Organization&#8217;s Library</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hammer content-import library --organization="Default_Organization" --path=’/var/lib/pulp/imports/dump_dir’</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hammer content-import library --organization="<em>My_Organization</em>" --path="/var/lib/pulp/imports/<em>My_Exported_Repo_Dir</em>"</code></p></td>
 </tr>
 </tbody>
 </table>
