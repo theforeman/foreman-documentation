@@ -124,6 +124,10 @@ const navVersions = [
             path: "Configuring_Load_Balancer"
           },
           {
+            title: "Managing Organizations and Locations in Foreman",
+            path: "Managing_Organizations_and_Locations"
+          },
+          {
             title: "Content Management Guide",
             path: "Content_Management_Guide"
           },
@@ -200,6 +204,10 @@ const navVersions = [
             path: "Configuring_Load_Balancer"
           },
           {
+            title: "Managing Organizations and Locations in Foreman",
+            path: "Managing_Organizations_and_Locations"
+          },
+          {
             title: "Content Management Guide",
             path: "Content_Management_Guide"
           },
@@ -274,6 +282,10 @@ const navVersions = [
           {
             title: "Configuring Smart Proxies with a Load Balancer",
             path: "Configuring_Load_Balancer"
+          },
+          {
+            title: "Managing Organizations and Locations in Foreman",
+            path: "Managing_Organizations_and_Locations"
           },
           {
             title: "Content Management Guide",
