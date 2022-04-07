@@ -34,10 +34,13 @@ To build both static site and guides for easy local testing, there is the global
 * `compile`: compiles all content into a single directory `./result`
 * `serve`: serves the result directory via a python web server (the default target)
 
-To test the whole site locally, perform `make serve` command and open up `http://localhost:5000`.
+To test the whole site locally, perform `make serve`.
+This keeps running but doesn't rebuild on changes.
+To view the results you can open up `http://localhost:5000` or run `make browse`.
 Use `PORT=5008` to change the web server port (5000 by default).
 It builds all contexts so the initial build can be slow, make sure to use `-j` option for faster builds on modern multi-core machines.
-Stable versions are symlink to the nightly (current) version, this can cause issues for deleted (or renamed) guides.
+Stable versions are symlink to the nightly (current) version, which can cause issues for deleted (or renamed) guides.
+After making changes it is recommended to use `make html` again.
 
 ## Deployment
 

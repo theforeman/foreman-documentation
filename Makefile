@@ -1,15 +1,18 @@
 SHELL := /bin/bash
 DEST := result
 PORT := 5000
+BASEURL := http://localhost:$(PORT)/
 VERSION_LINKS := 3.11 3.10 3.9 3.8 3.7 3.6 3.5 3.4 3.3 3.2 3.1 3.0 2.5 2.4
 
-.PHONY: all clean html web compile serve prep FORCE toc
+.PHONY: all clean html web compile serve prep FORCE toc browse
 
 UNAME = $(shell uname)
 ifeq ($(UNAME), Linux)
+BROWSER_OPEN = xdg-open
 CP_ARGS = -l
 endif
 ifeq ($(UNAME), Darwin)
+BROWSER_OPEN = open
 CP_ARGS =
 endif
 
@@ -44,3 +47,6 @@ toc: html
 	$(MAKE) -C guides/ toc
 
 FORCE:
+
+browse:
+	$(BROWSER_OPEN) $(BASEURL)
