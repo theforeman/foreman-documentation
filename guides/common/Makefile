@@ -28,14 +28,24 @@ BROWSER_OPEN = open
 CP_ARGS =
 endif
 
-ifeq ($(LINKS), LOCAL)
 # The Satellite build uses links which do not resolve. This does mean the link
 # checker has issues with verification of guides that have not yet been built
 # by downstream, but there really isn't a way around this unless we start
 # building with downstream filenames.
 ifneq ($(BUILD), satellite)
+
+ifeq ($(LINKS), LOCAL)
 BASEURL_ATTR = -a "BaseURL=file://$(BUILD_DIRA)"
 endif
+
+ifdef BASEURL
+	ifdef BASEPATH
+		BASEURL_ATTR = -a "BaseURL=$(BASEURL)$(BASEPATH)"
+	else
+		BASEURL_ATTR = -a "BaseURL=$(BASEURL)"
+	endif
+endif
+
 endif
 
 .SHELLFLAGS = -o pipefail -c
