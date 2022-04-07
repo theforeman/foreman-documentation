@@ -3,7 +3,7 @@ DEST := result
 PORT := 5000
 VERSION_LINKS := 3.8 3.7 3.6 3.5 3.4 3.3 3.2 3.1 3.0 2.5 2.4
 
-.PHONY: all clean html web compile serve prep
+.PHONY: all clean html web compile serve prep FORCE
 
 UNAME = $(shell uname)
 ifeq ($(UNAME), Linux)
@@ -24,10 +24,10 @@ clean:
 	$(MAKE) -C guides/ clean
 	rm -rf $(DEST) web/output/
 
-html: prep
-	$(MAKE) -C guides/ html BUILD=foreman-el
-	$(MAKE) -C guides/ html BUILD=foreman-deb
-	$(MAKE) -C guides/ html BUILD=katello
+html: build-foreman-el build-foreman-deb build-katello
+
+build-%: FORCE prep
+	$(MAKE) -C guides/ html BUILD=$*
 
 web: prep
 	cd web && bundle exec nanoc
@@ -39,3 +39,5 @@ compile: web html
 
 serve: compile
 	python3 -m http.server --directory ./$(DEST) $(PORT)
+
+FORCE:
