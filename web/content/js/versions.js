@@ -16,6 +16,10 @@ const navVersions = [
             path: "Quickstart_Guide"
           },
           {
+            title: "Complete Guide",
+            path: "Complete_Guide"
+          },
+          {
             title: "Installing Foreman Server",
             path: "Installing_Server"
           },
@@ -64,6 +68,10 @@ const navVersions = [
           {
             title: "Quickstart Guide",
             path: "Quickstart_Guide"
+          },
+          {
+            title: "Complete Guide",
+            path: "Complete_Guide"
           },
           {
             title: "Installing Foreman Server",
