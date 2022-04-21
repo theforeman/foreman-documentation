@@ -11,19 +11,19 @@ Contributions are welcome. Please read the [Contribution guidelines](#contributi
 Install the required tools.
 In Fedora perform:
 
-    dnf -y install make linkchecker
+	dnf -y install make linkchecker
 
 In MacOS required tools can be installed via brew but instead "make" call "gmake":
 
-    brew install make
+	brew install make
 
 Alternatively, XCode development environment can be installed to have make utility available on PATH, however this takes about an hour to download and install and requires several gigabytes of HDD space:
 
-		xcode-select --install
+	xcode-select --install
 
 Install ruby gems in `foreman-documentation` folder:
 
-		bundle install
+	bundle install
 
 Then simply run `make` or `make html` which builds HTML artifacts.
 Generating PDF output is slow, therefore command `make pdf` must be used separately.
@@ -32,20 +32,20 @@ To make both formats in one command, use `make html pdf`.
 Few additional make targets are available on the guide level.
 To quickly build HTML version and open new tab in a browser do:
 
-    cd doc-Provisioning_Guide
-    make browser
+	cd doc-Provisioning_Guide
+	make browser
 
 Similarly, to build and open PDF version do:
 
-    make open-pdf
+	make open-pdf
 
 To speed up the build process, make sure to use `-j` option. Ideally, set it to amount of cores plus one:
 
-		make -j9
+	make -j9
 
 An alias is often useful:
 
-		alias make="make -j$(nproc)"
+	alias make="make -j$(nproc)"
 
 Currently there are three different versions:
 
@@ -74,16 +74,16 @@ This requires the cloned git repository plus an application such as Podman or Do
 
 1. Build container image:
 
-       podman build --tag foreman_documentation .
+	podman build --tag foreman_documentation .
 
 2. Build Foreman documentation.
    Run this command in your `foreman-documentation` repository:
 
-       rm -rf guides/build && podman run --rm -v $(pwd):/foreman-documentation foreman_documentation make html
+	rm -rf guides/build && podman run --rm -v $(pwd):/foreman-documentation foreman_documentation make html
 
    On SELinux enabled systems, run this command:
 
-       rm -rf guides/build && podman run --rm -v $(pwd):/foreman-documentation:Z foreman_documentation make html
+	rm -rf guides/build && podman run --rm -v $(pwd):/foreman-documentation:Z foreman_documentation make html
 
 ## Reading or Publishing
 
@@ -94,6 +94,22 @@ All PDFs should be available for download though.
 ## Contribution guidelines
 
 Please read these guidelines before opening a Pull Request. For more information, see [Guidelines for Red Hat Documentation](https://redhat-documentation.github.io/).
+
+### Creating new guides
+
+Each guide must be in a separate directory in guides/ prefixed with "doc-". The following requirements must be met:
+
+* Top-level file `master.adoc`.
+* Directory `topics` with actual content.
+* Symlink `common` to `../common` for shared content.
+* Directory `images` with images.
+* Symlink `images/common` to `../common/images`.
+* File `Makefile` which includes `../common/Makefile`.
+* File `docinfo.xml` for downstream (Red Hat) guides. Presence of this file will cause build check via `ccutil`, a tool used by Red Hat documentation team.
+* Put new content into the `guides/common/modules` directory and stick to one (level one) heading per file.
+* Update `web/content/js/nav.js` to add a new item on the top-level menu.
+
+New guides can be typically created as copies of existing guides, just make sure to clean images, topics and `docinfo.xml`.
 
 ### Variables
 
