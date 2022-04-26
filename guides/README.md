@@ -91,6 +91,12 @@ We do not publish the content yet to prevent users confusion, however this secti
 We should make sure that only the last stable version of the HTML document is indexed by search engines, old and nightly builds should not be indexed.
 All PDFs should be available for download though.
 
+## Disabling the linkchecker for a specific URL pattern
+
+You can disable the linkcheck job for specific URL pattern, for example for unreleased downstream documentation or to exclude URLs that cannot resolve by design.
+Append your pattern to `guides/common/linkchecker.ini`.
+Example: [64d825cc9](https://github.com/theforeman/foreman-documentation/commit/64d825cc9da3992879dfbfc088988197edc9f33b)
+
 ## Contribution guidelines
 
 Please read these guidelines before opening a Pull Request. For more information, see [Guidelines for Red Hat Documentation](https://redhat-documentation.github.io/).
