@@ -5,3 +5,35 @@ Dynflow is the workflow management system and task orchestrator which is a {Proj
 Under the conditions when there are a lot of clients checking in on {Project} and running a number of tasks, Dynflow can take some help from an added tuning specifying how many executors can it launch.
 
 For more information about the tunings involved related to Dynflow, see `\https://{foreman-example-com}/foreman_tasks/sidekiq`.
+
+.Increase sidekiq workers
+{Project} contains a Dynflow service called `dynflow-sidekiq` that performs tasks scheduled by Dynflow.
+Sidekiq workers can be grouped into various queues to ensure lots of tasks of one type will not block execution of tasks of other type.
+
+{Team} recommendeds to increase the number of sidekiq workers to scale the Foreman tasking system for bulk concurrent tasks, for example for multiple Content View publications and promotions, content synchronizations, and synchronizations to {SmartProxyServer}s.
+There are two options available:
+
+* You can increase the number of threads by a dynflow worker (worker's concurrency).
+This has limited impact for values larger than five due to Ruby implementation of the concurrency of threads.
+* You can increase the number of workers, which is recommended.
+
+.Procedure
+. Increase the number of workers from one worker to three while remaining five threads/concurrency of each:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {foreman-installer} --foreman-dynflow-worker-instances 3    # optionally, add --foreman-dynflow-worker-concurrency 5
+----
+. Optional: Check if there are three worker services:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# systemctl -a | grep dynflow-sidekiq@worker-[0-9]
+dynflow-sidekiq@worker-1.service        loaded    active   running   Foreman jobs daemon - worker-1 on sidekiq
+dynflow-sidekiq@worker-2.service        loaded    active   running   Foreman jobs daemon - worker-2 on sidekiq
+dynflow-sidekiq@worker-3.service        loaded    active   running   Foreman jobs daemon - worker-3 on sidekiq
+----
+
+ifdef::satellite[]
+For more information, see https://access.redhat.com/solutions/6293741[How to add sidekiq workers in Satellite6?].
+endif::[]
