@@ -1,7 +1,6 @@
 [id="Smart_Proxy_Performance_Tests_{context}"]
 = {SmartProxy} Performance Tests
 
-As of now testing for {SmartProxy} tuning recommendations is ongoing, but we are sharing some initial results here already.
 We have measured multiple test cases on multiple {SmartProxy} configurations:
 
 [width="79%",cols="48%,19%,33%",options="header",]
@@ -12,8 +11,23 @@ We have measured multiple test cases on multiple {SmartProxy} configurations:
 |extra large |16 |46 GiB
 |===
 
-For concurrent registrations a bottleneck is CPU speed, but all configs were able to handle even high concurrency without swapping.
+.Content delivery use case
+In a download test where we concurrently downloaded a 40MB repo of 2000 packages on 100, 200, .. 1000 hosts, we saw roughly 50% improvement in average download duration every time when we doubled Capsule resources. See table below for more concrete numbers..
 
+[width="100%",cols="25%,25%,25%,25%",options="header",]
+|===
+|Concurrent downloading hosts |Minimal (4CPU and 12GiB RAM) -> Large (8CPU and 24GiB RAM) |Large (8CPU and 24GiB RAM) -> Extra Large (16CPU and 46GiB RAM) |Minimal (4CPU and 12GiB RAM) -> Extra Large (16CPU and 46GiB RAM)
+|Average Improvement |~ 50% (e.g. for 700 concurrent downloads in average 9 seconds vs. 4.4 seconds per package) |~ 40% (e.g. for 700 concurrent downloads in average 4.4 seconds vs. 2.5 seconds per package) |~ 70% (e.g. for 700 concurrent downloads in average 9 seconds vs. 2.5 seconds per package)
+|===
+
+When we compared download performance from Satellite vs. from Capsule we have seen only about 5% speedup, but that is expected as Capsule’s main benefit is in getting content closer to geographically distributed clients (or clients in different networks) and in handling part of the load Satellite would have to handle itself. In some smaller HW configurations (8 CPUs and 24 GiB) Satellite was not able to handle downloads from more than 500 concurrent clients, while a capsule with the same HW configuration was able to service more than 1000 and possibly even more.
+
+.Frequent registrations use case
+For concurrent registrations a bottleneck is CPU speed, but all configs were able to handle even high concurrency without swapping.
+Hardware resources used for {SmartProxy} have only minimal impact on registration performance.
+For example, {SmartProxyServer} with 16 CPUs and 46 GiB RAM have at most a 9% registration speed improvement when compared to a {SmartProxyServer} with 4 CPUs and 12 GiB RAM.
+
+.Remote execution use case
 We have tested executing Remote Execution jobs via both SSH and Ansible backend on 500, 2000 and 4000 hosts.
 All configurations were able to handle all of the tests without errors, except for the smallest configuration (4 CPUs and 12 GiB memory) which failed to finish on all 4000 hosts.
 
