@@ -5,14 +5,21 @@ Use this procedure to upgrade your {Project} installation from {RHEL} 7 to {RHEL
 LEAPP is the supported tool for {RHEL} 7 to {RHEL} 8 upgrades.
 
 .Prerequisites
-* {Project} {ProjectVersionPrevious} running on CentOS 7.
-- Upgrading does not work on {RHEL}. You must have a {RHEL}-compatible LEAPP build to upgrade.
-* Access to a local repository server mirroring all required repositories.
+* {Project} {ProjectVersionPrevious} running on CentOS Linux 7.
+ifdef::katello,foreman-el[]
+- {Project} installations running on {RHEL} 7 cannot upgrade to {RHEL} 8. You must have a {RHEL} compatible LEAPP build to upgrade.
+endif::[]
+* Access to available repositories or a local mirror of repositories.
 * No outstanding updates.
-* You can upgrade a CentOS7 system before you upgrade {Project}.
+* {Project} installations can be upgraded to CentOS Stream 8 and a {RHEL} rebuild.
+ifdef::satellite[]
+* {Project} installations upgrade from {RHEL} 7 to {RHEL} 8, not from CentOS Linux 7 and {RHEL} rebuilds.
+endif::[]
 
 .Procedure
+ifdef::katello,foreman-el[]
 . Configure the https://copr.fedorainfracloud.org/coprs/g/theforeman/leapp/[@theforeman/leapp COPR Repository], which contains newer LEAPP packages than those shipped by https://wiki.almalinux.org/elevate/[AlmaLinux/ELevate], and support {Project} upgrades:
+
 +
 ----
 # curl -o /etc/yum.repos.d/theforeman-leapp.repo https://copr.fedorainfracloud.org/coprs/g/theforeman/leapp/repo/epel-7/group_theforeman-leapp-epel-7.repo
@@ -41,6 +48,13 @@ enabled=1
 gpgcheck=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-foreman
 module_hotfixes=1
+
+[leapp-foreman-client]
+name=Foreman client 3.2
+baseurl=https://yum.theforeman.org/client/3.2/el8/$basearch
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-foreman-client
 
 [leapp-puppet7]
 name=Puppet 7 Repository el 8 - $basearch
@@ -74,6 +88,7 @@ enabled=1
 gpgcheck=1
 module_hotfixes=1
 ----
+endif::[]
 
 * If you are not using {Project}, you can leave out `leapp-katello`, `leapp-katello-candlepin` and `leapp-pulpcore`.
 
@@ -81,10 +96,18 @@ module_hotfixes=1
 
 * You need a Puppet repository for the Puppet agent that the installer is using.
 
-. We do not support EL8 installations with EPEL8 enabled, so remove `epel-release`:
+ifdef::katello,foreman-el[]
+. We do not support {RHEL} 8 installations with EPEL 8 enabled, so remove `epel-release`:
 +
 ----
 # yum remove epel-release
+----
+endif::[]
+
+. Remove `centos-release-scl` and `centos-release-scl-rh` repositories:
++
+----
+# yum remove centos-release-scl centos-release-scl-rh
 ----
 . Let LEAPP analyze your system:
 +
@@ -106,28 +129,33 @@ Continue to the next step for remediation.
 ----
 +
 
+ifdef::katello,foreman-el[]
 ** If `preupgrade` aborts with a dependency resolution error such as:
 +
 ----
-# package rubygem-fx-0.5.0-2.el8.noarch requires rubygem(railties) >= 4.0.0, but none of the providers can install
+# package rubygem-fx-0.5.0-2.el8.noarch requires rubygem(railties) >= 4.0.0,
 ----
-or:
+but none of the providers can install or:
 +
 ----
- # package rubygem-railties-6.0.4.7-1.el8.noarch requires rubygem(thor) < 2.0, but none of the providers can install
+# package rubygem-railties-6.0.4.7-1.el8.noarch requires rubygem(thor) < 2.0
 ----
+but none of the providers can install:
+endif::[]
 
-** Remove packages that are no longer available from any repository:
+ifdef::katello,foreman-el[]
+. Remove packages that are no longer available from any repository:
 +
 ----
 # dnf remove $(dnf repoquery --extras --exclude '*katello*' --exclude '*pulp*' --exclude '*localhost*' --exclude "*$HOSTNAME*" --exclude libmodulemd) –
 ----
+endif::[]
 
 +
 
-** Check the output if it does not contain any local packages.
+. Check the output if it does not contain any local packages.
 
-** Remove `rubygem-thor`:
+. Remove `rubygem-thor`:
 +
 ----
 # yum remove rubygem-thor
@@ -143,17 +171,14 @@ or:
 +
 
 . Reboot the system.
-. After the system reboots, a live system conducts the upgrade.
-. Reboot to fix SELinux labels.
-. Reboot into the final {RHEL} 8 system.
-. After the system reboots, LEAPP finishes the upgrade.
-. You can watch LEAPP finish the upgrade with:
+. After the system reboots, a live system conducts the upgrade, reboots to fix SELinux labels, then reboots into the final {RHEL} 8 system.
+. After the system reboots, LEAPP finishes the upgrade, watch it with:
 +
 ----
 # journalctl -u leapp_resume -f
 ----
 
-[WARNING]
+[NOTE]
 ====
-If you installed the system and had to use `--disable-system-checks`, the last step of the upgrade will fail, and you will need to call `foreman-installer --disable-system-checks` manually once the system is booted up.
+If you install the system and need to use `--disable-system-checks`, the last step of the upgrade is going to fail, and you need to call `{foreman-installer} --disable-system-checks` manually once the system reboots.
 ====
