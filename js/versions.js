@@ -168,6 +168,86 @@ const navVersions = [
     ]
   },
   {
+    title: "Foreman 3.3 - Katello 4.5 (RC)",
+    path: "3.3",
+    builds: [
+      {
+        title: "Katello on EL",
+        filename: "index-katello.html",
+        guides: [
+          {
+            title: "Release Notes",
+            path: "Release_notes"
+          },
+          {
+            title: "Planning Guide",
+            path: "Planning_Guide"
+          },
+          {
+            title: "Quickstart Guide",
+            path: "Quickstart_Guide"
+          },
+          {
+            title: "Installing Katello Server",
+            path: "Installing_Server"
+          },
+          {
+            title: "Installing Smart Proxy with Content",
+            path: "Installing_Proxy"
+          },
+          {
+            title: "Upgrading and Updating",
+            path: "Upgrading_and_Updating"
+          },
+          {
+            title: "Configuring Smart Proxies with a Load Balancer",
+            path: "Configuring_Load_Balancer"
+          },
+          {
+            title: "Managing Organizations and Locations in Foreman",
+            path: "Managing_Organizations_and_Locations"
+          },
+          {
+            title: "Content Management Guide",
+            path: "Content_Management_Guide"
+          },
+          {
+            title: "Converting a Host to RHEL",
+            path: "Converting_a_Host_to_RHEL"
+          },
+          {
+            title: "Deploying Foreman on AWS",
+            path: "Deploying_on_AWS"
+          },
+          {
+            title: "Provisioning Guide",
+            path: "Provisioning_Guide"
+          },
+          {
+            title: "Configuring Foreman to use Ansible",
+            path: "Configuring_Ansible"
+          },
+          {
+            title: "Managing Hosts Guide",
+            path: "Managing_Hosts"
+          },
+          {
+            title: "Configuring Hosts Using Puppet",
+            path: "Managing_Configurations_Puppet"
+          },
+          {
+            title: "Administering Foreman",
+            path: "Administering_Red_Hat_Satellite"
+          },
+          {
+            title: "Application Centric Deployment",
+            path: "Application_Centric_Deployment"
+          }
+        ]
+      }
+    ]
+  },  
+  {
     title: "Foreman 3.2 - Katello 4.4 (stable)",
     path: "3.2",
     builds: [
