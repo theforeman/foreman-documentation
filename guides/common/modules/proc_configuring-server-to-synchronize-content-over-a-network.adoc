@@ -6,14 +6,23 @@ Configure a downstream {ProjectServer} to synchronize repositories from a connec
 .Prerequisites
 * A network connection exists between the upstream {ProjectServer} and the downstream {ProjectServer}.
 * You imported the subscriptions manifest on both the upstream and downstream {ProjectServer}.
-* You enabled the required repositories for the organization on the upstream {ProjectServer}.
-* You have user permissions to create product repositories and organizations on the downstream {ProjectServer}.
+* On the upstream {ProjectServer}, you enabled the required repositories for the organization.
+* The upstream user is an admin or has the following permissions:
+** `view_organizations`
+** `view_products`
+** `edit_organizations` (to download the CA certificate)
+** `view_lifecycle_environments`
+** `view_content_views`
+* On the downstream {ProjectServer}, you have imported the SSL certificate of the upstream {ProjectServer} using the contents of `http://_upstream-{foreman-example-com}_/pub/katello-server-ca.crt`.
+For more information, see {ContentManagementDocURL}Importing_Custom_SSL_Certificates_content-management[Importing SSL Certificates] in the _Content Management Guide_.
+* The downstream user is an admin or has the permissions to create product repositories and organizations.
+
 
 .Procedure
 . Navigate to *Content* > *Subscriptions*.
 . Click the *Manage Manifest* button.
 . Navigate to the *CDN Configuration* tab.
-. Select the *Upstream {ProjectServer}* tab.
+. Select the *Network Sync* tab.
 . In the *URL* field, enter the address of the upstream {ProjectServer}.
 . In the *Username*, enter your username for upstream login.
 . In the *Password*, enter your password or personal access token for upstream login.
@@ -24,31 +33,33 @@ Default is `Library`.
 Default is `Default_Organization_View`.
 . From the *SSL CA Content Credential* menu, select a CA certificate used by the upstream {ProjectServer}.
 . Click *Update*.
-
-The repositories should appear under *Content* > *Products*.
-
-You can synchronize the repositories using the *Sync Now* feature.
-You can also create a synchronization plan to ensure updates on a regular basis. For more information, see {ContentManagementDocURL}Creating_a_Sync_Plan_content-management[Creating a Synchronization Plan] in the _Content Management Guide_.
+. In the {ProjectWebUI}, navigate to *Content* > *Products*.
+. Click *Sync Now* to synchronize the repositories.
++
+You can also create a synchronization plan to ensure updates on a regular basis.
+For more information, see {ContentManagementDocURL}Creating_a_Sync_Plan_content-management[Creating a Synchronization Plan] in the _Content Management Guide_.
 
 .CLI Procedure
-. Log in to your {ProjectServer} using SSH.
-. Display information about your organization: // TODO upstream or downstream?
+. Connect to your downstream {ProjectServer} using SSH.
+. View information about the upstream CA certificate:
 +
 [options="nowrap" subs="+quotes"]
 ----
-# hammer organization show --name="_My_Organization_"
+# hammer content-credential show \
+--name="_My_Upstream_CA_Cert_" \
+--organization="_My_Downstream_Organization_"
 ----
 +
-This shows some related info under the "CDN Configuration" section in the output // TODO What information is relevant for the next step? + Output sample
+Note the ID of the CA certificate for the next step.
 . Set CDN configuration to an upstream {ProjectServer}:
 +
 [options="nowrap" subs="+quotes"]
 ----
 # hammer organization configure-cdn --name="_My_Downstream_Organization_" \
---type=upstream_server/network_sync  # TODO \
---url https://_upstream-server.example.com_ \ // TODO better example URL?
+--type=network_sync \
+--url https://_upstream-{foreman-example-com}_ \
 --username _upstream_username_ --password _upstream_password_ \
---ssl-ca-credential-id _8_ \
+--ssl-ca-credential-id "_My_Upstream_CA_Cert_ID" \
 --upstream-organization-label="_My_Upstream_Organization_" \
 [--upstream-lifecycle-environment-label="_My_Lifecycle_Environment_"] \
 [--upstream-content-view-label="_My_Content_View_"]
