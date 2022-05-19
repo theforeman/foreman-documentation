@@ -45,7 +45,7 @@ If Katello 4.2.1 was released before Foreman 3.0.1 it would show up as:
 To generate the changelogs for Foreman 3.0.0:
 
 ```sh
-./redmine_release_notes katello 3.0.0 > topics/foreman-3.0.0.adoc
+./redmine_release_notes foreman 3.0.0 > topics/foreman-3.0.0.adoc
 ```
 
 Then edit `master.adoc` and add:
