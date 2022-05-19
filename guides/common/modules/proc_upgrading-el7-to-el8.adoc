@@ -1,17 +1,29 @@
 [id="Upgrading-Project-from-EL7-to-EL8{context}"]
+ifdef::satellite[]
 = Upgrading {Project} from {RHEL} 7 to {RHEL} 8
+endif::[]
+ifdef::katello,foreman-el[]
+= Upgrading {Project} from Enterprise Linux 7 to Enterprise Linux 8
+endif::[]
 
 Use this procedure to upgrade your {Project} installation from {RHEL} 7 to {RHEL} 8.
 LEAPP is the supported tool for {RHEL} 7 to {RHEL} 8 upgrades.
 
 .Prerequisites
-* {Project} {ProjectVersionPrevious} running on CentOS Linux 7.
 ifdef::katello,foreman-el[]
+* {Project} {ProjectVersionPrevious} running on CentOS Linux 7.
+endif::[]
+
+ifdef::satellite[]
 - {Project} installations running on {RHEL} 7 cannot upgrade to {RHEL} 8. You must have a {RHEL} compatible LEAPP build to upgrade.
 endif::[]
+
 * Access to available repositories or a local mirror of repositories.
 * No outstanding updates.
+ifdef::katello,foreman-el[]
 * {Project} installations can be upgraded to CentOS Stream 8 and a {RHEL} rebuild.
+endif::[]
+
 ifdef::satellite[]
 * {Project} installations upgrade from {RHEL} 7 to {RHEL} 8, not from CentOS Linux 7 and {RHEL} rebuilds.
 endif::[]
@@ -30,17 +42,32 @@ ifdef::katello,foreman-el[]
 # yum install leapp leapp-repository leapp-data-centos
 ----
 
+ifdef::katello,foreman-el[]
 . Add {Project} specific repositories to `/etc/leapp/files/leapp_upgrade_repositories.repo`:
 +
 ----
-# [leapp-foreman]
+[leapp-foreman]
 name=Foreman 3.2
 baseurl=https://yum.theforeman.org/releases/3.2/el8/$basearch
 enabled=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-puppet7-release
+enabled=1
 gpgcheck=1
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-foreman
-module_hotfixes=1
 
+ifdef::katello[]
+[leapp-katello]
+name=Katello 4.4
+baseurl=https://yum.theforeman.org/katello/4.4/katello/el8/$basearch/
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-foreman
+enabled=1
+gpgcheck=1
+module_hotfixes=1
+endif::[]
+----
+endif::[]
+
++
+----
 [leapp-foreman-plugins]
 name=Foreman plugins 3.2
 baseurl=https://yum.theforeman.org/plugins/3.2/el8/$basearch
@@ -64,13 +91,6 @@ gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-puppet7-release
 enabled=1
 gpgcheck=1
 
-[leapp-katello]
-name=Katello 4.4
-baseurl=https://yum.theforeman.org/katello/4.4/katello/el8/$basearch/
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-foreman
-enabled=1
-gpgcheck=1
-module_hotfixes=1
 
 [leapp-katello-candlepin]
 name=Candlepin: an open source entitlement management system.
@@ -88,21 +108,18 @@ enabled=1
 gpgcheck=1
 module_hotfixes=1
 ----
-endif::[]
-
-* If you are not using {Project}, you can leave out `leapp-katello`, `leapp-katello-candlepin` and `leapp-pulpcore`.
 
 * If you are using Puppet 6 instead of Puppet 7, replace the `7` with a `6` in the `leapp-puppet7` entry.
 
 * You need a Puppet repository for the Puppet agent that the installer is using.
+endif::[]
 
 ifdef::katello,foreman-el[]
-. We do not support {RHEL} 8 installations with EPEL 8 enabled, so remove `epel-release`:
+. We do not support Enterprise Linux 8 installations with EPEL 8 enabled, so remove `epel-release`:
 +
 ----
 # yum remove epel-release
 ----
-endif::[]
 
 . Remove `centos-release-scl` and `centos-release-scl-rh` repositories:
 +
@@ -115,11 +132,10 @@ endif::[]
 # leapp preupgrade
 ----
 
-+
-
 The first run is expected to fail but report issues.
 Continue to the next step for remediation.
 
+[start=7]
 . Fix issues found by LEAPP (check `/var/log/leapp/leapp-report.txt` for details):
 +
 ----
@@ -128,40 +144,34 @@ Continue to the next step for remediation.
 # leapp answer --section remove_pam_pkcs11_module_check.confirm=True
 ----
 +
-
-ifdef::katello,foreman-el[]
-** If `preupgrade` aborts with a dependency resolution error such as:
-+
-----
-# package rubygem-fx-0.5.0-2.el8.noarch requires rubygem(railties) >= 4.0.0,
-----
-but none of the providers can install or:
-+
-----
-# package rubygem-railties-6.0.4.7-1.el8.noarch requires rubygem(thor) < 2.0
-----
-but none of the providers can install:
 endif::[]
 
 ifdef::katello,foreman-el[]
-. Remove packages that are no longer available from any repository:
-+
-----
-# dnf remove $(dnf repoquery --extras --exclude '*katello*' --exclude '*pulp*' --exclude '*localhost*' --exclude "*$HOSTNAME*" --exclude libmodulemd) –
-----
-endif::[]
-
+** The `preupgrade` might fail with a dependency resolution error such as:
 +
 
+* "package rubygem-fx-0.5.0-2.el8.noarch requires rubygem(railties) >= 4.0.0, but none of the providers can be installed"
+* "package rubygem-railties-6.0.4.7-1.el8.noarch requires rubygem(thor) < 2.0, but none of the providers can be installed"
+
+If this happens, do the following to clean up packages that cannot automatically upgrade:
+----
+# dnf remove $(dnf repoquery --extras --exclude '*katello*' --exclude '*pulp*' --exclude '*localhost*' --exclude "*$HOSTNAME*" --exclude libmodulemd)
+----
+
+[start=8]
 . Check the output if it does not contain any local packages.
-
++
 . Remove `rubygem-thor`:
 +
 ----
 # yum remove rubygem-thor
 ----
+endif::[]
+
++
 
 . Ensure `leapp preupgrade` has no issues.
++
 . Run:
 +
 ----
@@ -171,7 +181,16 @@ endif::[]
 +
 
 . Reboot the system.
++
+ifdef::satellite[]
 . After the system reboots, a live system conducts the upgrade, reboots to fix SELinux labels, then reboots into the final {RHEL} 8 system.
++
+endif::[]
+ifdef::katello,foreman-el[]
+. After the system reboots, a live system conducts the upgrade, reboots to fix SELinux labels, then reboots into the final Enterprise Linux 8 system.
++
+endif::[]
+
 . After the system reboots, LEAPP finishes the upgrade, watch it with:
 +
 ----
