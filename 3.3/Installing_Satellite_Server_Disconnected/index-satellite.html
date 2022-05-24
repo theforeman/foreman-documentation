@@ -1628,10 +1628,36 @@ See <a href="#configuring-server-to-sync-content-using-exports_satellite">Config
 <p>You imported the subscriptions manifest on both the upstream and downstream Satellite&#160;Server.</p>
 </li>
 <li>
-<p>You enabled the required repositories for the organization on the upstream Satellite&#160;Server.</p>
+<p>On the upstream Satellite&#160;Server, you enabled the required repositories for the organization.</p>
 </li>
 <li>
-<p>You have user permissions to create product repositories and organizations on the downstream Satellite&#160;Server.</p>
+<p>The upstream user is an admin or has the following permissions:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><code>view_organizations</code></p>
+</li>
+<li>
+<p><code>view_products</code></p>
+</li>
+<li>
+<p><code>edit_organizations</code> (to download the CA certificate)</p>
+</li>
+<li>
+<p><code>view_lifecycle_environments</code></p>
+</li>
+<li>
+<p><code>view_content_views</code></p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>On the downstream Satellite&#160;Server, you have imported the SSL certificate of the upstream Satellite&#160;Server using the contents of <code>http://<em>upstream-satellite.example.com</em>/pub/katello-server-ca.crt</code>.
+For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.11/html-single/content_management_guide/index#Importing_Custom_SSL_Certificates_content-management">Importing SSL Certificates</a> in the <em>Content Management Guide</em>.</p>
+</li>
+<li>
+<p>The downstream user is an admin or has the permissions to create product repositories and organizations.</p>
 </li>
 </ul>
 </div>
@@ -1648,7 +1674,7 @@ See <a href="#configuring-server-to-sync-content-using-exports_satellite">Config
 <p>Navigate to the <strong>CDN Configuration</strong> tab.</p>
 </li>
 <li>
-<p>Select the <strong>Upstream Satellite&#160;Server</strong> tab.</p>
+<p>Select the <strong>Network Sync</strong> tab.</p>
 </li>
 <li>
 <p>In the <strong>URL</strong> field, enter the address of the upstream Satellite&#160;Server.</p>
@@ -1676,30 +1702,35 @@ Default is <code>Default_Organization_View</code>.</p>
 <li>
 <p>Click <strong>Update</strong>.</p>
 </li>
+<li>
+<p>In the Satellite web UI, navigate to <strong>Content</strong> &gt; <strong>Products</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Sync Now</strong> to synchronize the repositories.</p>
+<div class="paragraph">
+<p>You can also create a synchronization plan to ensure updates on a regular basis.
+For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.11/html-single/content_management_guide/index#Creating_a_Sync_Plan_content-management">Creating a Synchronization Plan</a> in the <em>Content Management Guide</em>.</p>
+</div>
+</li>
 </ol>
-</div>
-<div class="paragraph">
-<p>The repositories should appear under <strong>Content</strong> &gt; <strong>Products</strong>.</p>
-</div>
-<div class="paragraph">
-<p>You can synchronize the repositories using the <strong>Sync Now</strong> feature.
-You can also create a synchronization plan to ensure updates on a regular basis. For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.11/html-single/content_management_guide/index#Creating_a_Sync_Plan_content-management">Creating a Synchronization Plan</a> in the <em>Content Management Guide</em>.</p>
 </div>
 <div class="olist arabic">
 <div class="title">CLI Procedure</div>
 <ol class="arabic">
 <li>
-<p>Log in to your Satellite&#160;Server using SSH.</p>
+<p>Connect to your downstream Satellite&#160;Server using SSH.</p>
 </li>
 <li>
-<p>Display information about your organization: // TODO upstream or downstream?</p>
+<p>View information about the upstream CA certificate:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># hammer organization show --name="<em>My_Organization</em>"</pre>
+<pre class="nowrap"># hammer content-credential show \
+--name="<em>My_Upstream_CA_Cert</em>" \
+--organization="<em>My_Downstream_Organization</em>"</pre>
 </div>
 </div>
 <div class="paragraph">
-<p>This shows some related info under the "CDN Configuration" section in the output // TODO What information is relevant for the next step? + Output sample</p>
+<p>Note the ID of the CA certificate for the next step.</p>
 </div>
 </li>
 <li>
@@ -1707,11 +1738,11 @@ You can also create a synchronization plan to ensure updates on a regular basis.
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># hammer organization configure-cdn --name="<em>My_Downstream_Organization</em>" \
---type=upstream_server/network_sync  # TODO \
---url https://<em>upstream-server.example.com</em> \ // TODO better example URL?
+--type=network_sync \
+--url https://<em>upstream-{foreman-example-com}</em> \
 --username <em>upstream_username</em> --password <em>upstream_password</em> \
---ssl-ca-credential-id <em>8</em> \
---upstream-organization-label="<em>My_Upstream_Organization</em>" \
+--ssl-ca-credential-id "<em>My_Upstream_CA_Cert_ID" \
+--upstream-organization-label="_My_Upstream_Organization</em>" \
 [--upstream-lifecycle-environment-label="<em>My_Lifecycle_Environment</em>"] \
 [--upstream-content-view-label="<em>My_Content_View</em>"]</pre>
 </div>
@@ -1742,7 +1773,7 @@ The default Content View label is <code>Default_Organization_View</code>.</p>
 <p>Switch to the <strong>CDN Configuration</strong> tab.</p>
 </li>
 <li>
-<p>Select <strong>Air-gapped</strong>.</p>
+<p>Select the <strong>Export Sync</strong> tab.</p>
 </li>
 <li>
 <p>Click <strong>Update</strong>.</p>
@@ -1756,10 +1787,10 @@ The default Content View label is <code>Default_Organization_View</code>.</p>
 <p>Log in to your Satellite&#160;Server using SSH.</p>
 </li>
 <li>
-<p>Set CDN configuration to air-gapped:</p>
+<p>Set CDN configuration to sync using exports:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># hammer organization configure-cdn --name="<em>My_Organization</em>" --type=airgapped/export_sync  # TODO</pre>
+<pre class="nowrap"># hammer organization configure-cdn --name="<em>My_Organization</em>" --type=export_sync</pre>
 </div>
 </div>
 </li>
