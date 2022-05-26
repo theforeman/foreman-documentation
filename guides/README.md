@@ -15,15 +15,17 @@ In Fedora perform:
 
 In MacOS required tools can be installed via brew but instead "make" call "gmake":
 
-	brew install make
+	brew install ruby make
+	# brew will ask to perform this after ruby installation, do it and restart the terminal
+	echo 'export PATH="/opt/homebrew/opt/ruby/bin:$PATH"' >> ~/.zshrc
 
-Alternatively, XCode development environment can be installed to have make utility available on PATH, however this takes about an hour to download and install and requires several gigabytes of HDD space:
+Alternatively, XCode development environment can be installed to have make utility available on PATH, however, this takes about an hour to download and install and requires several gigabytes of HDD space:
 
 	xcode-select --install
 
-Install ruby gems in `foreman-documentation` folder:
+Install ruby gems, in the `foreman-documentation` folder:
 
-	bundle install
+	make prep
 
 Then simply run `make` or `make html` which builds HTML artifacts.
 Generating PDF output is slow, therefore command `make pdf` must be used separately.
