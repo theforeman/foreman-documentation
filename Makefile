@@ -13,7 +13,7 @@ ifeq ($(UNAME), Darwin)
 CP_ARGS =
 endif
 
-all: serve
+all: html
 
 prep:
 	bundle install
