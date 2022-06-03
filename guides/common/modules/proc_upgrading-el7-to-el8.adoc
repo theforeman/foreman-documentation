@@ -1,4 +1,4 @@
-[id="Upgrading-Project-from-EL7-to-EL8{context}"]
+[id="Upgrading-Project-from-EL7-to-EL8_{context}"]
 ifdef::satellite[]
 = Upgrading {Project} from {RHEL} 7 to {RHEL} 8
 endif::[]
@@ -6,38 +6,72 @@ ifdef::katello,foreman-el[]
 = Upgrading {Project} from Enterprise Linux 7 to Enterprise Linux 8
 endif::[]
 
+ifdef::satellite[]
 Use this procedure to upgrade your {Project} installation from {RHEL} 7 to {RHEL} 8.
 LEAPP is the supported tool for {RHEL} 7 to {RHEL} 8 upgrades.
-
-.Prerequisites
-ifdef::katello,foreman-el[]
-* {Project} {ProjectVersionPrevious} running on CentOS Linux 7.
-- {Project} installations running on {RHEL} 7 cannot upgrade to {RHEL} 8. You must have a {RHEL} compatible LEAPP build to upgrade.
 endif::[]
 
+ifdef::katello,foreman-el[]
+Use this procedure to upgrade your {Project} installation from Enterprise Linux 7 to Enterprise Linux 8.
+LEAPP is the supported tool for {RHEL} 7 to {RHEL} 8 upgrades.
+endif::[]
+
+
+ifdef::katello,foreman-el[]
+.Prerequisites
+* {Project} {ProjectVersionPrevious} running on CentOS Linux 7.
+- {Project} installations running on {RHEL} 7 cannot upgrade to {RHEL} 8.
+You must have a {RHEL} compatible LEAPP build to upgrade.
 * Access to available repositories or a local mirror of repositories.
 * No outstanding updates.
-ifdef::katello,foreman-el[]
 * {Project} installations can be upgraded to CentOS Stream 8 and a {RHEL} rebuild.
 endif::[]
 
+ifdef::satellite[]
+.Prerequisites
+* Access to available repositories or a local mirror of repositories.
+* No outstanding updates.
+
 .Procedure
+[start=1]
+. Ensure `leapp preupgrade` has no issues.
+[start=2]
+. Run:
+----
+# leapp upgrade
+----
+[start=3]
+. Reboot the system.
+[start=4]
+. After the system reboots, a live system conducts the upgrade, reboots to fix SELinux labels, then reboots into the final {RHEL} 8 system.
+[start=5]
+. After the system reboots, LEAPP finishes the upgrade, watch it with:
+----
+# journalctl -u leapp_resume -f
+----
+
+[NOTE]
+====
+If you install the system and need to use `--disable-system-checks`, the last step of the upgrade is going to fail, and you need to call `{foreman-installer} --disable-system-checks` manually once the system reboots.
+====
+endif::[]
+
 ifdef::katello,foreman-el[]
+.Procedure
+[start=1]
 . Configure the https://copr.fedorainfracloud.org/coprs/g/theforeman/leapp/[@theforeman/leapp COPR Repository], which contains newer LEAPP packages than those shipped by https://wiki.almalinux.org/elevate/[AlmaLinux/ELevate], and support {Project} upgrades:
 
-+
 ----
 # curl -o /etc/yum.repos.d/theforeman-leapp.repo https://copr.fedorainfracloud.org/coprs/g/theforeman/leapp/repo/epel-7/group_theforeman-leapp-epel-7.repo
 ----
+[start=2]
 . Install required packages:
-+
 ----
 # yum install leapp leapp-repository leapp-data-centos
 ----
 
-ifdef::katello,foreman-el[]
+[start=3]
 . Add {Project} specific repositories to `/etc/leapp/files/leapp_upgrade_repositories.repo`:
-+
 ----
 [leapp-foreman]
 name=Foreman 3.2
@@ -98,46 +132,40 @@ gpgcheck=1
 ----
 endif::[]
 
+ifdef::katello,foreman-el[]
 * If you are using Puppet 6 instead of Puppet 7, replace the `7` with a `6` in the `leapp-puppet7` entry.
 
 * You need a Puppet repository for the Puppet agent that the installer is using.
 endif::[]
 
 ifdef::katello,foreman-el[]
+[start=4]
 . We do not support Enterprise Linux 8 installations with EPEL 8 enabled, so remove `epel-release`:
-+
 ----
 # yum remove epel-release
 ----
-
+[start=5]
 . Remove `centos-release-scl` and `centos-release-scl-rh` repositories:
-+
 ----
 # yum remove centos-release-scl centos-release-scl-rh
 ----
+[start=6]
 . Let LEAPP analyze your system:
-+
 ----
 # leapp preupgrade
 ----
-
 The first run is expected to fail but report issues.
 Continue to the next step for remediation.
 
 [start=7]
 . Fix issues found by LEAPP (check `/var/log/leapp/leapp-report.txt` for details):
-+
 ----
 # rmmod pata_acpi
 # echo PermitRootLogin yes | tee -a /etc/ssh/sshd_config
 # leapp answer --section remove_pam_pkcs11_module_check.confirm=True
 ----
-+
-endif::[]
-
 ifdef::katello,foreman-el[]
 ** The `preupgrade` might fail with a dependency resolution error such as:
-+
 
 * "package rubygem-fx-0.5.0-2.el8.noarch requires rubygem(railties) >= 4.0.0, but none of the providers can be installed"
 * "package rubygem-railties-6.0.4.7-1.el8.noarch requires rubygem(thor) < 2.0, but none of the providers can be installed"
@@ -156,30 +184,32 @@ Remove `rubygem-thor`:
 ----
 endif::[]
 
+ifdef::katello,foreman-el[]
 [start=8]
 . Ensure `leapp preupgrade` has no issues.
-+
+endif::[]
+
+ifdef::katello,foreman-el[]
+[start=9]
 . Run:
-+
 ----
 # leapp upgrade
 ----
-
-+
-
-. Reboot the system.
-+
-ifdef::satellite[]
-. After the system reboots, a live system conducts the upgrade, reboots to fix SELinux labels, then reboots into the final {RHEL} 8 system.
-+
 endif::[]
+
+
 ifdef::katello,foreman-el[]
-. After the system reboots, a live system conducts the upgrade, reboots to fix SELinux labels, then reboots into the final Enterprise Linux 8 system.
-+
+[start=10]
+. Reboot the system.
 endif::[]
 
+ifdef::katello,foreman-el[]
+[start=11]
+. After the system reboots, a live system conducts the upgrade, reboots to fix SELinux labels, then reboots into the final Enterprise Linux 8 system.
+
+
+[start=12]
 . After the system reboots, LEAPP finishes the upgrade, watch it with:
-+
 ----
 # journalctl -u leapp_resume -f
 ----
@@ -188,3 +218,4 @@ endif::[]
 ====
 If you install the system and need to use `--disable-system-checks`, the last step of the upgrade is going to fail, and you need to call `{foreman-installer} --disable-system-checks` manually once the system reboots.
 ====
+endif::[]
