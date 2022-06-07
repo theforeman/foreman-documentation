@@ -49,11 +49,12 @@
 <li><a href="#Puma_Tunings_performance-tuning">7. Puma Tunings</a>
 <ul class="sectlevel2">
 <li><a href="#Puma_Threads_performance-tuning">7.1. Puma Threads</a></li>
-<li><a href="#Puma_Workers_and_Threads_Auto_Tuning_performance-tuning">7.2. Puma Workers and Threads Auto-Tuning</a></li>
-<li><a href="#Puma_Workers_and_Threads_Recommendation_performance-tuning">7.3. Puma Workers and Threads Recommendations</a></li>
-<li><a href="#Configuring_Puma_Threads_performance-tuning">7.4. Configuring Puma Threads</a></li>
-<li><a href="#Configuring_Puma_DB_Pool_performance-tuning">7.5. Configuring Puma DB Pool</a></li>
-<li><a href="#Apache_HTTPD_Performance_Tuning_performance-tuning">7.6. Apache HTTPD Performance Tuning</a></li>
+<li><a href="#Configuring Puma Workers_performance-tuning">7.2. Configuring Puma Workers</a></li>
+<li><a href="#Puma_Workers_and_Threads_Auto_Tuning_performance-tuning">7.3. Puma Workers and Threads Auto-Tuning</a></li>
+<li><a href="#Puma_Workers_and_Threads_Recommendation_performance-tuning">7.4. Puma Workers and Threads Recommendations</a></li>
+<li><a href="#Configuring_Puma_Threads_performance-tuning">7.5. Configuring Puma Threads</a></li>
+<li><a href="#Configuring_Puma_DB_Pool_performance-tuning">7.6. Configuring Puma DB Pool</a></li>
+<li><a href="#Apache_HTTPD_Performance_Tuning_performance-tuning">7.7. Apache HTTPD Performance Tuning</a></li>
 </ul>
 </li>
 <li><a href="#qdrouterd_and_qpid_Tuning_performance-tuning">8. qdrouterd and qpid Tuning</a>
@@ -438,7 +439,73 @@ For any Foreman configuration that is supposed to handle a large number of clien
 </div>
 </div>
 <div class="sect2">
-<h3 id="Puma_Workers_and_Threads_Auto_Tuning_performance-tuning"><a class="anchor" href="#Puma_Workers_and_Threads_Auto_Tuning_performance-tuning"></a>7.2. Puma Workers and Threads Auto-Tuning</h3>
+<h3 id="Configuring Puma Workers_performance-tuning"><a class="anchor" href="#Configuring Puma Workers_performance-tuning"></a>7.2. Configuring Puma Workers</h3>
+<div class="paragraph">
+<p>If you have enough CPUs, adding more workers adds more performance.
+For example, we have compared Foreman setups with 8 and 16 CPUs.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 1. Automatic Tuning using foreman-installer options</caption>
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Foreman VM with 8 CPUs, 40 GiB RAM</th>
+<th class="tableblock halign-left valign-top">Foreman VM with 16 CPUs, 40 GiB RAM</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-threads-min=16</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-threads-min=16</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-threads-max=16</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-threads-max=16</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-workers=</code>{2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">16}`</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">`--foreman-foreman-service-puma-workers={2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">16}`</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>In 8 CPUs setup, changing the number of workers from 2 to 16, improved concurrent registration time by 36%.
+In 16 CPU setup, the same change caused 55% improvement.</p>
+</div>
+<div class="paragraph">
+<p>Adding more workers can also help with total registration concurrency Foreman can handle.
+In our measurements, setups with 2 workers were able to handle up to 480 concurrent registrations, but adding more workers improved the situation.</p>
+</div>
+<div class="paragraph">
+<div class="title">Manual tuning</div>
+<p>You can set the number of workers to two and the number of threads to five:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># {foreman-installer} \
+--foreman-foreman-service-puma-threads-max=5
+--foreman-foreman-service-puma-threads-min=5 \
+--foreman-foreman-service-puma-workers=2 \</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Puma_Workers_and_Threads_Auto_Tuning_performance-tuning"><a class="anchor" href="#Puma_Workers_and_Threads_Auto_Tuning_performance-tuning"></a>7.3. Puma Workers and Threads Auto-Tuning</h3>
 <div class="paragraph">
 <p>If you do not provide any Puma workers and thread values with <code>foreman-installer</code> or they are not present in your Foreman configuration, the <code>foreman-installer</code> configures a balanced number of workers.
 It follows this formula:</p>
@@ -470,7 +537,7 @@ Each Puma worker consumes around 1 GiB of RAM.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="Puma_Workers_and_Threads_Recommendation_performance-tuning"><a class="anchor" href="#Puma_Workers_and_Threads_Recommendation_performance-tuning"></a>7.3. Puma Workers and Threads Recommendations</h3>
+<h3 id="Puma_Workers_and_Threads_Recommendation_performance-tuning"><a class="anchor" href="#Puma_Workers_and_Threads_Recommendation_performance-tuning"></a>7.4. Puma Workers and Threads Recommendations</h3>
 <div class="paragraph">
 <p>In order to recommend thread and worker configurations for the different tuning profiles, we conducted Puma tuning testing on Foreman with different tuning profiles and the main test run performed in this testing was concurrent registration with the following combinations along with different workers and threads.
 Our recommendation is based purely on concurrent registration performance, so it might not reflect your exact use-case.
@@ -540,7 +607,7 @@ For example, if your setup is very content oriented with lots of publishes and p
 </table>
 </div>
 <div class="sect2">
-<h3 id="Configuring_Puma_Threads_performance-tuning"><a class="anchor" href="#Configuring_Puma_Threads_performance-tuning"></a>7.4. Configuring Puma Threads</h3>
+<h3 id="Configuring_Puma_Threads_performance-tuning"><a class="anchor" href="#Configuring_Puma_Threads_performance-tuning"></a>7.5. Configuring Puma Threads</h3>
 <div class="paragraph">
 <p>More workers allow for lower time to register hosts in parallel.
 For example, we have compared these two setups:</p>
@@ -577,7 +644,7 @@ Moreover, adding more workers did not consume more CPU and RAM but gets more per
 </div>
 </div>
 <div class="sect2">
-<h3 id="Configuring_Puma_DB_Pool_performance-tuning"><a class="anchor" href="#Configuring_Puma_DB_Pool_performance-tuning"></a>7.5. Configuring Puma DB Pool</h3>
+<h3 id="Configuring_Puma_DB_Pool_performance-tuning"><a class="anchor" href="#Configuring_Puma_DB_Pool_performance-tuning"></a>7.6. Configuring Puma DB Pool</h3>
 <div class="paragraph">
 <p>The effective value of <code>$db_pool</code> is automatically set to equal <code>$foreman::foreman_service_puma_threads_max</code>.
 It is the maximum of <code>$foreman::db_pool</code> and <code>$foreman::foreman_service_puma_threads_max</code> but both have default value 5, so any increase to the max threads above 5 automatically increases the database connection pool by the same amount</p>
@@ -723,13 +790,13 @@ Keeping default 5 min/max threads is a good choice as well.</p>
 </table>
 </div>
 <div class="sect2">
-<h3 id="Apache_HTTPD_Performance_Tuning_performance-tuning"><a class="anchor" href="#Apache_HTTPD_Performance_Tuning_performance-tuning"></a>7.6. Apache HTTPD Performance Tuning</h3>
+<h3 id="Apache_HTTPD_Performance_Tuning_performance-tuning"><a class="anchor" href="#Apache_HTTPD_Performance_Tuning_performance-tuning"></a>7.7. Apache HTTPD Performance Tuning</h3>
 <div class="paragraph">
 <p>Apache httpd forms a core part of the Foreman and acts as a web server for handling the requests that are being made through the Foreman web UI or exposed APIs.
 To increase the concurrency of the operations, httpd forms the first point where tuning can help to boost the performance of your Foreman.</p>
 </div>
 <div class="sect3">
-<h4 id="Configuring_how_many_processes_can_be_launched_by_Apache_httpd_performance-tuning"><a class="anchor" href="#Configuring_how_many_processes_can_be_launched_by_Apache_httpd_performance-tuning"></a>7.6.1. Configuring how many processes can be launched by Apache httpd</h4>
+<h4 id="Configuring_how_many_processes_can_be_launched_by_Apache_httpd_performance-tuning"><a class="anchor" href="#Configuring_how_many_processes_can_be_launched_by_Apache_httpd_performance-tuning"></a>7.7.1. Configuring how many processes can be launched by Apache httpd</h4>
 <div class="paragraph">
 <p>By default, HTTPD uses prefork request handling mechanism.
 With the prefork model of handling the requests, httpd launches a new process to handle the incoming connection by the client.</p>
@@ -772,7 +839,7 @@ apache::mod::prefork::startservers: 10</pre>
 </div>
 </div>
 <div class="sect3">
-<h4 id="Configuring_the_Open_Files_Limit_for_Apache_HTTPD_performance-tuning"><a class="anchor" href="#Configuring_the_Open_Files_Limit_for_Apache_HTTPD_performance-tuning"></a>7.6.2. Configuring the Open Files Limit for Apache HTTPD</h4>
+<h4 id="Configuring_the_Open_Files_Limit_for_Apache_HTTPD_performance-tuning"><a class="anchor" href="#Configuring_the_Open_Files_Limit_for_Apache_HTTPD_performance-tuning"></a>7.7.2. Configuring the Open Files Limit for Apache HTTPD</h4>
 <div class="paragraph">
 <p>With the tuning in place, Apache httpd can easily open a lot of file descriptors on the server which may exceed the default limit of most of the linux systems in place.
 To avoid any kind of issues that may arise as a result of exceeding max open files limit on the system, please create the following file and directory and set the contents of the file as specified in the below given example:</p>
