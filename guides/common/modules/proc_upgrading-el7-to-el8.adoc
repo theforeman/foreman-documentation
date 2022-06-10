@@ -1,16 +1,54 @@
-[id="Upgrading-Project-from-EL7-to-EL8_{context}"]
+[id="Upgrading-Project-from-Enterprise-Linux-7-to-Enterprise-Linux-8_{context}"]
+ifdef::foreman-el,katello[]
 = Upgrading {Project} from Enterprise Linux 7 to Enterprise Linux 8
+endif::[]
+ifdef::satellite[]
+= Upgrading {Project} from {RHEL} 7 to {RHEL} 8
+endif::[]
 
+ifdef::foreman-el,katello[]
 Use this procedure to upgrade your {Project} installation from Enterprise Linux 7 to Enterprise Linux 8.
 LEAPP is the supported tool for Enterprise Linux 7 to Enterprise Linux 8 upgrades.
+endif::[]
 
+ifdef::satellite[]
+Use this procedure to upgrade your {Project} installation from {RHEL} 7 to {RHEL} 8.
+endif::[]
+
+ifdef::foreman-el,katello[]
 .Prerequisites
 * {Project} {ProjectVersion} running on Enterprise Linux 7.
 * Access to available repositories or a local mirror of repositories.
-* No outstanding updates.
 * {Project} installations running on CentOS 7 can be upgraded to CentOS Stream 8 or a {RHEL} rebuild.
-* {Project} installations running on {RHEL} 7 can be upgraded to {RHEL} 8.
+endif::[]
 
+ifdef::satellite[]
+.Prerequisites
+* {Project} {ProjectVersion} running on {RHEL} 7.
+* Access to available repositories or a local mirror of repositories.
+* {Project} installations running on {RHEL} 7 can be upgraded to {RHEL} 8.
+* Subsequent minor versions of {Project} {ProjectVersion} will be supported on {RHEL} 8 only.
+* If you have {Project} {ProjectVersion} running on {RHEL} 7, you must migrate to {RHEL} 8 to stay up to date on {Project} {ProjectVersion} minor releases.
+* An offline backup created by `{foreman-maintain}`.
+This can be an older full backup with incremental backups leading to the point from where you want to restore.
+* An identical machine that can be configured with the same hostname and IP address as the source.
+
+.Fresh Install Migration
+. You can create a {RHEL} 8 system with identical specifications and the same hostname as the {RHEL} 7 system using the fresh install migration method.
+. You can choose how much of the {RHEL} 7 system to include in the backup to selectively import the relevant parts of the {RHEL} 7 system to {RHEL} 8.
+. This method requires a considerable amount of system downtime while the system backup is restored on the {RHEL} 8 system.
+. To reduce the amount of downtime, you can continue to use the {RHEL} 7 system on the target machine while the backup is being restored.
+. Any new changes you make during this time are not included in the backup on the {RHEL} 8 system on the source machine.
+. Storage space is required for the backup and access to a second machine to host the new {RHEL} 8 system.
+
+.In-Place Migration Using LEAPP
+. The in-place migration method requires several hours less downtime than the fresh install method.
+. You do not need to provide storage space for a backup or a second machine for {RHEL} 8, as the migration can occur in place on the {RHEL} 7 machine.
+. Downtime cannot be avoided entirely by using the {RHEL} 7 system while the {RHEL} 8 system is preparing because the in-place migration occurs on the same machine.
+. The in-place migration using LEAPP is not possible with FIPS-enabled systems.
+endif::[]
+
+ifdef::foreman-el,katello[]
 .Procedure
 . Configure the repositories to obtain LEAPP.
 +
@@ -37,7 +75,33 @@ On {RHEL}, enable the `rhel-7-server-extras-rpms` repository:
 ----
 # yum install leapp-data-centos
 ----
+endif::[]
 
+ifdef::satellite[]
+.Procedure
+. Configure the repositories to obtain LEAPP.
++
+On CentOS, configure the https://copr.fedorainfracloud.org/coprs/g/theforeman/leapp/[@theforeman/leapp COPR Repository], which contains newer LEAPP packages than those shipped by https://wiki.almalinux.org/elevate/[AlmaLinux/ELevate], and support {Project} upgrades:
++
+----
+# curl -o /etc/yum.repos.d/theforeman-leapp.repo https://copr.fedorainfracloud.org/coprs/g/theforeman/leapp/repo/epel-7/group_theforeman-leapp-epel-7.repo
+----
++
+On {RHEL}, enable the `rhel-7-server-extras-rpms` repository:
++
+----
+# subscription-manager repos --enable=rhel-7-server-extras-rpms
+----
+
+. Install required packages:
++
+----
+# {package-install-project} install leapp leapp-repository
+----
+
+endif::[]
+
+ifdef::foreman-el,katello[]
 +
 . Add {Project} specific repositories to `/etc/leapp/files/leapp_upgrade_repositories.repo`:
 +
@@ -116,6 +180,7 @@ gpgcheck=1
 ----
 # yum remove centos-release-scl centos-release-scl-rh
 ----
+endif::[]
 
 . Let LEAPP analyze your system:
 +
@@ -134,6 +199,7 @@ The following commands show the most common steps required:
 # leapp answer --section remove_pam_pkcs11_module_check.confirm=True
 ----
 
+ifdef::foreman-el,katello[]
 +
 The `preupgrade` might fail with a dependency resolution error such as:
 +
@@ -148,6 +214,7 @@ If this happens, do the following to clean up packages that cannot automatically
 ----
 # yum remove rubygem-thor rubygem-railties
 ----
+endif::[]
 
 . Ensure `leapp preupgrade` has no issues.
 
@@ -156,6 +223,7 @@ If this happens, do the following to clean up packages that cannot automatically
 ----
 # leapp upgrade
 ----
+ifdef::foreman-el,katello[]
 . Reboot the system.
 
 . After the system reboots, a live system conducts the upgrade, reboots to fix SELinux labels, then reboots into the final Enterprise Linux 8 system.
@@ -164,6 +232,18 @@ If this happens, do the following to clean up packages that cannot automatically
 ----
 # journalctl -u leapp_resume -f
 ----
+endif::[]
+
+ifdef::satellite[]
+. Reboot the system.
+
+. After the system reboots, a live system conducts the upgrade, reboots to fix SELinux labels, then reboots into the final {RHEL} 8 system.
+. LEAPP finishes the upgrade, watch it with:
++
+----
+# journalctl -u leapp_resume -f
+----
+endif::[]
 
 [NOTE]
 ====
