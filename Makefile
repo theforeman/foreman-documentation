@@ -16,9 +16,9 @@ endif
 all: html
 
 prep:
-	bundle install
+	bundle install --path vendor
 	cd web
-	bundle install
+	bundle install --path ../vendor
 	cd ..
 	mkdir -p $(DEST)/nightly
 
