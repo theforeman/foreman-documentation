@@ -6,12 +6,25 @@ This is a **work in progress**, an attempt to take content written by Red Hat do
 
 Contributions are welcome. Please read the [Contribution guidelines](#contribution-guidelines) before opening a Pull Request.
 
-## Building
+## Building Locally
 
 Install the required tools.
 In Fedora perform:
 
-	dnf -y install make linkchecker
+	dnf -y groupinstall development-tools
+	dnf -y install ruby ruby-devel rubygem-bundler linkchecker
+
+Then continue with the `make prep` step below.
+
+In RHEL perform:
+	
+	dnf module enable ruby:2.7
+	dnf -y groupinstall development-tools
+	dnf -y install ruby ruby-devel rubygem-bundler python3-pip
+	pip3 install linkchecker
+
+If you prefer to install python packages into home folder rather than system-wide folder (requires root), then add `--user` option to the `pip3` command.
+Then continue with the `make prep` step below.
 
 In MacOS required tools can be installed via brew but instead "make" call "gmake":
 
