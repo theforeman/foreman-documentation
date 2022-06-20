@@ -168,7 +168,7 @@ const navVersions = [
     ]
   },
   {
-    title: "Foreman 3.3 - Katello 4.5 (RC)",
+    title: "Foreman 3.3 - Katello 4.5 (supported)",
     path: "3.3",
     builds: [
       {
@@ -248,7 +248,7 @@ const navVersions = [
     ]
   },  
   {
-    title: "Foreman 3.2 - Katello 4.4 (stable)",
+    title: "Foreman 3.2 - Katello 4.4 (supported)",
     path: "3.2",
     builds: [
       {
@@ -328,7 +328,7 @@ const navVersions = [
     ]
   },
   {
-    title: "Foreman 3.1 - Katello 4.3 (supported)",
+    title: "Foreman 3.1 - Katello 4.3 (unsupported)",
     path: "3.1",
     builds: [
       {
