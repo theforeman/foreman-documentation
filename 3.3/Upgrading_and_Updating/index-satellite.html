@@ -51,10 +51,11 @@
 <li><a href="#upgrading_capsule_server">3.3. Upgrading Capsule&#160;Servers</a></li>
 <li><a href="#upgrading_clients">3.4. Upgrading Satellite Clients</a></li>
 <li><a href="#upgrading_discovery_parent">3.5. Upgrading Discovery</a></li>
-<li><a href="#upgrading_virt_who">3.6. Upgrading virt-who</a></li>
-<li><a href="#removing_satellite_tools_repository">3.7. Removing the Previous Version of the Satellite Tools Repository</a></li>
-<li><a href="#reclaiming-postgresql-space-after-an-upgrade_upgrade-guide">3.8. Reclaiming PostgreSQL Space</a></li>
-<li><a href="#tuning-with-predefined-profiles_upgrade-guide">3.9. Tuning Satellite&#160;Server with Predefined Profiles</a></li>
+<li><a href="#Upgrading-Project-from-Enterprise-Linux-7-to-Enterprise-Linux-8_upgrade-guide">3.6. Upgrading Satellite from Red&#160;Hat Enterprise Linux 7 to Red&#160;Hat Enterprise Linux 8</a></li>
+<li><a href="#upgrading_virt_who">3.7. Upgrading virt-who</a></li>
+<li><a href="#removing_satellite_tools_repository">3.8. Removing the Previous Version of the Satellite Tools Repository</a></li>
+<li><a href="#reclaiming-postgresql-space-after-an-upgrade_upgrade-guide">3.9. Reclaiming PostgreSQL Space</a></li>
+<li><a href="#tuning-with-predefined-profiles_upgrade-guide">3.10. Tuning Satellite&#160;Server with Predefined Profiles</a></li>
 </ul>
 </li>
 <li><a href="#_updating_satelliteserver_capsuleserver_and_content_hosts">4. Updating Satellite&#160;Server, Capsule&#160;Server, and Content Hosts</a>
@@ -1882,7 +1883,110 @@ After the upgrade, check all subnets to verify this was set correctly.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="upgrading_virt_who"><a class="anchor" href="#upgrading_virt_who"></a>3.6. Upgrading virt-who</h3>
+<h3 id="Upgrading-Project-from-Enterprise-Linux-7-to-Enterprise-Linux-8_upgrade-guide"><a class="anchor" href="#Upgrading-Project-from-Enterprise-Linux-7-to-Enterprise-Linux-8_upgrade-guide"></a>3.6. Upgrading Satellite from Red&#160;Hat Enterprise Linux 7 to Red&#160;Hat Enterprise Linux 8</h3>
+<div class="paragraph">
+<p>Use this procedure to upgrade your Satellite installation from Red&#160;Hat Enterprise Linux 7 to Red&#160;Hat Enterprise Linux 8.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Satellite 6.11 running on Red&#160;Hat Enterprise Linux 7.</p>
+</li>
+<li>
+<p>Access to available repositories or a local mirror of repositories.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Configure the repositories to obtain LEAPP.</p>
+<div class="paragraph">
+<p>On Red&#160;Hat Enterprise Linux, enable the <code>rhel-7-server-extras-rpms</code> repository:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># subscription-manager repos --enable=rhel-7-server-extras-rpms</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Install required packages:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-maintain packages install leapp leapp-repository</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Let LEAPP analyze your system:</p>
+<div class="listingblock">
+<div class="content">
+<pre># leapp preupgrade</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The first run is expected to fail but report issues.
+Continue to the next step for remediation.</p>
+</div>
+</li>
+<li>
+<p>Examine the report in the <code>/var/log/leapp/leapp-report.txt</code> file, answer all questions (using <code>leapp answer</code>) and manually resolve the other reported problems.
+The following commands show the most common steps required:</p>
+<div class="listingblock">
+<div class="content">
+<pre># rmmod pata_acpi
+# echo PermitRootLogin yes | tee -a /etc/ssh/sshd_config
+# leapp answer --section remove_pam_pkcs11_module_check.confirm=True</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Ensure <code>leapp preupgrade</code> has no issues.</p>
+</li>
+<li>
+<p>Run:</p>
+<div class="listingblock">
+<div class="content">
+<pre># leapp upgrade</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Reboot the system.</p>
+<div class="paragraph">
+<p>After the system reboots, a live system conducts the upgrade, reboots to fix SELinux labels, then reboots into the final Red&#160;Hat Enterprise Linux 8 system.</p>
+</div>
+</li>
+<li>
+<p>LEAPP finishes the upgrade, watch it with:</p>
+<div class="listingblock">
+<div class="content">
+<pre># journalctl -u leapp_resume -f</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If you install the system and need to use <code>--disable-system-checks</code>, the last step of the upgrade is going to fail, and you need to call <code>satellite-installer --disable-system-checks</code> manually once the system reboots.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="upgrading_virt_who"><a class="anchor" href="#upgrading_virt_who"></a>3.7. Upgrading virt-who</h3>
 <div class="paragraph">
 <p>If virt-who is installed on Satellite&#160;Server or a Capsule&#160;Server, it will be upgraded when they are upgraded.
 No further action is required.
@@ -1916,7 +2020,7 @@ For information about upgrading hosts, see <a href="#upgrading_clients">Upgradin
 </div>
 </div>
 <div class="sect2">
-<h3 id="removing_satellite_tools_repository"><a class="anchor" href="#removing_satellite_tools_repository"></a>3.7. Removing the Previous Version of the Satellite Tools Repository</h3>
+<h3 id="removing_satellite_tools_repository"><a class="anchor" href="#removing_satellite_tools_repository"></a>3.8. Removing the Previous Version of the Satellite Tools Repository</h3>
 <div class="paragraph">
 <p>After completing the upgrade to Satellite 6.11, the Red&#160;Hat Satellite Tools 6.10 repository can be removed from Content Views and then disabled.</p>
 </div>
@@ -1942,7 +2046,7 @@ Packages from a disabled repository are removed automatically by a scheduled tas
 </div>
 </div>
 <div class="sect2">
-<h3 id="reclaiming-postgresql-space-after-an-upgrade_upgrade-guide"><a class="anchor" href="#reclaiming-postgresql-space-after-an-upgrade_upgrade-guide"></a>3.8. Reclaiming PostgreSQL Space</h3>
+<h3 id="reclaiming-postgresql-space-after-an-upgrade_upgrade-guide"><a class="anchor" href="#reclaiming-postgresql-space-after-an-upgrade_upgrade-guide"></a>3.9. Reclaiming PostgreSQL Space</h3>
 <div class="paragraph">
 <p>The PostgreSQL database can use a large amount of disk space especially in heavily loaded deployments.
 Use this procedure to reclaim some of this disk space on Satellite.</p>
@@ -1978,7 +2082,7 @@ Use this procedure to reclaim some of this disk space on Satellite.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="tuning-with-predefined-profiles_upgrade-guide"><a class="anchor" href="#tuning-with-predefined-profiles_upgrade-guide"></a>3.9. Tuning Satellite&#160;Server with Predefined Profiles</h3>
+<h3 id="tuning-with-predefined-profiles_upgrade-guide"><a class="anchor" href="#tuning-with-predefined-profiles_upgrade-guide"></a>3.10. Tuning Satellite&#160;Server with Predefined Profiles</h3>
 <div class="paragraph">
 <p>If your Satellite deployment includes more than 5000 hosts, you can use predefined tuning profiles to improve performance of Satellite.</p>
 </div>

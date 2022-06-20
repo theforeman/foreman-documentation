@@ -27,7 +27,7 @@
 <h1>Upgrading and Updating Foreman</h1>
 <div class="details">
 <span id="revnumber">version 3.3,</span>
-<span id="revdate">published Jun 17 2022</span>
+<span id="revdate">published Jun 20 2022</span>
 </div>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
@@ -46,9 +46,10 @@
 <li><a href="#upgrading_capsule_server">2.2. Upgrading Smart&#160;Proxy&#160;servers</a></li>
 <li><a href="#upgrading_clients">2.3. Upgrading Foreman Clients</a></li>
 <li><a href="#upgrading_discovery_parent">2.4. Upgrading Discovery</a></li>
-<li><a href="#upgrading_virt_who">2.5. Upgrading virt-who</a></li>
-<li><a href="#reclaiming-postgresql-space-after-an-upgrade_upgrade-guide">2.6. Reclaiming PostgreSQL Space</a></li>
-<li><a href="#tuning-with-predefined-profiles_upgrade-guide">2.7. Tuning Foreman&#160;server with Predefined Profiles</a></li>
+<li><a href="#Upgrading-Project-from-Enterprise-Linux-7-to-Enterprise-Linux-8_upgrade-guide">2.5. Upgrading Foreman from Enterprise Linux 7 to Enterprise Linux 8</a></li>
+<li><a href="#upgrading_virt_who">2.6. Upgrading virt-who</a></li>
+<li><a href="#reclaiming-postgresql-space-after-an-upgrade_upgrade-guide">2.7. Reclaiming PostgreSQL Space</a></li>
+<li><a href="#tuning-with-predefined-profiles_upgrade-guide">2.8. Tuning Foreman&#160;server with Predefined Profiles</a></li>
 </ul>
 </li>
 <li><a href="#_updating_foremanserver_and_content_hosts">3. Updating Foreman&#160;server and Content Hosts</a>
@@ -789,7 +790,241 @@ After the upgrade, check all subnets to verify this was set correctly.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="upgrading_virt_who"><a class="anchor" href="#upgrading_virt_who"></a>2.5. Upgrading virt-who</h3>
+<h3 id="Upgrading-Project-from-Enterprise-Linux-7-to-Enterprise-Linux-8_upgrade-guide"><a class="anchor" href="#Upgrading-Project-from-Enterprise-Linux-7-to-Enterprise-Linux-8_upgrade-guide"></a>2.5. Upgrading Foreman from Enterprise Linux 7 to Enterprise Linux 8</h3>
+<div class="paragraph">
+<p>Use this procedure to upgrade your Foreman installation from Enterprise Linux 7 to Enterprise Linux 8.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Foreman 3.3 running on Enterprise Linux 7.</p>
+</li>
+<li>
+<p>Access to available repositories or a local mirror of repositories.</p>
+</li>
+<li>
+<p>Foreman installations running on CentOS 7 can be upgraded to CentOS Stream 8 or a Red&#160;Hat Enterprise Linux rebuild.</p>
+</li>
+<li>
+<p>Foreman installations running on Red&#160;Hat Enterprise Linux 7 can be upgraded to Red&#160;Hat Enterprise Linux 8.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Configure the repositories to obtain LEAPP.</p>
+<div class="paragraph">
+<p>On CentOS, configure the <a href="https://copr.fedorainfracloud.org/coprs/g/theforeman/leapp/">@theforeman/leapp COPR Repository</a>, which contains newer LEAPP packages than those shipped by <a href="https://wiki.almalinux.org/elevate/">AlmaLinux/ELevate</a>, and support Foreman upgrades:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># curl -o /etc/yum.repos.d/theforeman-leapp.repo https://copr.fedorainfracloud.org/coprs/g/theforeman/leapp/repo/epel-7/group_theforeman-leapp-epel-7.repo</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>On Red&#160;Hat Enterprise Linux, enable the <code>rhel-7-server-extras-rpms</code> repository:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># subscription-manager repos --enable=rhel-7-server-extras-rpms</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Install required packages:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># yum install leapp leapp-repository</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Install additional OS specific packages (<code>leapp-data-almalinux</code> for AlmaLinux, <code>leapp-data-centos</code> for CentOS Stream, or <code>leapp-data-rocky</code> for Rocky Linux).
+Note that this is not required for Red&#160;Hat Enterprise Linux based installations.</p>
+<div class="listingblock">
+<div class="content">
+<pre># yum install leapp-data-centos</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Add Foreman specific repositories to <code>/etc/leapp/files/leapp_upgrade_repositories.repo</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">[leapp-foreman]
+name=Foreman 3.3
+baseurl=https://yum.theforeman.org/releases/3.3/el8/$basearch
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-foreman
+enabled=1
+gpgcheck=1
+module_hotfixes=1
+
+[leapp-katello]
+name=Katello 4.5
+baseurl=https://yum.theforeman.org/katello/4.5/katello/el8/$basearch/
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-foreman
+enabled=1
+gpgcheck=1
+module_hotfixes=1
+
+[leapp-katello-candlepin]
+name=Candlepin: an open source entitlement management system.
+baseurl=https://yum.theforeman.org/katello/4.5/candlepin/el8/$basearch/
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-foreman
+enabled=1
+gpgcheck=1
+module_hotfixes=1
+
+[leapp-pulpcore]
+name=pulpcore: Fetch, Upload, Organize, and Distribute Software Packages.
+baseurl=https://yum.theforeman.org/pulpcore/3.18/el8/$basearch/
+gpgkey=https://yum.theforeman.org/pulpcore/3.18/GPG-RPM-KEY-pulpcore
+enabled=1
+gpgcheck=1
+module_hotfixes=1
+
+[leapp-foreman-plugins]
+name=Foreman plugins 3.3
+baseurl=https://yum.theforeman.org/plugins/3.3/el8/$basearch
+enabled=1
+gpgcheck=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-foreman
+module_hotfixes=1
+
+[leapp-foreman-client]
+name=Foreman client 3.3
+baseurl=https://yum.theforeman.org/client/3.3/el8/$basearch
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-foreman-client
+
+[leapp-puppet7]
+name=Puppet 7 Repository el 8 - $basearch
+baseurl=http://yum.puppetlabs.com/puppet7/el/8/$basearch
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-puppet7-release
+       file:///etc/pki/rpm-gpg/RPM-GPG-KEY-2025-04-06-puppet7-release
+enabled=1
+gpgcheck=1</pre>
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>If you are using Puppet 6 instead of Puppet 7, replace the <code>7</code> with a <code>6</code> in the <code>leapp-puppet7</code> entry.</p>
+</li>
+<li>
+<p>You need a Puppet repository for the Puppet agent that the installer is using.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>We do not support Enterprise Linux 8 installations with EPEL 8 enabled, so remove <code>epel-release</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre># yum remove epel-release</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Remove <code>centos-release-scl</code> and <code>centos-release-scl-rh</code> repositories:</p>
+<div class="listingblock">
+<div class="content">
+<pre># yum remove centos-release-scl centos-release-scl-rh</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Let LEAPP analyze your system:</p>
+<div class="listingblock">
+<div class="content">
+<pre># leapp preupgrade</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The first run is expected to fail but report issues.
+Continue to the next step for remediation.</p>
+</div>
+</li>
+<li>
+<p>Examine the report in the <code>/var/log/leapp/leapp-report.txt</code> file, answer all questions (using <code>leapp answer</code>) and manually resolve the other reported problems.
+The following commands show the most common steps required:</p>
+<div class="listingblock">
+<div class="content">
+<pre># rmmod pata_acpi
+# echo PermitRootLogin yes | tee -a /etc/ssh/sshd_config
+# leapp answer --section remove_pam_pkcs11_module_check.confirm=True</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>preupgrade</code> might fail with a dependency resolution error such as:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>"package rubygem-fx-0.5.0-2.el8.noarch requires rubygem(railties) &gt;= 4.0.0, but none of the providers can be installed"</p>
+</li>
+<li>
+<p>"package rubygem-railties-6.0.4.7-1.el8.noarch requires rubygem(thor) &lt; 2.0, but none of the providers can be installed"</p>
+<div class="paragraph">
+<p>If this happens, do the following to clean up packages that cannot automatically upgrade (<code>rubygem(thor)</code> and <code>rubygem(railties)</code> in the example above):</p>
+</div>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># yum remove rubygem-thor rubygem-railties</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Ensure <code>leapp preupgrade</code> has no issues.</p>
+</li>
+<li>
+<p>Run:</p>
+<div class="listingblock">
+<div class="content">
+<pre># leapp upgrade</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Reboot the system.</p>
+<div class="paragraph">
+<p>After the system reboots, a live system conducts the upgrade, reboots to fix SELinux labels, then reboots into the final Enterprise Linux 8 system.</p>
+</div>
+</li>
+<li>
+<p>LEAPP finishes the upgrade, watch it with:</p>
+<div class="listingblock">
+<div class="content">
+<pre># journalctl -u leapp_resume -f</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If you install the system and need to use <code>--disable-system-checks</code>, the last step of the upgrade is going to fail, and you need to call <code>foreman-installer --disable-system-checks</code> manually once the system reboots.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="upgrading_virt_who"><a class="anchor" href="#upgrading_virt_who"></a>2.6. Upgrading virt-who</h3>
 <div class="paragraph">
 <p>If virt-who is installed on Foreman&#160;server or a Smart&#160;Proxy&#160;server, it will be upgraded when they are upgraded.
 No further action is required.
@@ -823,7 +1058,7 @@ For information about upgrading hosts, see <a href="#upgrading_clients">Upgradin
 </div>
 </div>
 <div class="sect2">
-<h3 id="reclaiming-postgresql-space-after-an-upgrade_upgrade-guide"><a class="anchor" href="#reclaiming-postgresql-space-after-an-upgrade_upgrade-guide"></a>2.6. Reclaiming PostgreSQL Space</h3>
+<h3 id="reclaiming-postgresql-space-after-an-upgrade_upgrade-guide"><a class="anchor" href="#reclaiming-postgresql-space-after-an-upgrade_upgrade-guide"></a>2.7. Reclaiming PostgreSQL Space</h3>
 <div class="paragraph">
 <p>The PostgreSQL database can use a large amount of disk space especially in heavily loaded deployments.
 Use this procedure to reclaim some of this disk space on Foreman.</p>
@@ -859,7 +1094,7 @@ Use this procedure to reclaim some of this disk space on Foreman.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="tuning-with-predefined-profiles_upgrade-guide"><a class="anchor" href="#tuning-with-predefined-profiles_upgrade-guide"></a>2.7. Tuning Foreman&#160;server with Predefined Profiles</h3>
+<h3 id="tuning-with-predefined-profiles_upgrade-guide"><a class="anchor" href="#tuning-with-predefined-profiles_upgrade-guide"></a>2.8. Tuning Foreman&#160;server with Predefined Profiles</h3>
 <div class="paragraph">
 <p>If your Foreman deployment includes more than 5000 hosts, you can use predefined tuning profiles to improve performance of Foreman.</p>
 </div>
