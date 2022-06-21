@@ -9,11 +9,11 @@ const navVersions = [
         guides: [
           {
             title: "Release Notes",
-            path: "Release_notes"
+            path: "Release_Notes"
           },
           {
             title: "Quickstart Guide",
-            path: "Quickstart_Guide"
+            path: "Quickstart"
           },
           {
             title: "Installing Foreman Server",
@@ -25,7 +25,7 @@ const navVersions = [
           },
           {
             title: "Deploying Foreman on AWS",
-            path: "Deploying_on_AWS"
+            path: "Deploying_Project_on_AWS"
           },
           {
             title: "Provisioning Guide",
@@ -49,7 +49,7 @@ const navVersions = [
           },
           {
             title: "Application Centric Deployment",
-            path: "Application_Centric_Deployment"
+            path: "Deploying_Hosts_AppCentric"
           }
         ]
       },
@@ -59,11 +59,11 @@ const navVersions = [
         guides: [
           {
             title: "Release Notes",
-            path: "Release_notes"
+            path: "Release_Notes"
           },
           {
             title: "Quickstart Guide",
-            path: "Quickstart_Guide"
+            path: "Quickstart"
           },
           {
             title: "Installing Foreman Server",
@@ -71,7 +71,7 @@ const navVersions = [
           },
           {
             title: "Deploying Foreman on AWS",
-            path: "Deploying_on_AWS"
+            path: "Deploying_Project_on_AWS"
           },
           {
             title: "Provisioning Guide",
@@ -97,15 +97,15 @@ const navVersions = [
         guides: [
           {
             title: "Release Notes",
-            path: "Release_notes"
+            path: "Release_Notes"
           },
           {
             title: "Planning Guide",
-            path: "Planning_Guide"
+            path: "Planning_for_Project"
           },
           {
             title: "Quickstart Guide",
-            path: "Quickstart_Guide"
+            path: "Quickstart"
           },
           {
             title: "Installing Katello Server",
@@ -137,7 +137,7 @@ const navVersions = [
           },
           {
             title: "Deploying Foreman on AWS",
-            path: "Deploying_on_AWS"
+            path: "Deploying_Project_on_AWS"
           },
           {
             title: "Provisioning Guide",
@@ -161,7 +161,7 @@ const navVersions = [
           },
           {
             title: "Application Centric Deployment",
-            path: "Application_Centric_Deployment"
+            path: "Deploying_Hosts_AppCentric"
           }
         ]
       }
@@ -177,15 +177,15 @@ const navVersions = [
         guides: [
           {
             title: "Release Notes",
-            path: "Release_notes"
+            path: "Release_Notes"
           },
           {
             title: "Planning Guide",
-            path: "Planning_Guide"
+            path: "Planning_for_Project"
           },
           {
             title: "Quickstart Guide",
-            path: "Quickstart_Guide"
+            path: "Quickstart"
           },
           {
             title: "Installing Katello Server",
@@ -217,7 +217,7 @@ const navVersions = [
           },
           {
             title: "Deploying Foreman on AWS",
-            path: "Deploying_on_AWS"
+            path: "Deploying_Project_on_AWS"
           },
           {
             title: "Provisioning Guide",
@@ -241,7 +241,7 @@ const navVersions = [
           },
           {
             title: "Application Centric Deployment",
-            path: "Application_Centric_Deployment"
+            path: "Deploying_Hosts_AppCentric"
           }
         ]
       }
@@ -257,15 +257,15 @@ const navVersions = [
         guides: [
           {
             title: "Release Notes",
-            path: "Release_notes"
+            path: "Release_Notes"
           },
           {
             title: "Planning Guide",
-            path: "Planning_Guide"
+            path: "Planning_for_Project"
           },
           {
             title: "Quickstart Guide",
-            path: "Quickstart_Guide"
+            path: "Quickstart"
           },
           {
             title: "Installing Katello Server",
@@ -297,7 +297,7 @@ const navVersions = [
           },
           {
             title: "Deploying Foreman on AWS",
-            path: "Deploying_on_AWS"
+            path: "Deploying_Project_on_AWS"
           },
           {
             title: "Provisioning Guide",
@@ -321,7 +321,7 @@ const navVersions = [
           },
           {
             title: "Application Centric Deployment",
-            path: "Application_Centric_Deployment"
+            path: "Deploying_Hosts_AppCentric"
           }
         ]
       }
@@ -337,15 +337,15 @@ const navVersions = [
         guides: [
           {
             title: "Release Notes",
-            path: "Release_notes"
+            path: "Release_Notes"
           },
           {
             title: "Planning Guide",
-            path: "Planning_Guide"
+            path: "Planning_for_Project"
           },
           {
             title: "Quickstart Guide",
-            path: "Quickstart_Guide"
+            path: "Quickstart"
           },
           {
             title: "Installing Katello Server",
@@ -377,7 +377,7 @@ const navVersions = [
           },
           {
             title: "Deploying Foreman on AWS",
-            path: "Deploying_on_AWS"
+            path: "Deploying_Project_on_AWS"
           },
           {
             title: "Provisioning Guide",
@@ -401,7 +401,7 @@ const navVersions = [
           },
           {
             title: "Application Centric Deployment",
-            path: "Application_Centric_Deployment"
+            path: "Deploying_Hosts_AppCentric"
           }
         ]
       }
@@ -417,15 +417,15 @@ const navVersions = [
         guides: [
           {
             title: "Release Notes",
-            path: "Release_notes"
+            path: "Release_Notes"
           },
           {
             title: "Planning Guide",
-            path: "Planning_Guide"
+            path: "Planning_for_Project"
           },
           {
             title: "Quickstart Guide",
-            path: "Quickstart_Guide"
+            path: "Quickstart"
           },
           {
             title: "Installing Katello Server",
@@ -457,7 +457,7 @@ const navVersions = [
           },
           {
             title: "Deploying Foreman on AWS",
-            path: "Deploying_on_AWS"
+            path: "Deploying_Project_on_AWS"
           },
           {
             title: "Provisioning Guide",
@@ -481,7 +481,7 @@ const navVersions = [
           },
           {
             title: "Application Centric Deployment",
-            path: "Application_Centric_Deployment"
+            path: "Deploying_Hosts_AppCentric"
           }
         ]
       }
@@ -526,10 +526,6 @@ const navVersions = [
           {
             title: "Content Management Guide",
             path: "Content_Management_Guide"
-          },
-          {
-            title: "Converting a Host to RHEL",
-            path: "Converting_a_Host_to_RHEL"
           },
           {
             title: "Deploying Foreman on AWS",
@@ -596,10 +592,6 @@ const navVersions = [
             path: "Content_Management_Guide"
           },
           {
-            title: "Converting a Host to RHEL",
-            path: "Converting_a_Host_to_RHEL"
-          },
-          {
             title: "Deploying Foreman on AWS",
             path: "Deploying_on_AWS"
           },
@@ -662,10 +654,6 @@ const navVersions = [
           {
             title: "Content Management Guide",
             path: "Content_Management_Guide"
-          },
-          {
-            title: "Converting a Host to RHEL",
-            path: "Converting_a_Host_to_RHEL"
           },
           {
             title: "Deploying Foreman on AWS",
