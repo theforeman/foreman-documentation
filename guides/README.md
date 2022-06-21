@@ -47,7 +47,7 @@ To make both formats in one command, use `make html pdf`.
 Few additional make targets are available on the guide level.
 To quickly build HTML version and open new tab in a browser do:
 
-	cd doc-Provisioning_Guide
+	cd doc-Provisioning_Hosts
 	make browser
 
 Similarly, to build and open PDF version do:
