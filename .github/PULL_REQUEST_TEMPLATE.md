@@ -1,13 +1,10 @@
 
-Cherry-pick into:
+[ ] I am familiar with the [contributing](CONTRIBUTING.md) guidelines.
 
-* [ ] Foreman 3.3
-* [ ] Foreman 3.2
-* [ ] Foreman 3.1
-* For Foreman 3.0 or older, file a separate PR request
+Please cherry-pick my commits into:
 
-<!---
-Thank you for contributing to Foreman documentation. Make sure to read README
-for the documentation standards. Set cherry-pick github label to mark this
-contribution for cherry picking and check which version do you need with [x].
--->
+* [ ] Foreman 3.3/Katello 4.5
+* [ ] Foreman 3.2/Katello 4.4
+* [ ] Foreman 3.1/Katello 4.3
+* For Foreman 3.0 or older, please create a separate PR.
+* We do not accept PRs for Foreman 2.3 or older.
