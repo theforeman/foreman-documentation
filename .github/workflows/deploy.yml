@@ -207,6 +207,48 @@ jobs:
           name: foreman-docs-web-master
           path: web/output/
 
+  preview:
+    if: github.event_name == 'pull_request'
+    needs:
+      - check-html
+      - build-html
+      - build-web
+      - build-ccutil
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get source branch name
+        run: echo "BRANCH_NAME=$(echo ${GITHUB_HEAD_REF} | tr / -)" >> $GITHUB_ENV
+
+      - name: Set target name (master)
+        if: github.base_ref == 'master'
+        run: echo "TARGET_NAME=nightly" >> $GITHUB_ENV
+
+      - name: Set target name (stable branch)
+        if: github.base_ref != 'master'
+        run: echo "TARGET_NAME=$(echo ${GITHUB_BASE_REF} | tr / -)" >> $GITHUB_ENV
+
+      - name: Create public directory
+        run: mkdir -p public/${{ env.TARGET_NAME }}
+
+      - name: Download web
+        uses: actions/download-artifact@v3
+        with:
+          name: foreman-docs-web-master
+          path: public
+
+      - name: Download HTML
+        uses: actions/download-artifact@v3
+        with:
+          name: foreman-docs-html-${{ env.BRANCH_NAME }}
+          path: public/${{ env.TARGET_NAME }}
+
+      - uses: afc163/surge-preview@v1
+        with:
+          surge_token: ${{ secrets.SURGE_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          dist: public
+          build: echo done
+
   publish:
     if: >
       github.repository_owner == 'theforeman' &&
