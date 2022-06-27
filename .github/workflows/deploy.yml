@@ -216,6 +216,9 @@ jobs:
       - build-ccutil
     runs-on: ubuntu-latest
     steps:
+      - name: Install surge
+        run: npm install surge
+
       - name: Get source branch name
         run: echo "BRANCH_NAME=$(echo ${GITHUB_HEAD_REF} | tr / -)" >> $GITHUB_ENV
 
@@ -226,6 +229,9 @@ jobs:
       - name: Set target name (stable branch)
         if: github.base_ref != 'master'
         run: echo "TARGET_NAME=$(echo ${GITHUB_BASE_REF} | tr / -)" >> $GITHUB_ENV
+
+      - name: Set preview domain
+        run: echo "PREVIEW_DOMAIN=$(echo ${{ github.repository }} | tr / - )-${{ github.job }}-pr-${{ github.event.number }}.surge.sh" >> $GITHUB_ENV
 
       - name: Create public directory
         run: mkdir -p public/${{ env.TARGET_NAME }}
@@ -242,12 +248,11 @@ jobs:
           name: foreman-docs-html-${{ env.BRANCH_NAME }}
           path: public/${{ env.TARGET_NAME }}
 
-      - uses: afc163/surge-preview@v1
-        with:
-          surge_token: ${{ secrets.SURGE_TOKEN }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          dist: public
-          build: echo done
+      - name: Deploy to surge.sh
+        run: ./node_modules/.bin/surge ./public $PREVIEW_DOMAIN --token ${{ secrets.SURGE_TOKEN }}
+
+      - name: Generate summary
+        run: echo "The PR preview is available at [$PREVIEW_DOMAIN](https://$PREVIEW_DOMAIN)" >> $GITHUB_STEP_SUMMARY
 
   publish:
     if: >
