@@ -35,6 +35,7 @@ jobs:
             const script = require('./.github/download_workflow_run_artifact.js');
             let fs = require('fs');
             await script({github, context, core, fs, artifact_name: 'foreman-docs-html-${{ fromJSON(env.PR_DATA).branch_name }}'});
+            await script({github, context, core, fs, artifact_name: 'foreman-docs-html-base'});
             await script({github, context, core, fs, artifact_name: 'foreman-docs-web-master'});
 
       - name: Set preview domain
@@ -43,17 +44,44 @@ jobs:
       - name: Install surge
         run: npm install surge
 
+      - name: Install diffstat
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y diffstat
+
       - name: Create preview layout
         run: |
           mkdir -p preview/${{ fromJSON(env.PR_DATA).target_name }}
           unzip -d preview foreman-docs-web-master.zip
           unzip -d preview/${{ fromJSON(env.PR_DATA).target_name }} foreman-docs-html-${{ fromJSON(env.PR_DATA).branch_name }}.zip
 
+      - name: Create diff to old base
+        run: |
+          mkdir old
+          unzip -d old foreman-docs-html-base.zip
+          diff -Nrwu old/ public/${{ fromJSON(env.PR_DATA).target_name }}/ | cat > diff.patch
+          diffstat -l diff.patch > diff.txt
+
       - name: Deploy to surge.sh
         run: ./node_modules/.bin/surge ./preview $PREVIEW_DOMAIN --token ${{ secrets.SURGE_TOKEN }}
+
+      - name: Generate summary
+        run: |
+          echo "The PR preview for ${{ fromJSON(env.PR_DATA).head_sha }} is available at [${{ env.PREVIEW_DOMAIN }}](https://${{ env.PREVIEW_DOMAIN }})" >> pr.md
+          echo "" >> pr.md
+          echo "The following output files are affected by this PR:" >> pr.md
+          sed -E "s#(.*)#- [\1](https://${{ env.PREVIEW_DOMAIN }}/${{ fromJSON(env.PR_DATA).target_name }}/\1)#" diff.txt >> pr.md
+          echo "" >> pr.md
+          echo '<details>' >> pr.md
+          echo '<summary>show diff</summary>' >> pr.md
+          echo "" >> pr.md
+          echo '```diff' >> pr.md
+          cat diff.patch >> pr.md
+          echo '```' >> pr.md
+          echo '</details>' >> pr.md
 
       - name: Comment on PR
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           number: ${{ fromJSON(env.PR_DATA).pr_number }}
-          message: "The PR preview for ${{ fromJSON(env.PR_DATA).head_sha }} is available at [${{ env.PREVIEW_DOMAIN }}](https://${{ env.PREVIEW_DOMAIN }})"
+          path: pr.md

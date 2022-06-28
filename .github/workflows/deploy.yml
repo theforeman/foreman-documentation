@@ -151,6 +151,40 @@ jobs:
           name: pr
           path: guides/pr/
 
+  build-html-base:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    defaults:
+      run:
+        shell: bash
+        working-directory: guides
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.base_ref }}
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+
+      - name: Build HTML base for comparison
+        run: |
+          make clean
+          make -j ${{ env.MAKE_J }} html BUILD=foreman-el
+          make -j ${{ env.MAKE_J }} html BUILD=foreman-deb
+          make -j ${{ env.MAKE_J }} html BUILD=katello
+          make -j ${{ env.MAKE_J }} html BUILD=satellite
+          make -j ${{ env.MAKE_J }} html BUILD=orcharhino
+
+      - name: Upload HTML base for comparison
+        uses: actions/upload-artifact@v2
+        with:
+          name: foreman-docs-html-base
+          path: guides/build/
+
   build-pdf:
     runs-on: ubuntu-latest
     defaults:
