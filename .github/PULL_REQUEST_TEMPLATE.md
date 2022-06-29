@@ -1,5 +1,5 @@
 
-* [ ] I am familiar with the [contributing](CONTRIBUTING.md) guidelines.
+* [ ] I am familiar with the [contributing](https://github.com/theforeman/foreman-documentation/blob/master/CONTRIBUTING.md) guidelines.
 
 Please cherry-pick my commits into:
 
