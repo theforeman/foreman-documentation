@@ -1,0 +1,59 @@
+name: preview
+
+on:
+  workflow_run:
+    workflows:
+      - deploy
+    types:
+      - completed
+
+jobs:
+  preview:
+    if: github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Download metadata artifact
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const script = require('./.github/download_workflow_run_artifact.js');
+            let fs = require('fs');
+            await script({github, context, core, fs, artifact_name: 'pr'});
+
+      - name: Unzip artifact
+        run: unzip pr.zip
+
+      - name: Read PR data
+        run: echo "PR_DATA=$(cat ./pr.json)" >> $GITHUB_ENV
+
+      - name: Download other artifacts
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const script = require('./.github/download_workflow_run_artifact.js');
+            let fs = require('fs');
+            await script({github, context, core, fs, artifact_name: 'foreman-docs-html-${{ fromJSON(env.PR_DATA).branch_name }}'});
+            await script({github, context, core, fs, artifact_name: 'foreman-docs-web-master'});
+
+      - name: Set preview domain
+        run: echo "PREVIEW_DOMAIN=$(echo ${{ github.repository }} | tr / - )-${{ github.job }}-pr-${{ fromJSON(env.PR_DATA).pr_number }}.surge.sh" >> $GITHUB_ENV
+
+      - name: Install surge
+        run: npm install surge
+
+      - name: Create preview layout
+        run: |
+          mkdir -p preview/${{ fromJSON(env.PR_DATA).target_name }}
+          unzip -d preview foreman-docs-web-master.zip
+          unzip -d preview/${{ fromJSON(env.PR_DATA).target_name }} foreman-docs-html-${{ fromJSON(env.PR_DATA).branch_name }}.zip
+
+      - name: Deploy to surge.sh
+        run: ./node_modules/.bin/surge ./preview $PREVIEW_DOMAIN --token ${{ secrets.SURGE_TOKEN }}
+
+      - name: Comment on PR
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          number: ${{ fromJSON(env.PR_DATA).pr_number }}
+          message: "The PR preview for ${{ fromJSON(env.PR_DATA).head_sha }} is available at [$PREVIEW_DOMAIN](https://$PREVIEW_DOMAIN)"
