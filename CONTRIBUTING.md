@@ -30,6 +30,8 @@ We respect each others time and energy spent on Foreman documentation.
 * [ ] Before pushing, I view my diff against master or the target branch and check for spelling mistakes, failed conflict resolutions, etc.
 * [ ] Before pinging others about my PR, I await the Github Actions to see if my branch builds.
 * [ ] If I add text that applies only to a specific downstream product, I notify others and give them a chance to request extending the `ifdef::[]` or `ifndef::[]` directive.
++ [ ] My change does not contain `Foreman`, `Satellite`, or `orcharhino`.
+Instead, I use attributes.
 * [ ] I don't add useless or trailing white space.
 * [ ] I put each sentence to its own line.
 * [ ] I write a meaningful commit message.
