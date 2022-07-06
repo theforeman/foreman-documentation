@@ -8,6 +8,32 @@ on:
       - completed
 
 jobs:
+  preview-failed:
+    if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion != 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Download metadata artifact
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const script = require('./.github/download_workflow_run_artifact.js');
+            let fs = require('fs');
+            await script({github, context, core, fs, artifact_name: 'pr'});
+
+      - name: Unzip artifact
+        run: unzip pr.zip
+
+      - name: Read PR data
+        run: echo "PR_DATA=$(cat ./pr.json)" >> $GITHUB_ENV
+
+      - name: Comment on PR
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          number: ${{ fromJSON(env.PR_DATA).pr_number }}
+          message: "The PR preview for ${{ fromJSON(env.PR_DATA).head_sha }} could not be generated"
+
   preview:
     if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
