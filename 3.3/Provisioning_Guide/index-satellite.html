@@ -57,13 +57,15 @@
 </li>
 <li><a href="#Configuring_Networking_provisioning">3. Configuring Networking</a>
 <ul class="sectlevel2">
-<li><a href="#Network_Resources_provisioning">3.1. Network Resources</a></li>
-<li><a href="#DHCP_Options_provisioning">3.2. Satellite and DHCP Options</a></li>
-<li><a href="#Troubleshooting_DHCP_Problems_provisioning">3.3. Troubleshooting DHCP Problems in Satellite</a></li>
-<li><a href="#Prerequisites_for_Image_Based_Provisioning_provisioning">3.4. Prerequisites for Image Based Provisioning</a></li>
-<li><a href="#Configuring_Network_Services_provisioning">3.5. Configuring Network Services</a></li>
-<li><a href="#Adding_a_Domain_to_Server_provisioning">3.6. Adding a Domain to Satellite&#160;Server</a></li>
-<li><a href="#Adding_a_Subnet_to_Server_provisioning">3.7. Adding a Subnet to Satellite&#160;Server</a></li>
+<li><a href="#facts-and-nic-filtering_provisioning">3.1. Facts and NIC filtering</a></li>
+<li><a href="#optimizing-performance-by-removing-nics-from-database_provisioning">3.2. Optimizing performance by removing NICs from database</a></li>
+<li><a href="#Network_Resources_provisioning">3.3. Network Resources</a></li>
+<li><a href="#DHCP_Options_provisioning">3.4. Satellite and DHCP Options</a></li>
+<li><a href="#Troubleshooting_DHCP_Problems_provisioning">3.5. Troubleshooting DHCP Problems in Satellite</a></li>
+<li><a href="#Prerequisites_for_Image_Based_Provisioning_provisioning">3.6. Prerequisites for Image Based Provisioning</a></li>
+<li><a href="#Configuring_Network_Services_provisioning">3.7. Configuring Network Services</a></li>
+<li><a href="#Adding_a_Domain_to_Server_provisioning">3.8. Adding a Domain to Satellite&#160;Server</a></li>
+<li><a href="#Adding_a_Subnet_to_Server_provisioning">3.9. Adding a Subnet to Satellite&#160;Server</a></li>
 </ul>
 </li>
 <li><a href="#Using_Infoblox_as_DHCP_and_DNS_Providers_provisioning">4. Using Infoblox as DHCP and DNS Providers</a>
@@ -1481,7 +1483,86 @@ This includes:</p>
 To configure Satellite to use external DHCP, DNS, and TFTP services, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.11/html-single/installing_satellite_server_in_a_connected_network_environment/index#configuring-external-services">Configuring External Services</a> in <em>Installing Satellite Server from a Connected Network</em>.</p>
 </div>
 <div class="sect2">
-<h3 id="Network_Resources_provisioning"><a class="anchor" href="#Network_Resources_provisioning"></a>3.1. Network Resources</h3>
+<h3 id="facts-and-nic-filtering_provisioning"><a class="anchor" href="#facts-and-nic-filtering_provisioning"></a>3.1. Facts and NIC filtering</h3>
+<div class="paragraph">
+<p>Facts describe aspects such as total memory, operating system version, or architecture as reported by the host.
+You can find facts in <strong>Monitor</strong> &gt; <strong>Facts</strong> and search hosts through facts or use facts in templates.</p>
+</div>
+<div class="paragraph">
+<p>Satellite collects facts from multiple sources:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>subscription manager</code></p>
+</li>
+<li>
+<p><code>ansible</code></p>
+</li>
+<li>
+<p><code>puppet</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Satellite is an inventory system for hosts and network interfaces.
+For hypervisors or container hosts, adding thousands of interfaces per host and updating the inventory every few minutes is inadequate.
+For each individual NIC reported, Satellite creates a NIC entry and those entries are never removed from the database.
+Parsing all the facts and comparing all records in the database makes Satellite extremely slow and unusable.
+To optimize the performance of various actions, most importantly fact import, you can use the options available on the <strong>Facts</strong> tab under <strong>Administer</strong> &gt; <strong>Settings</strong>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="optimizing-performance-by-removing-nics-from-database_provisioning"><a class="anchor" href="#optimizing-performance-by-removing-nics-from-database_provisioning"></a>3.2. Optimizing performance by removing NICs from database</h3>
+<div class="paragraph">
+<p>Filter and exclude the connections using the <code>Exclude pattern for facts stored in Satellite</code> and <code>Ignore interfaces with matching identifier</code> option.
+By default, these options are set to most common hypervisors.
+If you name the virtual interfaces differently, you can update this filter to use it according to your requirements.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Administer</strong> &gt; <strong>Settings</strong> and select the <strong>Facts</strong> tab.</p>
+</li>
+<li>
+<p>To filter out all interfaces starting with specific names, for example, <code>blu</code>, add <code>blu*</code> to the <code>Ignore interfaces with matching identifier</code> option.</p>
+</li>
+<li>
+<p>To prevent databases from storing facts related to interfaces starting with specific names, for example, <code>blu</code>, add <code>blu*</code> to the <code>Exclude pattern for facts stored in Satellite</code> option.</p>
+<div class="paragraph">
+<p>By default, it contains the same list as the <code>Ignore interfaces with matching identifier</code> option.
+You can override it based on the your requirements.
+This filters out facts completely without storing them.</p>
+</div>
+</li>
+<li>
+<p>To remove facts from the database, enter the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-rake facts:clean</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This command removes all facts matching with the filter added in <strong>Administer</strong> &gt; <strong>Settings</strong> &gt; <strong>Facts</strong> &gt; the <code>Exclude pattern for facts stored in Satellite</code> option.</p>
+</div>
+</li>
+<li>
+<p>To remove interfaces from the database, enter the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-rake interfaces:clean</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This command removes all interfaces matching with the filter added in <strong>Administer</strong> &gt; <strong>Settings</strong> &gt; <strong>Facts</strong> &gt; the <code>Ignore interfaces with matching identifier</code> option.</p>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Network_Resources_provisioning"><a class="anchor" href="#Network_Resources_provisioning"></a>3.3. Network Resources</h3>
 <div class="paragraph">
 <p>Satellite contains networking resources that you must set up and configure to create a host.
 It includes the following networking resources:</p>
@@ -1551,7 +1632,7 @@ These subnets must be under exclusive Satellite control.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="DHCP_Options_provisioning"><a class="anchor" href="#DHCP_Options_provisioning"></a>3.2. Satellite and DHCP Options</h3>
+<h3 id="DHCP_Options_provisioning"><a class="anchor" href="#DHCP_Options_provisioning"></a>3.4. Satellite and DHCP Options</h3>
 <div class="paragraph">
 <p>Satellite manages DHCP reservations through a DHCP Capsule.
 Satellite also sets the <code>next-server</code> and <code>filename</code> DHCP options.</p>
@@ -1649,7 +1730,7 @@ Depending on the PXE loader option, the <code>filename</code> changes as follows
 </table>
 </div>
 <div class="sect2">
-<h3 id="Troubleshooting_DHCP_Problems_provisioning"><a class="anchor" href="#Troubleshooting_DHCP_Problems_provisioning"></a>3.3. Troubleshooting DHCP Problems in Satellite</h3>
+<h3 id="Troubleshooting_DHCP_Problems_provisioning"><a class="anchor" href="#Troubleshooting_DHCP_Problems_provisioning"></a>3.5. Troubleshooting DHCP Problems in Satellite</h3>
 <div class="paragraph">
 <p>Satellite can manage an ISC DHCP server on internal or external DHCP Capsule.
 Satellite can list, create, and delete DHCP reservations and leases.
@@ -1730,7 +1811,7 @@ If a lease is deleted, <code>{ deleted; }</code> is appended to the declaration.
 </div>
 </div>
 <div class="sect2">
-<h3 id="Prerequisites_for_Image_Based_Provisioning_provisioning"><a class="anchor" href="#Prerequisites_for_Image_Based_Provisioning_provisioning"></a>3.4. Prerequisites for Image Based Provisioning</h3>
+<h3 id="Prerequisites_for_Image_Based_Provisioning_provisioning"><a class="anchor" href="#Prerequisites_for_Image_Based_Provisioning_provisioning"></a>3.6. Prerequisites for Image Based Provisioning</h3>
 <div class="paragraph">
 <div class="title">Post-Boot Configuration Method</div>
 <p>Images that use the <code>finish</code> post-boot configuration scripts require a managed DHCP server, such as Satellite&#8217;s integrated Capsule or an external Capsule.
@@ -1793,7 +1874,7 @@ The image must have the <code>cloud-init</code> service configured to start when
 </div>
 </div>
 <div class="sect2">
-<h3 id="Configuring_Network_Services_provisioning"><a class="anchor" href="#Configuring_Network_Services_provisioning"></a>3.5. Configuring Network Services</h3>
+<h3 id="Configuring_Network_Services_provisioning"><a class="anchor" href="#Configuring_Network_Services_provisioning"></a>3.7. Configuring Network Services</h3>
 <div class="paragraph">
 <p>Some provisioning methods use Capsule&#160;Server services.
 For example, a network might require Capsule&#160;Server to act as a DHCP server.
@@ -1862,7 +1943,7 @@ This requires configuring Capsule&#160;Server to use the main PXE boot services:
 </ol>
 </div>
 <div class="sect3">
-<h4 id="Multiple_Subnets_or_Domains_Using_Installer_provisioning"><a class="anchor" href="#Multiple_Subnets_or_Domains_Using_Installer_provisioning"></a>3.5.1. Multiple Subnets or Domains Using Installer</h4>
+<h4 id="Multiple_Subnets_or_Domains_Using_Installer_provisioning"><a class="anchor" href="#Multiple_Subnets_or_Domains_Using_Installer_provisioning"></a>3.7.1. Multiple Subnets or Domains Using Installer</h4>
 <div class="paragraph">
 <p>The <code>satellite-installer</code> options allow only for a single DHCP subnet or DNS domain.
 One way to define more than one subnet is by using a custom configuration file.</p>
@@ -1908,7 +1989,7 @@ Subnets must be then defined in Satellite database.</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="DHCP_Options_For_Network_Configuration_provisioning"><a class="anchor" href="#DHCP_Options_For_Network_Configuration_provisioning"></a>3.5.2. DHCP Options for Network Configuration</h4>
+<h4 id="DHCP_Options_For_Network_Configuration_provisioning"><a class="anchor" href="#DHCP_Options_For_Network_Configuration_provisioning"></a>3.7.2. DHCP Options for Network Configuration</h4>
 <div class="dlist">
 <dl>
 <dt class="hdlist1">--foreman-proxy-dhcp</dt>
@@ -1951,7 +2032,7 @@ Set this to the address for Satellite&#160;Server on <code>eth1</code>.</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="DNS_Options_For_Network_Configuration_provisioning"><a class="anchor" href="#DNS_Options_For_Network_Configuration_provisioning"></a>3.5.3. DNS Options for Network Configuration</h4>
+<h4 id="DNS_Options_For_Network_Configuration_provisioning"><a class="anchor" href="#DNS_Options_For_Network_Configuration_provisioning"></a>3.7.3. DNS Options for Network Configuration</h4>
 <div class="dlist">
 <dl>
 <dt class="hdlist1">--foreman-proxy-dns</dt>
@@ -1993,7 +2074,7 @@ Set this to <code>eth1</code>.</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="TFTP_Options_For_Network_Configuration_provisioning"><a class="anchor" href="#TFTP_Options_For_Network_Configuration_provisioning"></a>3.5.4. TFTP Options for Network Configuration</h4>
+<h4 id="TFTP_Options_For_Network_Configuration_provisioning"><a class="anchor" href="#TFTP_Options_For_Network_Configuration_provisioning"></a>3.7.4. TFTP Options for Network Configuration</h4>
 <div class="dlist">
 <dl>
 <dt class="hdlist1">--foreman-proxy-tftp</dt>
@@ -2018,7 +2099,7 @@ Ensure that you use Capsule&#8217;s IP address.</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="Using_TFTP_Services_Through_NAT_provisioning"><a class="anchor" href="#Using_TFTP_Services_Through_NAT_provisioning"></a>3.5.5. Using TFTP Services Through NAT</h4>
+<h4 id="Using_TFTP_Services_Through_NAT_provisioning"><a class="anchor" href="#Using_TFTP_Services_Through_NAT_provisioning"></a>3.7.5. Using TFTP Services Through NAT</h4>
 <div class="paragraph">
 <p>You can use Satellite TFTP services through NAT.
 To do this, on all NAT routers or firewalls, you must enable a TFTP service on UDP port 69 and enable the TFTP state tracking feature.
@@ -2070,7 +2151,7 @@ In the <code>/etc/sysconfig/iptables-config</code> file, locate <code>IPTABLES_M
 </div>
 </div>
 <div class="sect2">
-<h3 id="Adding_a_Domain_to_Server_provisioning"><a class="anchor" href="#Adding_a_Domain_to_Server_provisioning"></a>3.6. Adding a Domain to Satellite&#160;Server</h3>
+<h3 id="Adding_a_Domain_to_Server_provisioning"><a class="anchor" href="#Adding_a_Domain_to_Server_provisioning"></a>3.8. Adding a Domain to Satellite&#160;Server</h3>
 <div class="paragraph">
 <p>Satellite&#160;Server defines domain names for each host on the network.
 Satellite&#160;Server must have information about the domain and Capsule&#160;Server responsible for domain name assignment.</p>
@@ -2170,7 +2251,7 @@ For example, user defined Boolean or string parameters to use in templates.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="Adding_a_Subnet_to_Server_provisioning"><a class="anchor" href="#Adding_a_Subnet_to_Server_provisioning"></a>3.7. Adding a Subnet to Satellite&#160;Server</h3>
+<h3 id="Adding_a_Subnet_to_Server_provisioning"><a class="anchor" href="#Adding_a_Subnet_to_Server_provisioning"></a>3.9. Adding a Subnet to Satellite&#160;Server</h3>
 <div class="paragraph">
 <p>You must add information for each of your subnets to Satellite&#160;Server because Satellite configures interfaces for new hosts.
 To configure interfaces, Satellite&#160;Server must have all the information about the network that connects these interfaces.</p>
