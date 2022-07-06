@@ -44,10 +44,10 @@ jobs:
       - name: Install surge
         run: npm install surge
 
-      - name: Install diffstat
+      - name: Install diffstat and pygments
         run: |
           sudo apt-get update
-          sudo apt-get install -y diffstat
+          sudo apt-get install -y diffstat python3-pygments
 
       - name: Create preview layout
         run: |
@@ -60,6 +60,7 @@ jobs:
           mkdir old
           unzip -d old foreman-docs-html-base.zip
           diff -Nrwu old/ preview/${{ fromJSON(env.PR_DATA).target_name }}/ | cat > preview/diff.patch
+          pygmentize -o preview/diff.html -l diff -f html -O full preview/diff.patch
           diffstat -l -p2 preview/diff.patch > diff.txt
 
       - name: Deploy to surge.sh
@@ -73,6 +74,8 @@ jobs:
           sed -E "s#(.*)#- [\1](https://${{ env.PREVIEW_DOMAIN }}/${{ fromJSON(env.PR_DATA).target_name }}/\1)#" diff.txt >> pr.md
           echo "" >> pr.md
           echo '[show diff](https://${{ env.PREVIEW_DOMAIN }}/diff.patch)' >> pr.md
+          echo "" >> pr.md
+          echo '[show diff as HTML](https://${{ env.PREVIEW_DOMAIN }}/diff.html)' >> pr.md
 
       - name: Comment on PR
         uses: marocchino/sticky-pull-request-comment@v2
