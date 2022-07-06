@@ -131,6 +131,13 @@ jobs:
           name: foreman-docs-html-${{ env.BRANCH_NAME }}
           path: guides/build/
 
+  pr-metadata:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Get branch name (pull request)
+        run: echo "BRANCH_NAME=$(echo ${GITHUB_HEAD_REF} | tr / -)" >> $GITHUB_ENV
+
       - name: Set target name (master)
         if: github.base_ref == 'master'
         run: echo "TARGET_NAME=nightly" >> $GITHUB_ENV
@@ -140,16 +147,14 @@ jobs:
         run: echo "TARGET_NAME=$(echo ${GITHUB_BASE_REF} | tr / -)" >> $GITHUB_ENV
 
       - name: Save PR metadata
-        if: github.event_name == 'pull_request'
         run: |
           mkdir -p ./pr
           echo '{"pr_number": ${{ github.event.number }}, "branch_name": "${{ env.BRANCH_NAME }}", "target_name": "${{ env.TARGET_NAME }}", "head_sha": "${{ github.event.pull_request.head.sha }}"}' > ./pr/pr.json
 
       - uses: actions/upload-artifact@v3
-        if: github.event_name == 'pull_request'
         with:
           name: pr
-          path: guides/pr/
+          path: ./pr/
 
   build-html-base:
     runs-on: ubuntu-latest
