@@ -56,20 +56,9 @@
 <li><a href="#Apache_HTTPD_Performance_Tuning_performance-tuning">6.7. Apache HTTPD Performance Tuning</a></li>
 </ul>
 </li>
-<li><a href="#qdrouterd_and_qpid_Tuning_performance-tuning">7. qdrouterd and qpid Tuning</a>
-<ul class="sectlevel2">
-<li><a href="#Calculating_the_maximum_open_files_limit_for_qdrouterd_performance-tuning">7.1. Calculating the maximum open files limit for qdrouterd</a></li>
-<li><a href="#Calculating_the_maximum_open_files_limit_for_qpidd_performance-tuning">7.2. Calculating the maximum open files limit for qpidd</a></li>
-<li><a href="#Configuring_the_Maximum_Asynchronous_Input_Output_Requests_performance-tuning">7.3. Configuring the Maximum Asynchronous Input-Output Requests</a></li>
-<li><a href="#Storage_Considerations_performance-tuning">7.4. Storage Considerations</a></li>
-<li><a href="#Configuring_the_qpid_mgmt_pub_interval_Parameter_performance-tuning">7.5. Configuring the QPID mgmt-pub-interval Parameter</a></li>
-</ul>
-</li>
-<li><a href="#Dynflow_Tuning_performance-tuning">8. Dynflow Tuning</a></li>
-<li><a href="#PostgreSQL_Tuning_performance-tuning">9. PostgreSQL Tuning</a></li>
-<li><a href="#Benchmarking_raw_DB_Performance_performance-tuning">10. Benchmarking raw DB performance</a></li>
-<li><a href="#Smart_Proxy_Configuration_Tuning_performance-tuning">11. Smart&#160;Proxy Configuration Tuning</a></li>
-<li><a href="#Smart_Proxy_Performance_Tests_performance-tuning">12. Smart&#160;Proxy Performance Tests</a></li>
+<li><a href="#Dynflow_Tuning_performance-tuning">7. Dynflow Tuning</a></li>
+<li><a href="#PostgreSQL_Tuning_performance-tuning">8. PostgreSQL Tuning</a></li>
+<li><a href="#Benchmarking_raw_DB_Performance_performance-tuning">9. Benchmarking raw DB performance</a></li>
 </ul>
 </div>
 </div>
@@ -97,37 +86,19 @@
 <p>Configure Puma to increase concurrency</p>
 </li>
 <li>
-<p>Configure Candlepin</p>
-</li>
-<li>
-<p>Configure Pulp</p>
-</li>
-<li>
 <p>Configure Foreman&#8217;s performance and scalability</p>
 </li>
 <li>
 <p>Configure Dynflow</p>
 </li>
 <li>
-<p>Deploy external Smart&#160;Proxies instead of relying on internal Smart&#160;Proxies</p>
-</li>
-<li>
-<p>Configure katello-agent for scalability</p>
-</li>
-<li>
 <p>Configure Hammer to reduce API timeouts</p>
-</li>
-<li>
-<p>Configure qpid and qdrouterd</p>
 </li>
 <li>
 <p>Improve PostgreSQL to handle more concurrent loads</p>
 </li>
 <li>
 <p>Configure the storage for DB workloads</p>
-</li>
-<li>
-<p>Ensure the storage requirements for Content Views are met</p>
 </li>
 <li>
 <p>Ensure the system requirements are met</p>
@@ -746,165 +717,7 @@ LimitNOFILE=640000</pre>
 </div>
 </div>
 <div class="sect1">
-<h2 id="qdrouterd_and_qpid_Tuning_performance-tuning"><a class="anchor" href="#qdrouterd_and_qpid_Tuning_performance-tuning"></a>7. qdrouterd and qpid Tuning</h2>
-<div class="sectionbody">
-<div class="sect2">
-<h3 id="Calculating_the_maximum_open_files_limit_for_qdrouterd_performance-tuning"><a class="anchor" href="#Calculating_the_maximum_open_files_limit_for_qdrouterd_performance-tuning"></a>7.1. Calculating the maximum open files limit for qdrouterd</h3>
-<div class="paragraph">
-<p>In deployments using <code>katello-agent</code> infrastructure with a large number of content hosts, it may be necessary to increase the maximum open files for qdrouterd.</p>
-</div>
-<div class="paragraph">
-<p>Calculate the limit for open files in qdrouterd using this formula: <code>(N x 3) + 100</code>, where N is the number of content hosts.
-Each content host may consume up to three file descriptors in the router and 100 filedescriptors are required to run the router itself.</p>
-</div>
-<div class="paragraph">
-<p>The following settings permit Foreman to scale up to 10.000 content hosts.</p>
-</div>
-<div class="olist arabic">
-<div class="title">Procedure</div>
-<ol class="arabic">
-<li>
-<p>Set the maximum open files limit in <code>/etc/foreman-installer/custom-hiera.yaml</code>:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">qpid::router::open_file_limit: "<em>My_Value</em>"</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>The default value is <code>150100</code>.</p>
-</div>
-</li>
-<li>
-<p>Apply your changes:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># foreman-installer</pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
-</div>
-<div class="sect2">
-<h3 id="Calculating_the_maximum_open_files_limit_for_qpidd_performance-tuning"><a class="anchor" href="#Calculating_the_maximum_open_files_limit_for_qpidd_performance-tuning"></a>7.2. Calculating the maximum open files limit for qpidd</h3>
-<div class="paragraph">
-<p>In deployments using <code>katello-agent</code> infrastructure with a large number of content hosts, it may be necessary to increase the maximum open files for qpidd.</p>
-</div>
-<div class="paragraph">
-<p>Calculate the limit for open files in qpidd using this formula: <code>(N x 4) + 500</code>, where N is the number of content hosts.
-A single content host can consume up to four file descriptors and 500 file descriptors are required for the operations of Broker (a component of qpidd).</p>
-</div>
-<div class="olist arabic">
-<div class="title">Procedure</div>
-<ol class="arabic">
-<li>
-<p>Set the maximum open files limit in <code>/etc/foreman-installer/custom-hiera.yaml</code>:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">qpid::open_file_limit: "<em>My_Value</em>"</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>The default value is <code>65536</code>.</p>
-</div>
-</li>
-<li>
-<p>Apply the changes:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># foreman-installer</pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
-</div>
-<div class="sect2">
-<h3 id="Configuring_the_Maximum_Asynchronous_Input_Output_Requests_performance-tuning"><a class="anchor" href="#Configuring_the_Maximum_Asynchronous_Input_Output_Requests_performance-tuning"></a>7.3. Configuring the Maximum Asynchronous Input-Output Requests</h3>
-<div class="paragraph">
-<p>In deployments using <code>katello-agent</code> infrastructure with a large number of content hosts, it may be necessary to increase the maximum allowable concurrent AIO requests.
-You can increase the maximum number of allowed concurrent AIO requests by increasing the kernel parameter <code>fs.aio-max-nr</code>.</p>
-</div>
-<div class="olist arabic">
-<div class="title">Procedure</div>
-<ol class="arabic">
-<li>
-<p>Set the value of <code>fs.aio-max-nr</code> to the desired maximum in a file in <code>/etc/sysctl.d</code>:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">fs.aio-max-nr=<em>My_Maximum_Concurrent_AIO_Requests</em></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Ensure this number is bigger than 33 multiplied by the maximum number of content hosts you plan to register to Foreman.</p>
-</div>
-</li>
-<li>
-<p>Apply the changes:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># sysctl -p</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Optional: Reboot your Foreman&#160;server to ensure that this change is applied.</p>
-</li>
-</ol>
-</div>
-</div>
-<div class="sect2">
-<h3 id="Storage_Considerations_performance-tuning"><a class="anchor" href="#Storage_Considerations_performance-tuning"></a>7.4. Storage Considerations</h3>
-<div class="paragraph">
-<p>Ensure you provide enough storage space for <code>/var/lib/qpidd</code> in advance when you are planning an installation that will use <code>katello-agent</code> extensively.
-On Foreman&#160;server, <code>/var/lib/qpidd</code> requires 2MiB disk space per content host.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="Configuring_the_qpid_mgmt_pub_interval_Parameter_performance-tuning"><a class="anchor" href="#Configuring_the_qpid_mgmt_pub_interval_Parameter_performance-tuning"></a>7.5. Configuring the QPID mgmt-pub-interval Parameter</h3>
-<div class="paragraph">
-<p>You might see the following error in journal (use <code>journalctl</code> command to access it) in Red&#160;Hat Enterprise Linux 7:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">foreman.example.com qpidd[92464]: [Broker] error Channel exception: not-attached: Channel 2 is not attached(/builddir/build/BUILD/qpid-cpp-0.30/src/qpid/amqp_0_10/SessionHandler.cpp: 39
-foreman.example.com qpidd[92464]: [Protocol] error Connectionqpid.10.1.10.1:5671-10.1.10.1:53790 timed out: closing</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>This error message appears because qpid maintains management objects for queues, sessions, and connections and recycles them every ten seconds by default.
-The same object with the same ID is created, deleted, and created again.
-The old management object is not yet purged, which is why qpid throws this error.</p>
-</div>
-<div class="olist arabic">
-<div class="title">Procedure</div>
-<ol class="arabic">
-<li>
-<p>Set the <code>mgmt-pub-interval</code> parameter in <code>/etc/foreman-installer/custom-hiera.yaml</code>:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">qpid::mgmt_pub_interval: 5</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Apply your changes:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># foreman-installer</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>For more information, see <a href="https://bugzilla.redhat.com/show_bug.cgi?id=1335694">BZ 1335694</a> comment 7.</p>
-</div>
-</li>
-</ol>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="Dynflow_Tuning_performance-tuning"><a class="anchor" href="#Dynflow_Tuning_performance-tuning"></a>8. Dynflow Tuning</h2>
+<h2 id="Dynflow_Tuning_performance-tuning"><a class="anchor" href="#Dynflow_Tuning_performance-tuning"></a>7. Dynflow Tuning</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Dynflow is the workflow management system and task orchestrator which is a Foreman plugin and is used to execute the different tasks of Foreman in an out-of-order execution manner.
@@ -960,7 +773,7 @@ dynflow-sidekiq@worker-3.service        loaded    active   running   Foreman job
 </div>
 </div>
 <div class="sect1">
-<h2 id="PostgreSQL_Tuning_performance-tuning"><a class="anchor" href="#PostgreSQL_Tuning_performance-tuning"></a>9. PostgreSQL Tuning</h2>
+<h2 id="PostgreSQL_Tuning_performance-tuning"><a class="anchor" href="#PostgreSQL_Tuning_performance-tuning"></a>8. PostgreSQL Tuning</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>PostgreSQL is the primary SQL based database that is used by Foreman for the storage of persistent context across a wide variety of tasks that Foreman does.
@@ -1027,7 +840,7 @@ Foreman developers recommends setting the value to <code>2000</code> as it is fo
 </div>
 </div>
 <div class="sect1">
-<h2 id="Benchmarking_raw_DB_Performance_performance-tuning"><a class="anchor" href="#Benchmarking_raw_DB_Performance_performance-tuning"></a>10. Benchmarking raw DB performance</h2>
+<h2 id="Benchmarking_raw_DB_Performance_performance-tuning"><a class="anchor" href="#Benchmarking_raw_DB_Performance_performance-tuning"></a>9. Benchmarking raw DB performance</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>To get a list of the top table sizes in disk space for both Candlepin, Foreman, and Pulp check <a href="https://github.com/RedHatSatellite/satellite-support/blob/master/postgres-size-report">postgres-size-report</a> script in <a href="https://github.com/RedHatSatellite/satellite-support">satellite-support</a> git repository.</p>
@@ -1062,102 +875,6 @@ For example, if the DB is only 20 GiB and the buffer pool is 32 GiB, it won&#821
 </td>
 </tr>
 </table>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="Smart_Proxy_Configuration_Tuning_performance-tuning"><a class="anchor" href="#Smart_Proxy_Configuration_Tuning_performance-tuning"></a>11. Smart&#160;Proxy Configuration Tuning</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Smart&#160;Proxies are meant to offload part of Foreman load and provide access to different networks related to distributing content to clients but they can also be used to execute remote execution jobs.
-What they cannot help with is anything which extensively uses Foreman API as host registration or package profile update.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="Smart_Proxy_Performance_Tests_performance-tuning"><a class="anchor" href="#Smart_Proxy_Performance_Tests_performance-tuning"></a>12. Smart&#160;Proxy Performance Tests</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>We have measured multiple test cases on multiple Smart&#160;Proxy configurations:</p>
-</div>
-<table class="tableblock frame-all grid-all" style="width: 79%;">
-<colgroup>
-<col style="width: 48%;">
-<col style="width: 19%;">
-<col style="width: 33%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">Smart&#160;Proxy HW configuration</th>
-<th class="tableblock halign-left valign-top">CPUs</th>
-<th class="tableblock halign-left valign-top">RAM</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">minimal</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">4</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">12 GiB</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">large </p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">8</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">24 GiB</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">extra large</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">16 </p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">46 GiB</p></td>
-</tr>
-</tbody>
-</table>
-<div class="paragraph">
-<div class="title">Content delivery use case</div>
-<p>In a download test where we concurrently downloaded a 40MB repo of 2000 packages on 100, 200, .. 1000 hosts, we saw roughly 50% improvement in average download duration every time when we doubled Smart&#160;Proxy&#160;server resources.
-For more percise numbers, see the table below.</p>
-</div>
-<table class="tableblock frame-all grid-all stretch">
-<colgroup>
-<col style="width: 25%;">
-<col style="width: 25%;">
-<col style="width: 25%;">
-<col style="width: 25%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">Concurrent downloading hosts</th>
-<th class="tableblock halign-left valign-top">Minimal (4 CPU and 12 GiB RAM) &#8594; Large (8 CPU and 24 GiB RAM)</th>
-<th class="tableblock halign-left valign-top">Large (8 CPU and 24 GiB RAM) &#8594; Extra Large (16 CPU and 46 GiB RAM)</th>
-<th class="tableblock halign-left valign-top">Minimal (4 CPU and 12 GiB RAM) &#8594; Extra Large (16 CPU and 46 GiB RAM)</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Average Improvement</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">~ 50% (e.g. for 700 concurrent downloads in average 9 seconds vs. 4.4 seconds per package)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">~ 40% (e.g. for 700 concurrent downloads in average 4.4 seconds vs. 2.5 seconds per package)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">~ 70% (e.g. for 700 concurrent downloads in average 9 seconds vs. 2.5 seconds per package)</p></td>
-</tr>
-</tbody>
-</table>
-<div class="paragraph">
-<p>When we compared download performance from Foreman&#160;server vs. from Smart&#160;Proxy&#160;server, we have seen only about 5% speedup, but that is expected as Smart&#160;Proxy&#160;server&#8217;s main benefit is in getting content closer to geographically distributed clients (or clients in different networks) and in handling part of the load Foreman&#160;server would have to handle itself.
-In some smaller hardware configurations (8 CPUs and 24 GiB), Foreman&#160;server was not able to handle downloads from more than 500 concurrent clients, while a Smart&#160;Proxy&#160;server with the same hardware configuration was able to service more than 1000 and possibly even more.</p>
-</div>
-<div class="paragraph">
-<div class="title">Frequent registrations use case</div>
-<p>For concurrent registrations a bottleneck is CPU speed, but all configs were able to handle even high concurrency without swapping.
-Hardware resources used for Smart&#160;Proxy have only minimal impact on registration performance.
-For example, Smart&#160;Proxy&#160;server with 16 CPUs and 46 GiB RAM have at most a 9% registration speed improvement when compared to a Smart&#160;Proxy&#160;server with 4 CPUs and 12 GiB RAM.</p>
-</div>
-<div class="paragraph">
-<div class="title">Remote execution use case</div>
-<p>We have tested executing Remote Execution jobs via both SSH and Ansible backend on 500, 2000 and 4000 hosts.
-All configurations were able to handle all of the tests without errors, except for the smallest configuration (4 CPUs and 12 GiB memory) which failed to finish on all 4000 hosts.</p>
-</div>
-<div class="paragraph">
-<p>In a sync test where we synced Red&#160;Hat Enterprise Linux 6, 7, 8 BaseOS and 8 AppStream we have not seen significant differences amongst Smart&#160;Proxy configurations.
-This will be different for syncing a higher number of content views in parallel.</p>
 </div>
 </div>
 </div>
