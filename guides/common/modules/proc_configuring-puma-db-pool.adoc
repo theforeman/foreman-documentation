@@ -2,44 +2,22 @@
 = Configuring Puma DB Pool
 
 The effective value of `$db_pool` is automatically set to equal `$foreman::foreman_service_puma_threads_max`.
-It is the maximum of `$foreman::db_pool` and `$foreman::foreman_service_puma_threads_max` but both have default value 5, so any increase to the max threads above 5 automatically increases the database connection pool by the same amount
+It is the maximum of `$foreman::db_pool` and `$foreman::foreman_service_puma_threads_max` but both have default value 5, so any increase to the max threads above 5 automatically increases the database connection pool by the same amount.
 
-Tuning number of workers is the more important aspect here and in some case we have seen up to 52% performance increase.
-Although installer uses 5 min/max threads by default, we recommend 16 threads in with all the tuning profiles in the table above.
-That is because we have seen up to 23% performance increase with 16 threads (14% for 8 compared and 10% for 32 compared) when compared to setup with 4 threads.
+If you encounter `ActiveRecord::ConnectionTimeoutError: could not obtain a connection from the pool within 5.000 seconds (waited 5.006 seconds); all pooled connections were in use` error in `/var/log/foreman/production.log`, you might want to increase this value.
 
-To get these numbers we used concurrent registrations test case which is a very specific use-case.
-It can be different on your {Project} which might have more balanced use-case (not only registrations).
-Keeping default 5 min/max threads is a good choice as well.
+.View current db_pool setting
+----
+# grep pool /etc/foreman/database.yml
+  pool: 5
+----
 
-These are our some measurements that lead us to these recommendations:
+== Manually tuning db_pool
+If you decide not to rely on automatically configured value, you can apply custom number like this:
 
-[width="100%",cols="17%,21%,20%,21%,21%",options="header",]
-|===
-| |4 workers, 4 threads |4 workers, 8 threads |4 workers, 16 threads |4 workers, 32 threads
-|Improvement| 0%| 14%| 23%| 10%
-|===
+[options="nowrap", subs="+attributes"]
+----
+# {foreman-installer} --foreman-db-pool 10
+----
 
-Use 4 - 6 workers on a default setup (4 CPUs) - we have seen about 25% higher performance with 5 workers when compared to 2 workers, but 8% lower performance with 8 workers when compared to 2 workers - see table below:
-
-[width="100%",cols="17%,21%,20%,21%,21%",options="header",]
-|===
-| |2 workers, 16 threads |4 workers, 16 threads |6 workers, 16 threads |8 workers, 16 threads
-|Improvement |0% |26% |22% |-8%
-|===
-
-Use 8 - 12 workers on a medium setup (8 CPUs) - see table below:
-
-[width="100%",cols="16%,17%,16%,17%,17%,17%",options="header",]
-|===
-| |2 workers, 16 threads |4 workers, 16 threads |8 workers, 16 threads |12 workers, 16 threads |16 workers, 16 threads
-|Improvement |0% |51% |52% |52% |42%
-|===
-
-Use 16 - 24 workers on a 32 CPUs setup (this was tested on a 90 GiB RAM machine and memory turned out to be a factor here as system started swapping - proper _extra-large_ should have 128 GiB), higher number of workers was problematic for higher registration concurrency levels we tested, so we cannot recommend it.
-
-[width="100%",cols="13%,14%,14%,14%,15%,15%,15%",options="header",]
-|===
-| |4 workers, 16 threads |8 workers, 16 threads |16 workers, 16 threads |24 workers, 16 threads |32 workers, 16 threads |48 workers, 16 threads
-|Improvement |0% |37% |44% |52% |too many failures |too many failures
-|===
+Please follow <<Applying configurations_{context}>> section to apply the change.

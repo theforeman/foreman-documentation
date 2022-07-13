@@ -1,16 +1,57 @@
-[id="Puma_Workers_and_Threads_Recommendation_{context}"]
+[id="Puma_Workers_and_Threads_Recommendations_{context}"]
 = Puma Workers and Threads Recommendations
 
-In order to recommend thread and worker configurations for the different tuning profiles, we conducted Puma tuning testing on {Project} with different tuning profiles and the main test run performed in this testing was concurrent registration with the following combinations along with different workers and threads.
+In order to recommend thread and worker configurations for the different tuning profiles, we conducted Puma tuning testing on {Project} with different tuning profiles.
+The main test used in this testing was concurrent registration with the following combinations along with different number of workers and threads.
 Our recommendation is based purely on concurrent registration performance, so it might not reflect your exact use-case.
 For example, if your setup is very content oriented with lots of publishes and promotes, you might want to limit resources consumed by Puma in favor of Pulp and PostgreSQL.
 
 [width="100%",cols="16%,19%,7%,7%,31%,20%",options="header",]
 |===
-|Name |Number of managed host |RAM |Cores |Recommended Puma Threads for both min & max |Recommended Puma Workers
+|Name |Number of managed hosts |RAM |Cores |Recommended Puma Threads for both min & max |Recommended Puma Workers
 |default |0-5000 |20 GiB |4 |16 |4-6
 |medium |5000-10000 |32 GiB |8 |16 |8-12
-|large |10000-20000 |64 GiB |16|16 |12-18
+|large |10000-20000 |64 GiB |16 |16 |12-18
 |extra-large |20000-60000 |128 GiB |32 |16 |16-24
 |extra-extra-large |60000+ |256 GiB+ |48+ |16 |20-26
+|===
+
+Tuning number of workers is the more important aspect here and in some case we have seen up to 52% performance increase.
+Although installer uses 5 min/max threads by default, we recommend 16 threads with all the tuning profiles in the table above.
+That is because we have seen up to 23% performance increase with 16 threads (14% for 8 and 10% for 32) when compared to setup with 4 threads.
+
+To figure out these recomendations we used concurrent registrations test case which is a very specific use-case.
+It can be different on your {Project} which might have more balanced use-case (not only registrations).
+Keeping default 5 min/max threads is a good choice as well.
+
+These are some of our measurements that lead us to these recommendations:
+
+[width="100%",cols="17%,21%,20%,21%,21%",options="header",]
+|===
+| |4 workers, 4 threads |4 workers, 8 threads |4 workers, 16 threads |4 workers, 32 threads
+|Improvement| 0%| 14%| 23%| 10%
+|===
+
+Use 4 - 6 workers on a default setup (4 CPUs) - we have seen about 25% higher performance with 5 workers when compared to 2 workers, but 8% lower performance with 8 workers when compared to 2 workers - see table below:
+
+[width="100%",cols="17%,21%,20%,21%,21%",options="header",]
+|===
+| |2 workers, 16 threads |4 workers, 16 threads |6 workers, 16 threads |8 workers, 16 threads
+|Improvement |0% |26% |22% |-8%
+|===
+
+Use 8 - 12 workers on a medium setup (8 CPUs) - see table below:
+
+[width="100%",cols="16%,17%,16%,17%,17%,17%",options="header",]
+|===
+| |2 workers, 16 threads |4 workers, 16 threads |8 workers, 16 threads |12 workers, 16 threads |16 workers, 16 threads
+|Improvement |0% |51% |52% |52% |42%
+|===
+
+Use 16 - 24 workers on a 32 CPUs setup (this was tested on a 90 GiB RAM machine and memory turned out to be a factor here as system started swapping - proper _extra-large_ should have 128 GiB), higher number of workers was problematic for higher registration concurrency levels we tested, so we cannot recommend it.
+
+[width="100%",cols="13%,14%,14%,14%,15%,15%,15%",options="header",]
+|===
+| |4 workers, 16 threads |8 workers, 16 threads |16 workers, 16 threads |24 workers, 16 threads |32 workers, 16 threads |48 workers, 16 threads
+|Improvement |0% |37% |44% |52% |too many failures |too many failures
 |===
