@@ -333,7 +333,7 @@ const navVersions = [
     builds: [
       {
         title: "Katello on EL",
-        filename: "index-foreman-deb.html",
+        filename: "index-katello.html",
         guides: [
           {
             title: "Release Notes",
@@ -413,7 +413,7 @@ const navVersions = [
     builds: [
       {
         title: "Katello on EL",
-        filename: "index-foreman-deb.html",
+        filename: "index-katello.html",
         guides: [
           {
             title: "Release Notes",
@@ -485,7 +485,7 @@ const navVersions = [
     builds: [
       {
         title: "Katello on EL",
-        filename: "index-foreman-deb.html",
+        filename: "index-katello.html",
         guides: [
           {
             title: "Planning Guide",
@@ -553,7 +553,7 @@ const navVersions = [
     builds: [
       {
         title: "Katello on EL",
-        filename: "index-foreman-deb.html",
+        filename: "index-katello.html",
         guides: [
           {
             title: "Planning Guide",
