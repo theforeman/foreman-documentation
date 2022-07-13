@@ -50,9 +50,9 @@
 <li><a href="#Puma_Tunings_performance-tuning">7. Puma Tunings</a>
 <ul class="sectlevel2">
 <li><a href="#Puma_Threads_performance-tuning">7.1. Puma Threads</a></li>
-<li><a href="#Configuring Puma Workers_performance-tuning">7.2. Configuring Puma Workers</a></li>
-<li><a href="#Puma_Workers_and_Threads_Auto_Tuning_performance-tuning">7.3. Puma Workers and Threads Auto-Tuning</a></li>
-<li><a href="#Puma_Workers_and_Threads_Recommendation_performance-tuning">7.4. Puma Workers and Threads Recommendations</a></li>
+<li><a href="#Puma_Workers_and_Threads_Auto_Tuning_performance-tuning">7.2. Puma Workers and Threads Auto-Tuning</a></li>
+<li><a href="#Puma_Workers_and_Threads_Recommendations_performance-tuning">7.3. Puma Workers and Threads Recommendations</a></li>
+<li><a href="#Configuring_Puma_Workers_performance-tuning">7.4. Configuring Puma Workers</a></li>
 <li><a href="#Configuring_Puma_Threads_performance-tuning">7.5. Configuring Puma Threads</a></li>
 <li><a href="#Configuring_Puma_DB_Pool_performance-tuning">7.6. Configuring Puma DB Pool</a></li>
 <li><a href="#Apache_HTTPD_Performance_Tuning_performance-tuning">7.7. Apache HTTPD Performance Tuning</a></li>
@@ -463,10 +463,17 @@ For any Foreman configuration that is supposed to handle a large number of clien
 <div class="sect2">
 <h3 id="Puma_Threads_performance-tuning"><a class="anchor" href="#Puma_Threads_performance-tuning"></a>7.1. Puma Threads</h3>
 <div class="paragraph">
-<p>Fewer Puma threads lead to higher memory usage for different scales on your Foreman&#160;server.</p>
+<p>Number of Puma threads (per Puma worker) is configured using two values: <code>threads_min</code> and <code>threads_max</code>.</p>
 </div>
 <div class="paragraph">
-<p>For example, we have compared these two setups:</p>
+<p>Value of <code>threads_min</code> determines how many threads each worker spawns at a worker start.
+Then, as concurrent requests are comming and more threads is needed, worker will be spawning more and more workers up to <code>threads_max</code> limit.</p>
+</div>
+<div class="paragraph">
+<p>We recommend setting <code>threads_min</code> to same value as <code>threads_max</code> as having fewer Puma threads lead to higher memory usage on your Foreman&#160;server.</p>
+</div>
+<div class="paragraph">
+<p>For example, we have compared these two setups using concurrent registrations test:</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
@@ -495,77 +502,19 @@ For any Foreman configuration that is supposed to handle a large number of clien
 </tbody>
 </table>
 <div class="paragraph">
-<p>Setting the minimum Puma threads to <code>16</code> results in about 12% less memory as compared to <code>t_min=0</code>.</p>
+<p>Setting the minimum Puma threads to <code>16</code> results in about 12% less memory usage as compared to <code>threads_min=0</code>.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="Configuring Puma Workers_performance-tuning"><a class="anchor" href="#Configuring Puma Workers_performance-tuning"></a>7.2. Configuring Puma Workers</h3>
-<div class="paragraph">
-<p>If you have enough CPUs, adding more workers adds more performance.
-For example, we have compared Foreman setups with 8 and 16 CPUs.</p>
-</div>
-<table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 1. Automatic Tuning using foreman-installer options</caption>
-<colgroup>
-<col style="width: 50%;">
-<col style="width: 50%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">Foreman VM with 8 CPUs, 40 GiB RAM</th>
-<th class="tableblock halign-left valign-top">Foreman VM with 16 CPUs, 40 GiB RAM</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-threads-min=16</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-threads-min=16</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-threads-max=16</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-threads-max=16</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-workers={2|4|8|16}</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-workers={2|4|8|16}</code></p></td>
-</tr>
-</tbody>
-</table>
-<div class="paragraph">
-<p>In 8 CPUs setup, changing the number of workers from 2 to 16, improved concurrent registration time by 36%.
-In 16 CPU setup, the same change caused 55% improvement.</p>
-</div>
-<div class="paragraph">
-<p>Adding more workers can also help with total registration concurrency Foreman can handle.
-In our measurements, setups with 2 workers were able to handle up to 480 concurrent registrations, but adding more workers improved the situation.</p>
-</div>
-<div class="paragraph">
-<div class="title">Manual tuning</div>
-<p>You can set the number of workers to two and the number of threads to five:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># foreman-installer \
---foreman-foreman-service-puma-threads-max=5
---foreman-foreman-service-puma-threads-min=5 \
---foreman-foreman-service-puma-workers=2 \</pre>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="Puma_Workers_and_Threads_Auto_Tuning_performance-tuning"><a class="anchor" href="#Puma_Workers_and_Threads_Auto_Tuning_performance-tuning"></a>7.3. Puma Workers and Threads Auto-Tuning</h3>
+<h3 id="Puma_Workers_and_Threads_Auto_Tuning_performance-tuning"><a class="anchor" href="#Puma_Workers_and_Threads_Auto_Tuning_performance-tuning"></a>7.2. Puma Workers and Threads Auto-Tuning</h3>
 <div class="paragraph">
 <p>If you do not provide any Puma workers and thread values with <code>foreman-installer</code> or they are not present in your Foreman configuration, the <code>foreman-installer</code> configures a balanced number of workers.
 It follows this formula:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre>min(CPU*1.5, RAM_IN_GB - 1.5)</pre>
+<pre>min(CPU_COUNT * 1.5, RAM_IN_GB - 1.5)</pre>
 </div>
-</div>
-<div class="paragraph">
-<p>This is too much with regards to memory.
-There have been cases where too many workers triggered OOM on Foreman.</p>
 </div>
 <div class="paragraph">
 <p>This should be fine for most cases, but with some usage patterns tuning is needed to either limit the amount of resources dedicated to Puma (so other Foreman components can use these) or for any other reason.
@@ -583,11 +532,31 @@ Each Puma worker consumes around 1 GiB of RAM.</p>
 <pre># systemctl status foreman.service</pre>
 </div>
 </div>
+<div class="sect3">
+<h4 id="Manually_tuning_Puma_workers_and_threads_count_performance-tuning"><a class="anchor" href="#Manually_tuning_Puma_workers_and_threads_count_performance-tuning"></a>7.2.1. Manually tuning Puma workers and threads count</h4>
+<div class="paragraph">
+<p>If you decide not to rely on <a href="#Puma_Workers_and_Threads_Auto_Tuning_performance-tuning">Puma Workers and Threads Auto-Tuning</a>, you can apply custom numbers for these tunables.
+In the example below we are using 2 workers, 5 and 5 threads:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer \
+--foreman-foreman-service-puma-workers=2 \
+--foreman-foreman-service-puma-threads-min=5 \
+--foreman-foreman-service-puma-threads-max=5</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apply your changes to Foreman&#160;server.
+For more information, see <a href="#Applying_configurations_performance-tuning">Applying configurations</a>.</p>
+</div>
+</div>
 </div>
 <div class="sect2">
-<h3 id="Puma_Workers_and_Threads_Recommendation_performance-tuning"><a class="anchor" href="#Puma_Workers_and_Threads_Recommendation_performance-tuning"></a>7.4. Puma Workers and Threads Recommendations</h3>
+<h3 id="Puma_Workers_and_Threads_Recommendations_performance-tuning"><a class="anchor" href="#Puma_Workers_and_Threads_Recommendations_performance-tuning"></a>7.3. Puma Workers and Threads Recommendations</h3>
 <div class="paragraph">
-<p>In order to recommend thread and worker configurations for the different tuning profiles, we conducted Puma tuning testing on Foreman with different tuning profiles and the main test run performed in this testing was concurrent registration with the following combinations along with different workers and threads.
+<p>In order to recommend thread and worker configurations for the different tuning profiles, we conducted Puma tuning testing on Foreman with different tuning profiles.
+The main test used in this testing was concurrent registration with the following combinations along with different number of workers and threads.
 Our recommendation is based purely on concurrent registration performance, so it might not reflect your exact use-case.
 For example, if your setup is very content oriented with lots of publishes and promotes, you might want to limit resources consumed by Puma in favor of Pulp and PostgreSQL.</p>
 </div>
@@ -603,7 +572,7 @@ For example, if your setup is very content oriented with lots of publishes and p
 <thead>
 <tr>
 <th class="tableblock halign-left valign-top">Name</th>
-<th class="tableblock halign-left valign-top">Number of managed host</th>
+<th class="tableblock halign-left valign-top">Number of managed hosts</th>
 <th class="tableblock halign-left valign-top">RAM</th>
 <th class="tableblock halign-left valign-top">Cores</th>
 <th class="tableblock halign-left valign-top">Recommended Puma Threads for both min &amp; max</th>
@@ -653,62 +622,18 @@ For example, if your setup is very content oriented with lots of publishes and p
 </tr>
 </tbody>
 </table>
-</div>
-<div class="sect2">
-<h3 id="Configuring_Puma_Threads_performance-tuning"><a class="anchor" href="#Configuring_Puma_Threads_performance-tuning"></a>7.5. Configuring Puma Threads</h3>
-<div class="paragraph">
-<p>More workers allow for lower time to register hosts in parallel.
-For example, we have compared these two setups:</p>
-</div>
-<table class="tableblock frame-all grid-all stretch">
-<colgroup>
-<col style="width: 50%;">
-<col style="width: 50%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">Foreman VM with 8 CPUs, 40 GiB RAM</th>
-<th class="tableblock halign-left valign-top">Foreman VM with 8 CPUs, 40 GiB RAM</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-threads-min=16</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-threads-min=8</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-threads-max=16</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-threads-max=8</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-workers=2</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-workers=4</code></p></td>
-</tr>
-</tbody>
-</table>
-<div class="paragraph">
-<p>Using more workers and the same total number of threads results in about 11% of speedup in highly concurrent registrations scenario.
-Moreover, adding more workers did not consume more CPU and RAM but gets more performance.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="Configuring_Puma_DB_Pool_performance-tuning"><a class="anchor" href="#Configuring_Puma_DB_Pool_performance-tuning"></a>7.6. Configuring Puma DB Pool</h3>
-<div class="paragraph">
-<p>The effective value of <code>$db_pool</code> is automatically set to equal <code>$foreman::foreman_service_puma_threads_max</code>.
-It is the maximum of <code>$foreman::db_pool</code> and <code>$foreman::foreman_service_puma_threads_max</code> but both have default value 5, so any increase to the max threads above 5 automatically increases the database connection pool by the same amount</p>
-</div>
 <div class="paragraph">
 <p>Tuning number of workers is the more important aspect here and in some case we have seen up to 52% performance increase.
-Although installer uses 5 min/max threads by default, we recommend 16 threads in with all the tuning profiles in the table above.
-That is because we have seen up to 23% performance increase with 16 threads (14% for 8 compared and 10% for 32 compared) when compared to setup with 4 threads.</p>
+Although installer uses 5 min/max threads by default, we recommend 16 threads with all the tuning profiles in the table above.
+That is because we have seen up to 23% performance increase with 16 threads (14% for 8 and 10% for 32) when compared to setup with 4 threads.</p>
 </div>
 <div class="paragraph">
-<p>To get these numbers we used concurrent registrations test case which is a very specific use-case.
+<p>To figure out these recommendations we used concurrent registrations test case which is a very specific use-case.
 It can be different on your Foreman which might have more balanced use-case (not only registrations).
 Keeping default 5 min/max threads is a good choice as well.</p>
 </div>
 <div class="paragraph">
-<p>These are our some measurements that lead us to these recommendations:</p>
+<p>These are some of our measurements that lead us to these recommendations:</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
@@ -836,6 +761,117 @@ Keeping default 5 min/max threads is a good choice as well.</p>
 </tr>
 </tbody>
 </table>
+</div>
+<div class="sect2">
+<h3 id="Configuring_Puma_Workers_performance-tuning"><a class="anchor" href="#Configuring_Puma_Workers_performance-tuning"></a>7.4. Configuring Puma Workers</h3>
+<div class="paragraph">
+<p>If you have enough CPUs, adding more workers adds more performance.
+For example, we have compared Foreman setups with 8 and 16 CPUs:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 1. foreman-installer options used to test effect of workers count</caption>
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Foreman VM with 8 CPUs, 40 GiB RAM</th>
+<th class="tableblock halign-left valign-top">Foreman VM with 16 CPUs, 40 GiB RAM</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-threads-min=16</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-threads-min=16</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-threads-max=16</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-threads-max=16</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-workers={2|4|8|16}</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-workers={2|4|8|16}</code></p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>In 8 CPUs setup, changing the number of workers from 2 to 16, improved concurrent registration time by 36%.
+In 16 CPUs setup, the same change caused 55% improvement.</p>
+</div>
+<div class="paragraph">
+<p>Adding more workers can also help with total registration concurrency Foreman can handle.
+In our measurements, setup with 2 workers were able to handle up to 480 concurrent registrations, but adding more workers improved the situation.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Configuring_Puma_Threads_performance-tuning"><a class="anchor" href="#Configuring_Puma_Threads_performance-tuning"></a>7.5. Configuring Puma Threads</h3>
+<div class="paragraph">
+<p>More threads allow for lower time to register hosts in parallel.
+For example, we have compared these two setups:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Foreman VM with 8 CPUs, 40 GiB RAM</th>
+<th class="tableblock halign-left valign-top">Foreman VM with 8 CPUs, 40 GiB RAM</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-threads-min=16</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-threads-min=8</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-threads-max=16</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-threads-max=8</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-workers=2</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-workers=4</code></p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Using more workers and the same total number of threads results in about 11% of speedup in highly concurrent registrations scenario.
+Moreover, adding more workers did not consume more CPU and RAM but gets more performance.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Configuring_Puma_DB_Pool_performance-tuning"><a class="anchor" href="#Configuring_Puma_DB_Pool_performance-tuning"></a>7.6. Configuring Puma DB Pool</h3>
+<div class="paragraph">
+<p>The effective value of <code>$db_pool</code> is automatically set to equal <code>$foreman::foreman_service_puma_threads_max</code>.
+It is the maximum of <code>$foreman::db_pool</code> and <code>$foreman::foreman_service_puma_threads_max</code> but both have default value 5, so any increase to the max threads above 5 automatically increases the database connection pool by the same amount.</p>
+</div>
+<div class="paragraph">
+<p>If you encounter <code>ActiveRecord::ConnectionTimeoutError: could not obtain a connection from the pool within 5.000 seconds (waited 5.006 seconds); all pooled connections were in use</code> error in <code>/var/log/foreman/production.log</code>, you might want to increase this value.</p>
+</div>
+<div class="listingblock">
+<div class="title">View current db_pool setting</div>
+<div class="content">
+<pre># grep pool /etc/foreman/database.yml
+  pool: 5</pre>
+</div>
+</div>
+<div class="sect3">
+<h4 id="Manually_tuning_db_pool_performance-tuning"><a class="anchor" href="#Manually_tuning_db_pool_performance-tuning"></a>7.6.1. Manually tuning db_pool</h4>
+<div class="paragraph">
+<p>If you decide not to rely on automatically configured value, you can apply custom number like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer --foreman-db-pool 10</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apply your changes to Foreman&#160;server.
+For more information, see <a href="#Applying_configurations_performance-tuning">Applying configurations</a>.</p>
+</div>
+</div>
 </div>
 <div class="sect2">
 <h3 id="Apache_HTTPD_Performance_Tuning_performance-tuning"><a class="anchor" href="#Apache_HTTPD_Performance_Tuning_performance-tuning"></a>7.7. Apache HTTPD Performance Tuning</h3>
