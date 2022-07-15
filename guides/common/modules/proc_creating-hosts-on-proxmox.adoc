@@ -1,0 +1,103 @@
+[id="Creating_Hosts_on_Proxmox_{context}"]
+= Creating Hosts on Proxmox
+
+// FIXME: WIP
+The Proxmox provisioning process provides the option to create hosts over a network connection or using an existing image.
+
+For network-based provisioning, you must create a host to access either {ProjectServer}'s integrated {SmartProxy} or an external {SmartProxyServer} on a Proxmox virtual network, so that the host has access to PXE provisioning services.
+The new host entry triggers the Proxmox server to create the virtual machine.
+If the virtual machine detects the defined {SmartProxyServer} through the virtual network, the virtual machine boots to PXE and begins to install the chosen operating system.
+
+.DHCP Conflicts
+If you use a virtual network on the Proxmox server for provisioning, ensure that you select a virtual network that does not provide DHCP assignments.
+This causes DHCP conflicts with {ProjectServer} when booting new hosts.
+
+For image-based provisioning, use the pre-existing image as a basis for the new volume.
+
+To use the CLI instead of the {ProjectWebUI}, see the xref:cli-creating-hosts-on-proxmox_{context}[].
+
+.Procedure
+. In the {ProjectWebUI}, navigate to *Hosts* > *Create Host*.
+. In the *Name* field, enter a host name.
+. Click the *Organization* and *Location* tabs to ensure that the provisioning context is automatically set to the current context.
+. From the *Host Group* list, select the host group that you want to use to populate the form.
+. From the *Deploy on* list, select the Proxmox connection.
+. From the *Compute Profile* list, select a profile to use to automatically populate virtual machine-based settings.
+. Click the *Interface* tab and click *Edit* on the host's interface.
+. Verify that the fields are automatically populated with values.
+Note in particular:
++
+  * The *Name* from the *Host* tab becomes the *DNS name*.
+  * {ProjectServer} automatically assigns an IP address for the new host.
++
+. Ensure that the *MAC address* field is blank.
+The Proxmox server assigns one to the host.
+. Verify that the *Managed*, *Primary*, and *Provision* options are automatically selected for the first interface on the host.
+If not, select them.
+. In the interface window, review the Proxmox-specific fields that are populated with settings from our compute profile.
+Modify these settings to suit your needs.
+. Click the *Operating System* tab, and confirm that all fields automatically contain values.
+. Select the Provisioning Method that you want:
++
+* For network-based provisioning, click *Network Based*.
+* For image-based provisioning, click *Image Based*.
+ifdef::satellite[]
+* For boot-disk provisioning, click *Boot disk based*.
+endif::[]
+ifdef::foreman-el,foreman-deb,katello,orcharhino[]
+* If the `foreman_bootdisk` plug-in is installed, and you want to use boot-disk provisioning, click *Boot disk based*.
+endif::[]
++
+. Click *Resolve* in *Provisioning templates* to check the new host can identify the right provisioning templates to use.
+. Click the *Virtual Machine* tab and confirm that these settings are populated with details from the host group and compute profile.
+Modify these settings to suit your requirements.
+ifdef::satellite,orcharhino[]
+. Click the *Parameters* tab and ensure that a parameter exists that provides an activation key.
+If not, add an activation key.
+endif::[]
+ifdef::foreman-el,katello[]
+. If you use the Katello plugin, click the *Parameters* tab and ensure that a parameter exists that provides an activation key.
+If not, add an activation key.
+endif::[]
+. Click *Submit* to provision your host on Proxmox.
+
+[id="cli-creating-hosts-on-proxmox_{context}"]
+.CLI procedure
+* Create the host from a network with the `hammer host create` command and include `--provision-method build` to use network-based provisioning.
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# hammer host create \
+--build true \
+--compute-attributes="cpus=1,corespersocket=2,memory_mb=1024,cluster=MyCluster,path=MyVMs,start=true" \
+--compute-resource "_My_Proxmox_" \
+--enabled true \
+--hostgroup "_My_Host_Group_" \
+--interface "managed=true,primary=true,provision=true,compute_type=VirtualE1000,compute_network=mynetwork" \
+--location "_My_Location_" \
+--managed true \
+--name "_My_Host_" \
+--organization "_My_Organization_" \
+--provision-method build \
+--volume="size_gb=20G,datastore=Data,name=myharddisk,thin=true"
+----
+* Create the host from an image with the `hammer host create` command and include `--provision-method image` to use image-based provisioning.
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# hammer host create \
+--compute-attributes="cpus=1,corespersocket=2,memory_mb=1024,cluster=MyCluster,path=MyVMs,start=true" \
+--compute-resource "_My_Proxmox_" \
+--enabled true \
+--hostgroup "_My_Host_Group_" \
+--image "_My_Proxmox_Image_" \
+--interface "managed=true,primary=true,provision=true,compute_type=VirtualE1000,compute_network=mynetwork" \
+--location "_My_Location_" \
+--managed true \
+--name "_My_Host_" \
+--organization "_My_Organization_" \
+--provision-method image \
+--volume="size_gb=20G,datastore=Data,name=myharddisk,thin=true"
+----
+
+For more information about additional host creation parameters for this compute resource, enter the `hammer host create --help` command.
