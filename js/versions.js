@@ -29,7 +29,7 @@ const navVersions = [
           },
           {
             title: "Provisioning Guide",
-            path: "Provisioning_Guide"
+            path: "Provisioning_Hosts"
           },
           {
             title: "Configuring Foreman to use Ansible",
@@ -75,7 +75,7 @@ const navVersions = [
           },
           {
             title: "Provisioning Guide",
-            path: "Provisioning_Guide"
+            path: "Provisioning_Hosts"
           },
           {
             title: "Configuring Foreman to use Ansible",
@@ -129,7 +129,7 @@ const navVersions = [
           },
           {
             title: "Content Management Guide",
-            path: "Content_Management_Guide"
+            path: "Managing_Content"
           },
           {
             title: "Converting a Host to RHEL",
@@ -141,7 +141,7 @@ const navVersions = [
           },
           {
             title: "Provisioning Guide",
-            path: "Provisioning_Guide"
+            path: "Provisioning_Hosts"
           },
           {
             title: "Configuring Foreman to use Ansible",
@@ -209,7 +209,7 @@ const navVersions = [
           },
           {
             title: "Content Management Guide",
-            path: "Content_Management_Guide"
+            path: "Managing_Content"
           },
           {
             title: "Converting a Host to RHEL",
@@ -221,7 +221,7 @@ const navVersions = [
           },
           {
             title: "Provisioning Guide",
-            path: "Provisioning_Guide"
+            path: "Provisioning_Hosts"
           },
           {
             title: "Configuring Foreman to use Ansible",
@@ -289,7 +289,7 @@ const navVersions = [
           },
           {
             title: "Content Management Guide",
-            path: "Content_Management_Guide"
+            path: "Managing_Content"
           },
           {
             title: "Converting a Host to RHEL",
@@ -301,7 +301,7 @@ const navVersions = [
           },
           {
             title: "Provisioning Guide",
-            path: "Provisioning_Guide"
+            path: "Provisioning_Hosts"
           },
           {
             title: "Configuring Foreman to use Ansible",
@@ -369,7 +369,7 @@ const navVersions = [
           },
           {
             title: "Content Management Guide",
-            path: "Content_Management_Guide"
+            path: "Managing_Content"
           },
           {
             title: "Converting a Host to RHEL",
@@ -381,7 +381,7 @@ const navVersions = [
           },
           {
             title: "Provisioning Guide",
-            path: "Provisioning_Guide"
+            path: "Provisioning_Hosts"
           },
           {
             title: "Configuring Foreman to use Ansible",
