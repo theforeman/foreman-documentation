@@ -29,7 +29,7 @@ const navVersions = [
           },
           {
             title: "Provisioning Guide",
-            path: "Provisioning_Guide"
+            path: "Provisioning_Hosts"
           },
           {
             title: "Configuring Foreman to use Ansible",
@@ -75,7 +75,7 @@ const navVersions = [
           },
           {
             title: "Provisioning Guide",
-            path: "Provisioning_Guide"
+            path: "Provisioning_Hosts"
           },
           {
             title: "Configuring Foreman to use Ansible",
@@ -141,7 +141,7 @@ const navVersions = [
           },
           {
             title: "Provisioning Guide",
-            path: "Provisioning_Guide"
+            path: "Provisioning_Hosts"
           },
           {
             title: "Configuring Foreman to use Ansible",
@@ -221,7 +221,7 @@ const navVersions = [
           },
           {
             title: "Provisioning Guide",
-            path: "Provisioning_Guide"
+            path: "Provisioning_Hosts"
           },
           {
             title: "Configuring Foreman to use Ansible",
@@ -301,7 +301,7 @@ const navVersions = [
           },
           {
             title: "Provisioning Guide",
-            path: "Provisioning_Guide"
+            path: "Provisioning_Hosts"
           },
           {
             title: "Configuring Foreman to use Ansible",
@@ -381,7 +381,7 @@ const navVersions = [
           },
           {
             title: "Provisioning Guide",
-            path: "Provisioning_Guide"
+            path: "Provisioning_Hosts"
           },
           {
             title: "Configuring Foreman to use Ansible",
