@@ -45,7 +45,7 @@ const navVersions = [
           },
           {
             title: "Administering Foreman",
-            path: "Administering_Red_Hat_Satellite"
+            path: "Administering_Project"
           },
           {
             title: "Application Centric Deployment",
@@ -87,7 +87,7 @@ const navVersions = [
           },
           {
             title: "Administering Foreman",
-            path: "Administering_Red_Hat_Satellite"
+            path: "Administering_Project"
           }
         ]
       },
@@ -157,7 +157,7 @@ const navVersions = [
           },
           {
             title: "Administering Foreman",
-            path: "Administering_Red_Hat_Satellite"
+            path: "Administering_Project"
           },
           {
             title: "Application Centric Deployment",
@@ -237,7 +237,7 @@ const navVersions = [
           },
           {
             title: "Administering Foreman",
-            path: "Administering_Red_Hat_Satellite"
+            path: "Administering_Project"
           },
           {
             title: "Application Centric Deployment",
@@ -317,7 +317,7 @@ const navVersions = [
           },
           {
             title: "Administering Foreman",
-            path: "Administering_Red_Hat_Satellite"
+            path: "Administering_Project"
           },
           {
             title: "Application Centric Deployment",
@@ -397,7 +397,7 @@ const navVersions = [
           },
           {
             title: "Administering Foreman",
-            path: "Administering_Red_Hat_Satellite"
+            path: "Administering_Project"
           },
           {
             title: "Application Centric Deployment",
