@@ -129,7 +129,7 @@ const navVersions = [
           },
           {
             title: "Content Management Guide",
-            path: "Content_Management_Guide"
+            path: "Managing_Content"
           },
           {
             title: "Converting a Host to RHEL",
@@ -209,7 +209,7 @@ const navVersions = [
           },
           {
             title: "Content Management Guide",
-            path: "Content_Management_Guide"
+            path: "Managing_Content"
           },
           {
             title: "Converting a Host to RHEL",
@@ -289,7 +289,7 @@ const navVersions = [
           },
           {
             title: "Content Management Guide",
-            path: "Content_Management_Guide"
+            path: "Managing_Content"
           },
           {
             title: "Converting a Host to RHEL",
@@ -369,7 +369,7 @@ const navVersions = [
           },
           {
             title: "Content Management Guide",
-            path: "Content_Management_Guide"
+            path: "Managing_Content"
           },
           {
             title: "Converting a Host to RHEL",
