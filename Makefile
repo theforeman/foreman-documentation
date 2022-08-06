@@ -17,9 +17,7 @@ all: html
 
 prep:
 	bundle install --path vendor
-	cd web
-	bundle install --path ../vendor
-	cd ..
+	cd web && bundle install --path ../vendor
 	mkdir -p $(DEST)/nightly
 
 clean:
