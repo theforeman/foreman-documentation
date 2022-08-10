@@ -3,6 +3,7 @@
 
 Please cherry-pick my commits into:
 
+* [ ] Foreman 3.4/Katello 4.6
 * [ ] Foreman 3.3/Katello 4.5
 * [ ] Foreman 3.2/Katello 4.4
 * [ ] Foreman 3.1/Katello 4.3
