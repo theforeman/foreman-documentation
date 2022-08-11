@@ -7,8 +7,13 @@ Discovered hosts keep running the Discovery image until they are rebooted into A
 ifdef::satellite[]
 The operating system image is based on {RHEL} 7.
 endif::[]
-ifndef::satellite[]
-The operating system image is based on CentOS 8 Stream.
+ifdef::orcharhino[]
+Run the following procedure on Rocky Linux 8.
+
+The Discovery image is based on Cent OS Stream 8.
+endif::[]
+ifndef::satellite,orcharhino[]
+The operating system image is based on CentOS Stream 8.
 endif::[]
 
 ifdef::satellite[]
@@ -21,6 +26,59 @@ Use this procedure to build a {Project} discovery image or rebuild an image if y
 Do not use this procedure on your production {Project} or {SmartProxy}.
 Use either a dedicated environment or copy the synchronized repositories and a kickstart file to a separate server.
 
+ifdef::orcharhino[]
+.Prerequisites
+* Ensure that hardware virtualization is available on your host.
+* Install the following packages:
++
+[options="nowrap" subs="+quotes"]
+----
+# dnf install lorax anaconda pykickstart wget qemu-kvm
+----
+* Clone the `foreman-discovery-image` repository:
++
+[options="nowrap" subs="+quotes"]
+----
+$ git clone https://github.com/theforeman/foreman-discovery-image.git
+$ cd foreman-discovery-image
+----
+
+.Procedure
+. Prepare the kickstart file:
++
+[options="nowrap" subs="+quotes"]
+----
+$ ./build-livecd fdi-centos8.ks
+----
+. Build the ISO image:
++
+[options="nowrap" subs="+quotes"]
+----
+$ sudo ./build-livecd-root _custom_ ./result "nomodeset nokaslr"
+----
++
+The options `nomodeset` and `nokaslr` instruct the Discovery image kernel to disable mode setting and to disable ASLR (Address Space Layout Randomization).
+. Verify that your `./result/fdi-custom-XXXXXXX.iso` file is created:
++
+[options="nowrap" subs="+quotes"]
+----
+$ ls -h ./result/*.iso
+----
+
+Use the following command to build a fully automated Discovery image with a static network configuration:
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+$ sudo ./build-livecd-root _custom_ ./result \
+"nomodeset nokaslr \
+fdi.pxip=192.168.140.20/24 fdi.pxgw=192.168.140.1 \
+fdi.pxdns=192.168.140.2 proxy.url=https://{foreman-example-com}:8443 \
+proxy.type=foreman fdi.pxmac=52:54:00:be:8e:8c fdi.pxauto=1"
+----
+
+For more information about configuration options, see xref:Unattended_Use_Customization_and_Image_Remastering_{context}[].
+
+endif::[]
+ifndef::orcharhino[]
 .Prerequisites
 * Install the `livecd-tools` package:
 +
@@ -105,6 +163,7 @@ Use `/var/tmp` because this process requires close to 3GB of space and `/tmp` mi
 ----
 # ls -h *.iso
 ----
+endif::[]
 
 When you create the `.iso` file, you can boot the `.iso` file over a network or locally.
 Complete one of the following procedures.
@@ -112,19 +171,26 @@ Complete one of the following procedures.
 If you want to boot the `.iso` file over a network, complete the following steps:
 
 .Procedure
+ifndef::orcharhino[]
 . To extract the initial ramdisk and kernel files from the `.iso` file over a network, enter the following command:
 +
 [options="nowrap" subs="+quotes"]
 ----
 # discovery-iso-to-pxe fdi.iso
 ----
+endif::[]
 . Create a directory to store your boot files:
 +
 [options="nowrap" subs="+quotes"]
 ----
 # mkdir /var/lib/tftpboot/boot/_myimage_
 ----
+ifdef::orcharhino[]
+. Copy the `./tftpboot/initrd0.img` and `./tftpboot/vmlinuz0` files to your new directory.
+endif::[]
+ifndef::orcharhino[]
 . Copy the `initrd0.img` and `vmlinuz0` files to your new directory.
+endif::[]
 . Edit the `KERNEL` and `APPEND` entries in the `/var/lib/tftpboot/pxelinux.cfg` file to add the information about your own initial ramdisk and kernel files.
 
 If you want to create a hybrid `.iso` file for booting locally, complete the following steps:
