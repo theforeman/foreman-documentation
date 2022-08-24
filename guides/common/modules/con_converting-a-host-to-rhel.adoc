@@ -1,0 +1,74 @@
+[id="converting-a-host-to-rhel_{context}"]
+= Converting a Host to {RHEL}
+
+You can convert {RHEL} derivative distributions into a supportable {RHEL} on a host while retaining installed applications and configurations.
+{Project} provides the *Convert2RHEL* utility to simplify the conversion process.
+
+The *Convert2RHEL* utility in {Project} consists of an Ansible role and Ansible playbook.
+You use the Ansible role to generate conversion data on {ProjectServer}, which includes enabling required repositories and creating products, activation keys, and host groups.
+Then you perform the actual conversion on the host using the Ansible playbook, which installs the Convert2RHEL CLI tool on the host and runs it.
+
+You can use the Ansible role to generate conversion data for the following conversions:
+
+* CentOS Linux 7 to {RHEL} 7
+* Oracle Linux 7 to {RHEL} 7
+* CentOS Linux 8 to {RHEL} 8
+* Oracle Linux 8 to {RHEL} 8
+
+These conversions are supported by Red Hat.
+ifndef::satellite[]
+You can use the Ansible playbook for other conversions as well, but in those cases you must enable required repositories and configure activation keys manually instead of using the Ansible role and variables.
+However, this approach was not tested and is not supported.
+endif::[]
+
+The conversion process is similar to a minor release upgrade of {RHEL} in which every RPM package on the system is replaced.
+Third-party packages and non-Red Hat packages that are not available in {RHEL} are retained.
+
+The Convert2RHEL utility removes unnecessary packages such as logos or packages known to cause issues during the conversion.
+The utility replaces the `CentOS-release` or `Oracle-release` package with the `rhel-release` package, and all packages signed by CentOS or Oracle with their Red Hat equivalents.
+The utility also subscribes the host to {Team} Subscription Management.
+
+The duration of the conversion process depends on the number of packages that have to be replaced, network speed, storage speed, and similar factors.
+
+.Prerequisites
+* Review https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html-single/converting_from_an_rpm-based_linux_distribution_to_rhel/index#con_supported-conversion-paths_converting-from-a-linux-distribution-to-rhel[Supported conversion paths] in _Converting from an RPM-based Linux distribution to RHEL_.
+* You must have completed the steps 1.{range}5. of the procedure https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html-single/converting_from_an_rpm-based_linux_distribution_to_rhel/index#proc_preparing-for-a-rhel-conversion_converting-from-a-linux-distribution-to-rhel[Preparing for a RHEL conversion] in _Converting from an RPM-based Linux distribution to RHEL_.
+* Ensure you have a subscription manifest uploaded to your {Project} and that there are sufficient {RHEL} entitlements allocated for the conversions you intend.
+Alternatively, you can use Ansible variables to tell the role to import the manifest from disk.
+The manifest must be imported to the organization to which you will register hosts for conversion.
++
+You can update your allocations and download the updated manifest from the https://access.redhat.com[Red Hat Customer Portal].
+For more information, see https://access.redhat.com/documentation/en-us/red_hat_subscription_management/2022/html/using_red_hat_subscription_management/using_manifests_con[Using manifests] in _Red Hat Subscription Management_.
+* Ensure that you have enabled Red Hat repositories in {Project} for the minor {RHEL} version to which you convert your hosts.
+
+.High-Level Conversion Steps
+. Import the `{ansible-namespace}.convert2rhel` Ansible role and variables.
+For more information, see {ConfiguringAnsibleDocURL}importing-Ansible-roles_ansible[Importing Ansible Roles and Variables] in _{ConfiguringAnsibleDocTitle}_.
+. Configure Ansible variables for generation of conversion data.
+For more information, see xref:variables-for-generation-of-conversion-data_{context}[].
+. Assign the `{ansible-namespace}.convert2rhel` role to the host that represents {ProjectServer}.
+For more information, see {ConfiguringAnsibleDocURL}adding-ansible-roles-to-an-existing-host_ansible[Assigning Ansible Roles to an Existing Host] in _{ConfiguringAnsibleDocTitle}_.
+. Run the Ansible role on {ProjectServer}.
+For more information, see {ConfiguringAnsibleDocURL}running-ansible-roles-on-a-host_ansible[Running Ansible Roles on a Host] in _{ConfiguringAnsibleDocTitle}_.
++
+The Ansible role generates data required for host conversion, that is, repositories, certificates, activation keys, and host groups.
+The role enables the `{RepoRHEL7Server}` repository with the *7Server* release and *x86_64* architecture, or `{RepoRHEL8BaseOS}` and `{RepoRHEL8AppStream}`, or both, depending on which variables you have set in the previous steps.
+. Register a host for conversion using a generated host group.
++
+Use the global registration template to register and subscribe your host before the conversion.
+Select the host group that was generated for the conversion you intend, such as `CentOS 8 converting` if you convert the host from CentOS{nbsp}8.
+For more information, see xref:Registering_Hosts_{context}[].
+. Run the Convert2RHEL playbook on the host.
+Execute a remote job with the following settings:
+** **Job category**: `Convert 2 RHEL`
+** **Job template**: `Convert to RHEL`
+** **Activation key**: `convert2rhel_rhel7` or `convert2rhel_rhel8`
+
++
+For more information, see xref:executing-a-remote-job_{context}[].
+
+.Additional resources
+* https://access.redhat.com/articles/2360841[How to perform an unsupported conversion from a RHEL-derived Linux distribution to RHEL]
+ifndef::satellite[]
+* https://github.com/oamg/convert2rhel/[Convert2RHEL CLI tool] on _GitHub_
+endif::[]
