@@ -2,30 +2,37 @@
 = Configuring Remote Execution for Pull Client
 
 By default, Remote Execution uses SSH as the transport mechanism for the Script provider.
-However, Remote Execution also offers a pull-based transport option, which communicates with hosts via MQTT.
-This is a good option if you are migrating from `katello-agent` which also uses pull-based communication.
+However, Remote Execution also offers pull-based transport, which you can use if your infrastructure prohibits outgoing connections from {SmartProxy} to hosts.
+
+This is comprised of `pull-mqtt` mode on {SmartProxy} in combination with a pull client running on hosts.
+Configure the `pull-mqtt` mode to migrate from Katello Agent, which is a deprecated method of pull-based transport.
+
+NOTE: The `pull-mqtt` mode works only with the Script provider.
+Ansible and other providers will continue to use their default transport settings.
+
+The mode is configured per {SmartProxy}.
+Some {SmartProxies} can be configured to use `pull-mqtt` mode while others use SSH.
+If this is the case, it is possible that one remote job on a given host will use the pull client and the next job on the same host will use SSH.
+If you wish to avoid this scenario, configure all {SmartProxies} to use the same mode.
 
 .Procedure
-* Enable the pull-based transport on each relevant {SmartProxyServer}:
+. Enable the pull-based transport on each relevant {SmartProxyServer}:
 +
 [options="nowrap" subs="quotes,attributes"]
 ----
  # {installer-scenario-smartproxy} \
 --foreman-proxy-plugin-remote-execution-script-mode pull-mqtt
 ----
-
-The mode is configured per {SmartProxy}.
-Some {SmartProxies} may be configured to use `pull-mqtt` mode while others use `ssh`.
-If this is the case, it is possible that one remote job on a given host will use the pull client, and the next job on the same host will use SSH.
-If you wish to avoid this scenario, configure all {SmartProxies} to use the same mode.
-
-In `pull-mqtt` mode, hosts subscribe to the {SmartProxy} they are registered through for job notifications.
+. Configure the firewall to allow MQTT service on port 1883:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# firewall-cmd --add-port="1883/tcp"
+# firewall-cmd --runtime-to-permanent
+----
+. In `pull-mqtt` mode, hosts subscribe for job notifications to the {SmartProxy} through which they are registered.
 Therefore, it is recommended to ensure that {ProjectServer} sends remote execution jobs to that same {SmartProxy}.
 To do this, in the {ProjectWebUI}, navigate to *Administer* > *Settings*.
-On the *Content* tab, set the value of "Prefer registered through {SmartProxy} for remote execution" to *Yes*.
-
-After the pull-based transport is set up on a {SmartProxy}, it must also be configured on each host.
-For more information, see {ManagingHostsDocURL}Configuring_and_Setting_Up_Remote_Jobs_managing-hosts[Configuring and Setting Up Remote Jobs] in _{ManagingHostsDocTitle}_.
-
-NOTE: The `pull-mqtt` mode works only with the Script provider.
-Ansible and other providers will continue to use their default transport settings.
+On the *Content* tab, set the value of *Prefer registered through {SmartProxy} for remote execution* to *Yes*.
+. After you set up the pull-based transport on {SmartProxy}, you must also configure it on each host.
+For more information, see {ManagingHostsDocURL}transport-modes-for-remote-execution_managing-hosts[Transport Modes for Remote Execution] in _{ManagingHostsDocTitle}_.
