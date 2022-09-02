@@ -49,14 +49,15 @@
 </li>
 <li><a href="#Installing_Server_Connected_satellite">3. Installing Satellite&#160;Server</a>
 <ul class="sectlevel2">
-<li><a href="#registering-to-red-hat-subscription-management_satellite">3.1. Registering to Red Hat Subscription Management</a></li>
-<li><a href="#attaching-infrastructure-subscription_satellite">3.2. Attaching the Satellite Infrastructure Subscription</a></li>
-<li><a href="#configuring-repositories_satellite">3.3. Configuring Repositories</a></li>
-<li><a href="#Installing_Server_Packages_satellite">3.4. Installing Satellite&#160;Server Packages</a></li>
-<li><a href="#synchronizing-the-system-clock-with-chronyd_satellite">3.5. Synchronizing the System Clock With chronyd</a></li>
-<li><a href="#installing-the-sos-package_satellite">3.6. Installing the SOS Package on the Base Operating System</a></li>
-<li><a href="#configuring-server_satellite">3.7. Configuring Satellite&#160;Server</a></li>
-<li><a href="#Importing_a_Red_Hat_Subscription_Manifest_into_Server_satellite">3.8. Importing a Red&#160;Hat Subscription Manifest into Satellite&#160;Server</a></li>
+<li><a href="#configuring-http-proxy-to-connect-to-cdn_satellite">3.1. Configuring the HTTP Proxy to Connect to Red Hat CDN</a></li>
+<li><a href="#registering-to-red-hat-subscription-management_satellite">3.2. Registering to Red Hat Subscription Management</a></li>
+<li><a href="#attaching-infrastructure-subscription_satellite">3.3. Attaching the Satellite Infrastructure Subscription</a></li>
+<li><a href="#configuring-repositories_satellite">3.4. Configuring Repositories</a></li>
+<li><a href="#Installing_Server_Packages_satellite">3.5. Installing Satellite&#160;Server Packages</a></li>
+<li><a href="#synchronizing-the-system-clock-with-chronyd_satellite">3.6. Synchronizing the System Clock With chronyd</a></li>
+<li><a href="#installing-the-sos-package_satellite">3.7. Installing the SOS Package on the Base Operating System</a></li>
+<li><a href="#configuring-server_satellite">3.8. Configuring Satellite&#160;Server</a></li>
+<li><a href="#Importing_a_Red_Hat_Subscription_Manifest_into_Server_satellite">3.9. Importing a Red&#160;Hat Subscription Manifest into Satellite&#160;Server</a></li>
 </ul>
 </li>
 <li><a href="#performing-additional-configuration">4. Performing Additional Configuration on Satellite&#160;Server</a>
@@ -1189,7 +1190,88 @@ restore /etc/dhcp/dhcpd.conf 622d9820b8e764ab124367c68f5fa3a1</pre>
 </div>
 </div>
 <div class="sect2">
-<h3 id="registering-to-red-hat-subscription-management_satellite"><a class="anchor" href="#registering-to-red-hat-subscription-management_satellite"></a>3.1. Registering to Red Hat Subscription Management</h3>
+<h3 id="configuring-http-proxy-to-connect-to-cdn_satellite"><a class="anchor" href="#configuring-http-proxy-to-connect-to-cdn_satellite"></a>3.1. Configuring the HTTP Proxy to Connect to Red Hat CDN</h3>
+<div class="paragraph">
+<p>To configure subscription-manager with an HTTP proxy, follow the procedure below.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On the network gateway and the HTTP Proxy, enable TCP for the following host names:</p>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Host name</th>
+<th class="tableblock halign-left valign-top">Port</th>
+<th class="tableblock halign-left valign-top">Protocol</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">subscription.rhsm.redhat.com</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">443</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">HTTPS</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">cdn.redhat.com</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">443</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">HTTPS</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">*.akamaiedge.net</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">443</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">HTTPS</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">cert-api.access.redhat.com (if using Red&#160;Hat Insights)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">443</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">HTTPS</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">api.access.redhat.com (if using Red&#160;Hat Insights)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">443</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">HTTPS</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Satellite&#160;Server uses SSL to communicate with the Red&#160;Hat CDN securely.
+Use of an SSL interception proxy interferes with this communication.
+These hosts must be whitelisted on the proxy.</p>
+</div>
+<div class="paragraph">
+<p>For a list of IP addresses used by the Red&#160;Hat CDN (cdn.redhat.com), see the Knowledgebase article <a href="https://access.redhat.com/articles/1525183">Public CIDR Lists for Red&#160;Hat</a> on the Red&#160;Hat Customer Portal.</p>
+</div>
+</li>
+<li>
+<p>On Satellite&#160;Server, complete the following details in the <code>/etc/rhsm/rhsm.conf</code> file:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># an http proxy server to use (enter server FQDN)
+proxy_hostname = <em>myproxy.example.com</em>
+
+# port for http proxy server
+proxy_port = 8080
+
+# user name for authenticating to an http proxy, if needed
+proxy_user =
+
+# password for basic http proxy auth, if needed
+proxy_password =</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="registering-to-red-hat-subscription-management_satellite"><a class="anchor" href="#registering-to-red-hat-subscription-management_satellite"></a>3.2. Registering to Red Hat Subscription Management</h3>
 <div class="paragraph">
 <p>Registering the host to Red Hat Subscription Management enables the host to subscribe to and consume content for any subscriptions available to the user.
 This includes content such as Red&#160;Hat Enterprise Linux and Red&#160;Hat Satellite.
@@ -1221,7 +1303,7 @@ The system has been registered with ID: 541084ff2-44cab-4eb1-9fa1-7683431bcf9a</
 </div>
 </div>
 <div class="sect2">
-<h3 id="attaching-infrastructure-subscription_satellite"><a class="anchor" href="#attaching-infrastructure-subscription_satellite"></a>3.2. Attaching the Satellite Infrastructure Subscription</h3>
+<h3 id="attaching-infrastructure-subscription_satellite"><a class="anchor" href="#attaching-infrastructure-subscription_satellite"></a>3.3. Attaching the Satellite Infrastructure Subscription</h3>
 <div class="admonitionblock note">
 <table>
 <tr>
@@ -1328,7 +1410,7 @@ Your subscription Pool ID is different from the example provided.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="configuring-repositories_satellite"><a class="anchor" href="#configuring-repositories_satellite"></a>3.3. Configuring Repositories</h3>
+<h3 id="configuring-repositories_satellite"><a class="anchor" href="#configuring-repositories_satellite"></a>3.4. Configuring Repositories</h3>
 <div class="paragraph">
 <p>Use this procedure to enable the repositories that are required to install Satellite&#160;Server. Choose from the available list which operating system and version you are installing on:</p>
 </div>
@@ -1343,7 +1425,7 @@ Your subscription Pool ID is different from the example provided.</p>
 </ul>
 </div>
 <div class="sect3">
-<h4 id="_redhat_enterprise_linux_8_2"><a class="anchor" href="#_redhat_enterprise_linux_8_2"></a>3.3.1. <a id="repositories-rhel-8"></a>Red&#160;Hat Enterprise Linux 8</h4>
+<h4 id="_redhat_enterprise_linux_8_2"><a class="anchor" href="#_redhat_enterprise_linux_8_2"></a>3.4.1. <a id="repositories-rhel-8"></a>Red&#160;Hat Enterprise Linux 8</h4>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
@@ -1394,7 +1476,7 @@ For more information about modules and lifecycle streams on Red&#160;Hat Enterpr
 </div>
 </div>
 <div class="sect3">
-<h4 id="_redhat_enterprise_linux_7_2"><a class="anchor" href="#_redhat_enterprise_linux_7_2"></a>3.3.2. <a id="repositories-rhel-7"></a>Red&#160;Hat Enterprise Linux 7</h4>
+<h4 id="_redhat_enterprise_linux_7_2"><a class="anchor" href="#_redhat_enterprise_linux_7_2"></a>3.4.2. <a id="repositories-rhel-7"></a>Red&#160;Hat Enterprise Linux 7</h4>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
@@ -1435,7 +1517,7 @@ For more information, see <a href="https://access.redhat.com/documentation/en-us
 </div>
 </div>
 <div class="sect2">
-<h3 id="Installing_Server_Packages_satellite"><a class="anchor" href="#Installing_Server_Packages_satellite"></a>3.4. Installing Satellite&#160;Server Packages</h3>
+<h3 id="Installing_Server_Packages_satellite"><a class="anchor" href="#Installing_Server_Packages_satellite"></a>3.5. Installing Satellite&#160;Server Packages</h3>
 <div class="ulist">
 <ul>
 <li>
@@ -1447,7 +1529,7 @@ For more information, see <a href="https://access.redhat.com/documentation/en-us
 </ul>
 </div>
 <div class="sect3">
-<h4 id="_redhat_enterprise_linux_8_3"><a class="anchor" href="#_redhat_enterprise_linux_8_3"></a>3.4.1. <a id="el-8"></a>Red&#160;Hat Enterprise Linux 8</h4>
+<h4 id="_redhat_enterprise_linux_8_3"><a class="anchor" href="#_redhat_enterprise_linux_8_3"></a>3.5.1. <a id="el-8"></a>Red&#160;Hat Enterprise Linux 8</h4>
 <div id="configuring-foreman-repositories-el-dnf_el8" class="olist arabic">
 <div class="title">Procedure</div>
 <ol class="arabic">
@@ -1471,7 +1553,7 @@ For more information, see <a href="https://access.redhat.com/documentation/en-us
 </div>
 </div>
 <div class="sect3">
-<h4 id="_redhat_enterprise_linux_7_3"><a class="anchor" href="#_redhat_enterprise_linux_7_3"></a>3.4.2. <a id="el-7"></a>Red&#160;Hat Enterprise Linux 7</h4>
+<h4 id="_redhat_enterprise_linux_7_3"><a class="anchor" href="#_redhat_enterprise_linux_7_3"></a>3.5.2. <a id="el-7"></a>Red&#160;Hat Enterprise Linux 7</h4>
 <div id="configuring-foreman-repositories-el-yum_el7" class="olist arabic">
 <ol class="arabic">
 <li>
@@ -1495,7 +1577,7 @@ For more information, see <a href="https://access.redhat.com/documentation/en-us
 </div>
 </div>
 <div class="sect2">
-<h3 id="synchronizing-the-system-clock-with-chronyd_satellite"><a class="anchor" href="#synchronizing-the-system-clock-with-chronyd_satellite"></a>3.5. Synchronizing the System Clock With chronyd</h3>
+<h3 id="synchronizing-the-system-clock-with-chronyd_satellite"><a class="anchor" href="#synchronizing-the-system-clock-with-chronyd_satellite"></a>3.6. Synchronizing the System Clock With chronyd</h3>
 <div class="paragraph">
 <p>To minimize the effects of time drift, you must synchronize the system clock on the base operating system on which you want to install Satellite&#160;Server with Network Time Protocol (NTP) servers.
 If the base operating system clock is configured incorrectly, certificate verification might fail.</p>
@@ -1527,7 +1609,7 @@ If the base operating system clock is configured incorrectly, certificate verifi
 </div>
 </div>
 <div class="sect2">
-<h3 id="installing-the-sos-package_satellite"><a class="anchor" href="#installing-the-sos-package_satellite"></a>3.6. Installing the SOS Package on the Base Operating System</h3>
+<h3 id="installing-the-sos-package_satellite"><a class="anchor" href="#installing-the-sos-package_satellite"></a>3.7. Installing the SOS Package on the Base Operating System</h3>
 <div class="paragraph">
 <p>Install the <strong>sos</strong> package on the base operating system so that you can collect configuration and diagnostic information from a Red&#160;Hat Enterprise Linux system.
 You can also use it to provide the initial system analysis, which is required when opening a service request with Red Hat Technical Support.
@@ -1548,7 +1630,7 @@ For more information on using <code>sos</code>, see the Knowledgebase solution <
 </div>
 </div>
 <div class="sect2">
-<h3 id="configuring-server_satellite"><a class="anchor" href="#configuring-server_satellite"></a>3.7. Configuring Satellite&#160;Server</h3>
+<h3 id="configuring-server_satellite"><a class="anchor" href="#configuring-server_satellite"></a>3.8. Configuring Satellite&#160;Server</h3>
 <div class="paragraph">
 <p>Install Satellite&#160;Server using the <code>satellite-installer</code> installation script.</p>
 </div>
@@ -1570,7 +1652,7 @@ Depending on the options that you use when running the Satellite installer, the 
 </table>
 </div>
 <div class="sect3">
-<h4 id="Configuring_Installation_satellite"><a class="anchor" href="#Configuring_Installation_satellite"></a>3.7.1. Configuring Satellite Installation</h4>
+<h4 id="Configuring_Installation_satellite"><a class="anchor" href="#Configuring_Installation_satellite"></a>3.8.1. Configuring Satellite Installation</h4>
 <div class="paragraph">
 <p>This initial configuration procedure creates an organization, location, user name, and password.
 After the initial configuration, you can create additional organizations and locations if required.
@@ -1633,7 +1715,7 @@ For more information on how to apply custom configuration on other services, see
 </div>
 </div>
 <div class="sect2">
-<h3 id="Importing_a_Red_Hat_Subscription_Manifest_into_Server_satellite"><a class="anchor" href="#Importing_a_Red_Hat_Subscription_Manifest_into_Server_satellite"></a>3.8. Importing a Red&#160;Hat Subscription Manifest into Satellite&#160;Server</h3>
+<h3 id="Importing_a_Red_Hat_Subscription_Manifest_into_Server_satellite"><a class="anchor" href="#Importing_a_Red_Hat_Subscription_Manifest_into_Server_satellite"></a>3.9. Importing a Red&#160;Hat Subscription Manifest into Satellite&#160;Server</h3>
 <div class="paragraph">
 <p>Use the following procedure to import a Red&#160;Hat Subscription Manifest into Satellite&#160;Server.</p>
 </div>
@@ -2007,88 +2089,7 @@ To use the CLI instead of the Satellite web UI, see the <a href="#cli-adding-a-d
 </div>
 </div>
 <div class="sect3">
-<h4 id="configuring-http-proxy-to-connect-to-cdn_satellite"><a class="anchor" href="#configuring-http-proxy-to-connect-to-cdn_satellite"></a>4.6.2. Configuring the HTTP Proxy to Connect to Red Hat CDN</h4>
-<div class="paragraph">
-<p>Verify that Satellite can connect to the Red&#160;Hat CDN and can synchronize its repositories.</p>
-</div>
-<div class="olist arabic">
-<div class="title">Procedure</div>
-<ol class="arabic">
-<li>
-<p>On the network gateway and the HTTP Proxy, enable TCP for the following host names:</p>
-<table class="tableblock frame-all grid-all stretch">
-<colgroup>
-<col style="width: 50%;">
-<col style="width: 25%;">
-<col style="width: 25%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">Host name</th>
-<th class="tableblock halign-left valign-top">Port</th>
-<th class="tableblock halign-left valign-top">Protocol</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">subscription.rhsm.redhat.com</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">443</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">HTTPS</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">cdn.redhat.com</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">443</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">HTTPS</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">*.akamaiedge.net</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">443</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">HTTPS</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">cert-api.access.redhat.com (if using Red&#160;Hat Insights)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">443</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">HTTPS</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">api.access.redhat.com (if using Red&#160;Hat Insights)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">443</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">HTTPS</p></td>
-</tr>
-</tbody>
-</table>
-<div class="paragraph">
-<p>Satellite&#160;Server uses SSL to communicate with the Red&#160;Hat CDN securely.
-Use of an SSL interception proxy interferes with this communication.
-These hosts must be whitelisted on the proxy.</p>
-</div>
-<div class="paragraph">
-<p>For a list of IP addresses used by the Red&#160;Hat CDN (cdn.redhat.com), see the Knowledgebase article <a href="https://access.redhat.com/articles/1525183">Public CIDR Lists for Red&#160;Hat</a> on the Red&#160;Hat Customer Portal.</p>
-</div>
-</li>
-<li>
-<p>On Satellite&#160;Server, complete the following details in the <code>/etc/rhsm/rhsm.conf</code> file:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># an http proxy server to use (enter server FQDN)
-proxy_hostname = <em>myproxy.example.com</em>
-
-# port for http proxy server
-proxy_port = 8080
-
-# user name for authenticating to an http proxy, if needed
-proxy_user =
-
-# password for basic http proxy auth, if needed
-proxy_password =</pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
-</div>
-<div class="sect3">
-<h4 id="configuring-selinux-to-ensure-access-on-custom-ports_satellite"><a class="anchor" href="#configuring-selinux-to-ensure-access-on-custom-ports_satellite"></a>4.6.3. Configuring SELinux to Ensure Access to Satellite on Custom Ports</h4>
+<h4 id="configuring-selinux-to-ensure-access-on-custom-ports_satellite"><a class="anchor" href="#configuring-selinux-to-ensure-access-on-custom-ports_satellite"></a>4.6.2. Configuring SELinux to Ensure Access to Satellite on Custom Ports</h4>
 <div class="paragraph">
 <p>SELinux ensures access of Red&#160;Hat Satellite and Subscription Manager only to specific ports.
 In the case of the HTTP cache, the TCP ports are 8080, 8118, 8123, and 10001 - 10010.
@@ -2119,7 +2120,7 @@ http_cache_port_t       tcp    8080, 8118, 8123, 10001-10010
 </div>
 </div>
 <div class="sect3">
-<h4 id="using-an-http-proxy-for-all-http-requests_satellite"><a class="anchor" href="#using-an-http-proxy-for-all-http-requests_satellite"></a>4.6.4. Using an HTTP Proxy for all Satellite HTTP Requests</h4>
+<h4 id="using-an-http-proxy-for-all-http-requests_satellite"><a class="anchor" href="#using-an-http-proxy-for-all-http-requests_satellite"></a>4.6.3. Using an HTTP Proxy for all Satellite HTTP Requests</h4>
 <div class="paragraph">
 <p>If your Satellite&#160;Server must remain behind a firewall that blocks HTTP and HTTPS, you can configure a proxy for communication with external systems, including compute resources.</p>
 </div>
@@ -2155,7 +2156,7 @@ http_cache_port_t       tcp    8080, 8118, 8123, 10001-10010
 </div>
 </div>
 <div class="sect3">
-<h4 id="excluding-hosts-from-receiving-proxied-requests_satellite"><a class="anchor" href="#excluding-hosts-from-receiving-proxied-requests_satellite"></a>4.6.5. Excluding Hosts from Receiving Proxied Requests</h4>
+<h4 id="excluding-hosts-from-receiving-proxied-requests_satellite"><a class="anchor" href="#excluding-hosts-from-receiving-proxied-requests_satellite"></a>4.6.4. Excluding Hosts from Receiving Proxied Requests</h4>
 <div class="paragraph">
 <p>If you use an HTTP Proxy for all Satellite HTTP or HTTPS requests, you can prevent certain hosts from communicating through the proxy.</p>
 </div>
@@ -2188,7 +2189,7 @@ http_cache_port_t       tcp    8080, 8118, 8123, 10001-10010
 </div>
 </div>
 <div class="sect3">
-<h4 id="resetting-the-http-proxy_satellite"><a class="anchor" href="#resetting-the-http-proxy_satellite"></a>4.6.6. Resetting the HTTP Proxy</h4>
+<h4 id="resetting-the-http-proxy_satellite"><a class="anchor" href="#resetting-the-http-proxy_satellite"></a>4.6.5. Resetting the HTTP Proxy</h4>
 <div class="paragraph">
 <p>If you want to reset the current HTTP proxy setting, unset the <strong>Default HTTP Proxy</strong> setting.</p>
 </div>
