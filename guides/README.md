@@ -206,6 +206,7 @@ This makes `git diff` much easier to read and helps reviewing changes.
 Whitespace after partial files has to be handled in the file using the `include::` directive.
 * Source files use UTF-8 character encoding.
 * Image file names use dashes (`-`) and suffix a build target, e.g. `foreman`.
+* Links to different guides are followed by the title of the guide in italics, for example `in _{ManagingHostsDocTitle}_`.
 
 ### Structure
 
