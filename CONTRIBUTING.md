@@ -41,6 +41,7 @@ See [seven rules for git commit messages](https://cbea.ms/git-commit/#seven-rule
 See [LICENSE](LICENSE).
 * [ ] If I make more than one change on my branch, I create more than one commit and rebase my branch to master.
 * [ ] My PR does not solely rely on internal resources to answer the _why_, but instead contains at least a basic description for the community.
+* [ ] When creating my PR, I select all branches I want my change to get cherry-picked to.
 
 ## Crafting Great Pull Requests
 
