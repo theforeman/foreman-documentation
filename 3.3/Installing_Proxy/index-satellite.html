@@ -68,6 +68,12 @@
 <li><a href="#configuring-external-idm-dns_capsule">4.4. Configuring Capsule&#160;Server with External IdM DNS</a></li>
 </ul>
 </li>
+<li><a href="#Managing_DHCP_Using_Smart_Proxy_capsule">5. Managing DHCP Using Capsule</a>
+<ul class="sectlevel2">
+<li><a href="#Securing_the_dhcpd_API_capsule">5.1. Securing the dhcpd API</a></li>
+</ul>
+</li>
+<li><a href="#Managing_DNS_Using_Smart_Proxy_capsule">6. Managing DNS Using Capsule</a></li>
 <li><a href="#capsule-server-scalability-considerations_capsule">Appendix A: Capsule&#160;Server Scalability Considerations</a></li>
 </ul>
 </div>
@@ -3250,6 +3256,103 @@ To configure Satellite or Capsule as DNS server without using an answer file, en
 </ol>
 </div>
 </div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="Managing_DHCP_Using_Smart_Proxy_capsule"><a class="anchor" href="#Managing_DHCP_Using_Smart_Proxy_capsule"></a>5. Managing DHCP Using Capsule</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Satellite can integrate with a DHCP service using your Capsule.
+A Capsule has multiple DHCP providers that you can use to integrate Satellite with your existing DHCP infrastructure or deploy a new one.
+You can use the DHCP module of Capsule to query for available IP addresses, add new, and delete existing reservations.
+Note that your Capsule cannot manage subnet declarations.</p>
+</div>
+<div class="ulist">
+<div class="title">Available DHCP providers</div>
+<ul>
+<li>
+<p><code>dhcp_infoblox</code> - For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.11/html-single/provisioning_hosts/index#Using_Infoblox_as_DHCP_and_DNS_Providers_provisioning">Using Infoblox as DHCP and DNS Providers</a> in <em>Provisioning Hosts</em>.</p>
+</li>
+<li>
+<p><code>dhcp_isc</code> - ISC DHCP server over OMAPI.
+For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.11/html-single/installing_capsule_server/index#configuring-dns-dhcp-and-tftp_smart-proxy">Configuring DNS, DHCP, and TFTP on Capsule&#160;Server</a> in <em>Installing Capsule Server</em>.</p>
+</li>
+<li>
+<p><code>dhcp_remote_isc</code> - ISC DHCP server over OMAPI with leases mounted through networking.
+For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.11/html-single/installing_capsule_server/index#configuring-external-dhcp_smart-proxy">Configuring an External DHCP Server to Use with Capsule&#160;Server</a> in <em>Installing Capsule Server</em>.</p>
+</li>
+</ul>
+</div>
+<div class="sect2">
+<h3 id="Securing_the_dhcpd_API_capsule"><a class="anchor" href="#Securing_the_dhcpd_API_capsule"></a>5.1. Securing the dhcpd API</h3>
+<div class="paragraph">
+<p>Capsule interacts with DHCP daemon using the dhcpd API to manage DHCP.
+By default, the dhcpd API listens to any host without access control.
+You can add an <code>omapi_key</code> to provide basic security.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Install the required packages:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># yum install install bind-utils</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Generate a key:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnssec-keygen -r /dev/urandom -a HMAC-MD5 -b 512 -n HOST omapi_key
+# cat Komapi_key.+*.private | grep ^Key|cut -d ' ' -f2-</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Use <code>satellite-installer</code> to secure the dhcpd API:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-installer \
+--foreman-proxy-dhcp-key-name "<em>My_Name</em>" \
+--foreman-proxy-dhcp-key-secret "<em>My_Secret</em>"</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="Managing_DNS_Using_Smart_Proxy_capsule"><a class="anchor" href="#Managing_DNS_Using_Smart_Proxy_capsule"></a>6. Managing DNS Using Capsule</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Satellite can manage DNS records using your Capsule.
+DNS management contains updating and removing DNS records from existing DNS zones.
+A Capsule has multiple DNS providers that you can use to integrate Satellite with your existing DNS infrastructure or deploy a new one.</p>
+</div>
+<div class="paragraph">
+<p>After you have enabled DNS, your Capsule can manipulate any DNS server that complies with RFC 2136 using the <code>dns_nsupdate</code> provider.
+Other providers provide more direct integration, such as <code>dns_infoblox</code> for <a href="https://www.infoblox.com/">Infoblox</a>.</p>
+</div>
+<div class="ulist">
+<div class="title">Available DNS Providers</div>
+<ul>
+<li>
+<p><code>dns_infoblox</code> - For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.11/html-single/provisioning_hosts/index#Using_Infoblox_as_DHCP_and_DNS_Providers_provisioning">Using Infoblox as DHCP and DNS Providers</a> in <em>Provisioning Hosts</em>.</p>
+</li>
+<li>
+<p><code>dns_nsupdate</code> - Dynamic DNS update using nsupdate.
+For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.11/html-single/provisioning_hosts/index#Using_Infoblox_as_DHCP_and_DNS_Providers_provisioning">Using Infoblox as DHCP and DNS Providers</a> in <em>Provisioning Hosts</em>.</p>
+</li>
+<li>
+<p><code>dns_nsupdate_gss</code> - Dynamic DNS update with GSS-TSIG.
+For more information, see <a href="#configuring-dynamic-dns-update-with-gss-tsig-authentication_capsule">Configuring Dynamic DNS Update with GSS-TSIG Authentication</a>.</p>
+</li>
+</ul>
 </div>
 </div>
 </div>
