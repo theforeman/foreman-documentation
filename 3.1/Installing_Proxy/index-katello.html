@@ -27,7 +27,7 @@
 <h1>Installing an External Smart&#160;Proxy&#160;Server 3.1</h1>
 <div class="details">
 <span id="revnumber">version 3.1 (unsupported),</span>
-<span id="revdate">published Sep 05 2022</span>
+<span id="revdate">published Sep 07 2022</span>
 </div>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
@@ -72,7 +72,20 @@
 <li><a href="#configuring-external-idm-dns_smart-proxy">4.4. Configuring Smart&#160;Proxy&#160;server with External IdM DNS</a></li>
 </ul>
 </li>
+<li><a href="#Managing_DHCP_Using_Smart_Proxy_smart-proxy">5. Managing DHCP Using Smart&#160;Proxy</a>
+<ul class="sectlevel2">
+<li><a href="#Configuring_dhcp_libvirt_smart-proxy">5.1. Configuring dhcp_libvirt</a></li>
+<li><a href="#Securing_the_dhcpd_API_smart-proxy">5.2. Securing the dhcpd API</a></li>
+</ul>
+</li>
+<li><a href="#Managing_DNS_Using_Smart_Proxy_smart-proxy">6. Managing DNS Using Smart&#160;Proxy</a>
+<ul class="sectlevel2">
+<li><a href="#Configuring_dns_libvirt_smart-proxy">6.1. Configuring dns_libvirt</a></li>
+</ul>
+</li>
 <li><a href="#capsule-server-scalability-considerations_smart-proxy">Appendix A: Smart&#160;Proxy&#160;server Scalability Considerations</a></li>
+<li><a href="#DHCP_ISC_Settings_smart-proxy">Appendix B: dhcp_isc Settings</a></li>
+<li><a href="#DHCP_Options_For_Network_Configuration_smart-proxy">Appendix C: DHCP Options for Network Configuration</a></li>
 </ul>
 </div>
 </div>
@@ -3018,6 +3031,164 @@ To configure Foreman or Smart&#160;Proxy as DNS server without using an answer f
 </div>
 </div>
 <div class="sect1">
+<h2 id="Managing_DHCP_Using_Smart_Proxy_smart-proxy"><a class="anchor" href="#Managing_DHCP_Using_Smart_Proxy_smart-proxy"></a>5. Managing DHCP Using Smart&#160;Proxy</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Foreman can integrate with a DHCP service using your Smart&#160;Proxy.
+A Smart&#160;Proxy has multiple DHCP providers that you can use to integrate Foreman with your existing DHCP infrastructure or deploy a new one.
+You can use the DHCP module of Smart&#160;Proxy to query for available IP addresses, add new, and delete existing reservations.
+Note that your Smart&#160;Proxy cannot manage subnet declarations.</p>
+</div>
+<div class="ulist">
+<div class="title">Available DHCP providers</div>
+<ul>
+<li>
+<p><code>dhcp_infoblox</code> - For more information, see <a href="https://docs.theforeman.org/3.1/Provisioning_Hosts/index-katello.html#Using_Infoblox_as_DHCP_and_DNS_Providers_provisioning">Using Infoblox as DHCP and DNS Providers</a> in <em>Provisioning Hosts</em>.</p>
+</li>
+<li>
+<p><code>dhcp_isc</code> - ISC DHCP server over OMAPI.
+For more information, see <a href="https://docs.theforeman.org/3.1/Installing_Proxy/index-katello.html#configuring-dns-dhcp-and-tftp_smart-proxy">Configuring DNS, DHCP, and TFTP on Smart&#160;Proxy&#160;server</a> in <em>Installing an External Smart&#160;Proxy&#160;Server 3.1</em>.</p>
+</li>
+<li>
+<p><code>dhcp_remote_isc</code> - ISC DHCP server over OMAPI with leases mounted through networking.
+For more information, see <a href="https://docs.theforeman.org/3.1/Installing_Proxy/index-katello.html#configuring-external-dhcp_smart-proxy">Configuring an External DHCP Server to Use with Smart&#160;Proxy&#160;server</a> in <em>Installing an External Smart&#160;Proxy&#160;Server 3.1</em>.</p>
+</li>
+<li>
+<p><code>dhcp_libvirt</code> - dnsmasq DHCP via libvirt API</p>
+</li>
+</ul>
+</div>
+<div class="sect2">
+<h3 id="Configuring_dhcp_libvirt_smart-proxy"><a class="anchor" href="#Configuring_dhcp_libvirt_smart-proxy"></a>5.1. Configuring dhcp_libvirt</h3>
+<div class="paragraph">
+<p>The <em>dhcp_libvirt</em> plugin manages IP reservations and leases using <code>dnsmasq</code> through the libvirt API.
+It uses <code>ruby-libvirt</code> to connect to the local or remote instance of libvirt daemon.</p>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>You can use <code>foreman-installer</code> to configure <code>dhcp_libvirt</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">foreman-installer \
+--foreman-proxy-dhcp true \
+--foreman-proxy-dhcp-provider libvirt \
+--foreman-proxy-libvirt-network default \
+--foreman-proxy-libvirt-network qemu:///system</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Securing_the_dhcpd_API_smart-proxy"><a class="anchor" href="#Securing_the_dhcpd_API_smart-proxy"></a>5.2. Securing the dhcpd API</h3>
+<div class="paragraph">
+<p>Smart&#160;Proxy interacts with DHCP daemon using the dhcpd API to manage DHCP.
+By default, the dhcpd API listens to any host without access control.
+You can add an <code>omapi_key</code> to provide basic security.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Install the required packages:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># yum install install bind-utils</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Generate a key:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnssec-keygen -r /dev/urandom -a HMAC-MD5 -b 512 -n HOST omapi_key
+# cat Komapi_key.+*.private | grep ^Key|cut -d ' ' -f2-</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Use <code>foreman-installer</code> to secure the dhcpd API:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer \
+--foreman-proxy-dhcp-key-name "<em>My_Name</em>" \
+--foreman-proxy-dhcp-key-secret "<em>My_Secret</em>"</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="Managing_DNS_Using_Smart_Proxy_smart-proxy"><a class="anchor" href="#Managing_DNS_Using_Smart_Proxy_smart-proxy"></a>6. Managing DNS Using Smart&#160;Proxy</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Foreman can manage DNS records using your Smart&#160;Proxy.
+DNS management contains updating and removing DNS records from existing DNS zones.
+A Smart&#160;Proxy has multiple DNS providers that you can use to integrate Foreman with your existing DNS infrastructure or deploy a new one.</p>
+</div>
+<div class="paragraph">
+<p>After you have enabled DNS, your Smart&#160;Proxy can manipulate any DNS server that complies with RFC 2136 using the <code>dns_nsupdate</code> provider.
+Other providers provide more direct integration, such as <code>dns_infoblox</code> for <a href="https://www.infoblox.com/">Infoblox</a>.</p>
+</div>
+<div class="ulist">
+<div class="title">Available DNS Providers</div>
+<ul>
+<li>
+<p><code>dns_infoblox</code> - For more information, see <a href="https://docs.theforeman.org/3.1/Provisioning_Hosts/index-katello.html#Using_Infoblox_as_DHCP_and_DNS_Providers_provisioning">Using Infoblox as DHCP and DNS Providers</a> in <em>Provisioning Hosts</em>.</p>
+</li>
+<li>
+<p><code>dns_libvirt</code> - Dnsmasq DNS via libvirt API.
+For more information, see <a href="#configuring-dynamic-dns-update-with-gss-tsig-authentication_smart-proxy">Configuring Dynamic DNS Update with GSS-TSIG Authentication</a>.</p>
+</li>
+<li>
+<p><code>dns_nsupdate</code> - Dynamic DNS update using nsupdate.
+For more information, see <a href="https://docs.theforeman.org/3.1/Provisioning_Hosts/index-katello.html#Using_Infoblox_as_DHCP_and_DNS_Providers_provisioning">Using Infoblox as DHCP and DNS Providers</a> in <em>Provisioning Hosts</em>.</p>
+</li>
+<li>
+<p><code>dns_nsupdate_gss</code> - Dynamic DNS update with GSS-TSIG.
+For more information, see <a href="#configuring-dynamic-dns-update-with-gss-tsig-authentication_smart-proxy">Configuring Dynamic DNS Update with GSS-TSIG Authentication</a>.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For more information, see <a href="https://projects.theforeman.org/projects/foreman/wiki/List_of_Smart-Proxy_Plugins#DNS-plugins">List of DNS plugins</a></p>
+</div>
+<div class="sect2">
+<h3 id="Configuring_dns_libvirt_smart-proxy"><a class="anchor" href="#Configuring_dns_libvirt_smart-proxy"></a>6.1. Configuring dns_libvirt</h3>
+<div class="paragraph">
+<p>The <em>dns_libvirt</em> DNS provider manages IP reservations and leases using dnsmasq through the libvirt API.
+It uses <code>ruby-libvirt</code> gem to connect to the local or a remote instance of libvirt daemon.</p>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>You can use <code>foreman-installer</code> to configure <code>dns_libvirt</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer \
+--foreman-proxy-dns true \
+--foreman-proxy-dns-provider libvirt \
+--foreman-proxy-libvirt-network default \
+--foreman-proxy-libvirt-url qemu:///system</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note that you can only use one network and URL for both <em>dns_libvirt</em> and <em>dhcp_libvirt</em>.</p>
+</div>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="capsule-server-scalability-considerations_smart-proxy"><a class="anchor" href="#capsule-server-scalability-considerations_smart-proxy"></a>Appendix A: Smart&#160;Proxy&#160;server Scalability Considerations</h2>
 <div class="sectionbody">
 <div class="paragraph">
@@ -3123,6 +3294,90 @@ The limit of 100 concurrent requests applies.
 </tr>
 </tbody>
 </table>
+</div>
+</div>
+<div class="sect1">
+<h2 id="DHCP_ISC_Settings_smart-proxy"><a class="anchor" href="#DHCP_ISC_Settings_smart-proxy"></a>Appendix B: dhcp_isc Settings</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The <em>dhcp_isc</em> provider uses a combination of the ISC DHCP server OMAPI management interface and parsing of configuration and lease files.
+This requires it to be run on the same host as the DHCP server.
+The following settings are defined in <code>dhcp_isc.yml</code>:</p>
+</div>
+<div class="listingblock">
+<div class="title">Configuring the path to the <em>config</em> and <em>leases</em> files:</div>
+<div class="content">
+<pre class="nowrap">:config: /etc/dhcp/dhcpd.conf
+:leases: /var/lib/dhcpd/dhcpd.leases</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Securing the DHCP server with an <em>omapi_key</em></div>
+<div class="content">
+<pre class="nowrap">:key_name: <em>My_OMAPI_Key</em>
+:key_secret: <em>My_Key_Secret</em></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Setting a port on which the DHCP server listens</div>
+<div class="content">
+<pre class="nowrap">:omapi_port: <em>My_DHCP_Server_Port</em>  # default: 7911</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The server is defined in <code>dhcp.yml</code>:</p>
+</div>
+<div class="listingblock">
+<div class="title">Setting the host on which the DHCP server runs on</div>
+<div class="content">
+<pre class="nowrap">:server: <em>My_DHCP_Server_FQDN</em></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="DHCP_Options_For_Network_Configuration_smart-proxy"><a class="anchor" href="#DHCP_Options_For_Network_Configuration_smart-proxy"></a>Appendix C: DHCP Options for Network Configuration</h2>
+<div class="sectionbody">
+<div class="dlist">
+<dl>
+<dt class="hdlist1">--foreman-proxy-dhcp</dt>
+<dd>
+<p>  Enables the DHCP service.
+You can set this option to <code>true</code> or <code>false</code>.</p>
+</dd>
+<dt class="hdlist1">--foreman-proxy-dhcp-managed</dt>
+<dd>
+<p>  Enables Foreman to manage the DHCP service.
+You can set this option to <code>true</code> or <code>false</code>.</p>
+</dd>
+<dt class="hdlist1">--foreman-proxy-dhcp-gateway</dt>
+<dd>
+<p>  The DHCP pool gateway.
+Set this to the address of the external gateway for hosts on your private network.</p>
+</dd>
+<dt class="hdlist1">--foreman-proxy-dhcp-interface</dt>
+<dd>
+<p>  Sets the interface for the DHCP service to listen for requests.
+Set this to <code>eth1</code>.</p>
+</dd>
+<dt class="hdlist1">--foreman-proxy-dhcp-nameservers</dt>
+<dd>
+<p>  Sets the addresses of the nameservers provided to clients through DHCP.
+Set this to the address for Foreman&#160;server on <code>eth1</code>.</p>
+</dd>
+<dt class="hdlist1">--foreman-proxy-dhcp-range</dt>
+<dd>
+<p>A space-separated DHCP pool range for Discovered and Unmanaged services.</p>
+</dd>
+<dt class="hdlist1">--foreman-proxy-dhcp-server</dt>
+<dd>
+<p>Sets the address of the DHCP server to manage.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>Run <code>foreman-installer --help</code> to view more options related to DHCP and other Smart&#160;Proxy services.</p>
+</div>
 </div>
 </div>
 </div>
