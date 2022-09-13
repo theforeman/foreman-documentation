@@ -33,6 +33,7 @@ the upgrade to proceed.
 * On a virtual machine, take a snapshot.
 * On a physical machine, create a backup.
 +
+
 For information on backups, see {AdministeringDocURL}backing-up-satellite-server-and-capsule-server[Backing Up {ProjectServer} and {SmartProxyServer}] in the _Administering {ProjectName} {ProjectVersionPrevious}_ guide.
 
 ifdef::katello[]
@@ -93,25 +94,13 @@ ifdef::satellite[]
 # {package-install} rubygem-foreman_maintain
 ----
 
-. Update the `gofer` package:
-[options="nowrap" subs="attributes"]
-+
-----
-# {package-update-project} gofer
-----
-
-. Restart the `goferd` service:
-+
-[options="nowrap"]
-----
-# systemctl restart goferd
-----
-
 . On {SmartProxyServer}, verify that the `foreman_url` setting points to the {Project} FQDN:
 +
 ----
 # grep foreman_url /etc/foreman-proxy/settings.yml
 ----
+
+. Ensure that the `apache::purge_configs: false` entry is either not present or commented out in the `/etc/foreman-installer/custom-hiera.yaml` file of the {Project} {ProjectVersionPrevious}/{SmartProxy} {ProjectVersionPrevious} servers which will be upgraded to {ProjectVersion}.
 
 . Check the available versions to confirm the version you want is listed:
 +
@@ -151,6 +140,14 @@ In such a case, change directory, for example to the *_root_* user's home direct
 ====
 +
 endif::[]
+. If you have migrated content from Pulp 2 to Pulp 3, remove all Pulp 2 content.
++
+[options="nowrap" subs="attributes"]
+----
+# {foreman-maintain} content remove-pulp2
+----
+This removes Pulp 2 RPMs, content in `/var/lib/pulp/content/`, the mongo database, and migration content in the Pulp 3 database.
+
 . Check when the kernel packages were last updated:
 +
 [options="nowrap"]
@@ -167,3 +164,48 @@ endif::[]
 . Optional: If you made manual edits to DNS or DHCP configuration files, check and restore any changes required to the DNS and DHCP configuration files using the backups made earlier.
 
 . Optional: If you use custom repositories, ensure that you enable these custom repositories after the upgrade completes.
+
+. On {ProjectServer}, perform a complete synchronization of the upgraded {SmartProxy} as the MongoDB and RPM repositories are not automatically migrated with {Project}.
++
+[options="nowrap" subs="attributes"]
+----
+# hammer capsule content synchronize --name ${{SmartProxy}} --skip-metadata-check true --async
+----
+
+.Upgrading {SmartProxy} Servers Using Remote Execution in the {ProjectWebUI}
+
+. Create a backup.
++
+* On a virtual machine, take a snapshot.
+* On a physical machine, create a backup.
++
+For information on backups, see {AdministeringDocURL}backing-up-satellite-server-and-capsule-server[Backing Up {ProjectServer} and {SmartProxyServer}] in the _Administering {ProjectName} {ProjectVersionPrevious}_ guide.
+
+. Optional: If you made manual edits to DNS or DHCP configuration in the `/etc/zones.conf` or `/etc/dhcp/dhcpd.conf` files, back up the configuration files because the installer only supports one domain or subnet, and therefore restoring changes from these backups might be required.
+
+. Optional: If you made manual edits to DNS or DHCP configuration files and do not want to overwrite the changes, enter the following command:
++
+[options="nowrap"]
+----
+# {foreman-installer} --foreman-proxy-dns-managed=false \
+--foreman-proxy-dhcp-managed=false
+----
+
+. In the {Project} web UI, navigate to *Monitor* > *Jobs*.
+
+. Click *Run Job*.
+
+. From the *Job category* list, select *Maintenance Operations*.
+
+. From the *Job template* list, select *Capsule Upgrade Playbook*.
+
+. In the *Search Query* field, enter the host name of the {SmartProxy}.
+
+. Ensure that *Resolves to* shows *1 host*.
+
+. In the *target_version* field, enter the target version of the {SmartProxy}.
+
+. In the *whitelist_options* field, enter the whitelist options.
+
+. For *Type of query*, click *Static Query* or *Dynamic Query* depending on the type of query.
+. Select the schedule for the job execution in *Schedule*.

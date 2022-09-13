@@ -2,7 +2,7 @@
 
 = Cloning {ProjectServer}
 
-When you upgrade {ProjectServer}, you can optionally create a clone of your {Project} to ensure that you do not lose any data while you upgrade. After your upgrade is complete, you can then decommission the earlier version of {ProjectServer}.
+When you upgrade {ProjectServer}, you can optionally create and upgrade a clone of your {Project} to ensure that you do not lose any data while you upgrade. After your upgrade is complete, you can then decommission the earlier version of {ProjectServer}.
 
 Use the following procedures to clone your {Project} instances to preserve your environments in preparation for upgrade.
 
@@ -12,7 +12,7 @@ Instead you must backup the existing {SmartProxyServer}, restore it on Red Hat E
 .Terminology
 Ensure that you understand the following terms:
 
-*Source server*: the server that you clone
+*Source server*: the server that you clone.
 
 *Target server*: the new server that you copy files to and clone the source server to.
 
@@ -39,7 +39,7 @@ To clone {ProjectServer}, ensure that you have the following resources available
 
 Before you begin cloning, ensure the following conditions exist:
 
-* The target server is on an isolated network. This avoids unwanted communication with {SmartProxyServer}s and hosts
+* The target server is on an isolated network. This avoids unwanted communication with {SmartProxyServer}s and hosts.
 * The target server has the capacity to store all your backup files from the source server.
 
 .Customized configuration files
@@ -53,7 +53,7 @@ You can clone {Project} server without including Pulp data. However, for your cl
 To transfer Pulp data to a target server, you have two options:
 
 * Clone using backup with Pulp data
-* Clone using backup without Pulp data and copy `/var/lib/pulp` manually from source server.
+* Clone using backup without Pulp data and copy `/var/lib/pulp` manually from the source server.
 
 If your `pulp_data.tar` file is greater than 500 GB, or if you use a slow storage system, such as NFS, and your `pulp_data.tar` file is greater than 100 GB, do not include `pulp_data.tar` in the backup because this can cause memory errors during extraction. Copy the `pulp_data.tar` file from the source server to the target server.
 
@@ -61,7 +61,7 @@ If your `pulp_data.tar` file is greater than 500 GB, or if you use a slow storag
 
 Follow the steps in the procedure in xref:sec_Cloning_Satellite_Server[] and replace the steps that involve cloning with Pulp data with the following steps:
 
-. Perform a backup with MongoDB and PostgreSQL databases active excluding the Pulp data:
+. Perform a backup with PostgreSQL databases active excluding the Pulp data:
 +
 [options="nowrap" subs="attributes"]
 ----
@@ -108,7 +108,7 @@ On the source server, complete the following steps:
 +
 Note the _Pool ID_ for later use.
 +
-. Remove the {ProjectName} subscription.
+. Remove the {ProjectName} subscription:
 +
 [options="nowrap" subs="attributes"]
 ----
@@ -124,7 +124,8 @@ Note the _Pool ID_ for later use.
 # du -sh /var/lib/pulp/
 ----
 +
-. If you have less than 500 GB of Pulp data, perform a backup with MongoDB and PostgreSQL databases active including the Pulp data. If you have more than 500 GB of Pulp data, skip the following steps and complete the steps in xref:sec-Pulp_Data_Considerations[] before you continue.
+. If you have less than 500 GB of Pulp data, perform a backup with PostgreSQL databases active including the Pulp data.
+If you have more than 500 GB of Pulp data, skip the following steps and complete the steps in xref:sec-Pulp_Data_Considerations[] before you continue.
 +
 [options="nowrap" subs="attributes"]
 ----
@@ -164,24 +165,35 @@ To clone your server, complete the following steps on your target server:
 --enable=rhel-7-server-satellite-{ProjectVersionPrevious}-rpms
 ----
 +
-. Install the `satellite-clone` package
+ifdef::satellite[]
+. Install the `satellite-clone` package:
++
+[options="nowrap" subs="attributes"]
+----
+# yum install satellite-clone
+----
+endif::[]
+ifndef::satellite[]
+. Install the `satellite-clone` package:
 +
 [options="nowrap" subs="attributes"]
 ----
 # {package-install-project} satellite-clone
 ----
+endif::[]
 +
 After you install the `satellite-clone` tool, you can adjust any configuration to suit your own deployment in the `/etc/satellite-clone/satellite-clone-vars.yml` file.
 +
-. Run the `satellite-clone` tool.
+. Run the `satellite-clone` tool:
 +
 [options="nowrap" subs="attributes"]
 ----
 # satellite-clone
 ----
 +
-. Reconfigure DHCP, DNS, TFTP and remote execution services. The cloning process disables these services on the target {ProjectServer} to avoid conflict with the source {ProjectServer}.
-. Reconfigure and enable DHCP, DNS, TFTP in the {Project} web UI. For more information, see {InstallingProjectDocURL}configuring-external-services[Configuring External Services on {ProjectServer}] in _Installing {ProjectServer}_.
+. Reconfigure DHCP, DNS, TFTP, and remote execution services.
+The cloning process disables these services on the target {ProjectServer} to avoid conflict with the source {ProjectServer}.
+. Reconfigure and enable DHCP, DNS, and TFTP in the {ProjectWebUI}. For more information, see {InstallingProjectDocURL}configuring-external-services[Configuring External Services on {ProjectServer}] in _Installing {ProjectServer}_.
 . Enable remote execution:
 +
 [options="nowrap" subs="attributes"]
@@ -198,8 +210,8 @@ After you install the `satellite-clone` tool, you can adjust any configuration t
 . Verify that the available subscriptions are correct.
 . Follow the instructions in the `/usr/share/satellite-clone/logs/reassociate_capsules.txt` file to restore the associations between {SmartProxies} and their lifecycle environments.
 . Update your network configuration, for example, DNS, to match the target server’s IP address with its new host name.
-The `satellite-clone` tool changes the hostname to the source server's hostname.
-If you want to change the hostname to something different, you can use the `satellite-change-hostname` tool.
+The `satellite-clone` tool changes the host name to the source server's host name.
+If you want to change the host name to something different, you can use the `satellite-change-hostname` tool.
 For more information, see {AdministeringDocURL}sect-Administering-Renaming_a_Server[Renaming a {Project} or {SmartProxyServer}] in _Administrating {ProjectName}_.
 . If the source server uses the `virt-who` daemon, install and configure it on the target server.
 Copy all the `virt-who` configuration files in the `/etc/virt-who.d/` directory from the source server to the same directory on the target server.

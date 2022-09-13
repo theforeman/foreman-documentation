@@ -2,23 +2,76 @@
 
 .Before You Begin
 
-* Note that you can upgrade {SmartProxies} separately from {Project}. For more information, see xref:upgrading_capsules-separately-from-satellite_upgrade-guide[].
-* Review and update your firewall configuration prior to upgrading your {ProjectServer}. For more information, see {InstallingProjectDocURL}preparing-environment-for-satellite-installation[Preparing your environment for installation] in _Installing {ProjectServer}_.
-* Ensure that you do not delete the manifest from the Customer Portal or in the {Project} Web UI because this removes all the entitlements of your content hosts.
-* Back up and remove all Foreman hooks before upgrading. Restore any hooks only after {Project} is known to be working after the upgrade is complete.
-* If you have edited any of the default templates, back up the files either by cloning or exporting them. Cloning is the recommended method because that prevents them being overwritten in future updates or upgrades. To confirm if a template has been edited, you can view its *History* before you upgrade or view the changes in the audit log after an upgrade. In the web UI, Navigate to *Monitor* > *Audits* and search for the template to see a record of changes made. If you use the export method, restore your changes by comparing the exported template and the default template, manually applying your changes.
+* Note that you can upgrade {SmartProxies} separately from {Project}.
+For more information, see xref:upgrading_capsules-separately-from-satellite_upgrade-guide[].
+* Review and update your firewall configuration prior to upgrading your {ProjectServer}.
+For more information, see {InstallingProjectDocURL}preparing-environment-for-satellite-installation[Preparing your environment for installation] in _Installing {ProjectServer}_.
+* Ensure that you do not delete the manifest from the Customer Portal or in the {ProjectWebUI} because this removes all the entitlements of your content hosts.
+* Back up and remove all Foreman hooks before upgrading.
+Restore any hooks only after {Project} is known to be working after the upgrade is complete.
+ifdef::satellite[]
+Note that Foreman Hooks functionality is deprecated and will be removed in the next {Project} version.
+endif::[]
+* If you have edited any of the default templates, back up the files either by cloning or exporting them.
+Cloning is the recommended method because that prevents them being overwritten in future updates or upgrades.
+To confirm if a template has been edited, you can view its *History* before you upgrade or view the changes in the audit log after an upgrade.
+In the {ProjectWebUI}, navigate to *Monitor* > *Audits* and search for the template to see a record of changes made.
+If you use the export method, restore your changes by comparing the exported template and the default template, manually applying your changes.
+ifdef::satellite[]
+* Pulp content migration occurs at {ProjectVersionPrevious}, before the upgrade to {ProjectVersion}.
+* Ensure there is sufficient storage space for `/var/lib/pulp/published` to double in size before starting the migration process.
+Check the size of `/var/lib/pulp/published` with:
++
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+# du -sh /var/lib/pulp/published/
+----
+* Content migration can be run online, but uses processor, disk, and memory resources.
+Sync and content view publishing operations might take longer as a result.
+* If you have not pre-migrated Pulp content, the `PULP_CONTENT_PREMIGRATION_BATCH_SIZE` setting defines the number of content units processed at the same time.
+It affects the amount of RAM used and the I/O load.
+The lower the value, the longer `satellite-maintain content prepare` takes to complete.
+The upgrade downtime is also longer if you have content left to migrate at that point.
+** The default value is 1000.
+** If the system has a hard disk drive, or there are concerns about I/O load, the recommended value is 50.
+** A lower value is not recommended.
+* Use the following method to set `PULP_CONTENT_PREMIGRATION_BATCH_SIZE`:
+. Create a directory and file:
++
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+$ mkdir /etc/systemd/system/pulpcore-worker@.service.d/
+$ vi  /etc/systemd/system/pulpcore-worker@.service.d/settings.conf
+----
+with contents:
++
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+[Service]
+User=pulp
+Environment=PULP_CONTENT_PREMIGRATION_BATCH_SIZE=1000
+----
+. Restart the `{foreman-maintain}` services using:
++
+[options="nowrap",  subs="verbatim,quotes,attributes"]
+----
+# systemctl daemon-reload
+# {foreman-maintain} service restart
+----
++
+For further information, see xref:preparing_to_migrate_pulp_content[Preparing to Migrate Content to Pulp 3].
+endif::[]
 
 .{SmartProxy} Considerations
 
 * If you use Content Views to control updates to a {SmartProxyServer}’s base operating system, or for {SmartProxyServer} repository, you must publish updated versions of those Content Views.
-
+* Note that {ProjectServer} upgraded from {ProjectVersionPrevious} to {ProjectVersion} can use {SmartProxyServer}s still at {ProjectVersionPrevious}.
 
 [WARNING]
 ====
 If you implemented custom certificates, you must retain the content of both the `/root/ssl-build` directory and the directory in which you created any source files associated with your custom
 certificates.
 
-Failure to retain these files during an upgrade causes the upgrade to fail. If
-these files have been deleted, they must be restored from a backup in order for
-the upgrade to proceed.
+Failure to retain these files during an upgrade causes the upgrade to fail.
+If these files have been deleted, they must be restored from a backup in order for the upgrade to proceed.
 ====

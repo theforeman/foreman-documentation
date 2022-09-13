@@ -1,0 +1,63 @@
+#!/usr/bin/env ruby
+
+# in dev environment also publish all guides under /nightly/
+postprocess do
+  if ENV['NANOC_ENV'] == 'dev'
+    ["nightly"].each do |version|
+      begin
+        FileUtils.mkdir_p("output/#{version}")
+        Dir.glob("../guides/build/*/").each do |dir|
+          FileUtils.ln_sf("../../#{dir}", "output/#{version}/")
+        end
+      rescue Exception
+        # pass
+      end
+    end
+  end
+end
+
+# all layouts use ERB
+layout "/**/*", :erb
+
+# images, plain files, icons and JS
+passthrough "/img/**"
+passthrough "/js/**"
+passthrough "/CNAME"
+passthrough "/favicon.ico"
+
+# SCSS compilation
+ignore "/css/_*.{sass,scss}"
+compile "/css/default.scss" do
+  style = ENV['NANOC_ENV'] == 'dev' ? :expanded : :compressed
+  filter :sass, syntax: :scss, style: style
+  write "/css/default.css"
+end
+
+# HTML compilation with ERB
+# a_page.html.erb -> a_page/index.html
+compile "/*.html.erb" do
+  filter :erb
+  layout "/default.html.erb"
+  write item.identifier.without_ext.to_s
+end
+
+# AsciiDoc compilation
+# release-3.0.adoc -> release/3.0/index.html
+compile "/release-*.adoc" do
+  filter :asciidoctor
+  layout "/default.html.erb"
+  _, version = item.identifier.components.last.split("-")
+  if version == "nightly.adoc"
+    write "/release/#{version.split(".").first}/index.html"
+  else
+    write "/release/#{version.split(".")[0..1].join(".")}/index.html"
+  end
+end
+
+# AsciiDoc compilation
+# a_page.adoc -> a_page/index.html
+compile "/*.adoc" do
+  filter :asciidoctor
+  layout "/default.html.erb"
+  write "#{item.identifier.without_ext}.html"
+end

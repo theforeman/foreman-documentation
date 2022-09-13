@@ -1,28 +1,38 @@
 [[upgrading_a_disconnected_satellite]]
-
 = Upgrading a Disconnected {ProjectServer}
 
-Use this procedure for a {ProjectServer} not connected to the Red{nbsp}Hat Content Delivery Network.
+Use this procedure if your {ProjectServer} is not connected to the Red{nbsp}Hat Content Delivery Network.
 
 [WARNING]
-If you customize configuration files, manually or using a tool such as Hiera, these changes are overwritten when you enter the `{foreman-maintain}` command during upgrading or updating. You can use the `--noop` option with the `{foreman-installer}` command to review the changes that are applied during upgrading or updating. For more information, see the Red Hat Knowledgebase solution https://access.redhat.com/solutions/3351311[How to use the noop option to check for changes in {Project} config files during an upgrade].
-
+====
+* If you customized configuration files, either manually or using a tool such as Hiera, these changes are overwritten when you enter the `{foreman-maintain}` command during upgrading or updating.
+You can use the `--noop` option with the `{foreman-installer}` command to review the changes that are applied during upgrading or updating.
+For more information, see the Red Hat Knowledgebase solution https://access.redhat.com/solutions/3351311[How to use the noop option to check for changes in {Project} config files during an upgrade].
+* The hammer import and export commands have been replaced with `hammer content-import` and `hammer content-export` tooling.
++
+If you have scripts that are using `hammer content-view version export`, `hammer content-view version export-legacy`, `hammer repository export`, or their respective import commands, you have to adjust them to use the `hammer content-export` command instead, along with its respective import command.
+* If you implemented custom certificates, you must retain the content of both the `/root/ssl-build` directory and the directory in which you created any source files associated with your custom certificates.
++
+Failure to retain these files during an upgrade causes the upgrade to fail.
+If these files have been deleted, they must be restored from a backup in order for the upgrade to proceed.
+====
 
 .Before You Begin
 
-* Review and update your firewall configuration before upgrading your {ProjectServer}. For more information, see https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html-single/installing_satellite_server_from_a_disconnected_network/index#satellite-ports-and-firewalls-requirements_satellite[Ports and Firewalls Requirements] in _Installing {ProjectServer} from a Disconnected Network_.
+* Review and update your firewall configuration before upgrading your {ProjectServer}.
+For more information, see https://access.redhat.com/documentation/en-us/red_hat_satellite/{AccessRedHatComVersion}/html-single/installing_satellite_server_from_a_disconnected_network/index#satellite-ports-and-firewalls-requirements_satellite[Ports and Firewalls Requirements] in _Installing {ProjectServer} from a Disconnected Network_.
 * Ensure that you do not delete the manifest from the Customer Portal or in the {Project} Web UI because this removes all the entitlements of your content hosts.
-* Back up and remove all Foreman hooks before upgrading. Reinstate hooks only after {Project} is known to be working after the upgrade is complete.
+* Back up and remove all Foreman hooks before upgrading.
+Reinstate hooks only after {Project} is known to be working after the upgrade is complete.
 
 [WARNING]
 ====
-If you implemented custom certificates, you must retain the content of both the `/root/ssl-build` directory and the directory in which you created any source files associated with your custom
-certificates.
+If you implemented custom certificates, you must retain the content of both the `/root/ssl-build` directory and the directory in which you created any source files associated with your custom certificates.
 
-Failure to retain these files during an upgrade causes the upgrade to fail. If
-these files have been deleted, they must be restored from a backup in order for
-the upgrade to proceed.
+Failure to retain these files during an upgrade causes the upgrade to fail.
+If these files have been deleted, they must be restored from a backup in order for the upgrade to proceed.
 ====
+
 
 .Upgrade Disconnected {ProjectServer}
 
@@ -39,8 +49,6 @@ Run the pre-upgrade check script to get a list of hosts that can be deleted afte
 ----
 # foreman-rake katello:upgrade_check
 ----
-+
-If the upgrade check reports a failure due to running tasks, then it is recommended that you wait for the tasks to complete. It is possible to cancel some tasks, but you should follow the guidance in the Red{nbsp}Hat Knowledgebase solution https://access.redhat.com/solutions/2089951[How to manage paused tasks on {ProjectNameX}] to understand which tasks are safe to cancel and which are not safe to cancel.
 
 . Optional: If you made manual edits to DNS or DHCP configuration in the `/etc/zones.conf` or `/etc/dhcp/dhcpd.conf` files, back up the configuration files because the installer only supports one domain or subnet, and therefore restoring changes from these backups might be required.
 
@@ -52,7 +60,7 @@ If the upgrade check reports a failure due to running tasks, then it is recommen
 --foreman-proxy-dhcp-managed=false
 ----
 
-. Optional: If you use PostgreSQL as an external database, on the PostgreSQL server, install the `rh-postgresql12-postgresql-evr` package, which is available from the `{RepoRHEL7Server{Project}ServerProductVersion}` repository:
+. Optional: If you use PostgreSQL as an external database, on the PostgreSQL server, install the `rh-postgresql12-postgresql-evr` package, which is available from the `{RepoRHEL7ServerSatelliteServerProductVersion}` repository:
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
@@ -60,6 +68,8 @@ If the upgrade check reports a failure due to running tasks, then it is recommen
 ----
 
 . In the {Project} web UI, navigate to *Hosts* > *Discovered hosts*. If there are discovered hosts available, turn them off and then delete all entries under the `Discovered hosts` page. Select all other organizations in turn using the organization setting menu and repeat this action as required. Reboot these hosts after the upgrade has completed.
+
+. Ensure that the `apache::purge_configs: false` entry is either not present or commented out in the `/etc/foreman-installer/custom-hiera.yaml` file of the {Project} {ProjectVersionPrevious}/{SmartProxy} {ProjectVersionPrevious} servers which will be upgraded to {ProjectVersion}.
 
 . Make sure all external {SmartProxyServer}s are assigned to an organization, otherwise they might get unregistered due to host-unification changes.
 
@@ -77,98 +87,7 @@ If the upgrade check reports a failure due to running tasks, then it is recommen
 # {foreman-maintain} service stop
 ----
 
-. Obtain the latest ISO files by following the https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html-single/installing_satellite_server_from_a_disconnected_network/installing-satellite-server-disconnected#downloading-the-binary-dvd-images_satellite[Downloading the Binary DVD Images] procedure in the _Installing {ProjectServer} from a Disconnected Network_ guide.
-
-. Create directories to serve as a mount point, mount the ISO images, and configure the `rhel7-server` repository by following the https://access.redhat.com/documentation/en-us/red_hat_satellite/{ProductVersion}/html-single/installing_satellite_server_from_a_disconnected_network/installing-satellite-server-disconnected#configuring-the-base-operating-system-with-offline-repositories_satellite[Configuring the Base System with Offline Repositories] procedure in the _Installing {ProjectServer} from a Disconnected Network_ guide. Do not install or update any packages at this stage.
-
-. Configure the {Project} {ProjectVersion} repository from the ISO file.
-
-.. Copy the ISO file's repository data file for the {ProjectName} packages:
-+
-[options="nowrap"]
-----
-# cp /media/sat6/media.repo /etc/yum.repos.d/sat6.repo
-----
-
-.. Edit the `/etc/yum.repos.d/sat6.repo` file:
-+
-----
-# vi /etc/yum.repos.d/sat6.repo
-----
-
-... Change the default `InstallMedia` repository name to `{Project}-{ProjectVersion}`:
-+
-[options="nowrap" subs="+quotes,attributes"]
-----
-[{Project}-{ProjectVersion}]
-----
-
-... Add the `baseurl` directive:
-+
-[options="nowrap"]
-----
-baseurl=file:///media/sat6/
-----
-
-. Configure the Red Hat Software Collections repository from the ISO file.
-
-.. Copy the ISO file's repository data file for Red Hat Software Collections packages:
-+
-[options="nowrap"]
-----
-# cp /media/sat6/RHSCL/media.repo /etc/yum.repos.d/RHSCL.repo
-----
-
-.. Edit the `/etc/yum.repos.d/RHSCL.repo` file:
-+
-[options="nowrap"]
-----
-# vi /etc/yum.repos.d/RHSCL.repo
-----
-
-... Change the default `InstallMedia` repository name to `RHSCL`:
-+
-[options="nowrap" subs="+quotes,attributes"]
-----
-[RHSCL]
-----
-
-... Add the `baseurl` directive:
-+
-[options="nowrap"]
-----
-baseurl=file:///media/sat6/RHSCL/
-----
-
-. Configure the {ProjectName} Maintenance repository from the ISO file.
-
-.. Copy the ISO file's repository data file for {ProjectName} Maintenance packages:
-+
-[options="nowrap"]
-----
-# cp /media/sat6/sat-maintenance/media.repo /etc/yum.repos.d/sat-maintenance.repo
-----
-
-.. Edit the `/etc/yum.repos.d/sat-maintenance.repo` file:
-+
-[options="nowrap"]
-----
-# vi /etc/yum.repos.d/sat-maintenance.repo
-----
-
-... Change the default `InstallMedia` repository name to `{Project}-Maintenance`:
-+
-[options="nowrap" subs="+quotes,attributes"]
-----
-[{Project}-Maintenance]
-----
-
-... Add the `baseurl` directive:
-+
-[options="nowrap"]
-----
-baseurl=file:///media/sat6/sat-maintenance/
-----
+For more information with additional steps, see xref:updating_satellite_server_to_next_minor_version[Section 5.2 Updating Disconnected {ProjectServer}].
 
 . Optional: If you have applied custom Apache server configurations, note that the custom configurations are reverted to the installation defaults when you perform the upgrade.
 +
@@ -200,7 +119,7 @@ Include /etc/httpd/conf.modules.d/*.conf
 +
 [options="nowrap" subs="attributes"]
 ----
-# {installer-scenario} --upgrade --verbose --noop
+# {installer-scenario} --verbose --noop
 ----
 Review the `{installer-log-file}` to preview the changes that are applied during the upgrade. Locate the `\+++` and `---` symbols that indicate the changes to the configurations files. Although entering the `{foreman-installer}` command with the `--noop` option does not apply any changes to your {Project}, some Puppet resources in the module expect changes to be applied and might display failure messages.
 
@@ -257,6 +176,14 @@ If the script fails due to missing or outdated packages, you must download and i
 ----
 # hash -d {foreman-maintain} service 2> /dev/null
 ----
+
+. If you have migrated content from Pulp 2 to Pulp 3, remove all Pulp 2 content:
++
+[options="nowrap" subs="attributes"]
+----
+# {foreman-maintain} content remove-pulp2
+----
+This removes uploaded and synchronized Pulp 2 packages, content in `/var/lib/pulp/content/`, MongoDB, and migration content in the Pulp 3 database.
 
 . Check when the kernel packages were last updated:
 +
