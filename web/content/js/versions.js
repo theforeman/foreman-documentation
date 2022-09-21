@@ -132,10 +132,6 @@ const navVersions = [
             path: "Managing_Content"
           },
           {
-            title: "Converting a Host to RHEL",
-            path: "Converting_a_Host_to_RHEL"
-          },
-          {
             title: "Deploying Foreman on AWS",
             path: "Deploying_on_AWS"
           },
@@ -212,10 +208,6 @@ const navVersions = [
             path: "Managing_Content"
           },
           {
-            title: "Converting a Host to RHEL",
-            path: "Converting_a_Host_to_RHEL"
-          },
-          {
             title: "Deploying Foreman on AWS",
             path: "Deploying_on_AWS"
           },
@@ -246,7 +238,7 @@ const navVersions = [
         ]
       }
     ]
-  },  
+  },
   {
     title: "Foreman 3.2 - Katello 4.4 (supported)",
     path: "3.2",
