@@ -128,7 +128,7 @@ const navVersions = [
             "path": "Managing_Organizations_and_Locations"
           },
           {
-            "title": "Content Management Guide",
+            "title": "Managing Content",
             "path": "Managing_Content"
           },
           {
@@ -208,7 +208,7 @@ const navVersions = [
             "path": "Managing_Organizations_and_Locations"
           },
           {
-            "title": "Content Management Guide",
+            "title": "Managing Content",
             "path": "Managing_Content"
           },
           {
@@ -288,7 +288,7 @@ const navVersions = [
             "path": "Managing_Organizations_and_Locations"
           },
           {
-            "title": "Content Management Guide",
+            "title": "Managing Content",
             "path": "Managing_Content"
           },
           {
@@ -368,7 +368,7 @@ const navVersions = [
             "path": "Managing_Organizations_and_Locations"
           },
           {
-            "title": "Content Management Guide",
+            "title": "Managing Content",
             "path": "Managing_Content"
           },
           {
@@ -448,7 +448,7 @@ const navVersions = [
             "path": "Managing_Organizations_and_Locations"
           },
           {
-            "title": "Content Management Guide",
+            "title": "Managing Content",
             "path": "Managing_Content"
           },
           {
