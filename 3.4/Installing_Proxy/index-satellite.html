@@ -1899,38 +1899,11 @@ http://<em>capsule.example.com</em>/pub/katello-ca-consumer-latest.noarch.rpm</p
 <h3 id="configuring-remote-execution-for-pull-client_capsule"><a class="anchor" href="#configuring-remote-execution-for-pull-client_capsule"></a>3.2. Configuring Remote Execution for Pull Client</h3>
 <div class="paragraph">
 <p>By default, Remote Execution uses SSH as the transport mechanism for the Script provider.
-However, Remote Execution also offers a pull-based transport option, which communicates with hosts via MQTT.
-This is a good option if you are migrating from <code>katello-agent</code> which also uses pull-based communication.</p>
-</div>
-<div class="ulist">
-<div class="title">Procedure</div>
-<ul>
-<li>
-<p>Enable the pull-based transport on each relevant Capsule&#160;Server:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"> # satellite-installer --scenario capsule \
---foreman-proxy-plugin-remote-execution-script-mode pull-mqtt</pre>
-</div>
-</div>
-</li>
-</ul>
+However, Remote Execution also offers pull-based transport, which you can use if your infrastructure prohibits outgoing connections from Capsule to hosts.</p>
 </div>
 <div class="paragraph">
-<p>The mode is configured per Capsule.
-Some Capsules may be configured to use <code>pull-mqtt</code> mode while others use <code>ssh</code>.
-If this is the case, it is possible that one remote job on a given host will use the pull client, and the next job on the same host will use SSH.
-If you wish to avoid this scenario, configure all Capsules to use the same mode.</p>
-</div>
-<div class="paragraph">
-<p>In <code>pull-mqtt</code> mode, hosts subscribe to the Capsule they are registered through for job notifications.
-Therefore, it is recommended to ensure that Satellite&#160;Server sends remote execution jobs to that same Capsule.
-To do this, in the Satellite web UI, navigate to <strong>Administer</strong> &gt; <strong>Settings</strong>.
-On the <strong>Content</strong> tab, set the value of "Prefer registered through Capsule for remote execution" to <strong>Yes</strong>.</p>
-</div>
-<div class="paragraph">
-<p>After the pull-based transport is set up on a Capsule, it must also be configured on each host.
-For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.11/html-single/managing_hosts/index#Configuring_and_Setting_Up_Remote_Jobs_managing-hosts">Configuring and Setting Up Remote Jobs</a> in <em>Managing Hosts</em>.</p>
+<p>This is comprised of <code>pull-mqtt</code> mode on Capsule in combination with a pull client running on hosts.
+Configure the <code>pull-mqtt</code> mode to migrate from Katello Agent, which is a deprecated method of pull-based transport.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -1944,6 +1917,45 @@ Ansible and other providers will continue to use their default transport setting
 </td>
 </tr>
 </table>
+</div>
+<div class="paragraph">
+<p>The mode is configured per Capsule.
+Some Capsules can be configured to use <code>pull-mqtt</code> mode while others use SSH.
+If this is the case, it is possible that one remote job on a given host will use the pull client and the next job on the same host will use SSH.
+If you wish to avoid this scenario, configure all Capsules to use the same mode.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Enable the pull-based transport on each relevant Capsule&#160;Server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"> # satellite-installer --scenario capsule \
+--foreman-proxy-plugin-remote-execution-script-mode pull-mqtt</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Configure the firewall to allow MQTT service on port 1883:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># firewall-cmd --add-port="1883/tcp"
+# firewall-cmd --runtime-to-permanent</pre>
+</div>
+</div>
+</li>
+<li>
+<p>In <code>pull-mqtt</code> mode, hosts subscribe for job notifications to the Capsule through which they are registered.
+Therefore, it is recommended to ensure that Satellite&#160;Server sends remote execution jobs to that same Capsule.
+To do this, in the Satellite web UI, navigate to <strong>Administer</strong> &gt; <strong>Settings</strong>.
+On the <strong>Content</strong> tab, set the value of <strong>Prefer registered through Capsule for remote execution</strong> to <strong>Yes</strong>.</p>
+</li>
+<li>
+<p>After you set up the pull-based transport on Capsule, you must also configure it on each host.
+For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.11/html-single/managing_hosts/index#transport-modes-for-remote-execution_managing-hosts">Transport Modes for Remote Execution</a> in <em>Managing Hosts</em>.</p>
+</li>
+</ol>
 </div>
 </div>
 <div class="sect2">
