@@ -115,11 +115,11 @@
 <li><a href="#about-running-jobs-on-hosts_managing-hosts">11.1. About Running Jobs on Hosts</a></li>
 <li><a href="#remote-execution-workflow_managing-hosts">11.2. Remote Execution Workflow</a></li>
 <li><a href="#permissions-for-remote-execution_managing-hosts">11.3. Permissions for Remote Execution</a></li>
-<li><a href="#creating-a-job-template_managing-hosts">11.4. Creating a Job Template</a></li>
-<li><a href="#configuring-the-fallback-to-any-smartproxy-setting_managing-hosts">11.5. Configuring the Fallback to Any Smart&#160;Proxy Remote Execution Setting in Foreman</a></li>
-<li><a href="#configuring-the-global-smartproxy-remote-execution-setting_managing-hosts">11.6. Configuring the Global Smart&#160;Proxy Remote Execution Setting in Foreman</a></li>
-<li><a href="#configuring-an-alternative-directory-to-execute-remote-jobs-on-hosts_managing-hosts">11.7. Configuring Foreman to Use an Alternative Directory to Execute Remote Jobs on Hosts</a></li>
-<li><a href="#Configuring_a_Host_to_Use_the_Pull_Client_managing-hosts">11.8. Configuring a Host to Use the Pull Client</a></li>
+<li><a href="#transport-modes-for-remote-execution_managing-hosts">11.4. Transport Modes for Remote Execution</a></li>
+<li><a href="#creating-a-job-template_managing-hosts">11.5. Creating a Job Template</a></li>
+<li><a href="#configuring-the-fallback-to-any-smartproxy-setting_managing-hosts">11.6. Configuring the Fallback to Any Smart&#160;Proxy Remote Execution Setting in Foreman</a></li>
+<li><a href="#configuring-the-global-smartproxy-remote-execution-setting_managing-hosts">11.7. Configuring the Global Smart&#160;Proxy Remote Execution Setting in Foreman</a></li>
+<li><a href="#configuring-an-alternative-directory-to-execute-remote-jobs-on-hosts_managing-hosts">11.8. Configuring Foreman to Use an Alternative Directory to Execute Remote Jobs on Hosts</a></li>
 <li><a href="#Distributing_SSH_Keys_for_Remote_Execution_managing-hosts">11.9. Distributing SSH Keys for Remote Execution</a></li>
 <li><a href="#distributing-ssh-keys-for-remote-execution-manually_managing-hosts">11.10. Distributing SSH Keys for Remote Execution Manually</a></li>
 <li><a href="#using-the-api-to-obtain-ssh-keys-for-remote-execution_managing-hosts">11.11. Using the Foreman API to Obtain SSH Keys for Remote Execution</a></li>
@@ -346,6 +346,10 @@ You cannot specify both.</p>
 <p>On the <strong>Parameters</strong> tab, click <strong>Add Parameter</strong> to add any parameter variables that you want to pass to job templates at run time.
 This includes all Puppet Class, Ansible playbook parameters and host parameters that you want to associate with the host.
 To use a parameter variable with an Ansible job template, you must add a <strong>Host Parameter</strong>.</p>
+<div class="paragraph">
+<p>If you want to create a host with pull mode for remote job execution, add the <code>enable-remote-execution-pull</code> parameter with type <code>boolean</code> set to <code>true</code>.
+For more information, see <a href="#transport-modes-for-remote-execution_managing-hosts">Transport Modes for Remote Execution</a>.</p>
+</div>
 </li>
 <li>
 <p>On the <strong>Additional Information</strong> tab, enter additional information about the host.</p>
@@ -1068,6 +1072,21 @@ When overridden, the selected value will be stored on host parameter level.</p>
 </div>
 </li>
 <li>
+<p>From the <strong>REX pull mode</strong> list, select whether you want to deploy Foreman remote execution pull client.</p>
+<div class="paragraph">
+<p>If set to <code>Yes</code>, the remote execution pull client is installed on the registered host.
+The inherited value is based on the <code>host_registration_remote_execution_pull</code> parameter.
+It can be inherited, for example from a host group, an operating system, or an organization.
+When overridden, the selected value is stored on the host parameter level.</p>
+</div>
+<div class="paragraph">
+<p>The registered host must have access to the Foreman developers <a href="https://yum.theforeman.org/client/nightly/" class="bare">https://yum.theforeman.org/client/nightly/</a> repository.</p>
+</div>
+<div class="paragraph">
+<p>For more information about the pull mode, see <a href="#transport-modes-for-remote-execution_managing-hosts">Transport Modes for Remote Execution</a>.</p>
+</div>
+</li>
+<li>
 <p>From the <strong>Setup Insights</strong> list, select whether you want to install <code>insights-client</code> and register the hosts to Insights.</p>
 <div class="paragraph">
 <p>The Insights tool is available for Red&#160;Hat Enterprise Linux only.
@@ -1320,8 +1339,7 @@ Follow these steps to switch to Remote Execution.</p>
 <div class="title">Procedure</div>
 <ol class="arabic">
 <li>
-<p>If you have Remote Execution configured to use <code>pull-mqtt</code> mode: Deploy the remote execution pull client to the hosts.
-For more information, see <a href="#Configuring_a_Host_to_Use_the_Pull_Client_managing-hosts">Configuring a Host to Use the Pull Client</a>.</p>
+<p>If you have Remote Execution configured to use <code>pull-mqtt</code> mode: Deploy the remote execution pull client to the hosts.</p>
 </li>
 <li>
 <p>If you have Remote Execution configured to use <code>ssh</code> mode: Distribute the remote execution SSH keys to the hosts.
@@ -1375,7 +1393,7 @@ If your host is installed on oVirt version 4.4 or lower, do not remove the <code
 </ol>
 </div>
 <div class="paragraph">
-<p>The Foreman server now uses host management by remote execution instead of katello-agent.</p>
+<p>The Foreman server now uses host management by remote execution instead of Katello Agent.</p>
 </div>
 <div class="paragraph">
 <p>The following table shows the remote execution equivalent commands to perform specific package actions.
@@ -4454,19 +4472,12 @@ This is referred to as remote execution.</p>
 Before you can use Ansible roles, you must import the roles into Foreman from the Smart&#160;Proxy where they are installed.</p>
 </div>
 <div class="paragraph">
-<p>Communication occurs through Smart&#160;Proxy&#160;server, which means that Foreman&#160;server does not require direct access to the target host, and can scale to manage many hosts.</p>
-</div>
-<div class="paragraph">
-<p>On Smart&#160;Proxies in <code>ssh</code> mode, remote execution uses the SSH service that must be enabled and running on the target host.
-Ensure that the remote execution Smart&#160;Proxy has access to port 22 on the target hosts.</p>
-</div>
-<div class="paragraph">
-<p>On Smart&#160;Proxies in <code>pull-mqtt</code> mode, remote execution uses MQTT to publish jobs it receives from Foreman&#160;server, and the host subscribes to these jobs using the <code>yggdrasil</code> pull client.
-Requirements for <code>pull-mqtt</code> mode are described in <a href="https://docs.theforeman.org/nightly/Managing_Hosts/index-foreman-el.html#configuring-a-host-to-use-the-pull-client_managing_hosts">Configuring a Host to Use the Pull Client</a>.</p>
+<p>Communication occurs through Smart&#160;Proxy&#160;server, which means that Foreman&#160;server does not require direct access to the target host, and can scale to manage many hosts.
+For more information, see <a href="#transport-modes-for-remote-execution_managing-hosts">Transport Modes for Remote Execution</a>.</p>
 </div>
 <div class="paragraph">
 <p>Foreman uses ERB syntax job templates.
-For more information, see <a href="https://docs.theforeman.org/nightly/Managing_Hosts/index-foreman-el.html#Template_Writing_Reference_managing-hosts">Template Writing Reference</a> in <em>Managing Hosts</em>.</p>
+For more information, see <a href="#Template_Writing_Reference_managing-hosts">Template Writing Reference</a>.</p>
 </div>
 <div class="paragraph">
 <p>Several job templates for shell scripts and Ansible are included by default.
@@ -4618,7 +4629,39 @@ If you have already scheduled some jobs to run in the future, and the permission
 </div>
 </div>
 <div class="sect2">
-<h3 id="creating-a-job-template_managing-hosts"><a class="anchor" href="#creating-a-job-template_managing-hosts"></a>11.4. Creating a Job Template</h3>
+<h3 id="transport-modes-for-remote-execution_managing-hosts"><a class="anchor" href="#transport-modes-for-remote-execution_managing-hosts"></a>11.4. Transport Modes for Remote Execution</h3>
+<div class="paragraph">
+<p>You can configure your Foreman to use two different modes of transport for remote job execution.</p>
+</div>
+<div class="paragraph">
+<p>On Smart&#160;Proxies in <code>ssh</code> mode, remote execution uses the SSH service to transport job details.
+This is the default transport mode.
+The SSH service must be enabled and active on the target hosts.
+The remote execution Smart&#160;Proxy must have access to the SSH port on the target hosts.
+Unless you have a different setting, the standard SSH port is 22.</p>
+</div>
+<div class="paragraph">
+<p>On Smart&#160;Proxies in <code>pull-mqtt</code> mode, remote execution uses Message Queueing Telemetry Transport (MQTT) to publish jobs it receives from Foreman&#160;server.
+The host subscribes to the MQTT broker on Smart&#160;Proxy for job notifications using the <code>yggdrasil</code> pull client.
+After the host receives a notification, it pulls job details from Smart&#160;Proxy over HTTPS, runs the job, and reports results back to Smart&#160;Proxy.</p>
+</div>
+<div class="paragraph">
+<p>To use the <code>mqtt-pull</code> mode, you must enable it on Smart&#160;Proxy&#160;server and configure the pull client on the target hosts.</p>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p>To enable pull mode on Smart&#160;Proxy&#160;server, see <a href="https://docs.theforeman.org/nightly/Installing_Proxy/index-foreman-el.html#configuring-remote-execution-for-pull-client_smart-proxy">Configuring Remote Execution for Pull Client</a> in <em>Installing an External Smart&#160;Proxy&#160;Server nightly</em>.</p>
+</li>
+<li>
+<p>To enable pull mode on a new host, continue either with <a href="#Creating_a_Host_managing-hosts">Creating a Host in Foreman</a> or <a href="#Registering_Hosts_managing-hosts">Registering Hosts</a>.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="creating-a-job-template_managing-hosts"><a class="anchor" href="#creating-a-job-template_managing-hosts"></a>11.5. Creating a Job Template</h3>
 <div class="paragraph">
 <p>Use this procedure to create a job template.
 To use the CLI instead of the Foreman web UI, see the <a href="#cli-creating-a-job-template_managing-hosts">CLI procedure</a>.</p>
@@ -4706,7 +4749,7 @@ For more information, see the appendices in the <em>Managing Hosts</em> guide.</
 </div>
 </div>
 <div class="sect2">
-<h3 id="configuring-the-fallback-to-any-smartproxy-setting_managing-hosts"><a class="anchor" href="#configuring-the-fallback-to-any-smartproxy-setting_managing-hosts"></a>11.5. Configuring the Fallback to Any Smart&#160;Proxy Remote Execution Setting in Foreman</h3>
+<h3 id="configuring-the-fallback-to-any-smartproxy-setting_managing-hosts"><a class="anchor" href="#configuring-the-fallback-to-any-smartproxy-setting_managing-hosts"></a>11.6. Configuring the Fallback to Any Smart&#160;Proxy Remote Execution Setting in Foreman</h3>
 <div class="paragraph">
 <p>You can enable the <strong>Fallback to Any Smart&#160;Proxy</strong> setting to configure Foreman to search for remote execution Smart&#160;Proxies from the list of Smart&#160;Proxies that are assigned to hosts.
 This can be useful if you need to run remote jobs on hosts that have no subnets configured or if the hosts' subnets are assigned to Smart&#160;Proxies that do not have the remote execution feature enabled.</p>
@@ -4763,7 +4806,7 @@ For example, to set the value to <code>true</code>, enter the following command:
 </div>
 </div>
 <div class="sect2">
-<h3 id="configuring-the-global-smartproxy-remote-execution-setting_managing-hosts"><a class="anchor" href="#configuring-the-global-smartproxy-remote-execution-setting_managing-hosts"></a>11.6. Configuring the Global Smart&#160;Proxy Remote Execution Setting in Foreman</h3>
+<h3 id="configuring-the-global-smartproxy-remote-execution-setting_managing-hosts"><a class="anchor" href="#configuring-the-global-smartproxy-remote-execution-setting_managing-hosts"></a>11.7. Configuring the Global Smart&#160;Proxy Remote Execution Setting in Foreman</h3>
 <div class="paragraph">
 <p>By default, Foreman searches for remote execution Smart&#160;Proxies in hosts' organizations and locations regardless of whether Smart&#160;Proxies are assigned to hosts' subnets or not.
 You can disable the <strong>Enable Global Smart&#160;Proxy</strong> setting if you want to limit the search to the Smart&#160;Proxies that are assigned to hosts' subnets.</p>
@@ -4802,7 +4845,7 @@ For example, to set the value to <code>true</code>, enter the following command:
 </div>
 </div>
 <div class="sect2">
-<h3 id="configuring-an-alternative-directory-to-execute-remote-jobs-on-hosts_managing-hosts"><a class="anchor" href="#configuring-an-alternative-directory-to-execute-remote-jobs-on-hosts_managing-hosts"></a>11.7. Configuring Foreman to Use an Alternative Directory to Execute Remote Jobs on Hosts</h3>
+<h3 id="configuring-an-alternative-directory-to-execute-remote-jobs-on-hosts_managing-hosts"><a class="anchor" href="#configuring-an-alternative-directory-to-execute-remote-jobs-on-hosts_managing-hosts"></a>11.8. Configuring Foreman to Use an Alternative Directory to Execute Remote Jobs on Hosts</h3>
 <div class="paragraph">
 <p>By default, Foreman uses the <code>/var/tmp</code> directory on the client system to execute the remote execution jobs.
 If the client system has <code>noexec</code> set for the <code>/var/</code> volume or file system, you must configure Foreman to use an alternative directory because otherwise the remote execution job fails since the script cannot be run.</p>
@@ -4835,87 +4878,6 @@ If the client system has <code>noexec</code> set for the <code>/var/</code> volu
 </div>
 </li>
 </ol>
-</div>
-</div>
-<div class="sect2">
-<h3 id="Configuring_a_Host_to_Use_the_Pull_Client_managing-hosts"><a class="anchor" href="#Configuring_a_Host_to_Use_the_Pull_Client_managing-hosts"></a>11.8. Configuring a Host to Use the Pull Client</h3>
-<div class="paragraph">
-<p>For Smart&#160;Proxies configured to use <code>pull-mqtt</code> mode, hosts can subscribe to remote jobs using the remote execution pull client.
-Managed hosts do not require an SSH connection to their Smart&#160;Proxy&#160;server.</p>
-</div>
-<div class="ulist">
-<div class="title">Prerequisites</div>
-<ul>
-<li>
-<p>You have registered the host to Foreman.</p>
-</li>
-<li>
-<p>The host&#8217;s Smart&#160;Proxy is configured to use <code>pull-mqtt</code> mode.</p>
-</li>
-<li>
-<p>The Foreman developers <a href="https://yum.theforeman.org/client/nightly/" class="bare">https://yum.theforeman.org/client/nightly/</a> repository is enabled and synchronized on Foreman&#160;server, and enabled on the host.</p>
-</li>
-<li>
-<p>The host is able to communicate with its Smart&#160;Proxy over MQTT using port <code>1883</code>.</p>
-</li>
-<li>
-<p>The host is able to communicate with its Smart&#160;Proxy over HTTPS.</p>
-</li>
-</ul>
-</div>
-<div class="olist arabic">
-<div class="title">Procedure</div>
-<ol class="arabic">
-<li>
-<p>Install the <code>katello-pull-transport-migrate</code> package on your host:</p>
-</li>
-</ol>
-</div>
-<div class="paragraph">
-<p>On EL7 hosts:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre># yum install katello-pull-transport-migrate</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>On EL8 and EL9 hosts:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre># dnf install katello-pull-transport-migrate</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>The host&#8217;s <code>subscription-manager</code> configuration and consumer certificates are used to configure the <code>yggdrasil</code> client on the host, and the pull mode client worker is started.</p>
-</div>
-<div class="olist arabic">
-<div class="title">Verification</div>
-<ol class="arabic">
-<li>
-<p>To verify that the host is configured to use the pull client, run the following command:</p>
-<div class="listingblock">
-<div class="content">
-<pre># systemctl status yggdrasild</pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
-The <code>katello-pull-transport-migrate</code> package was created to help users migrate from <code>katello-agent</code> to remote execution with the pull client.
-However, having <code>katello-agent</code> installed on the host is not a requirement.
-You can use <code>katello-pull-transport-migrate</code> regardless of whether <code>katello-agent</code> is installed.
-</td>
-</tr>
-</table>
 </div>
 </div>
 <div class="sect2">
