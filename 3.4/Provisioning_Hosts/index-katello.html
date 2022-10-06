@@ -27,7 +27,7 @@
 <h1>Provisioning Hosts</h1>
 <div class="details">
 <span id="revnumber">version 3.4 (unsupported),</span>
-<span id="revdate">published Oct 05 2022</span>
+<span id="revdate">published Oct 06 2022</span>
 </div>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
@@ -4549,7 +4549,10 @@ In the Foreman web UI, navigate to <strong>Hosts</strong> &gt; <strong>Discovere
 Discovered hosts keep running the Discovery image until they are rebooted into Anaconda, which then initiates the provisioning process.</p>
 </div>
 <div class="paragraph">
-<p>The operating system image is based on CentOS Stream 8.</p>
+<p>Run the following procedure on Enterprise Linux 8.</p>
+</div>
+<div class="paragraph">
+<p>The Discovery image is based on CentOS Stream 8.</p>
 </div>
 <div class="paragraph">
 <p>Use this procedure to build a Foreman discovery image or rebuild an image if you change configuration files.</p>
@@ -4562,10 +4565,22 @@ Use either a dedicated environment or copy the synchronized repositories and a k
 <div class="title">Prerequisites</div>
 <ul>
 <li>
-<p>Install the <code>livecd-tools</code> package:</p>
+<p>Ensure that hardware virtualization is available on your host.</p>
+</li>
+<li>
+<p>Install the following packages:</p>
 <div class="listingblock">
 <div class="content">
-<pre># yum install livecd-tools</pre>
+<pre class="nowrap"># dnf install git-core lorax anaconda pykickstart wget qemu-kvm</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Clone the <code>foreman-discovery-image</code> repository:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ git clone https://github.com/theforeman/foreman-discovery-image.git
+$ cd foreman-discovery-image</pre>
 </div>
 </div>
 </li>
@@ -4575,57 +4590,62 @@ Use either a dedicated environment or copy the synchronized repositories and a k
 <div class="title">Procedure</div>
 <ol class="arabic">
 <li>
-<p>Open the <code>/usr/share/foreman-discovery-image/foreman-discovery-image.ks</code> file for editing:</p>
+<p>Replace the contents of the <code>00-repos-centos8.ks</code> file with the following:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># vim /usr/share/foreman-discovery-image/foreman-discovery-image.ks</pre>
+<pre class="nowrap">url --mirrorlist=http://mirrorlist.centos.org/?release=8&arch=$basearch&repo=baseos
+repo --name="AppStream" --mirrorlist=http://mirrorlist.centos.org/?release=8&arch=$basearch&repo=appstream
+repo --name="foreman-el8" --baseurl=http://yum.theforeman.org/releases/3.4/el8/$basearch/
+repo --name="foreman-plugins-el8" --baseurl=http://yum.theforeman.org/plugins/3.4/el8/$basearch/
+module --name=ruby --stream=2.7
+module --name=postgresql --stream=12
+module --name=foreman --stream=el8</pre>
 </div>
 </div>
 </li>
 <li>
-<p>Replace the <code>repo</code> lines in the kickstart file with the repository URLs:</p>
+<p>Prepare the kickstart file:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap">repo --name=centos --mirrorlist=http://mirrorlist.centos.org/?release=7&arch=$basearch&repo=os
-repo --name=centos-updates --mirrorlist=http://mirrorlist.centos.org/?release=7&arch=$basearch&repo=updates
-repo --name=epel7 --mirrorlist=https://mirrors.fedoraproject.org/metalink?repo=epel-7&arch=$basearch
-repo --name=centos-sclo-rh --mirrorlist=http://mirrorlist.centos.org/?release=7&arch=x86_64&repo=sclo-rh
-repo --name=foreman-el7 --baseurl=http://yum.theforeman.org/releases/3.4/el7/$basearch/
-repo --name=foreman-plugins-el7 --baseurl=http://yum.theforeman.org/plugins/3.4/el7/$basearch/</pre>
+<pre class="nowrap">$ ./build-livecd fdi-centos8.ks</pre>
 </div>
 </div>
 </li>
 <li>
-<p>Run the <code>livecd-creator</code> tool:</p>
+<p>Build the ISO image:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># livecd-creator \
---cache=var/cache/build-fdi \
---compression-type=xz \
---config /usr/share/foreman-discovery-image/foreman-discovery-image.ks \
---fslabel fdi \
---title="<em>My_Discovery_Image</em>" \
---tmpdir /var/tmp</pre>
+<pre class="nowrap">$ sudo ./build-livecd-root <em>custom</em> ./result "nomodeset nokaslr"</pre>
 </div>
 </div>
 <div class="paragraph">
-<p>If you change <code>fdi</code> in the <code>--fslabel</code> option, you must also change the root label on the kernel command line when loading the image.
-<code>fdi</code> or the alternative name is appended to the <code>.iso</code> file that is created as part of this procedure.
-The PXE Discovery tool uses this name when converting from <code>.iso</code> to PXE.</p>
-</div>
-<div class="paragraph">
-<p>Use <code>/var/tmp</code> because this process requires close to 3GB of space and <code>/tmp</code> might have problems if the system is low on swap space.</p>
+<p>The options <code>nomodeset</code> and <code>nokaslr</code> instruct the Discovery image kernel to disable mode setting and to disable ASLR (Address Space Layout Randomization).</p>
 </div>
 </li>
 <li>
-<p>Verify that your <code>fdi.iso</code> file is created:</p>
+<p>Verify that your <code>./result/fdi-custom-XXXXXXX.iso</code> file is created:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># ls -h *.iso</pre>
+<pre class="nowrap">$ ls -h ./result/*.iso</pre>
 </div>
 </div>
 </li>
 </ol>
+</div>
+<div class="paragraph">
+<p>Use the following command to build a fully automated Discovery image with a static network configuration:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ sudo ./build-livecd-root <em>custom</em> ./result \
+"nomodeset nokaslr \
+fdi.pxip=192.168.140.20/24 fdi.pxgw=192.168.140.1 \
+fdi.pxdns=192.168.140.2 proxy.url=https://foreman.example.com:8443 \
+proxy.type=foreman fdi.pxmac=52:54:00:be:8e:8c fdi.pxauto=1"</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For more information about configuration options, see <a href="#Unattended_Use_Customization_and_Image_Remastering_provisioning">Unattended Use, Customization, and Image Remastering</a>.</p>
 </div>
 <div class="paragraph">
 <p>When you create the <code>.iso</code> file, you can boot the <code>.iso</code> file over a network or locally.
@@ -4638,14 +4658,6 @@ Complete one of the following procedures.</p>
 <div class="title">Procedure</div>
 <ol class="arabic">
 <li>
-<p>To extract the initial ramdisk and kernel files from the <code>.iso</code> file over a network, enter the following command:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># discovery-iso-to-pxe fdi.iso</pre>
-</div>
-</div>
-</li>
-<li>
 <p>Create a directory to store your boot files:</p>
 <div class="listingblock">
 <div class="content">
@@ -4654,7 +4666,7 @@ Complete one of the following procedures.</p>
 </div>
 </li>
 <li>
-<p>Copy the <code>initrd0.img</code> and <code>vmlinuz0</code> files to your new directory.</p>
+<p>Copy the <code>./tftpboot/initrd0.img</code> and <code>./tftpboot/vmlinuz0</code> files to your new directory.</p>
 </li>
 <li>
 <p>Edit the <code>KERNEL</code> and <code>APPEND</code> entries in the <code>/var/lib/tftpboot/pxelinux.cfg</code> file to add the information about your own initial ramdisk and kernel files.</p>
