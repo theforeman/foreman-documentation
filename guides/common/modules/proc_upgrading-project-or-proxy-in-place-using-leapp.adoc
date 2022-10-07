@@ -22,6 +22,8 @@ For more information, see https://access.redhat.com/articles/3664871[Leapp utili
 * Obtain the ISO files for {RHEL} 8 and {Project}.
 For more information, see xref:upgrading_a_disconnected_satellite[].
 * For more information on customizing the Leapp upgrade for your environment, see https://access.redhat.com/articles/4977891[Customizing your {RHEL} in-place upgrade].
+* Since Leapp completes part of the upgrade in a container that has no access to additional ISO mounts, the repositories cannot be served from a locally mounted ISO but must be delivered over the network from a different machine.
+* For more information, see https://access.redhat.com/solutions/5492401[How to in-place upgrade an offline / disconnected RHEL 7 machine to RHEL 8 with Leapp?]
 endif::[]
 ifndef::satellite[]
 * Access to available repositories or a local mirror of repositories.
@@ -77,6 +79,7 @@ ifdef::satellite[]
 [BaseOS]
 name={RepoRHEL8BaseOS}
 baseurl=http://_server.example.com_/rhel8/BaseOS/
+
 [AppStream]
 name={RepoRHEL8AppStream}
 baseurl=http://_server.example.com_/rhel8/AppStream/
@@ -89,15 +92,11 @@ baseurl=http://_server.example.com_/rhel8/AppStream/
 [{RepoRHEL8ServerSatelliteServerProductVersion}]
 name={RepoRHEL8ServerSatelliteServerProductVersion}
 baseurl=http://_server.example.com_/sat6/Satellite/
+
 [{RepoRHEL8ServerSatelliteMaintenanceProductVersion}]
 name={RepoRHEL8ServerSatelliteMaintenanceProductVersion}
 baseurl=http://_server.example.com_/sat6/Maintenance/
 ----
-+
-[NOTE]
-====
-Since Leapp completes part of the upgrade in a container that has no access to additional ISO mounts, the repositories cannot be served from a locally mounted ISO but must be delivered over the network from a different machine.
-====
 endif::[]
 
 ifdef::foreman-el,katello[]
@@ -203,10 +202,9 @@ If you run {Project} in a disconnected environment, add the `--no-rhsm` and `--e
 --no-rhsm \
 --enablerepo BaseOS \
 --enablerepo AppStream \
+--enablerepo {RepoRHEL8ServerSatelliteServerProductVersion} \
 --enablerepo {RepoRHEL8ServerSatelliteMaintenanceProductVersion}
 ----
-+
-When running `leapp preupgrade` and `leapp upgrade`, you must pass `--enablerepo <id>` for each manually defined repository from the previous step.
 endif::[]
 
 +
@@ -267,6 +265,20 @@ If `eth0` was renamed to `em0`, call the installer to use the new interface name
 +
 ----
 # leapp upgrade
+----
+
+ifdef::satellite[]
++
+. If you run {Project} in a disconnected environment, add the `--no-rhsm` and `--enablerepo` parameters:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# leapp upgrade \
+--no-rhsm \
+--enablerepo BaseOS \
+--enablerepo AppStream \
+--enablerepo {RepoRHEL8ServerSatelliteServerProductVersion} \
+--enablerepo {RepoRHEL8ServerSatelliteMaintenanceProductVersion}
 ----
 
 . Reboot the system.
