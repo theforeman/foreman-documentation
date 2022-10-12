@@ -12,8 +12,22 @@ endif::[]
 ifdef::satellite[]
 * Review Known Issues before you begin an upgrade.
 For more information, see {ReleaseNotesURL}ref_known-issues_assembly_introducing-red-hat-satellite[Known Issues in {ProjectName} {ProjectVersion}].
+
+.Prerequisites for Disconnected Environments
+If you run {Project} or {SmartProxy} in a disconnected environment, ensure it meets the following prerequisites:
+
+* You must obtain and deploy Leapp metadata manually.
+For more information, see https://access.redhat.com/articles/3664871[Leapp utility metadata in-place upgrades of RHEL for disconnected upgrades].
+* You require access to {RHEL} and {Project} or {SmartProxy} packages.
+* Obtain the ISO files for {RHEL} 8 and {Project} or {SmartProxy}.
+For more information, see xref:upgrading_a_disconnected_satellite[].
+* For more information on customizing the Leapp upgrade for your environment, see https://access.redhat.com/articles/4977891[Customizing your {RHEL} in-place upgrade].
+* Since Leapp completes part of the upgrade in a container that has no access to additional ISO mounts, the repositories cannot be served from a locally mounted ISO but must be delivered over the network from a different machine.
+* For more information, see https://access.redhat.com/solutions/5492401[How to in-place upgrade an offline / disconnected RHEL 7 machine to RHEL 8 with Leapp?]
 endif::[]
+ifndef::satellite[]
 * Access to available repositories or a local mirror of repositories.
+endif::[]
 * If you previously upgraded {Project} or {SmartProxy} from an earlier version, and the `/var/lib/pgsql` contained the PostgreSQL database content before the migration from PostgreSQL 9 to PostgreSQL 12 from the SCL, empty `/var/lib/pgsql` before proceeding.
 * During the upgrade, the PostgreSQL data is moved from `/var/opt/rh/rh-postgresql12/lib/pgsql/data/` to `/var/lib/pgsql/data/`.
 If these two paths reside on the same partition, no further action is required.
@@ -50,6 +64,36 @@ On {RHEL}, enable the `rhel-7-server-extras-rpms` repository:
 ----
 # {package-install-project} leapp leapp-repository
 ----
+ifdef::satellite[]
+. For Leapp to perform the upgrade in a disconnected environment, download the metadata and manually extract, as described in https://access.redhat.com/articles/3664871[Leapp utility metadata in-place upgrades of RHEL for disconnected upgrades].
+
+. Set up the following repositories to perform the upgrade in a disconnected environment:
+.. `/etc/yum.repos.d/rhel8.repo`:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+[BaseOS]
+name={RepoRHEL8BaseOS}
+baseurl=http://_server.example.com_/rhel8/BaseOS/
+
+[AppStream]
+name={RepoRHEL8AppStream}
+baseurl=http://_server.example.com_/rhel8/AppStream/
+----
++
+.. `/etc/yum.repos.d/{project-context}.repo:`
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+[{RepoRHEL8ServerSatelliteServerProductVersion}]
+name={RepoRHEL8ServerSatelliteServerProductVersion}
+baseurl=http://_server.example.com_/sat6/Satellite/
+
+[{RepoRHEL8ServerSatelliteMaintenanceProductVersion}]
+name={RepoRHEL8ServerSatelliteMaintenanceProductVersion}
+baseurl=http://_server.example.com_/sat6/Maintenance/
+----
+endif::[]
 
 ifdef::foreman-el,katello[]
 . Install additional OS specific packages (`leapp-data-almalinux` for AlmaLinux, `leapp-data-centos` for CentOS Stream, or `leapp-data-rocky` for Rocky Linux).
@@ -144,9 +188,25 @@ endif::[]
 ----
 # leapp preupgrade
 ----
-The first run is expected to fail but report issues and inhibit the upgrade.
+ifdef::satellite[]
 +
-Examine the report in the `/var/log/leapp/leapp-report.txt` file, answer all questions (using `leapp answer`) and manually resolve the other reported problems.
+If you run {Project} or {SmartProxy} in a disconnected environment, add the `--no-rhsm` and `--enablerepo` parameters:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# leapp preupgrade \
+--no-rhsm \
+--enablerepo BaseOS \
+--enablerepo AppStream \
+--enablerepo {RepoRHEL8ServerSatelliteServerProductVersion} \
+--enablerepo {RepoRHEL8ServerSatelliteMaintenanceProductVersion}
+----
+endif::[]
+
++
+The first run is expected to fail but report issues and inhibit the upgrade.
+Examine the report in the `/var/log/leapp/leapp-report.txt` file, answer all questions (using `leapp answer`), and manually resolve the other reported problems.
++
 The following commands show the most common steps required:
 +
 ----
@@ -154,6 +214,7 @@ The following commands show the most common steps required:
 # echo PermitRootLogin yes | tee -a /etc/ssh/sshd_config
 # leapp answer --section remove_pam_pkcs11_module_check.confirm=True
 ----
+
 ifdef::foreman-el,katello[]
 +
 `leapp preupgrade` might fail with a dependency resolution error such as:
@@ -171,9 +232,9 @@ If this happens, do the following to clean up packages that cannot automatically
 # yum remove rubygem-thor rubygem-railties
 ----
 endif::[]
+
 +
 If `leapp preupgrade` inhibits the upgrade with *Unsupported network configuration* because there are multiple legacy named network interfaces, follow the instructions shown by Leapp to rename the interfaces, followed by an installer run to reconfigure {Project} or {SmartProxy} to use the new interface names:
-
 +
 [options="nowrap" subs="attributes"]
 ----
@@ -181,8 +242,8 @@ If `leapp preupgrade` inhibits the upgrade with *Unsupported network configurati
     --foreman-proxy-dhcp-interface  DHCP listen interface (current: "eth0")
     --foreman-proxy-dns-interface  DNS interface (current: "eth0")
 ----
++
 If `eth0` was renamed to `em0`, call the installer to use the new interface name with:
-
 +
 [options="nowrap" subs="attributes"]
 ----
@@ -195,6 +256,20 @@ If `eth0` was renamed to `em0`, call the installer to use the new interface name
 +
 ----
 # leapp upgrade
+----
+
+ifdef::satellite[]
++
+. If you run {Project} in a disconnected environment, add the `--no-rhsm` and `--enablerepo` parameters:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# leapp upgrade \
+--no-rhsm \
+--enablerepo BaseOS \
+--enablerepo AppStream \
+--enablerepo {RepoRHEL8ServerSatelliteServerProductVersion} \
+--enablerepo {RepoRHEL8ServerSatelliteMaintenanceProductVersion}
 ----
 
 . Reboot the system.
@@ -226,7 +301,7 @@ endif::[]
 ifdef::satellite[]
 . Complete the post-upgrade steps described in https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/upgrading_from_rhel_7_to_rhel_8/verifying-the-post-upgrade-state-of-the-rhel-8-system_upgrading-from-rhel-7-to-rhel-8[Verifying the post-upgrade state of the RHEL 8 system] in the _Upgrading from RHEL 7 to RHEL 8_ guide.
 endif::[]
-. For {Project} only and not {SmartProxy}, if you require SELinux to be in enforcing mode, run the following command before changing SELinux to enforcing mode::
+. If you require SELinux to be in enforcing mode, run the following command before changing SELinux to enforcing mode:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
