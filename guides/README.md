@@ -17,7 +17,7 @@ In Fedora perform:
 Then continue with the `make prep` step below.
 
 In RHEL perform:
-	
+
 	dnf module enable ruby:2.7
 	dnf -y groupinstall development-tools
 	dnf -y install ruby ruby-devel rubygem-bundler python3-pip
@@ -206,19 +206,21 @@ This makes `git diff` much easier to read and helps reviewing changes.
 Whitespace after partial files has to be handled in the file using the `include::` directive.
 * Source files use UTF-8 character encoding.
 * Image file names use dashes (`-`) and suffix a build target, e.g. `foreman`.
+See also [Images](#Images).
+* Links to different guides are followed by the title of the guide in italics, for example `in _{ManagingHostsDocTitle}_`.
 
 ### Structure
 
 If you create a new file, use the file structure described here.
 
-Files that are included in more than one guide are kept in the common/ subdirectory, and have prefixes to distinguish their type of content.
+Files that are included in more than one guide are kept in the `common/` subdirectory, and have prefixes to distinguish their type of content.
 
-Assemblies are kept at the top of the common/ subdirectory:
+Assemblies are kept at the top of the `common/` subdirectory:
 
 * [`assembly`](https://redhat-documentation.github.io/modular-docs/#forming-assemblies): Files starting with `assembly_` contain user stories and the modules required to accomplish those user stories.
 See the [assembly template](https://raw.githubusercontent.com/redhat-documentation/modular-docs/master/modular-docs-manual/files/TEMPLATE_ASSEMBLY_a-collection-of-modules.adoc).
 
-Modules are kept in the common/modules/ subdirectory:
+Modules are kept in the `common/modules/` subdirectory:
 
 * [`con`](https://redhat-documentation.github.io/modular-docs/#creating-concept-modules): Files starting with `con_` contain concepts and explain the _what_ and _why_.
 See the [concept template](https://raw.githubusercontent.com/redhat-documentation/modular-docs/master/modular-docs-manual/files/TEMPLATE_CONCEPT_concept-explanation.adoc).
@@ -231,10 +233,17 @@ Snippets do not require an ID.
 
 ### Images
 
-Each guide must have an `images/` subdirectory with `images/common` symlink into the `common/images` directory.
+Each guide must have an `images/` subdirectory with `images/common` symlink into the `common/images/` directory.
 Images local to the guide shall be kept in the `images/` directory.
-Images which are supposed to be reused across guides shall be kept in the `images/common` directory.
+Images which are supposed to be reused across guides shall be kept in the `images/common/` directory.
 Subdirectories can be created and are actually recommended.
+
 To insert an image, use `image::common/global_image.png` or `image::local_image.png`.
+
+You should create upstream diagrams using [diagrams.net](https://www.diagrams.net/).
+Place the editable diagram in `drawio` format in `guides/image-sources/`.
+For inclusion in the content, export diagrams to SVG and place them as described above.
+
+
 
 For more information, see the [Modular Documentation Reference Guide](https://redhat-documentation.github.io/modular-docs/).
