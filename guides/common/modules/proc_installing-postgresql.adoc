@@ -2,12 +2,115 @@
 = Installing PostgreSQL
 
 You can install only the same version of PostgreSQL that is installed with the `{foreman-installer}` tool during an internal database installation.
-You can install PostgreSQL using {RHELServer} 7 repositories or from an external source, as long as the version is supported.
-{Project} supports PostgreSQL version 12.1.
+You can install PostgreSQL using {EL} 8 or {RHELServer} 7 repositories.
+{Project} supports PostgreSQL version 12.
 
 include::snip_firewalld.adoc[]
 
-.Procedure
+* xref:#pgsql-el-8[{EL} 8]
+* xref:#pgsql-el-7[{EL} 7]
+
+== [[pgsql-el-8]]{EL} 8
+
+. To install PostgreSQL, enter the following command:
++
+----
+ifdef::katello,satellite,orcharhino[]
+# dnf install postgresql-server postgresql-evr
+endif::[]
+ifndef::katello,satellite,orcharhino[]
+# dnf install postgresql-server
+endif::[]
+----
+
+. To initialize PostgreSQL, enter the following command:
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+# postgresql-setup initdb
+----
++
+. Edit the `/var/lib/pgsql/data/postgresql.conf` file:
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+# vi /var/lib/pgsql/data/postgresql.conf
+----
++
+. Remove the `#` and edit to listen to inbound connections:
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+listen_addresses = '*'
+----
++
+. Edit the `/var/lib/pgsql/data/pg_hba.conf` file:
++
+[options="nowrap" subs="verbatim,quotes"]
+-----
+# vi /var/lib/pgsql/data/pg_hba.conf
+-----
++
+. Add the following line to the file:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+  host  all   all   _{Project}_ip_/24   md5
+----
+
+. To start, and enable PostgreSQL service, enter the following commands:
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+# systemctl start postgresql
+# systemctl enable postgresql
+----
+
+. Open the *postgresql* port on the external PostgreSQL server:
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+# firewall-cmd --add-service=postgresql
+# firewall-cmd --runtime-to-permanent
+----
++
+. Switch to the `postgres` user and start the PostgreSQL client:
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+$ su - postgres -c psql
+----
++
+. Create three databases and dedicated roles: one for {Project}, one for Candlepin, and one for Pulp:
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+CREATE USER "foreman" WITH PASSWORD '_Foreman_Password_';
+CREATE USER "candlepin" WITH PASSWORD '_Candlepin_Password_';
+CREATE USER "pulp" WITH PASSWORD '_Pulpcore_Password_';
+CREATE DATABASE foreman OWNER foreman;
+CREATE DATABASE candlepin OWNER candlepin;
+CREATE DATABASE pulpcore OWNER pulp;
+----
++
+. Exit the `postgres` user:
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+# \q
+----
++
+. From {ProjectServer}, test that you can access the database.
+If the connection succeeds, the commands return `1`.
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+# PGPASSWORD='_Foreman_Password_' psql -h _postgres.example.com_  -p 5432 -U foreman -d foreman -c "SELECT 1 as ping"
+# PGPASSWORD='_Candlepin_Password_' psql -h _postgres.example.com_ -p 5432 -U candlepin -d candlepin -c "SELECT 1 as ping"
+# PGPASSWORD='_Pulpcore_Password_' psql -h _postgres.example.com_ -p 5432 -U pulp -d pulpcore -c "SELECT 1 as ping"
+----
+
+== [[pgsql-el-7]]{EL} 7
 
 . To install PostgreSQL, enter the following command:
 +
