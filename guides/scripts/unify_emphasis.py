@@ -7,7 +7,7 @@ import sys
 
 dict_url_to_title = {
     "AdministeringDocURL": "AdministeringDocTitle",
-    "ConfiguringAnsibleDocURL": "ConfiguringAnsibleDocTitle",
+    "ManagingConfigurationsAnsibleDocURL": "ManagingConfigurationsAnsibleDocTitle",
     "ConfiguringLoadBalancerDocURL": "ConfiguringLoadBalancerDocTitle",
     "ContentManagementDocURL": "ContentManagementDocTitle",
     "InstallingServerDocURL": "InstallingServerDocTitle",
