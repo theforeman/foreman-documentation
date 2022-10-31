@@ -28,16 +28,16 @@ const navVersions = [
             path: "Deploying_on_AWS"
           },
           {
-            title: "Provisioning Guide",
-            path: "Provisioning_Hosts"
+            "title": "Provisioning Hosts",
+            "path": "Provisioning_Hosts"
           },
           {
-            title: "Configuring Foreman to use Ansible",
-            path: "Configuring_Ansible"
+            "title": "Managing Hosts",
+            "path": "Managing_Hosts"
           },
           {
-            title: "Managing Hosts Guide",
-            path: "Managing_Hosts"
+            "title": "Configuring Hosts Using Ansible",
+            "path": "Managing_Configurations_Ansible"
           },
           {
             title: "Configuring Hosts Using Puppet",
@@ -74,12 +74,12 @@ const navVersions = [
             path: "Deploying_on_AWS"
           },
           {
-            title: "Provisioning Guide",
-            path: "Provisioning_Hosts"
+            "title": "Provisioning Hosts",
+            "path": "Provisioning_Hosts"
           },
           {
-            title: "Configuring Foreman to use Ansible",
-            path: "Configuring_Ansible"
+            "title": "Configuring Hosts Using Ansible",
+            "path": "Managing_Configurations_Ansible"
           },
           {
             title: "Configuring Hosts Using Puppet",
@@ -136,16 +136,16 @@ const navVersions = [
             path: "Deploying_on_AWS"
           },
           {
-            title: "Provisioning Guide",
-            path: "Provisioning_Hosts"
+            "title": "Provisioning Hosts",
+            "path": "Provisioning_Hosts"
           },
           {
-            title: "Configuring Foreman to use Ansible",
-            path: "Configuring_Ansible"
+            "title": "Managing Hosts",
+            "path": "Managing_Hosts"
           },
           {
-            title: "Managing Hosts Guide",
-            path: "Managing_Hosts"
+            "title": "Configuring Hosts Using Ansible",
+            "path": "Managing_Configurations_Ansible"
           },
           {
             title: "Configuring Hosts Using Puppet",
@@ -212,16 +212,16 @@ const navVersions = [
             path: "Deploying_on_AWS"
           },
           {
-            title: "Provisioning Guide",
-            path: "Provisioning_Hosts"
+            "title": "Provisioning Hosts",
+            "path": "Provisioning_Hosts"
           },
           {
-            title: "Configuring Foreman to use Ansible",
-            path: "Configuring_Ansible"
+            "title": "Managing Hosts",
+            "path": "Managing_Hosts"
           },
           {
-            title: "Managing Hosts Guide",
-            path: "Managing_Hosts"
+            "title": "Configuring Hosts Using Ansible",
+            "path": "Managing_Configurations_Ansible"
           },
           {
             title: "Configuring Hosts Using Puppet",
@@ -288,20 +288,16 @@ const navVersions = [
             path: "Converting_a_Host_to_RHEL"
           },
           {
-            title: "Deploying Foreman on AWS",
-            path: "Deploying_on_AWS"
+            "title": "Provisioning Hosts",
+            "path": "Provisioning_Hosts"
           },
           {
-            title: "Provisioning Guide",
-            path: "Provisioning_Hosts"
+            "title": "Managing Hosts",
+            "path": "Managing_Hosts"
           },
           {
-            title: "Configuring Foreman to use Ansible",
-            path: "Configuring_Ansible"
-          },
-          {
-            title: "Managing Hosts Guide",
-            path: "Managing_Hosts"
+            "title": "Configuring Hosts Using Ansible",
+            "path": "Managing_Configurations_Ansible"
           },
           {
             title: "Configuring Hosts Using Puppet",
