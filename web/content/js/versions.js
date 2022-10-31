@@ -28,16 +28,16 @@ const navVersions = [
             path: "Deploying_on_AWS"
           },
           {
-            title: "Provisioning Guide",
-            path: "Provisioning_Guide"
+            title: "Provisioning Hosts",
+            path: "Provisioning_Hosts"
           },
           {
-            title: "Configuring Foreman to use Ansible",
-            path: "Configuring_Ansible"
-          },
-          {
-            title: "Managing Hosts Guide",
+            title: "Managing Hosts",
             path: "Managing_Hosts"
+          },
+          {
+            title: "Configuring Hosts Using Ansible",
+            path: "Managing_Configurations_Ansible"
           },
           {
             title: "Configuring Hosts Using Puppet",
@@ -74,12 +74,12 @@ const navVersions = [
             path: "Deploying_on_AWS"
           },
           {
-            title: "Provisioning Guide",
-            path: "Provisioning_Guide"
+            title: "Provisioning Hosts",
+            path: "Provisioning_Hosts"
           },
           {
-            title: "Configuring Foreman to use Ansible",
-            path: "Configuring_Ansible"
+            title: "Configuring Hosts Using Ansible",
+            path: "Managing_Configurations_Ansible"
           },
           {
             title: "Configuring Hosts Using Puppet",
@@ -136,16 +136,16 @@ const navVersions = [
             path: "Deploying_on_AWS"
           },
           {
-            title: "Provisioning Guide",
-            path: "Provisioning_Guide"
+            title: "Provisioning Hosts",
+            path: "Provisioning_Hosts"
           },
           {
-            title: "Configuring Foreman to use Ansible",
-            path: "Configuring_Ansible"
-          },
-          {
-            title: "Managing Hosts Guide",
+            title: "Managing Hosts",
             path: "Managing_Hosts"
+          },
+          {
+            title: "Configuring Hosts Using Ansible",
+            path: "Managing_Configurations_Ansible"
           },
           {
             title: "Configuring Hosts Using Puppet",
@@ -208,17 +208,12 @@ const navVersions = [
             path: "Content_Management_Guide"
           },
           {
-<<<<<<< HEAD
             title: "Converting a Host to RHEL",
             path: "Converting_a_Host_to_RHEL"
           },
           {
             title: "Deploying Foreman on AWS",
             path: "Deploying_on_AWS"
-=======
-            "title": "Deploying Foreman on AWS",
-            "path": "Deploying_Project_on_AWS"
->>>>>>> f2292db3c (Remove Convert2RHEL guide from navigation for 3.3 and 3.4)
           },
           {
             title: "Provisioning Guide",
@@ -293,17 +288,12 @@ const navVersions = [
             path: "Content_Management_Guide"
           },
           {
-<<<<<<< HEAD
             title: "Converting a Host to RHEL",
             path: "Converting_a_Host_to_RHEL"
           },
           {
             title: "Deploying Foreman on AWS",
             path: "Deploying_on_AWS"
-=======
-            "title": "Deploying Foreman on AWS",
-            "path": "Deploying_Project_on_AWS"
->>>>>>> f2292db3c (Remove Convert2RHEL guide from navigation for 3.3 and 3.4)
           },
           {
             title: "Provisioning Guide",
@@ -326,93 +316,88 @@ const navVersions = [
             path: "Administering_Red_Hat_Satellite"
           },
           {
-<<<<<<< HEAD
             title: "Application Centric Deployment",
-            path: "Application_Centric_Deployment"
-=======
-            "title": "Application Centric Deployment",
-            "path": "Deploying_Hosts_AppCentric"
+            path: "Deploying_Hosts_AppCentric"
           }
         ]
       }
     ]
   },
   {
-    "title": "Foreman 3.2 - Katello 4.4 (unsupported)",
-    "path": "3.2",
-    "builds": [
+    title: "Foreman 3.2 - Katello 4.4 (unsupported)",
+    path: "3.2",
+    builds: [
       {
-        "title": "Katello on EL",
-        "filename": "index-katello.html",
-        "guides": [
+        title: "Katello on EL",
+        filename: "index-katello.html",
+        guides: [
           {
-            "title": "Release Notes",
-            "path": "Release_Notes"
+            title: "Release Notes",
+            path: "Release_Notes"
           },
           {
-            "title": "Planning Guide",
-            "path": "Planning_for_Project"
+            title: "Planning Guide",
+            path: "Planning_for_Project"
           },
           {
-            "title": "Quickstart Guide",
-            "path": "Quickstart"
+            title: "Quickstart Guide",
+            path: "Quickstart"
           },
           {
-            "title": "Installing Katello Server",
-            "path": "Installing_Server"
+            title: "Installing Katello Server",
+            path: "Installing_Server"
           },
           {
-            "title": "Installing Smart Proxy with Content",
-            "path": "Installing_Proxy"
+            title: "Installing Smart Proxy with Content",
+            path: "Installing_Proxy"
           },
           {
-            "title": "Upgrading and Updating",
-            "path": "Upgrading_and_Updating"
+            title: "Upgrading and Updating",
+            path: "Upgrading_and_Updating"
           },
           {
-            "title": "Configuring Smart Proxies with a Load Balancer",
-            "path": "Configuring_Load_Balancer"
+            title: "Configuring Smart Proxies with a Load Balancer",
+            path: "Configuring_Load_Balancer"
           },
           {
-            "title": "Managing Organizations and Locations in Foreman",
-            "path": "Managing_Organizations_and_Locations"
+            title: "Managing Organizations and Locations in Foreman",
+            path: "Managing_Organizations_and_Locations"
           },
           {
-            "title": "Managing Content",
-            "path": "Managing_Content"
+            title: "Managing Content",
+            path: "Managing_Content"
           },
           {
-            "title": "Converting a Host to RHEL",
-            "path": "Converting_a_Host_to_RHEL"
+            title: "Converting a Host to RHEL",
+            path: "Converting_a_Host_to_RHEL"
           },
           {
-            "title": "Deploying Foreman on AWS",
-            "path": "Deploying_Project_on_AWS"
+            title: "Deploying Foreman on AWS",
+            path: "Deploying_Project_on_AWS"
           },
           {
-            "title": "Provisioning Guide",
-            "path": "Provisioning_Hosts"
+            title: "Provisioning Guide",
+            path: "Provisioning_Hosts"
           },
           {
-            "title": "Configuring Foreman to use Ansible",
-            "path": "Configuring_Ansible"
+            title: "Configuring Foreman to use Ansible",
+            path: "Configuring_Ansible"
           },
           {
-            "title": "Managing Hosts Guide",
-            "path": "Managing_Hosts"
+            title: "Managing Hosts Guide",
+            path: "Managing_Hosts"
           },
           {
-            "title": "Configuring Hosts Using Puppet",
-            "path": "Managing_Configurations_Puppet"
+            title: "Configuring Hosts Using Puppet",
+            path: "Managing_Configurations_Puppet"
           },
           {
-            "title": "Administering Foreman",
-            "path": "Administering_Project"
+            title: "Administering Foreman",
+            path: "Administering_Project"
           },
           {
-            "title": "Application Centric Deployment",
-            "path": "Deploying_Hosts_AppCentric"
->>>>>>> f2292db3c (Remove Convert2RHEL guide from navigation for 3.3 and 3.4)
+            title: "Application Centric Deployment",
+            path: "Deploying_Hosts_AppCentric"
           }
         ]
       }
