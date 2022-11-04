@@ -67,11 +67,10 @@ Complete the following steps on the connected {ProjectServer}.
 +
 [options="nowrap" subs="attributes"]
 ----
-{RepoRHEL7ServerAnsible}
 {RepoRHEL8BaseOS}
+{RepoRHEL8AppStream}
 {RepoRHEL8ServerSatelliteServerProductVersion}
 {RepoRHEL8ServerSatelliteMaintenanceProductVersion}
-{RepoRHEL8AppStream}
 ----
 +
 . Download the debug certificate of the organization and store it locally at, for example, `/etc/pki/katello/certs/org-debug-cert.pem` or a location of your choosing.
@@ -79,18 +78,18 @@ Complete the following steps on the connected {ProjectServer}.
 +
 [options="nowrap" subs="attributes"]
 ----
-[{RepoRHEL7ServerAnsible}]
-name=Ansible {SatelliteAnsibleVersion} RPMs for Red Hat Enterprise Linux 7 Server x86_64
-baseurl=https://{foreman-example-com}/pulp/content/My_Organization/Library/content/dist/rhel/server/7/$releasever/$basearch/ansible/{SatelliteAnsibleVersion}/os/
+[{RepoRHEL8BaseOS}]
+name=Red Hat Enterprise Linux 8 for x86_64 - BaseOS (RPMs)
+baseurl=https://{foreman-example-com}/pulp/content/My_Organization/Library/content/dist/rhel8/8/x86_64/baseos/os
 enabled=1
 sslclientcert = /etc/pki/katello/certs/org-debug-cert.pem
 sslclientkey = /etc/pki/katello/certs/org-debug-cert.pem
 sslcacert = /etc/pki/katello/certs/katello-server-ca.crt
 sslverify = 1
 
-[{RepoRHEL8BaseOS}]
-name=Red Hat Enterprise Linux 8 for x86_64 - BaseOS (RPMs)
-baseurl=https://{foreman-example-com}/pulp/content/My_Organization/Library/content/dist/rhel8/8/x86_64/baseos/os
+[{RepoRHEL8AppStream}]
+name=Red Hat Enterprise Linux 8 for x86_64 - AppStream (RPMs)
+baseurl=https://{foreman-example-com}/pulp/content/My_Organization/Library/content/dist/rhel8/8/x86_64/appstream/os
 enabled=1
 sslclientcert = /etc/pki/katello/certs/org-debug-cert.pem
 sslclientkey = /etc/pki/katello/certs/org-debug-cert.pem
@@ -113,15 +112,6 @@ sslclientcert = /etc/pki/katello/certs/org-debug-cert.pem
 sslclientkey = /etc/pki/katello/certs/org-debug-cert.pem
 sslcacert = /etc/pki/katello/certs/katello-server-ca.crt
 sslverify = 1
-
-[{RepoRHEL8AppStream}]
-name=Red Hat Enterprise Linux 8 for x86_64 - AppStream (RPMs)
-baseurl=https://{foreman-example-com}/pulp/content/My_Organization/Library/content/dist/rhel8/8/x86_64/appstream/os
-enabled=1
-sslclientcert = /etc/pki/katello/certs/org-debug-cert.pem
-sslclientkey = /etc/pki/katello/certs/org-debug-cert.pem
-sslcacert = /etc/pki/katello/certs/katello-server-ca.crt
-sslverify = 1
 ----
 +
 . In the configuration file, replace `/etc/pki/katello/certs/org-debug-cert.pem` in `sslclientcert` and `sslclientkey` with the location of the downloaded organization debug certificate.
@@ -139,9 +129,9 @@ To obtain the organization label, enter the command:
 ----
 # reposync --delete --download-metadata -p ~/{Project}-repos -n \
  -r {RepoRHEL8BaseOS} \
+ -r {RepoRHEL8AppStream} \
  -r {RepoRHEL8ServerSatelliteServerProductVersion} \
- -r {RepoRHEL8ServerSatelliteMaintenanceProductVersion} \
- -r {RepoRHEL8AppStream}
+ -r {RepoRHEL8ServerSatelliteMaintenanceProductVersion}
 ----
 +
 This downloads the contents of the repositories from the connected {ProjectServer} and stores them in the directory `~/{Project}-repos`.
@@ -156,7 +146,7 @@ This downloads the contents of the repositories from the connected {ProjectServe
 ----
 . Use the generated `{Project}-repos.tgz` file to upgrade in the disconnected {ProjectServer}.
 
-Perform the following steps on the disconnected {ProjectServer}
+Perform the following steps on the disconnected {ProjectServer}:
 
 . Copy the generated `{Project}-repos.tgz` file to your disconnected {ProjectServer}
 . Extract the archive to anywhere accessible by the `root` user.
@@ -176,6 +166,11 @@ name=Red Hat Enterprise Linux 8 for x86_64 - BaseOS (RPMs)
 baseurl=file:///root/{Project}-repos/{RepoRHEL8BaseOS}
 enabled=1
 
+[{RepoRHEL8AppStream}]
+name=Red Hat Enterprise Linux 8 for x86_64 - AppStream (RPMs)
+baseurl=file:///root/{Project}-repos/{RepoRHEL8AppStream}
+enabled=1
+
 [{RepoRHEL8ServerSatelliteServerProductVersion}]
 name={ProjectNameX} for RHEL 8 Server RPMs x86_64
 baseurl=file:///root/{Project}-repos/{RepoRHEL8ServerSatelliteServerProductVersion}
@@ -184,11 +179,6 @@ enabled=1
 [{RepoRHEL8ServerSatelliteMaintenanceProductVersion}]
 name={ProjectName} Maintenance 6 for RHEL 8 Server RPMs x86_64
 baseurl=file:///root/{Project}-repos/{RepoRHEL8ServerSatelliteMaintenanceProductVersion}
-enabled=1
-
-[{RepoRHEL8AppStream}]
-name=Red Hat Enterprise Linux 8 for x86_64 - AppStream (RPMs)
-baseurl=file:///root/{Project}-repos/{RepoRHEL8AppStream}
 enabled=1
 ----
 +
@@ -222,18 +212,5 @@ If you lose connection to the command shell where the upgrade command is running
 # {foreman-maintain} upgrade run --whitelist="check-upstream-repository,repositories-validate" --target-version {ProductVersion}.__z__
 ----
 
-. Check when the kernel packages were last updated:
-+
-[options="nowrap"]
-----
-# rpm -qa --last | grep kernel
-----
-+
-. Optional: If a kernel update occurred since the last reboot, stop {Project} services and reboot the system:
-+
-[options="nowrap" subs="attributes"]
-----
-# {foreman-maintain} service stop
-# reboot
-----
+include::snip_needs_reboot.adoc[]
 endif::[]
