@@ -1,0 +1,86 @@
+[id="Creating_a_Remote_Source_for_a_Custom_File_Type_Repository_{context}"]
+= Creating a Remote Source for a {customfiletypetitle} Repository
+
+You can create a {customfiletype} repository source from a directory of files that is external to {ProjectServer} using *Pulp Manifest*.
+You can then synchronize the files into a repository on {ProjectServer} over HTTP or HTTPS and manage the {customfiletype} content like any other content type.
+
+Use this procedure to configure a repository in a directory on a remote server.
+To create a file type repository in a directory on the base system where {ProjectServer} is installed, see xref:Creating_a_Local_Source_for_a_Custom_File_Type_Repository_{context}[].
+
+.Prerequisites
+ifndef::satellite[]
+* You have a server running {EL} 7 or 8 registered to your {Project}.
+endif::[]
+ifdef::satellite[]
+* You have a server running {EL} 7 or 8 registered to your {Project} or the Red{nbsp}Hat CDN.
+* Your server has an entitlement to the {RHELServer} and {ProjectName} Utils repositories.
+endif::[]
+* You have installed an HTTP server.
+ifndef::orcharhino[]
+For more information about configuring a web server, see https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/deploying_different_types_of_servers/setting-apache-http-server_deploying-different-types-of-servers[Setting up the Apache HTTP web server] in {RHEL}{nbsp}8 _Deploying different types of servers_ or https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/system_administrators_guide/ch-web_servers#s1-The_Apache_HTTP_Server[The Apache HTTP Server] in the {RHEL}{nbsp}7 _System Administrator's Guide_.
+endif::[]
+
+.Procedure
+ifdef::satellite[]
+. On your server, ensure that the right repositories are enabled:
+** On {EL} 8:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# subscription-manager repos --enable={RepoRHEL8BaseOS} \
+--enable={RepoRHEL8AppStream} \
+--enable={RepoRHEL8ServerSatelliteUtils}
+----
+** On {EL} 7:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# subscription-manager repos --enable={RepoRHEL7Server} \
+--enable={RepoRHEL7ServerSatelliteUtils}
+----
+endif::[]
+. Install the Pulp Manifest package:
+** On {EL} 8:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# dnf install python39-pulp_manifest
+----
+** On {EL} 7:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# yum install tfm-pulpcore-python3-pulp_manifest
+----
+. Create a directory that you want to use as the file type repository in the HTTP server's public folder:
++
+[options="nowrap" subs="+quotes"]
+----
+# mkdir /var/www/html/pub/__my_file_repo__
+----
+. Add files to the directory or create a test file:
++
+[options="nowrap" subs="+quotes"]
+----
+# touch /var/www/html/pub/__my_file_repo__/_test.txt_
+----
+. Run the Pulp Manifest command to create the manifest:
++
+[options="nowrap" subs="+quotes"]
+----
+# pulp-manifest /var/www/html/pub/__my_file_repo__
+----
+. Verify the manifest was created:
++
+[options="nowrap" subs="+quotes"]
+----
+# ls /var/www/html/pub/__my_file_repo__
+PULP_MANIFEST test.txt
+----
+
+Now, you can import your remote source as a {customfiletype} repository.
+Use the path to the directory to specify an *Upstream URL*, such as `\http://{foreman-example-com}/__my_file_repo__`.
+For more information, see xref:Creating_a_Custom_File_Type_Repository_{context}[].
+
+If you update the contents of your directory, re-run Pulp Manifest and sync the repository in {Project}.
+For more information, see xref:Synchronizing_Repositories_{context}[].
