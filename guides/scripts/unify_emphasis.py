@@ -18,7 +18,7 @@ dict_url_to_title = {
     "PlanningDocURL": "PlanningDocTitle",
     "ProvisioningDocURL": "ProvisioningDocTitle",
     "UpgradingDocURL": "UpgradingDocTitle",
-    "InstallingDisconnectedDocURL": "InstallingServerDisconnectedDocTitle",
+    "InstallingServerDisconnectedDocURL": "InstallingServerDisconnectedDocTitle",
 }
 list_of_adoc_files = []
 pattern_docurl = r"([Ss])*(ee )*(in )*(the )*({)([A-Za-z]*DocURL)(})([A-Za-z_{}-]*)(\[)([_]*)([A-Z{}a-z0-9 (),-]*)([_]*)(\])*( )*(in )*(the )*(_)*([A-Za-z{} ]*)(_)*( [Gg]uide)*(_)*"
