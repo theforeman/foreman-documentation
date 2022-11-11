@@ -31,7 +31,7 @@ endif::[]
 
 Ensure that the DHCP range of all subnets that you plan to use for discovery do not intersect with the DHCP lease pool configured for the managed DHCP service.
 The DHCP range is set in the {ProjectWebUI}, while the lease pool range is set using the `{foreman-installer}` command.
-For example, in a 10.1.0.0/16 network range 10.1.0.0 to 10.1.127.255 could be allocated for leases and 10.1.128.0 to 10.1.255.254 could be allocate for reservations.
+For example, in a 10.1.0.0/16 network range 10.1.0.0 to 10.1.127.255 could be allocated for leases and 10.1.128.0 to 10.1.255.254 could be allocated for reservations.
 
 ifndef::orcharhino[]
 Since network interface names are not expected to always be the same https://access.redhat.com/solutions/5984311[between major versions] of {RHEL},
@@ -41,27 +41,38 @@ endif::[]
 hosts or virtual machines can be created with incorrect network configurations. On Dell servers, the new naming scheme can be disabled via `biosdevname=1` kernel command line option, for other hardware or virtual machines, the new naming scheme can be completely turned off via `net.ifnames=1`.
 endif::[]
 
-To use {ProjectServer} to provide the Discovery image, install the following RPM packages:
-
-* `rubygem-foreman_discovery`
-ifdef::satellite[]
-* `foreman-discovery-image`
-endif::[]
-* `rubygem-smart_proxy_discovery`
-
-The `rubygem-foreman_discovery` package contains the {Project} plug-in to handle discovered nodes, connections, and necessary database structures, and API.
-
-ifdef::satellite[]
+.Procedure
+. Install Discovery on {ProjectServer}:
+ifdef::satellite,orcharhino[]
++
 The `foreman-discovery-image` package installs the Discovery ISO to the `/usr/share/foreman-discovery-image/` directory.
 You can build a PXE boot image from this ISO using the `livecd-iso-to-pxeboot` tool.
 The tool saves this PXE boot image in the `/var/lib/tftpboot/boot` directory.
 For more information, see xref:Building_a_Discovery_Image_{context}[].
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foreman-installer} \
+--enable-foreman-plugin-discovery \
+--enable-foreman-proxy-plugin-discovery
+----
++
+. Install `foreman-discovery-image`:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+{package-install-project} foreman-discovery-image
+----
 endif::[]
 
-The `rubygem-smart_proxy_discovery` package configures {SmartProxyServer}, such as the integrated {SmartProxy} of {ProjectServer}, to act as a proxy for the Discovery service.
-
-ifndef::satellite[]
-You can use the `{foreman-installer}` tool to install the packages and the Discovery image.
+ifndef::satellite,orcharhino[]
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foreman-installer} \
+--enable-foreman-plugin-discovery \
+--enable-foreman-proxy-plugin-discovery \
+--foreman-proxy-plugin-discovery-install-images=true
+----
 endif::[]
 
 When the installation completes, you can view the new menu option by navigating to *Hosts* > *Discovered Hosts*.
