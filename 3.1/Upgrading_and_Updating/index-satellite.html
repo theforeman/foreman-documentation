@@ -700,8 +700,7 @@ If these files have been deleted, they must be restored from a backup in order f
 </div>
 <div class="paragraph">
 <p>You cannot upgrade a self-registered Satellite.
-You must migrate a self-registered Satellite to the Red Hat Content Delivery Network (CDN) and then perform the upgrade.
-To migrate a self-registered Satellite to the CDN, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.11/html-single/upgrading_and_updating_red_hat_satellite/index#Migrating_a_Self_Registered_Server_upgrade-guide">Migrating Self-Registered Satellites</a> in the <em>Upgrading and Updating Red&#160;Hat Satellite</em> guide.</p>
+You must migrate a self-registered Satellite to the Red Hat Content Delivery Network (CDN) and then perform the upgrade.</p>
 </div>
 <div class="paragraph">
 <div class="title">FIPS mode</div>
@@ -2317,9 +2316,6 @@ For example, to apply the medium tuning profile settings, enter the following co
 For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.11/html/release_notes/index#ref_known-issues_assembly_introducing-red-hat-satellite">Known Issues in Red&#160;Hat Satellite 6.11</a>.</p>
 </li>
 <li>
-<p>Access to available repositories or a local mirror of repositories.</p>
-</li>
-<li>
 <p>If you previously upgraded Satellite or Capsule from an earlier version, and the <code>/var/lib/pgsql</code> contained the PostgreSQL database content before the migration from PostgreSQL 9 to PostgreSQL 12 from the SCL, empty <code>/var/lib/pgsql</code> before proceeding.</p>
 </li>
 <li>
@@ -2330,13 +2326,46 @@ You can move the PostgreSQL data on your own and the upgrade will skip this step
 </li>
 </ul>
 </div>
-<div class="exampleblock">
-<div class="content">
+<div class="paragraph">
+<div class="title">Prerequisites for Disconnected Environment</div>
+<p>If you run Satellite in a disconnected environment, ensure it also meets the following prerequisites:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>You must obtain and deploy Leapp metadata manually.
+For more information, see <a href="https://access.redhat.com/articles/3664871">Leapp utility metadata in-place upgrades of RHEL for disconnected upgrades</a>.</p>
+</li>
+<li>
+<p>You require access to Red&#160;Hat Enterprise Linux and Satellite packages.
+Obtain the ISO files for Red&#160;Hat Enterprise Linux 8 and Satellite.
+For more information, see <a href="#upgrading_a_disconnected_satellite">Upgrading a Disconnected Satellite&#160;Server</a>.</p>
+</li>
+<li>
+<p>For more information on customizing the Leapp upgrade for your environment, see <a href="https://access.redhat.com/articles/4977891">Customizing your Red&#160;Hat Enterprise Linux in-place upgrade</a>.</p>
+</li>
+<li>
+<p>Since Leapp completes part of the upgrade in a container that has no access to additional ISO mounts, the repositories cannot be served from a locally mounted ISO but must be delivered over the network from a different machine.</p>
+</li>
+<li>
+<p>For more information, see <a href="https://access.redhat.com/solutions/5492401">How to in-place upgrade an offline / disconnected RHEL 7 machine to RHEL 8 with Leapp?</a></p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
 <div class="paragraph">
 <p>Satellite supports DEFAULT and FIPS crypto-policies.
 The FUTURE crypto-policy is not supported for Satellite and Capsule installations.</p>
 </div>
-</div>
+</td>
+</tr>
+</table>
 </div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
@@ -2361,6 +2390,44 @@ The FUTURE crypto-policy is not supported for Satellite and Capsule installation
 </div>
 </li>
 <li>
+<p>For Leapp to perform the upgrade in a disconnected environment, download the metadata and manually extract, as described in <a href="https://access.redhat.com/articles/3664871">Leapp utility metadata in-place upgrades of RHEL for disconnected upgrades</a>.</p>
+</li>
+<li>
+<p>Set up the following repositories to perform the upgrade in a disconnected environment:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p><code>/etc/yum.repos.d/rhel8.repo</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">[BaseOS]
+name=rhel-8-for-x86_64-baseos-rpms
+baseurl=http://<em>server.example.com</em>/rhel8/BaseOS/
+
+[AppStream]
+name=rhel-8-for-x86_64-appstream-rpms
+baseurl=http://<em>server.example.com</em>/rhel8/AppStream/</pre>
+</div>
+</div>
+</li>
+<li>
+<p><code>/etc/yum.repos.d/satellite.repo:</code></p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">[satellite-6.11-for-rhel-8-x86_64-rpms]
+name=satellite-6.11-for-rhel-8-x86_64-rpms
+baseurl=http://<em>server.example.com</em>/sat6/Satellite/
+
+[satellite-maintenance-6.11-for-rhel-8-x86_64-rpms]
+name=satellite-maintenance-6.11-for-rhel-8-x86_64-rpms
+baseurl=http://<em>server.example.com</em>/sat6/Maintenance/</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</li>
+<li>
 <p>Let Leapp analyze your system:</p>
 <div class="listingblock">
 <div class="content">
@@ -2368,11 +2435,24 @@ The FUTURE crypto-policy is not supported for Satellite and Capsule installation
 </div>
 </div>
 <div class="paragraph">
-<p>The first run is expected to fail but report issues and inhibit the upgrade.</p>
+<p>If you run Satellite in a disconnected environment, add the <code>--no-rhsm</code> and <code>--enablerepo</code> parameters:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># leapp preupgrade \
+--no-rhsm \
+--enablerepo BaseOS \
+--enablerepo AppStream \
+--enablerepo satellite-6.11-for-rhel-8-x86_64-rpms \
+--enablerepo satellite-maintenance-6.11-for-rhel-8-x86_64-rpms</pre>
+</div>
 </div>
 <div class="paragraph">
-<p>Examine the report in the <code>/var/log/leapp/leapp-report.txt</code> file, answer all questions (using <code>leapp answer</code>) and manually resolve the other reported problems.
-The following commands show the most common steps required:</p>
+<p>The first run is expected to fail but report issues and inhibit the upgrade.
+Examine the report in the <code>/var/log/leapp/leapp-report.txt</code> file, answer all questions (using <code>leapp answer</code>), and manually resolve the other reported problems.</p>
+</div>
+<div class="paragraph">
+<p>The following commands show the most common steps required:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -2410,6 +2490,19 @@ The following commands show the most common steps required:</p>
 <pre># leapp upgrade</pre>
 </div>
 </div>
+<div class="paragraph">
+<p>If you run Satellite in a disconnected environment, add the <code>--no-rhsm</code> and <code>--enablerepo</code> parameters:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># leapp upgrade \
+--no-rhsm \
+--enablerepo BaseOS \
+--enablerepo AppStream \
+--enablerepo satellite-6.11-for-rhel-8-x86_64-rpms \
+--enablerepo satellite-maintenance-6.11-for-rhel-8-x86_64-rpms</pre>
+</div>
+</div>
 </li>
 <li>
 <p>Reboot the system.</p>
@@ -2429,7 +2522,7 @@ The following commands show the most common steps required:</p>
 <p>Complete the post-upgrade steps described in <a href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/upgrading_from_rhel_7_to_rhel_8/verifying-the-post-upgrade-state-of-the-rhel-8-system_upgrading-from-rhel-7-to-rhel-8">Verifying the post-upgrade state of the RHEL 8 system</a> in the <em>Upgrading from RHEL 7 to RHEL 8</em> guide.</p>
 </li>
 <li>
-<p>For Satellite only and not Capsule, if you require SELinux to be in enforcing mode, run the following command before changing SELinux to enforcing mode::</p>
+<p>For Satellite only and not Capsule, if you require SELinux to be in enforcing mode, run the following command before changing SELinux to enforcing mode:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># dnf reinstall foreman-selinux katello-selinux --disableplugin=foreman-protector</pre>
