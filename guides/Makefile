@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 SUBDIRS = $(shell ls -d doc-*)
 
-.PHONY: all clean html pdf linkchecker linkchecker-tryer serve subdirs $(SUBDIRS)
+.PHONY: all clean html pdf linkchecker serve subdirs $(SUBDIRS)
 
 all: html
 
@@ -21,9 +21,6 @@ clean:
 
 linkchecker:
 	find build -type f -name index\*html | xargs linkchecker -r1 -f common/linkchecker.ini --check-extern
-
-linkchecker-tryer:
-	find build -type f -name index\*html | xargs linkchecker -r1 -f common/linkchecker.ini --check-extern | linkchecker-tryer
 
 serve:
 	python -m http.server --directory ./build 8813
