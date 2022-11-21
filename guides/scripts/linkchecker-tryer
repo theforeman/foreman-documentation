@@ -1,0 +1,57 @@
+#!/usr/bin/env python3
+
+import fileinput
+import re
+import sys
+import time
+from subprocess import DEVNULL, STDOUT, call
+
+
+RETRIES = 3
+SLEEP_TIME = 30
+
+
+def parse_linkchecker_output(linkchecker_output):
+    pattern = re.compile(r"^URL\s+\`(?P<url>.+)\'$\n" +
+                         r"(^Name\s+\`(?P<name>.*?)\'$\n)?" +
+                         r"^Parent URL\s+(?P<parent>.*?)$\n"+
+                         r".*?^Result\s+(?P<result>.*?)$"
+                         , flags=re.M + re.S)
+
+    return {x.group("url"): x.group(0) for x in pattern.finditer(linkchecker_output)}
+
+
+def is_good_link(link):
+    return call(["linkchecker", "-r0", link], stdout=DEVNULL, stderr=STDOUT) == 0
+
+
+def find_bad_links(linkchecker_output):
+    bad_links = parse_linkchecker_output(linkchecker_output)
+
+    for _retry in range(RETRIES):
+        if bad_links:
+            time.sleep(SLEEP_TIME)
+
+        for link in list(bad_links.keys()):
+            if is_good_link(link):
+                del bad_links[link]
+
+    return bad_links.values()
+
+
+def main():
+    messages = find_bad_links(''.join(fileinput.input()))
+
+    print("\n")
+    print("-------------------------------------------------")
+    print("----------=========FINAL RESULT========----------")
+    print("-------------------------------------------------")
+    for message in messages:
+        print(message)
+        print()
+    if messages:
+        sys.exit(1)
+
+
+if __name__ == '__main__':
+    main()
