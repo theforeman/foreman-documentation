@@ -58,3 +58,4 @@ Ideally, each individual change correlates to an individual commit.
 
 * [Contributing Guidelines for Github documentation](https://github.com/github/docs/blob/main/CONTRIBUTING.md)
 * [theforeman.org/contribute](https://theforeman.org/contribute.html)
+* [7 Git tips for technical writers](https://opensource.com/article/22/11/git-tips-technical-writers)
