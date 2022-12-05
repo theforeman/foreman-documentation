@@ -159,9 +159,9 @@
 </li>
 <li><a href="#Managing_Custom_File_Type_Content_content-management">16. Managing Custom File Type Content</a>
 <ul class="sectlevel2">
-<li><a href="#Creating_a_Custom_File_Type_Repository_content-management">16.1. Creating a Custom File Type Repository</a></li>
-<li><a href="#Creating_a_Custom_File_Type_Repository_in_a_Local_Directory_content-management">16.2. Creating a Custom File Type Repository in a Local Directory</a></li>
-<li><a href="#Creating_a_Remote_File_Type_Repository_content-management">16.3. Creating a Remote File Type Repository</a></li>
+<li><a href="#Creating_a_Local_Source_for_a_Custom_File_Type_Repository_content-management">16.1. Creating a Local Source for a Custom File Type Repository</a></li>
+<li><a href="#Creating_a_Remote_Source_for_a_Custom_File_Type_Repository_content-management">16.2. Creating a Remote Source for a Custom File Type Repository</a></li>
+<li><a href="#Creating_a_Custom_File_Type_Repository_content-management">16.3. Creating a Custom File Type Repository</a></li>
 <li><a href="#Uploading_Files_To_a_Custom_File_Type_Repository_content-management">16.4. Uploading Files To a Custom File Type Repository</a></li>
 <li><a href="#Downloading_Files_to_a_Host_from_a_Custom_File_Type_Repository_content-management">16.5. Downloading Files to a Host From a Custom File Type Repository</a></li>
 </ul>
@@ -7071,12 +7071,230 @@ When you add files to a custom file type repository, you can use the normal Sate
 Clients must download the files over HTTP or HTTPS using <code>curl -O</code>.</p>
 </div>
 <div class="paragraph">
-<p>You can create a file type repository in Satellite&#160;Server only in a custom Product, but there is flexibility in how you create the file type repository.
-You can create an independent file type repository in a directory on the system where Satellite is installed, or on a remote HTTP server, and then synchronize the contents of that directory into Satellite.
+<p>You can create a file type repository in Satellite&#160;Server only in a custom Product, but there is flexibility in how you create the repository source.
+You can create an independent repository source in a directory on Satellite&#160;Server, or on a remote HTTP server, and then synchronize the contents of that directory into Satellite.
 This method is useful when you have multiple files to add to a Satellite repository.</p>
 </div>
 <div class="sect2">
-<h3 id="Creating_a_Custom_File_Type_Repository_content-management"><a class="anchor" href="#Creating_a_Custom_File_Type_Repository_content-management"></a>16.1. Creating a Custom File Type Repository</h3>
+<h3 id="Creating_a_Local_Source_for_a_Custom_File_Type_Repository_content-management"><a class="anchor" href="#Creating_a_Local_Source_for_a_Custom_File_Type_Repository_content-management"></a>16.1. Creating a Local Source for a Custom File Type Repository</h3>
+<div class="paragraph">
+<p>You can create a custom file type repository source, from a directory of files, on the base system where Satellite is installed using <strong>Pulp Manifest</strong>.
+You can then synchronize the files into a repository and manage the custom file type content like any other content type.</p>
+</div>
+<div class="paragraph">
+<p>Use this procedure to configure a repository in a directory on the base system where Satellite is installed.
+To create a file type repository in a directory on a remote server, see <a href="#Creating_a_Remote_Source_for_a_Custom_File_Type_Repository_content-management">Creating a Remote Source for a Custom File Type Repository</a>.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Ensure the Utils repository is enabled.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># subscription-manager repos --enable=rhel-8-for-x86_64-baseos-rpms \
+--enable=rhel-8-for-x86_64-appstream-rpms \
+--enable=satellite-utils-6.13-for-rhel-8-x86_64-rpms</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Install the Pulp Manifest package:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-maintain packages install python39-pulp_manifest</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note that this command stops the Satellite service and re-runs <code>satellite-installer</code>.
+Alternatively, to prevent downtime caused by stopping the service, you can use the following:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-maintain packages unlock
+# dnf install python39-pulp_manifest
+# satellite-maintain packages lock</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create a directory that you want to use as the file type repository, such as:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># mkdir -p /var/lib/pulp/<em>local_repos</em>/<em>my_file_repo</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Add the parent folder into allowed import paths:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># {foreman-installer} --foreman-proxy-content-pulpcore-additional-import-paths /var/lib/pulp/<em>local_repos</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Add files to the directory or create a test file:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># touch /var/lib/pulp/<em>local_repos</em>/<em>my_file_repo</em>/<em>test.txt</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Run the Pulp Manifest command to create the manifest:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># pulp-manifest /var/lib/pulp/<em>local_repos</em>/<em>my_file_repo</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Verify the manifest was created:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ls /var/lib/pulp/<em>local_repos</em>/<em>my_file_repo</em>
+PULP_MANIFEST test.txt</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Now, you can import your local source as a custom file type repository.
+Use the <code>file://</code> URL scheme and the name of the directory to specify an <strong>Upstream URL</strong>, such as <code>file:///<em>my_file_repo</em></code>.
+For more information, see <a href="#Creating_a_Custom_File_Type_Repository_content-management">Creating a Custom File Type Repository</a>.</p>
+</div>
+<div class="paragraph">
+<p>If you update the contents of your directory, re-run Pulp Manifest and sync the repository in Satellite.
+For more information, see <a href="#Synchronizing_Repositories_content-management">Synchronizing Repositories</a>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Creating_a_Remote_Source_for_a_Custom_File_Type_Repository_content-management"><a class="anchor" href="#Creating_a_Remote_Source_for_a_Custom_File_Type_Repository_content-management"></a>16.2. Creating a Remote Source for a Custom File Type Repository</h3>
+<div class="paragraph">
+<p>You can create a custom file type repository source from a directory of files that is external to Satellite&#160;Server using <strong>Pulp Manifest</strong>.
+You can then synchronize the files into a repository on Satellite&#160;Server over HTTP or HTTPS and manage the custom file type content like any other content type.</p>
+</div>
+<div class="paragraph">
+<p>Use this procedure to configure a repository in a directory on a remote server.
+To create a file type repository in a directory on the base system where Satellite&#160;Server is installed, see <a href="#Creating_a_Local_Source_for_a_Custom_File_Type_Repository_content-management">Creating a Local Source for a Custom File Type Repository</a>.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>You have a server running Red&#160;Hat Enterprise Linux 7 or 8 registered to your Satellite or the Red&#160;Hat CDN.</p>
+</li>
+<li>
+<p>Your server has an entitlement to the Red&#160;Hat Enterprise Linux Server and Red&#160;Hat Satellite Utils repositories.</p>
+</li>
+<li>
+<p>You have installed an HTTP server.
+For more information about configuring a web server, see <a href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/deploying_different_types_of_servers/setting-apache-http-server_deploying-different-types-of-servers">Setting up the Apache HTTP web server</a> in Red&#160;Hat Enterprise Linux&#160;8 <em>Deploying different types of servers</em> or <a href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/system_administrators_guide/ch-web_servers#s1-The_Apache_HTTP_Server">The Apache HTTP Server</a> in the Red&#160;Hat Enterprise Linux&#160;7 <em>System Administrator&#8217;s Guide</em>.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On your server, ensure that the right repositories are enabled.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>On Red&#160;Hat Enterprise Linux 8:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># subscription-manager repos \
+--enable=rhel-8-for-x86_64-baseos-rpms \
+--enable=rhel-8-for-x86_64-appstream-rpms \
+--enable=satellite-utils-6.13-for-rhel-8-x86_64-rpms</pre>
+</div>
+</div>
+</li>
+<li>
+<p>On Red&#160;Hat Enterprise Linux 7:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># subscription-manager repos --enable=rhel-7-server-rpms \
+--enable=rhel-7-server-satellite-utils-6.13-rpms</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Install the Pulp Manifest package:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>On Red&#160;Hat Enterprise Linux 8:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf install python39-pulp_manifest</pre>
+</div>
+</div>
+</li>
+<li>
+<p>On Red&#160;Hat Enterprise Linux 7:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># yum install tfm-pulpcore-python3-pulp_manifest</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Create a directory that you want to use as the file type repository in the HTTP server&#8217;s public folder:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># mkdir /var/www/html/pub/<em>my_file_repo</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Add files to the directory or create a test file:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># touch /var/www/html/pub/<em>my_file_repo</em>/<em>test.txt</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Run the Pulp Manifest command to create the manifest:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># pulp-manifest /var/www/html/pub/<em>my_file_repo</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Verify the manifest was created:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ls /var/www/html/pub/<em>my_file_repo</em>
+PULP_MANIFEST test.txt</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Now, you can import your remote source as a custom file type repository.
+Use the path to the directory to specify an <strong>Upstream URL</strong>, such as <code>http://satellite.example.com/<em>my_file_repo</em></code>.
+For more information, see <a href="#Creating_a_Custom_File_Type_Repository_content-management">Creating a Custom File Type Repository</a>.</p>
+</div>
+<div class="paragraph">
+<p>If you update the contents of your directory, re-run Pulp Manifest and sync the repository in Satellite.
+For more information, see <a href="#Synchronizing_Repositories_content-management">Synchronizing Repositories</a>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Creating_a_Custom_File_Type_Repository_content-management"><a class="anchor" href="#Creating_a_Custom_File_Type_Repository_content-management"></a>16.3. Creating a Custom File Type Repository</h3>
 <div class="paragraph">
 <p>The procedure for creating a custom file type repository is the same as the procedure for creating any custom content, except that when you create the repository, you select the <strong>file</strong> type.
 You must create a product and then add a custom repository.</p>
@@ -7260,356 +7478,6 @@ By default, the repository is published through HTTP.</p>
 </table>
 </li>
 </ol>
-</div>
-</div>
-<div class="sect2">
-<h3 id="Creating_a_Custom_File_Type_Repository_in_a_Local_Directory_content-management"><a class="anchor" href="#Creating_a_Custom_File_Type_Repository_in_a_Local_Directory_content-management"></a>16.2. Creating a Custom File Type Repository in a Local Directory</h3>
-<div class="paragraph">
-<p>You can create a custom file type repository, from a directory of files, on the base system where Satellite is installed using the <code>pulp-manifest</code> command.
-You can then synchronize the files into Satellite&#160;Server.
-When you add files to a file type repository, you can work with the files as with any other repository.</p>
-</div>
-<div class="paragraph">
-<p>Use this procedure to configure a repository in a directory on the base system where Satellite is installed.
-To create a file type repository in a directory on a remote server, see <a href="#Creating_a_Remote_File_Type_Repository_content-management">Creating a Remote File Type Repository</a>.</p>
-</div>
-<div class="paragraph">
-<div class="title">Procedure</div>
-<p>To create a file type repository in a local directory, complete the following procedure:</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Ensure the Utils repository is enabled.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># subscription-manager repos --enable=rhel-8-for-x86_64-baseos-rpms \
---enable=rhel-8-for-x86_64-appstream-rpms \
---enable=satellite-utils-6.13-for-rhel-8-x86_64-rpms</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Install the Pulp Manifest package:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># satellite-maintain packages install python3-pulp_manifest</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Note that this command stops the Satellite service and re-runs satellite-installer.
-Alternatively, to prevent downtime caused by stopping the service, you can use the following:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># satellite-maintain packages unlock
-# dnf install python3-pulp_manifest
-# satellite-maintain packages lock</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Create a directory that you want to use as the file type repository in the HTTP server&#8217;s public folder:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># mkdir <em>my_file_repo</em></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Add files to the directory or create a test file:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># touch <em>my_file_repo</em>/<em>test.txt</em></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Enter the Pulp Manifest command to create the manifest:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># pulp-manifest <em>my_file_repo</em></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Verify the manifest was created:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># ls <em>my_file_repo</em>
-PULP_MANIFEST test.txt</pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
-<div class="paragraph">
-<div class="title">Importing Files from a File Type Repository</div>
-<p>To import files from a file type repository in a local directory, complete the following procedure:</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Ensure a custom Product exists in Satellite&#160;Server.</p>
-</li>
-<li>
-<p>In the Satellite web UI, navigate to <strong>Content</strong> &gt; <strong>Products</strong>.</p>
-</li>
-<li>
-<p>Select the name of a product.</p>
-</li>
-<li>
-<p>Click the <strong>Repositories</strong> tab and select <strong>New Repository</strong>.</p>
-</li>
-<li>
-<p>In the <strong>Name</strong> field, enter a name for the repository.
-Satellite automatically completes this field based on what you enter for <strong>Name</strong>.</p>
-</li>
-<li>
-<p>From the <strong>Type</strong> list, select the content type of the repository.</p>
-</li>
-<li>
-<p>In the <strong>Upstream URL</strong> field, enter the local directory with the repository to use as the source, in the form <code>file:///<em>my_file_repo</em></code>.</p>
-</li>
-<li>
-<p>Select the <strong>Verify SSL</strong> checkbox to check the SSL certificate for the repository or clear the <strong>Verify SSL</strong> checkbox.</p>
-</li>
-<li>
-<p>Optional: In the <strong>Upstream Username</strong> field, enter the upstream user name that you require.</p>
-</li>
-<li>
-<p>Optional: In the <strong>Upstream Password</strong> field, enter the corresponding password for your upstream user name.</p>
-</li>
-<li>
-<p>Optional: In the <strong>Upstream Authentication Token</strong> field, provide the token of the upstream repository user for authentication.
-Leave this field empty if the repository does not require authentication.</p>
-</li>
-<li>
-<p>From the <strong>Mirroring Policy</strong> list, select the type of content synchronization Satellite&#160;Server performs.
-For more information, see <a href="#Mirroring_Policies_Overview_content-management">Mirroring Policies Overview</a>.</p>
-</li>
-<li>
-<p>Optional: In the <strong>HTTP Proxy Policy</strong> field, select the desired HTTP proxy.
-The default value is <code>Global Default</code>.</p>
-</li>
-<li>
-<p>Optional: You can clear the <strong>Unprotected</strong> checkbox to require a subscription entitlement certificate for accessing this repository.
-By default, the repository is published through HTTP.</p>
-</li>
-<li>
-<p>Optional: In the <strong>GPG Key</strong> field, select the GPG key for the repository.</p>
-</li>
-<li>
-<p>Optional: In the <strong>SSL CA Cert</strong> field, select the SSL CA Certificate for the repository.</p>
-</li>
-<li>
-<p>Optional: In the <strong>SSL Client cert</strong> field, select the SSL Client Certificate for the repository.</p>
-</li>
-<li>
-<p>Optional: In the <strong>SSL Client Key</strong> field, select the SSL Client Key for the repository.</p>
-</li>
-<li>
-<p>Select <strong>Save</strong> to save this repository entry.</p>
-</li>
-</ol>
-</div>
-<div class="paragraph">
-<div class="title">Updating a File Type Repository</div>
-<p>To update the file type repository, complete the following steps:</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>In the Satellite web UI, navigate to <strong>Content</strong> &gt; <strong>Products</strong>.</p>
-</li>
-<li>
-<p>Select the name of a product.</p>
-</li>
-<li>
-<p>Select the name of the repository you want to update.</p>
-</li>
-<li>
-<p>From the <strong>Select Action</strong> menu, select <strong>Sync Now</strong>.</p>
-</li>
-<li>
-<p>Visit the URL where the repository is published to see the files.</p>
-</li>
-</ol>
-</div>
-</div>
-<div class="sect2">
-<h3 id="Creating_a_Remote_File_Type_Repository_content-management"><a class="anchor" href="#Creating_a_Remote_File_Type_Repository_content-management"></a>16.3. Creating a Remote File Type Repository</h3>
-<div class="paragraph">
-<p>You can create a custom file type repository from a directory of files that is external to Satellite&#160;Server using the <code>pulp-manifest</code> command.
-You can then synchronize the files into Satellite&#160;Server over HTTP or HTTPS.
-When you add files to a file type repository, you can work with the files as with any other repository.</p>
-</div>
-<div class="paragraph">
-<p>Use this procedure to configure a repository in a directory on a remote server.
-To create a file type repository in a directory on the base system where Satellite&#160;Server is installed, see <a href="#Creating_a_Custom_File_Type_Repository_in_a_Local_Directory_content-management">Creating a Custom File Type Repository in a Local Directory</a>.</p>
-</div>
-<div class="paragraph">
-<div class="title">Prerequisites</div>
-<p>Before you create a remote file type repository, ensure the following conditions exist:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>You have a Red&#160;Hat Enterprise Linux&#160;7 server registered to your Satellite or the Red&#160;Hat CDN.</p>
-</li>
-<li>
-<p>Your server has an entitlement to the Red&#160;Hat Enterprise Linux Server and Satellite Client 6 repositories.</p>
-</li>
-<li>
-<p>You have installed an HTTP server.
-For more information about configuring a web server, see <a href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/system_administrators_guide/ch-web_servers#s1-The_Apache_HTTP_Server">The Apache HTTP Server</a> in the Red&#160;Hat Enterprise Linux&#160;7 <em>System Administrator&#8217;s Guide</em>.</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<div class="title">Procedure</div>
-<p>To create a file type repository in a remote directory, complete the following procedure:</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>On your machine, ensure that the right repositories are enabled.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># subscription-manager repos --enable=rhel-8-for-x86_64-baseos-rpms \
---enable=rhel-8-for-x86_64-appstream-rpms \
---enable=satellite-utils-6.13-for-rhel-8-x86_64-rpms</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Install the Pulp Manifest package:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># dnf install python3-pulp_manifest</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Create a directory that you want to use as the file type repository in the HTTP server&#8217;s public folder:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># mkdir /var/www/html/pub/<em>my_file_repo</em></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Add files to the directory or create a test file:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># touch /var/www/html/pub/<em>my_file_repo/test.txt</em></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Enter the Pulp Manifest command to create the manifest:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># pulp-manifest /var/www/html/pub/<em>my_file_repo</em></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Verify the manifest was created:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># ls /var/www/html/pub/<em>my_file_repo</em>
-PULP_MANIFEST test.txt</pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
-<div class="paragraph">
-<div class="title">Importing Files from a Remote a File Type Repository</div>
-<p>To import files from a remote file type repository, complete the following procedure:</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Ensure a custom Product exists in Satellite&#160;Server, or create a custom Product.
-For more information see <a href="#Creating_a_Custom_File_Type_Repository_content-management">Creating a Custom File Type Repository</a></p>
-</li>
-<li>
-<p>In the Satellite web UI, navigate to <strong>Content</strong> &gt; <strong>Products</strong>.</p>
-</li>
-<li>
-<p>Select the name of a product.</p>
-</li>
-<li>
-<p>Click the <strong>Repositories</strong> tab and select <strong>New Repository</strong>.</p>
-</li>
-<li>
-<p>In the <strong>Name</strong> field, enter a name for the repository.
-Red&#160;Hat Satellite automatically completes this field based on what you enter for <strong>Name</strong>.</p>
-</li>
-<li>
-<p>From the <strong>Type</strong> list, select <strong>file</strong>.</p>
-</li>
-<li>
-<p>In the <strong>Upstream URL</strong> field, enter the URL of the upstream repository to use as a source.</p>
-</li>
-<li>
-<p>Select the <strong>Verify SSL</strong> checkbox if you want to verify that the upstream repository&#8217;s SSL certificates are signed by a trusted CA.</p>
-</li>
-<li>
-<p>Optional: In the <strong>Upstream Username</strong> field, enter the user name for the upstream repository if required for authentication.
-Clear this field if the repository does not require authentication.</p>
-</li>
-<li>
-<p>Optional: In the <strong>Upstream Password</strong> field, enter the corresponding password for the upstream repository.
-Clear this field if the repository does not require authentication.</p>
-</li>
-<li>
-<p>Optional: In the <strong>Upstream Authentication Token</strong> field, provide the token of the upstream repository user for authentication.
-Leave this field empty if the repository does not require authentication.</p>
-</li>
-<li>
-<p>From the <strong>Mirroring Policy</strong> list, select the type of content synchronization Satellite&#160;Server performs.
-For more information, see <a href="#Mirroring_Policies_Overview_content-management">Mirroring Policies Overview</a>.</p>
-</li>
-<li>
-<p>Optional: In the <strong>HTTP Proxy Policy</strong> field, select the desired HTTP proxy.
-The default value is <code>Global Default</code>.</p>
-</li>
-<li>
-<p>Optional: You can clear the <strong>Unprotected</strong> checkbox to require a subscription entitlement certificate for accessing this repository.
-By default, the repository is published through HTTP.</p>
-</li>
-<li>
-<p>Optional: In the <strong>GPG Key</strong> field, select the GPG key for the repository.</p>
-</li>
-<li>
-<p>Optional: In the <strong>SSL CA Cert</strong> field, select the SSL CA Certificate for the repository.</p>
-</li>
-<li>
-<p>Optional: In the <strong>SSL Client cert</strong> field, select the SSL Client Certificate for the repository.</p>
-</li>
-<li>
-<p>Optional: In the <strong>SSL Client Key</strong> field, select the SSL Client Key for the repository.</p>
-</li>
-<li>
-<p>Click <strong>Save</strong>.</p>
-</li>
-<li>
-<p>To update the file type repository, navigate to <strong>Content</strong> &gt; <strong>Products</strong>.
-Select the name of a product that contains the repository that you want to update.</p>
-</li>
-<li>
-<p>In the product&#8217;s window, select the name of the repository you want to update.</p>
-</li>
-<li>
-<p>From the <strong>Select Action</strong> menu, select <strong>Sync Now</strong>.</p>
-</li>
-</ol>
-</div>
-<div class="paragraph">
-<p>Visit the URL where the repository is published to view the files.</p>
 </div>
 </div>
 <div class="sect2">
