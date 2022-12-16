@@ -27,7 +27,7 @@
 <h1>Tuning Performance of Foreman</h1>
 <div class="details">
 <span id="revnumber">version 3.5 (unsupported),</span>
-<span id="revdate">published Dec 14 2022</span>
+<span id="revdate">published Dec 16 2022</span>
 </div>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
@@ -48,8 +48,9 @@
 <li><a href="#Puma_Tunings_performance-tuning">5.2. Puma Tunings</a></li>
 <li><a href="#Apache_HTTPD_Performance_Tuning_performance-tuning">5.3. Apache HTTPD Performance Tuning</a></li>
 <li><a href="#Dynflow_Tuning_performance-tuning">5.4. Dynflow Tuning</a></li>
-<li><a href="#PostgreSQL_Tuning_performance-tuning">5.5. PostgreSQL Tuning</a></li>
-<li><a href="#Redis_Tuning_performance-tuning">5.6. Redis Tuning</a></li>
+<li><a href="#REX_pull_based_transport_performance-tuning">5.5. REX pull-based transport</a></li>
+<li><a href="#PostgreSQL_Tuning_performance-tuning">5.6. PostgreSQL Tuning</a></li>
+<li><a href="#Redis_Tuning_performance-tuning">5.7. Redis Tuning</a></li>
 </ul>
 </li>
 </ul>
@@ -843,7 +844,51 @@ dynflow-sidekiq@worker-3.service        loaded    active   running   Foreman job
 </div>
 </div>
 <div class="sect2">
-<h3 id="PostgreSQL_Tuning_performance-tuning"><a class="anchor" href="#PostgreSQL_Tuning_performance-tuning"></a>5.5. PostgreSQL Tuning</h3>
+<h3 id="REX_pull_based_transport_performance-tuning"><a class="anchor" href="#REX_pull_based_transport_performance-tuning"></a>5.5. REX pull-based transport</h3>
+<div class="paragraph">
+<p>Foreman has a pull-based transport that has the features of REX but with a deployment model similar to katello-agent.
+This transport uses MQTT as its messaging protocol and includes an MQTT client running on each host.
+In order to tune the MQTT server (<code>mosquitto</code>) and increase the number of hosts connected to it, you can follow the following procedure on the Foreman&#160;server:</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Enable pull-based remote execution on your Foreman&#160;server or Smart&#160;Proxy&#160;server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">foreman-installer --foreman-proxy-plugin-remote-execution-script-mode pull-mqtt</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note that your Foreman&#160;server or Smart&#160;Proxy&#160;server can only use one transport mode, either SSH or MQTT.</p>
+</div>
+</li>
+<li>
+<p>To increase the default number of hosts accepted by the MQTT server, create the following system unit definition file and set its contents as specified in the below given example (this will allow the <code>mosquitto</code> service to handle ~5000 hosts):</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">cat &gt;/etc/systemd/system/mosquitto.service.d/limits.conf &lt;&lt;<em>EOF</em>
+[Service]
+LimitNOFILE=5000
+<em>EOF</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Run the following commands to apply your changes:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl daemon-reload
+# systemctl restart mosquitto.service</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="PostgreSQL_Tuning_performance-tuning"><a class="anchor" href="#PostgreSQL_Tuning_performance-tuning"></a>5.6. PostgreSQL Tuning</h3>
 <div class="paragraph">
 <p>PostgreSQL is the primary SQL based database that is used by Foreman for the storage of persistent context across a wide variety of tasks that Foreman does.
 The database sees an extensive usage is usually working on to provide the Foreman with the data which it needs for its smooth functioning.
@@ -907,7 +952,7 @@ Foreman developers recommends setting the value to <code>2000</code> as it is fo
 <p>For more information, see <a href="https://bugzilla.redhat.com/show_bug.cgi?id=1867311#c12">BZ1867311: Upgrade fails when checkpoint_segments postgres parameter configured</a>.</p>
 </div>
 <div class="sect3">
-<h4 id="Benchmarking_raw_DB_Performance_performance-tuning"><a class="anchor" href="#Benchmarking_raw_DB_Performance_performance-tuning"></a>5.5.1. Benchmarking raw DB performance</h4>
+<h4 id="Benchmarking_raw_DB_Performance_performance-tuning"><a class="anchor" href="#Benchmarking_raw_DB_Performance_performance-tuning"></a>5.6.1. Benchmarking raw DB performance</h4>
 <div class="paragraph">
 <p>To get a list of the top table sizes in disk space for both Candlepin, Foreman, and Pulp check <a href="https://github.com/RedHatSatellite/satellite-support/blob/master/postgres-size-report">postgres-size-report</a> script in <a href="https://github.com/RedHatSatellite/satellite-support">satellite-support</a> git repository.</p>
 </div>
@@ -945,7 +990,7 @@ For example, if the DB is only 20 GiB and the buffer pool is 32 GiB, it won&#821
 </div>
 </div>
 <div class="sect2">
-<h3 id="Redis_Tuning_performance-tuning"><a class="anchor" href="#Redis_Tuning_performance-tuning"></a>5.6. Redis Tuning</h3>
+<h3 id="Redis_Tuning_performance-tuning"><a class="anchor" href="#Redis_Tuning_performance-tuning"></a>5.7. Redis Tuning</h3>
 <div class="paragraph">
 <p>Redis is an in-memory data store.
 It is used by multiple services in Foreman.
