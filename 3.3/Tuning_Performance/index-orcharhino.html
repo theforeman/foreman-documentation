@@ -27,7 +27,7 @@
 <h1>Tuning Performance of orcharhino</h1>
 <div class="details">
 <span id="revnumber">version 6.1,</span>
-<span id="revdate">published Dec 14 2022</span>
+<span id="revdate">published Dec 16 2022</span>
 </div>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
@@ -50,9 +50,10 @@
 <li><a href="#Apache_HTTPD_Performance_Tuning_performance-tuning">6.3. Apache HTTPD Performance Tuning</a></li>
 <li><a href="#qdrouterd_and_qpid_Tuning_performance-tuning">6.4. qdrouterd and qpid Tuning</a></li>
 <li><a href="#Dynflow_Tuning_performance-tuning">6.5. Dynflow Tuning</a></li>
-<li><a href="#PostgreSQL_Tuning_performance-tuning">6.6. PostgreSQL Tuning</a></li>
-<li><a href="#Redis_Tuning_performance-tuning">6.7. Redis Tuning</a></li>
-<li><a href="#Smart_Proxy_Configuration_Tuning_performance-tuning">6.8. orcharhino Proxy Configuration Tuning</a></li>
+<li><a href="#REX_pull_based_transport_performance-tuning">6.6. REX pull-based transport</a></li>
+<li><a href="#PostgreSQL_Tuning_performance-tuning">6.7. PostgreSQL Tuning</a></li>
+<li><a href="#Redis_Tuning_performance-tuning">6.8. Redis Tuning</a></li>
+<li><a href="#Smart_Proxy_Configuration_Tuning_performance-tuning">6.9. orcharhino Proxy Configuration Tuning</a></li>
 </ul>
 </li>
 </ul>
@@ -1143,7 +1144,51 @@ dynflow-sidekiq@worker-3.service        loaded    active   running   Foreman job
 </div>
 </div>
 <div class="sect2">
-<h3 id="PostgreSQL_Tuning_performance-tuning"><a class="anchor" href="#PostgreSQL_Tuning_performance-tuning"></a>6.6. PostgreSQL Tuning</h3>
+<h3 id="REX_pull_based_transport_performance-tuning"><a class="anchor" href="#REX_pull_based_transport_performance-tuning"></a>6.6. REX pull-based transport</h3>
+<div class="paragraph">
+<p>orcharhino has a pull-based transport that has the features of REX but with a deployment model similar to katello-agent.
+This transport uses MQTT as its messaging protocol and includes an MQTT client running on each host.
+In order to tune the MQTT server (<code>mosquitto</code>) and increase the number of hosts connected to it, you can follow the following procedure on the orcharhino Server:</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Enable pull-based remote execution on your orcharhino Server or orcharhino Proxy:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">foreman-installer --foreman-proxy-plugin-remote-execution-script-mode pull-mqtt</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note that your orcharhino Server or orcharhino Proxy can only use one transport mode, either SSH or MQTT.</p>
+</div>
+</li>
+<li>
+<p>To increase the default number of hosts accepted by the MQTT server, create the following system unit definition file and set its contents as specified in the below given example (this will allow the <code>mosquitto</code> service to handle ~5000 hosts):</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">cat &gt;/etc/systemd/system/mosquitto.service.d/limits.conf &lt;&lt;<em>EOF</em>
+[Service]
+LimitNOFILE=5000
+<em>EOF</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Run the following commands to apply your changes:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl daemon-reload
+# systemctl restart mosquitto.service</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="PostgreSQL_Tuning_performance-tuning"><a class="anchor" href="#PostgreSQL_Tuning_performance-tuning"></a>6.7. PostgreSQL Tuning</h3>
 <div class="paragraph">
 <p>PostgreSQL is the primary SQL based database that is used by orcharhino for the storage of persistent context across a wide variety of tasks that orcharhino does.
 The database sees an extensive usage is usually working on to provide the orcharhino with the data which it needs for its smooth functioning.
@@ -1204,7 +1249,7 @@ ATIX AG recommends setting the value to <code>2000</code> as it is for the <em>m
 </ul>
 </div>
 <div class="sect3">
-<h4 id="Benchmarking_raw_DB_Performance_performance-tuning"><a class="anchor" href="#Benchmarking_raw_DB_Performance_performance-tuning"></a>6.6.1. Benchmarking raw DB performance</h4>
+<h4 id="Benchmarking_raw_DB_Performance_performance-tuning"><a class="anchor" href="#Benchmarking_raw_DB_Performance_performance-tuning"></a>6.7.1. Benchmarking raw DB performance</h4>
 <div class="paragraph">
 <p>PGbench utility (note you may need to resize PostgreSQL data directory <code>/var/opt/rh/rh-postgresql12/lib/pgsql/</code> directory to 100 GiB or what does benchmark take to run) might be used to measure PostgreSQL performance on your system.
 Use <code>yum install postgresql-contrib</code> to install it.</p>
@@ -1238,7 +1283,7 @@ For example, if the DB is only 20 GiB and the buffer pool is 32 GiB, it won&#821
 </div>
 </div>
 <div class="sect2">
-<h3 id="Redis_Tuning_performance-tuning"><a class="anchor" href="#Redis_Tuning_performance-tuning"></a>6.7. Redis Tuning</h3>
+<h3 id="Redis_Tuning_performance-tuning"><a class="anchor" href="#Redis_Tuning_performance-tuning"></a>6.8. Redis Tuning</h3>
 <div class="paragraph">
 <p>Redis is an in-memory data store.
 It is used by multiple services in orcharhino.
@@ -1251,13 +1296,13 @@ For more about it please see <a href="#Disable_Transparent_Hugepage_performance-
 </div>
 </div>
 <div class="sect2">
-<h3 id="Smart_Proxy_Configuration_Tuning_performance-tuning"><a class="anchor" href="#Smart_Proxy_Configuration_Tuning_performance-tuning"></a>6.8. orcharhino Proxy Configuration Tuning</h3>
+<h3 id="Smart_Proxy_Configuration_Tuning_performance-tuning"><a class="anchor" href="#Smart_Proxy_Configuration_Tuning_performance-tuning"></a>6.9. orcharhino Proxy Configuration Tuning</h3>
 <div class="paragraph">
 <p>orcharhino Proxies are meant to offload part of orcharhino load and provide access to different networks related to distributing content to clients but they can also be used to execute remote execution jobs.
 What they cannot help with is anything which extensively uses orcharhino API as host registration or package profile update.</p>
 </div>
 <div class="sect3">
-<h4 id="Smart_Proxy_Performance_Tests_performance-tuning"><a class="anchor" href="#Smart_Proxy_Performance_Tests_performance-tuning"></a>6.8.1. orcharhino Proxy Performance Tests</h4>
+<h4 id="Smart_Proxy_Performance_Tests_performance-tuning"><a class="anchor" href="#Smart_Proxy_Performance_Tests_performance-tuning"></a>6.9.1. orcharhino Proxy Performance Tests</h4>
 <div class="paragraph">
 <p>We have measured multiple test cases on multiple orcharhino Proxy configurations:</p>
 </div>
