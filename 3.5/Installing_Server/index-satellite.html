@@ -78,12 +78,26 @@
 <li><a href="#tuning-with-predefined-profiles_satellite">4.14. Tuning Satellite&#160;Server with Predefined Profiles</a></li>
 </ul>
 </li>
-<li><a href="#configuring-external-services">5. Configuring Satellite&#160;Server with External Services</a>
+<li><a href="#Configuring_External_Authentication_satellite">5. Configuring External Authentication</a>
 <ul class="sectlevel2">
-<li><a href="#configuring-external-dns_satellite">5.1. Configuring Satellite&#160;Server with External DNS</a></li>
-<li><a href="#configuring-external-dhcp_satellite">5.2. Configuring Satellite&#160;Server with External DHCP</a></li>
-<li><a href="#configuring-external-tftp_satellite">5.3. Configuring Satellite&#160;Server with External TFTP</a></li>
-<li><a href="#configuring-external-idm-dns_satellite">5.4. Configuring Satellite&#160;Server with External IdM DNS</a></li>
+<li><a href="#Using_LDAP_satellite">5.1. Using LDAP</a></li>
+<li><a href="#Using_FreeIPA_satellite">5.2. Using Red&#160;Hat Identity Management</a></li>
+<li><a href="#Using_Active_Directory_satellite">5.3. Using Active Directory</a></li>
+<li><a href="#Configuring_External_User_Groups_satellite">5.4. Configuring External User Groups</a></li>
+<li><a href="#Refreshing_External_User_Groups_for_LDAP_satellite">5.5. Refreshing External User Groups for LDAP</a></li>
+<li><a href="#Refreshing_External_User_Groups_for_FreeIPA_or_AD_satellite">5.6. Refreshing External User Groups for Red&#160;Hat Identity Management or AD</a></li>
+<li><a href="#External_Authentication_for_Provisioned_Hosts_satellite">5.7. External Authentication for Provisioned Hosts</a></li>
+<li><a href="#Configuring_Project_with_Keycloak_Authentication_keycloak-general">5.8. Configuring Satellite with Red&#160;Hat Single Sign-On Authentication</a></li>
+<li><a href="#Configuring_Keycloak_Authentication_with_TOTP_keycloak-totp">5.9. Configuring Red&#160;Hat Single Sign-On Authentication with TOTP</a></li>
+<li><a href="#Disabling_Keycloak_Authentication_satellite">5.10. Disabling Red&#160;Hat Single Sign-On Authentication</a></li>
+</ul>
+</li>
+<li><a href="#configuring-external-services">6. Configuring Satellite&#160;Server with External Services</a>
+<ul class="sectlevel2">
+<li><a href="#configuring-external-dns_satellite">6.1. Configuring Satellite&#160;Server with External DNS</a></li>
+<li><a href="#configuring-external-dhcp_satellite">6.2. Configuring Satellite&#160;Server with External DHCP</a></li>
+<li><a href="#configuring-external-tftp_satellite">6.3. Configuring Satellite&#160;Server with External TFTP</a></li>
+<li><a href="#configuring-external-idm-dns_satellite">6.4. Configuring Satellite&#160;Server with External IdM DNS</a></li>
 </ul>
 </li>
 <li><a href="#applying-custom-configuration_satellite">Appendix A: Applying Custom Configuration to Red&#160;Hat Satellite</a></li>
@@ -3270,13 +3284,2562 @@ For example, to apply the medium tuning profile settings, enter the following co
 </div>
 </div>
 <div class="sect1">
-<h2 id="configuring-external-services"><a class="anchor" href="#configuring-external-services"></a>5. Configuring Satellite&#160;Server with External Services</h2>
+<h2 id="Configuring_External_Authentication_satellite"><a class="anchor" href="#Configuring_External_Authentication_satellite"></a>5. Configuring External Authentication</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>By using external authentication you can derive user and user group permissions from user group membership in an external identity provider.
+When you use external authentication, you do not have to create these users and maintain their group membership manually on Satellite&#160;Server.
+In case the external source does not provide email, it will be requested during the first login through Satellite web UI.</p>
+</div>
+<div class="paragraph">
+<div class="title">Important User and Group Account Information</div>
+<p>All user and group accounts must be local accounts.
+This is to ensure that there are no authentication conflicts between local accounts on your Satellite&#160;Server and accounts in your Active Directory domain.</p>
+</div>
+<div class="paragraph">
+<p>Your system is not affected by this conflict if your user and group accounts exist in both <code>/etc/passwd</code> and <code>/etc/group</code> files.
+For example, to check if entries for <code>puppet</code>, <code>apache</code>, <code>foreman</code> and <code>foreman-proxy</code> groups exist in both <code>/etc/passwd</code> and <code>/etc/group</code> files, enter the following commands:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># cat /etc/passwd | grep 'puppet\|apache\|foreman\|foreman-proxy'
+# cat /etc/group | grep 'puppet\|apache\|foreman\|foreman-proxy'</pre>
+</div>
+</div>
+<div class="paragraph">
+<div class="title">Scenarios for Configuring External Authentication</div>
+<p>Red&#160;Hat Satellite supports the following general scenarios for configuring external authentication:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Using <em>Lightweight Directory Access Protocol</em> (LDAP) server as an external identity provider.
+LDAP is a set of open protocols used to access centrally stored information over a network.
+With Satellite, you can manage LDAP entirely through the Satellite web UI.
+For more information, see <a href="#Using_LDAP_satellite">Using LDAP</a>.
+Though you can use LDAP to connect to a Red&#160;Hat Identity Management or AD server, the setup does not support server discovery, cross-forest trusts, or single sign-on with Kerberos in Satellite&#8217;s web UI.</p>
+</li>
+<li>
+<p>Using a Red&#160;Hat Identity Management server as an external identity provider.
+Red&#160;Hat Identity Management deals with the management of individual identities, their credentials and privileges used in a networking environment.
+Configuration using Red&#160;Hat Identity Management cannot be completed using only the Satellite web UI and requires some interaction with the CLI.
+For more information see <a href="#Using_FreeIPA_satellite">Using Red&#160;Hat Identity Management</a>.</p>
+</li>
+<li>
+<p>Using <em>Active Directory</em> (AD) integrated with Red&#160;Hat Identity Management through cross-forest Kerberos trust as an external identity provider.
+For more information see <a href="#Active_Directory_with_Cross_Forest_Trust_satellite">Active Directory with Cross-Forest Trust</a>.</p>
+</li>
+<li>
+<p>Using Red&#160;Hat Single Sign-On as an OpenID provider for external authentication to Satellite.
+For more information, see <a href="#Configuring_Project_with_Keycloak_Authentication_keycloak-general">Configuring Satellite with Red&#160;Hat Single Sign-On Authentication</a>.</p>
+</li>
+<li>
+<p>Using Red&#160;Hat Single Sign-On as an OpenID provider for external authentication to Satellite with TOTP.
+For more information, see <a href="#Configuring_Keycloak_Authentication_with_TOTP_keycloak-totp">Configuring Red&#160;Hat Single Sign-On Authentication with TOTP</a>.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>As well as providing access to Satellite&#160;Server, hosts provisioned with Satellite can also be integrated with Red&#160;Hat Identity Management realms.
+Red&#160;Hat Satellite has a realm feature that automatically manages the life cycle of any system registered to a realm or domain provider.
+For more information, see <a href="#External_Authentication_for_Provisioned_Hosts_satellite">External Authentication for Provisioned Hosts</a>.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 8. Authentication Overview</caption>
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Authentication</th>
+<th class="tableblock halign-left valign-top">User Groups</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Red&#160;Hat Identity Management</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Kerberos or LDAP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Active Directory</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Kerberos or LDAP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">POSIX</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">LDAP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+</tr>
+</tbody>
+</table>
+<div class="sect2">
+<h3 id="Using_LDAP_satellite"><a class="anchor" href="#Using_LDAP_satellite"></a>5.1. Using LDAP</h3>
+<div class="paragraph">
+<p>Satellite supports LDAP authentication using one or multiple LDAP directories.</p>
+</div>
+<div class="paragraph">
+<p>If you require Red&#160;Hat Satellite to use <code>TLS</code> to establish a secure LDAP connection (LDAPS), first obtain certificates used by the LDAP server you are connecting to and mark them as trusted on the base operating system of your Satellite&#160;Server as described below.
+If your LDAP server uses a certificate chain with intermediate certificate authorities, all of the root and intermediate certificates in the chain must be trusted, so ensure all certificates are obtained.
+If you do not require secure LDAP at this time, proceed to <a href="#Configuring_Project_to_Use_LDAP_satellite">Configuring Red&#160;Hat Satellite to use LDAP</a>.</p>
+</div>
+<div class="paragraph">
+<div class="title">Using SSSD Configuration</div>
+<p>Though direct LDAP integration is covered in this section, Red&#160;Hat recommends that you use SSSD and configure it against Red&#160;Hat Identity Management, AD, or an LDAP server.
+SSSD improves the consistency of the authentication process.
+For more information about the preferred configurations, see <a href="#Using_Active_Directory_satellite">Using Active Directory</a>.
+You can also cache the SSSD credentials and use them for LDAP authentication.
+For more information on SSSD, see <a href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html-single/configuring_authentication_and_authorization_in_rhel/index#configuring-SSSD-to-use-LDAP-and-require-TLS-authentication_configuring-authentication-and-authorization-in-rhel">Configuring SSSD</a> in the <em>Red&#160;Hat Enterprise Linux 8 Configuring Authentication and Authorization in RHEL Guide</em>.</p>
+</div>
+<div class="sect3">
+<h4 id="Configuring_TLS_for_Secure_LDAP_satellite"><a class="anchor" href="#Configuring_TLS_for_Secure_LDAP_satellite"></a>5.1.1. Configuring TLS for Secure LDAP</h4>
+<div class="paragraph">
+<p>Use the Satellite CLI to configure TLS for secure LDAP (LDAPS).</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Obtain the Certificate from the LDAP Server.</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>If you use Active Directory Certificate Services, export the Enterprise PKI CA Certificate using the Base-64 encoded X.509 format.
+See <a href="https://access.redhat.com/solutions/1498773">How to configure Active Directory authentication with <code>TLS</code> on Satellite</a> for information on creating and exporting a CA certificate from an Active Directory server.</p>
+</li>
+<li>
+<p>Download the LDAP server certificate to a temporary location onto Satellite&#160;Server and remove it when finished.</p>
+<div class="paragraph">
+<p>For example, <code>/tmp/example.crt</code>.
+The filename extensions <code>.cer</code> and <code>.crt</code> are only conventions and can refer to DER binary or PEM ASCII format certificates.</p>
+</div>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>Trust the Certificate from the LDAP Server.</p>
+<div class="paragraph">
+<p>Satellite&#160;Server requires the CA certificates for LDAP authentication to be individual files in <code>/etc/pki/tls/certs/</code> directory.</p>
+</div>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Use the <code>install</code> command to install the imported certificate into the <code>/etc/pki/tls/certs/</code> directory with the correct permissions:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># install /tmp/<em>example.crt</em> /etc/pki/tls/certs/</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Enter the following command as <code>root</code> to trust the <em>example.crt</em> certificate obtained from the LDAP server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ln -s <em>example.crt</em> /etc/pki/tls/certs/$(openssl \
+x509 -noout -hash -in \
+/etc/pki/tls/certs/<em>example.crt</em>).0</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Restart the <code>httpd</code> service:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl restart httpd</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="Configuring_Project_to_Use_LDAP_satellite"><a class="anchor" href="#Configuring_Project_to_Use_LDAP_satellite"></a>5.1.2. Configuring Red&#160;Hat Satellite to use LDAP</h4>
+<div class="paragraph">
+<p>In the Satellite web UI, configure Satellite to use LDAP.</p>
+</div>
+<div class="paragraph">
+<p>Note that if you need single sign-on functionality with Kerberos on Satellite web UI, you should use Red&#160;Hat Identity Management and AD external authentication instead.
+For more information, see <a href="#Using_FreeIPA_satellite">Using Red&#160;Hat Identity Management</a> or <a href="#Using_Active_Directory_satellite">Using Active Directory</a>.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Set the Network Information System (NIS) service boolean to true to prevent SELinux from stopping outgoing LDAP connections:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># setsebool -P nis_enabled on</pre>
+</div>
+</div>
+</li>
+<li>
+<p>In the Satellite web UI, navigate to <strong>Administer</strong> &gt; <strong>LDAP Authentication</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Create Authentication Source</strong>.</p>
+</li>
+<li>
+<p>On the <strong>LDAP server</strong> tab, enter the LDAP server&#8217;s name, host name, port, and server type.
+The default port is 389, the default server type is POSIX (alternatively you can select FreeIPA or Active Directory depending on the type of authentication server).
+For <code>TLS</code> encrypted connections, select the <strong>LDAPS</strong> checkbox to enable encryption.
+The port should change to 636, which is the default for LDAPS.</p>
+</li>
+<li>
+<p>On the <strong>Account</strong> tab, enter the account information and domain name details.
+See <a href="#Description_of_LDAP_Settings_satellite">Description of LDAP Settings</a> for descriptions and examples.</p>
+</li>
+<li>
+<p>On the <strong>Attribute mappings</strong> tab, map LDAP attributes to Satellite attributes.
+You can map login name, first name, last name, email address, and photo attributes.
+See <a href="#Example_Settings_for_LDAP_Connections_satellite">Example Settings for LDAP Connections</a> for examples.</p>
+</li>
+<li>
+<p>On the <strong>Locations</strong> tab, select locations from the left table.
+Selected locations are assigned to users created from the LDAP authentication source, and available after their first login.</p>
+</li>
+<li>
+<p>On the <strong>Organizations</strong> tab, select organizations from the left table.
+Selected organizations are assigned to users created from the LDAP authentication source, and available after their first login.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong>.</p>
+</li>
+<li>
+<p>Configure new accounts for LDAP users:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>If you did not select <strong>Automatically Create Accounts In Satellite</strong> checkbox, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.13/html-single/administering_red_hat_satellite/index#Creating_a_User_admin">Creating a User</a> in <em>Administering Red&#160;Hat Satellite</em> to create user accounts manually.</p>
+</li>
+<li>
+<p>If you selected the <strong>Automatically Create Accounts In Satellite</strong> checkbox, LDAP users can now log in to Satellite using their LDAP accounts and passwords.
+After they log in for the first time, the Satellite administrator has to assign roles to them manually.
+For more information on assigning user accounts appropriate roles in Satellite, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.13/html-single/administering_red_hat_satellite/index#Assigning_Roles_to_a_User_admin">Assigning Roles to a User</a> in <em>Administering Red&#160;Hat Satellite</em>.</p>
+</li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="Description_of_LDAP_Settings_satellite"><a class="anchor" href="#Description_of_LDAP_Settings_satellite"></a>5.1.3. Description of LDAP Settings</h4>
+<div class="paragraph">
+<p>The following table provides a description for each setting in the <strong>Account</strong> tab.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 9. Account Tab Settings</caption>
+<colgroup>
+<col style="width: 22.2222%;">
+<col style="width: 77.7778%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Setting</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Account</strong></p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>The user name of the LDAP account that has read access to the LDAP server.
+User name is not required if the server allows anonymous reading, otherwise use the full path to the user&#8217;s object.
+For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">uid=$login,cn=users,cn=accounts,dc=example,dc=com</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>$login</code> variable stores the username entered on the login page as a literal string.
+The value is accessed when the variable is expanded.</p>
+</div>
+<div class="paragraph">
+<p>The variable cannot be used with external user groups from an LDAP source because Satellite needs to retrieve the group list without the user logging in.
+Use either an anonymous, or dedicated service user.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Account password</strong></p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>The LDAP password for the user defined in the <strong>Account username</strong> field.
+This field can remain blank if the <strong>Account username</strong> is using the <code>$login</code> variable.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Base DN</strong></p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>The top level domain name of the LDAP directory.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Groups base DN</strong></p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>The top level domain name of the LDAP directory tree that contains groups.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>LDAP filter</strong></p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>A filter to restrict LDAP queries.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Automatically Create Accounts In Satellite</strong></p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>If this checkbox is selected, Satellite creates user accounts for LDAP users when they log in to Satellite for the first time.
+After they log in for the first time, the Satellite administrator has to assign roles to them manually.
+See <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.13/html-single/administering_red_hat_satellite/index#Assigning_Roles_to_a_User_admin">Assigning Roles to a User</a> in <em>{AdministeringDocTitle)</em> to assign user accounts appropriate roles in Satellite.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Usergroup Sync</strong></p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>If this option is selected, the user group membership of a user is automatically synchronized when the user logs in, which ensures the membership is always up to date.
+If this option is cleared, Satellite relies on a cron job to regularly synchronize group membership (every 30 minutes by default).
+For more information, see <a href="#Configuring_External_User_Groups_satellite">Configuring External User Groups</a>.</p>
+</div></div></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="Example_Settings_for_LDAP_Connections_satellite"><a class="anchor" href="#Example_Settings_for_LDAP_Connections_satellite"></a>5.1.4. Example Settings for LDAP Connections</h4>
+<div class="paragraph">
+<p>The following table shows example settings for different types of LDAP connections.
+The example below uses a dedicated service account called <em>redhat</em> that has bind, read, and search permissions on the user and group entries.
+Note that LDAP attribute names are case sensitive.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 10. Example Settings for Active Directory, Free IPA or Red&#160;Hat Identity Management and POSIX LDAP Connections</caption>
+<colgroup>
+<col style="width: 14.2857%;">
+<col style="width: 28.5714%;">
+<col style="width: 28.5714%;">
+<col style="width: 28.5715%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Setting</th>
+<th class="tableblock halign-left valign-top">Active Directory</th>
+<th class="tableblock halign-left valign-top">FreeIPA or Red&#160;Hat Identity Management</th>
+<th class="tableblock halign-left valign-top">POSIX (OpenLDAP)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Account</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DOMAIN\redhat</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">uid=redhat,cn=users,
+cn=accounts,dc=example,
+dc=com</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">uid=redhat,ou=users,
+dc=example,dc=com</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Account password</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P@ssword</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Base DN</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DC=example,DC=COM</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">dc=example,dc=com</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">dc=example,dc=com</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Groups Base DN</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CN=Users,DC=example,DC=com</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">cn=groups,cn=accounts,
+dc=example,dc=com</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">cn=employee,ou=userclass,
+dc=example,dc=com</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Login name attribute</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">userPrincipalName</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">uid</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">uid</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">First name attribute</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">givenName</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">givenName</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">givenName</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Last name attribute</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">sn</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">sn</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">sn</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Email address attribute</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">mail</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">mail</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">mail</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Photo attribute</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">thumbnailPhoto</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p><code>userPrincipalName</code> allows the use of whitespace in usernames.
+The login name attribute <code>sAMAccountName</code> (which is not listed in the table above) provides backwards compatibility with legacy Microsoft systems.
+<code>sAMAccountName</code> does not allow the use of whitespace in usernames.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="Example_LDAP_Filters_satellite"><a class="anchor" href="#Example_LDAP_Filters_satellite"></a>5.1.5. Example LDAP Filters</h4>
+<div class="paragraph">
+<p>As an administrator, you can create LDAP filters to restrict the access of specific users to Satellite.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 11. Example filters for allowing specific users to login</caption>
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 75%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">User</th>
+<th class="tableblock halign-left valign-top">Filter</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">User1, User3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">(memberOf=cn=Group1,cn=Users,dc=domain,dc=example)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">User2, User3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">(memberOf=cn=Group2,cn=Users,dc=domain,dc=example)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">User1, User2, User3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">(|(memberOf=cn=Group1,cn=Users,dc=domain,dc=example)(memberOf=cn=Group2,cn=Users,dc=domain,dc=example))</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<div class="title">LDAP directory structure</div>
+<p>The LDAP directory structure that the filters in the example use:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">DC=Domain,DC=Example
+   |
+   |----- CN=Users
+         |
+         |----- CN=Group1
+         |----- CN=Group2
+         |----- CN=User1
+         |----- CN=User2
+         |----- CN=User3</pre>
+</div>
+</div>
+<div class="paragraph">
+<div class="title">LDAP group membership</div>
+<p>The group membership that the filters in the example use:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 66.6667%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Group</th>
+<th class="tableblock halign-left valign-top">Members</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Group1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">User1,
+User3</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Group2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">User2,
+User3</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Using_FreeIPA_satellite"><a class="anchor" href="#Using_FreeIPA_satellite"></a>5.2. Using Red&#160;Hat Identity Management</h3>
+<div class="paragraph">
+<p>This section shows how to integrate Satellite&#160;Server with a Red&#160;Hat Identity Management server and how to enable host-based access control.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>You can attach Red&#160;Hat Identity Management as an external authentication source with no single sign-on support.
+For more information, see <a href="#Using_LDAP_satellite">Using LDAP</a>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>The base operating system of Satellite&#160;Server must be enrolled in the Red&#160;Hat Identity Management domain by the Red&#160;Hat Identity Management administrator of your organization.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The examples in this chapter assume separation between Red&#160;Hat Identity Management and Satellite configuration.
+However, if you have administrator privileges for both servers, you can configure Red&#160;Hat Identity Management as described in <a href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html-single/installing_identity_management/index">Red&#160;Hat Enterprise Linux 8 Installing Identity Management Guide</a>.</p>
+</div>
+<div class="sect3">
+<h4 id="Configuring_FreeIPA_Authentication_on_Server_satellite"><a class="anchor" href="#Configuring_FreeIPA_Authentication_on_Server_satellite"></a>5.2.1. Configuring Red&#160;Hat Identity Management Authentication on Satellite&#160;Server</h4>
+<div class="paragraph">
+<p>In the Satellite CLI, configure Red&#160;Hat Identity Management authentication by first creating a host entry on the Red&#160;Hat Identity Management server.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On the Red&#160;Hat Identity Management server, to authenticate, enter the following command and enter your password when prompted:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># kinit <em>admin</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>To verify that you have authenticated, enter the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># klist</pre>
+</div>
+</div>
+</li>
+<li>
+<p>On the Red&#160;Hat Identity Management server, create a host entry for Satellite&#160;Server and generate a one-time password, for example:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ipa host-add --random <em>hostname</em></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The generated one-time password must be used on the client to complete Red&#160;Hat Identity Management-enrollment.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>For more information on host configuration properties, see <a href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html-single/configuring_and_managing_identity_management/index#con_host-entry-LDAP_managing-hosts-ui">Host entry in IdM LDAP</a> in <em>Configuring and managing Identity Management</em>.</p>
+</div>
+</li>
+<li>
+<p>Create an HTTP service for Satellite&#160;Server, for example:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ipa service-add HTTP/<em>hostname</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For more information on managing services, see <a href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html-single/accessing_identity_management_services/index">Red&#160;Hat Enterprise Linux 8 Accessing Identity Management Services guide</a>.</p>
+</div>
+</li>
+<li>
+<p>On Satellite&#160;Server, install the IPA client:</p>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Warning</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>This command might restart Satellite services during the installation of the package.
+For more information about installing and updating packages on Satellite, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.13/html-single/administering_red_hat_satellite/index#Managing_Packages_on_the_Base_Operating_System_admin">Managing Packages on the Base Operating System of Satellite&#160;Server or Capsule&#160;Server</a> in <em>Administering Red&#160;Hat Satellite</em>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-maintain packages install ipa-client</pre>
+</div>
+</div>
+</li>
+<li>
+<p>On Satellite&#160;Server, enter the following command as root to configure Red&#160;Hat Identity Management-enrollment:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ipa-client-install --password <em>OTP</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Replace <em>OTP</em> with the one-time password provided by the Red&#160;Hat Identity Management administrator.</p>
+</div>
+</li>
+<li>
+<p>Set <code>foreman-ipa-authentication</code> to true, using the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-installer --foreman-ipa-authentication=true</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Restart Satellite services:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-maintain service restart</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>External users can now log in to Satellite using their Red&#160;Hat Identity Management credentials.
+They can now choose to either log in to Satellite&#160;Server directly using their username and password or take advantage of the configured Kerberos single sign-on and obtain a ticket on their client machine and be logged in automatically.
+The two-factor authentication with one-time password (2FA OTP) is also supported.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="Configuring_Host_Based_Authentication_Control_satellite"><a class="anchor" href="#Configuring_Host_Based_Authentication_Control_satellite"></a>5.2.2. Configuring Host-Based Authentication Control</h4>
+<div class="paragraph">
+<p>HBAC rules define which machine within the domain a Red&#160;Hat Identity Management user is allowed to access.
+You can configure HBAC on the Red&#160;Hat Identity Management server to prevent selected users from accessing Satellite&#160;Server.
+With this approach, you can prevent Satellite from creating database entries for users that are not allowed to log in.
+For more information on HBAC, see <a href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html-single/managing_idm_users_groups_hosts_and_access_control_rules/index#host-based-access-control-rules-in-idm_ensuring-the-presence-of">Managing IdM Users, Groups, Hosts, and Access Control Rules Guide</a>.</p>
+</div>
+<div class="paragraph">
+<p>On the Red&#160;Hat Identity Management server, configure Host-Based Authentication Control (HBAC).</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On the Red&#160;Hat Identity Management server, to authenticate, enter the following command and enter your password when prompted:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># kinit <em>admin</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>To verify that you have authenticated, enter the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># klist</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create HBAC service and rule on the Red&#160;Hat Identity Management server and link them together.
+The following examples use the PAM service name <em>satellite-prod</em>.
+Execute the following commands on the Red&#160;Hat Identity Management server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ipa hbacsvc-add satellite-prod
+# ipa hbacrule-add allow_satellite_prod
+# ipa hbacrule-add-service allow_satellite_prod --hbacsvcs=satellite-prod</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Add the user who is to have access to the service satellite-prod, and the hostname of Satellite&#160;Server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ipa hbacrule-add-user allow_satellite_prod --user=<em>username</em>
+# ipa hbacrule-add-host allow_satellite_prod --hosts=<em>satellite.example.com</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Alternatively, host groups and user groups can be added to the <em>allow</em>satellite_prod_ rule.</p>
+</div>
+</li>
+<li>
+<p>To check the status of the rule, execute:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ipa hbacrule-find satellite-prod
+# ipa hbactest --user=<em>username</em> --host=<em>satellite.example.com</em> --service=satellite-prod</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Ensure the allow_all rule is disabled on the Red&#160;Hat Identity Management server.
+For instructions on how to do so without disrupting other services see the <a href="https://access.redhat.com/solutions/67895">How to configure HBAC rules in IdM</a> article on the Red&#160;Hat Customer Portal.</p>
+</li>
+<li>
+<p>Configure the Red&#160;Hat Identity Management integration with Satellite&#160;Server as described in <a href="#Configuring_FreeIPA_Authentication_on_Server_satellite">Configuring Red&#160;Hat Identity Management Authentication on Satellite&#160;Server</a>.
+On Satellite&#160;Server, define the PAM service as root:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-installer --foreman-pam-service=satellite-prod</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Using_Active_Directory_satellite"><a class="anchor" href="#Using_Active_Directory_satellite"></a>5.3. Using Active Directory</h3>
+<div class="paragraph">
+<p>This section shows how to use direct Active Directory (AD) as an external authentication source for Satellite&#160;Server.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>You can attach Active Directory as an external authentication source with no single sign-on support.
+For more information, see <a href="#Using_LDAP_satellite">Using LDAP</a>.
+For an example configuration, see <a href="https://access.redhat.com/solutions/1498773">How to configure Active Directory authentication with TLS on Satellite</a>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Direct AD integration means that Satellite&#160;Server is joined directly to the AD domain where the identity is stored.
+The recommended setup consists of two steps:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Enrolling Satellite&#160;Server with the Active Directory server as described in <a href="#Enrolling_Server_with_the_AD_Server_satellite">Enrolling Satellite&#160;Server with the AD Server</a>.</p>
+</li>
+<li>
+<p>Configuring direct Active Directory integration with GSS-proxy as described in <a href="#Configuring_Direct_AD_Integration_with_GSS_Proxy_satellite">Configuring Direct AD Integration with GSS-Proxy</a>.</p>
+</li>
+</ul>
+</div>
+<div class="sect3">
+<h4 id="GSS_Proxy_satellite"><a class="anchor" href="#GSS_Proxy_satellite"></a>5.3.1. GSS-Proxy</h4>
+<div class="paragraph">
+<p>The traditional process of Kerberos authentication in Apache requires the Apache process to have read access to the keytab file.
+GSS-Proxy allows you to implement stricter privilege separation for the Apache server by removing access to the keytab file while preserving Kerberos authentication functionality.
+When using AD as an external authentication source for Satellite, it is recommended to implement GSS-proxy, because the keys in the keytab file are the same as the host keys.</p>
+</div>
+<div class="paragraph">
+<p>Perform the following procedures on Red&#160;Hat Enterprise Linux that acts as a base operating system for your Satellite&#160;Server.
+For the examples in this section <em>EXAMPLE.ORG</em> is the Kerberos realm for the AD domain.
+By completing the procedures, users that belong to the EXAMPLE.ORG realm can log in to Satellite&#160;Server.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="Enrolling_Server_with_the_AD_Server_satellite"><a class="anchor" href="#Enrolling_Server_with_the_AD_Server_satellite"></a>5.3.2. Enrolling Satellite&#160;Server with the AD Server</h4>
+<div class="paragraph">
+<p>In the Satellite CLI, enroll Satellite&#160;Server with the Active Directory server.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisite</div>
+<ul>
+<li>
+<p>GSS-proxy and nfs-utils are installed.</p>
+<div class="paragraph">
+<p>Installing GSS-proxy and nfs-utils:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-maintain packages install gssproxy nfs-utils</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Install the required packages:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-maintain packages install sssd adcli realmd ipa-python-compat krb5-workstation samba-common-tools</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Enroll Satellite&#160;Server with the AD server.
+You may need to have administrator permissions to perform the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># realm join -v <em>EXAMPLE.ORG</em> --membership-software=samba -U Administrator</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="Configuring_Direct_AD_Integration_with_GSS_Proxy_satellite"><a class="anchor" href="#Configuring_Direct_AD_Integration_with_GSS_Proxy_satellite"></a>5.3.3. Configuring Direct AD Integration with GSS-Proxy</h4>
+<div class="paragraph">
+<p>In the Satellite CLI, configure the direct Active Directory integration with GSS-proxy.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisite</div>
+<ul>
+<li>
+<p>Satellite is enrolled with the Active Directory server.
+For more information, see <a href="#Enrolling_Server_with_the_AD_Server_satellite">Enrolling Satellite&#160;Server with the AD Server</a>.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Create the <code>/etc/ipa/</code> directory and the <code>default.conf</code> file:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># mkdir /etc/ipa
+# touch /etc/ipa/default.conf</pre>
+</div>
+</div>
+</li>
+<li>
+<p>To the <code>default.conf</code> file, add the following content:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">[global]
+server = unused
+realm = <em>EXAMPLE.ORG</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create the <code>/etc/net-keytab.conf</code> file with the following content:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">[global]
+workgroup = EXAMPLE
+realm = EXAMPLE.ORG
+kerberos method = system keytab
+security = ads</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Determine the effective user ID of the Apache user:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># id apache</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apache user must not have access to the keytab file.</p>
+</div>
+</li>
+<li>
+<p>Create the <code>/etc/gssproxy/00-http.conf</code> file with the following content:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">[service/HTTP]
+mechs = krb5
+cred_store = keytab:/etc/krb5.keytab
+cred_store = ccache:/var/lib/gssproxy/clients/krb5cc_%U
+euid = <em>ID_of_Apache_User</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create a keytab entry:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># KRB5_KTNAME=FILE:/etc/httpd/conf/http.keytab net ads keytab add HTTP -U administrator -d3 -s /etc/net-keytab.conf
+# chown root.apache /etc/httpd/conf/http.keytab
+# chmod 640 /etc/httpd/conf/http.keytab</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Enable IPA authenication in Satellite:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-installer --foreman-ipa-authentication=true</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Start and enable the <code>gssproxy</code> service:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl restart gssproxy
+# systemctl enable --now gssproxy</pre>
+</div>
+</div>
+</li>
+<li>
+<p>To configure the Apache server to use the <code>gssproxy</code> service, create a <code>systemd</code> drop-in file and add the following content to it:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># mkdir -p /etc/systemd/system/httpd.service.d/
+# vi /etc/systemd/system/httpd.service.d/gssproxy.conf
+[Service]
+Environment=GSS_USE_PROXY=1</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Apply changes to the service:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl daemon-reload</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Start and enable the <code>httpd</code> service:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl restart httpd</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Verify that SSO is working as expected.</p>
+<div class="paragraph">
+<p>With a running Apache server, users making HTTP requests against the server are authenticated if the client has a valid Kerberos ticket.</p>
+</div>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Retrieve the Kerberos ticket of the LDAP user, using the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># kinit ldapuser</pre>
+</div>
+</div>
+</li>
+<li>
+<p>View the Kerberos ticket, using the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># klist</pre>
+</div>
+</div>
+</li>
+<li>
+<p>View output from successful SSO-based authentication, using the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># curl -k -u : --negotiate https://<em>satellite.example.com/</em>users/extlogin</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This returns the following response:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">&lt;html&gt;&lt;body&gt;You are being &lt;a href="https://<em>satellite.example.com/</em>users/4-ldapuserexample-com/edit"&gt;redirected&lt;/a&gt;.&lt;/body&gt;&lt;/html&gt;</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="Kerberos_Configuration_in_Web_Browsers_satellite"><a class="anchor" href="#Kerberos_Configuration_in_Web_Browsers_satellite"></a>5.3.4. Kerberos Configuration in Web Browsers</h4>
+<div class="paragraph">
+<p>For information on configuring Firefox, see <a href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html-single/configuring_authentication_and_authorization_in_rhel/index#Configuring_Firefox_to_use_Kerberos_for_SSO">Configuring Firefox to Use Kerberos for Single Sign-On</a> in the <em>Red&#160;Hat Enterprise Linux Configuring authentication and authorization in RHEL</em> guide.</p>
+</div>
+<div class="paragraph">
+<p>If you use the Internet Explorer browser, add Satellite&#160;Server to the list of Local Intranet or Trusted sites, and turn on the <em>Enable Integrated Windows Authentication</em> setting.
+See the Internet Explorer documentation for details.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>With direct AD integration, HBAC through Red&#160;Hat Identity Management is not available.
+As an alternative, you can use Group Policy Objects (GPO) that enable administrators to centrally manage policies in AD environments.
+To ensure correct GPO to PAM service mapping, use the following sssd configuration:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">access_provider = ad
+ad_gpo_access_control = enforcing
+ad_gpo_map_service = +foreman</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Here, <em>foreman</em> is the PAM service name.
+For more information on GPOs, see <a href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/integrating_rhel_systems_directly_with_windows_active_directory/managing-direct-connections-to-ad_integrating-rhel-systems-directly-with-active-directory#applying-group-policy-object-access-control-in-rhel_managing-direct-connections-to-ad">How SSSD interprets GPO access control rules</a> in <em>Integrating RHEL systems directly with Windows Active Directory</em>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="Active_Directory_with_Cross_Forest_Trust_satellite"><a class="anchor" href="#Active_Directory_with_Cross_Forest_Trust_satellite"></a>5.3.5. Active Directory with Cross-Forest Trust</h4>
+<div class="paragraph">
+<p>Kerberos can create <code>cross-forest trust</code> that defines a relationship between two otherwise separate domain forests.
+A domain forest is a hierarchical structure of domains; both AD and Red&#160;Hat Identity Management constitute a forest.
+With a trust relationship enabled between AD and Red&#160;Hat Identity Management, users of AD can access Linux hosts and services using a single set of credentials.
+For more information on cross-forest trusts, see <a href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/planning_identity_management/planning-a-cross-forest-trust-between-idm-and-ad_planning-identity-management">Planning a cross-forest trust between IdM and AD</a> in <em>Red&#160;Hat Enterprise Linux Planning Identity Management</em>.</p>
+</div>
+<div class="paragraph">
+<p>From the Satellite point of view, the configuration process is the same as integration with Red&#160;Hat Identity Management server without cross-forest trust configured.
+Satellite&#160;Server has to be enrolled in the IPM domain and integrated as described in <a href="#Using_FreeIPA_satellite">Using Red&#160;Hat Identity Management</a>.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="Configuring_the_FreeIPA_Server_to_use_Cross_Forest_Trust_satellite"><a class="anchor" href="#Configuring_the_FreeIPA_Server_to_use_Cross_Forest_Trust_satellite"></a>5.3.6. Configuring the Red&#160;Hat Identity Management Server to Use Cross-Forest Trust</h4>
+<div class="paragraph">
+<p>On the Red&#160;Hat Identity Management server, configure the server to use <code>cross-forest trust</code>.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Enable HBAC:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Create an external group and add the AD group to it.</p>
+</li>
+<li>
+<p>Add the new external group to a POSIX group.</p>
+</li>
+<li>
+<p>Use the POSIX group in a HBAC rule.</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>Configure sssd to transfer additional attributes of AD users.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Add the AD user attributes to the <em>nss</em> and <em>domain</em> sections in <code>/etc/sssd/sssd.conf</code>.
+For example:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">[nss]
+user_attributes=+mail, +sn, +givenname
+
+[domain/EXAMPLE]
+ldap_user_extra_attrs=mail, sn, givenname</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Configuring_External_User_Groups_satellite"><a class="anchor" href="#Configuring_External_User_Groups_satellite"></a>5.4. Configuring External User Groups</h3>
+<div class="paragraph">
+<p>Satellite does not associate external users with their user group automatically.
+You must create a user group with the same name as in the external source on Satellite.
+Members of the external user group then automatically become members of the Satellite user group and receive the associated permissions.</p>
+</div>
+<div class="paragraph">
+<p>The configuration of external user groups depends on the type of external authentication.</p>
+</div>
+<div class="paragraph">
+<p>To assign additional permissions to an external user, add this user to an internal user group that has no external mapping specified.
+Then assign the required roles to this group.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>If you use an LDAP server, configure Satellite to use LDAP authentication.
+For more information see <a href="#Using_LDAP_satellite">Using LDAP</a>.</p>
+<div class="paragraph">
+<p>When using external user groups from an LDAP source, you cannot use the <code>$login</code> variable as a substitute for the account user name.
+You must use either an anonymous or dedicated service user.</p>
+</div>
+</li>
+<li>
+<p>If you use a Red&#160;Hat Identity Management or AD server, configure Satellite to use Red&#160;Hat Identity Management or AD authentication.
+For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.13/html-single/installing_satellite_server_in_a_connected_network_environment/index#Configuring_External_Authentication_satellite">Configuring External Authentication</a> in <em>Installing Satellite&#160;Server in a Connected Network Environment</em>.</p>
+</li>
+<li>
+<p>Ensure that at least one external user authenticates for the first time.</p>
+</li>
+<li>
+<p>Retain a copy of the external group names you want to use.
+To find the group membership of external users, enter the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># id <em>username</em></pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Administer</strong> &gt; <strong>User Groups</strong>, and click <strong>Create User Group</strong>.</p>
+</li>
+<li>
+<p>Specify the name of the new user group.
+Do not select any users to avoid adding users automatically when you refresh the external user group.</p>
+</li>
+<li>
+<p>Click the <strong>Roles</strong> tab and select the roles you want to assign to the user group.
+Alternatively, select the <strong>Administrator</strong> checkbox to assign all available permissions.</p>
+</li>
+<li>
+<p>Click the <strong>External groups</strong> tab, then click <strong>Add external user group</strong>, and select an authentication source from the <strong>Auth source</strong> drop-down menu.</p>
+<div class="paragraph">
+<p>Specify the exact name of the external group in the <strong>Name</strong> field.</p>
+</div>
+</li>
+<li>
+<p>Click <strong>Submit</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Refreshing_External_User_Groups_for_LDAP_satellite"><a class="anchor" href="#Refreshing_External_User_Groups_for_LDAP_satellite"></a>5.5. Refreshing External User Groups for LDAP</h3>
+<div class="paragraph">
+<p>To set the LDAP source to synchronize user group membership automatically on user login, in the <strong>Auth Source</strong> page, select the <strong>Usergroup Sync</strong> option.
+If this option is not selected, LDAP user groups are refreshed automatically through a scheduled cron job synchronizing the LDAP Authentication source every 30 minutes by default.</p>
+</div>
+<div class="paragraph">
+<p>If the user groups in the LDAP Authentication source change in the lapse of time between scheduled tasks, the user can be assigned to incorrect external user groups.
+This is corrected automatically when the scheduled task runs.</p>
+</div>
+<div class="paragraph">
+<p>Use this procedure to refresh the LDAP source manually.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Administer</strong> &gt; <strong>Usergroups</strong> and select a user group.</p>
+</li>
+<li>
+<p>On the <strong>External Groups</strong> tab, click <strong>Refresh</strong> to the right of the required user group.</p>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">CLI procedure</div>
+<ul>
+<li>
+<p>Enter the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre># foreman-rake ldap:refresh_usergroups</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Refreshing_External_User_Groups_for_FreeIPA_or_AD_satellite"><a class="anchor" href="#Refreshing_External_User_Groups_for_FreeIPA_or_AD_satellite"></a>5.6. Refreshing External User Groups for Red&#160;Hat Identity Management or AD</h3>
+<div class="paragraph">
+<p>External user groups based on Red&#160;Hat Identity Management or AD are refreshed only when a group member logs in to Satellite.
+It is not possible to alter user membership of external user groups in the Satellite web UI, such changes are overwritten on the next group refresh.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="External_Authentication_for_Provisioned_Hosts_satellite"><a class="anchor" href="#External_Authentication_for_Provisioned_Hosts_satellite"></a>5.7. External Authentication for Provisioned Hosts</h3>
+<div class="paragraph">
+<p>Use this section to configure Satellite&#160;Server or Capsule&#160;Server for Red&#160;Hat Identity Management realm support, then add hosts to the Red&#160;Hat Identity Management realm group.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Satellite&#160;Server that is registered to the Content Delivery Network or an external Capsule&#160;Server that is registered to Satellite&#160;Server.</p>
+</li>
+<li>
+<p>A deployed realm or domain provider such as Red&#160;Hat Identity Management.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<div class="title">To install and configure Red&#160;Hat Identity Management packages on Satellite&#160;Server or Capsule&#160;Server:</div>
+<p>To use Red&#160;Hat Identity Management for provisioned hosts, complete the following steps to install and configure Red&#160;Hat Identity Management packages on Satellite&#160;Server or Capsule&#160;Server:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Install the <code>ipa-client</code> package on Satellite&#160;Server or Capsule&#160;Server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-maintain packages install ipa-client</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Configure the server as a Red&#160;Hat Identity Management client:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ipa-client-install</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create a realm proxy user, <code>realm-capsule</code>, and the relevant roles in Red&#160;Hat Identity Management:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-prepare-realm admin realm-capsule</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note the principal name that returns and your Red&#160;Hat Identity Management server configuration details because you require them for the following procedure.</p>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<div class="title">To configure Satellite&#160;Server or Capsule&#160;Server for Red&#160;Hat Identity Management Realm Support:</div>
+<p>Complete the following procedure on Satellite and every Capsule that you want to use:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Copy the <code>/root/freeipa.keytab</code> file to any Capsule&#160;Server that you want to include in the same principal and realm:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># scp /root/freeipa.keytab root@<em>capsule.example.com</em>:/etc/foreman-proxy/freeipa.keytab</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Move the <code>/root/freeipa.keytab</code> file to the <code>/etc/foreman-proxy</code> directory and set the ownership settings to the <code>foreman-proxy</code> user:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># mv /root/freeipa.keytab /etc/foreman-proxy
+# chown foreman-proxy:foreman-proxy /etc/foreman-proxy/freeipa.keytab</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Enter the following command on all Capsules that you want to include in the realm.
+If you use the integrated Capsule on Satellite, enter this command on Satellite&#160;Server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-installer --foreman-proxy-realm true \
+--foreman-proxy-realm-keytab /etc/foreman-proxy/freeipa.keytab \
+--foreman-proxy-realm-principal <em>realm-capsule@EXAMPLE.COM</em> \
+--foreman-proxy-realm-provider freeipa</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can also use these options when you first configure the Satellite&#160;Server.</p>
+</div>
+</li>
+<li>
+<p>Ensure that the most updated versions of the ca-certificates package is installed and trust the Red&#160;Hat Identity Management Certificate Authority:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># cp /etc/ipa/ca.crt /etc/pki/ca-trust/source/anchors/ipa.crt
+# update-ca-trust enable
+# update-ca-trust</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Optional: If you configure Red&#160;Hat Identity Management on an existing Satellite&#160;Server or Capsule&#160;Server, complete the following steps to ensure that the configuration changes take effect:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Restart the <strong>foreman-proxy</strong> service:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl restart foreman-proxy</pre>
+</div>
+</div>
+</li>
+<li>
+<p>In the Satellite web UI, navigate to <strong>Infrastructure</strong> &gt; <strong>Capsules</strong>.</p>
+</li>
+<li>
+<p>Locate the Capsule you have configured for Red&#160;Hat Identity Management and from the list in the <strong>Actions</strong> column, select <strong>Refresh</strong>.</p>
+</li>
+</ol>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<div class="title">To create a realm for the Red&#160;Hat Identity Management-enabled Capsule</div>
+<p>After you configure your integrated or external Capsule with Red&#160;Hat Identity Management, you must create a realm and add the Red&#160;Hat Identity Management-configured Capsule to the realm.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Infrastructure</strong> &gt; <strong>Realms</strong> and click <strong>Create Realm</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter a name for the realm.</p>
+</li>
+<li>
+<p>From the <strong>Realm Type</strong> list, select the type of realm.</p>
+</li>
+<li>
+<p>From the <strong>Realm Capsule</strong> list, select Capsule&#160;Server where you have configured Red&#160;Hat Identity Management.</p>
+</li>
+<li>
+<p>Click the <strong>Locations</strong> tab and from the <strong>Locations</strong> list, select the location where you want to add the new realm.</p>
+</li>
+<li>
+<p>Click the <strong>Organizations</strong> tab and from the <strong>Organizations</strong> list, select the organization where you want to add the new realm.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong>.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<div class="title">Updating Host Groups with Realm Information</div>
+<p>You must update any host groups that you want to use with the new realm information.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Configure</strong> &gt; <strong>Host Groups</strong>, select the host group that you want to update, and click the <strong>Network</strong> tab.</p>
+</li>
+<li>
+<p>From the <strong>Realm</strong> list, select the realm you create as part of this procedure, and then click <strong>Submit</strong>.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<div class="title">Adding Hosts to a Red&#160;Hat Identity Management Host Group</div>
+<p>Red&#160;Hat Identity Management supports the ability to set up automatic membership rules based on a system&#8217;s attributes.
+Red&#160;Hat Satellite&#8217;s realm feature provides administrators with the ability to map the Red&#160;Hat Satellite host groups to the Red&#160;Hat Identity Management parameter <code>userclass</code> which allow administrators to configure automembership.</p>
+</div>
+<div class="paragraph">
+<p>When nested host groups are used, they are sent to the Red&#160;Hat Identity Management server as they are displayed in the Red&#160;Hat Satellite User Interface.
+For example, "Parent/Child/Child".</p>
+</div>
+<div class="paragraph">
+<p>Satellite&#160;Server or Capsule&#160;Server sends updates to the Red&#160;Hat Identity Management server, however automembership rules are only applied at initial registration.</p>
+</div>
+<div class="olist arabic">
+<div class="title">To Add Hosts to a Red&#160;Hat Identity Management Host Group:</div>
+<ol class="arabic">
+<li>
+<p>On the Red&#160;Hat Identity Management server, create a host group:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ipa hostgroup-add <em>hostgroup_name</em> --desc=<em>hostgroup_description</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create an <code>automembership</code> rule:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ipa automember-add --type=hostgroup <em>hostgroup_name</em> <em>automember_rule</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Where you can use the following options:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>automember-add</code> flags the group as an automember group.</p>
+</li>
+<li>
+<p><code>--type=hostgroup</code> identifies that the target group is a host group, not a user group.</p>
+</li>
+<li>
+<p><code><em>automember_rule</em></code> adds the name you want to identify the automember rule by.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Define an automembership condition based on the <code>userclass</code> attribute:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ipa automember-add-condition --key=userclass --type=hostgroup --inclusive-regex=<em>^webserver</em> <em>hostgroup_name</em>
+----------------------------------
+Added condition(s) to "<em>hostgroup_name</em>"
+----------------------------------
+Automember Rule: <em>automember_rule</em>
+Inclusive Regex: userclass=<em>^webserver</em>
+----------------------------
+Number of conditions added 1
+----------------------------</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Where you can use the following options:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>automember-add-condition</code> adds regular expression conditions to identify group members.</p>
+</li>
+<li>
+<p><code>--key=userclass</code> specifies the key attribute as <code>userclass</code>.</p>
+</li>
+<li>
+<p><code>--type=hostgroup</code> identifies that the target group is a host group, not a user group.</p>
+</li>
+<li>
+<p><code>--inclusive-regex=</code> <em>^webserver</em> identifies matching values with a regular expression pattern.</p>
+</li>
+<li>
+<p><em>hostgroup_name</em> &#8211; identifies the target host group&#8217;s name.</p>
+</li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>When a system is added to Satellite&#160;Server&#8217;s <em>hostgroup_name</em> host group, it is added automatically to the Red&#160;Hat Identity Management server&#8217;s "<em>hostgroup_name</em>" host group.
+Red&#160;Hat Identity Management host groups allow for Host-Based Access Controls (HBAC), sudo policies and other Red&#160;Hat Identity Management functions.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Configuring_Project_with_Keycloak_Authentication_keycloak-general"><a class="anchor" href="#Configuring_Project_with_Keycloak_Authentication_keycloak-general"></a>5.8. Configuring Satellite with Red&#160;Hat Single Sign-On Authentication</h3>
+<div class="paragraph">
+<p>Use this section to configure Satellite to use Red&#160;Hat Single Sign-On as an OpenID provider for external authentication.</p>
+</div>
+<div class="sect3">
+<h4 id="prerequisites-for-integrating-satellite-with-keycloak_keycloak-general"><a class="anchor" href="#prerequisites-for-integrating-satellite-with-keycloak_keycloak-general"></a>5.8.1. Prerequisites for Configuring Satellite with Red&#160;Hat Single Sign-On Authentication</h4>
+<div class="paragraph">
+<p>Before configuring Satellite with Red&#160;Hat Single Sign-On external authentication, ensure that you meet the following requirements:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>A working installation of Red&#160;Hat Single Sign-On server that uses HTTPS instead of HTTP.</p>
+</li>
+<li>
+<p>A Red&#160;Hat Single Sign-On account with admin privileges.</p>
+</li>
+<li>
+<p>A realm for Satellite user accounts created in Red&#160;Hat Single Sign-On.</p>
+</li>
+<li>
+<p>If the certificates or the CA are self-signed, ensure that they are added to the end-user certificate trust store.</p>
+</li>
+<li>
+<p>Users imported or added to Red&#160;Hat Single Sign-On.</p>
+<div class="paragraph">
+<p>If you have an existing user database configured such as LDAP or Kerberos, you can import users from it by configuring user federation.
+For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_single_sign-on/7.4/html/server_administration_guide/user-storage-federation">User Storage Federation</a> in the <em>Red&#160;Hat Single Sign-On Server Administration Guide</em>.</p>
+</div>
+<div class="paragraph">
+<p>If you do not have an existing user database configured, you can manually create users in Red&#160;Hat Single Sign-On.
+For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_single_sign-on/7.4/html/server_administration_guide/user_management#create-new-user">Creating New Users</a> in the <em>Red&#160;Hat Single Sign-On Server Administration Guide</em>.</p>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="registering-satellite-as-a-keycloak-client_keycloak-general"><a class="anchor" href="#registering-satellite-as-a-keycloak-client_keycloak-general"></a>5.8.2. Registering Satellite as a Red&#160;Hat Single Sign-On Client</h4>
+<div class="paragraph">
+<p>Use this procedure to register Satellite to Red&#160;Hat Single Sign-On as a client and configure Satellite to use Red&#160;Hat Single Sign-On as an authentication source.</p>
+</div>
+<div class="paragraph">
+<p>You can configure Satellite and Red&#160;Hat Single Sign-On with two different authentication methods:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Users authenticate to Satellite using the Satellite web UI.</p>
+</li>
+<li>
+<p>Users authenticate to Satellite using the Satellite CLI.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>You must decide on how you want your users to authenticate in advance because both methods require different Satellite clients to be registered to Red&#160;Hat Single Sign-On and configured.
+The steps to register and configure Satellite client in Red&#160;Hat Single Sign-On are distinguished within the procedure.</p>
+</div>
+<div class="paragraph">
+<p>You can also register two different Satellite clients to Red&#160;Hat Single Sign-On if you want to use both authentication methods and configure both clients accordingly.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On the Satellite server, install the following packages:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-maintain packages install mod_auth_openidc keycloak-httpd-client-install</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Register Satellite to Red&#160;Hat Single Sign-On as a client.
+Note that you the registration process for logging in using the web UI and the CLI are different.
+You can register two clients Satellite clients to Red&#160;Hat Single Sign-On to be able to log in to Satellite from the web UI and the CLI.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>If you want you users to authenticate to Satellite using the web UI, create a client as follows:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># keycloak-httpd-client-install --app-name foreman-openidc \
+--keycloak-server-url "<em>https://RHSSO.example.com</em>" \
+--keycloak-admin-username "<em>admin</em>" \
+--keycloak-realm "<em>Satellite_Realm</em>" \
+--keycloak-admin-realm master \
+--keycloak-auth-role root-admin \
+-t openidc -l /users/extlogin --force</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Enter the password for the administer account when prompted.
+This command creates a client for Satellite in Red&#160;Hat Single Sign-On.</p>
+</div>
+<div class="paragraph">
+<p>Then, configure Satellite to use Red&#160;Hat Single Sign-On as an authentication source:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-installer --foreman-keycloak true \
+--foreman-keycloak-app-name "foreman-openidc" \
+--foreman-keycloak-realm "<em>Satellite_Realm</em>"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>If you want your users to authenticate to Satellite using the CLI, create a client as follows:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># keycloak-httpd-client-install --app-name hammer-openidc \
+--keycloak-server-url "<em>https://RHSSO.example.com</em>" \
+--keycloak-admin-username "<em>admin</em>" \
+--keycloak-realm "<em>Satellite_Realm</em>" \
+--keycloak-admin-realm master \
+--keycloak-auth-role root-admin \
+-t openidc -l /users/extlogin --force</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Enter the password for the administer account when prompted.
+This command creates a client for Satellite in Red&#160;Hat Single Sign-On.</p>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Restart the <code>httpd</code> service:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl restart httpd</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="configuring-the-satellite-client-in-keycloak_keycloak-general"><a class="anchor" href="#configuring-the-satellite-client-in-keycloak_keycloak-general"></a>5.8.3. Configuring the Satellite Client in Red&#160;Hat Single Sign-On</h4>
+<div class="paragraph">
+<p>Use this procedure to configure the Satellite client in the Red&#160;Hat Single Sign-On web UI and create group and audience mappers for the Satellite client.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Red&#160;Hat Single Sign-On web UI, navigate to <strong>Clients</strong> and click the Satellite client.</p>
+</li>
+<li>
+<p>Configure access type:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>If you want your users to authenticate to Satellite using the Satellite web UI, from the <strong>Access Type</strong> list, select <strong>confidential</strong>.</p>
+</li>
+<li>
+<p>If you want your users to authenticate to Satellite using the CLI, from the <strong>Access Type</strong> list, select <strong>public</strong>.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>In the <strong>Valid redirect URI</strong> fields, add a valid redirect URI.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>If you want your users to authenticate to Satellite using the Satellite web UI, in the blank field below the existing URI, enter a URI in the form <code>https://satellite.example.com/users/extlogin</code>. Note that you must add the string <code>/users/extlogin</code> after the Satellite FQDN.</p>
+<div class="paragraph">
+<p>After completing this step, the Satellite client for logging in using the Satellite web UI must have the following <strong>Valid Redirect URIs</strong>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">https://satellite.example.com/users/extlogin/redirect_uri
+https://satellite.example.com/users/extlogin</pre>
+</div>
+</div>
+</li>
+<li>
+<p>If you want your users to authenticate to Satellite using the CLI, in the blank field below the existing URI, enter <strong>urn:ietf:wg:oauth:2.0:oob</strong>.</p>
+<div class="paragraph">
+<p>After completing this step, the Satellite client for logging in using the CLI must have the following <strong>Valid Redirect URIs</strong>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">https://satellite.example.com/users/extlogin/redirect_uri
+urn:ietf:wg:oauth:2.0:oob</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Click the <strong>Mappers</strong> tab and click <strong>Create</strong> to add an audience mapper.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter a name for the audience mapper.</p>
+</li>
+<li>
+<p>From the <strong>Mapper Type</strong> list, select <strong>Audience</strong>.</p>
+</li>
+<li>
+<p>From the <strong>Included Client Audience</strong> list, select the Satellite client.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Create</strong> to add a group mapper so that you can specify authorization in Satellite based on group membership.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter a name for the group mapper.</p>
+</li>
+<li>
+<p>From the <strong>Mapper Type</strong> list, select <strong>Group Membership</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Token Claim Name</strong> field, enter <strong>groups</strong>.</p>
+</li>
+<li>
+<p>Set the <strong>Full group path</strong> setting to OFF.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="Configuring_Project_Settings_for_Keycloak_Authentication_keycloak-general"><a class="anchor" href="#Configuring_Project_Settings_for_Keycloak_Authentication_keycloak-general"></a>5.8.4. Configuring Satellite Settings for Red&#160;Hat Single Sign-On Authentication</h4>
+<div class="paragraph">
+<p>Use this section to configure Satellite for Red&#160;Hat Single Sign-On authentication using the Satellite web UI or the CLI.</p>
+</div>
+<div class="sect4">
+<h5 id="configuring-satellite-settings-for-keycloak-authentication-using-the-web-ui_keycloak-general"><a class="anchor" href="#configuring-satellite-settings-for-keycloak-authentication-using-the-web-ui_keycloak-general"></a>Configuring Satellite Settings for Red&#160;Hat Single Sign-On Authentication Using the Web UI</h5>
+<div class="paragraph">
+<p>Use this procedure to configure Satellite settings for Red&#160;Hat Single Sign-On authentication using the Satellite web UI.</p>
+</div>
+<div class="paragraph">
+<p>Note that you can navigate to the following URL within your realm to obtain values to configure Satellite settings: <code>https://RHSSO.example.com/auth/realms/Satellite_Realm/.well-known/openid-configuration</code></p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisite</div>
+<ul>
+<li>
+<p>Ensure that the <strong>Access Type</strong> setting in the Satellite client in the Red&#160;Hat Single Sign-On web UI is set to <strong>confidential</strong></p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Administer</strong> &gt; <strong>Settings</strong>, and click the <strong>Authentication</strong> tab.</p>
+</li>
+<li>
+<p>Locate the <strong>Authorize login delegation</strong> row, and in the <strong>Value</strong> column, set the value to <strong>Yes</strong>.</p>
+</li>
+<li>
+<p>Locate the <strong>Authorize login delegation auth source user autocreate</strong> row, and in the <strong>Value</strong> column,
+set the value to <strong>External</strong>.</p>
+</li>
+<li>
+<p>Locate the <strong>Login delegation logout URL</strong> row, and in the <strong>Value</strong> column, set the value to <strong>https://satellite.example.com/users/extlogout</strong>.</p>
+</li>
+<li>
+<p>Locate the <strong>OIDC Algorithm</strong> row, and in the <strong>Value</strong> column, set the algorithm for encoding on Red&#160;Hat Single Sign-On to <strong>RS256</strong>.</p>
+</li>
+<li>
+<p>Locate the <strong>OIDC Audience</strong> row, and in the <strong>Value</strong> column, set the value to the client ID for Red&#160;Hat Single Sign-On.</p>
+</li>
+<li>
+<p>Locate the <strong>OIDC Issuer</strong> row, and in the <strong>Value</strong> column, set the value to <strong><em>https://RHSSO.example.com/auth/realms/Satellite_Realm</em></strong>.</p>
+</li>
+<li>
+<p>Locate the <strong>OIDC JWKs URL</strong> row, and in the <strong>Value</strong> column, set the value to <strong><em>https://RHSSO.example.com/auth/realms/Satellite_Realm/protocol/openid-connect/certs</em></strong>.</p>
+</li>
+<li>
+<p>In the Satellite web UI, navigate to <strong>Administer</strong> &gt; <strong>Authentication Sources</strong> and click <strong>External</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Create LDAP Authentication Source</strong> and select the Red&#160;Hat Single Sign-On server.</p>
+</li>
+<li>
+<p>Click the <strong>Locations</strong> tab and add locations that can use the Red&#160;Hat Single Sign-On authentication source.</p>
+</li>
+<li>
+<p>Click the <strong>Organizations</strong> tab and add organizations that can use the Red&#160;Hat Single Sign-On authentication source.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect4">
+<h5 id="configuring-satellite-settings-for-keycloak-authentication-using-the-cli_keycloak-general"><a class="anchor" href="#configuring-satellite-settings-for-keycloak-authentication-using-the-cli_keycloak-general"></a>Configuring Satellite Settings for Red&#160;Hat Single Sign-On Authentication Using the CLI</h5>
+<div class="paragraph">
+<p>Use this procedure to configure Satellite settings for Red&#160;Hat Single Sign-On authentication using the Satellite CLI.</p>
+</div>
+<div class="paragraph">
+<p>Note that you can navigate to the following URL within your realm to obtain values to configure Satellite settings: <code>https://RHSSO.example.com/auth/realms/Satellite_Realm/.well-known/openid-configuration</code></p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisite</div>
+<ul>
+<li>
+<p>Ensure that the <strong>Access Type</strong> setting in the Satellite client in the Red&#160;Hat Single Sign-On web UI is set to <strong>public</strong></p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On Satellite, set the login delegation to <code>true</code> so that users can authenticate using the Open IDC protocol:</p>
+<div class="listingblock">
+<div class="content">
+<pre># hammer settings set --name authorize_login_delegation --value true</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Set the login delegation logout URL:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer settings set --name login_delegation_logout_url \
+--value https://satellite.example.com/users/extlogout</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Set the algorithm for encoding on Red&#160;Hat Single Sign-On, for example, <code>RS256</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre># hammer settings set --name oidc_algorithm --value 'RS256'</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Open the <code><em>RHSSO.example.com</em>/auth/realms/<em>RHSSO_REALM</em>/.well-known/openid-configuration</code> URL and note the values to populate the options in the following steps.</p>
+</li>
+<li>
+<p>Add the value for the Hammer client in the Open IDC audience:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer settings set --name oidc_audience \
+--value "['<em>satellite.example.com</em>-hammer-openidc']"</pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If you register several Red&#160;Hat Single Sign-On clients to Satellite, ensure that you append all audiences in the array.
+For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer settings set --name oidc_audience \
+--value "['<em>satellite.example.com</em>-foreman-openidc', '<em>satellite.example.com</em>-hammer-openidc']"</pre>
+</div>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Set the value for the Open IDC issuer:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer settings set --name oidc_issuer \
+--value "<em>RHSSO.example.com</em>/auth/realms/<em>RHSSO_Realm</em>"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Set the value for Open IDC Java Web Token (JWT):</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer settings set --name oidc_jwks_url \
+--value "<em>RHSSO.example.com</em>/auth/realms/<em>RHSSO_Realm</em>/protocol/openid-connect/certs"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Retrieve the ID of the Red&#160;Hat Single Sign-On authentication source:</p>
+<div class="listingblock">
+<div class="content">
+<pre># hammer auth-source external list</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Set the location and organization:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer auth-source external update --id <em>Authentication Source ID</em> \
+--location-ids <em>Location ID</em> --organization-ids <em>Organization ID</em></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="logging-in-to-the-satellite-web-ui-using-keycloak_keycloak-general"><a class="anchor" href="#logging-in-to-the-satellite-web-ui-using-keycloak_keycloak-general"></a>5.8.5. Logging in to the Satellite web UI Using Red&#160;Hat Single Sign-On</h4>
+<div class="paragraph">
+<p>Use this procedure to log in to the Satellite web UI using Red&#160;Hat Single Sign-On.</p>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>In your browser, log in to Satellite and enter your credentials.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="logging-in-to-the-satellite-cli-using-keycloak_keycloak-general"><a class="anchor" href="#logging-in-to-the-satellite-cli-using-keycloak_keycloak-general"></a>5.8.6. Logging in to the Satellite CLI Using Red&#160;Hat Single Sign-On</h4>
+<div class="paragraph">
+<p>Use this procedure to authenticate to the Satellite CLI using the code grant type.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>To authenticate to the Satellite CLI using the code grant type, enter the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer auth login oauth \
+--two-factor \
+--oidc-token-endpoint 'https://<em>RHSSO.example.com</em>/auth/realms/ssl-realm/protocol/openid-connect/token' \
+--oidc-authorization-endpoint 'https://<em>RHSSO.example.com</em>/auth' \
+--oidc-client-id '<em>satellite.example.com</em>-foreman-openidc' \
+--oidc-redirect-uri urn:ietf:wg:oauth:2.0:oob</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The command prompts you to enter a success code.</p>
+</div>
+</li>
+<li>
+<p>To retrieve the success code, navigate to the URL that the command returns and provide the required information.</p>
+</li>
+<li>
+<p>Copy the success code that the web UI returns.</p>
+</li>
+<li>
+<p>In the command prompt of <code>hammer auth login oauth</code>, enter the success code to authenticate to the Satellite CLI.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="configuring-group-mapping-for-keycloak-authentication_keycloak-general"><a class="anchor" href="#configuring-group-mapping-for-keycloak-authentication_keycloak-general"></a>5.8.7. Configuring Group Mapping for Red&#160;Hat Single Sign-On Authentication</h4>
+<div class="paragraph">
+<p>Optionally, to implement the Role Based Access Control (RBAC), create a group in Satellite, assign a role to this group, and then map an Active Directory group to the Satellite group.
+As a result, anyone in the given group in Red&#160;Hat Single Sign-On are logged in under the corresponding Satellite group.
+This example configures users of the Satellite-admin user group in the Active Directory to authenticate as users with administrator privileges on Satellite.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Administer</strong> &gt; <strong>User Groups</strong>, and click the <strong>Create User Group</strong> button.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter a name for the user group.
+The name should not be the same as in the Active Directory.</p>
+</li>
+<li>
+<p>Do not add users and user groups to the right-hand columns.
+Click the <strong>Roles</strong> tab.</p>
+</li>
+<li>
+<p>Select the <strong>Administer</strong> checkbox.</p>
+</li>
+<li>
+<p>Click the <strong>External Groups</strong> tab.</p>
+</li>
+<li>
+<p>Click <strong>Add external user group</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter the name of the Active Directory group.</p>
+</li>
+<li>
+<p>From the list, select <strong>EXTERNAL</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Configuring_Keycloak_Authentication_with_TOTP_keycloak-totp"><a class="anchor" href="#Configuring_Keycloak_Authentication_with_TOTP_keycloak-totp"></a>5.9. Configuring Red&#160;Hat Single Sign-On Authentication with TOTP</h3>
+<div class="paragraph">
+<p>Use this section to configure Satellite to use Red&#160;Hat Single Sign-On as an OpenID provider for external authentication with TOTP cards.</p>
+</div>
+<div class="sect3">
+<h4 id="prerequisites-for-integrating-satellite-with-keycloak_keycloak-totp"><a class="anchor" href="#prerequisites-for-integrating-satellite-with-keycloak_keycloak-totp"></a>5.9.1. Prerequisites for Configuring Satellite with Red&#160;Hat Single Sign-On Authentication</h4>
+<div class="paragraph">
+<p>Before configuring Satellite with Red&#160;Hat Single Sign-On external authentication, ensure that you meet the following requirements:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>A working installation of Red&#160;Hat Single Sign-On server that uses HTTPS instead of HTTP.</p>
+</li>
+<li>
+<p>A Red&#160;Hat Single Sign-On account with admin privileges.</p>
+</li>
+<li>
+<p>A realm for Satellite user accounts created in Red&#160;Hat Single Sign-On.</p>
+</li>
+<li>
+<p>If the certificates or the CA are self-signed, ensure that they are added to the end-user certificate trust store.</p>
+</li>
+<li>
+<p>Users imported or added to Red&#160;Hat Single Sign-On.</p>
+<div class="paragraph">
+<p>If you have an existing user database configured such as LDAP or Kerberos, you can import users from it by configuring user federation.
+For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_single_sign-on/7.4/html/server_administration_guide/user-storage-federation">User Storage Federation</a> in the <em>Red&#160;Hat Single Sign-On Server Administration Guide</em>.</p>
+</div>
+<div class="paragraph">
+<p>If you do not have an existing user database configured, you can manually create users in Red&#160;Hat Single Sign-On.
+For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_single_sign-on/7.4/html/server_administration_guide/user_management#create-new-user">Creating New Users</a> in the <em>Red&#160;Hat Single Sign-On Server Administration Guide</em>.</p>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="registering-satellite-as-a-keycloak-client_keycloak-totp"><a class="anchor" href="#registering-satellite-as-a-keycloak-client_keycloak-totp"></a>5.9.2. Registering Satellite as a Red&#160;Hat Single Sign-On Client</h4>
+<div class="paragraph">
+<p>Use this procedure to register Satellite to Red&#160;Hat Single Sign-On as a client and configure Satellite to use Red&#160;Hat Single Sign-On as an authentication source.</p>
+</div>
+<div class="paragraph">
+<p>You can configure Satellite and Red&#160;Hat Single Sign-On with two different authentication methods:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Users authenticate to Satellite using the Satellite web UI.</p>
+</li>
+<li>
+<p>Users authenticate to Satellite using the Satellite CLI.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>You must decide on how you want your users to authenticate in advance because both methods require different Satellite clients to be registered to Red&#160;Hat Single Sign-On and configured.
+The steps to register and configure Satellite client in Red&#160;Hat Single Sign-On are distinguished within the procedure.</p>
+</div>
+<div class="paragraph">
+<p>You can also register two different Satellite clients to Red&#160;Hat Single Sign-On if you want to use both authentication methods and configure both clients accordingly.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On the Satellite server, install the following packages:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-maintain packages install mod_auth_openidc keycloak-httpd-client-install</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Register Satellite to Red&#160;Hat Single Sign-On as a client.
+Note that you the registration process for logging in using the web UI and the CLI are different.
+You can register two clients Satellite clients to Red&#160;Hat Single Sign-On to be able to log in to Satellite from the web UI and the CLI.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>If you want you users to authenticate to Satellite using the web UI, create a client as follows:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># keycloak-httpd-client-install --app-name foreman-openidc \
+--keycloak-server-url "<em>https://RHSSO.example.com</em>" \
+--keycloak-admin-username "<em>admin</em>" \
+--keycloak-realm "<em>Satellite_Realm</em>" \
+--keycloak-admin-realm master \
+--keycloak-auth-role root-admin \
+-t openidc -l /users/extlogin --force</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Enter the password for the administer account when prompted.
+This command creates a client for Satellite in Red&#160;Hat Single Sign-On.</p>
+</div>
+<div class="paragraph">
+<p>Then, configure Satellite to use Red&#160;Hat Single Sign-On as an authentication source:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-installer --foreman-keycloak true \
+--foreman-keycloak-app-name "foreman-openidc" \
+--foreman-keycloak-realm "<em>Satellite_Realm</em>"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>If you want your users to authenticate to Satellite using the CLI, create a client as follows:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># keycloak-httpd-client-install --app-name hammer-openidc \
+--keycloak-server-url "<em>https://RHSSO.example.com</em>" \
+--keycloak-admin-username "<em>admin</em>" \
+--keycloak-realm "<em>Satellite_Realm</em>" \
+--keycloak-admin-realm master \
+--keycloak-auth-role root-admin \
+-t openidc -l /users/extlogin --force</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Enter the password for the administer account when prompted.
+This command creates a client for Satellite in Red&#160;Hat Single Sign-On.</p>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Restart the <code>httpd</code> service:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl restart httpd</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="configuring-the-satellite-client-in-keycloak_keycloak-totp"><a class="anchor" href="#configuring-the-satellite-client-in-keycloak_keycloak-totp"></a>5.9.3. Configuring the Satellite Client in Red&#160;Hat Single Sign-On</h4>
+<div class="paragraph">
+<p>Use this procedure to configure the Satellite client in the Red&#160;Hat Single Sign-On web UI and create group and audience mappers for the Satellite client.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Red&#160;Hat Single Sign-On web UI, navigate to <strong>Clients</strong> and click the Satellite client.</p>
+</li>
+<li>
+<p>Configure access type:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>If you want your users to authenticate to Satellite using the Satellite web UI, from the <strong>Access Type</strong> list, select <strong>confidential</strong>.</p>
+</li>
+<li>
+<p>If you want your users to authenticate to Satellite using the CLI, from the <strong>Access Type</strong> list, select <strong>public</strong>.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>In the <strong>Valid redirect URI</strong> fields, add a valid redirect URI.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>If you want your users to authenticate to Satellite using the Satellite web UI, in the blank field below the existing URI, enter a URI in the form <code>https://satellite.example.com/users/extlogin</code>. Note that you must add the string <code>/users/extlogin</code> after the Satellite FQDN.</p>
+<div class="paragraph">
+<p>After completing this step, the Satellite client for logging in using the Satellite web UI must have the following <strong>Valid Redirect URIs</strong>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">https://satellite.example.com/users/extlogin/redirect_uri
+https://satellite.example.com/users/extlogin</pre>
+</div>
+</div>
+</li>
+<li>
+<p>If you want your users to authenticate to Satellite using the CLI, in the blank field below the existing URI, enter <strong>urn:ietf:wg:oauth:2.0:oob</strong>.</p>
+<div class="paragraph">
+<p>After completing this step, the Satellite client for logging in using the CLI must have the following <strong>Valid Redirect URIs</strong>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">https://satellite.example.com/users/extlogin/redirect_uri
+urn:ietf:wg:oauth:2.0:oob</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Click the <strong>Mappers</strong> tab and click <strong>Create</strong> to add an audience mapper.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter a name for the audience mapper.</p>
+</li>
+<li>
+<p>From the <strong>Mapper Type</strong> list, select <strong>Audience</strong>.</p>
+</li>
+<li>
+<p>From the <strong>Included Client Audience</strong> list, select the Satellite client.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Create</strong> to add a group mapper so that you can specify authorization in Satellite based on group membership.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter a name for the group mapper.</p>
+</li>
+<li>
+<p>From the <strong>Mapper Type</strong> list, select <strong>Group Membership</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Token Claim Name</strong> field, enter <strong>groups</strong>.</p>
+</li>
+<li>
+<p>Set the <strong>Full group path</strong> setting to OFF.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="Configuring_Project_Settings_for_Keycloak_Authentication_keycloak-totp"><a class="anchor" href="#Configuring_Project_Settings_for_Keycloak_Authentication_keycloak-totp"></a>5.9.4. Configuring Satellite Settings for Red&#160;Hat Single Sign-On Authentication</h4>
+<div class="paragraph">
+<p>Use this section to configure Satellite for Red&#160;Hat Single Sign-On authentication using the Satellite web UI or the CLI.</p>
+</div>
+<div class="sect4">
+<h5 id="configuring-satellite-settings-for-keycloak-authentication-using-the-web-ui_keycloak-totp"><a class="anchor" href="#configuring-satellite-settings-for-keycloak-authentication-using-the-web-ui_keycloak-totp"></a>Configuring Satellite Settings for Red&#160;Hat Single Sign-On Authentication Using the Web UI</h5>
+<div class="paragraph">
+<p>Use this procedure to configure Satellite settings for Red&#160;Hat Single Sign-On authentication using the Satellite web UI.</p>
+</div>
+<div class="paragraph">
+<p>Note that you can navigate to the following URL within your realm to obtain values to configure Satellite settings: <code>https://RHSSO.example.com/auth/realms/Satellite_Realm/.well-known/openid-configuration</code></p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisite</div>
+<ul>
+<li>
+<p>Ensure that the <strong>Access Type</strong> setting in the Satellite client in the Red&#160;Hat Single Sign-On web UI is set to <strong>confidential</strong></p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Administer</strong> &gt; <strong>Settings</strong>, and click the <strong>Authentication</strong> tab.</p>
+</li>
+<li>
+<p>Locate the <strong>Authorize login delegation</strong> row, and in the <strong>Value</strong> column, set the value to <strong>Yes</strong>.</p>
+</li>
+<li>
+<p>Locate the <strong>Authorize login delegation auth source user autocreate</strong> row, and in the <strong>Value</strong> column,
+set the value to <strong>External</strong>.</p>
+</li>
+<li>
+<p>Locate the <strong>Login delegation logout URL</strong> row, and in the <strong>Value</strong> column, set the value to <strong>https://satellite.example.com/users/extlogout</strong>.</p>
+</li>
+<li>
+<p>Locate the <strong>OIDC Algorithm</strong> row, and in the <strong>Value</strong> column, set the algorithm for encoding on Red&#160;Hat Single Sign-On to <strong>RS256</strong>.</p>
+</li>
+<li>
+<p>Locate the <strong>OIDC Audience</strong> row, and in the <strong>Value</strong> column, set the value to the client ID for Red&#160;Hat Single Sign-On.</p>
+</li>
+<li>
+<p>Locate the <strong>OIDC Issuer</strong> row, and in the <strong>Value</strong> column, set the value to <strong><em>https://RHSSO.example.com/auth/realms/Satellite_Realm</em></strong>.</p>
+</li>
+<li>
+<p>Locate the <strong>OIDC JWKs URL</strong> row, and in the <strong>Value</strong> column, set the value to <strong><em>https://RHSSO.example.com/auth/realms/Satellite_Realm/protocol/openid-connect/certs</em></strong>.</p>
+</li>
+<li>
+<p>In the Satellite web UI, navigate to <strong>Administer</strong> &gt; <strong>Authentication Sources</strong> and click <strong>External</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Create LDAP Authentication Source</strong> and select the Red&#160;Hat Single Sign-On server.</p>
+</li>
+<li>
+<p>Click the <strong>Locations</strong> tab and add locations that can use the Red&#160;Hat Single Sign-On authentication source.</p>
+</li>
+<li>
+<p>Click the <strong>Organizations</strong> tab and add organizations that can use the Red&#160;Hat Single Sign-On authentication source.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect4">
+<h5 id="configuring-satellite-settings-for-keycloak-authentication-using-the-cli_keycloak-totp"><a class="anchor" href="#configuring-satellite-settings-for-keycloak-authentication-using-the-cli_keycloak-totp"></a>Configuring Satellite Settings for Red&#160;Hat Single Sign-On Authentication Using the CLI</h5>
+<div class="paragraph">
+<p>Use this procedure to configure Satellite settings for Red&#160;Hat Single Sign-On authentication using the Satellite CLI.</p>
+</div>
+<div class="paragraph">
+<p>Note that you can navigate to the following URL within your realm to obtain values to configure Satellite settings: <code>https://RHSSO.example.com/auth/realms/Satellite_Realm/.well-known/openid-configuration</code></p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisite</div>
+<ul>
+<li>
+<p>Ensure that the <strong>Access Type</strong> setting in the Satellite client in the Red&#160;Hat Single Sign-On web UI is set to <strong>public</strong></p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On Satellite, set the login delegation to <code>true</code> so that users can authenticate using the Open IDC protocol:</p>
+<div class="listingblock">
+<div class="content">
+<pre># hammer settings set --name authorize_login_delegation --value true</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Set the login delegation logout URL:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer settings set --name login_delegation_logout_url \
+--value https://satellite.example.com/users/extlogout</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Set the algorithm for encoding on Red&#160;Hat Single Sign-On, for example, <code>RS256</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre># hammer settings set --name oidc_algorithm --value 'RS256'</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Open the <code><em>RHSSO.example.com</em>/auth/realms/<em>RHSSO_REALM</em>/.well-known/openid-configuration</code> URL and note the values to populate the options in the following steps.</p>
+</li>
+<li>
+<p>Add the value for the Hammer client in the Open IDC audience:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer settings set --name oidc_audience \
+--value "['<em>satellite.example.com</em>-hammer-openidc']"</pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If you register several Red&#160;Hat Single Sign-On clients to Satellite, ensure that you append all audiences in the array.
+For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer settings set --name oidc_audience \
+--value "['<em>satellite.example.com</em>-foreman-openidc', '<em>satellite.example.com</em>-hammer-openidc']"</pre>
+</div>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Set the value for the Open IDC issuer:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer settings set --name oidc_issuer \
+--value "<em>RHSSO.example.com</em>/auth/realms/<em>RHSSO_Realm</em>"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Set the value for Open IDC Java Web Token (JWT):</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer settings set --name oidc_jwks_url \
+--value "<em>RHSSO.example.com</em>/auth/realms/<em>RHSSO_Realm</em>/protocol/openid-connect/certs"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Retrieve the ID of the Red&#160;Hat Single Sign-On authentication source:</p>
+<div class="listingblock">
+<div class="content">
+<pre># hammer auth-source external list</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Set the location and organization:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer auth-source external update --id <em>Authentication Source ID</em> \
+--location-ids <em>Location ID</em> --organization-ids <em>Organization ID</em></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="configuring-satellite-with-keycloak-for-totp-authentication_keycloak-totp"><a class="anchor" href="#configuring-satellite-with-keycloak-for-totp-authentication_keycloak-totp"></a>5.9.5. Configuring Satellite with Red&#160;Hat Single Sign-On for TOTP Authentication</h4>
+<div class="paragraph">
+<p>Use this procedure to configure Satellite to use Red&#160;Hat Single Sign-On as an OpenID provider for external authentication with Time-based One-time Password (TOTP).</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Red&#160;Hat Single Sign-On web UI, navigate to the Satellite realm.</p>
+</li>
+<li>
+<p>Navigate to <strong>Authentication</strong>, and click the <strong>OTP Policy</strong> tab.</p>
+</li>
+<li>
+<p>Ensure that the <strong>Supported Applications</strong> field includes FreeOTP or Google Authenticator.</p>
+</li>
+<li>
+<p>Configure the OTP settings to suit your requirements.</p>
+</li>
+<li>
+<p>Optional: If you want to use TOTP authentication as a default authentication method for all users, click the <strong>Flows</strong> tab, and to the right of the <strong>OTP Form</strong> setting, select <strong>REQUIRED</strong>.</p>
+</li>
+<li>
+<p>Click the <strong>Required Actions</strong> tab.</p>
+</li>
+<li>
+<p>To the right of the <strong>Configure OTP</strong> row, select the <strong>Default Action</strong> checkbox.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="logging-in-to-the-satellite-web-ui-using-keycloak-totp-authentication_keycloak-totp"><a class="anchor" href="#logging-in-to-the-satellite-web-ui-using-keycloak-totp-authentication_keycloak-totp"></a>5.9.6. Logging in to the Satellite web UI Using Red&#160;Hat Single Sign-On TOTP Authentication</h4>
+<div class="paragraph">
+<p>Use this procedure to log in to the Satellite web UI using Red&#160;Hat Single Sign-On TOTP authentication.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Log in to Satellite, Satellite redirects you to the Red&#160;Hat Single Sign-On login screen.</p>
+</li>
+<li>
+<p>Enter your username and password, and click <strong>Log In</strong>.</p>
+</li>
+<li>
+<p>The first attempt to log in, Red&#160;Hat Single Sign-On requests you to configure your client by scanning the barcode and entering the pin displayed.</p>
+</li>
+<li>
+<p>After you configure your client and enter a valid PIN, Red&#160;Hat Single Sign-On redirects you to Satellite and
+logs you in.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="logging-in-to-the-satellite-cli-using-keycloak_keycloak-totp"><a class="anchor" href="#logging-in-to-the-satellite-cli-using-keycloak_keycloak-totp"></a>5.9.7. Logging in to the Satellite CLI Using Red&#160;Hat Single Sign-On</h4>
+<div class="paragraph">
+<p>Use this procedure to authenticate to the Satellite CLI using the code grant type.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>To authenticate to the Satellite CLI using the code grant type, enter the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer auth login oauth \
+--two-factor \
+--oidc-token-endpoint 'https://<em>RHSSO.example.com</em>/auth/realms/ssl-realm/protocol/openid-connect/token' \
+--oidc-authorization-endpoint 'https://<em>RHSSO.example.com</em>/auth' \
+--oidc-client-id '<em>satellite.example.com</em>-foreman-openidc' \
+--oidc-redirect-uri urn:ietf:wg:oauth:2.0:oob</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The command prompts you to enter a success code.</p>
+</div>
+</li>
+<li>
+<p>To retrieve the success code, navigate to the URL that the command returns and provide the required information.</p>
+</li>
+<li>
+<p>Copy the success code that the web UI returns.</p>
+</li>
+<li>
+<p>In the command prompt of <code>hammer auth login oauth</code>, enter the success code to authenticate to the Satellite CLI.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="configuring-group-mapping-for-keycloak-authentication_keycloak-totp"><a class="anchor" href="#configuring-group-mapping-for-keycloak-authentication_keycloak-totp"></a>5.9.8. Configuring Group Mapping for Red&#160;Hat Single Sign-On Authentication</h4>
+<div class="paragraph">
+<p>Optionally, to implement the Role Based Access Control (RBAC), create a group in Satellite, assign a role to this group, and then map an Active Directory group to the Satellite group.
+As a result, anyone in the given group in Red&#160;Hat Single Sign-On are logged in under the corresponding Satellite group.
+This example configures users of the Satellite-admin user group in the Active Directory to authenticate as users with administrator privileges on Satellite.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Administer</strong> &gt; <strong>User Groups</strong>, and click the <strong>Create User Group</strong> button.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter a name for the user group.
+The name should not be the same as in the Active Directory.</p>
+</li>
+<li>
+<p>Do not add users and user groups to the right-hand columns.
+Click the <strong>Roles</strong> tab.</p>
+</li>
+<li>
+<p>Select the <strong>Administer</strong> checkbox.</p>
+</li>
+<li>
+<p>Click the <strong>External Groups</strong> tab.</p>
+</li>
+<li>
+<p>Click <strong>Add external user group</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter the name of the Active Directory group.</p>
+</li>
+<li>
+<p>From the list, select <strong>EXTERNAL</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Disabling_Keycloak_Authentication_satellite"><a class="anchor" href="#Disabling_Keycloak_Authentication_satellite"></a>5.10. Disabling Red&#160;Hat Single Sign-On Authentication</h3>
+<div class="paragraph">
+<p>If you want to disable Red&#160;Hat Single Sign-On authentication in Satellite, complete this procedure.</p>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>Enter the following command to disable Red&#160;Hat Single Sign-On Authentication:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-installer --reset-foreman-keycloak</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="configuring-external-services"><a class="anchor" href="#configuring-external-services"></a>6. Configuring Satellite&#160;Server with External Services</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>If you do not want to configure the DNS, DHCP, and TFTP services on Satellite&#160;Server, use this section to configure your Satellite&#160;Server to work with external DNS, DHCP and TFTP services.</p>
 </div>
 <div class="sect2">
-<h3 id="configuring-external-dns_satellite"><a class="anchor" href="#configuring-external-dns_satellite"></a>5.1. Configuring Satellite&#160;Server with External DNS</h3>
+<h3 id="configuring-external-dns_satellite"><a class="anchor" href="#configuring-external-dns_satellite"></a>6.1. Configuring Satellite&#160;Server with External DNS</h3>
 <div class="paragraph">
 <p>You can configure Satellite&#160;Server with external DNS.
 Satellite&#160;Server uses the <code>nsupdate</code> utility to update DNS records on the remote server.</p>
@@ -3355,7 +5918,7 @@ send\n" | nsupdate -k /etc/foreman-proxy/rndc.key</pre>
 </div>
 </div>
 <div class="sect2">
-<h3 id="configuring-external-dhcp_satellite"><a class="anchor" href="#configuring-external-dhcp_satellite"></a>5.2. Configuring Satellite&#160;Server with External DHCP</h3>
+<h3 id="configuring-external-dhcp_satellite"><a class="anchor" href="#configuring-external-dhcp_satellite"></a>6.2. Configuring Satellite&#160;Server with External DHCP</h3>
 <div class="paragraph">
 <p>To configure Satellite&#160;Server with external DHCP, you must complete the following procedures:</p>
 </div>
@@ -3370,7 +5933,7 @@ send\n" | nsupdate -k /etc/foreman-proxy/rndc.key</pre>
 </ol>
 </div>
 <div class="sect3">
-<h4 id="configuring-an-external-dhcp-server_satellite"><a class="anchor" href="#configuring-an-external-dhcp-server_satellite"></a>5.2.1. Configuring an External DHCP Server to Use with Satellite&#160;Server</h4>
+<h4 id="configuring-an-external-dhcp-server_satellite"><a class="anchor" href="#configuring-an-external-dhcp-server_satellite"></a>6.2.1. Configuring an External DHCP Server to Use with Satellite&#160;Server</h4>
 <div class="paragraph">
 <p>To configure an external DHCP server running Red&#160;Hat Enterprise Linux to use with Satellite&#160;Server, you must install the ISC DHCP Service and Berkeley Internet Name Domain (BIND) packages.
 You must also share the DHCP configuration and lease files with Satellite&#160;Server.
@@ -3591,7 +6154,7 @@ Clients are configured using NFSv3.</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="Configuring_Server_with_an_External_DHCP_Server_satellite"><a class="anchor" href="#Configuring_Server_with_an_External_DHCP_Server_satellite"></a>5.2.2. Configuring Satellite&#160;Server with an External DHCP Server</h4>
+<h4 id="Configuring_Server_with_an_External_DHCP_Server_satellite"><a class="anchor" href="#Configuring_Server_with_an_External_DHCP_Server_satellite"></a>6.2.2. Configuring Satellite&#160;Server with an External DHCP Server</h4>
 <div class="paragraph">
 <p>You can configure Satellite&#160;Server with an external DHCP server.</p>
 </div>
@@ -3695,7 +6258,7 @@ bash-4.2$ exit</pre>
 </div>
 </div>
 <div class="sect2">
-<h3 id="configuring-external-tftp_satellite"><a class="anchor" href="#configuring-external-tftp_satellite"></a>5.3. Configuring Satellite&#160;Server with External TFTP</h3>
+<h3 id="configuring-external-tftp_satellite"><a class="anchor" href="#configuring-external-tftp_satellite"></a>6.3. Configuring Satellite&#160;Server with External TFTP</h3>
 <div class="paragraph">
 <p>You can configure Satellite&#160;Server with external TFTP services.</p>
 </div>
@@ -3756,7 +6319,7 @@ bash-4.2$ exit</pre>
 </div>
 </div>
 <div class="sect2">
-<h3 id="configuring-external-idm-dns_satellite"><a class="anchor" href="#configuring-external-idm-dns_satellite"></a>5.4. Configuring Satellite&#160;Server with External IdM DNS</h3>
+<h3 id="configuring-external-idm-dns_satellite"><a class="anchor" href="#configuring-external-idm-dns_satellite"></a>6.4. Configuring Satellite&#160;Server with External IdM DNS</h3>
 <div class="paragraph">
 <p>When Satellite&#160;Server adds a DNS record for a host, it first determines which Capsule is providing DNS for that domain.
 It then communicates with the Capsule that is configured to provide DNS service for your deployment and adds the record.
@@ -3806,7 +6369,7 @@ For more information about configuring realm enrollment, see <a href="https://ac
 </table>
 </div>
 <div class="sect3">
-<h4 id="configuring-dynamic-dns-update-with-gss-tsig-authentication_satellite"><a class="anchor" href="#configuring-dynamic-dns-update-with-gss-tsig-authentication_satellite"></a>5.4.1. Configuring Dynamic DNS Update with GSS-TSIG Authentication</h4>
+<h4 id="configuring-dynamic-dns-update-with-gss-tsig-authentication_satellite"><a class="anchor" href="#configuring-dynamic-dns-update-with-gss-tsig-authentication_satellite"></a>6.4.1. Configuring Dynamic DNS Update with GSS-TSIG Authentication</h4>
 <div class="paragraph">
 <p>You can configure the IdM server to use the generic security service algorithm for secret key transaction (GSS-TSIG) technology defined in <a href="https://tools.ietf.org/html/rfc3645">RFC3645</a>.
 To configure the IdM server to use the GSS-TSIG technology, you must install the IdM client on the Satellite&#160;Server base operating system.</p>
@@ -4090,7 +6653,7 @@ For example, <code>example.com</code>.</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="configuring-dynamic-dns-update-with-tsig-authentication_satellite"><a class="anchor" href="#configuring-dynamic-dns-update-with-tsig-authentication_satellite"></a>5.4.2. Configuring Dynamic DNS Update with TSIG Authentication</h4>
+<h4 id="configuring-dynamic-dns-update-with-tsig-authentication_satellite"><a class="anchor" href="#configuring-dynamic-dns-update-with-tsig-authentication_satellite"></a>6.4.2. Configuring Dynamic DNS Update with TSIG Authentication</h4>
 <div class="paragraph">
 <p>You can configure an IdM server to use the secret key transaction authentication for DNS (TSIG) technology that uses the <code>rndc.key</code> key file for authentication.
 The TSIG protocol is defined in <a href="https://tools.ietf.org/html/rfc2845">RFC2845</a>.</p>
@@ -4280,7 +6843,7 @@ send\n" | nsupdate -k /etc/rndc.key</pre>
 </div>
 </div>
 <div class="sect3">
-<h4 id="reverting-to-internal-dns-service_satellite"><a class="anchor" href="#reverting-to-internal-dns-service_satellite"></a>5.4.3. Reverting to Internal DNS Service</h4>
+<h4 id="reverting-to-internal-dns-service_satellite"><a class="anchor" href="#reverting-to-internal-dns-service_satellite"></a>6.4.3. Reverting to Internal DNS Service</h4>
 <div class="paragraph">
 <p>You can revert to using Satellite&#160;Server and Capsule&#160;Server as your DNS providers.
 You can use a backup of the answer file that was created before configuring external DNS, or you can create a backup of the answer file.
