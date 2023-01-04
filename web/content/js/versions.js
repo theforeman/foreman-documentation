@@ -120,6 +120,10 @@ const navVersions = [
             "path": "Upgrading_and_Updating"
           },
           {
+            "title": "Tuning Performance",
+            "path": "Tuning_Performance"
+          },
+          {
             "title": "Configuring Smart Proxies with a Load Balancer",
             "path": "Configuring_Load_Balancer"
           },
@@ -194,6 +198,10 @@ const navVersions = [
           {
             "title": "Upgrading and Updating",
             "path": "Upgrading_and_Updating"
+          },
+          {
+            "title": "Tuning Performance",
+            "path": "Tuning_Performance"
           },
           {
             "title": "Configuring Smart Proxies with a Load Balancer",
@@ -272,6 +280,10 @@ const navVersions = [
             "path": "Upgrading_and_Updating"
           },
           {
+            "title": "Tuning Performance",
+            "path": "Tuning_Performance"
+          },
+          {
             "title": "Configuring Smart Proxies with a Load Balancer",
             "path": "Configuring_Load_Balancer"
           },
@@ -346,6 +358,10 @@ const navVersions = [
           {
             "title": "Upgrading and Updating",
             "path": "Upgrading_and_Updating"
+          },
+          {
+            "title": "Tuning Performance",
+            "path": "Tuning_Performance"
           },
           {
             "title": "Configuring Smart Proxies with a Load Balancer",
