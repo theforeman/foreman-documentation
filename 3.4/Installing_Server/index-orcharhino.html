@@ -27,7 +27,7 @@
 <h1>Installing orcharhino Server</h1>
 <div class="details">
 <span id="revnumber">version 6.1,</span>
-<span id="revdate">published Jan 03 2023</span>
+<span id="revdate">published Jan 04 2023</span>
 </div>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
@@ -73,12 +73,26 @@
 <li><a href="#tuning-with-predefined-profiles_orcharhino">4.11. Tuning orcharhino Server with Predefined Profiles</a></li>
 </ul>
 </li>
-<li><a href="#configuring-external-services">5. Configuring orcharhino Server with External Services</a>
+<li><a href="#Configuring_External_Authentication_orcharhino">5. Configuring External Authentication</a>
 <ul class="sectlevel2">
-<li><a href="#configuring-external-dns_orcharhino">5.1. Configuring orcharhino Server with External DNS</a></li>
-<li><a href="#configuring-external-dhcp_orcharhino">5.2. Configuring orcharhino Server with External DHCP</a></li>
-<li><a href="#configuring-external-tftp_orcharhino">5.3. Configuring orcharhino Server with External TFTP</a></li>
-<li><a href="#configuring-external-idm-dns_orcharhino">5.4. Configuring orcharhino Server with External IdM DNS</a></li>
+<li><a href="#Using_LDAP_orcharhino">5.1. Using LDAP</a></li>
+<li><a href="#Using_FreeIPA_orcharhino">5.2. Using FreeIPA</a></li>
+<li><a href="#Using_Active_Directory_orcharhino">5.3. Using Active Directory</a></li>
+<li><a href="#Configuring_External_User_Groups_orcharhino">5.4. Configuring External User Groups</a></li>
+<li><a href="#Refreshing_External_User_Groups_for_LDAP_orcharhino">5.5. Refreshing External User Groups for LDAP</a></li>
+<li><a href="#Refreshing_External_User_Groups_for_FreeIPA_or_AD_orcharhino">5.6. Refreshing External User Groups for FreeIPA or AD</a></li>
+<li><a href="#External_Authentication_for_Provisioned_Hosts_orcharhino">5.7. External Authentication for Provisioned Hosts</a></li>
+<li><a href="#Configuring_Project_with_Keycloak_Authentication_keycloak-general">5.8. Configuring orcharhino with Keycloak Authentication</a></li>
+<li><a href="#Configuring_Keycloak_Authentication_with_TOTP_keycloak-totp">5.9. Configuring Keycloak Authentication with TOTP</a></li>
+<li><a href="#Disabling_Keycloak_Authentication_orcharhino">5.10. Disabling Keycloak Authentication</a></li>
+</ul>
+</li>
+<li><a href="#configuring-external-services">6. Configuring orcharhino Server with External Services</a>
+<ul class="sectlevel2">
+<li><a href="#configuring-external-dns_orcharhino">6.1. Configuring orcharhino Server with External DNS</a></li>
+<li><a href="#configuring-external-dhcp_orcharhino">6.2. Configuring orcharhino Server with External DHCP</a></li>
+<li><a href="#configuring-external-tftp_orcharhino">6.3. Configuring orcharhino Server with External TFTP</a></li>
+<li><a href="#configuring-external-idm-dns_orcharhino">6.4. Configuring orcharhino Server with External IdM DNS</a></li>
 </ul>
 </li>
 <li><a href="#applying-custom-configuration_orcharhino">Appendix A: Applying Custom Configuration to orcharhino</a></li>
@@ -2556,13 +2570,2533 @@ For example, to apply the medium tuning profile settings, enter the following co
 </div>
 </div>
 <div class="sect1">
-<h2 id="configuring-external-services"><a class="anchor" href="#configuring-external-services"></a>5. Configuring orcharhino Server with External Services</h2>
+<h2 id="Configuring_External_Authentication_orcharhino"><a class="anchor" href="#Configuring_External_Authentication_orcharhino"></a>5. Configuring External Authentication</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>By using external authentication you can derive user and user group permissions from user group membership in an external identity provider.
+When you use external authentication, you do not have to create these users and maintain their group membership manually on orcharhino Server.
+In case the external source does not provide email, it will be requested during the first login through orcharhino management UI.</p>
+</div>
+<div class="paragraph">
+<div class="title">Important User and Group Account Information</div>
+<p>All user and group accounts must be local accounts.
+This is to ensure that there are no authentication conflicts between local accounts on your orcharhino Server and accounts in your Active Directory domain.</p>
+</div>
+<div class="paragraph">
+<p>Your system is not affected by this conflict if your user and group accounts exist in both <code>/etc/passwd</code> and <code>/etc/group</code> files.
+For example, to check if entries for <code>puppet</code>, <code>apache</code>, <code>foreman</code> and <code>foreman-proxy</code> groups exist in both <code>/etc/passwd</code> and <code>/etc/group</code> files, enter the following commands:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># cat /etc/passwd | grep 'puppet\|apache\|foreman\|foreman-proxy'
+# cat /etc/group | grep 'puppet\|apache\|foreman\|foreman-proxy'</pre>
+</div>
+</div>
+<div class="paragraph">
+<div class="title">Scenarios for Configuring External Authentication</div>
+<p>orcharhino supports the following general scenarios for configuring external authentication:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Using <em>Lightweight Directory Access Protocol</em> (LDAP) server as an external identity provider.
+LDAP is a set of open protocols used to access centrally stored information over a network.
+With orcharhino, you can manage LDAP entirely through the orcharhino management UI.
+For more information, see <a href="#Using_LDAP_orcharhino">Using LDAP</a>.
+Though you can use LDAP to connect to a FreeIPA or AD server, the setup does not support server discovery, cross-forest trusts, or single sign-on with Kerberos in orcharhino&#8217;s web UI.</p>
+</li>
+<li>
+<p>Using a FreeIPA server as an external identity provider.
+FreeIPA deals with the management of individual identities, their credentials and privileges used in a networking environment.
+Configuration using FreeIPA cannot be completed using only the orcharhino management UI and requires some interaction with the CLI.
+For more information see <a href="#Using_FreeIPA_orcharhino">Using FreeIPA</a>.</p>
+</li>
+<li>
+<p>Using <em>Active Directory</em> (AD) integrated with FreeIPA through cross-forest Kerberos trust as an external identity provider.
+For more information see <a href="#Active_Directory_with_Cross_Forest_Trust_orcharhino">Active Directory with Cross-Forest Trust</a>.</p>
+</li>
+<li>
+<p>Using Keycloak as an OpenID provider for external authentication to orcharhino.
+For more information, see <a href="#Configuring_Project_with_Keycloak_Authentication_keycloak-general">Configuring orcharhino with Keycloak Authentication</a>.</p>
+</li>
+<li>
+<p>Using Keycloak as an OpenID provider for external authentication to orcharhino with TOTP.
+For more information, see <a href="#Configuring_Keycloak_Authentication_with_TOTP_keycloak-totp">Configuring Keycloak Authentication with TOTP</a>.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>As well as providing access to orcharhino Server, hosts provisioned with orcharhino can also be integrated with FreeIPA realms.
+orcharhino has a realm feature that automatically manages the life cycle of any system registered to a realm or domain provider.
+For more information, see <a href="#External_Authentication_for_Provisioned_Hosts_orcharhino">External Authentication for Provisioned Hosts</a>.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 7. Authentication Overview</caption>
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Authentication</th>
+<th class="tableblock halign-left valign-top">User Groups</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">FreeIPA</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Kerberos or LDAP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Active Directory</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Kerberos or LDAP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">POSIX</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">LDAP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+</tr>
+</tbody>
+</table>
+<div class="sect2">
+<h3 id="Using_LDAP_orcharhino"><a class="anchor" href="#Using_LDAP_orcharhino"></a>5.1. Using LDAP</h3>
+<div class="paragraph">
+<p>orcharhino supports LDAP authentication using one or multiple LDAP directories.</p>
+</div>
+<div class="paragraph">
+<p>If you require orcharhino to use <code>TLS</code> to establish a secure LDAP connection (LDAPS), first obtain certificates used by the LDAP server you are connecting to and mark them as trusted on the base operating system of your orcharhino Server as described below.
+If your LDAP server uses a certificate chain with intermediate certificate authorities, all of the root and intermediate certificates in the chain must be trusted, so ensure all certificates are obtained.
+If you do not require secure LDAP at this time, proceed to <a href="#Configuring_Project_to_Use_LDAP_orcharhino">Configuring orcharhino to use LDAP</a>.</p>
+</div>
+<div class="paragraph">
+<div class="title">Using SSSD Configuration</div>
+<p>Though direct LDAP integration is covered in this section, Red&#160;Hat recommends that you use SSSD and configure it against FreeIPA, AD, or an LDAP server.
+SSSD improves the consistency of the authentication process.
+For more information about the preferred configurations, see <a href="#Using_Active_Directory_orcharhino">Using Active Directory</a>.
+You can also cache the SSSD credentials and use them for LDAP authentication.</p>
+</div>
+<div class="sect3">
+<h4 id="Configuring_TLS_for_Secure_LDAP_orcharhino"><a class="anchor" href="#Configuring_TLS_for_Secure_LDAP_orcharhino"></a>5.1.1. Configuring TLS for Secure LDAP</h4>
+<div class="paragraph">
+<p>Use the orcharhino CLI to configure TLS for secure LDAP (LDAPS).</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Obtain the Certificate from the LDAP Server.</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>If you use Active Directory Certificate Services, export the Enterprise PKI CA Certificate using the Base-64 encoded X.509 format.</p>
+</li>
+<li>
+<p>Download the LDAP server certificate to a temporary location onto orcharhino Server and remove it when finished.</p>
+<div class="paragraph">
+<p>For example, <code>/tmp/example.crt</code>.
+The filename extensions <code>.cer</code> and <code>.crt</code> are only conventions and can refer to DER binary or PEM ASCII format certificates.</p>
+</div>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>Trust the Certificate from the LDAP Server.</p>
+<div class="paragraph">
+<p>orcharhino Server requires the CA certificates for LDAP authentication to be individual files in <code>/etc/pki/tls/certs/</code> directory.</p>
+</div>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Use the <code>install</code> command to install the imported certificate into the <code>/etc/pki/tls/certs/</code> directory with the correct permissions:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># install /tmp/<em>example.crt</em> /etc/pki/tls/certs/</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Enter the following command as <code>root</code> to trust the <em>example.crt</em> certificate obtained from the LDAP server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ln -s <em>example.crt</em> /etc/pki/tls/certs/$(openssl \
+x509 -noout -hash -in \
+/etc/pki/tls/certs/<em>example.crt</em>).0</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Restart the <code>httpd</code> service:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl restart httpd</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="Configuring_Project_to_Use_LDAP_orcharhino"><a class="anchor" href="#Configuring_Project_to_Use_LDAP_orcharhino"></a>5.1.2. Configuring orcharhino to use LDAP</h4>
+<div class="paragraph">
+<p>In the orcharhino management UI, configure orcharhino to use LDAP.</p>
+</div>
+<div class="paragraph">
+<p>Note that if you need single sign-on functionality with Kerberos on orcharhino management UI, you should use FreeIPA and AD external authentication instead.
+For more information, see <a href="#Using_FreeIPA_orcharhino">Using FreeIPA</a> or <a href="#Using_Active_Directory_orcharhino">Using Active Directory</a>.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Set the Network Information System (NIS) service boolean to true to prevent SELinux from stopping outgoing LDAP connections:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># setsebool -P nis_enabled on</pre>
+</div>
+</div>
+</li>
+<li>
+<p>In the orcharhino management UI, navigate to <strong>Administer</strong> &gt; <strong>LDAP Authentication</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Create Authentication Source</strong>.</p>
+</li>
+<li>
+<p>On the <strong>LDAP server</strong> tab, enter the LDAP server&#8217;s name, host name, port, and server type.
+The default port is 389, the default server type is POSIX (alternatively you can select FreeIPA or Active Directory depending on the type of authentication server).
+For <code>TLS</code> encrypted connections, select the <strong>LDAPS</strong> checkbox to enable encryption.
+The port should change to 636, which is the default for LDAPS.</p>
+</li>
+<li>
+<p>On the <strong>Account</strong> tab, enter the account information and domain name details.
+See <a href="#Description_of_LDAP_Settings_orcharhino">Description of LDAP Settings</a> for descriptions and examples.</p>
+</li>
+<li>
+<p>On the <strong>Attribute mappings</strong> tab, map LDAP attributes to orcharhino attributes.
+You can map login name, first name, last name, email address, and photo attributes.
+See <a href="#Example_Settings_for_LDAP_Connections_orcharhino">Example Settings for LDAP Connections</a> for examples.</p>
+</li>
+<li>
+<p>On the <strong>Locations</strong> tab, select locations from the left table.
+Selected locations are assigned to users created from the LDAP authentication source, and available after their first login.</p>
+</li>
+<li>
+<p>On the <strong>Organizations</strong> tab, select organizations from the left table.
+Selected organizations are assigned to users created from the LDAP authentication source, and available after their first login.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong>.</p>
+</li>
+<li>
+<p>Configure new accounts for LDAP users:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>If you did not select <strong>Automatically Create Accounts In orcharhino</strong> checkbox, see <a href="https://docs.theforeman.org/3.4/Administering_Project/index-orcharhino.html#Creating_a_User_admin">Creating a User</a> in <em>Administering orcharhino</em> to create user accounts manually.</p>
+</li>
+<li>
+<p>If you selected the <strong>Automatically Create Accounts In orcharhino</strong> checkbox, LDAP users can now log in to orcharhino using their LDAP accounts and passwords.
+After they log in for the first time, the orcharhino administrator has to assign roles to them manually.
+For more information on assigning user accounts appropriate roles in orcharhino, see <a href="https://docs.theforeman.org/3.4/Administering_Project/index-orcharhino.html#Assigning_Roles_to_a_User_admin">Assigning Roles to a User</a> in <em>Administering orcharhino</em>.</p>
+</li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="Description_of_LDAP_Settings_orcharhino"><a class="anchor" href="#Description_of_LDAP_Settings_orcharhino"></a>5.1.3. Description of LDAP Settings</h4>
+<div class="paragraph">
+<p>The following table provides a description for each setting in the <strong>Account</strong> tab.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 8. Account Tab Settings</caption>
+<colgroup>
+<col style="width: 22.2222%;">
+<col style="width: 77.7778%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Setting</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Account</strong></p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>The user name of the LDAP account that has read access to the LDAP server.
+User name is not required if the server allows anonymous reading, otherwise use the full path to the user&#8217;s object.
+For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">uid=$login,cn=users,cn=accounts,dc=example,dc=com</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>$login</code> variable stores the username entered on the login page as a literal string.
+The value is accessed when the variable is expanded.</p>
+</div>
+<div class="paragraph">
+<p>The variable cannot be used with external user groups from an LDAP source because orcharhino needs to retrieve the group list without the user logging in.
+Use either an anonymous, or dedicated service user.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Account password</strong></p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>The LDAP password for the user defined in the <strong>Account username</strong> field.
+This field can remain blank if the <strong>Account username</strong> is using the <code>$login</code> variable.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Base DN</strong></p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>The top level domain name of the LDAP directory.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Groups base DN</strong></p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>The top level domain name of the LDAP directory tree that contains groups.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>LDAP filter</strong></p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>A filter to restrict LDAP queries.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Automatically Create Accounts In orcharhino</strong></p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>If this checkbox is selected, orcharhino creates user accounts for LDAP users when they log in to orcharhino for the first time.
+After they log in for the first time, the orcharhino administrator has to assign roles to them manually.
+See <a href="https://docs.theforeman.org/3.4/Administering_Project/index-orcharhino.html#Assigning_Roles_to_a_User_admin">Assigning Roles to a User</a> in <em>{AdministeringDocTitle)</em> to assign user accounts appropriate roles in orcharhino.</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Usergroup Sync</strong></p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>If this option is selected, the user group membership of a user is automatically synchronized when the user logs in, which ensures the membership is always up to date.
+If this option is cleared, orcharhino relies on a cron job to regularly synchronize group membership (every 30 minutes by default).
+For more information, see <a href="#Configuring_External_User_Groups_orcharhino">Configuring External User Groups</a>.</p>
+</div></div></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="Example_Settings_for_LDAP_Connections_orcharhino"><a class="anchor" href="#Example_Settings_for_LDAP_Connections_orcharhino"></a>5.1.4. Example Settings for LDAP Connections</h4>
+<div class="paragraph">
+<p>The following table shows example settings for different types of LDAP connections.
+The example below uses a dedicated service account called <em>redhat</em> that has bind, read, and search permissions on the user and group entries.
+Note that LDAP attribute names are case sensitive.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 9. Example Settings for Active Directory, Free IPA or Red&#160;Hat Identity Management and POSIX LDAP Connections</caption>
+<colgroup>
+<col style="width: 14.2857%;">
+<col style="width: 28.5714%;">
+<col style="width: 28.5714%;">
+<col style="width: 28.5715%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Setting</th>
+<th class="tableblock halign-left valign-top">Active Directory</th>
+<th class="tableblock halign-left valign-top">FreeIPA or Red&#160;Hat Identity Management</th>
+<th class="tableblock halign-left valign-top">POSIX (OpenLDAP)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Account</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DOMAIN\redhat</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">uid=redhat,cn=users,
+cn=accounts,dc=example,
+dc=com</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">uid=redhat,ou=users,
+dc=example,dc=com</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Account password</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P@ssword</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Base DN</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DC=example,DC=COM</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">dc=example,dc=com</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">dc=example,dc=com</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Groups Base DN</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CN=Users,DC=example,DC=com</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">cn=groups,cn=accounts,
+dc=example,dc=com</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">cn=employee,ou=userclass,
+dc=example,dc=com</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Login name attribute</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">userPrincipalName</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">uid</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">uid</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">First name attribute</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">givenName</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">givenName</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">givenName</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Last name attribute</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">sn</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">sn</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">sn</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Email address attribute</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">mail</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">mail</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">mail</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Photo attribute</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">thumbnailPhoto</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p><code>userPrincipalName</code> allows the use of whitespace in usernames.
+The login name attribute <code>sAMAccountName</code> (which is not listed in the table above) provides backwards compatibility with legacy Microsoft systems.
+<code>sAMAccountName</code> does not allow the use of whitespace in usernames.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="Example_LDAP_Filters_orcharhino"><a class="anchor" href="#Example_LDAP_Filters_orcharhino"></a>5.1.5. Example LDAP Filters</h4>
+<div class="paragraph">
+<p>As an administrator, you can create LDAP filters to restrict the access of specific users to orcharhino.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 10. Example filters for allowing specific users to login</caption>
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 75%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">User</th>
+<th class="tableblock halign-left valign-top">Filter</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">User1, User3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">(memberOf=cn=Group1,cn=Users,dc=domain,dc=example)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">User2, User3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">(memberOf=cn=Group2,cn=Users,dc=domain,dc=example)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">User1, User2, User3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">(|(memberOf=cn=Group1,cn=Users,dc=domain,dc=example)(memberOf=cn=Group2,cn=Users,dc=domain,dc=example))</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<div class="title">LDAP directory structure</div>
+<p>The LDAP directory structure that the filters in the example use:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">DC=Domain,DC=Example
+   |
+   |----- CN=Users
+         |
+         |----- CN=Group1
+         |----- CN=Group2
+         |----- CN=User1
+         |----- CN=User2
+         |----- CN=User3</pre>
+</div>
+</div>
+<div class="paragraph">
+<div class="title">LDAP group membership</div>
+<p>The group membership that the filters in the example use:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 66.6667%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Group</th>
+<th class="tableblock halign-left valign-top">Members</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Group1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">User1,
+User3</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Group2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">User2,
+User3</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Using_FreeIPA_orcharhino"><a class="anchor" href="#Using_FreeIPA_orcharhino"></a>5.2. Using FreeIPA</h3>
+<div class="paragraph">
+<p>This section shows how to integrate orcharhino Server with a FreeIPA server and how to enable host-based access control.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>You can attach FreeIPA as an external authentication source with no single sign-on support.
+For more information, see <a href="#Using_LDAP_orcharhino">Using LDAP</a>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>The base operating system of orcharhino Server must be enrolled in the FreeIPA domain by the FreeIPA administrator of your organization.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The examples in this chapter assume separation between FreeIPA and orcharhino configuration.</p>
+</div>
+<div class="sect3">
+<h4 id="Configuring_FreeIPA_Authentication_on_Server_orcharhino"><a class="anchor" href="#Configuring_FreeIPA_Authentication_on_Server_orcharhino"></a>5.2.1. Configuring FreeIPA Authentication on orcharhino Server</h4>
+<div class="paragraph">
+<p>In the orcharhino CLI, configure FreeIPA authentication by first creating a host entry on the FreeIPA server.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On the FreeIPA server, to authenticate, enter the following command and enter your password when prompted:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># kinit <em>admin</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>To verify that you have authenticated, enter the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># klist</pre>
+</div>
+</div>
+</li>
+<li>
+<p>On the FreeIPA server, create a host entry for orcharhino Server and generate a one-time password, for example:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ipa host-add --random <em>hostname</em></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The generated one-time password must be used on the client to complete FreeIPA-enrollment.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Create an HTTP service for orcharhino Server, for example:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ipa service-add HTTP/<em>hostname</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>On orcharhino Server, install the IPA client:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf install ipa-client</pre>
+</div>
+</div>
+</li>
+<li>
+<p>On orcharhino Server, enter the following command as root to configure FreeIPA-enrollment:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ipa-client-install --password <em>OTP</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Replace <em>OTP</em> with the one-time password provided by the FreeIPA administrator.</p>
+</div>
+</li>
+<li>
+<p>If orcharhino Server is running on Debian, ensure that the hostname is set to the fully qualified domain name (FQDN); the short name is not sufficient:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hostname
+orcharhino.example.com</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Otherwise the installer cannot generate the right principal name that is needed to join the realm.</p>
+</div>
+</li>
+<li>
+<p>Set <code>foreman-ipa-authentication</code> to true, using the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer --foreman-ipa-authentication=true</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Restart orcharhino services:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-maintain service restart</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>External users can now log in to orcharhino using their FreeIPA credentials.
+They can now choose to either log in to orcharhino Server directly using their username and password or take advantage of the configured Kerberos single sign-on and obtain a ticket on their client machine and be logged in automatically.
+The two-factor authentication with one-time password (2FA OTP) is also supported.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="Configuring_Host_Based_Authentication_Control_orcharhino"><a class="anchor" href="#Configuring_Host_Based_Authentication_Control_orcharhino"></a>5.2.2. Configuring Host-Based Authentication Control</h4>
+<div class="paragraph">
+<p>HBAC rules define which machine within the domain a FreeIPA user is allowed to access.
+You can configure HBAC on the FreeIPA server to prevent selected users from accessing orcharhino Server.
+With this approach, you can prevent orcharhino from creating database entries for users that are not allowed to log in.</p>
+</div>
+<div class="paragraph">
+<p>On the FreeIPA server, configure Host-Based Authentication Control (HBAC).</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On the FreeIPA server, to authenticate, enter the following command and enter your password when prompted:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># kinit <em>admin</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>To verify that you have authenticated, enter the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># klist</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create HBAC service and rule on the FreeIPA server and link them together.
+The following examples use the PAM service name <em>orcharhino-prod</em>.
+Execute the following commands on the FreeIPA server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ipa hbacsvc-add orcharhino-prod
+# ipa hbacrule-add allow_orcharhino_prod
+# ipa hbacrule-add-service allow_orcharhino_prod --hbacsvcs=orcharhino-prod</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Add the user who is to have access to the service orcharhino-prod, and the hostname of orcharhino Server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ipa hbacrule-add-user allow_orcharhino_prod --user=<em>username</em>
+# ipa hbacrule-add-host allow_orcharhino_prod --hosts=<em>orcharhino.example.com</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Alternatively, host groups and user groups can be added to the <em>allow</em>orcharhino_prod_ rule.</p>
+</div>
+</li>
+<li>
+<p>To check the status of the rule, execute:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ipa hbacrule-find orcharhino-prod
+# ipa hbactest --user=<em>username</em> --host=<em>orcharhino.example.com</em> --service=orcharhino-prod</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Ensure the allow_all rule is disabled on the FreeIPA server.</p>
+</li>
+<li>
+<p>Configure the FreeIPA integration with orcharhino Server as described in <a href="#Configuring_FreeIPA_Authentication_on_Server_orcharhino">Configuring FreeIPA Authentication on orcharhino Server</a>.
+On orcharhino Server, define the PAM service as root:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer --foreman-pam-service=orcharhino-prod</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Using_Active_Directory_orcharhino"><a class="anchor" href="#Using_Active_Directory_orcharhino"></a>5.3. Using Active Directory</h3>
+<div class="paragraph">
+<p>This section shows how to use direct Active Directory (AD) as an external authentication source for orcharhino Server.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>You can attach Active Directory as an external authentication source with no single sign-on support.
+For more information, see <a href="#Using_LDAP_orcharhino">Using LDAP</a>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Direct AD integration means that orcharhino Server is joined directly to the AD domain where the identity is stored.
+The recommended setup consists of two steps:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Enrolling orcharhino Server with the Active Directory server as described in <a href="#Enrolling_Server_with_the_AD_Server_orcharhino">Enrolling orcharhino Server with the AD Server</a>.</p>
+</li>
+<li>
+<p>Configuring direct Active Directory integration with GSS-proxy as described in <a href="#Configuring_Direct_AD_Integration_with_GSS_Proxy_orcharhino">Configuring Direct AD Integration with GSS-Proxy</a>.</p>
+</li>
+</ul>
+</div>
+<div class="sect3">
+<h4 id="GSS_Proxy_orcharhino"><a class="anchor" href="#GSS_Proxy_orcharhino"></a>5.3.1. GSS-Proxy</h4>
+<div class="paragraph">
+<p>The traditional process of Kerberos authentication in Apache requires the Apache process to have read access to the keytab file.
+GSS-Proxy allows you to implement stricter privilege separation for the Apache server by removing access to the keytab file while preserving Kerberos authentication functionality.
+When using AD as an external authentication source for orcharhino, it is recommended to implement GSS-proxy, because the keys in the keytab file are the same as the host keys.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="Enrolling_Server_with_the_AD_Server_orcharhino"><a class="anchor" href="#Enrolling_Server_with_the_AD_Server_orcharhino"></a>5.3.2. Enrolling orcharhino Server with the AD Server</h4>
+<div class="paragraph">
+<p>In the orcharhino CLI, enroll orcharhino Server with the Active Directory server.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisite</div>
+<ul>
+<li>
+<p>GSS-proxy and nfs-utils are installed.</p>
+<div class="paragraph">
+<p>Installing GSS-proxy and nfs-utils:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf install gssproxy nfs-utils</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Install the required packages:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf install sssd adcli realmd ipa-python-compat krb5-workstation samba-common-tools</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Enroll orcharhino Server with the AD server.
+You may need to have administrator permissions to perform the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># realm join -v <em>EXAMPLE.ORG</em> --membership-software=samba -U Administrator</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="Configuring_Direct_AD_Integration_with_GSS_Proxy_orcharhino"><a class="anchor" href="#Configuring_Direct_AD_Integration_with_GSS_Proxy_orcharhino"></a>5.3.3. Configuring Direct AD Integration with GSS-Proxy</h4>
+<div class="paragraph">
+<p>In the orcharhino CLI, configure the direct Active Directory integration with GSS-proxy.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisite</div>
+<ul>
+<li>
+<p>orcharhino is enrolled with the Active Directory server.
+For more information, see <a href="#Enrolling_Server_with_the_AD_Server_orcharhino">Enrolling orcharhino Server with the AD Server</a>.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Create the <code>/etc/ipa/</code> directory and the <code>default.conf</code> file:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># mkdir /etc/ipa
+# touch /etc/ipa/default.conf</pre>
+</div>
+</div>
+</li>
+<li>
+<p>To the <code>default.conf</code> file, add the following content:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">[global]
+server = unused
+realm = <em>EXAMPLE.ORG</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create the <code>/etc/net-keytab.conf</code> file with the following content:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">[global]
+workgroup = EXAMPLE
+realm = EXAMPLE.ORG
+kerberos method = system keytab
+security = ads</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Determine the effective user ID of the Apache user:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># id apache</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Apache user must not have access to the keytab file.</p>
+</div>
+</li>
+<li>
+<p>Create the <code>/etc/gssproxy/00-http.conf</code> file with the following content:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">[service/HTTP]
+mechs = krb5
+cred_store = keytab:/etc/krb5.keytab
+cred_store = ccache:/var/lib/gssproxy/clients/krb5cc_%U
+euid = <em>ID_of_Apache_User</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create a keytab entry:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># KRB5_KTNAME=FILE:/etc/httpd/conf/http.keytab net ads keytab add HTTP -U administrator -d3 -s /etc/net-keytab.conf
+# chown root.apache /etc/httpd/conf/http.keytab
+# chmod 640 /etc/httpd/conf/http.keytab</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Enable IPA authenication in orcharhino:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer --foreman-ipa-authentication=true</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Start and enable the <code>gssproxy</code> service:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl restart gssproxy
+# systemctl enable --now gssproxy</pre>
+</div>
+</div>
+</li>
+<li>
+<p>To configure the Apache server to use the <code>gssproxy</code> service, create a <code>systemd</code> drop-in file and add the following content to it:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># mkdir -p /etc/systemd/system/httpd.service.d/
+# vi /etc/systemd/system/httpd.service.d/gssproxy.conf
+[Service]
+Environment=GSS_USE_PROXY=1</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Apply changes to the service:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl daemon-reload</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Start and enable the <code>httpd</code> service:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl restart httpd</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Verify that SSO is working as expected.</p>
+<div class="paragraph">
+<p>With a running Apache server, users making HTTP requests against the server are authenticated if the client has a valid Kerberos ticket.</p>
+</div>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Retrieve the Kerberos ticket of the LDAP user, using the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># kinit ldapuser</pre>
+</div>
+</div>
+</li>
+<li>
+<p>View the Kerberos ticket, using the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># klist</pre>
+</div>
+</div>
+</li>
+<li>
+<p>View output from successful SSO-based authentication, using the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># curl -k -u : --negotiate https://<em>orcharhino.example.com/</em>users/extlogin</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This returns the following response:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">&lt;html&gt;&lt;body&gt;You are being &lt;a href="https://<em>orcharhino.example.com/</em>users/4-ldapuserexample-com/edit"&gt;redirected&lt;/a&gt;.&lt;/body&gt;&lt;/html&gt;</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="Kerberos_Configuration_in_Web_Browsers_orcharhino"><a class="anchor" href="#Kerberos_Configuration_in_Web_Browsers_orcharhino"></a>5.3.4. Kerberos Configuration in Web Browsers</h4>
+<div class="paragraph">
+<p>If you use the Internet Explorer browser, add orcharhino Server to the list of Local Intranet or Trusted sites, and turn on the <em>Enable Integrated Windows Authentication</em> setting.
+See the Internet Explorer documentation for details.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>With direct AD integration, HBAC through FreeIPA is not available.
+As an alternative, you can use Group Policy Objects (GPO) that enable administrators to centrally manage policies in AD environments.
+To ensure correct GPO to PAM service mapping, use the following sssd configuration:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">access_provider = ad
+ad_gpo_access_control = enforcing
+ad_gpo_map_service = +foreman</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Here, <em>foreman</em> is the PAM service name.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="Active_Directory_with_Cross_Forest_Trust_orcharhino"><a class="anchor" href="#Active_Directory_with_Cross_Forest_Trust_orcharhino"></a>5.3.5. Active Directory with Cross-Forest Trust</h4>
+<div class="paragraph">
+<p>Kerberos can create <code>cross-forest trust</code> that defines a relationship between two otherwise separate domain forests.
+A domain forest is a hierarchical structure of domains; both AD and FreeIPA constitute a forest.
+With a trust relationship enabled between AD and FreeIPA, users of AD can access Linux hosts and services using a single set of credentials.</p>
+</div>
+<div class="paragraph">
+<p>From the orcharhino point of view, the configuration process is the same as integration with FreeIPA server without cross-forest trust configured.
+orcharhino Server has to be enrolled in the IPM domain and integrated as described in <a href="#Using_FreeIPA_orcharhino">Using FreeIPA</a>.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="Configuring_the_FreeIPA_Server_to_use_Cross_Forest_Trust_orcharhino"><a class="anchor" href="#Configuring_the_FreeIPA_Server_to_use_Cross_Forest_Trust_orcharhino"></a>5.3.6. Configuring the FreeIPA Server to Use Cross-Forest Trust</h4>
+<div class="paragraph">
+<p>On the FreeIPA server, configure the server to use <code>cross-forest trust</code>.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Enable HBAC:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Create an external group and add the AD group to it.</p>
+</li>
+<li>
+<p>Add the new external group to a POSIX group.</p>
+</li>
+<li>
+<p>Use the POSIX group in a HBAC rule.</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>Configure sssd to transfer additional attributes of AD users.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Add the AD user attributes to the <em>nss</em> and <em>domain</em> sections in <code>/etc/sssd/sssd.conf</code>.
+For example:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">[nss]
+user_attributes=+mail, +sn, +givenname
+
+[domain/EXAMPLE]
+ldap_user_extra_attrs=mail, sn, givenname</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Configuring_External_User_Groups_orcharhino"><a class="anchor" href="#Configuring_External_User_Groups_orcharhino"></a>5.4. Configuring External User Groups</h3>
+<div class="paragraph">
+<p>orcharhino does not associate external users with their user group automatically.
+You must create a user group with the same name as in the external source on orcharhino.
+Members of the external user group then automatically become members of the orcharhino user group and receive the associated permissions.</p>
+</div>
+<div class="paragraph">
+<p>The configuration of external user groups depends on the type of external authentication.</p>
+</div>
+<div class="paragraph">
+<p>To assign additional permissions to an external user, add this user to an internal user group that has no external mapping specified.
+Then assign the required roles to this group.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>If you use an LDAP server, configure orcharhino to use LDAP authentication.
+For more information see <a href="#Using_LDAP_orcharhino">Using LDAP</a>.</p>
+<div class="paragraph">
+<p>When using external user groups from an LDAP source, you cannot use the <code>$login</code> variable as a substitute for the account user name.
+You must use either an anonymous or dedicated service user.</p>
+</div>
+</li>
+<li>
+<p>If you use a FreeIPA or AD server, configure orcharhino to use FreeIPA or AD authentication.
+For more information, see <a href="https://docs.theforeman.org/3.4/Installing_Server/index-orcharhino.html#Configuring_External_Authentication_orcharhino">Configuring External Authentication</a> in <em>Installing orcharhino Server</em>.</p>
+</li>
+<li>
+<p>Ensure that at least one external user authenticates for the first time.</p>
+</li>
+<li>
+<p>Retain a copy of the external group names you want to use.
+To find the group membership of external users, enter the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># id <em>username</em></pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the orcharhino management UI, navigate to <strong>Administer</strong> &gt; <strong>User Groups</strong>, and click <strong>Create User Group</strong>.</p>
+</li>
+<li>
+<p>Specify the name of the new user group.
+Do not select any users to avoid adding users automatically when you refresh the external user group.</p>
+</li>
+<li>
+<p>Click the <strong>Roles</strong> tab and select the roles you want to assign to the user group.
+Alternatively, select the <strong>Administrator</strong> checkbox to assign all available permissions.</p>
+</li>
+<li>
+<p>Click the <strong>External groups</strong> tab, then click <strong>Add external user group</strong>, and select an authentication source from the <strong>Auth source</strong> drop-down menu.</p>
+<div class="paragraph">
+<p>Specify the exact name of the external group in the <strong>Name</strong> field.</p>
+</div>
+</li>
+<li>
+<p>Click <strong>Submit</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Refreshing_External_User_Groups_for_LDAP_orcharhino"><a class="anchor" href="#Refreshing_External_User_Groups_for_LDAP_orcharhino"></a>5.5. Refreshing External User Groups for LDAP</h3>
+<div class="paragraph">
+<p>To set the LDAP source to synchronize user group membership automatically on user login, in the <strong>Auth Source</strong> page, select the <strong>Usergroup Sync</strong> option.
+If this option is not selected, LDAP user groups are refreshed automatically through a scheduled cron job synchronizing the LDAP Authentication source every 30 minutes by default.</p>
+</div>
+<div class="paragraph">
+<p>If the user groups in the LDAP Authentication source change in the lapse of time between scheduled tasks, the user can be assigned to incorrect external user groups.
+This is corrected automatically when the scheduled task runs.</p>
+</div>
+<div class="paragraph">
+<p>Use this procedure to refresh the LDAP source manually.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the orcharhino management UI, navigate to <strong>Administer</strong> &gt; <strong>Usergroups</strong> and select a user group.</p>
+</li>
+<li>
+<p>On the <strong>External Groups</strong> tab, click <strong>Refresh</strong> to the right of the required user group.</p>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">CLI procedure</div>
+<ul>
+<li>
+<p>Enter the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre># foreman-rake ldap:refresh_usergroups</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Refreshing_External_User_Groups_for_FreeIPA_or_AD_orcharhino"><a class="anchor" href="#Refreshing_External_User_Groups_for_FreeIPA_or_AD_orcharhino"></a>5.6. Refreshing External User Groups for FreeIPA or AD</h3>
+<div class="paragraph">
+<p>External user groups based on FreeIPA or AD are refreshed only when a group member logs in to orcharhino.
+It is not possible to alter user membership of external user groups in the orcharhino management UI, such changes are overwritten on the next group refresh.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="External_Authentication_for_Provisioned_Hosts_orcharhino"><a class="anchor" href="#External_Authentication_for_Provisioned_Hosts_orcharhino"></a>5.7. External Authentication for Provisioned Hosts</h3>
+<div class="paragraph">
+<p>Use this section to configure orcharhino Server or orcharhino Proxy for FreeIPA realm support, then add hosts to the FreeIPA realm group.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>orcharhino Server that is registered to the Content Delivery Network or an external orcharhino Proxy that is registered to orcharhino Server.</p>
+</li>
+<li>
+<p>A deployed realm or domain provider such as FreeIPA.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<div class="title">To install and configure FreeIPA packages on orcharhino Server or orcharhino Proxy:</div>
+<p>To use FreeIPA for provisioned hosts, complete the following steps to install and configure FreeIPA packages on orcharhino Server or orcharhino Proxy:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Install the <code>ipa-client</code> package on orcharhino Server or orcharhino Proxy:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf install ipa-client</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Configure the server as a FreeIPA client:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ipa-client-install</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create a realm proxy user, <code>realm-orcharhino-proxy</code>, and the relevant roles in FreeIPA:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-prepare-realm admin realm-orcharhino-proxy</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note the principal name that returns and your FreeIPA server configuration details because you require them for the following procedure.</p>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<div class="title">To configure orcharhino Server or orcharhino Proxy for FreeIPA Realm Support:</div>
+<p>Complete the following procedure on orcharhino and every orcharhino Proxy that you want to use:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Copy the <code>/root/freeipa.keytab</code> file to any orcharhino Proxy that you want to include in the same principal and realm:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># scp /root/freeipa.keytab root@<em>orcharhino-proxy.example.com</em>:/etc/foreman-proxy/freeipa.keytab</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Move the <code>/root/freeipa.keytab</code> file to the <code>/etc/foreman-proxy</code> directory and set the ownership settings to the <code>foreman-proxy</code> user:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># mv /root/freeipa.keytab /etc/foreman-proxy
+# chown foreman-proxy:foreman-proxy /etc/foreman-proxy/freeipa.keytab</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Enter the following command on all orcharhino Proxies that you want to include in the realm.
+If you use the integrated orcharhino Proxy on orcharhino, enter this command on orcharhino Server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer --foreman-proxy-realm true \
+--foreman-proxy-realm-keytab /etc/foreman-proxy/freeipa.keytab \
+--foreman-proxy-realm-principal <em>realm-orcharhino-proxy@EXAMPLE.COM</em> \
+--foreman-proxy-realm-provider freeipa</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can also use these options when you first configure the orcharhino Server.</p>
+</div>
+</li>
+<li>
+<p>Ensure that the most updated versions of the ca-certificates package is installed and trust the FreeIPA Certificate Authority:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># cp /etc/ipa/ca.crt /etc/pki/ca-trust/source/anchors/ipa.crt
+# update-ca-trust enable
+# update-ca-trust</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Optional: If you configure FreeIPA on an existing orcharhino Server or orcharhino Proxy, complete the following steps to ensure that the configuration changes take effect:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Restart the <strong>foreman-proxy</strong> service:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl restart foreman-proxy</pre>
+</div>
+</div>
+</li>
+<li>
+<p>In the orcharhino management UI, navigate to <strong>Infrastructure</strong> &gt; <strong>orcharhino Proxies</strong>.</p>
+</li>
+<li>
+<p>Locate the orcharhino Proxy you have configured for FreeIPA and from the list in the <strong>Actions</strong> column, select <strong>Refresh</strong>.</p>
+</li>
+</ol>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<div class="title">To create a realm for the FreeIPA-enabled orcharhino Proxy</div>
+<p>After you configure your integrated or external orcharhino Proxy with FreeIPA, you must create a realm and add the FreeIPA-configured orcharhino Proxy to the realm.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the orcharhino management UI, navigate to <strong>Infrastructure</strong> &gt; <strong>Realms</strong> and click <strong>Create Realm</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter a name for the realm.</p>
+</li>
+<li>
+<p>From the <strong>Realm Type</strong> list, select the type of realm.</p>
+</li>
+<li>
+<p>From the <strong>Realm orcharhino Proxy</strong> list, select orcharhino Proxy where you have configured FreeIPA.</p>
+</li>
+<li>
+<p>Click the <strong>Locations</strong> tab and from the <strong>Locations</strong> list, select the location where you want to add the new realm.</p>
+</li>
+<li>
+<p>Click the <strong>Organizations</strong> tab and from the <strong>Organizations</strong> list, select the organization where you want to add the new realm.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong>.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<div class="title">Updating Host Groups with Realm Information</div>
+<p>You must update any host groups that you want to use with the new realm information.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>In the orcharhino management UI, navigate to <strong>Configure</strong> &gt; <strong>Host Groups</strong>, select the host group that you want to update, and click the <strong>Network</strong> tab.</p>
+</li>
+<li>
+<p>From the <strong>Realm</strong> list, select the realm you create as part of this procedure, and then click <strong>Submit</strong>.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<div class="title">Adding Hosts to a FreeIPA Host Group</div>
+<p>FreeIPA supports the ability to set up automatic membership rules based on a system&#8217;s attributes.
+orcharhino&#8217;s realm feature provides administrators with the ability to map the orcharhino host groups to the FreeIPA parameter <code>userclass</code> which allow administrators to configure automembership.</p>
+</div>
+<div class="paragraph">
+<p>When nested host groups are used, they are sent to the FreeIPA server as they are displayed in the orcharhino User Interface.
+For example, "Parent/Child/Child".</p>
+</div>
+<div class="paragraph">
+<p>orcharhino Server or orcharhino Proxy sends updates to the FreeIPA server, however automembership rules are only applied at initial registration.</p>
+</div>
+<div class="olist arabic">
+<div class="title">To Add Hosts to a FreeIPA Host Group:</div>
+<ol class="arabic">
+<li>
+<p>On the FreeIPA server, create a host group:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ipa hostgroup-add <em>hostgroup_name</em> --desc=<em>hostgroup_description</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create an <code>automembership</code> rule:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ipa automember-add --type=hostgroup <em>hostgroup_name</em> <em>automember_rule</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Where you can use the following options:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>automember-add</code> flags the group as an automember group.</p>
+</li>
+<li>
+<p><code>--type=hostgroup</code> identifies that the target group is a host group, not a user group.</p>
+</li>
+<li>
+<p><code><em>automember_rule</em></code> adds the name you want to identify the automember rule by.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Define an automembership condition based on the <code>userclass</code> attribute:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ipa automember-add-condition --key=userclass --type=hostgroup --inclusive-regex=<em>^webserver</em> <em>hostgroup_name</em>
+----------------------------------
+Added condition(s) to "<em>hostgroup_name</em>"
+----------------------------------
+Automember Rule: <em>automember_rule</em>
+Inclusive Regex: userclass=<em>^webserver</em>
+----------------------------
+Number of conditions added 1
+----------------------------</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Where you can use the following options:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>automember-add-condition</code> adds regular expression conditions to identify group members.</p>
+</li>
+<li>
+<p><code>--key=userclass</code> specifies the key attribute as <code>userclass</code>.</p>
+</li>
+<li>
+<p><code>--type=hostgroup</code> identifies that the target group is a host group, not a user group.</p>
+</li>
+<li>
+<p><code>--inclusive-regex=</code> <em>^webserver</em> identifies matching values with a regular expression pattern.</p>
+</li>
+<li>
+<p><em>hostgroup_name</em> &#8211; identifies the target host group&#8217;s name.</p>
+</li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>When a system is added to orcharhino Server&#8217;s <em>hostgroup_name</em> host group, it is added automatically to the FreeIPA server&#8217;s "<em>hostgroup_name</em>" host group.
+FreeIPA host groups allow for Host-Based Access Controls (HBAC), sudo policies and other FreeIPA functions.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Configuring_Project_with_Keycloak_Authentication_keycloak-general"><a class="anchor" href="#Configuring_Project_with_Keycloak_Authentication_keycloak-general"></a>5.8. Configuring orcharhino with Keycloak Authentication</h3>
+<div class="paragraph">
+<p>Use this section to configure orcharhino to use Keycloak as an OpenID provider for external authentication.</p>
+</div>
+<div class="sect3">
+<h4 id="prerequisites-for-integrating-orcharhino-with-keycloak_keycloak-general"><a class="anchor" href="#prerequisites-for-integrating-orcharhino-with-keycloak_keycloak-general"></a>5.8.1. Prerequisites for Configuring orcharhino with Keycloak Authentication</h4>
+<div class="paragraph">
+<p>Before configuring orcharhino with Keycloak external authentication, ensure that you meet the following requirements:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>A working installation of Keycloak server that uses HTTPS instead of HTTP.</p>
+</li>
+<li>
+<p>A Keycloak account with admin privileges.</p>
+</li>
+<li>
+<p>A realm for orcharhino user accounts created in Keycloak.</p>
+</li>
+<li>
+<p>If the certificates or the CA are self-signed, ensure that they are added to the end-user certificate trust store.</p>
+</li>
+<li>
+<p>Users imported or added to Keycloak.</p>
+<div class="paragraph">
+<p>If you have an existing user database configured such as LDAP or Kerberos, you can import users from it by configuring user federation.</p>
+</div>
+<div class="paragraph">
+<p>If you do not have an existing user database configured, you can manually create users in Keycloak.</p>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="registering-orcharhino-as-a-keycloak-client_keycloak-general"><a class="anchor" href="#registering-orcharhino-as-a-keycloak-client_keycloak-general"></a>5.8.2. Registering orcharhino as a Keycloak Client</h4>
+<div class="paragraph">
+<p>Use this procedure to register orcharhino to Keycloak as a client and configure orcharhino to use Keycloak as an authentication source.</p>
+</div>
+<div class="paragraph">
+<p>You can configure orcharhino and Keycloak with two different authentication methods:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Users authenticate to orcharhino using the orcharhino management UI.</p>
+</li>
+<li>
+<p>Users authenticate to orcharhino using the orcharhino CLI.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>You must decide on how you want your users to authenticate in advance because both methods require different orcharhino clients to be registered to Keycloak and configured.
+The steps to register and configure orcharhino client in Keycloak are distinguished within the procedure.</p>
+</div>
+<div class="paragraph">
+<p>You can also register two different orcharhino clients to Keycloak if you want to use both authentication methods and configure both clients accordingly.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On the orcharhino server, install the following packages:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf install mod_auth_openidc keycloak-httpd-client-install</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Register orcharhino to Keycloak as a client.
+Note that you the registration process for logging in using the web UI and the CLI are different.
+You can register two clients orcharhino clients to Keycloak to be able to log in to orcharhino from the web UI and the CLI.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>If you want you users to authenticate to orcharhino using the web UI, create a client as follows:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># keycloak-httpd-client-install --app-name foreman-openidc \
+--keycloak-server-url "<em>https://Keycloak.example.com</em>" \
+--keycloak-admin-username "<em>admin</em>" \
+--keycloak-realm "<em>orcharhino_Realm</em>" \
+--keycloak-admin-realm master \
+--keycloak-auth-role root-admin \
+-t openidc -l /users/extlogin --force</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Enter the password for the administer account when prompted.
+This command creates a client for orcharhino in Keycloak.</p>
+</div>
+<div class="paragraph">
+<p>Then, configure orcharhino to use Keycloak as an authentication source:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer --foreman-keycloak true \
+--foreman-keycloak-app-name "foreman-openidc" \
+--foreman-keycloak-realm "<em>orcharhino_Realm</em>"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>If you want your users to authenticate to orcharhino using the CLI, create a client as follows:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># keycloak-httpd-client-install --app-name hammer-openidc \
+--keycloak-server-url "<em>https://Keycloak.example.com</em>" \
+--keycloak-admin-username "<em>admin</em>" \
+--keycloak-realm "<em>orcharhino_Realm</em>" \
+--keycloak-admin-realm master \
+--keycloak-auth-role root-admin \
+-t openidc -l /users/extlogin --force</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Enter the password for the administer account when prompted.
+This command creates a client for orcharhino in Keycloak.</p>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Restart the <code>httpd</code> service:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl restart httpd</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="configuring-the-orcharhino-client-in-keycloak_keycloak-general"><a class="anchor" href="#configuring-the-orcharhino-client-in-keycloak_keycloak-general"></a>5.8.3. Configuring the orcharhino Client in Keycloak</h4>
+<div class="paragraph">
+<p>Use this procedure to configure the orcharhino client in the Keycloak web UI and create group and audience mappers for the orcharhino client.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Keycloak web UI, navigate to <strong>Clients</strong> and click the orcharhino client.</p>
+</li>
+<li>
+<p>Configure access type:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>If you want your users to authenticate to orcharhino using the orcharhino management UI, from the <strong>Access Type</strong> list, select <strong>confidential</strong>.</p>
+</li>
+<li>
+<p>If you want your users to authenticate to orcharhino using the CLI, from the <strong>Access Type</strong> list, select <strong>public</strong>.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>In the <strong>Valid redirect URI</strong> fields, add a valid redirect URI.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>If you want your users to authenticate to orcharhino using the orcharhino management UI, in the blank field below the existing URI, enter a URI in the form <code>https://orcharhino.example.com/users/extlogin</code>. Note that you must add the string <code>/users/extlogin</code> after the orcharhino FQDN.</p>
+<div class="paragraph">
+<p>After completing this step, the orcharhino client for logging in using the orcharhino management UI must have the following <strong>Valid Redirect URIs</strong>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">https://orcharhino.example.com/users/extlogin/redirect_uri
+https://orcharhino.example.com/users/extlogin</pre>
+</div>
+</div>
+</li>
+<li>
+<p>If you want your users to authenticate to orcharhino using the CLI, in the blank field below the existing URI, enter <strong>urn:ietf:wg:oauth:2.0:oob</strong>.</p>
+<div class="paragraph">
+<p>After completing this step, the orcharhino client for logging in using the CLI must have the following <strong>Valid Redirect URIs</strong>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">https://orcharhino.example.com/users/extlogin/redirect_uri
+urn:ietf:wg:oauth:2.0:oob</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Click the <strong>Mappers</strong> tab and click <strong>Create</strong> to add an audience mapper.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter a name for the audience mapper.</p>
+</li>
+<li>
+<p>From the <strong>Mapper Type</strong> list, select <strong>Audience</strong>.</p>
+</li>
+<li>
+<p>From the <strong>Included Client Audience</strong> list, select the orcharhino client.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Create</strong> to add a group mapper so that you can specify authorization in orcharhino based on group membership.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter a name for the group mapper.</p>
+</li>
+<li>
+<p>From the <strong>Mapper Type</strong> list, select <strong>Group Membership</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Token Claim Name</strong> field, enter <strong>groups</strong>.</p>
+</li>
+<li>
+<p>Set the <strong>Full group path</strong> setting to OFF.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="Configuring_Project_Settings_for_Keycloak_Authentication_keycloak-general"><a class="anchor" href="#Configuring_Project_Settings_for_Keycloak_Authentication_keycloak-general"></a>5.8.4. Configuring orcharhino Settings for Keycloak Authentication</h4>
+<div class="paragraph">
+<p>Use this section to configure orcharhino for Keycloak authentication using the orcharhino management UI or the CLI.</p>
+</div>
+<div class="sect4">
+<h5 id="configuring-orcharhino-settings-for-keycloak-authentication-using-the-web-ui_keycloak-general"><a class="anchor" href="#configuring-orcharhino-settings-for-keycloak-authentication-using-the-web-ui_keycloak-general"></a>Configuring orcharhino Settings for Keycloak Authentication Using the Web UI</h5>
+<div class="paragraph">
+<p>Use this procedure to configure orcharhino settings for Keycloak authentication using the orcharhino management UI.</p>
+</div>
+<div class="paragraph">
+<p>Note that you can navigate to the following URL within your realm to obtain values to configure orcharhino settings: <code>https://Keycloak.example.com/auth/realms/orcharhino_Realm/.well-known/openid-configuration</code></p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisite</div>
+<ul>
+<li>
+<p>Ensure that the <strong>Access Type</strong> setting in the orcharhino client in the Keycloak web UI is set to <strong>confidential</strong></p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the orcharhino management UI, navigate to <strong>Administer</strong> &gt; <strong>Settings</strong>, and click the <strong>Authentication</strong> tab.</p>
+</li>
+<li>
+<p>Locate the <strong>Authorize login delegation</strong> row, and in the <strong>Value</strong> column, set the value to <strong>Yes</strong>.</p>
+</li>
+<li>
+<p>Locate the <strong>Authorize login delegation auth source user autocreate</strong> row, and in the <strong>Value</strong> column,
+set the value to <strong>External</strong>.</p>
+</li>
+<li>
+<p>Locate the <strong>Login delegation logout URL</strong> row, and in the <strong>Value</strong> column, set the value to <strong>https://orcharhino.example.com/users/extlogout</strong>.</p>
+</li>
+<li>
+<p>Locate the <strong>OIDC Algorithm</strong> row, and in the <strong>Value</strong> column, set the algorithm for encoding on Keycloak to <strong>RS256</strong>.</p>
+</li>
+<li>
+<p>Locate the <strong>OIDC Audience</strong> row, and in the <strong>Value</strong> column, set the value to the client ID for Keycloak.</p>
+</li>
+<li>
+<p>Locate the <strong>OIDC Issuer</strong> row, and in the <strong>Value</strong> column, set the value to <strong><em>https://Keycloak.example.com/auth/realms/orcharhino_Realm</em></strong>.</p>
+</li>
+<li>
+<p>Locate the <strong>OIDC JWKs URL</strong> row, and in the <strong>Value</strong> column, set the value to <strong><em>https://Keycloak.example.com/auth/realms/orcharhino_Realm/protocol/openid-connect/certs</em></strong>.</p>
+</li>
+<li>
+<p>In the orcharhino management UI, navigate to <strong>Administer</strong> &gt; <strong>Authentication Sources</strong> and click <strong>External</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Create LDAP Authentication Source</strong> and select the Keycloak server.</p>
+</li>
+<li>
+<p>Click the <strong>Locations</strong> tab and add locations that can use the Keycloak authentication source.</p>
+</li>
+<li>
+<p>Click the <strong>Organizations</strong> tab and add organizations that can use the Keycloak authentication source.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect4">
+<h5 id="configuring-orcharhino-settings-for-keycloak-authentication-using-the-cli_keycloak-general"><a class="anchor" href="#configuring-orcharhino-settings-for-keycloak-authentication-using-the-cli_keycloak-general"></a>Configuring orcharhino Settings for Keycloak Authentication Using the CLI</h5>
+<div class="paragraph">
+<p>Use this procedure to configure orcharhino settings for Keycloak authentication using the orcharhino CLI.</p>
+</div>
+<div class="paragraph">
+<p>Note that you can navigate to the following URL within your realm to obtain values to configure orcharhino settings: <code>https://Keycloak.example.com/auth/realms/orcharhino_Realm/.well-known/openid-configuration</code></p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisite</div>
+<ul>
+<li>
+<p>Ensure that the <strong>Access Type</strong> setting in the orcharhino client in the Keycloak web UI is set to <strong>public</strong></p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On orcharhino, set the login delegation to <code>true</code> so that users can authenticate using the Open IDC protocol:</p>
+<div class="listingblock">
+<div class="content">
+<pre># hammer settings set --name authorize_login_delegation --value true</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Set the login delegation logout URL:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer settings set --name login_delegation_logout_url \
+--value https://orcharhino.example.com/users/extlogout</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Set the algorithm for encoding on Keycloak, for example, <code>RS256</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre># hammer settings set --name oidc_algorithm --value 'RS256'</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Open the <code><em>Keycloak.example.com</em>/auth/realms/<em>Keycloak_REALM</em>/.well-known/openid-configuration</code> URL and note the values to populate the options in the following steps.</p>
+</li>
+<li>
+<p>Add the value for the Hammer client in the Open IDC audience:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer settings set --name oidc_audience \
+--value "['<em>orcharhino.example.com</em>-hammer-openidc']"</pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If you register several Keycloak clients to orcharhino, ensure that you append all audiences in the array.
+For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer settings set --name oidc_audience \
+--value "['<em>orcharhino.example.com</em>-foreman-openidc', '<em>orcharhino.example.com</em>-hammer-openidc']"</pre>
+</div>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Set the value for the Open IDC issuer:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer settings set --name oidc_issuer \
+--value "<em>Keycloak.example.com</em>/auth/realms/<em>Keycloak_Realm</em>"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Set the value for Open IDC Java Web Token (JWT):</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer settings set --name oidc_jwks_url \
+--value "<em>Keycloak.example.com</em>/auth/realms/<em>Keycloak_Realm</em>/protocol/openid-connect/certs"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Retrieve the ID of the Keycloak authentication source:</p>
+<div class="listingblock">
+<div class="content">
+<pre># hammer auth-source external list</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Set the location and organization:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer auth-source external update --id <em>Authentication Source ID</em> \
+--location-ids <em>Location ID</em> --organization-ids <em>Organization ID</em></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="logging-in-to-the-orcharhino-web-ui-using-keycloak_keycloak-general"><a class="anchor" href="#logging-in-to-the-orcharhino-web-ui-using-keycloak_keycloak-general"></a>5.8.5. Logging in to the orcharhino management UI Using Keycloak</h4>
+<div class="paragraph">
+<p>Use this procedure to log in to the orcharhino management UI using Keycloak.</p>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>In your browser, log in to orcharhino and enter your credentials.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="logging-in-to-the-orcharhino-cli-using-keycloak_keycloak-general"><a class="anchor" href="#logging-in-to-the-orcharhino-cli-using-keycloak_keycloak-general"></a>5.8.6. Logging in to the orcharhino CLI Using Keycloak</h4>
+<div class="paragraph">
+<p>Use this procedure to authenticate to the orcharhino CLI using the code grant type.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>To authenticate to the orcharhino CLI using the code grant type, enter the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer auth login oauth \
+--two-factor \
+--oidc-token-endpoint 'https://<em>Keycloak.example.com</em>/auth/realms/ssl-realm/protocol/openid-connect/token' \
+--oidc-authorization-endpoint 'https://<em>Keycloak.example.com</em>/auth' \
+--oidc-client-id '<em>orcharhino.example.com</em>-foreman-openidc' \
+--oidc-redirect-uri urn:ietf:wg:oauth:2.0:oob</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The command prompts you to enter a success code.</p>
+</div>
+</li>
+<li>
+<p>To retrieve the success code, navigate to the URL that the command returns and provide the required information.</p>
+</li>
+<li>
+<p>Copy the success code that the web UI returns.</p>
+</li>
+<li>
+<p>In the command prompt of <code>hammer auth login oauth</code>, enter the success code to authenticate to the orcharhino CLI.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="configuring-group-mapping-for-keycloak-authentication_keycloak-general"><a class="anchor" href="#configuring-group-mapping-for-keycloak-authentication_keycloak-general"></a>5.8.7. Configuring Group Mapping for Keycloak Authentication</h4>
+<div class="paragraph">
+<p>Optionally, to implement the Role Based Access Control (RBAC), create a group in orcharhino, assign a role to this group, and then map an Active Directory group to the orcharhino group.
+As a result, anyone in the given group in Keycloak are logged in under the corresponding orcharhino group.
+This example configures users of the orcharhino-admin user group in the Active Directory to authenticate as users with administrator privileges on orcharhino.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the orcharhino management UI, navigate to <strong>Administer</strong> &gt; <strong>User Groups</strong>, and click the <strong>Create User Group</strong> button.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter a name for the user group.
+The name should not be the same as in the Active Directory.</p>
+</li>
+<li>
+<p>Do not add users and user groups to the right-hand columns.
+Click the <strong>Roles</strong> tab.</p>
+</li>
+<li>
+<p>Select the <strong>Administer</strong> checkbox.</p>
+</li>
+<li>
+<p>Click the <strong>External Groups</strong> tab.</p>
+</li>
+<li>
+<p>Click <strong>Add external user group</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter the name of the Active Directory group.</p>
+</li>
+<li>
+<p>From the list, select <strong>EXTERNAL</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Configuring_Keycloak_Authentication_with_TOTP_keycloak-totp"><a class="anchor" href="#Configuring_Keycloak_Authentication_with_TOTP_keycloak-totp"></a>5.9. Configuring Keycloak Authentication with TOTP</h3>
+<div class="paragraph">
+<p>Use this section to configure orcharhino to use Keycloak as an OpenID provider for external authentication with TOTP cards.</p>
+</div>
+<div class="sect3">
+<h4 id="prerequisites-for-integrating-orcharhino-with-keycloak_keycloak-totp"><a class="anchor" href="#prerequisites-for-integrating-orcharhino-with-keycloak_keycloak-totp"></a>5.9.1. Prerequisites for Configuring orcharhino with Keycloak Authentication</h4>
+<div class="paragraph">
+<p>Before configuring orcharhino with Keycloak external authentication, ensure that you meet the following requirements:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>A working installation of Keycloak server that uses HTTPS instead of HTTP.</p>
+</li>
+<li>
+<p>A Keycloak account with admin privileges.</p>
+</li>
+<li>
+<p>A realm for orcharhino user accounts created in Keycloak.</p>
+</li>
+<li>
+<p>If the certificates or the CA are self-signed, ensure that they are added to the end-user certificate trust store.</p>
+</li>
+<li>
+<p>Users imported or added to Keycloak.</p>
+<div class="paragraph">
+<p>If you have an existing user database configured such as LDAP or Kerberos, you can import users from it by configuring user federation.</p>
+</div>
+<div class="paragraph">
+<p>If you do not have an existing user database configured, you can manually create users in Keycloak.</p>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="registering-orcharhino-as-a-keycloak-client_keycloak-totp"><a class="anchor" href="#registering-orcharhino-as-a-keycloak-client_keycloak-totp"></a>5.9.2. Registering orcharhino as a Keycloak Client</h4>
+<div class="paragraph">
+<p>Use this procedure to register orcharhino to Keycloak as a client and configure orcharhino to use Keycloak as an authentication source.</p>
+</div>
+<div class="paragraph">
+<p>You can configure orcharhino and Keycloak with two different authentication methods:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Users authenticate to orcharhino using the orcharhino management UI.</p>
+</li>
+<li>
+<p>Users authenticate to orcharhino using the orcharhino CLI.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>You must decide on how you want your users to authenticate in advance because both methods require different orcharhino clients to be registered to Keycloak and configured.
+The steps to register and configure orcharhino client in Keycloak are distinguished within the procedure.</p>
+</div>
+<div class="paragraph">
+<p>You can also register two different orcharhino clients to Keycloak if you want to use both authentication methods and configure both clients accordingly.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On the orcharhino server, install the following packages:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf install mod_auth_openidc keycloak-httpd-client-install</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Register orcharhino to Keycloak as a client.
+Note that you the registration process for logging in using the web UI and the CLI are different.
+You can register two clients orcharhino clients to Keycloak to be able to log in to orcharhino from the web UI and the CLI.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>If you want you users to authenticate to orcharhino using the web UI, create a client as follows:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># keycloak-httpd-client-install --app-name foreman-openidc \
+--keycloak-server-url "<em>https://Keycloak.example.com</em>" \
+--keycloak-admin-username "<em>admin</em>" \
+--keycloak-realm "<em>orcharhino_Realm</em>" \
+--keycloak-admin-realm master \
+--keycloak-auth-role root-admin \
+-t openidc -l /users/extlogin --force</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Enter the password for the administer account when prompted.
+This command creates a client for orcharhino in Keycloak.</p>
+</div>
+<div class="paragraph">
+<p>Then, configure orcharhino to use Keycloak as an authentication source:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer --foreman-keycloak true \
+--foreman-keycloak-app-name "foreman-openidc" \
+--foreman-keycloak-realm "<em>orcharhino_Realm</em>"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>If you want your users to authenticate to orcharhino using the CLI, create a client as follows:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># keycloak-httpd-client-install --app-name hammer-openidc \
+--keycloak-server-url "<em>https://Keycloak.example.com</em>" \
+--keycloak-admin-username "<em>admin</em>" \
+--keycloak-realm "<em>orcharhino_Realm</em>" \
+--keycloak-admin-realm master \
+--keycloak-auth-role root-admin \
+-t openidc -l /users/extlogin --force</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Enter the password for the administer account when prompted.
+This command creates a client for orcharhino in Keycloak.</p>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Restart the <code>httpd</code> service:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl restart httpd</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="configuring-the-orcharhino-client-in-keycloak_keycloak-totp"><a class="anchor" href="#configuring-the-orcharhino-client-in-keycloak_keycloak-totp"></a>5.9.3. Configuring the orcharhino Client in Keycloak</h4>
+<div class="paragraph">
+<p>Use this procedure to configure the orcharhino client in the Keycloak web UI and create group and audience mappers for the orcharhino client.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Keycloak web UI, navigate to <strong>Clients</strong> and click the orcharhino client.</p>
+</li>
+<li>
+<p>Configure access type:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>If you want your users to authenticate to orcharhino using the orcharhino management UI, from the <strong>Access Type</strong> list, select <strong>confidential</strong>.</p>
+</li>
+<li>
+<p>If you want your users to authenticate to orcharhino using the CLI, from the <strong>Access Type</strong> list, select <strong>public</strong>.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>In the <strong>Valid redirect URI</strong> fields, add a valid redirect URI.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>If you want your users to authenticate to orcharhino using the orcharhino management UI, in the blank field below the existing URI, enter a URI in the form <code>https://orcharhino.example.com/users/extlogin</code>. Note that you must add the string <code>/users/extlogin</code> after the orcharhino FQDN.</p>
+<div class="paragraph">
+<p>After completing this step, the orcharhino client for logging in using the orcharhino management UI must have the following <strong>Valid Redirect URIs</strong>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">https://orcharhino.example.com/users/extlogin/redirect_uri
+https://orcharhino.example.com/users/extlogin</pre>
+</div>
+</div>
+</li>
+<li>
+<p>If you want your users to authenticate to orcharhino using the CLI, in the blank field below the existing URI, enter <strong>urn:ietf:wg:oauth:2.0:oob</strong>.</p>
+<div class="paragraph">
+<p>After completing this step, the orcharhino client for logging in using the CLI must have the following <strong>Valid Redirect URIs</strong>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">https://orcharhino.example.com/users/extlogin/redirect_uri
+urn:ietf:wg:oauth:2.0:oob</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Click the <strong>Mappers</strong> tab and click <strong>Create</strong> to add an audience mapper.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter a name for the audience mapper.</p>
+</li>
+<li>
+<p>From the <strong>Mapper Type</strong> list, select <strong>Audience</strong>.</p>
+</li>
+<li>
+<p>From the <strong>Included Client Audience</strong> list, select the orcharhino client.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Create</strong> to add a group mapper so that you can specify authorization in orcharhino based on group membership.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter a name for the group mapper.</p>
+</li>
+<li>
+<p>From the <strong>Mapper Type</strong> list, select <strong>Group Membership</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Token Claim Name</strong> field, enter <strong>groups</strong>.</p>
+</li>
+<li>
+<p>Set the <strong>Full group path</strong> setting to OFF.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="Configuring_Project_Settings_for_Keycloak_Authentication_keycloak-totp"><a class="anchor" href="#Configuring_Project_Settings_for_Keycloak_Authentication_keycloak-totp"></a>5.9.4. Configuring orcharhino Settings for Keycloak Authentication</h4>
+<div class="paragraph">
+<p>Use this section to configure orcharhino for Keycloak authentication using the orcharhino management UI or the CLI.</p>
+</div>
+<div class="sect4">
+<h5 id="configuring-orcharhino-settings-for-keycloak-authentication-using-the-web-ui_keycloak-totp"><a class="anchor" href="#configuring-orcharhino-settings-for-keycloak-authentication-using-the-web-ui_keycloak-totp"></a>Configuring orcharhino Settings for Keycloak Authentication Using the Web UI</h5>
+<div class="paragraph">
+<p>Use this procedure to configure orcharhino settings for Keycloak authentication using the orcharhino management UI.</p>
+</div>
+<div class="paragraph">
+<p>Note that you can navigate to the following URL within your realm to obtain values to configure orcharhino settings: <code>https://Keycloak.example.com/auth/realms/orcharhino_Realm/.well-known/openid-configuration</code></p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisite</div>
+<ul>
+<li>
+<p>Ensure that the <strong>Access Type</strong> setting in the orcharhino client in the Keycloak web UI is set to <strong>confidential</strong></p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the orcharhino management UI, navigate to <strong>Administer</strong> &gt; <strong>Settings</strong>, and click the <strong>Authentication</strong> tab.</p>
+</li>
+<li>
+<p>Locate the <strong>Authorize login delegation</strong> row, and in the <strong>Value</strong> column, set the value to <strong>Yes</strong>.</p>
+</li>
+<li>
+<p>Locate the <strong>Authorize login delegation auth source user autocreate</strong> row, and in the <strong>Value</strong> column,
+set the value to <strong>External</strong>.</p>
+</li>
+<li>
+<p>Locate the <strong>Login delegation logout URL</strong> row, and in the <strong>Value</strong> column, set the value to <strong>https://orcharhino.example.com/users/extlogout</strong>.</p>
+</li>
+<li>
+<p>Locate the <strong>OIDC Algorithm</strong> row, and in the <strong>Value</strong> column, set the algorithm for encoding on Keycloak to <strong>RS256</strong>.</p>
+</li>
+<li>
+<p>Locate the <strong>OIDC Audience</strong> row, and in the <strong>Value</strong> column, set the value to the client ID for Keycloak.</p>
+</li>
+<li>
+<p>Locate the <strong>OIDC Issuer</strong> row, and in the <strong>Value</strong> column, set the value to <strong><em>https://Keycloak.example.com/auth/realms/orcharhino_Realm</em></strong>.</p>
+</li>
+<li>
+<p>Locate the <strong>OIDC JWKs URL</strong> row, and in the <strong>Value</strong> column, set the value to <strong><em>https://Keycloak.example.com/auth/realms/orcharhino_Realm/protocol/openid-connect/certs</em></strong>.</p>
+</li>
+<li>
+<p>In the orcharhino management UI, navigate to <strong>Administer</strong> &gt; <strong>Authentication Sources</strong> and click <strong>External</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Create LDAP Authentication Source</strong> and select the Keycloak server.</p>
+</li>
+<li>
+<p>Click the <strong>Locations</strong> tab and add locations that can use the Keycloak authentication source.</p>
+</li>
+<li>
+<p>Click the <strong>Organizations</strong> tab and add organizations that can use the Keycloak authentication source.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect4">
+<h5 id="configuring-orcharhino-settings-for-keycloak-authentication-using-the-cli_keycloak-totp"><a class="anchor" href="#configuring-orcharhino-settings-for-keycloak-authentication-using-the-cli_keycloak-totp"></a>Configuring orcharhino Settings for Keycloak Authentication Using the CLI</h5>
+<div class="paragraph">
+<p>Use this procedure to configure orcharhino settings for Keycloak authentication using the orcharhino CLI.</p>
+</div>
+<div class="paragraph">
+<p>Note that you can navigate to the following URL within your realm to obtain values to configure orcharhino settings: <code>https://Keycloak.example.com/auth/realms/orcharhino_Realm/.well-known/openid-configuration</code></p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisite</div>
+<ul>
+<li>
+<p>Ensure that the <strong>Access Type</strong> setting in the orcharhino client in the Keycloak web UI is set to <strong>public</strong></p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On orcharhino, set the login delegation to <code>true</code> so that users can authenticate using the Open IDC protocol:</p>
+<div class="listingblock">
+<div class="content">
+<pre># hammer settings set --name authorize_login_delegation --value true</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Set the login delegation logout URL:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer settings set --name login_delegation_logout_url \
+--value https://orcharhino.example.com/users/extlogout</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Set the algorithm for encoding on Keycloak, for example, <code>RS256</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre># hammer settings set --name oidc_algorithm --value 'RS256'</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Open the <code><em>Keycloak.example.com</em>/auth/realms/<em>Keycloak_REALM</em>/.well-known/openid-configuration</code> URL and note the values to populate the options in the following steps.</p>
+</li>
+<li>
+<p>Add the value for the Hammer client in the Open IDC audience:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer settings set --name oidc_audience \
+--value "['<em>orcharhino.example.com</em>-hammer-openidc']"</pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If you register several Keycloak clients to orcharhino, ensure that you append all audiences in the array.
+For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer settings set --name oidc_audience \
+--value "['<em>orcharhino.example.com</em>-foreman-openidc', '<em>orcharhino.example.com</em>-hammer-openidc']"</pre>
+</div>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Set the value for the Open IDC issuer:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer settings set --name oidc_issuer \
+--value "<em>Keycloak.example.com</em>/auth/realms/<em>Keycloak_Realm</em>"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Set the value for Open IDC Java Web Token (JWT):</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer settings set --name oidc_jwks_url \
+--value "<em>Keycloak.example.com</em>/auth/realms/<em>Keycloak_Realm</em>/protocol/openid-connect/certs"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Retrieve the ID of the Keycloak authentication source:</p>
+<div class="listingblock">
+<div class="content">
+<pre># hammer auth-source external list</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Set the location and organization:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer auth-source external update --id <em>Authentication Source ID</em> \
+--location-ids <em>Location ID</em> --organization-ids <em>Organization ID</em></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="configuring-orcharhino-with-keycloak-for-totp-authentication_keycloak-totp"><a class="anchor" href="#configuring-orcharhino-with-keycloak-for-totp-authentication_keycloak-totp"></a>5.9.5. Configuring orcharhino with Keycloak for TOTP Authentication</h4>
+<div class="paragraph">
+<p>Use this procedure to configure orcharhino to use Keycloak as an OpenID provider for external authentication with Time-based One-time Password (TOTP).</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Keycloak web UI, navigate to the orcharhino realm.</p>
+</li>
+<li>
+<p>Navigate to <strong>Authentication</strong>, and click the <strong>OTP Policy</strong> tab.</p>
+</li>
+<li>
+<p>Ensure that the <strong>Supported Applications</strong> field includes FreeOTP or Google Authenticator.</p>
+</li>
+<li>
+<p>Configure the OTP settings to suit your requirements.</p>
+</li>
+<li>
+<p>Optional: If you want to use TOTP authentication as a default authentication method for all users, click the <strong>Flows</strong> tab, and to the right of the <strong>OTP Form</strong> setting, select <strong>REQUIRED</strong>.</p>
+</li>
+<li>
+<p>Click the <strong>Required Actions</strong> tab.</p>
+</li>
+<li>
+<p>To the right of the <strong>Configure OTP</strong> row, select the <strong>Default Action</strong> checkbox.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="logging-in-to-the-orcharhino-web-ui-using-keycloak-totp-authentication_keycloak-totp"><a class="anchor" href="#logging-in-to-the-orcharhino-web-ui-using-keycloak-totp-authentication_keycloak-totp"></a>5.9.6. Logging in to the orcharhino management UI Using Keycloak TOTP Authentication</h4>
+<div class="paragraph">
+<p>Use this procedure to log in to the orcharhino management UI using Keycloak TOTP authentication.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Log in to orcharhino, orcharhino redirects you to the Keycloak login screen.</p>
+</li>
+<li>
+<p>Enter your username and password, and click <strong>Log In</strong>.</p>
+</li>
+<li>
+<p>The first attempt to log in, Keycloak requests you to configure your client by scanning the barcode and entering the pin displayed.</p>
+</li>
+<li>
+<p>After you configure your client and enter a valid PIN, Keycloak redirects you to orcharhino and
+logs you in.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="logging-in-to-the-orcharhino-cli-using-keycloak_keycloak-totp"><a class="anchor" href="#logging-in-to-the-orcharhino-cli-using-keycloak_keycloak-totp"></a>5.9.7. Logging in to the orcharhino CLI Using Keycloak</h4>
+<div class="paragraph">
+<p>Use this procedure to authenticate to the orcharhino CLI using the code grant type.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>To authenticate to the orcharhino CLI using the code grant type, enter the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer auth login oauth \
+--two-factor \
+--oidc-token-endpoint 'https://<em>Keycloak.example.com</em>/auth/realms/ssl-realm/protocol/openid-connect/token' \
+--oidc-authorization-endpoint 'https://<em>Keycloak.example.com</em>/auth' \
+--oidc-client-id '<em>orcharhino.example.com</em>-foreman-openidc' \
+--oidc-redirect-uri urn:ietf:wg:oauth:2.0:oob</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The command prompts you to enter a success code.</p>
+</div>
+</li>
+<li>
+<p>To retrieve the success code, navigate to the URL that the command returns and provide the required information.</p>
+</li>
+<li>
+<p>Copy the success code that the web UI returns.</p>
+</li>
+<li>
+<p>In the command prompt of <code>hammer auth login oauth</code>, enter the success code to authenticate to the orcharhino CLI.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="configuring-group-mapping-for-keycloak-authentication_keycloak-totp"><a class="anchor" href="#configuring-group-mapping-for-keycloak-authentication_keycloak-totp"></a>5.9.8. Configuring Group Mapping for Keycloak Authentication</h4>
+<div class="paragraph">
+<p>Optionally, to implement the Role Based Access Control (RBAC), create a group in orcharhino, assign a role to this group, and then map an Active Directory group to the orcharhino group.
+As a result, anyone in the given group in Keycloak are logged in under the corresponding orcharhino group.
+This example configures users of the orcharhino-admin user group in the Active Directory to authenticate as users with administrator privileges on orcharhino.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the orcharhino management UI, navigate to <strong>Administer</strong> &gt; <strong>User Groups</strong>, and click the <strong>Create User Group</strong> button.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter a name for the user group.
+The name should not be the same as in the Active Directory.</p>
+</li>
+<li>
+<p>Do not add users and user groups to the right-hand columns.
+Click the <strong>Roles</strong> tab.</p>
+</li>
+<li>
+<p>Select the <strong>Administer</strong> checkbox.</p>
+</li>
+<li>
+<p>Click the <strong>External Groups</strong> tab.</p>
+</li>
+<li>
+<p>Click <strong>Add external user group</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter the name of the Active Directory group.</p>
+</li>
+<li>
+<p>From the list, select <strong>EXTERNAL</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Disabling_Keycloak_Authentication_orcharhino"><a class="anchor" href="#Disabling_Keycloak_Authentication_orcharhino"></a>5.10. Disabling Keycloak Authentication</h3>
+<div class="paragraph">
+<p>If you want to disable Keycloak authentication in orcharhino, complete this procedure.</p>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>Enter the following command to disable Keycloak Authentication:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer --reset-foreman-keycloak</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="configuring-external-services"><a class="anchor" href="#configuring-external-services"></a>6. Configuring orcharhino Server with External Services</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>If you do not want to configure the DNS, DHCP, and TFTP services on orcharhino Server, use this section to configure your orcharhino Server to work with external DNS, DHCP and TFTP services.</p>
 </div>
 <div class="sect2">
-<h3 id="configuring-external-dns_orcharhino"><a class="anchor" href="#configuring-external-dns_orcharhino"></a>5.1. Configuring orcharhino Server with External DNS</h3>
+<h3 id="configuring-external-dns_orcharhino"><a class="anchor" href="#configuring-external-dns_orcharhino"></a>6.1. Configuring orcharhino Server with External DNS</h3>
 <div class="paragraph">
 <p>You can configure orcharhino Server with external DNS.
 orcharhino Server uses the <code>nsupdate</code> utility to update DNS records on the remote server.</p>
@@ -2641,7 +5175,7 @@ send\n" | nsupdate -k /etc/foreman-proxy/rndc.key</pre>
 </div>
 </div>
 <div class="sect2">
-<h3 id="configuring-external-dhcp_orcharhino"><a class="anchor" href="#configuring-external-dhcp_orcharhino"></a>5.2. Configuring orcharhino Server with External DHCP</h3>
+<h3 id="configuring-external-dhcp_orcharhino"><a class="anchor" href="#configuring-external-dhcp_orcharhino"></a>6.2. Configuring orcharhino Server with External DHCP</h3>
 <div class="paragraph">
 <p>To configure orcharhino Server with external DHCP, you must complete the following procedures:</p>
 </div>
@@ -2656,7 +5190,7 @@ send\n" | nsupdate -k /etc/foreman-proxy/rndc.key</pre>
 </ol>
 </div>
 <div class="sect3">
-<h4 id="configuring-an-external-dhcp-server_orcharhino"><a class="anchor" href="#configuring-an-external-dhcp-server_orcharhino"></a>5.2.1. Configuring an External DHCP Server to Use with orcharhino Server</h4>
+<h4 id="configuring-an-external-dhcp-server_orcharhino"><a class="anchor" href="#configuring-an-external-dhcp-server_orcharhino"></a>6.2.1. Configuring an External DHCP Server to Use with orcharhino Server</h4>
 <div class="paragraph">
 <p>To configure an external DHCP server running Enterprise Linux to use with orcharhino Server, you must install the ISC DHCP Service and Berkeley Internet Name Domain (BIND) packages.
 You must also share the DHCP configuration and lease files with orcharhino Server.
@@ -2877,7 +5411,7 @@ Clients are configured using NFSv3.</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="Configuring_Server_with_an_External_DHCP_Server_orcharhino"><a class="anchor" href="#Configuring_Server_with_an_External_DHCP_Server_orcharhino"></a>5.2.2. Configuring orcharhino Server with an External DHCP Server</h4>
+<h4 id="Configuring_Server_with_an_External_DHCP_Server_orcharhino"><a class="anchor" href="#Configuring_Server_with_an_External_DHCP_Server_orcharhino"></a>6.2.2. Configuring orcharhino Server with an External DHCP Server</h4>
 <div class="paragraph">
 <p>You can configure orcharhino Server with an external DHCP server.</p>
 </div>
@@ -2981,7 +5515,7 @@ bash-4.2$ exit</pre>
 </div>
 </div>
 <div class="sect2">
-<h3 id="configuring-external-tftp_orcharhino"><a class="anchor" href="#configuring-external-tftp_orcharhino"></a>5.3. Configuring orcharhino Server with External TFTP</h3>
+<h3 id="configuring-external-tftp_orcharhino"><a class="anchor" href="#configuring-external-tftp_orcharhino"></a>6.3. Configuring orcharhino Server with External TFTP</h3>
 <div class="paragraph">
 <p>You can configure orcharhino Server with external TFTP services.</p>
 </div>
@@ -3042,7 +5576,7 @@ bash-4.2$ exit</pre>
 </div>
 </div>
 <div class="sect2">
-<h3 id="configuring-external-idm-dns_orcharhino"><a class="anchor" href="#configuring-external-idm-dns_orcharhino"></a>5.4. Configuring orcharhino Server with External IdM DNS</h3>
+<h3 id="configuring-external-idm-dns_orcharhino"><a class="anchor" href="#configuring-external-idm-dns_orcharhino"></a>6.4. Configuring orcharhino Server with External IdM DNS</h3>
 <div class="paragraph">
 <p>When orcharhino Server adds a DNS record for a host, it first determines which orcharhino Proxy is providing DNS for that domain.
 It then communicates with the orcharhino Proxy that is configured to provide DNS service for your deployment and adds the record.
@@ -3092,7 +5626,7 @@ For more information about configuring realm enrollment, see <a href="https://do
 </table>
 </div>
 <div class="sect3">
-<h4 id="configuring-dynamic-dns-update-with-gss-tsig-authentication_orcharhino"><a class="anchor" href="#configuring-dynamic-dns-update-with-gss-tsig-authentication_orcharhino"></a>5.4.1. Configuring Dynamic DNS Update with GSS-TSIG Authentication</h4>
+<h4 id="configuring-dynamic-dns-update-with-gss-tsig-authentication_orcharhino"><a class="anchor" href="#configuring-dynamic-dns-update-with-gss-tsig-authentication_orcharhino"></a>6.4.1. Configuring Dynamic DNS Update with GSS-TSIG Authentication</h4>
 <div class="paragraph">
 <p>You can configure the IdM server to use the generic security service algorithm for secret key transaction (GSS-TSIG) technology defined in <a href="https://tools.ietf.org/html/rfc3645">RFC3645</a>.
 To configure the IdM server to use the GSS-TSIG technology, you must install the IdM client on the orcharhino Server base operating system.</p>
@@ -3375,7 +5909,7 @@ For example, <code>example.com</code>.</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="configuring-dynamic-dns-update-with-tsig-authentication_orcharhino"><a class="anchor" href="#configuring-dynamic-dns-update-with-tsig-authentication_orcharhino"></a>5.4.2. Configuring Dynamic DNS Update with TSIG Authentication</h4>
+<h4 id="configuring-dynamic-dns-update-with-tsig-authentication_orcharhino"><a class="anchor" href="#configuring-dynamic-dns-update-with-tsig-authentication_orcharhino"></a>6.4.2. Configuring Dynamic DNS Update with TSIG Authentication</h4>
 <div class="paragraph">
 <p>You can configure an IdM server to use the secret key transaction authentication for DNS (TSIG) technology that uses the <code>rndc.key</code> key file for authentication.
 The TSIG protocol is defined in <a href="https://tools.ietf.org/html/rfc2845">RFC2845</a>.</p>
@@ -3565,7 +6099,7 @@ send\n" | nsupdate -k /etc/rndc.key</pre>
 </div>
 </div>
 <div class="sect3">
-<h4 id="reverting-to-internal-dns-service_orcharhino"><a class="anchor" href="#reverting-to-internal-dns-service_orcharhino"></a>5.4.3. Reverting to Internal DNS Service</h4>
+<h4 id="reverting-to-internal-dns-service_orcharhino"><a class="anchor" href="#reverting-to-internal-dns-service_orcharhino"></a>6.4.3. Reverting to Internal DNS Service</h4>
 <div class="paragraph">
 <p>You can revert to using orcharhino Server and orcharhino Proxy as your DNS providers.
 You can use a backup of the answer file that was created before configuring external DNS, or you can create a backup of the answer file.
