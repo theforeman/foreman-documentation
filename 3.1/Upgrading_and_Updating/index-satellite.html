@@ -2764,7 +2764,7 @@ rhel-7-server-satellite-maintenance-6.11-rpms</pre>
 </div>
 </li>
 <li>
-<p>Use the health check option to determine if the system is ready for upgrade.
+<p>Use the health check option to determine if the system is ready to upgrade.
 On first use of this command, <code>satellite-maintain</code> prompts you to enter the hammer admin user credentials and saves them in the <code>/etc/foreman-maintain/foreman-maintain-hammer.yml</code> file.</p>
 <div class="listingblock">
 <div class="content">
@@ -2779,7 +2779,7 @@ On first use of this command, <code>satellite-maintain</code> prompts you to ent
 <p>Because of the lengthy update time, use a utility such as <code>tmux</code> to suspend and reattach a communication session.
 You can then check the upgrade progress without staying connected to the command shell continuously.</p>
 <div class="paragraph">
-<p>If you lose connection to the command shell where the upgrade command is running, you can see the logged messages in the <code>/var/log/foreman-installer/satellite.log</code> file to check if the process completed successfully.</p>
+<p>If you lose connection to the command shell where the upgrade command is running, you can see the logged messages in the <code>/var/log/foreman-installer/satellite.log</code> file to check if the process was completed successfully.</p>
 </div>
 </li>
 <li>
@@ -2815,8 +2815,221 @@ You can then check the upgrade progress without staying connected to the command
 <div class="paragraph">
 <p>This section describes the steps needed to update in an Air-gapped Disconnected setup where the connected Satellite&#160;Server (which synchronizes content from CDN) is air gapped from a disconnected Satellite&#160;Server.</p>
 </div>
+<div class="sect3">
+<h4 id="_updating_disconnected_satelliteserver_on_redhat_enterprise_linux_8"><a class="anchor" href="#_updating_disconnected_satelliteserver_on_redhat_enterprise_linux_8"></a>6.2.1. Updating Disconnected Satellite&#160;Server on Red&#160;Hat Enterprise Linux 8</h4>
 <div class="paragraph">
-<p>Complete the following steps on the connected Satellite&#160;Server.</p>
+<p>Complete the following steps on the connected Satellite&#160;Server for Red&#160;Hat Enterprise Linux 8.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Ensure that you have synchronized the following repositories in your connected Satellite&#160;Server.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">rhel-8-for-x86_64-baseos-rpms
+rhel-8-for-x86_64-appstream-rpms
+satellite-6.11-for-rhel-8-x86_64-rpms
+satellite-maintenance-6.11-for-rhel-8-x86_64-rpms</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Download the debug certificate of the organization and store it locally at, for example, <code>/etc/pki/katello/certs/org-debug-cert.pem</code> or a location of your choosing.</p>
+</li>
+<li>
+<p>Create a Yum configuration file under <code>/etc/yum.repos.d</code> with the following repository information:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">[rhel-8-for-x86_64-baseos-rpms]
+name=Red Hat Enterprise Linux 8 for x86_64 - BaseOS (RPMs)
+baseurl=https://satellite.example.com/pulp/content/My_Organization/Library/content/dist/rhel8/8/x86_64/baseos/os
+enabled=1
+sslclientcert = /etc/pki/katello/certs/org-debug-cert.pem
+sslclientkey = /etc/pki/katello/certs/org-debug-cert.pem
+sslcacert = /etc/pki/katello/certs/katello-server-ca.crt
+sslverify = 1
+
+[rhel-8-for-x86_64-appstream-rpms]
+name=Red Hat Enterprise Linux 8 for x86_64 - AppStream (RPMs)
+baseurl=https://satellite.example.com/pulp/content/My_Organization/Library/content/dist/rhel8/8/x86_64/appstream/os
+enabled=1
+sslclientcert = /etc/pki/katello/certs/org-debug-cert.pem
+sslclientkey = /etc/pki/katello/certs/org-debug-cert.pem
+sslcacert = /etc/pki/katello/certs/katello-server-ca.crt
+sslverify = 1
+
+[satellite-6.11-for-rhel-8-x86_64-rpms]
+name=Red&#160;Hat Satellite 6.11 for RHEL 8 RPMs x86_64
+baseurl=https://satellite.example.com/pulp/content/My_Organization/Library/content/dist/layered/rhel8/x86_64/satellite/6.11/os
+enabled=1
+sslclientcert = /etc/pki/katello/certs/org-debug-cert.pem
+sslclientkey = /etc/pki/katello/certs/org-debug-cert.pem
+sslcacert = /etc/pki/katello/certs/katello-server-ca.crt
+
+[satellite-maintenance-6.11-for-rhel-8-x86_64-rpms]
+name=Red&#160;Hat Satellite Maintenance 6.11 for RHEL 8 RPMs x86_64
+baseurl=https://satellite.example.com/pulp/content/My_Organization/Library/content/dist/layered/rhel8/x86_64/sat-maintenance/6.11/os
+enabled=1
+sslclientcert = /etc/pki/katello/certs/org-debug-cert.pem
+sslclientkey = /etc/pki/katello/certs/org-debug-cert.pem
+sslcacert = /etc/pki/katello/certs/katello-server-ca.crt
+sslverify = 1</pre>
+</div>
+</div>
+</li>
+<li>
+<p>In the configuration file, replace <code>/etc/pki/katello/certs/org-debug-cert.pem</code> in <code>sslclientcert</code> and <code>sslclientkey</code> with the location of the downloaded organization debug certificate.</p>
+</li>
+<li>
+<p>Update <code>satellite.example.com</code> with the correct FQDN for your deployment.</p>
+</li>
+<li>
+<p>Replace <code>My_Organization</code> with the correct organization label in the <code>baseurl</code>.
+To obtain the organization label, enter the command:</p>
+<div class="listingblock">
+<div class="content">
+<pre># hammer organization list</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Enter the <code>reposync</code> command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># reposync --delete --download-metadata -p ~/Satellite-repos -n \
+ -r rhel-8-for-x86_64-baseos-rpms \
+ -r rhel-8-for-x86_64-appstream-rpms \
+ -r satellite-6.11-for-rhel-8-x86_64-rpms \
+ -r satellite-maintenance-6.11-for-rhel-8-x86_64-rpms</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This downloads the contents of the repositories from the connected Satellite&#160;Server and stores them in the directory <code>~/Satellite-repos</code>.</p>
+</div>
+</li>
+<li>
+<p>Verify that the RPMs have been downloaded and the repository data directory is generated in each of the sub-directories of <code>~/Satellite-repos</code>.</p>
+</li>
+<li>
+<p>Archive the contents of the directory</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># cd ~
+# tar czf Satellite-repos.tgz Satellite-repos</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Use the generated <code>Satellite-repos.tgz</code> file to upgrade in the disconnected Satellite&#160;Server.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Perform the following steps on the disconnected Satellite&#160;Server:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Copy the generated <code>Satellite-repos.tgz</code> file to your disconnected Satellite&#160;Server</p>
+</li>
+<li>
+<p>Extract the archive to anywhere accessible by the <code>root</code> user.
+In the following example <code>/root</code> is the extraction location.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># cd /root
+# tar zxf Satellite-repos.tgz</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create a Yum configuration file under <code>/etc/yum.repos.d</code> with the following repository information:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">[rhel-8-for-x86_64-baseos-rpms]
+name=Red Hat Enterprise Linux 8 for x86_64 - BaseOS (RPMs)
+baseurl=file:///root/Satellite-repos/rhel-8-for-x86_64-baseos-rpms
+enabled=1
+
+[rhel-8-for-x86_64-appstream-rpms]
+name=Red Hat Enterprise Linux 8 for x86_64 - AppStream (RPMs)
+baseurl=file:///root/Satellite-repos/rhel-8-for-x86_64-appstream-rpms
+enabled=1
+
+[satellite-6.11-for-rhel-8-x86_64-rpms]
+name=Red&#160;Hat Satellite&#160;6 for RHEL 8 Server RPMs x86_64
+baseurl=file:///root/Satellite-repos/satellite-6.11-for-rhel-8-x86_64-rpms
+enabled=1
+
+[satellite-maintenance-6.11-for-rhel-8-x86_64-rpms]
+name=Red&#160;Hat Satellite Maintenance 6 for RHEL 8 Server RPMs x86_64
+baseurl=file:///root/Satellite-repos/satellite-maintenance-6.11-for-rhel-8-x86_64-rpms
+enabled=1</pre>
+</div>
+</div>
+</li>
+<li>
+<p>In the configuration file, replace the <code>/root/Satellite-repos</code> with the extracted location.</p>
+</li>
+<li>
+<p>Check the available versions to confirm the next minor version is listed:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-maintain upgrade list-versions</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Use the health check option to determine if the system is ready to upgrade.
+On first use of this command, <code>satellite-maintain</code> prompts you to enter the hammer admin user credentials and saves them in the <code>/etc/foreman-maintain/foreman-maintain-hammer.yml</code> file.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-maintain upgrade check --whitelist="check-upstream-repository,repositories-validate" --target-version 6.11.<em>z</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Review the results and address any highlighted error conditions before performing the upgrade.</p>
+</li>
+<li>
+<p>Because of the lengthy update time, use a utility such as <code>tmux</code> to suspend and reattach a communication session.
+You can then check the upgrade progress without staying connected to the command shell continuously.</p>
+<div class="paragraph">
+<p>If you lose connection to the command shell where the upgrade command is running, you can see the logged messages in the <code>/var/log/foreman-installer/satellite.log</code> file to check if the process was completed successfully.</p>
+</div>
+</li>
+<li>
+<p>Perform the upgrade:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-maintain upgrade run --whitelist="check-upstream-repository,repositories-validate" --target-version 6.11.<em>z</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Check when the kernel packages were last updated:</p>
+<div class="listingblock">
+<div class="content">
+<pre># rpm -qa --last | grep kernel</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Optional: If a kernel update occurred since the last reboot, stop Satellite services and reboot the system:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-maintain service stop
+# reboot</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_updating_disconnected_satelliteserver_on_redhat_enterprise_linux_7"><a class="anchor" href="#_updating_disconnected_satelliteserver_on_redhat_enterprise_linux_7"></a>6.2.2. Updating Disconnected Satellite&#160;Server on Red&#160;Hat Enterprise Linux 7</h4>
+<div class="paragraph">
+<p>Complete the following steps on the connected Satellite&#160;Server for Red&#160;Hat Enterprise Linux 7.</p>
 </div>
 <div class="olist arabic">
 <ol class="arabic">
@@ -3062,6 +3275,7 @@ You can then check the upgrade progress without staying connected to the command
 </div>
 </li>
 </ol>
+</div>
 </div>
 </div>
 <div class="sect2">
