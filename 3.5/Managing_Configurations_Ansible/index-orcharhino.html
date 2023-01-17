@@ -40,6 +40,7 @@
 <li><a href="#overriding-Ansible-variables_ansible">1.4. Overriding Ansible Variables in orcharhino</a></li>
 <li><a href="#adding-rhel-system-roles_ansible">1.5. Adding Red Hat Enterprise Linux System Roles</a></li>
 <li><a href="#synchronizing-ansible-collections_ansible">1.6. Synchronizing Ansible Collections</a></li>
+<li><a href="#customizing-ansible-configuration_ansible">1.7. Customizing Ansible Configuration</a></li>
 </ul>
 </li>
 <li><a href="#using-ansible-roles_ansible">2. Using Ansible Roles to Automate Repetitive Tasks on orcharhino Hosts</a>
@@ -126,13 +127,7 @@ To enable the Ansible plug-in in orcharhino, enter the following command:</p>
 </div>
 <div id="Ansible-paths_ansible" class="paragraph">
 <div class="title">Ansible paths</div>
-<p>orcharhino imports Ansible roles and variables from paths based on configuration in <code>/etc/ansible/ansible.cfg</code>.
-orcharhino then runs imported roles from paths based on configuration in <code>/etc/foreman-proxy/ansible.cfg</code>.
-In both cases, orcharhino reads the paths from <code>roles_path</code> and <code>collections_paths</code> directives.
-Keep these two cfg files in sync, otherwise you might import roles that cannot be run or you will not see roles you can run.</p>
-</div>
-<div class="paragraph">
-<p>If none of the paths are specified in the configuration files, the following default paths are used:</p>
+<p>orcharhino imports and runs Ansible roles from the following paths:</p>
 </div>
 <div class="ulist">
 <ul>
@@ -150,14 +145,19 @@ Keep these two cfg files in sync, otherwise you might import roles that cannot b
 </li>
 </ul>
 </div>
+<div class="paragraph">
+<p>Roles and collections from installed packages are placed under <code>/usr/share/ansible</code>.
+If you want to add custom roles or collections, place them under <code>/etc/ansible</code>.</p>
+</div>
+<div class="paragraph">
+<p>The paths are configured by orcharhino.
+For more information, see <a href="#customizing-ansible-configuration_ansible">Customizing Ansible Configuration</a>.</p>
+</div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
 <ol class="arabic">
 <li>
-<p>Configure your <a href="#Ansible-paths_ansible">Ansible paths</a> on the orcharhino Server and all orcharhino Proxys where you want to use the roles.</p>
-</li>
-<li>
-<p>Add the roles to a directory in an <a href="#Ansible-paths_ansible">Ansible path</a> on the orcharhino Server and all orcharhino Proxys from where you want to use the roles.
+<p>Add the roles to a directory in an <a href="#Ansible-paths_ansible">Ansible path</a> on orcharhino Server and all orcharhino Proxys from where you want to use the roles.
 If you want to use custom or third party Ansible roles, ensure to configure an external version control system to synchronize roles between orcharhino Server and orcharhino Proxys.</p>
 </li>
 <li>
@@ -552,6 +552,87 @@ For example, <code>https://console.redhat.com/api/automation-hub/</code>.</p>
 <p>From the <strong>Select Action</strong> menu, select <strong>Sync Now</strong>.</p>
 </li>
 </ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="customizing-ansible-configuration_ansible"><a class="anchor" href="#customizing-ansible-configuration_ansible"></a>1.7. Customizing Ansible Configuration</h3>
+<div class="paragraph">
+<p>orcharhino manages essential Ansible configuration that is required for Ansible integration with orcharhino.
+However, you can customize other Ansible configuration options as usual.</p>
+</div>
+<div class="paragraph">
+<p>orcharhino stores the essential Ansible configuration as environment variables in <code>/etc/foreman-proxy/ansible.env</code>.
+This file is managed by the foreman-installer.</p>
+</div>
+<div class="paragraph">
+<p>Ansible reads configuration from <code>/etc/ansible/ansible.cfg</code> and the environment provided by orcharhino Proxy.
+If you need to customize Ansible configuration, you can do so in the <code>/etc/ansible/ansible.cfg</code> file.</p>
+</div>
+<div class="paragraph">
+<p>Note that environment variables take precedence over values in <code>ansible.cfg</code>, which ensures that the essential configuration required by orcharhino is retained.</p>
+</div>
+<div class="paragraph">
+<p>The following table lists the essential Ansible configuration options managed by orcharhino.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 1. Essential Ansible Configuration</caption>
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Environment Variable</th>
+<th class="tableblock halign-left valign-top">Config Key</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ANSIBLE_CALLBACK_WHITELIST</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">callback_whitelist</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enables callback to orcharhino; equivalent to <code>callbacks_enabled</code> for cross-version compatibility</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ANSIBLE_CALLBACKS_ENABLED</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">callbacks_enabled</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enables callback to orcharhino; equivalent to <code>callback_whitelist</code> for cross-version compatibility</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ANSIBLE_COLLECTIONS_PATHS</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">collections_paths</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">List of paths to Ansible collections</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ANSIBLE_LOCAL_TEMP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">local_tmp</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Temporary directory on orcharhino Proxy</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ANSIBLE_HOST_KEY_CHECKING</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">host_key_checking</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Disables checking of host keys during SSH connection</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ANSIBLE_ROLES_PATH</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">roles_path</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">List of paths to Ansible roles</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ANSIBLE_SSH_ARGS</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ssh_args</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Arguments passed to SSH connection</p></td>
+</tr>
+</tbody>
+</table>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="https://docs.ansible.com/ansible/latest/reference_appendices/config.html">Ansible Configuration Settings</a></p>
+</li>
+</ul>
 </div>
 </div>
 </div>
@@ -1997,7 +2078,7 @@ For more information about managing users, roles, and permission filters, see <a
 <p>In the AWX web UI, create a credential for your orcharhino.
 For more information about creating credentials, see <a href="http://docs.ansible.com/ansible-tower/latest/html/userguide/credentials.html#add-a-new-credential">Add a New Credential</a> and <a href="http://docs.ansible.com/ansible-tower/latest/html/userguide/credentials.html#red-hat-satellite-6">orcharhino Credentials</a> in the <em>AWX User Guide</em>.</p>
 <table id="tabl-Managing_Hosts-Integrating_Satellite_and_Ansible_Tower-Satellite_Credentials" class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 1. orcharhino Credentials</caption>
+<caption class="title">Table 2. orcharhino Credentials</caption>
 <colgroup>
 <col style="width: 33.3333%;">
 <col style="width: 66.6667%;">
@@ -2048,7 +2129,7 @@ For more information, see <a href="http://docs.ansible.com/ansible-tower/latest/
 <p>In the new inventory, add orcharhino Server as the inventory source, specifying the following inventory source options.
 For more information, see <a href="https://docs.ansible.com/ansible-tower/latest/html/userguide/inventories.html#add-source">Add Source</a> in the <em>AWX User Guide</em>.</p>
 <table id="tabl-Managing_Hosts-Integrating_Satellite_and_Ansible_Tower-Inventory_Source_Options" class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 2. Inventory Source Options</caption>
+<caption class="title">Table 3. Inventory Source Options</caption>
 <colgroup>
 <col style="width: 33.3333%;">
 <col style="width: 66.6667%;">
@@ -2188,7 +2269,7 @@ For more information about job templates, see <a href="http://docs.ansible.com/a
 <li>
 <p>Enter the following information for each new parameter:</p>
 <table id="tabl-Managing_Hosts-Integrating_Satellite_and_Ansible_Tower-Host_Parameters" class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 3. Host Parameters</caption>
+<caption class="title">Table 4. Host Parameters</caption>
 <colgroup>
 <col style="width: 25%;">
 <col style="width: 25%;">
