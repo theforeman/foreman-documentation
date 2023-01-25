@@ -5,31 +5,54 @@ Use this procedure to add Google Compute Engine (GCE) as a compute resource in {
 To use the CLI instead of the {ProjectWebUI}, see the xref:cli-Adding_a_Google_GCE_Connection_{context}[].
 
 .Procedure
-include::snip_create-and-add-google-gce-service-account-key.adoc[]
+. In Google GCE, generate a service account key in JSON format.
+For more information, see https://cloud.google.com/iam/docs/creating-managing-service-account-keys[Create and manage service account keys] in the GCE documentation.
 . In the {ProjectWebUI}, navigate to *Infrastructure* > *Compute Resources* and click *Create Compute Resource*.
 . In the *Name* field, enter a name for the compute resource.
 . From the *Provider* list, select *Google*.
 . Optional: In the *Description* field, enter a description for the resource.
-. In the *Google Project ID* field, enter the project ID.
-. In the *Client Email* field, enter the client email.
-. In the *Certificate Path* field, enter the path to the service account key.
-For example, `/usr/share/foreman/_gce_key_.json`.
+. In the *JSON key* field, click *Choose File* and locate your service account key for upload from your local machine.
 . Click *Load Zones* to populate the list of zones from your GCE environment.
 . From the *Zone* list, select the GCE zone to use.
 . Click *Submit*.
 
 [id="cli-Adding_a_Google_GCE_Connection_{context}"]
 .CLI procedure
-include::snip_create-and-add-google-gce-service-account-key.adoc[]
+. In Google GCE, generate a service account key in JSON format.
+For more information, see https://cloud.google.com/iam/docs/creating-managing-service-account-keys[Create and manage service account keys] in the GCE documentation.
+. Copy the file from your local machine to {ProjectServer}:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# scp _My_GCE_Key_.json root@{foreman-example-com}:/etc/foreman/_My_GCE_Key_.json
+----
+. On {ProjectServer}, change the owner for your service account key to the `foreman` user:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# chown root:foreman /etc/foreman/_My_GCE_Key_.json
+----
+. On {ProjectServer}, configure permissions for your service account key to ensure that the file is readable:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# chmod 0640 /etc/foreman/_My_GCE_Key_.json
+----
+ifndef::foreman-deb[]
+. On {ProjectServer}, restore SELinux context for your service account key:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# restorecon -vv /etc/foreman/_My_GCE_Key_.json
+----
+endif::[]
 . Use the `hammer compute-resource create` command to add a GCE compute resource to {Project}:
 +
 [options="nowrap" subs="+quotes"]
 ----
 # hammer compute-resource create \
---email "_My_GCE_Email_" \
---key-path "_Path_To_My_GCE_Key.json_" \
+--key-path "/etc/foreman/_My_GCE_Key_.json" \
 --name "_My_GCE_Compute_Resource_" \
---project "_My_GCE_Project_ID_" \
 --provider "gce" \
 --zone "_My_Zone_"
 ----
