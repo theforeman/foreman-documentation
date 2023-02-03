@@ -120,6 +120,10 @@ const navVersions = [
             "path": "Upgrading_and_Updating"
           },
           {
+            "title": "Tuning Performance",
+            "path": "Tuning_Performance"
+          },
+          {
             "title": "Configuring Smart Proxies with a Load Balancer",
             "path": "Configuring_Load_Balancer"
           },
@@ -164,7 +168,7 @@ const navVersions = [
     ]
   },
   {
-    "title": "Foreman 3.5 - Katello 4.7 (release candidate)",
+    "title": "Foreman 3.5 - Katello 4.7 (supported)",
     "path": "3.5",
     "builds": [
       {
@@ -194,6 +198,10 @@ const navVersions = [
           {
             "title": "Upgrading and Updating",
             "path": "Upgrading_and_Updating"
+          },
+          {
+            "title": "Tuning Performance",
+            "path": "Tuning_Performance"
           },
           {
             "title": "Configuring Smart Proxies with a Load Balancer",
@@ -272,6 +280,10 @@ const navVersions = [
             "path": "Upgrading_and_Updating"
           },
           {
+            "title": "Tuning Performance",
+            "path": "Tuning_Performance"
+          },
+          {
             "title": "Configuring Smart Proxies with a Load Balancer",
             "path": "Configuring_Load_Balancer"
           },
@@ -316,7 +328,7 @@ const navVersions = [
     ]
   },
   {
-    "title": "Foreman 3.3 - Katello 4.5 (supported)",
+    "title": "Foreman 3.3 - Katello 4.5 (unsupported)",
     "path": "3.3",
     "builds": [
       {
@@ -346,6 +358,10 @@ const navVersions = [
           {
             "title": "Upgrading and Updating",
             "path": "Upgrading_and_Updating"
+          },
+          {
+            "title": "Tuning Performance",
+            "path": "Tuning_Performance"
           },
           {
             "title": "Configuring Smart Proxies with a Load Balancer",

@@ -1,0 +1,33 @@
+[id="REX_pull_based_transport_{context}"]
+= REX pull-based transport
+
+{Project} has a pull-based transport that has the features of REX but with a deployment model similar to katello-agent. 
+This transport uses MQTT as its messaging protocol and includes an MQTT client running on each host.
+In order to tune the MQTT server (`mosquitto`) and increase the number of hosts connected to it, you can follow the following procedure on the {ProjectServer}:
+
+.Procedure
+
+. Enable pull-based remote execution on your {ProjectServer} or {SmartProxyServer}:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+{foreman-installer} --foreman-proxy-plugin-remote-execution-script-mode pull-mqtt
+----
++
+Note that your {ProjectServer} or {SmartProxyServer} can only use one transport mode, either SSH or MQTT.
+. To increase the default number of hosts accepted by the MQTT server, create the following system unit definition file and set its contents as specified in the below given example (this will allow the `mosquitto` service to handle ~5000 hosts):
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+cat >/etc/systemd/system/mosquitto.service.d/limits.conf <<__EOF__
+[Service]
+LimitNOFILE=5000
+__EOF__
+----
+. Run the following commands to apply your changes:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# systemctl daemon-reload
+# systemctl restart mosquitto.service
+----
