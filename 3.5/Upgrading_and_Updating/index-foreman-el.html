@@ -45,7 +45,6 @@
 <li><a href="#Upgrading_Server_upgrade-guide">2.1. Upgrading Foreman&#160;server</a></li>
 <li><a href="#upgrading_capsule_server">2.2. Upgrading Smart&#160;Proxy&#160;servers</a></li>
 <li><a href="#Upgrading_the_External_Database_upgrade-guide">2.3. Upgrading the External Database</a></li>
-<li><a href="#performing-post-upgrade-tasks_upgrade-guide">2.4. Performing Post-Upgrade Tasks</a></li>
 </ul>
 </li>
 </ul>
@@ -161,9 +160,6 @@ For more information, see <a href="#Upgrading_Server_upgrade-guide">Upgrading Fo
 <p>Upgrade all Smart&#160;Proxy&#160;servers to 3.5.
 For more information, see <a href="#upgrading_capsule_server">Upgrading Smart&#160;Proxy&#160;servers</a>.</p>
 </li>
-<li>
-<p>Continue with <a href="#performing-post-upgrade-tasks_upgrade-guide">Performing Post-Upgrade Tasks</a>.</p>
-</li>
 </ol>
 </div>
 </div>
@@ -223,9 +219,6 @@ This allows you to upgrade all Smart&#160;Proxies one after another without any 
 </li>
 <li>
 <p><a href="#upgrading_capsule_server">Upgrading Smart&#160;Proxy&#160;servers</a></p>
-</li>
-<li>
-<p><a href="#performing-post-upgrade-tasks_upgrade-guide">Performing Post-Upgrade Tasks</a></p>
 </li>
 </ol>
 </div>
@@ -524,229 +517,6 @@ Otherwise reconfigure Foreman to use the new name:</p>
 </div>
 </li>
 </ol>
-</div>
-</div>
-<div class="sect2">
-<h3 id="performing-post-upgrade-tasks_upgrade-guide"><a class="anchor" href="#performing-post-upgrade-tasks_upgrade-guide"></a>2.4. Performing Post-Upgrade Tasks</h3>
-<div class="paragraph">
-<p>Some of the procedures in this section are optional.
-You can choose to perform only those procedures that are relevant to your installation.</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><a href="#upgrading_discovery_parent">Upgrading Discovery</a></p>
-</li>
-<li>
-<p><a href="#migrating-ansible-content_upgrade-guide">Migrating Ansible Content</a></p>
-</li>
-<li>
-<p><a href="#reclaiming-postgresql-space-after-an-upgrade_upgrade-guide">Reclaiming PostgreSQL Space</a></p>
-</li>
-</ul>
-</div>
-<div class="sect3">
-<h4 id="upgrading_discovery_parent"><a class="anchor" href="#upgrading_discovery_parent"></a>2.4.1. Upgrading Discovery</h4>
-<div class="paragraph">
-<p>If you use the PXE-based discovery process, then you must complete the discovery upgrade procedure on Foreman and on any Smart&#160;Proxy&#160;server with hosts that you want to be listed in Foreman on the <strong>Hosts</strong> &gt; <strong>Discovered hosts</strong> page.</p>
-</div>
-<div class="paragraph">
-<p>This section describes updating the PXELinux template and the boot image passed to hosts that use PXE booting to register themselves with Foreman&#160;server.</p>
-</div>
-<div class="paragraph">
-<p>From Foreman&#160;3.5, provisioning templates now have a separate association with a subnet, and do not default to using the TFTP Smart&#160;Proxy for that subnet.
-If you create subnets after the upgrade, you must specifically enable the Foreman or a Smart&#160;Proxy to provide a proxy service for discovery templates and then configure all subnets with discovered hosts to use a specific <em>template Smart&#160;Proxy</em>.</p>
-</div>
-<div class="paragraph">
-<p>During the upgrade, for every subnet with a TFTP proxy enabled, the template Smart&#160;Proxy is set to be the same as the TFTP Smart&#160;Proxy.
-After the upgrade, check all subnets to verify this was set correctly.</p>
-</div>
-<div class="paragraph">
-<p>These procedures are not required if you do not use PXE booting of hosts to enable Foreman to discover new hosts.</p>
-</div>
-<div class="sect4">
-<h5 id="upgrading_discovery_satellite"><a class="anchor" href="#upgrading_discovery_satellite"></a>Upgrading Discovery on Foreman&#160;server</h5>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Update the Discovery template in the Foreman web UI:</p>
-<div class="olist loweralpha">
-<ol class="loweralpha" type="a">
-<li>
-<p>In the Foreman web UI, navigate to <strong>Hosts</strong> &gt; <strong>Provisioning templates</strong>.</p>
-</li>
-<li>
-<p>On the <code>PXELinux global default</code> line, click <strong>Clone</strong>.</p>
-</li>
-<li>
-<p>Enter a new name for the template in the <strong>Name</strong> field, for example <code>ACME PXE global default</code>.</p>
-</li>
-<li>
-<p>In the template editor field, change the line <code>ONTIMEOUT local</code> to <code>ONTIMEOUT discovery</code> and click <strong>Submit</strong>.</p>
-</li>
-<li>
-<p>In the Foreman web UI, navigate to <strong>Administer</strong> &gt; <strong>Settings</strong>.</p>
-</li>
-<li>
-<p>On the <strong>Provisioning</strong> tab, set <code>Default PXE global template entry</code> to a custom value for your environment.</p>
-</li>
-<li>
-<p>Locate <code>Global default PXELinux template</code> and click on its <strong>Value</strong>.</p>
-</li>
-<li>
-<p>Select the name of the newly created template from the menu and click <strong>Submit</strong>.</p>
-</li>
-<li>
-<p>In the Foreman web UI, navigate to <strong>Hosts</strong> &gt; <strong>Provisioning templates</strong>.</p>
-</li>
-<li>
-<p>Click <strong>Build PXE Default</strong>, then click <strong>OK</strong>.</p>
-</li>
-</ol>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>If the template is modified, a Foreman upgrade overrides it to its default version.
-Once the PXE Default configuration is built, the template configured in the <strong>Settings</strong> is deployed to the TFTP.
-This can result in deploying the default template if the new template is correctly set in the <strong>Settings</strong>.</p>
-</div>
-</td>
-</tr>
-</table>
-</div>
-</li>
-<li>
-<p>In the Foreman web UI, go to <strong>Configure</strong> &gt; <strong>Discovery Rules</strong> and associate selected organizations and locations with discovery rules.</p>
-</li>
-</ol>
-</div>
-</div>
-<div class="sect4">
-<h5 id="verify_subnets_have_a_template_capsule"><a class="anchor" href="#verify_subnets_have_a_template_capsule"></a>Verifying Subnets have a Template Smart&#160;Proxy</h5>
-<div class="olist arabic">
-<div class="title">Ensure all subnets with discovered hosts have a template Smart&#160;Proxy:</div>
-<ol class="arabic">
-<li>
-<p>In the Foreman web UI, navigate to <strong>Infrastructure</strong> &gt; <strong>Subnets</strong>.</p>
-</li>
-<li>
-<p>Select the subnet you want to check.</p>
-</li>
-<li>
-<p>On the <strong>Smart&#160;Proxies</strong> tab, ensure a <strong>Template Smart&#160;Proxy</strong> has been set for this subnet.</p>
-</li>
-</ol>
-</div>
-<div class="paragraph">
-<p>For more information about configuring subnets with template Smart&#160;Proxies, see <a href="https://docs.theforeman.org/3.5/Provisioning_Hosts/index-foreman-el.html#Configuring_the_Discovery_Service_provisioning">Configuring the Discovery Service</a> in <em>Provisioning Hosts</em>.</p>
-</div>
-</div>
-</div>
-<div class="sect3">
-<h4 id="migrating-ansible-content_upgrade-guide"><a class="anchor" href="#migrating-ansible-content_upgrade-guide"></a>2.4.2. Migrating Ansible Content</h4>
-<div class="paragraph">
-<p>The upgrade from Enterprise Linux 7 to Enterprise Linux 8 includes an upgrade from Ansible Engine 2.9 to Ansible Core 2.12.</p>
-</div>
-<div class="paragraph">
-<p>If you have custom Ansible content such as playbooks, job templates inside REX, roles and collections on disk, and you rely on modules being delivered by the Ansible RPM on Foreman, you have to take additional steps to adapt your Ansible installation or migrate your Ansible content.</p>
-</div>
-<div class="paragraph">
-<p>Ansible Core contains only essential modules.
-In terms of FQCN notation <code>namespace.collection.module</code>, you can continue to use <code>ansible.builtin.*</code>, but everything else is missing in Ansible Core.
-That means you will be no longer able to use non-builtin Ansible modules as you were used to and you have to get them from another source, eventually.</p>
-</div>
-<div class="paragraph">
-<p>You have the following options to handle your Ansible content after the upgrade:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>You can obtain additional community-maintained collections that provide the non-essential functionality from Ansible Galaxy.
-For more information, see <a href="https://docs.ansible.com/ansible/latest/galaxy/user_guide.html#installing-collections">Installing collections</a> in the <em>Galaxy User Guide</em>.</p>
-</li>
-<li>
-<p>You can rewrite your Ansible roles, templates and other affected content.</p>
-</li>
-</ul>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>If you want to download and install Ansible content on Smart&#160;Proxy that does not have a connection to an external Ansible Galaxy server, then you must pass the content through Foreman&#160;server instead of using the URL of the Ansible Galaxy server in the configuration on the Smart&#160;Proxy directly:</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Sync the content from a Ansible Galaxy server to a custom repository on your Foreman&#160;server.</p>
-</li>
-<li>
-<p>Configure Ansible on your Smart&#160;Proxy to download the content from Foreman&#160;server.</p>
-</li>
-</ol>
-</div>
-</td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-<p>To find out what content is affected after the upgrade, you can run:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># ansible-lint --enable-list only-builtins -p <em>path/to/your/playbook/play.yml</em></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>You need <code>ansible-lint</code> 6.1.0 or newer.
-You can install it from <a href="https://pypi.org/project/ansible-lint/">pypi.org</a>.</p>
-</div>
-</div>
-<div class="sect3">
-<h4 id="reclaiming-postgresql-space-after-an-upgrade_upgrade-guide"><a class="anchor" href="#reclaiming-postgresql-space-after-an-upgrade_upgrade-guide"></a>2.4.3. Reclaiming PostgreSQL Space</h4>
-<div class="paragraph">
-<p>The PostgreSQL database can use a large amount of disk space especially in heavily loaded deployments.
-Use this procedure to reclaim some of this disk space on Foreman.</p>
-</div>
-<div class="olist arabic">
-<div class="title">Procedure</div>
-<ol class="arabic">
-<li>
-<p>Stop all services, except for the <code>postgresql</code> service:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># foreman-maintain service stop --exclude postgresql</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Switch to the <code>postgres</code> user and reclaim space on the database:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># su - postgres -c 'vacuumdb --full --all'</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Start the other services when the vacuum completes:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># foreman-maintain service start</pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
 </div>
 </div>
 </div>
