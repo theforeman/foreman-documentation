@@ -1,30 +1,59 @@
 [id="Installing_Puppet_Agent_during_Host_Provisioning_{context}"]
 = Installing Puppet Agent during Host Provisioning
 
-Install the Puppet agent during the host provisioning process.
+Use this procedure to install the Puppet agent during the host provisioning process.
+
+ifdef::satellite[]
+.Prerequisites
+* You enabled and synchronized the *{project-client-name}* repository to {Project}.
+For more information, see {ContentManagementDocURL}Importing_Content_content-management[Importing Content] in _{ContentManagementDocTitle}_.
+* You created an activation key that enables the *{project-client-name}* repository for hosts.
+For more information, see {ContentManagementDocURL}Managing_Activation_Keys_content-management[Managing Activation Keys] in _{ContentManagementDocTitle}_.
+endif::[]
+ifdef::katello,orcharhino[]
+.Prerequisites
+* You created a Product and repository for the upstream Puppet agent, such as `\https://yum.puppet.com` or `\https://apt.puppet.com`, and synchronized the repository to {Project}.
+For more information, see {ContentManagementDocURL}Importing_Content_content-management[Importing Content] in _{ContentManagementDocTitle}_.
+* You created an activation key that enables the Puppet agent repository for hosts.
+For more information, see {ContentManagementDocURL}Managing_Activation_Keys_content-management[Managing Activation Keys] in _{ContentManagementDocTitle}_.
+endif::[]
 
 .Procedure
-. Navigate to *Hosts > Provisioning Templates*.
+. Navigate to *Hosts* > *Provisioning Templates*.
 . Select a provisioning template depending on your host provisioning method.
 For more information, see {ProvisioningDocURL}types-of-provisioning-templates_provisioning[Types of Provisioning Templates] in _{ProvisioningDocTitle}_.
+ifndef::katello,orcharhino,satellite[]
+. Ensure the `puppetlabs_repo` snippet is included as follows:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+<%= snippet 'puppetlabs_repo' %>
+----
++
+Note that this snippet is already included in the templates shipped with {Project}, such as `Kickstart default` or `Preseed default`.
+endif::[]
 . Ensure the `puppet_setup` snippet is included as follows:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 <%= snippet 'puppet_setup' %>
 ----
-. Enable Puppet using a host parameter for a single host or host group:
 +
-Add a host parameter named `enable-puppet7` for Puppet 7
-ifndef::satellite[]
-or `enable-puppet6` for Puppet 6
+Note that this snippet is already included in the templates shipped with {Project}, such as `Kickstart default` or `Preseed default`.
+ifndef::katello,orcharhino,satellite[]
+. Enable the Puppet agent from the official Puppet repository using one of the following host parameters in global parameters, a host group, or for a single host:
+
+* Add a host parameter named `enable-puppetlabs-repo` for the latest stable Puppet release in the unversioned repository.
+* Add a host parameter named `enable-official-puppet7-repo` for the Puppet 7 release repository.
+
++
+Select the *boolean* type and set the value to `true`.
 endif::[]
-as type boolean set to `true`.
-. Optional: To install the Puppet agent directly from https://yum.puppet.com/[yum.puppet.com], add a host parameter named `enable-puppetlabs-puppet7-repo` for Puppet 7
-ifndef::satellite[]
-or `enable-puppetlabs-puppet6-repo` for Puppet 6
+ifdef::katello,orcharhino,satellite[]
+. Enable the Puppet agent using a host parameter in global parameters, a host group, or for a single host.
+Add a host parameter named `enable-puppet7`, select the *boolean* type, and set the value to `true`.
 endif::[]
-as type boolean set to `true`.
-ifndef::katello[]
-Only use this if you don't provide Puppet agent to the host using its activation key.
+ifdef::katello,orcharhino,satellite[]
+. Ensure your host has access to the Puppet agent packages from {ProjectServer} by using an appropriate activation key.
 endif::[]
+. Ensure that you assign a Puppet environment, Puppet server and Puppet CA server to your host.
