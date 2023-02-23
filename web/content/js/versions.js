@@ -168,6 +168,174 @@ const navVersions = [
     ]
   },
   {
+    "title": "Foreman 3.6 - Katello 4.8 (release candidate)",
+    "path": "3.6",
+    "builds": [
+      {
+        "title": "Foreman on EL",
+        "filename": "index-foreman-el.html",
+        "guides": [
+          {
+            "title": "Release Notes",
+            "path": "Release_Notes"
+          },
+          {
+            "title": "Quickstart Guide",
+            "path": "Quickstart"
+          },
+          {
+            "title": "Installing Foreman Server",
+            "path": "Installing_Server"
+          },
+          {
+            "title": "Installing Smart Proxy",
+            "path": "Installing_Proxy"
+          },
+          {
+            "title": "Deploying Foreman on AWS",
+            "path": "Deploying_Project_on_AWS"
+          },
+          {
+            "title": "Provisioning Hosts",
+            "path": "Provisioning_Hosts"
+          },
+          {
+            "title": "Managing Hosts",
+            "path": "Managing_Hosts"
+          },
+          {
+            "title": "Configuring Hosts Using Ansible",
+            "path": "Managing_Configurations_Ansible"
+          },
+          {
+            "title": "Configuring Hosts Using Puppet",
+            "path": "Managing_Configurations_Puppet"
+          },
+          {
+            "title": "Administering Foreman",
+            "path": "Administering_Project"
+          },
+          {
+            "title": "Application Centric Deployment",
+            "path": "Deploying_Hosts_AppCentric"
+          }
+        ]
+      },
+      {
+        "title": "Foreman on Debian",
+        "filename": "index-foreman-deb.html",
+        "guides": [
+          {
+            "title": "Release Notes",
+            "path": "Release_Notes"
+          },
+          {
+            "title": "Quickstart Guide",
+            "path": "Quickstart"
+          },
+          {
+            "title": "Installing Foreman Server",
+            "path": "Installing_Server"
+          },
+          {
+            "title": "Deploying Foreman on AWS",
+            "path": "Deploying_Project_on_AWS"
+          },
+          {
+            "title": "Provisioning Hosts",
+            "path": "Provisioning_Hosts"
+          },
+          {
+            "title": "Configuring Hosts Using Ansible",
+            "path": "Managing_Configurations_Ansible"
+          },
+          {
+            "title": "Configuring Hosts Using Puppet",
+            "path": "Managing_Configurations_Puppet"
+          },
+          {
+            "title": "Administering Foreman",
+            "path": "Administering_Project"
+          }
+        ]
+      },
+      {
+        "title": "Katello on EL",
+        "filename": "index-katello.html",
+        "guides": [
+          {
+            "title": "Release Notes",
+            "path": "Release_Notes"
+          },
+          {
+            "title": "Planning Guide",
+            "path": "Planning_for_Project"
+          },
+          {
+            "title": "Quickstart Guide",
+            "path": "Quickstart"
+          },
+          {
+            "title": "Installing Katello Server",
+            "path": "Installing_Server"
+          },
+          {
+            "title": "Installing Smart Proxy with Content",
+            "path": "Installing_Proxy"
+          },
+          {
+            "title": "Upgrading and Updating",
+            "path": "Upgrading_and_Updating"
+          },
+          {
+            "title": "Tuning Performance",
+            "path": "Tuning_Performance"
+          },
+          {
+            "title": "Configuring Smart Proxies with a Load Balancer",
+            "path": "Configuring_Load_Balancer"
+          },
+          {
+            "title": "Managing Organizations and Locations in Foreman",
+            "path": "Managing_Organizations_and_Locations"
+          },
+          {
+            "title": "Managing Content",
+            "path": "Managing_Content"
+          },
+          {
+            "title": "Deploying Foreman on AWS",
+            "path": "Deploying_Project_on_AWS"
+          },
+          {
+            "title": "Provisioning Hosts",
+            "path": "Provisioning_Hosts"
+          },
+          {
+            "title": "Managing Hosts",
+            "path": "Managing_Hosts"
+          },
+          {
+            "title": "Configuring Hosts Using Ansible",
+            "path": "Managing_Configurations_Ansible"
+          },
+          {
+            "title": "Configuring Hosts Using Puppet",
+            "path": "Managing_Configurations_Puppet"
+          },
+          {
+            "title": "Administering Foreman",
+            "path": "Administering_Project"
+          },
+          {
+            "title": "Application Centric Deployment",
+            "path": "Deploying_Hosts_AppCentric"
+          }
+        ]
+      }
+    ]
+  },
+  {
     "title": "Foreman 3.5 - Katello 4.7 (supported)",
     "path": "3.5",
     "builds": [
