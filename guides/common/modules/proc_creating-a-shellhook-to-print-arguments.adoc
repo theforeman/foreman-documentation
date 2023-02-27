@@ -1,0 +1,69 @@
+[id="creating-a-shellhook-to-print-arguments_{context}"]
+= Creating a Shellhook to Print Arguments
+
+Create a simple shellhook script that prints "Hello World!" when you run a remote execution job.
+
+.Prerequisite
+* You have the `webhooks` and `shellhooks` plug-ins installed.
+For more information, see:
+
+** xref:installing-webhooks-plugin_{context}[]
+** xref:installing-shellhooks-plugin_{context}[]
+
+.Procedure
+. Modify the `/var/lib/foreman-proxy/shellhooks/print_args` script to print arguments to standard error output so you can see them in the {SmartProxy} logs:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+#!/bin/sh
+#
+# Prints all arguments to stderr
+#
+echo "$@" >&2
+----
+. In the {ProjectWebUI}, navigate to *Administer* > *Webhooks*.
+. Click *Create new*.
+. From the *Subscribe to* list, select *Actions Remote Execution Run Host Job Succeeded*.
+. Enter a *Name* for your webhook.
+. In the *Target URL* field, enter the URL of your {SmartProxyServer} followed by `:{smartproxy_port}/shellhook/print_args`:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+https://_{smartproxy-example-com}_:{smartproxy_port}/shellhook/print_args
+----
++
+Note that `shellhook` in the URL is singular, unlike the `shellhooks` directory.
+. From the *Template* list, select *Empty Payload*.
+. On the *Credentials* tab, check *{SmartProxy} Authorization*.
+. On the *Additional* tab, enter the following text in the *Optional HTTP headers* field:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+{
+    "X-Shellhook-Arg-1": "Hello",
+    "X-Shellhook-Arg-2": "World!"
+}
+----
+. Click *Submit*.
+You now have successfully created a shellhook that prints "Hello World!" to {SmartProxy} logs every time you a remote execution job succeeds.
+
+.Verification
+. Run a remote execution job on any host.
+You can use `time` as a command.
+For more information, see {ManagingHostsDocURL}executing-a-remote-job_managing-hosts[Executing a Remote Job] in _{ManagingHostsDocTitle}_.
+. Verify that the shellhook script was triggered and printed "Hello World!" to {SmartProxyServer} logs:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# tail /var/log/foreman-proxy/proxy.log
+----
++
+You should find the following lines at the end of the log:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+[I] Started POST /shellhook/print_args
+[I] Finished POST /shellhook/print_args with 200 (0.33 ms)
+[I] [3520] Started task /var/lib/foreman-proxy/shellhooks/print_args\ Hello\ World\!
+[W] [3520] Hello World!
+----
