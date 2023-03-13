@@ -1,0 +1,55 @@
+[id="Configuring_{smart-proxy-context}_Server_with_Custom_SSL_Certificates_for_Load_Balancing_without_Puppet_{context}"]
+= Configuring {SmartProxyServerTitle} with Custom SSL Certificates for Load Balancing without Puppet
+
+The following section describes how to configure {SmartProxyServer}s that use custom SSL certificates for load balancing without Puppet.
+Complete this procedure on each {SmartProxyServer} that you want to configure for load balancing.
+
+.Procedure
+. Append the following option to the `{certs-generate}` command that you obtain from the output of the `katello-certs-check` command:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+--foreman-proxy-cname _loadbalancer.example.com_
+----
+. On {ProjectServer}, enter the `{certs-generate}` command to generate {SmartProxy} certificates:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# {certs-generate} \
+--certs-tar /root/{smart-proxy-context}_cert/{smart-proxy-context}.tar \
+--foreman-proxy-cname _loadbalancer.example.com_ \
+--foreman-proxy-fqdn _{smartproxy-example-com}_ \
+--server-ca-cert /root/{smart-proxy-context}_cert/ca_cert_bundle.pem \
+--server-cert /root/{smart-proxy-context}_cert/{smart-proxy-context}.pem \
+--server-key /root/{smart-proxy-context}_cert/{smart-proxy-context}.pem
+----
++
+Retain a copy of the example `{foreman-installer}` command from the output for installing {SmartProxyServer} certificates.
+. Copy the certificate archive file from {ProjectServer} to {SmartProxyServer}:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# scp /root/_{smartproxy-example-com}_-certs.tar root@_{smartproxy-example-com}_:__{smartproxy-example-com}__-certs.tar
+----
+. Append the following options to the `{foreman-installer}` command that you obtain from the output of the `{certs-generate}` command:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+--certs-cname "_loadbalancer.example.com_" \
+--enable-foreman-proxy-plugin-remote-execution-script
+----
+. On {SmartProxyServer}, enter the `{foreman-installer}` command:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {installer-scenario-smartproxy} \
+--certs-cname "_loadbalancer.example.com_" \
+--certs-tar-file "_{smartproxy-example-com}-certs.tar_" \
+--enable-foreman-proxy-plugin-remote-execution-script \
+--foreman-proxy-foreman-base-url "_https://{foreman-example-com}_" \
+--foreman-proxy-oauth-consumer-key "_oauth key_" \
+--foreman-proxy-oauth-consumer-secret "_oauth secret_" \
+--foreman-proxy-register-in-foreman "true" \
+--foreman-proxy-trusted-hosts "_{foreman-example-com}_" \
+--foreman-proxy-trusted-hosts "_{smartproxy-example-com}_"
+----

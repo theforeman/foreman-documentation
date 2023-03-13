@@ -1,15 +1,10 @@
-[id='configuring-capsule-server-with-custom-ssl-certificates-for-load-balancing-without-puppet']
-= Configuring {SmartProxyServer} with Custom SSL Certificates for Load Balancing without Puppet
-
-The following section describes how to configure {SmartProxyServer}s that use custom SSL certificates for load balancing without Puppet.
-
-== Creating Custom SSL Certificates for {SmartProxyServer}
+[id="Creating_Custom_SSL_Certificates_for_{smart-proxy-context}_{context}"]
+= Creating Custom SSL Certificates for {SmartProxyServerTitle}
 
 This procedure outlines how to create a configuration file for the Certificate Signing Request and include the load balancer and {SmartProxyServer} as Subject Alternative Names (SAN).
 Complete this procedure on each {SmartProxyServer} that you want to configure for load balancing.
 
 .Procedure
-
 . On {SmartProxyServer}, create a directory to contain all the source certificate files, accessible to only the `root` user:
 +
 [options="nowrap", subs="+quotes,attributes"]
@@ -17,7 +12,6 @@ Complete this procedure on each {SmartProxyServer} that you want to configure fo
 # mkdir /root/{smart-proxy-context}_cert
 # cd /root/{smart-proxy-context}_cert
 ----
-
 . Create a private key with which to sign the Certificate Signing Request (CSR).
 +
 Note that the private key must be unencrypted.
@@ -29,7 +23,6 @@ If you already have a private key for this {SmartProxyServer}, skip this step.
 ----
 # openssl genrsa -out /root/{smart-proxy-context}_cert/{smart-proxy-context}_cert_key.pem 4096
 ----
-
 . Create the certificate request configuration file with the following content:
 +
 [options="nowrap", subs="+quotes,attributes"]
@@ -46,7 +39,7 @@ stateOrProvinceName=_State or Province Full Name_
 localityName=_Locality Name_
 0.organizationName=_Organization Name_
 organizationalUnitName=_{SmartProxy} Organization Unit Name_
-commonName=_{smartproxy-example-com}_  <1>
+commonName=_{smartproxy-example-com}_ <1>
 emailAddress=_Email Address_
 
 [ req_ext ]
@@ -55,7 +48,7 @@ emailAddress=_Email Address_
 keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
 subjectAltName = @alt_names
 
-[alt_names]                  <2>
+[alt_names] <2>
 DNS.1 = _loadbalancer.example.com_
 DNS.2 = _{smartproxy-example-com}_
 ----
@@ -65,14 +58,14 @@ You can also set a wildcard value `*`.
 If you set a wildcard value, you must add the `-t {certs-proxy-context}` option when you use the `katello-certs-check` command.
 <2> Under `[alt_names]`, include the FQDN of the load balancer as `DNS.1` and the FQDN of {SmartProxyServer} as `DNS.2`.
 
-. Create a Certificate Signing Request (CSR) for the SAN certificate.
+. Create a Certificate Signing Request (CSR) for the SAN certificate:
 +
 [options="nowrap", subs="+quotes,attributes"]
 ----
 # openssl req -new \
 -key /root/{smart-proxy-context}_cert/{smart-proxy-context}_cert_key.pem \ <1>
--config SAN_config.cfg \                   <2>
--out /root/{smart-proxy-context}_cert/{smart-proxy-context}_cert_csr.pem   <3>
+-config SAN_config.cfg \ <2>
+-out /root/{smart-proxy-context}_cert/{smart-proxy-context}_cert_csr.pem <3>
 ----
 <1> {SmartProxyServer}’s private key, used to sign the certificate
 <2> The certificate request configuration file
@@ -83,17 +76,15 @@ If you set a wildcard value, you must add the `-t {certs-proxy-context}` option 
 When you submit the request, specify the lifespan of the certificate.
 The method for sending the certificate request varies, so consult the Certificate Authority for the preferred method.
 In response to the request, you can expect to receive a Certificate Authority bundle and a signed certificate, in separate files.
-
 . Copy the Certificate Authority bundle and {SmartProxyServer} certificate file that you receive from the Certificate Authority, and {SmartProxyServer} private key to your {ProjectServer}.
-
 . On {ProjectServer}, validate {SmartProxyServer} certificate input files:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 # katello-certs-check \
--c /root/{smart-proxy-context}_cert/{smart-proxy-context}_cert.pem \      <1>
--k /root/{smart-proxy-context}_cert/{smart-proxy-context}_cert_key.pem \  <2>
--b /root/{smart-proxy-context}_cert/ca_cert_bundle.pem      <3>
+-c /root/{smart-proxy-context}_cert/{smart-proxy-context}_cert.pem \ <1>
+-k /root/{smart-proxy-context}_cert/{smart-proxy-context}_cert_key.pem \ <2>
+-b /root/{smart-proxy-context}_cert/ca_cert_bundle.pem <3>
 ----
 <1> {SmartProxyServer} certificate file, provided by your Certificate Authority
 <2> {SmartProxyServer}’s private key that you used to sign the certificate
@@ -102,64 +93,3 @@ In response to the request, you can expect to receive a Certificate Authority bu
 If you set the `commonName=` to a wildcard value `*`, you must add the `-t {certs-proxy-context}` option to the `katello-certs-check` command.
 +
 Retain a copy of the example `{certs-generate}` command that is output by the `katello-certs-check` command for creating the Certificate Archive File for this {SmartProxyServer}.
-
-== Configuring {SmartProxyServer} with Custom SSL Certificates for Load Balancing without Puppet
-
-Complete this procedure on each {SmartProxyServer} that you want to configure for load balancing.
-
-.Procedure
-
-. Append the following option to the `{certs-generate}` command that you obtain from the output of the `katello-certs-check` command:
-+
-[options="nowrap", subs="+quotes,attributes"]
-----
---foreman-proxy-cname _loadbalancer.example.com_
-----
-
-. On {ProjectServer}, enter the `{certs-generate}` command to generate {SmartProxy} certificates.
-For example:
-+
-[options="nowrap", subs="+quotes,attributes"]
-----
-# {certs-generate} \
---foreman-proxy-fqdn _{smartproxy-example-com}_ \
---certs-tar /root/{smart-proxy-context}_cert/{smart-proxy-context}.tar \
---server-cert /root/{smart-proxy-context}_cert/{smart-proxy-context}.pem \
---server-key /root/{smart-proxy-context}_cert/{smart-proxy-context}.pem \
---server-ca-cert /root/{smart-proxy-context}_cert/ca_cert_bundle.pem \
---foreman-proxy-cname _loadbalancer.example.com_
-----
-+
-Retain a copy of the example `{foreman-installer}` command from the output for installing {SmartProxyServer} certificates.
-
-. Copy the certificate archive file from {ProjectServer} to {SmartProxyServer}:
-+
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
-# scp /root/_{smartproxy-example-com}_-certs.tar \
-root@_{smartproxy-example-com}_:__{smartproxy-example-com}__-certs.tar
-----
-
-. Append the following options to the `{foreman-installer}` command that you obtain from the output of the `{certs-generate}` command.
-+
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
---certs-cname "_loadbalancer.example.com_" \
---enable-foreman-proxy-plugin-remote-execution-script
-----
-
-. On {SmartProxyServer}, enter the `{foreman-installer}` command, for example:
-+
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
-# {installer-scenario-smartproxy} \
---foreman-proxy-register-in-foreman "true" \
---foreman-proxy-foreman-base-url "_https://{foreman-example-com}_" \
---foreman-proxy-trusted-hosts "_{foreman-example-com}_" \
---foreman-proxy-trusted-hosts "_{smartproxy-example-com}_" \
---foreman-proxy-oauth-consumer-key "_oauth key_" \
---foreman-proxy-oauth-consumer-secret "_oauth secret_" \
---certs-tar-file "_{smartproxy-example-com}-certs.tar_" \
---certs-cname "_loadbalancer.example.com_" \
---enable-foreman-proxy-plugin-remote-execution-script
-----
