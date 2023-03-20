@@ -61,12 +61,13 @@
 <ul class="sectlevel2">
 <li><a href="#Registering_Hosts_managing-hosts">3.1. Registering Hosts</a></li>
 <li><a href="#Customizing_the_Registration_Templates_managing-hosts">3.2. Customizing the Registration Templates</a></li>
-<li><a href="#Registering_an_Atomic_Host_managing-hosts">3.3. Registering an Atomic Host to Red&#160;Hat Satellite</a></li>
-<li><a href="#Registering_a_Host_Using_the_Bootstrap_Script_managing-hosts">3.4. Registering a Host to Red&#160;Hat Satellite Using The Bootstrap Script</a></li>
-<li><a href="#Installing_the_Katello_Agent_managing-hosts">3.5. Installing the Katello Agent</a></li>
-<li><a href="#Installing_Tracer_managing-hosts">3.6. Installing Tracer</a></li>
-<li><a href="#Installing_and_Configuring_the_Puppet_Agent_on_a_Host_Manually_managing-hosts">3.7. Installing and Configuring Puppet Agent on a Host Manually</a></li>
-<li><a href="#Migrating_From_Katello_Agent_to_Remote_Execution_managing-hosts">3.8. Migrating From Katello Agent to Remote Execution</a></li>
+<li><a href="#installing-and-configuring-puppet-agent-during-host-registration_managing-hosts">3.3. Installing and Configuring Puppet Agent during Host Registration</a></li>
+<li><a href="#Registering_an_Atomic_Host_managing-hosts">3.4. Registering an Atomic Host to Red&#160;Hat Satellite</a></li>
+<li><a href="#Registering_a_Host_Using_the_Bootstrap_Script_managing-hosts">3.5. Registering a Host to Red&#160;Hat Satellite Using The Bootstrap Script</a></li>
+<li><a href="#Installing_the_Katello_Agent_managing-hosts">3.6. Installing the Katello Agent</a></li>
+<li><a href="#Installing_Tracer_managing-hosts">3.7. Installing Tracer</a></li>
+<li><a href="#Installing_and_Configuring_Puppet_Agent_Manually_managing-hosts">3.8. Installing and Configuring Puppet Agent Manually</a></li>
+<li><a href="#Migrating_From_Katello_Agent_to_Remote_Execution_managing-hosts">3.9. Migrating From Katello Agent to Remote Execution</a></li>
 </ul>
 </li>
 <li><a href="#Adding_Network_Interfaces_managing-hosts">4. Adding Network Interfaces</a>
@@ -1568,7 +1569,7 @@ This method is suited for hosts that haven&#8217;t been provisioned through Sate
 <p><a href="#Installing_Tracer_managing-hosts">Installing Tracer</a></p>
 </li>
 <li>
-<p><a href="#Installing_and_Configuring_the_Puppet_Agent_on_a_Host_Manually_managing-hosts">Installing and Configuring Puppet Agent on a Host Manually</a></p>
+<p><a href="#Installing_and_Configuring_Puppet_Agent_Manually_managing-hosts">Installing and Configuring Puppet Agent Manually</a></p>
 </li>
 </ul>
 </div>
@@ -2032,7 +2033,72 @@ This template renders when hosts access the <code>/register</code> endpoint.</p>
 </table>
 </div>
 <div class="sect2">
-<h3 id="Registering_an_Atomic_Host_managing-hosts"><a class="anchor" href="#Registering_an_Atomic_Host_managing-hosts"></a>3.3. Registering an Atomic Host to Red&#160;Hat Satellite</h3>
+<h3 id="installing-and-configuring-puppet-agent-during-host-registration_managing-hosts"><a class="anchor" href="#installing-and-configuring-puppet-agent-during-host-registration_managing-hosts"></a>3.3. Installing and Configuring Puppet Agent during Host Registration</h3>
+<div class="paragraph">
+<p>Use this procedure to install and configure the Puppet agent on the host during registration.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>You enabled and synchronized the <strong>Satellite Client 6</strong> repository to Satellite.
+For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.13/html-single/managing_content/index#Importing_Content_content-management">Importing Content</a> in <em>Managing Content</em>.</p>
+</li>
+<li>
+<p>You created an activation key that enables the <strong>Satellite Client 6</strong> repository for hosts.
+For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.13/html-single/managing_content/index#Managing_Activation_Keys_content-management">Managing Activation Keys</a> in <em>Managing Content</em>.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Configure</strong> &gt; <strong>Global Parameters</strong> to add host parameters globally.
+Alternatively, you can navigate to <strong>Configure</strong> &gt; <strong>Host Groups</strong> and edit or create a host group to add host parameters only to a host group.</p>
+</li>
+<li>
+<p>Enable the Puppet agent using a host parameter in global parameters or a host group.
+Add a host parameter named <code>enable-puppet7</code>, select the <strong>boolean</strong> type, and set the value to <code>true</code>.</p>
+</li>
+<li>
+<p>Specify configuration for the Puppet agent using the following host parameters in global parameters or a host group:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Add a host parameter named <code>puppet_server</code>, select the <strong>string</strong> type, and set the value to the hostname of your Puppet server, such as <code>puppet.example.com</code>.</p>
+</li>
+<li>
+<p>Optional: Add a host parameter named <code>puppet_ca_server</code>, select the <strong>string</strong> type, and set the value to the hostname of your Puppet CA server, such as <code>puppet-ca.example.com</code>.
+If <code>puppet_ca_server</code> is not set, the Puppet agent will use the same server as <code>puppet_server</code>.</p>
+</li>
+<li>
+<p>Optional: Add a host parameter named <code>puppet_environment</code>, select the <strong>string</strong> type, and set the value to the Puppet environment you want the host to use.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Until the <a href="https://bugzilla.redhat.com/show_bug.cgi?id=2177730">BZ2177730</a> is resolved, you must use host parameters to specify the Puppet agent configuration even in integrated setups where the Puppet server is a Capsule&#160;Server.</p>
+</div>
+</li>
+<li>
+<p>Navigate to <strong>Hosts</strong> &gt; <strong>Register Host</strong> and register your host using an appropriate activation key.
+For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.13/html-single/managing_hosts/index#Registering_Hosts_managing-hosts">Registering Hosts</a> in <em>Managing Hosts</em>.</p>
+</li>
+<li>
+<p>Navigate to <strong>Infrastructure</strong> &gt; <strong>Capsules</strong>.</p>
+</li>
+<li>
+<p>From the list in the <strong>Actions</strong> column for the required Capsule&#160;Server, select <strong>Certificates</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Sign</strong> to the right of the required host to sign the SSL certificate for the Puppet agent.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Registering_an_Atomic_Host_managing-hosts"><a class="anchor" href="#Registering_an_Atomic_Host_managing-hosts"></a>3.4. Registering an Atomic Host to Red&#160;Hat Satellite</h3>
 <div class="paragraph">
 <p>Use the following procedure to register an Atomic Host to Red&#160;Hat Satellite.</p>
 </div>
@@ -2092,7 +2158,7 @@ This template renders when hosts access the <code>/register</code> endpoint.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="Registering_a_Host_Using_the_Bootstrap_Script_managing-hosts"><a class="anchor" href="#Registering_a_Host_Using_the_Bootstrap_Script_managing-hosts"></a>3.4. Registering a Host to Red&#160;Hat Satellite Using The Bootstrap Script</h3>
+<h3 id="Registering_a_Host_Using_the_Bootstrap_Script_managing-hosts"><a class="anchor" href="#Registering_a_Host_Using_the_Bootstrap_Script_managing-hosts"></a>3.5. Registering a Host to Red&#160;Hat Satellite Using The Bootstrap Script</h3>
 <div class="paragraph">
 <p><strong>Deprecated</strong> Use registration via Global registration feature.</p>
 </div>
@@ -2273,7 +2339,7 @@ In the Satellite web UI, navigate to <strong>Infrastructure</strong> &gt; <stron
 </ol>
 </div>
 <div class="sect3">
-<h4 id="Setting_Permissions_for_the_Bootstrap_Script_managing-hosts"><a class="anchor" href="#Setting_Permissions_for_the_Bootstrap_Script_managing-hosts"></a>3.4.1. Setting Permissions for the Bootstrap Script</h4>
+<h4 id="Setting_Permissions_for_the_Bootstrap_Script_managing-hosts"><a class="anchor" href="#Setting_Permissions_for_the_Bootstrap_Script_managing-hosts"></a>3.5.1. Setting Permissions for the Bootstrap Script</h4>
 <div class="paragraph">
 <p>Use this procedure to configure a Satellite user with the permissions required to run the bootstrap script.
 To use the CLI instead of the Satellite web UI, see the <a href="#CLI_Setting_Permissions_for_the_Bootstrap_Script_managing-hosts">CLI procedure</a>.</p>
@@ -2384,7 +2450,7 @@ For more information on creating users with Hammer, see <a href="https://access.
 </div>
 </div>
 <div class="sect3">
-<h4 id="Advanced_Bootstrap_Script_Configuration_managing-hosts"><a class="anchor" href="#Advanced_Bootstrap_Script_Configuration_managing-hosts"></a>3.4.2. Advanced Bootstrap Script Configuration</h4>
+<h4 id="Advanced_Bootstrap_Script_Configuration_managing-hosts"><a class="anchor" href="#Advanced_Bootstrap_Script_Configuration_managing-hosts"></a>3.5.2. Advanced Bootstrap Script Configuration</h4>
 <div class="paragraph">
 <p>This section has more examples for using the bootstrap script to register or migrate a host.</p>
 </div>
@@ -2794,7 +2860,7 @@ If you cannot update the host to use an FQDN that is accepted by Satellite, you 
 </div>
 </div>
 <div class="sect2">
-<h3 id="Installing_the_Katello_Agent_managing-hosts"><a class="anchor" href="#Installing_the_Katello_Agent_managing-hosts"></a>3.5. Installing the Katello Agent</h3>
+<h3 id="Installing_the_Katello_Agent_managing-hosts"><a class="anchor" href="#Installing_the_Katello_Agent_managing-hosts"></a>3.6. Installing the Katello Agent</h3>
 <div class="paragraph">
 <p>You can install the Katello agent to remotely update Satellite clients.</p>
 </div>
@@ -2856,7 +2922,7 @@ For more information, see <a href="https://access.redhat.com/documentation/en-us
 </div>
 </div>
 <div class="sect2">
-<h3 id="Installing_Tracer_managing-hosts"><a class="anchor" href="#Installing_Tracer_managing-hosts"></a>3.6. Installing Tracer</h3>
+<h3 id="Installing_Tracer_managing-hosts"><a class="anchor" href="#Installing_Tracer_managing-hosts"></a>3.7. Installing Tracer</h3>
 <div class="paragraph">
 <p>Use this procedure to install Tracer on Red&#160;Hat Satellite and access Traces.
 Tracer displays a list of services and applications that are outdated and need to be restarted.
@@ -2903,9 +2969,9 @@ If it is not installed, an <strong>Enable Traces</strong> button initiates a rem
 </div>
 </div>
 <div class="sect2">
-<h3 id="Installing_and_Configuring_the_Puppet_Agent_on_a_Host_Manually_managing-hosts"><a class="anchor" href="#Installing_and_Configuring_the_Puppet_Agent_on_a_Host_Manually_managing-hosts"></a>3.7. Installing and Configuring Puppet Agent on a Host Manually</h3>
+<h3 id="Installing_and_Configuring_Puppet_Agent_Manually_managing-hosts"><a class="anchor" href="#Installing_and_Configuring_Puppet_Agent_Manually_managing-hosts"></a>3.8. Installing and Configuring Puppet Agent Manually</h3>
 <div class="paragraph">
-<p>Install and configure the Puppet agent on a host manually.</p>
+<p>Use this procedure to install and configure the Puppet agent on a host manually.</p>
 </div>
 <div class="paragraph">
 <p>For more information about Puppet, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.13/html-single/managing_configurations_using_puppet_integration_in_red_hat_satellite/index#">Managing Configurations Using Puppet Integration in Satellite</a>.</p>
@@ -3013,7 +3079,7 @@ server = <em>satellite.example.com</em></pre>
 </div>
 </div>
 <div class="sect2">
-<h3 id="Migrating_From_Katello_Agent_to_Remote_Execution_managing-hosts"><a class="anchor" href="#Migrating_From_Katello_Agent_to_Remote_Execution_managing-hosts"></a>3.8. Migrating From Katello Agent to Remote Execution</h3>
+<h3 id="Migrating_From_Katello_Agent_to_Remote_Execution_managing-hosts"><a class="anchor" href="#Migrating_From_Katello_Agent_to_Remote_Execution_managing-hosts"></a>3.9. Migrating From Katello Agent to Remote Execution</h3>
 <div class="paragraph">
 <p><strong>Remote Execution</strong> is the preferred way to manage package content on hosts.
 The Katello Agent is deprecated and will be removed in a future Satellite version.
