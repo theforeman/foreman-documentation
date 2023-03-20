@@ -27,7 +27,7 @@
 <h1>Configuring Hosts Using Ansible</h1>
 <div class="details">
 <span id="revnumber">version 3.6 (unsupported),</span>
-<span id="revdate">published Mar 17 2023</span>
+<span id="revdate">published Mar 20 2023</span>
 </div>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
@@ -41,6 +41,7 @@
 <li><a href="#adding-rhel-system-roles_ansible">1.5. Adding Red&#160;Hat Enterprise Linux System Roles</a></li>
 <li><a href="#synchronizing-ansible-collections_ansible">1.6. Synchronizing Ansible Collections</a></li>
 <li><a href="#customizing-ansible-configuration_ansible">1.7. Customizing Ansible Configuration</a></li>
+<li><a href="#using-ansible-vault-with-foreman_ansible">1.8. Using Ansible Vault with Foreman</a></li>
 </ul>
 </li>
 <li><a href="#using-ansible-roles_ansible">2. Using Ansible Roles to Automate Repetitive Tasks on Foreman Hosts</a>
@@ -566,8 +567,9 @@ However, you can customize other Ansible configuration options as usual.</p>
 This file is managed by the foreman-installer.</p>
 </div>
 <div class="paragraph">
-<p>Ansible reads configuration from <code>/etc/ansible/ansible.cfg</code> and the environment provided by Smart&#160;Proxy.
-If you need to customize Ansible configuration, you can do so in the <code>/etc/ansible/ansible.cfg</code> file.</p>
+<p>Ansible reads configuration from a configuration file and the environment provided by Smart&#160;Proxy.
+If you need to customize Ansible configuration, you can do so in the system-wide <code>/etc/ansible/ansible.cfg</code> file or in the <code>/usr/share/foreman-proxy/.ansible.cfg</code> file in the home directory of the <code>foreman-proxy</code> user.
+Note that if you use <code>/usr/share/foreman-proxy/.ansible.cfg</code>, Ansible spawned by Foreman ignores configuration in <code>/etc/ansible/ansible.cfg</code>.</p>
 </div>
 <div class="paragraph">
 <p>Note that environment variables take precedence over values in <code>ansible.cfg</code>, which ensures that the essential configuration required by Foreman is retained.</p>
@@ -634,6 +636,64 @@ If you need to customize Ansible configuration, you can do so in the <code>/etc/
 <p><a href="https://docs.ansible.com/ansible/latest/reference_appendices/config.html">Ansible Configuration Settings</a></p>
 </li>
 </ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="using-ansible-vault-with-foreman_ansible"><a class="anchor" href="#using-ansible-vault-with-foreman_ansible"></a>1.8. Using Ansible Vault with Foreman</h3>
+<div class="paragraph">
+<p>You can encrypt sensitive Ansible data files using the Ansible Vault tool and configure Ansible to access the encrypted files using a password stored in a file.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>If you customized <code>/etc/ansible/ansible.cfg</code>, copy your configuration from <code>/etc/ansible/ansible.cfg</code> to <code>/usr/share/foreman-proxy/.ansible.cfg</code>.</p>
+</li>
+<li>
+<p>Encrypt the sensitive file using the <code>ansible-vault</code> command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ansible-vault encrypt /etc/ansible/roles/<em>Role_Name</em>/vars/main.yml</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note that <code>ansible-vault</code> changes the file permissions to <code>600</code>.</p>
+</div>
+</li>
+<li>
+<p>Change the group and permissions of the encrypted file to ensure that the <code>foreman-proxy</code> user can read it:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># chown :foreman-proxy /etc/ansible/roles/<em>Role_Name</em>/vars/main.yml
+# chmod 0640 /etc/ansible/roles/<em>Role_Name</em>/vars/main.yml</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create the <code>/usr/share/foreman-proxy/.ansible_vault_password</code> file and enter the Vault password into it.</p>
+</li>
+<li>
+<p>Change the user and permissions of the <code>.ansible_vault_password</code> file to ensure that only the <code>foreman-proxy</code> user can read it:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># chown foreman-proxy:foreman-proxy /usr/share/foreman-proxy/.ansible_vault_password
+# chmod 0400 /usr/share/foreman-proxy/.ansible_vault_password</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Add the path of the Vault password file to the <code>[defaults]</code> section in <code>/usr/share/foreman-proxy/.ansible.cfg</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">[defaults]
+vault_password_file = /usr/share/foreman-proxy/.ansible_vault_password</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The path to the Vault password file must be absolute.</p>
+</div>
+</li>
+</ol>
 </div>
 </div>
 </div>
