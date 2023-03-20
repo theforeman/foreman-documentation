@@ -11,42 +11,54 @@ For more information, see xref:Implementing_PXE_less_Discovery_{context}[].
 
 .Boot ISO Types
 
-There are four types of boot ISOs:
-
-Full host image::
-A boot ISO that contains the kernel and initial RAM disk image for the specific host.
-This image is useful if the host fails to chainload correctly.
-The provisioning template still downloads from {ProjectServer}.
-
-Subnet image::
-A boot ISO that is similar to the generic image but is configured with the address of a {SmartProxyServer}.
-This image is generic to all hosts with a provisioning NIC on the same subnet.
-The image is based on iPXE boot firmware, only limited hardware is supported.
+There are the following types of boot ISOs:
 
 ifndef::satellite[]
 Host image::
 A boot ISO for the specific host.
 This image contains only the boot files that are necessary to access the installation media on {ProjectServer}.
 The user defines the subnet data in {Project} and the image is created with static networking.
-The image is based on iPXE boot firmware, only limited hardware is supported.
+The image is based on iPXE boot firmware, only a limited number of network cards is supported.
+endif::[]
 
+Full host image::
+A boot ISO that contains the kernel and initial RAM disk image for the specific host.
+This image is useful if the host fails to chainload correctly.
+The provisioning template still downloads from {ProjectServer}.
+
+ifndef::satellite[]
 Generic image::
 A boot ISO that is not associated with a specific host.
 The ISO sends the host's MAC address to {ProjectServer}, which matches it against the host entry.
-The image does not store IP address details, and requires access to a DHCP server on the network to bootstrap.
+The image does not store IP address details and requires access to a DHCP server on the network to bootstrap.
 This image is also available from the `/bootdisk/disks/generic` URL on your {ProjectServer}, for example, `\https://{foreman-example-com}/bootdisk/disks/generic`.
 endif::[]
 
+Subnet image::
+A boot ISO that is not associated with a specific host.
+The ISO sends the host's MAC address to {SmartProxyServer}, which matches it against the host entry.
+The image does not store IP address details and requires access to a DHCP server on the network to bootstrap.
+This image is generic to all hosts with a provisioning NIC on the same subnet.
+The image is based on iPXE boot firmware, only a limited number of network cards is supported.
+
 [NOTE]
 ====
+The *Full host image* is based on SYSLINUX and Grub and works with most network cards.
 ifdef::satellite[]
-Host and Generic images are no longer available in Satellite.
+When using a *Subnet image*,
 endif::[]
-The *Full host image* is based on SYSLINUX and Grub and works with most hardware.
-When using a *Host image*, *Generic image*, or *Subnet image*, see https://ipxe.org/appnote/hardware_drivers[supported hardware on ipxe.org] for a list of hardware drivers expected to work with an iPXE-based boot disk.
+ifndef::satellite[]
+When using a *Host image*, *Generic image*, or *Subnet image*,
+endif::[]
+see https://ipxe.org/appnote/hardware_drivers[supported hardware on ipxe.org] for a list of network card drivers expected to work with an iPXE-based boot disk.
 ====
 
+ifdef::satellite[]
+*Full host image* contains provisioning tokens, therefore the generated image has limited lifespan.
+endif::[]
+ifndef::satellite[]
 *Host image* and *Full host image* contain provisioning tokens, therefore the generated image has limited lifespan.
+endif::[]
 For more information about configuring security tokens, read xref:Configuring_the_Security_Token_Validity_Duration_{context}[].
 
 To use the CLI instead of the {ProjectWebUI}, see the xref:cli-creating-hosts-with-pxe-less-provisioning_{context}[].
@@ -68,73 +80,87 @@ Note in particular:
 If not, select them.
 . Click the *Operating System* tab, and verify that all fields contain values.
 Confirm each aspect of the operating system.
-. Click *Resolve* in *Provisioning template* to check the new host can identify the right provisioning templates to use.
+. Click *Resolve* in *Provisioning Templates* to check the new host can identify the right provisioning templates to use.
 +
 For more information about associating provisioning templates, see xref:provisioning-templates_{context}[].
-+
-ifdef::foreman-el,foreman-deb,katello[]
-. If you use the Katello plug-in, click the *Parameters* tab, and ensure that a parameter exists that provides an activation key.
-If not, add an activation key.
-endif::[]
-ifdef::satellite,orcharhino[]
+ifdef::katello,satellite,orcharhino[]
 . Click the *Parameters* tab, and ensure that a parameter exists that provides an activation key.
 If not, add an activation key.
 endif::[]
 . Click *Submit* to save the host details.
-
 This creates a host entry and the host details page appears.
+. Download the boot disk from {ProjectServer}.
++
+ifndef::satellite[]
+* For *Host image*, on the host details page, click the vertical elipsis and select *Host '_My_Host_Name_' image*.
+endif::[]
+* For *Full host image*, on the host details page, click the vertical elipsis and select *Full host '_My_Host_Name_' image*.
+ifndef::satellite[]
+* For *Generic image*, navigate to *Infrastructure* > *Subnets*, click *Boot disk* and select *Generic image*.
+endif::[]
+* For *Subnet image*, navigate to *Infrastructure* > *Subnets*, click the dropdown menu in the *Actions* column of the required subnet and select *Subnet generic image*.
+. Write the ISO to a USB storage device using the `dd` utility or `livecd-tools` if required.
+. When you start the host and boot from the ISO or the USB storage device, the host connects to {ProjectServer} and starts installing operating system from its kickstart tree.
+ifdef::satellite,katello,orcharhino[]
++
+When the installation completes, the host also registers to {ProjectServer} using the activation key and installs the necessary configuration and management tools from the *{project-client-name}* repository.
+endif::[]
 
-The options on the upper-right of the window are the *Boot disk* menu.
-From this menu, one of the following images is available for download: *Host image*, *Full host image*, *Generic image*, and *Subnet image*.
+
 
 [id="cli-creating-hosts-with-pxe-less-provisioning_{context}"]
 .CLI procedure
-. Create the host with the `hammer host create` command.
+. Create the host using the `hammer host create` command.
 +
 [options="nowrap" subs="+quotes"]
 ----
-# hammer host create --name "_My_Bare_Metal_" --organization "_My_Organization_" \
---location "_My_Location_" --hostgroup "_My_Host_Group_" --mac "aa:aa:aa:aa:aa:aa" \
+# hammer host create --name "_My_Host_Name_" --organization "_My_Organization_" \
+--location "_My_Location_" --hostgroup "_My_Host_Group_" --mac "_aa:aa:aa:aa:aa:aa_" \
 --build true --enabled true --managed true
 ----
 . Ensure that your network interface options are set using the `hammer host interface update` command.
 +
 [options="nowrap" subs="+quotes"]
 ----
-# hammer host interface update --host "test3" --managed true \
+# hammer host interface update --host "_My_Host_Name_" --managed true \
 --primary true --provision true
 ----
-. Download the boot disk from {ProjectServer} with the `hammer bootdisk host` command:
+. Download the boot disk from {ProjectServer} using the `hammer bootdisk` command:
 +
+ifndef::satellite[]
 * For *Host image*:
 +
 [options="nowrap" subs="+quotes"]
 ----
-# hammer bootdisk host --host _test3.example.com_
+# hammer bootdisk host --host _My_Host_Name.example.com_
 ----
+endif::[]
 * For *Full host image*:
 +
 [options="nowrap" subs="+quotes"]
 ----
-# hammer bootdisk host --host _test3.example.com_ --full true
+# hammer bootdisk host --host _My_Host_Name.example.com_ --full true
 ----
+ifndef::satellite[]
 * For *Generic image*:
 +
 [options="nowrap" subs="+quotes"]
 ----
 # hammer bootdisk generic
 ----
+endif::[]
 * For *Subnet image*:
 +
 [options="nowrap" subs="+quotes"]
 ----
-# hammer bootdisk subnet --subnet _subnetName_
+# hammer bootdisk subnet --subnet _My_Subnet_Name_
 ----
 
++
 This creates a boot ISO for your host to use.
-Write the ISO to a USB storage device using the *dd* utility or *livecd-tools* if required.
-When you start the physical host and boot from the ISO or the USB storage device, the host connects to {ProjectServer} and starts installing operating system from its kickstart tree.
-
+. Write the ISO to a USB storage device using the `dd` utility or `livecd-tools` if required.
+. When you start the physical host and boot from the ISO or the USB storage device, the host connects to {ProjectServer} and starts installing operating system from its kickstart tree.
 ifdef::satellite,katello,orcharhino[]
++
 When the installation completes, the host also registers to {ProjectServer} using the activation key and installs the necessary configuration and management tools from the *{project-client-name}* repository.
 endif::[]
