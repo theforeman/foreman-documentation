@@ -3410,7 +3410,7 @@ For more information, see <a href="#Implementing_PXE_less_Discovery_provisioning
 </div>
 <div class="paragraph">
 <div class="title">Boot ISO Types</div>
-<p>There are four types of boot ISOs:</p>
+<p>There are the following types of boot ISOs:</p>
 </div>
 <div class="dlist">
 <dl>
@@ -3422,9 +3422,11 @@ The provisioning template still downloads from Satellite&#160;Server.</p>
 </dd>
 <dt class="hdlist1">Subnet image</dt>
 <dd>
-<p>A boot ISO that is similar to the generic image but is configured with the address of a Capsule&#160;Server.
+<p>A boot ISO that is not associated with a specific host.
+The ISO sends the host&#8217;s MAC address to Capsule&#160;Server, which matches it against the host entry.
+The image does not store IP address details and requires access to a DHCP server on the network to bootstrap.
 This image is generic to all hosts with a provisioning NIC on the same subnet.
-The image is based on iPXE boot firmware, only limited hardware is supported.</p>
+The image is based on iPXE boot firmware, only a limited number of network cards is supported.</p>
 </dd>
 </dl>
 </div>
@@ -3436,16 +3438,16 @@ The image is based on iPXE boot firmware, only limited hardware is supported.</p
 </td>
 <td class="content">
 <div class="paragraph">
-<p>Host and Generic images are no longer available in Satellite.
-The <strong>Full host image</strong> is based on SYSLINUX and Grub and works with most hardware.
-When using a <strong>Host image</strong>, <strong>Generic image</strong>, or <strong>Subnet image</strong>, see <a href="https://ipxe.org/appnote/hardware_drivers">supported hardware on ipxe.org</a> for a list of hardware drivers expected to work with an iPXE-based boot disk.</p>
+<p>The <strong>Full host image</strong> is based on SYSLINUX and Grub and works with most network cards.
+When using a <strong>Subnet image</strong>,
+see <a href="https://ipxe.org/appnote/hardware_drivers">supported hardware on ipxe.org</a> for a list of network card drivers expected to work with an iPXE-based boot disk.</p>
 </div>
 </td>
 </tr>
 </table>
 </div>
 <div class="paragraph">
-<p><strong>Host image</strong> and <strong>Full host image</strong> contain provisioning tokens, therefore the generated image has limited lifespan.
+<p><strong>Full host image</strong> contains provisioning tokens, therefore the generated image has limited lifespan.
 For more information about configuring security tokens, read <a href="#Configuring_the_Security_Token_Validity_Duration_provisioning">Configuring the Security Token Validity Duration</a>.</p>
 </div>
 <div class="paragraph">
@@ -3495,7 +3497,7 @@ If not, select them.</p>
 Confirm each aspect of the operating system.</p>
 </li>
 <li>
-<p>Click <strong>Resolve</strong> in <strong>Provisioning template</strong> to check the new host can identify the right provisioning templates to use.</p>
+<p>Click <strong>Resolve</strong> in <strong>Provisioning Templates</strong> to check the new host can identify the right provisioning templates to use.</p>
 <div class="paragraph">
 <p>For more information about associating provisioning templates, see <a href="#provisioning-templates_provisioning">Provisioning Templates</a>.</p>
 </div>
@@ -3505,26 +3507,42 @@ Confirm each aspect of the operating system.</p>
 If not, add an activation key.</p>
 </li>
 <li>
-<p>Click <strong>Submit</strong> to save the host details.</p>
+<p>Click <strong>Submit</strong> to save the host details.
+This creates a host entry and the host details page appears.</p>
+</li>
+<li>
+<p>Download the boot disk from Satellite&#160;Server.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>For <strong>Full host image</strong>, on the host details page, click the vertical elipsis and select <strong>Full host '<em>My_Host_Name</em>' image</strong>.</p>
+</li>
+<li>
+<p>For <strong>Subnet image</strong>, navigate to <strong>Infrastructure</strong> &gt; <strong>Subnets</strong>, click the dropdown menu in the <strong>Actions</strong> column of the required subnet and select <strong>Subnet generic image</strong>.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Write the ISO to a USB storage device using the <code>dd</code> utility or <code>livecd-tools</code> if required.</p>
+</li>
+<li>
+<p>When you start the host and boot from the ISO or the USB storage device, the host connects to Satellite&#160;Server and starts installing operating system from its kickstart tree.</p>
+<div class="paragraph">
+<p>When the installation completes, the host also registers to Satellite&#160;Server using the activation key and installs the necessary configuration and management tools from the <strong>Satellite Client 6</strong> repository.</p>
+</div>
 </li>
 </ol>
-</div>
-<div class="paragraph">
-<p>This creates a host entry and the host details page appears.</p>
-</div>
-<div class="paragraph">
-<p>The options on the upper-right of the window are the <strong>Boot disk</strong> menu.
-From this menu, one of the following images is available for download: <strong>Host image</strong>, <strong>Full host image</strong>, <strong>Generic image</strong>, and <strong>Subnet image</strong>.</p>
 </div>
 <div id="cli-creating-hosts-with-pxe-less-provisioning_provisioning" class="olist arabic">
 <div class="title">CLI procedure</div>
 <ol class="arabic">
 <li>
-<p>Create the host with the <code>hammer host create</code> command.</p>
+<p>Create the host using the <code>hammer host create</code> command.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># hammer host create --name "<em>My_Bare_Metal</em>" --organization "<em>My_Organization</em>" \
---location "<em>My_Location</em>" --hostgroup "<em>My_Host_Group</em>" --mac "aa:aa:aa:aa:aa:aa" \
+<pre class="nowrap"># hammer host create --name "<em>My_Host_Name</em>" --organization "<em>My_Organization</em>" \
+--location "<em>My_Location</em>" --hostgroup "<em>My_Host_Group</em>" --mac "<em>aa:aa:aa:aa:aa:aa</em>" \
 --build true --enabled true --managed true</pre>
 </div>
 </div>
@@ -3533,36 +3551,20 @@ From this menu, one of the following images is available for download: <strong>H
 <p>Ensure that your network interface options are set using the <code>hammer host interface update</code> command.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># hammer host interface update --host "test3" --managed true \
+<pre class="nowrap"># hammer host interface update --host "<em>My_Host_Name</em>" --managed true \
 --primary true --provision true</pre>
 </div>
 </div>
 </li>
 <li>
-<p>Download the boot disk from Satellite&#160;Server with the <code>hammer bootdisk host</code> command:</p>
+<p>Download the boot disk from Satellite&#160;Server using the <code>hammer bootdisk</code> command:</p>
 <div class="ulist">
 <ul>
-<li>
-<p>For <strong>Host image</strong>:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># hammer bootdisk host --host <em>test3.example.com</em></pre>
-</div>
-</div>
-</li>
 <li>
 <p>For <strong>Full host image</strong>:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># hammer bootdisk host --host <em>test3.example.com</em> --full true</pre>
-</div>
-</div>
-</li>
-<li>
-<p>For <strong>Generic image</strong>:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># hammer bootdisk generic</pre>
+<pre class="nowrap"># hammer bootdisk host --host <em>My_Host_Name.example.com</em> --full true</pre>
 </div>
 </div>
 </li>
@@ -3570,22 +3572,26 @@ From this menu, one of the following images is available for download: <strong>H
 <p>For <strong>Subnet image</strong>:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># hammer bootdisk subnet --subnet <em>subnetName</em></pre>
+<pre class="nowrap"># hammer bootdisk subnet --subnet <em>My_Subnet_Name</em></pre>
 </div>
 </div>
 </li>
 </ul>
 </div>
-</li>
-</ol>
-</div>
 <div class="paragraph">
-<p>This creates a boot ISO for your host to use.
-Write the ISO to a USB storage device using the <strong>dd</strong> utility or <strong>livecd-tools</strong> if required.
-When you start the physical host and boot from the ISO or the USB storage device, the host connects to Satellite&#160;Server and starts installing operating system from its kickstart tree.</p>
+<p>This creates a boot ISO for your host to use.</p>
 </div>
+</li>
+<li>
+<p>Write the ISO to a USB storage device using the <code>dd</code> utility or <code>livecd-tools</code> if required.</p>
+</li>
+<li>
+<p>When you start the physical host and boot from the ISO or the USB storage device, the host connects to Satellite&#160;Server and starts installing operating system from its kickstart tree.</p>
 <div class="paragraph">
 <p>When the installation completes, the host also registers to Satellite&#160;Server using the activation key and installs the necessary configuration and management tools from the <strong>Satellite Client 6</strong> repository.</p>
+</div>
+</li>
+</ol>
 </div>
 </div>
 <div class="sect2">
