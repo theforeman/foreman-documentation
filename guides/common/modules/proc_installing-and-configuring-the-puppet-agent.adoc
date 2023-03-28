@@ -3,32 +3,26 @@
 
 Install and configure the Puppet agent on a host manually.
 
-ifndef::managing-configurations-puppet[]
-ifdef::satellite[]
-For more information about Puppet, see {ManagingConfigurationsPuppetDocURL}[Managing Configurations Using Puppet Integration in {Project}].
-endif::[]
-endif::[]
-
 .Prerequisites
 * The host must have a Puppet environment assigned to it.
 ifdef::satellite[]
-* The {ProjectName} Client repository must be enabled and synchronized to {ProjectServer}, and enabled on the host.
-The `puppet-agent` rpm is available within the following repositories:
-** {Team} {project-client-name} for RHEL 7 Server RPMs x86_64 - `{RepoRHEL7ServerSatelliteToolsProductVersion}`
-** {Team} {project-client-name} for RHEL 8 Server RPMs <arch> - `{RepoRHEL8ServerSatelliteToolsProductVersion}`
-** {Team} {project-client-name} for RHEL 9 Server RPMs <arch> - `{RepoRHEL9ServerSatelliteToolsProductVersion}`
+* The *{project-client-name}* repository must be enabled and synchronized to {ProjectServer}, and enabled on the host.
+For more information, see {ContentManagementDocURL}Importing_Content_content-management[Importing Content] in _{ContentManagementDocTitle}_.
 endif::[]
-ifdef::orcharhino[]
-* The {Team} {project-client-name} repository must be enabled and synchronized to {ProjectServer}, and enabled on the host.
-endif::[]
-ifndef::satellite,orcharhino[]
+ifndef::satellite[]
 * Ensure a repository containing the Puppet agent is enabled on the host, for example https://apt.puppet.com/[apt.puppet.com] or https://yum.puppet.com/[yum.puppet.com].
 endif::[]
 
 .Procedure
 . Log in to the host as the `root` user.
 . Install the Puppet agent package.
-* On hosts running {EL}:
+* On hosts running {EL} 8 and above:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# dnf install puppet-agent
+----
+* On hosts running {EL} 7 and below:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
@@ -48,33 +42,27 @@ ifndef::satellite[]
 # zypper install puppet-agent
 ----
 endif::[]
-. Append the following server and environment settings to the `/etc/puppetlabs/puppet/puppet.conf` file.
+. Add the Puppet agent to `PATH` in your current shell using the following script:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+. /etc/profile.d/puppet-agent.sh
+----
+. Configure the Puppet agent.
 Set the `environment` parameter to the name of the Puppet environment to which the host belongs:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-environment = _My_Puppet_Environment_
-server = _{foreman-example-com}_
+# puppet config set server _{foreman-example-com}_ --section agent
+# puppet config set environment _My_Puppet_Environment_ --section agent
 ----
-. Configure the Puppet agent to start at boot:
-* On {EL} 6:
+. Start the Puppet agent service:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-# chkconfig puppet on
+# puppet resource service puppet ensure=running enable=true
 ----
-ifdef::satellite[]
-* On {EL} 7 and 8:
-endif::[]
-ifndef::satellite[]
-* On other operating systems:
-endif::[]
-+
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
-# systemctl enable --now puppet
-----
-. Run the Puppet agent on the host:
+. Create a certificate for the host:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
@@ -83,9 +71,14 @@ endif::[]
 . In the {ProjectWebUI}, navigate to *Infrastructure* > *{SmartProxies}*.
 . From the list in the *Actions* column for the required {SmartProxyServer}, select *Certificates*.
 . Click *Sign* to the right of the required host to sign the SSL certificate for the Puppet agent.
+. On the host, run the Puppet agent again:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# puppet ssl bootstrap
+----
 
 ifndef::managing-configurations-puppet[]
-ifdef::satellite[]
-You can continue with {ManagingConfigurationsPuppetDocURL}[Managing Configurations Using Puppet Integration in {Project}].
-endif::[]
+.Additional Resources
+* For more information about Puppet, see {ManagingConfigurationsPuppetDocURL}[_{ManagingConfigurationsPuppetDocTitle}_].
 endif::[]
