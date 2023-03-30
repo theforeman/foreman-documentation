@@ -47,7 +47,9 @@
 </li>
 <li><a href="#Managing_Alternate_Content_Sources_content-management">4. Managing Alternate Content Sources</a>
 <ul class="sectlevel2">
-<li><a href="#Configuring_Alternate_Content_Sources_content-management">4.1. Configuring Alternate Content Sources</a></li>
+<li><a href="#Configuring_Custom_Alternate_Content_Sources_content-management">4.1. Configuring Custom Alternate Content Sources</a></li>
+<li><a href="#Configuring_Simplified_Alternate_Content_Sources_content-management">4.2. Configuring Simplified Alternate Content Sources</a></li>
+<li><a href="#Configuring_RHUI_Alternate_Content_Sources_content-management">4.3. Configuring RHUI Alternate Content Sources</a></li>
 </ul>
 </li>
 <li><a href="#Importing_Content_content-management">5. Importing Content</a>
@@ -725,15 +727,88 @@ To learn more about SCA, see <a href="https://access.redhat.com/articles/simple-
 <div class="sectionbody">
 <div class="paragraph">
 <p>Alternate content sources define alternate paths to download content during synchronization.
-The content itself is downloaded from the alternate content source and only the metadata is downloaded from the upstream URL.
+The content itself is downloaded from the alternate content source, while the metadata is downloaded from the orcharhino&#160;Server or the upstream URL, depending on the configuration.
 You can use alternate content source to speed up synchronization if the content is located on the local filesystem or on a nearby network.
 You can set up alternate content sources for orcharhino&#160;Server and orcharhino&#160;Proxy.
 You must refresh the alternate content source after creation or after making any changes.
 A weekly cron job refreshes all alternate content sources.
 You can also refresh the alternate content sources manually using the orcharhino management UI or the Hammer CLI.</p>
 </div>
+<div class="paragraph">
+<p>There are three types of alternate content sources:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Custom</dt>
+<dd>
+<p>Custom alternate content sources download the content from any upstream repository on the network or filesystem.</p>
+</dd>
+<dt class="hdlist1">Simplified</dt>
+<dd>
+<p>Simplified alternate content sources copy the upstream repository information from your orcharhino&#160;Server for the selected products.
+Simplified alternate content sources are ideal for situations where the connection from your orcharhino&#160;Proxy to the upstream repo is faster than from your orcharhino&#160;Server.</p>
+</dd>
+<dt class="hdlist1">RHUI</dt>
+<dd>
+<p>RHUI alternate content sources download content from a Red Hat Update Infrastructure server.
+orcharhino management UI provides examples to help you find the network paths and to import authentication credentials.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<div class="title">Permission Requirements for Alternate Content Sources</div>
+<p>Non-administrator users must have the below permissions to manage alternate content sources:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><code>view_smart_proxies</code></p>
+</li>
+<li>
+<p><code>view_content_credentials</code></p>
+</li>
+<li>
+<p><code>view_organizations</code></p>
+</li>
+<li>
+<p><code>view_products</code></p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>In addition to the above permissions, assign permissions specific to alternate content sources, depending on the actions the users can perform:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><code>view_alternate_content_sources</code></p>
+</li>
+<li>
+<p><code>create_alternate_content_sources</code></p>
+</li>
+<li>
+<p><code>edit_alternate_content_sources</code></p>
+</li>
+<li>
+<p><code>destroy_alternate_content_sources</code></p>
+</li>
+</ol>
+</div>
 <div class="sect2">
-<h3 id="Configuring_Alternate_Content_Sources_content-management"><a class="anchor" href="#Configuring_Alternate_Content_Sources_content-management"></a>4.1. Configuring Alternate Content Sources</h3>
+<h3 id="Configuring_Custom_Alternate_Content_Sources_content-management"><a class="anchor" href="#Configuring_Custom_Alternate_Content_Sources_content-management"></a>4.1. Configuring Custom Alternate Content Sources</h3>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>If the repository requires SSL authentication, import the SSL certificate and key to the orcharhino.
+For more information, see <a href="https://docs.theforeman.org/3.5/Managing_Content/index-orcharhino.html#Importing_Custom_SSL_Certificates_content-management">Importing Custom SSL Certificates</a> in <em>Managing Content</em>.</p>
+</li>
+<li>
+<p>Note that the alternate content source paths consist of a base URL appended with the subpaths that you provide.
+For example, if your base URL is <code><a href="https://server.example.com" class="bare">https://server.example.com</a></code> and your subpaths are <code>rhel7/</code> and <code>rhel8/</code>, then both <code><a href="https://server.example.com/rhel7/" class="bare">https://server.example.com/rhel7/</a></code> and <code><a href="https://server.example.com/rhel8/" class="bare">https://server.example.com/rhel8/</a></code> will be searched.</p>
+</li>
+</ul>
+</div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
 <ol class="arabic">
@@ -775,7 +850,7 @@ You can also refresh the alternate content sources manually using the orcharhino
 </li>
 </ol>
 </div>
-<div id="cli-configuring-alternate-content-sources_content-management" class="olist arabic">
+<div id="cli-configuring-custom-alternate-content-sources_content-management" class="olist arabic">
 <div class="title">CLI Procedure</div>
 <ol class="arabic">
 <li>
@@ -787,6 +862,205 @@ You can also refresh the alternate content sources manually using the orcharhino
 --alternate-content-source-type custom \
 --base-url "<em>https://local-repo.example.com:port</em>" \
 --smart-proxy-ids <em>orcharhino&#160;Proxy_ID</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Check if the newly created alternate content source is listed:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer alternate-content-source list</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Refresh the alternate content source:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer alternate-content-source refresh --id <em>My_Alternate_Content_Source_ID</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Add the orcharhino&#160;Proxies to which the alternate content source is to be synced:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer alternate-content-source update \
+--id <em>My_Alternate_Content_Source_ID</em> \
+--smart-proxy-ids <em>orcharhino&#160;Proxy_ID</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Refresh the alternate content sources:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer alternate-content-source refresh --id <em>My_Alternate_Content_Source_ID</em></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Configuring_Simplified_Alternate_Content_Sources_content-management"><a class="anchor" href="#Configuring_Simplified_Alternate_Content_Sources_content-management"></a>4.2. Configuring Simplified Alternate Content Sources</h3>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the orcharhino management UI, navigate to <strong>Content</strong> &gt; <strong>Alternate Content Sources</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Add Source</strong> and set the <strong>Source type</strong> as <strong>Simplified</strong>.</p>
+</li>
+<li>
+<p>Select the <strong>Content type</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter a name for the alternate content source.</p>
+</li>
+<li>
+<p>Optional: In the <strong>Description</strong> field, provide a description for the ACS.</p>
+</li>
+<li>
+<p>Select orcharhino&#160;Proxies to which the alternate content source is to be synced.</p>
+</li>
+<li>
+<p>Optional: Select <strong>Use HTTP proxies</strong> if you want the ACS to use the orcharhino&#160;Proxy&#8217;s HTTP proxy.</p>
+</li>
+<li>
+<p>Select the products that should use the alternate content source.</p>
+</li>
+<li>
+<p>Review details and click <strong>Add</strong>.</p>
+</li>
+<li>
+<p>Navigate to <strong>Content</strong> &gt; <strong>Alternate Content Sources</strong>, click the vertical ellipsis next to the newly created alternate content source, and select <strong>Refresh</strong>.</p>
+</li>
+</ol>
+</div>
+<div id="cli-configuring-simplified-alternate-content-sources_content-management" class="olist arabic">
+<div class="title">CLI Procedure</div>
+<ol class="arabic">
+<li>
+<p>Create a simplified ACS:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer alternate-content-source create \
+--name <em>My_ACS_Name</em> \
+--alternate-content-source-type simplified \
+--smart-proxy-ids <em>My</em>orcharhino&#160;Proxy_ID_ \
+--product-ids <em>My_Product_ID</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Check if the newly created ACS is listed:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer alternate-content-source list</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Refresh the ACS:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer alternate-content-source refresh --id  <em>My_ACS_ID</em> </pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Configuring_RHUI_Alternate_Content_Sources_content-management"><a class="anchor" href="#Configuring_RHUI_Alternate_Content_Sources_content-management"></a>4.3. Configuring RHUI Alternate Content Sources</h3>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Generate the client entitlement certificates for the required repos on the RHUA node as described in <a href="https://access.redhat.com/documentation/en-us/red_hat_update_infrastructure/4/html/configuring_and_managing_red_hat_update_infrastructure/assembly_cmg-creating-client-ent-cert-config-rpm_configuring-and-managing-red-hat-update-infrastructure#proc_cmg-creating-client-entitlement-certificate_assembly_cmg-creating-client-ent-cert-config-rpm">Creating a client entitlement certificate with the Red Hat Update Infrastructure Management Tool</a> in <em>Configuring and Managing Red Hat Update Infrastructure</em>.</p>
+</li>
+<li>
+<p>Import the client entitlement certificates into your orcharhino.
+For more information, see <a href="https://docs.theforeman.org/3.5/Managing_Content/index-orcharhino.html#Importing_Custom_SSL_Certificates_content-management">Importing Custom SSL Certificates</a> in <em>Managing Content</em>.</p>
+</li>
+<li>
+<p>Obtain a list of the subpaths for the required repositories.
+Execute the following command on your RHUA server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># rhui-manager repo info --repo_id <em>My_Repo_ID</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Note that the alternate content source paths consist of a base URL appended with the subpaths that you provide.
+For example, if your base URL is <code><a href="https://server.example.com" class="bare">https://server.example.com</a></code> and your subpaths are <code>rhel7/</code> and <code>rhel8/</code>, then both <code><a href="https://server.example.com/rhel7/" class="bare">https://server.example.com/rhel7/</a></code> and <code><a href="https://server.example.com/rhel8/" class="bare">https://server.example.com/rhel8/</a></code> will be searched.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the orcharhino management UI, navigate to <strong>Content</strong> &gt; <strong>Alternate Content Sources</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Add Source</strong> and set the <strong>Source type</strong> as <strong>RHUI</strong>.</p>
+</li>
+<li>
+<p>Generate RHUI certificates using the command provided in the orcharhino management UI.
+Ensure that you pass the repo labels of the desired repositories.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter a name for the alternate content source.</p>
+</li>
+<li>
+<p>Optional: In the <strong>Description</strong> field, provide a description for the ACS.</p>
+</li>
+<li>
+<p>Select orcharhino&#160;Proxies to which the alternate content source is to be synced.</p>
+</li>
+<li>
+<p>Optional: Select <strong>Use HTTP proxies</strong> if you want the ACS to use the orcharhino&#160;Proxy&#8217;s HTTP proxy.</p>
+</li>
+<li>
+<p>Enter the Base URL of the Red Hat Update Infrastructure CDS node.</p>
+</li>
+<li>
+<p>Enter a comma-separated list of Subpaths.</p>
+</li>
+<li>
+<p>Provide the <strong>Content Credentials</strong>, if these are needed.</p>
+</li>
+<li>
+<p>If SSL verification is required, enable <strong>Verify SSL</strong> and select the SSL CA certificate.</p>
+</li>
+<li>
+<p>Review details and click <strong>Add</strong>.</p>
+</li>
+<li>
+<p>Navigate to <strong>Content</strong> &gt; <strong>Alternate Content Sources</strong>, click the vertical ellipsis next to the newly created alternate content source, and select <strong>Refresh</strong>.</p>
+</li>
+</ol>
+</div>
+<div id="cli-configuring-rhui-alternate-content-sources_content-management" class="olist arabic">
+<div class="title">CLI Procedure</div>
+<ol class="arabic">
+<li>
+<p>On orcharhino&#160;Server, enter the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer alternate-content-source create \
+--name "<em>My_ACS_Name</em>" \
+--alternate-content-source-type rhui \
+--base-url "<em>https://rhui-cds-node/pulp/content</em>" \
+--subpaths <em>path/to/repo/1/,path/to/repo/2/</em> \
+--ssl-client-cert-id <em>My_SSL_Client_Certificate_ID</em> \
+--ssl-client-key-id <em>My_SSL_Client_Key_ID</em> \
+--smart-proxy-ids <em>My</em>orcharhino&#160;Proxy_ID_ \
+--verify-ssl 1</pre>
 </div>
 </div>
 </li>
