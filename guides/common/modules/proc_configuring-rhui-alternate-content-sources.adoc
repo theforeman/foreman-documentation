@@ -1,0 +1,75 @@
+[id="Configuring_RHUI_Alternate_Content_Sources_{context}"]
+= Configuring RHUI Alternate Content Sources
+
+.Prerequisites
+* Generate the client entitlement certificates for the required repos on the RHUA node as described in https://access.redhat.com/documentation/en-us/red_hat_update_infrastructure/4/html/configuring_and_managing_red_hat_update_infrastructure/assembly_cmg-creating-client-ent-cert-config-rpm_configuring-and-managing-red-hat-update-infrastructure#proc_cmg-creating-client-entitlement-certificate_assembly_cmg-creating-client-ent-cert-config-rpm[Creating a client entitlement certificate with the Red Hat Update Infrastructure Management Tool] in _Configuring and Managing Red Hat Update Infrastructure_.
+* Import the client entitlement certificates into your {Project}.
+For more information, see {ContentManagementDocURL}Importing_Custom_SSL_Certificates_content-management[Importing Custom SSL Certificates] in _{ContentManagementDocTitle}_.
+* Obtain a list of the subpaths for the required repositories.
+Execute the following command on your RHUA server:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# rhui-manager repo info --repo_id _My_Repo_ID_
+----
+* Note that the alternate content source paths consist of a base URL appended with the subpaths that you provide.
+For example, if your base URL is `https://server.example.com` and your subpaths are `rhel7/` and `rhel8/`, then both `https://server.example.com/rhel7/` and `https://server.example.com/rhel8/` will be searched. 
+
+.Procedure
+. In the {ProjectWebUI}, navigate to *Content* > *Alternate Content Sources*.
+. Click *Add Source* and set the *Source type* as *RHUI*.
+. Generate RHUI certificates using the command provided in the {ProjectWebUI}.
+Ensure that you pass the repo labels of the desired repositories.
+. In the *Name* field, enter a name for the alternate content source.
+. Optional: In the *Description* field, provide a description for the ACS.
+. Select {SmartProxies} to which the alternate content source is to be synced.
+. Optional: Select *Use HTTP proxies* if you want the ACS to use the {SmartProxy}'s HTTP proxy.
+. Enter the Base URL of the Red Hat Update Infrastructure CDS node.
+. Enter a comma-separated list of Subpaths.
+. Provide the *Content Credentials*, if these are needed.
+. If SSL verification is required, enable *Verify SSL* and select the SSL CA certificate.
+. Review details and click *Add*.
+. Navigate to *Content* > *Alternate Content Sources*, click the vertical ellipsis next to the newly created alternate content source, and select *Refresh*.
+
+[id="cli-configuring-rhui-alternate-content-sources_{context}"]
+.CLI Procedure
+. On {ProjectServer}, enter the following command:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# hammer alternate-content-source create \
+--name "_My_ACS_Name_" \
+--alternate-content-source-type rhui \
+--base-url "_https://rhui-cds-node/pulp/content_" \
+--subpaths _path/to/repo/1/,path/to/repo/2/_ \
+--ssl-client-cert-id _My_SSL_Client_Certificate_ID_ \
+--ssl-client-key-id _My_SSL_Client_Key_ID_ \
+--smart-proxy-ids _My_{SmartProxy}_ID_ \
+--verify-ssl 1
+----
+. Check if the newly created alternate content source is listed:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# hammer alternate-content-source list
+----
+. Refresh the alternate content source:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# hammer alternate-content-source refresh --id _My_Alternate_Content_Source_ID_
+----
+. Add the {SmartProxies} to which the alternate content source is to be synced:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# hammer alternate-content-source update \
+--id _My_Alternate_Content_Source_ID_ \
+--smart-proxy-ids _{SmartProxy}_ID_
+----
+. Refresh the alternate content sources:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# hammer alternate-content-source refresh --id _My_Alternate_Content_Source_ID_
+----
