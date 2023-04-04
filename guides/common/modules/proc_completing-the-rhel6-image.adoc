@@ -4,62 +4,60 @@
 .Procedure
 . Update the system:
 +
------------
+----
 # yum update
------------
+----
 . Install the `cloud-init` packages:
 +
 [options="nowrap" subs="+quotes,attributes"]
------------
+----
 # yum install cloud-utils-growpart cloud-init
------------
+----
 . Edit the `/etc/cloud/cloud.cfg` configuration file and under `cloud_init_modules` add:
 +
------------
+----
 - resolv-conf
------------
+----
 +
 The `resolv-conf` option automatically configures the `resolv.conf` configuration file when an instance boots for the first time.
 This file contains information related to the instance such as `nameservers`, `domain`, and other options.
 . To prevent network issues, create the `/etc/udev/rules.d/75-persistent-net-generator.rules` file as follows:
 +
--------------
+----
 # echo "#" > /etc/udev/rules.d/75-persistent-net-generator.rules
--------------
+----
 +
 This prevents `/etc/udev/rules.d/70-persistent-net.rules` file from being created.
 If `/etc/udev/rules.d/70-persistent-net.rules` is created, networking might not function properly when booting from snapshots (the network interface is created as "eth1" rather than "eth0" and IP address is not assigned).
 . Add the following line to `/etc/sysconfig/network` to avoid problems accessing the EC2 metadata service:
 +
--------------
+----
 NOZEROCONF=yes
--------------
+----
 . Un-register the virtual machine so that the resulting image does not contain the same subscription details for every instance cloned based on it:
 +
 [options="nowrap" subs="+quotes,attributes"]
-----------
+----
 # subscription-manager repos --disable=*
 # subscription-manager unregister
 # yum clean all
-----------
+----
 . Power off the instance:
 +
-----------
+----
 # poweroff
-----------
-+
+----
 . On your {RHEL} Workstation, log in as root and reset and clean the image using the `virt-sysprep` command so it can be used to create instances without issues:
 +
-----------
+----
 # virt-sysprep -d rhel6
-----------
-+
+----
 . Reduce image size using the `virt-sparsify` command.
 This command converts any free space within the disk image back to free space within the host:
 +
-----------
+----
 # virt-sparsify --compress rhel6.qcow2 rhel6-cloud.qcow2
-----------
+----
 +
 This creates a new `rhel6-cloud.qcow2` file in the location where you enter the command.
 +
