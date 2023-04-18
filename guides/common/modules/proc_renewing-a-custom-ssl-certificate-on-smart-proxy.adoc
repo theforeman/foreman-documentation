@@ -1,0 +1,64 @@
+[id="Renewing_a_Custom_SSL_Certificate_on_{smart-proxy-context}_{context}"]
+= Renewing a {customssltitle} certificate on {SmartProxyServer}
+
+Use this procedure to update your {customssl} certificate for {SmartProxyServer}.
+The `{foreman-installer}` command, which the `{certs-generate}` command returns, is unique to each {SmartProxyServer}.
+You cannot use the same command on more than one {SmartProxyServer}.
+
+.Prerequisite
+* You must create a new Certificate Signing Request and send it to the Certificate Authority to sign the certificate.
+Refer to the {InstallingServerDocURL}Configuring_Server_with_a_Custom_SSL_Certificate_{context}[Configuring {ProjectServer} with a Custom SSL Certificate] guide before creating a new CSR because the {ProjectServer} certificate must have X.509 v3 `Key Usage` and `Extended Key Usage` extensions with required values.
+In return, you will receive the {SmartProxyServer} certificate and CA bundle.
+
+.Procedure
+. On your {ProjectServer}, validate the {customssl} certificate input files:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# katello-certs-check -t {smart-proxy-context} \
+-b /root/_{smart-proxy-context}_cert/ca_cert_bundle.pem_ \
+-c /root/_{smart-proxy-context}_cert/{smart-proxy-context}_cert.pem_ \
+-k /root/_{smart-proxy-context}_cert/{smart-proxy-context}_cert_key.pem_
+----
+. On your {ProjectServer}, generate the certificate archive file for your {SmartProxyServer}:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+{certs-generate} --foreman-proxy-fqdn "{smartproxy-example-com}" \
+--certs-tar  "_/root/My_Certificates/{smartproxy-example-com}-certs.tar_" \
+--server-cert "_/root/My_Certificates/{smart-proxy-context}_cert.pem_" \
+--server-key "_/root/My_Certificates/{smart-proxy-context}_cert_key.pem_" \
+--server-ca-cert "_/root/My_Certificates/ca_cert_bundle.pem_" \
+--certs-update-server
+----
+. On your {ProjectServer}, copy the certificate archive file to your {SmartProxyServer}:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# scp _/root/My_Certificates/{smartproxy-example-com}-certs.tar_ _user@{smartproxy-example-com}_:
+----
++
+You can move the copied file to the applicable path if required.
+. Retain a copy of the `{foreman-installer}` command that the `{certs-generate}` command returns for deploying the certificate to your {SmartProxyServer}.
+. Deploy the certificate on your {SmartProxyServer} using the `{foreman-installer}` command returned by the `{certs-generate}` command:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {installer-scenario-smartproxy} \
+--foreman-proxy-content-parent-fqdn "{foreman-example-com}" \
+--foreman-proxy-register-in-foreman "true" \
+--foreman-proxy-foreman-base-url \ "https://{foreman-example-com}"
+--foreman-proxy-content-certs-tar "_/root/My_Certificates/{smartproxy-example-com}-certs.tar_" \
+--certs-update-server
+----
+
+[IMPORTANT]
+====
+Do not delete the certificate archive file on the {SmartProxyServer} after you deploy the certificate.
+They are required when upgrading {SmartProxyServer}.
+====
+
+[NOTE]
+====
+If a new consumer package `katello-ca-consumer-latest.noarch.rpm` is generated due to a different Certificate Signing Authority, all the clients registered to {SmartProxyServer} must be updated.
+====
