@@ -120,6 +120,10 @@ const navVersions = [
             "path": "Upgrading_and_Updating"
           },
           {
+            "title": "Tuning Performance",
+            "path": "Tuning_Performance"
+          },
+          {
             "title": "Configuring Smart Proxies with a Load Balancer",
             "path": "Configuring_Load_Balancer"
           },
@@ -164,7 +168,87 @@ const navVersions = [
     ]
   },
   {
-    "title": "Foreman 3.5 - Katello 4.7 (release candidate)",
+    "title": "Foreman 3.6 - Katello 4.8 (supported)",
+    "path": "3.6",
+    "builds": [
+      {
+        "title": "Katello on EL",
+        "filename": "index-katello.html",
+        "guides": [
+          {
+            "title": "Release Notes",
+            "path": "Release_Notes"
+          },
+          {
+            "title": "Planning Guide",
+            "path": "Planning_for_Project"
+          },
+          {
+            "title": "Quickstart Guide",
+            "path": "Quickstart"
+          },
+          {
+            "title": "Installing Katello Server",
+            "path": "Installing_Server"
+          },
+          {
+            "title": "Installing Smart Proxy with Content",
+            "path": "Installing_Proxy"
+          },
+          {
+            "title": "Upgrading and Updating",
+            "path": "Upgrading_and_Updating"
+          },
+          {
+            "title": "Tuning Performance",
+            "path": "Tuning_Performance"
+          },
+          {
+            "title": "Configuring Smart Proxies with a Load Balancer",
+            "path": "Configuring_Load_Balancer"
+          },
+          {
+            "title": "Managing Organizations and Locations in Foreman",
+            "path": "Managing_Organizations_and_Locations"
+          },
+          {
+            "title": "Managing Content",
+            "path": "Managing_Content"
+          },
+          {
+            "title": "Deploying Foreman on AWS",
+            "path": "Deploying_Project_on_AWS"
+          },
+          {
+            "title": "Provisioning Hosts",
+            "path": "Provisioning_Hosts"
+          },
+          {
+            "title": "Managing Hosts",
+            "path": "Managing_Hosts"
+          },
+          {
+            "title": "Configuring Hosts Using Ansible",
+            "path": "Managing_Configurations_Ansible"
+          },
+          {
+            "title": "Configuring Hosts Using Puppet",
+            "path": "Managing_Configurations_Puppet"
+          },
+          {
+            "title": "Administering Foreman",
+            "path": "Administering_Project"
+          },
+          {
+            "title": "Application Centric Deployment",
+            "path": "Deploying_Hosts_AppCentric"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Foreman 3.5 - Katello 4.7 (supported)",
     "path": "3.5",
     "builds": [
       {
@@ -196,6 +280,10 @@ const navVersions = [
             "path": "Upgrading_and_Updating"
           },
           {
+            "title": "Tuning Performance",
+            "path": "Tuning_Performance"
+          },
+          {
             "title": "Configuring Smart Proxies with a Load Balancer",
             "path": "Configuring_Load_Balancer"
           },
@@ -240,7 +328,7 @@ const navVersions = [
     ]
   },
   {
-    "title": "Foreman 3.4 - Katello 4.6 (supported)",
+    "title": "Foreman 3.4 - Katello 4.6 (unsupported)",
     "path": "3.4",
     "builds": [
       {
@@ -272,6 +360,10 @@ const navVersions = [
             "path": "Upgrading_and_Updating"
           },
           {
+            "title": "Tuning Performance",
+            "path": "Tuning_Performance"
+          },
+          {
             "title": "Configuring Smart Proxies with a Load Balancer",
             "path": "Configuring_Load_Balancer"
           },
@@ -316,7 +408,7 @@ const navVersions = [
     ]
   },
   {
-    "title": "Foreman 3.3 - Katello 4.5 (supported)",
+    "title": "Foreman 3.3 - Katello 4.5 (unsupported)",
     "path": "3.3",
     "builds": [
       {
@@ -346,6 +438,10 @@ const navVersions = [
           {
             "title": "Upgrading and Updating",
             "path": "Upgrading_and_Updating"
+          },
+          {
+            "title": "Tuning Performance",
+            "path": "Tuning_Performance"
           },
           {
             "title": "Configuring Smart Proxies with a Load Balancer",

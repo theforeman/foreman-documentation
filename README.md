@@ -63,7 +63,7 @@ When a commit is pushed into `X.Y`:
   * Add the new release versions to the site's index page and navigation bar by editing [/web/content/index.adoc](https://github.com/theforeman/foreman-documentation/blob/master/web/content/index.adoc) and [/web/content/js/nav.js](https://github.com/theforeman/foreman-documentation/blob/master/web/content/js/nav.js).
   * Test the changes by following the instructions in [/web/README.md](https://github.com/theforeman/foreman-documentation/tree/master/web/README.md) to deploy the website locally.
   * Add the new Foreman version to [/.github/PULL_REQUEST_TEMPLATE.md](https://github.com/theforeman/foreman-documentation/blob/master/.github/PULL_REQUEST_TEMPLATE.md).
-  * Update `SYMLINK_VERSIONS` in the root `Makefile`.
+  * Update `VERSION_LINKS` in the root `Makefile`.
   * Push the changes into `master`.
 * Check the site if links and landing page appeared correctly. HTML guides should be deployed into `/X.Y`
 

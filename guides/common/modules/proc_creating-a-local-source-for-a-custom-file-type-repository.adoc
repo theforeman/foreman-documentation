@@ -1,0 +1,83 @@
+[id="Creating_a_Local_Source_for_a_Custom_File_Type_Repository_{context}"]
+= Creating a Local Source for a {customfiletypetitle} Repository
+
+You can create a {customfiletype} repository source, from a directory of files, on the base system where {Project} is installed using *Pulp Manifest*.
+You can then synchronize the files into a repository and manage the {customfiletype} content like any other content type.
+
+Use this procedure to configure a repository in a directory on the base system where {Project} is installed.
+To create a file type repository in a directory on a remote server, see xref:Creating_a_Remote_Source_for_a_Custom_File_Type_Repository_{context}[].
+
+.Procedure
+ifdef::satellite[]
+. Ensure the Utils repository is enabled.
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# subscription-manager repos \
+--enable={RepoRHEL8AppStream} \
+--enable={RepoRHEL8BaseOS} \
+--enable={RepoRHEL8ServerSatelliteUtils}
+----
+. Enable the satellite-utils module:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# dnf module enable satellite-utils
+----
+endif::[]
+. Install the Pulp Manifest package:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {package-install-project} python39-pulp_manifest
+----
+ifdef::satellite[]
++
+Note that this command stops the {Project} service and re-runs `{foreman-installer}`.
+Alternatively, to prevent downtime caused by stopping the service, you can use the following:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {foreman-maintain} packages unlock
+# {package-install} python39-pulp_manifest
+# {foreman-maintain} packages lock
+----
+endif::[]
+. Create a directory that you want to use as the file type repository, such as:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# mkdir -p /var/lib/pulp/__local_repos__/__my_file_repo__
+----
+. Add the parent folder into allowed import paths:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {foreman-installer} --foreman-proxy-content-pulpcore-additional-import-paths /var/lib/pulp/__local_repos__
+----
+. Add files to the directory or create a test file:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# touch /var/lib/pulp/__local_repos__/__my_file_repo__/_test.txt_
+----
+. Run the Pulp Manifest command to create the manifest:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# pulp-manifest /var/lib/pulp/__local_repos__/__my_file_repo__
+----
+. Verify the manifest was created:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# ls /var/lib/pulp/__local_repos__/__my_file_repo__
+PULP_MANIFEST test.txt
+----
+
+Now, you can import your local source as a {customfiletype} repository.
+Use the `file://` URL scheme and the name of the directory to specify an *Upstream URL*, such as `\file:///__my_file_repo__`.
+For more information, see xref:Creating_a_Custom_File_Type_Repository_{context}[].
+
+If you update the contents of your directory, re-run Pulp Manifest and sync the repository in {Project}.
+For more information, see xref:Synchronizing_Repositories_{context}[].

@@ -15,15 +15,14 @@ endif::[]
 * The {Project} user that generates the `curl` command must have the `create_hosts` permission.
 * You must have root privileges on the host that you want to register.
 ifdef::satellite,orcharhino[]
-* You must have an activation key created.
-* Optional: If you want to register hosts to Red{nbsp}Hat Insights, you must synchronize the `{RepoRHEL7Server}` repository and make it available in the activation key that you use.
-This is required to install the `insights-client` package on hosts.
-* {ProjectServer}, any {SmartProxyServer}s, and all hosts must be synchronized with the same NTP server, and have a time synchronization tool enabled and running.
+* {ProjectServer}, any {SmartProxyServers}, and all hosts must be synchronized with the same NTP server, and have a time synchronization tool enabled and running.
 * The daemon *rhsmcertd* must be running on the hosts.
 * An activation key must be available for the host.
 For more information, see {ContentManagementDocURL}Managing_Activation_Keys_content-management[Managing Activation Keys] in _{ContentManagementDocTitle}_.
-* Subscription Manager must be version 1.10 or later.
-The package is available in the standard {RHEL} repository.
+endif::[]
+ifdef::satellite[]
+* Optional: If you want to register hosts to Red{nbsp}Hat Insights, you must synchronize the `{RepoRHEL8BaseOS}` and `{RepoRHEL8AppStream}` repositories and make them available in the activation key that you use.
+This is required to install the `insights-client` package on hosts.
 endif::[]
 * Optional: If you want to register hosts through {SmartProxy}, ensure that the *Registration* and *Templates* features are enabled on this {SmartProxy}.
 +
@@ -34,8 +33,9 @@ Use a FQDN, not an IP address:
 +
 [options="nowrap", subs="+quotes,attributes"]
 ----
-# {foreman-installer} --foreman-proxy-registration \
---foreman-proxy-templates \
+# {foreman-installer} \
+--foreman-proxy-registration true \
+--foreman-proxy-templates true \
 --foreman-proxy-template-url 'http://{smartproxy-example-com}'
 ----
 
@@ -46,7 +46,7 @@ Use a FQDN, not an IP address:
 . Optional: From the *Host Group* list, select the host group to associate the hosts with.
 Fields that inherit value from *Host group*: *Operating system*, *Activation Keys* and *Lifecycle environment*.
 . Optional: From the *Operating system* list, select the operating system of hosts that you want to register.
-ifndef::satellite[]
+ifndef::satellite,orcharhino[]
 Specifying an operating system is required when you register machines without `subscription-manager`, such as Debian or Ubuntu.
 endif::[]
 . Optional: From the *{SmartProxy}* list, select the {SmartProxy} to register hosts through.
@@ -91,6 +91,7 @@ If set to `Yes`, public SSH keys will be installed on the registered host.
 The inherited value is based on the `host_registration_remote_execution` parameter.
 It can be inherited, for example from a host group, an operating system, or an organization.
 When overridden, the selected value will be stored on host parameter level.
+ifdef::client-content-dnf[]
 . From the *Setup Insights* list, select whether you want to install `insights-client` and register the hosts to Insights.
 +
 The Insights tool is available for {RHEL} only.
@@ -98,19 +99,22 @@ It has no effect on other operating systems.
 +
 You must enable the following repositories on a registered machine:
 
-* RHEL 6: `rhel-6-server-rpms`
-* RHEL 7: `rhel-7-server-rpms`
-* RHEL 8: `rhel-8-for-x86_64-appstream-rpms`
+* {RHEL} 6: `rhel-6-server-rpms`
+* {RHEL} 7: `rhel-7-server-rpms`
+* {RHEL} 8: `rhel-8-for-x86_64-appstream-rpms`
 +
-The `insights-client` package is installed by default on RHEL 8 except in environments whereby RHEL 8 was deployed with "Minimal Install" option.
+The `insights-client` package is installed by default on {RHEL} 8 except in environments whereby {RHEL} 8 was deployed with "Minimal Install" option.
+endif::[]
 . Optional: In the *Install packages* field, list the packages (separated with spaces) that you want to install on the host upon registration.
 This can be set by the `host_packages` parameter.
 . Optional: Select the *Update packages* option to update all packages on the host upon registration.
 This can be set by the `host_update_packages` parameter.
 . Optional: In the *Repository* field, enter a repository to be added before the registration is performed.
 For example, it can be useful to make the `subscription-manager` package available for the purpose of the registration.
+ifdef::client-content-dnf[]
 For Red Hat family distributions, enter the URL of the repository, for example `\http://rpm.example.com/`.
-ifndef::satellite[]
+endif::[]
+ifdef::client-content-apt[]
 For Debian OS families, enter the whole line of list file content, for example `deb \http://deb.example.com/ buster 1.0`.
 endif::[]
 . Optional: In the *Repository GPG key URL* field, specify the public key to verify the signatures of GPG-signed packages.
@@ -150,22 +154,9 @@ endif::[]
 
 ifdef::foreman-el,foreman-deb,katello[]
 . Optional: This step is for the Katello users only.
-If you register RHEL or CentOS hosts, in the *Activation Keys* field, enter one or more activation keys to assign to registered hosts.
+If you register {RHEL} or CentOS hosts, in the *Activation Keys* field, enter one or more activation keys to assign to registered hosts.
 endif::[]
 
 . Click the *Generate* button.
 . Copy the generated `curl` command.
 . On the hosts that you want to register, run the `curl` command as `root`.
-
-ifdef::katello,satellite,orcharhino[]
-[NOTE]
-====
-For {RHEL} 6.3 hosts, the release version defaults to {RHEL} 6 Server and needs to be pointed to the 6.3 repository:
-
-. In the {ProjectWebUI}, navigate to *Hosts* > *Content Hosts*.
-. Select the checkbox next to the host that needs to be changed.
-. From the *Select Action* list, select *Set Release Version*.
-. From the *Release Version* list, select *6.3*.
-. Click *Done*.
-====
-endif::[]

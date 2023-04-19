@@ -1,0 +1,219 @@
+[[cloning_satellite_server]]
+
+= Cloning {ProjectServer}
+
+Use the following procedures to clone your {ProjectServer}.
+
+The {Project} clone tool does not support migrating a {SmartProxyServer} to {EL} 8.
+Instead, you must backup the existing {SmartProxyServer}, restore it on {EL} 8, and then reconfigure {SmartProxyServer}.
+
+.Terminology
+Ensure that you understand the following terms:
+
+*Source server*:: The origin of the clone.
+
+*Target server*:: The new server that you copy files to and clone the source server to.
+
+
+[[sec-Cloning_Workflow_Overview]]
+== Cloning Process Overview
+
+. Back up the source server.
+. Clone the source server to the target server.
+. Power off the source server.
+. Update the network configuration on the target server to match the target server’s IP address with its new host name.
+. Restart *goferd* in Content hosts and {SmartProxies} to refresh the connection.
+. Test the new target server.
+
+
+[[sec-Cloning_Prerequisites]]
+== Prerequisites
+
+To clone {ProjectServer}, ensure that you have the following resources available:
+
+* A minimal install of {EL} 8 to become the target server.
+Do not install {EL} 8 software groups or third-party applications.
+Ensure that your server complies with all the required specifications.
+For more information, see {InstallingServerDocURL}Preparing_your_Environment_for_Installation_{project-context}[Preparing your Environment for Installation] in _{InstallingServerDocTitle}_.
+* A backup of your {ProjectServer} that you make using the `{foreman-maintain} backup` script.
+You can use a backup with or without Pulp data.
+* A {Project} subscription for the target server.
+
+Before you begin cloning, ensure the following conditions exist:
+
+* The target server is on an isolated network.
+This avoids unwanted communication with {SmartProxyServers} and hosts.
+* The target server has the capacity to store all your backup files from the source server.
+
+.Customized configuration files
+
+If you have any customized configurations on your source server that are not managed by the `{foreman-installer}` tool or {Project} backup process, you must manually back up these files.
+
+[[sec-Pulp_Data_Considerations]]
+== Pulp Data Considerations
+
+You can clone {Project} server without including Pulp data.
+However, for your cloned environment to work, you do require Pulp data.
+If the target server does not have Pulp data. it is not a fully working {Project}.
+
+To transfer Pulp data to a target server, you have two options:
+
+* Clone using backup with Pulp data
+* Clone using backup without Pulp data and copy `/var/lib/pulp` manually from the source server.
+
+If your `pulp_data.tar` file is greater than 500 GB, or if you use a slow storage system, such as NFS, and your `pulp_data.tar` file is greater than 100 GB, do not include `pulp_data.tar` in the backup because this can cause memory errors during extraction.
+Copy the `pulp_data.tar` file from the source server to the target server.
+
+.To back up without Pulp data
+
+Follow the steps in the procedure in xref:sec_Cloning_Satellite_Server[] and replace the steps that involve cloning with Pulp data with the following steps:
+
+. Perform a backup with PostgreSQL databases active excluding the Pulp data:
++
+[options="nowrap" subs="attributes"]
+----
+# {foreman-maintain} backup offline --skip-pulp-content \
+--assumeyes /var/backup
+----
++
+. Stop and disable {Project} services:
++
+[options="nowrap" subs="attributes"]
+----
+# {foreman-maintain} service stop
+# {foreman-maintain} service disable
+----
++
+. Copy the Pulp data to the target server:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# rsync --archive --partial --progress --compress \
+/var/lib/pulp _target_server.example.com:/var/lib/pulp_
+----
+
+Proceed to xref:sec-Cloning_to_Target[].
+
+
+[[sec_Cloning_Satellite_Server]]
+== Cloning {ProjectServer}
+
+Use the following procedures to clone {ProjectServer}. Note that because of the high volume of data that you must copy and transfer as part of these procedures, it can take a significant amount of time to complete.
+
+[[sec-Preparing_Source_Server]]
+=== Preparing the source server for cloning
+
+On the source server, complete the following steps:
+
+. Verify the Pool ID of your {Project} subscription:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# subscription-manager list --consumed \
+--matches '{ProjectName}'|grep "_Pool ID_:"|awk '{print $3}'
+----
++
+Note the _Pool ID_ for later use.
++
+. Remove the {ProjectName} subscription:
++
+[options="nowrap" subs="attributes"]
+----
+# subscription-manager remove --serial=$(subscription-manager list \
+--consumed \
+--matches '{ProjectName}'|grep "Serial:"|awk '{print $2}')
+----
++
+. Determine the size of the Pulp data:
++
+[options="nowrap"]
+----
+# du -sh /var/lib/pulp/
+----
++
+. If you have less than 500 GB of Pulp data, perform a backup with PostgreSQL databases active including the Pulp data.
+If you have more than 500 GB of Pulp data, skip the following steps and complete the steps in xref:sec-Pulp_Data_Considerations[] before you continue.
++
+[options="nowrap" subs="attributes"]
+----
+# {foreman-maintain} backup offline --assumeyes /var/backup
+----
++
+. Stop and disable {Project} services:
++
+[options="nowrap" subs="attributes"]
+----
+# {foreman-maintain} service stop
+# {foreman-maintain} service disable
+----
+
+
+Proceed to xref:sec-Cloning_to_Target[].
+
+[[sec-Cloning_to_Target]]
+=== Cloning to the Target Server
+
+To clone your server, complete the following steps on your target server:
+
+. The `satellite-clone` tool defaults to using `/backup/` as the backup folder.
+If you copy to a different folder, update the `backup_dir` variable in the `/etc/satellite-clone/satellite-clone-vars.yml` file.
+. Place the backup files from the source {Project} in the `/backup/` folder on the target server.
+You can either mount the shared storage or copy the backup files to the `/backup/` folder on the target server.
+. Power off the source server.
+. Enter the following commands to register to the Customer Portal, attach subscriptions, and enable only the required subscriptions:
++
+[options="nowrap" subs="quotes,attributes"]
+----
+# subscription-manager register _your_customer_portal_credentials_
+# subscription-manager attach --pool=__pool_ID__
+# subscription-manager repos --disable=*
+# subscription-manager repos --enable={RepoRHEL8AppStream} \
+--enable={RepoRHEL8BaseOS} \
+--enable={RepoRHEL8ServerSatelliteMaintenanceProductVersion}
+# dnf module enable satellite-maintenance:el8
+----
++
+. Install the `satellite-clone` package:
++
+[options="nowrap" subs="attributes"]
+----
+# {package-install} satellite-clone
+----
++
+After you install the `satellite-clone` tool, you can adjust any configuration to suit your own deployment in the `/etc/satellite-clone/satellite-clone-vars.yml` file.
++
+. Run the `satellite-clone` tool:
++
+[options="nowrap" subs="attributes"]
+----
+# satellite-clone
+----
++
+. Reconfigure DHCP, DNS, TFTP, and remote execution services.
+The cloning process disables these services on the target {ProjectServer} to avoid conflict with the source {ProjectServer}.
+. Reconfigure and enable DHCP, DNS, and TFTP in the {ProjectWebUI}.
+For more information, see {InstallingServerDocURL}configuring-external-services[Configuring External Services on {ProjectServer}] in _{InstallingServerDocTitle}_.
+. Enable remote execution:
++
+[options="nowrap" subs="attributes"]
+----
+# {installer-scenario} \
+--enable-foreman-plugin-remote-execution \
+--enable-foreman-proxy-plugin-remote-execution-script
+----
++
+. Log in to the {ProjectWebUI}, with the username `admin` and the password `changeme`.
+Immediately update the admin password to secure credentials.
+. Ensure that the correct organization is selected.
+. In the {ProjectWebUI}, navigate to *Content* > *Subscriptions*, then click *Manage Manifest*.
+. Click the *Refresh* button, then click *Close* to return to the list of subscriptions.
+. Verify that the available subscriptions are correct.
+. Follow the instructions in the `/usr/share/satellite-clone/logs/reassociate_capsules.txt` file to restore the associations between {SmartProxies} and their lifecycle environments.
+. Update your network configuration, for example, DNS, to match the target server’s IP address with its new host name.
+The `satellite-clone` tool changes the host name to the source server's host name.
+If you want to change the host name to something different, you can use the `satellite-change-hostname` tool.
+For more information, see {AdministeringDocURL}Renaming_Server_admin[Renaming a {Project} or {SmartProxyServer}] in _{AdministeringDocTitle}_.
+. If the source server uses the `virt-who` daemon, install and configure it on the target server.
+Copy all the `virt-who` configuration files in the `/etc/virt-who.d/` directory from the source server to the same directory on the target server.
+For more information, see {ConfiguringVMSubscriptionsDocURL}[_{ConfiguringVMSubscriptionsDocTitle}_].
+After you perform an upgrade using the following chapters, you can safely decommission the source server.

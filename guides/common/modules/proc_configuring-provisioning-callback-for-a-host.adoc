@@ -1,0 +1,89 @@
+[id="Configuring_Provisioning_Callback_for_a_Host_{context}"]
+= Configuring Provisioning Callback for a Host
+
+When you create hosts in {Project}, you can use {awx} to run playbooks to configure your newly created hosts.
+This is called _provisioning callback_ in {awx}.
+
+The provisioning callback function triggers a playbook run from {awx} as part of the provisioning process.
+The playbook configures the host after the provisioning process.
+
+For more information about provisioning callbacks, see http://docs.ansible.com/ansible-tower/latest/html/userguide/job_templates.html#provisioning-callbacks[Provisioning Callbacks] in the _{awx} User Guide_.
+
+In {ProjectServer}, the `{client_template_type} Default` and `{client_template_type} Default Finish` templates include three snippets:
+
+. `ansible_provisioning_callback`
+. `ansible_tower_callback_script`
+. `ansible_tower_callback_service`
+
+You can add parameters to hosts or host groups to provide the credentials that these snippets can use to run Ansible playbooks on your newly created hosts.
+
+.Prerequisites
+
+Before you can configure provisioning callbacks, you must add {Project} as a dynamic inventory in {awx}.
+For more information, see {ManagingConfigurationsAnsibleDocURL}Integrating_{project-context}_and_{awx-context}_ansible[Integrating {Project} and {awx}].
+
+In the {awx} web UI, you must complete the following tasks:
+
+. Create a machine credential for your new host.
+Ensure that you enter the same password in the credential that you plan to assign to the host that you create in {Project}.
+For more information, see https://docs.ansible.com/ansible-tower/latest/html/userguide/credentials.html#add-a-new-credential[Add a New Credential] in the _{awx} User Guide_.
+. Create a project.
+For more information, see https://docs.ansible.com/ansible-tower/latest/html/userguide/projects.html[Projects] in the _{awx} User Guide_.
+. Add a job template to your project.
+For more information, see https://docs.ansible.com/ansible-tower/latest/html/userguide/job_templates.html#create-a-job-template[Job Templates] in the _{awx} User Guide_.
+. In your job template, you must enable provisioning callbacks, generate the host configuration key, and note the _template_ID_ of your job template.
+For more information about job templates, see http://docs.ansible.com/ansible-tower/latest/html/userguide/job_templates.html#[Job Templates] in the _{awx} User Guide_.
+
+.Procedure
+
+. In the {ProjectWebUI}, navigate to *Configure* > *Host Group*.
+. Create a host group or edit an existing host group.
+. In the Host Group window, click the *Parameters* tab.
+. Click *Add Parameter*.
+. Enter the following information for each new parameter:
++
+.Host Parameters
+[cols="2,1,2",options="header"]
+|====
+|Name |Value |Description
+|`ansible_tower_provisioning` |true |Enables Provisioning Callback.
+|`ansible_tower_fqdn` |_tower.example.com_ |The fully qualified domain name (FQDN) of your {awx}.
+Do not add `https` because this is appended by {awx}.
+|`ansible_job_template_id` |_template_ID_ |The ID of your provisioning template that you can find in the URL of the template: `/templates/job_template/_5_`.
+|`ansible_host_config_key` |_config_KEY_ |The host configuration key that your job template generates in {awx}.
+|====
++
+. Click *Submit*.
+. Create a host using the host group.
+. On the new host, enter the following command to start the `ansible-callback` service:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# systemctl start ansible-callback
+----
+. On the new host, enter the following command to output the status of the `ansible-callback` service:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# systemctl status ansible-callback
+----
++
+Provisioning callback is configured correctly if the command returns the following output:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+SAT_host systemd[1]: Started Provisioning callback to {awx}...
+----
+
+.Manual Provisioning Callback
+* You can use the provisioning callback URL and the host configuration key from a host to call {awx}:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# curl -k -s --data curl --insecure --data host_config_key=_my_config_key_ \
+https://_tower.example.com_/api/v2/job_templates/_8_/callback/
+----
++
+Ensure that you use `https` when you enter the provisioning callback URL.
+
+This triggers the playbook run specified in the template against the host.

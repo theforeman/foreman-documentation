@@ -1,0 +1,46 @@
+[id="Load_Balancing_Solution_Architecture_{context}"]
+= Load Balancing Solution Architecture
+
+You can configure {ProjectServer} to use a load balancer to distribute client requests and network load across multiple {SmartProxyServers}.
+This results in an overall performance improvement on {SmartProxyServers}.
+
+This guide outlines how to prepare {ProjectServer} and {SmartProxyServer} for load balancing, and provides guidelines on how to configure a load balancer and register clients in a load-balanced setup.
+
+A load-balanced setup consists of the following components:
+
+* {ProjectServer}
+* Two or more {SmartProxyServers}
+* A load balancer
+* Multiple clients
+
+.{Project} Load Balancing Solution Architecture
+ifdef::satellite[]
+image::common/load-balancing-architecture-satellite.png[Load Balancing Solution Architecture]
+endif::[]
+ifdef::orcharhino[]
+image::common/load-balancing-architecture-orcharhino.svg[Load Balancing Solution Architecture]
+endif::[]
+ifndef::satellite,orcharhino[]
+image::common/load-balancing-architecture.png[Load Balancing Solution Architecture]
+endif::[]
+
+In a load-balanced setup, nearly all {SmartProxy} functionality continues to work as expected when one {SmartProxyServer} is down, for planned or unplanned maintenance.
+Load balancer works with the following services and features:
+
+* Registration using `subscription-manager`
+* Content Management with `yum` repositories
+* Optional: Puppet
+
+NOTE: In the load-balanced setup, a load balancer distributes load only for the services and features mentioned above.
+If other services, such as provisioning or virt-who, are running on the individual {SmartProxies}, you must access them directly through {SmartProxies} and not through the load balancer.
+
+.Managing Puppet Limitations
+Puppet Certificate Authority (CA) management does not support certificate signing in a load-balanced setup.
+Puppet CA stores certificate information, such as the serial number counter and CRL, on the file system.
+Multiple writer processes that attempt to use the same data can corrupt it.
+
+To manage this Puppet limitation, complete the following steps:
+
+. Configure Puppet certificate signing on one {SmartProxyServer}, typically the first system where you configure {SmartProxyServer} for load balancing.
+. Configure the clients to send CA requests to port 8141 on a load balancer.
+. Configure a load balancer to redirect CA requests from port 8141 to port 8140 on the system where you configure {SmartProxyServer} to sign Puppet certificates.

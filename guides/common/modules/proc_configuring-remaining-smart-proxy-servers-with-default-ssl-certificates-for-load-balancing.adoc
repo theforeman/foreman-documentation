@@ -1,0 +1,89 @@
+[id="Configuring_Remaining_{smart-proxy-context}_Servers_with_Default_SSL_Certificates_for_Load_Balancing_{context}"]
+= Configuring Remaining {SmartProxyServersTitle} with Default SSL Certificates for Load Balancing
+
+Complete this procedure on each {SmartProxyServer} excluding the system where you configure {SmartProxyServer} to sign Puppet certificates.
+
+.Procedure
+. On {ProjectServer}, generate Katello certificates for {SmartProxyServer}:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {certs-generate} \
+--certs-tar "/root/_{smartproxy-example-com}_-certs.tar" \
+--foreman-proxy-cname _{loadbalancer-example-com}_ \
+--foreman-proxy-fqdn _{smartproxy-example-com}_
+----
++
+Retain a copy of the example `{foreman-installer}` command that is output by the `{certs-generate}` command for installing {SmartProxyServer} certificate.
+. Copy the certificate archive file from {ProjectServer} to {SmartProxyServer}:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# scp /root/_{smartproxy-example-com}_-certs.tar root@_{smartproxy-example-com}_:/root/__{smartproxy-example-com}__-certs.tar
+----
+. On {SmartProxyServer}, install the `puppetserver` package:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {package-install-project} puppetserver
+----
+. On {SmartProxyServer}, create directories for puppet certificates:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# mkdir -p /etc/puppetlabs/puppet/ssl/certs/ \
+/etc/puppetlabs/puppet/ssl/private_keys/ \
+/etc/puppetlabs/puppet/ssl/public_keys/
+----
+. On {SmartProxyServer}, copy the Puppet certificates for this {SmartProxyServer} from the system where you configure {SmartProxyServer} to sign Puppet certificates:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# scp root@_{smart-proxy-context}-ca.example.com_:/etc/puppetlabs/puppet/ssl/certs/_{smartproxy-example-com}_.pem /etc/puppetlabs/puppet/ssl/certs/_{smartproxy-example-com}_.pem
+# scp root@_{smart-proxy-context}-ca.example.com_:/etc/puppetlabs/puppet/ssl/certs/ca.pem /etc/puppetlabs/puppet/ssl/certs/ca.pem
+# scp root@_{smart-proxy-context}-ca.example.com_:/etc/puppetlabs/puppet/ssl/private_keys/_{smartproxy-example-com}_.pem /etc/puppetlabs/puppet/ssl/private_keys/_{smartproxy-example-com}_.pem
+# scp root@_{smart-proxy-context}-ca.example.com_:/etc/puppetlabs/puppet/ssl/public_keys/_{smartproxy-example-com}_.pem /etc/puppetlabs/puppet/ssl/public_keys/_{smartproxy-example-com}_.pem
+----
+. On {SmartProxyServer}, change the `/etc/puppetlabs/puppet/ssl/` directory ownership to user `puppet` and group `puppet`:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# chown -R puppet:puppet /etc/puppetlabs/puppet/ssl/
+----
+. On {SmartProxyServer}, set the SELinux context for the `/etc/puppetlabs/puppet/ssl/` directory:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# restorecon -Rv /etc/puppetlabs/puppet/ssl/
+----
+. Append the following options to the `{foreman-installer}` command that you obtain from the output of the `{certs-generate}` command:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+--certs-cname "_{loadbalancer-example-com}_" \
+--enable-foreman-proxy-plugin-remote-execution-script \
+--foreman-proxy-puppetca "false" \
+--puppet-ca-server "_{smart-proxy-context}-ca.example.com_" \
+--puppet-dns-alt-names "_{loadbalancer-example-com}_" \
+--puppet-server-ca "false"
+----
+. On {SmartProxyServer}, enter the `{foreman-installer}` command:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {installer-scenario-smartproxy} \
+--certs-cname "_{loadbalancer-example-com}_" \
+--certs-tar-file "_{smartproxy-example-com}-certs.tar_" \
+--enable-foreman-proxy-plugin-remote-execution-script \
+--foreman-proxy-foreman-base-url "_https://{foreman-example-com}_" \
+--foreman-proxy-oauth-consumer-key "_oauth key_" \
+--foreman-proxy-oauth-consumer-secret "_oauth secret_" \
+--foreman-proxy-puppetca "false" \
+--foreman-proxy-register-in-foreman "true" \
+--foreman-proxy-trusted-hosts "_{foreman-example-com}_" \
+--foreman-proxy-trusted-hosts "_{smartproxy-example-com}_" \
+--puppet-ca-server "_{smart-proxy-context}-ca.example.com_" \
+--puppet-dns-alt-names "_{loadbalancer-example-com}_" \
+--puppet-server-ca "false" \
+--puppet-server-foreman-url "_https://{foreman-example-com}_"
+----
