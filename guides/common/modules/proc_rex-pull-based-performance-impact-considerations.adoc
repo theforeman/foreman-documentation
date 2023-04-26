@@ -1,0 +1,35 @@
+[id="REX_pull_based_performance_impact_considerations_{context}"]
+= REX pull-based transport performance impact considerations
+
+When {ProjectServer} is configured to use REX pull-based transport for remote execution jobs using "Script" provider, {SmartProxyServer} sends a notification about new job to the client machines through MQTT.
+This notification does not include actual workload (actual script) the client is supposed to execute.
+Once a client receives a message about a new remote execution job, it queries the {SmartProxyServer} for the actual payload.
+As the client executes the job, it periodically sends outputs of the job to the capsule, further increasing the number of requests to {SmartProxyServer}.
+
+These requests to {SmartProxyServer} together with high concurrency allowed by MQTT protocol can cause exhaustion of {SmartProxyServer} available connections and some requests might fail, making some child tasks of remote execution jobs to hang. 
+This also depends on actual job payload, as some jobs are causing additional load to {ProjectServer}, making it compete for resources if you are using integrated {SmartProxyServer}.
+
+To avoid this, configure your {ProjectServer} and {SmartProxyServer} deployment appropriately with the following parameters:
+
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# mqtt_ttl   <1> 
+# mqtt_rate_limit   <2>
+# mqtt_resend_interval   <3>
+----
+<1> Time interval in seconds given to the host to pick up the job before considering the job undelivered.
+<2> Number of jobs that are allowed to run at the same time.
+<3> Time interval in seconds at which the notification should be re-sent to the host until the job is picked up or canceled.
+
+To tune these parameters you can follow the following procedure on the {ProjectServer}:
+
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {foreman-installer} \
+--foreman-proxy-plugin-remote-execution-script-mqtt-rate-limit _My_MQTT_Rate_Limit_ \
+--foreman-proxy-plugin-remote-execution-script-mqtt-resend-interval _My_MQTT_Resend_Interval_ \
+--foreman-proxy-plugin-remote-execution-script-mqtt-ttl _My_MQTT_Time_To_Live_
+----
+
+{SmartProxyServer} logs are in `/var/log/foreman-proxy/proxy.log`. 
+{SmartProxyServer} uses Webrick HTTP server (no httpd or Puma involved), so there is no simple way to increase its capacity.
