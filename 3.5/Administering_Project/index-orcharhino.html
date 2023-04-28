@@ -162,7 +162,9 @@
 <li><a href="#webhooks-available-events_admin">16.5. Available Webhook Events</a></li>
 <li><a href="#shellhooks_admin">16.6. Shellhooks</a></li>
 <li><a href="#installing-shellhooks-plugin_admin">16.7. Installing the Shellhooks Plugin</a></li>
-<li><a href="#using-shellhook_arguments_admin">16.8. Using Shellhook Arguments</a></li>
+<li><a href="#passing-arguments-to-shellhook-script-using-webhooks_admin">16.8. Passing Arguments to Shellhook Script Using Webhooks</a></li>
+<li><a href="#passing-arguments-to-shellhook-script-using-curl_admin">16.9. Passing Arguments to Shellhook Script Using Curl</a></li>
+<li><a href="#creating-a-shellhook-to-print-arguments_admin">16.10. Creating a Shellhook to Print Arguments</a></li>
 </ul>
 </li>
 <li><a href="#Searching_and_Bookmarking_admin">17. Searching and Bookmarking</a>
@@ -6305,13 +6307,14 @@ After installing webhooks, you can configure orcharhino&#160;Server to send webh
 <div class="sect2">
 <h3 id="creating-a-webhook-template_admin"><a class="anchor" href="#creating-a-webhook-template_admin"></a>16.3. Creating a Webhook Template</h3>
 <div class="paragraph">
-<p>Use the following procedure to create a webhook template in the orcharhino management UI.</p>
+<p>Webhook templates are used to generate the body of HTTP request to a configured target when a webhook is triggered.
+Use the following procedure to create a webhook template in the orcharhino management UI.</p>
 </div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
 <ol class="arabic">
 <li>
-<p>In the orcharhino management UI, navigate to <strong>Administer</strong> <strong>&gt;</strong> <strong>Webhooks Templates</strong>.</p>
+<p>In the orcharhino management UI, navigate to <strong>Administer</strong> &gt; <strong>Webhook Templates</strong>.</p>
 </li>
 <li>
 <p>Click <strong>Clone an existing template</strong> or <strong>Create Template</strong>.</p>
@@ -6323,7 +6326,9 @@ After installing webhooks, you can configure orcharhino&#160;Server to send webh
 <p>Use the editor to make changes to the template payload.</p>
 <div class="paragraph">
 <p>A webhook HTTP payload must be created using orcharhino template syntax.
-The webhook template can use a special variable called <code>@object</code> that can represent the main object of the event.</p>
+The webhook template can use a special variable called <code>@object</code> that can represent the main object of the event.
+<code>@object</code> can be missing in case of certain events.
+You can determine what data are actually available with the <code>@payload</code> variable.</p>
 </div>
 <div class="paragraph">
 <p>For more information, see <a href="https://docs.theforeman.org/3.5/Managing_Hosts/index-orcharhino.html#Template_Writing_Reference_managing-hosts">Template Writing Reference</a> in <em>Managing Hosts</em> and for available template macros and methods, visit <code>/templates_doc</code> on orcharhino&#160;Server.</p>
@@ -6353,46 +6358,43 @@ The webhook template can use a special variable called <code>@object</code> that
 <div class="title">Procedure</div>
 <ol class="arabic">
 <li>
-<p>In the orcharhino management UI, click <strong>Administer</strong> <strong>&gt;</strong> <strong>Webhooks</strong>.</p>
+<p>In the orcharhino management UI, navigate to <strong>Administer</strong> &gt; <strong>Webhooks</strong>.</p>
 </li>
 <li>
-<p>Click <strong>Create Webhook</strong>.</p>
+<p>Click <strong>Create new</strong>.</p>
 </li>
 <li>
-<p>Click <strong>Subscribe to</strong> to select an event.</p>
+<p>From the <strong>Subscribe to</strong> list, select an event.</p>
 </li>
 <li>
-<p>Enter a name.</p>
+<p>Enter a <strong>Name</strong> for your webhook.</p>
 </li>
 <li>
-<p>Enter a target URL.
+<p>Enter a <strong>Target URL</strong>.
 Webhooks make HTTP requests to pre-configured URLs.
-The target URL can be a dynamic URL.
-When using the shellhooks plugin, the URL should be in the form <code>https://orcharhino-proxy.example.com:8443/shellhook/my_script</code>.</p>
+The target URL can be a dynamic URL.</p>
 </li>
 <li>
-<p>Click <strong>Template</strong> to select a template.</p>
+<p>Click <strong>Template</strong> to select a template.
+Webhook templates are used to generate the body of the HTTP request to orcharhino&#160;Server when a webhook is triggered.</p>
 </li>
 <li>
 <p>Enter an HTTP method.</p>
 </li>
 <li>
-<p>Check the <strong>Enabled</strong> flag if you want to create an active webhook.</p>
+<p>Optional: If you do not want activate the webhook when you create it, uncheck the <strong>Enabled</strong> flag.</p>
 </li>
 <li>
 <p>Click the <strong>Credentials</strong> tab.</p>
 </li>
 <li>
-<p>Optional: If HTTP authentication is required, enter the username and password.</p>
+<p>Optional: If HTTP authentication is required, enter <strong>User</strong> and <strong>Password</strong>.</p>
 </li>
 <li>
-<p>Select <strong>Verify SSL</strong> if the server certificate should be verified against the system certificate store or orcharhino CA.</p>
+<p>Optional: Uncheck <strong>Verify SSL</strong> if you do not want to verify the server certificate against the system certificate store or orcharhino CA.</p>
 </li>
 <li>
-<p>Select <strong>Proxy Authorization</strong> when using shellhooks, otherwise clear this box.</p>
-</li>
-<li>
-<p>On the <strong>Additional</strong> tab, enter the HTTP Content Type.
+<p>On the <strong>Additional</strong> tab, enter the <strong>HTTP Content Type</strong>.
 For example, <code>application/json</code>, <code>application/xml</code> or <code>text/plain</code> on the payload you define.
 The application does not attempt to convert the content to match the specified content type.</p>
 </li>
@@ -6602,21 +6604,36 @@ Some events are marked as <strong>custom</strong>, in that case, the payload is 
 <div class="sect2">
 <h3 id="shellhooks_admin"><a class="anchor" href="#shellhooks_admin"></a>16.6. Shellhooks</h3>
 <div class="paragraph">
-<p>With webhooks, one orcharhino event can only be mapped to one API call.
+<p>With webhooks, you can only map one orcharhino event to one API call.
 For advanced integrations, where a single shell script can contain multiple commands, you can install a orcharhino&#160;Proxy shellhooks plugin that exposes executables using a REST HTTP API.</p>
 </div>
 <div class="paragraph">
-<p>A webhook can then be configured to reach out to a orcharhino&#160;Proxy API to run a predefined shellhook, which, for example, can contain commands or edit files.</p>
+<p>You can then configure a webhook to reach out to a orcharhino&#160;Proxy API to run a predefined shellhook.
+A shellhook is an executable script that can be written in any language as long as it can be executed.
+The shellhook can for example contain commands or edit files.</p>
 </div>
 <div class="paragraph">
-<p>Scripts must be placed in <code>/var/lib/foreman-proxy/shellhooks</code> as executables with only alphanumeric characters and underscores in the name.</p>
+<p>You must place your executable scripts in <code>/var/lib/foreman-proxy/shellhooks</code> with only alphanumeric characters and underscores in their name.</p>
 </div>
 <div class="paragraph">
-<p>The HTTPS payload is passed using standard input, optional command line arguments can be provided using X-Shellhook-Arg-1 <em>to</em> N.</p>
+<p>You can pass input to shellhook script through the webhook payload.
+This input is redirected to standard input of the shellhook script.
+You can pass arguments to shellhook script using HTTP headers in format <code>X-Shellhook-Arg-1</code> to <code>X-Shellhook-Arg-99</code>.
+For more information on passing arguments to shellhook script, see:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="#passing-arguments-to-shellhook-script-using-webhooks_admin">Passing Arguments to Shellhook Script Using Webhooks</a></p>
+</li>
+<li>
+<p><a href="#passing-arguments-to-shellhook-script-using-curl_admin">Passing Arguments to Shellhook Script Using Curl</a></p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
 <p>The HTTP method must be POST.
-An example URL would be: <code>https://orcharhino-proxy.example.com:8443/shellhook/my_script</code>.</p>
+An example URL would be: <code>https://orcharhino-proxy.example.com:8443/shellhook/My_Script</code>.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -6633,13 +6650,16 @@ An example URL would be: <code>https://orcharhino-proxy.example.com:8443/shellho
 </table>
 </div>
 <div class="paragraph">
-<p>You must enable <strong>Proxy Authorization</strong> for each webhook that is connected to a shellhook, to enable it to authorize a call.</p>
+<p>You must enable <strong>orcharhino&#160;Proxy Authorization</strong> for each webhook connected to a shellhook to enable it to authorize a call.</p>
 </div>
 <div class="paragraph">
-<p>Standard output and error are redirected to the orcharhino&#160;Proxy log as messages with debug or warning levels respectively.</p>
+<p>Standard output and standard error output are redirected to the orcharhino&#160;Proxy logs as messages with debug or warning levels respectively.</p>
 </div>
 <div class="paragraph">
-<p>There is no return value from shellhook HTTPS calls.</p>
+<p>The shellhook HTTPS calls do not return a value.</p>
+</div>
+<div class="paragraph">
+<p>For an example on creating a shellhook script, see <a href="#creating-a-shellhook-to-print-arguments_admin">Creating a Shellhook to Print Arguments</a>.</p>
 </div>
 </div>
 <div class="sect2">
@@ -6654,12 +6674,35 @@ An example URL would be: <code>https://orcharhino-proxy.example.com:8443/shellho
 </div>
 </div>
 <div class="sect2">
-<h3 id="using-shellhook_arguments_admin"><a class="anchor" href="#using-shellhook_arguments_admin"></a>16.8. Using Shellhook Arguments</h3>
+<h3 id="passing-arguments-to-shellhook-script-using-webhooks_admin"><a class="anchor" href="#passing-arguments-to-shellhook-script-using-webhooks_admin"></a>16.8. Passing Arguments to Shellhook Script Using Webhooks</h3>
 <div class="paragraph">
+<p>Use this procedure to pass arguments to a shellhook script using webhooks.</p>
+</div>
+<div class="ulist">
 <div class="title">Procedure</div>
-<p>To pass arguments into a shellhook script, create the following HTTP headers:</p>
+<ul>
+<li>
+<p>When creating a webhook, on the <strong>Additional</strong> tab, create HTTP headers in the following format:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">{
+  "X-Shellhook-Arg-1": "<em>VALUE</em>",
+  "X-Shellhook-Arg-2": "<em>VALUE</em>"
+}</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Ensure that the headers have a valid JSON or ERB format.
+Only pass safe fields like database ID, name, or labels that do not include new lines or quote characters.</p>
+</div>
+<div class="paragraph">
+<p>For more information, see <a href="#creating-a-webhook_admin">Creating a Webhook</a>.</p>
+</div>
+</li>
+</ul>
 </div>
 <div class="listingblock">
+<div class="title">Example</div>
 <div class="content">
 <pre class="nowrap">{
   "X-Shellhook-Arg-1": "&lt;%= @object.content_view_version_id %&gt;",
@@ -6667,9 +6710,149 @@ An example URL would be: <code>https://orcharhino-proxy.example.com:8443/shellho
 }</pre>
 </div>
 </div>
+</div>
+<div class="sect2">
+<h3 id="passing-arguments-to-shellhook-script-using-curl_admin"><a class="anchor" href="#passing-arguments-to-shellhook-script-using-curl_admin"></a>16.9. Passing Arguments to Shellhook Script Using Curl</h3>
 <div class="paragraph">
-<p>Ensure the content renders to a valid JSON.
-Also, only pass safe fields like database ID, name, or labels which do not include new lines or quote characters.</p>
+<p>Use this procedure to pass arguments to a shellhook script using curl.</p>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>When executing a shellhook script using <code>curl</code>, create HTTP headers in the following format:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">"X-Shellhook-Arg-1: <em>VALUE</em>"
+"X-Shellhook-Arg-2: <em>VALUE</em>"</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="title">Example</div>
+<div class="content">
+<pre class="nowrap"># curl -sX POST -H 'Content-Type: text/plain' \
+-H "X-Shellhook-Arg-1: Version 1.0" \
+-H "X-Shellhook-Arg-2: My Content View" \
+--data "" https://orcharhino-proxy.example.com:8443/shellhook/My_Script</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="creating-a-shellhook-to-print-arguments_admin"><a class="anchor" href="#creating-a-shellhook-to-print-arguments_admin"></a>16.10. Creating a Shellhook to Print Arguments</h3>
+<div class="paragraph">
+<p>Create a simple shellhook script that prints "Hello World!" when you run a remote execution job.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisite</div>
+<ul>
+<li>
+<p>You have the <code>webhooks</code> and <code>shellhooks</code> plug-ins installed.
+For more information, see:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="#installing-webhooks-plugin_admin">Installing Webhooks</a></p>
+</li>
+<li>
+<p><a href="#installing-shellhooks-plugin_admin">Installing the Shellhooks Plugin</a></p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Modify the <code>/var/lib/foreman-proxy/shellhooks/print_args</code> script to print arguments to standard error output so you can see them in the orcharhino&#160;Proxy logs:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">#!/bin/sh
+#
+# Prints all arguments to stderr
+#
+echo "$@" &gt;&amp;2</pre>
+</div>
+</div>
+</li>
+<li>
+<p>In the orcharhino management UI, navigate to <strong>Administer</strong> &gt; <strong>Webhooks</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Create new</strong>.</p>
+</li>
+<li>
+<p>From the <strong>Subscribe to</strong> list, select <strong>Actions Remote Execution Run Host Job Succeeded</strong>.</p>
+</li>
+<li>
+<p>Enter a <strong>Name</strong> for your webhook.</p>
+</li>
+<li>
+<p>In the <strong>Target URL</strong> field, enter the URL of your orcharhino&#160;Proxy followed by <code>:8443/shellhook/print_args</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">https://<em>orcharhino-proxy.example.com</em>:8443/shellhook/print_args</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note that <code>shellhook</code> in the URL is singular, unlike the <code>shellhooks</code> directory.</p>
+</div>
+</li>
+<li>
+<p>From the <strong>Template</strong> list, select <strong>Empty Payload</strong>.</p>
+</li>
+<li>
+<p>On the <strong>Credentials</strong> tab, check <strong>orcharhino&#160;Proxy Authorization</strong>.</p>
+</li>
+<li>
+<p>On the <strong>Additional</strong> tab, enter the following text in the <strong>Optional HTTP headers</strong> field:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">{
+    "X-Shellhook-Arg-1": "Hello",
+    "X-Shellhook-Arg-2": "World!"
+}</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Click <strong>Submit</strong>.
+You now have successfully created a shellhook that prints "Hello World!" to orcharhino&#160;Proxy logs every time you a remote execution job succeeds.</p>
+</li>
+</ol>
+</div>
+<div class="olist arabic">
+<div class="title">Verification</div>
+<ol class="arabic">
+<li>
+<p>Run a remote execution job on any host.
+You can use <code>time</code> as a command.
+For more information, see <a href="https://docs.theforeman.org/3.5/Managing_Hosts/index-orcharhino.html#executing-a-remote-job_managing-hosts">Executing a Remote Job</a> in <em>Managing Hosts</em>.</p>
+</li>
+<li>
+<p>Verify that the shellhook script was triggered and printed "Hello World!" to orcharhino&#160;Proxy logs:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># tail /var/log/foreman-proxy/proxy.log</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You should find the following lines at the end of the log:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">[I] Started POST /shellhook/print_args
+[I] Finished POST /shellhook/print_args with 200 (0.33 ms)
+[I] [3520] Started task /var/lib/foreman-proxy/shellhooks/print_args\ Hello\ World\!
+[W] [3520] Hello World!</pre>
+</div>
+</div>
+</li>
+</ol>
 </div>
 </div>
 </div>
