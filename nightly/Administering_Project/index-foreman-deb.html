@@ -35,10 +35,13 @@
 <li><a href="#Accessing_Server_admin">1. Accessing Foreman</a>
 <ul class="sectlevel2">
 <li><a href="#Logging_in_admin">1.1. Logging in to Foreman</a></li>
-<li><a href="#Navigation_Tabs_in_the_Web_UI_admin">1.2. Navigation Tabs in the Foreman web UI</a></li>
-<li><a href="#Changing_the_Password_admin">1.3. Changing the Password</a></li>
-<li><a href="#Resetting_the_Administrative_User_Password_admin">1.4. Resetting the Administrative User Password</a></li>
-<li><a href="#Setting_a_Custom_Message_on_the_Login_Page_admin">1.5. Setting a Custom Message on the Login Page</a></li>
+<li><a href="#Using_FreeIPA_credentials_to_log_in_to_the_foreman_Hammer_CLI_admin">1.2. Using FreeIPA credentials to log in to the Foreman Hammer CLI</a></li>
+<li><a href="#Using_FreeIPA_credentials_to_log_in_to_the_foreman_web_UI-with-a-Firefox-browser_admin">1.3. Using FreeIPA credentials to log in to the Foreman web UI with a Firefox browser</a></li>
+<li><a href="#Using_FreeIPA_credentials_to_log_in_to_the_foreman_web_UI-with-a-Chrome-browser_admin">1.4. Using FreeIPA credentials to log in to the Foreman web UI with a Chrome browser</a></li>
+<li><a href="#Navigation_Tabs_in_the_Web_UI_admin">1.5. Navigation Tabs in the Foreman web UI</a></li>
+<li><a href="#Changing_the_Password_admin">1.6. Changing the Password</a></li>
+<li><a href="#Resetting_the_Administrative_User_Password_admin">1.7. Resetting the Administrative User Password</a></li>
+<li><a href="#Setting_a_Custom_Message_on_the_Login_Page_admin">1.8. Setting a Custom Message on the Login Page</a></li>
 </ul>
 </li>
 <li><a href="#Starting_and_Stopping_Server_admin">2. Starting and Stopping Foreman</a></li>
@@ -192,7 +195,260 @@ For more information, see <a href="#Resetting_the_Administrative_User_Password_a
 </div>
 </div>
 <div class="sect2">
-<h3 id="Navigation_Tabs_in_the_Web_UI_admin"><a class="anchor" href="#Navigation_Tabs_in_the_Web_UI_admin"></a>1.2. Navigation Tabs in the Foreman web UI</h3>
+<h3 id="Using_FreeIPA_credentials_to_log_in_to_the_foreman_Hammer_CLI_admin"><a class="anchor" href="#Using_FreeIPA_credentials_to_log_in_to_the_foreman_Hammer_CLI_admin"></a>1.2. Using FreeIPA credentials to log in to the Foreman Hammer CLI</h3>
+<div class="paragraph">
+<p>This section describes how to log in to your Foreman Hammer CLI with your FreeIPA (IdM) login and password.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>You have enrolled your Foreman&#160;server into FreeIPA and configured it to use FreeIPA for authentication.
+More specifically, you have enabled access both to the Foreman web UI and the Foreman API.
+For more information, see <a href="https://docs.theforeman.org/nightly/Installing_Server/index-foreman-deb.html#Using_FreeIPA_foreman">Using FreeIPA</a> in <em>Installing Foreman nightly Server on Debian/Ubuntu</em>.</p>
+</li>
+<li>
+<p>The host on which you run this procedure is configured to use FreeIPA credentials to log users in to your Foreman Hammer CLI.
+For more information, see <a href="https://docs.theforeman.org/nightly/Installing_Server/index-foreman-deb.html#Configuring_the_Hammer_CLI_to_Use_FreeIPA_User_Authentication_foreman">Configuring the Hammer CLI to Use FreeIPA User Authentication</a> in <em>Installing Foreman nightly Server on Debian/Ubuntu</em>.</p>
+</li>
+<li>
+<p>The host is an FreeIPA client.</p>
+</li>
+<li>
+<p>An FreeIPA server is running and reachable by the host.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Obtain a Kerberos ticket-granting ticket (TGT) on behalf of a Foreman user:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ kinit idm_user</pre>
+</div>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Warning</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If, when you were setting FreeIPA to be the authentication provider, you enabled access to both the Foreman API and the Foreman web UI, an attacker can now obtain an API session after the user receives the Kerberos TGT.
+The attack is possible even if the user did not previously enter the Foreman login credentials anywhere, for example in the browser.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>If automatic negotiate authentication is not enabled, use the TGT to authenticate to Hammer manually:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer auth login negotiate</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Optional: Destroy all cached Kerberos tickets in the collection:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ kdestroy -A</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="paragraph">
+<p>You are still logged in, even after destroying the Kerberos ticket.</p>
+</div>
+</div>
+</div>
+<div class="ulist">
+<div class="title">Verification</div>
+<ul>
+<li>
+<p>Use any <code>hammer</code> command to ensure that the system does not ask you to authenticate again:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer host list</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>To log out of Hammer, enter: <code>hammer auth logout</code>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Using_FreeIPA_credentials_to_log_in_to_the_foreman_web_UI-with-a-Firefox-browser_admin"><a class="anchor" href="#Using_FreeIPA_credentials_to_log_in_to_the_foreman_web_UI-with-a-Firefox-browser_admin"></a>1.3. Using FreeIPA credentials to log in to the Foreman web UI with a Firefox browser</h3>
+<div class="paragraph">
+<p>This section describes how to use the Firefox browser to log in to your Foreman web UI with your FreeIPA (IdM) login and password.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>You have enrolled your Foreman&#160;server into FreeIPA and configured the server to use FreeIPA for authentication.
+For more information, see <a href="https://docs.theforeman.org/nightly/Installing_Server/index-foreman-deb.html#Using_FreeIPA_foreman">Using FreeIPA</a> in <em>Installing Foreman nightly Server on Debian/Ubuntu</em>.</p>
+</li>
+<li>
+<p>The host on which you are using a Firefox browser to log in to the Foreman web UI is an FreeIPA client.</p>
+</li>
+<li>
+<p>You have a valid FreeIPA login and password.</p>
+</li>
+<li>
+<p>Foreman developers recommends using the latest stable Firefox browser.</p>
+</li>
+<li>
+<p>Your Firefox browser is configured for Single Sign-On (SSO).</p>
+</li>
+<li>
+<p>An FreeIPA server is running and reachable by the host.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Obtain the Kerberos ticket granting ticket (TGT) for yourself using your FreeIPA credentials:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ kinit <em>idm_user</em>
+Password for idm_user@<em>EXAMPLE.COM</em>:</pre>
+</div>
+</div>
+</li>
+<li>
+<p>In your browser address bar, enter the URL of your Foreman&#160;server.</p>
+<div class="paragraph">
+<p>You are logged in automatically.</p>
+</div>
+</li>
+</ol>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Alternatively, you can skip the first two steps and enter your login and password in the fields displayed on the Foreman web UI.
+This is also the only option if the host from which you are accessing the Foreman web UI is not an FreeIPA client.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Using_FreeIPA_credentials_to_log_in_to_the_foreman_web_UI-with-a-Chrome-browser_admin"><a class="anchor" href="#Using_FreeIPA_credentials_to_log_in_to_the_foreman_web_UI-with-a-Chrome-browser_admin"></a>1.4. Using FreeIPA credentials to log in to the Foreman web UI with a Chrome browser</h3>
+<div class="paragraph">
+<p>This section describes how to use a Chrome browser to log in to your Foreman web UI with your FreeIPA login and password.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>You have enrolled your Foreman&#160;server into FreeIPA and configured the server to use FreeIPA for authentication.
+For more information, see <a href="https://docs.theforeman.org/nightly/Installing_Server/index-foreman-deb.html#Using_FreeIPA_foreman">Using FreeIPA</a> in <em>Installing Foreman nightly Server on Debian/Ubuntu</em>.</p>
+</li>
+<li>
+<p>The host on which you are using the Chrome browser to log in to the Foreman web UI is an FreeIPA client.</p>
+</li>
+<li>
+<p>You have a valid FreeIPA login and password.</p>
+</li>
+<li>
+<p>Foreman developers recommends using the latest stable Chrome browser.</p>
+</li>
+<li>
+<p>An FreeIPA server is running and reachable by the host.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Enable the Chrome browser to use Kerberos authentication:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ google-chrome --auth-server-whitelist="<strong>.<em>example.com</em>" --auth-negotiate-delegate-whitelist=”</strong>.<em>example.com</em>"</pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Instead of allowlisting the whole domain, you can also allowlist a specific Foreman&#160;server.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Obtain the Kerberos ticket-granting ticket (TGT) for yourself using your FreeIPA credentials:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ kinit <em>idm_user</em>
+Password for <em>idm_user@_EXAMPLE.COM</em>:</pre>
+</div>
+</div>
+</li>
+<li>
+<p>In your browser address bar, enter the URL of your Foreman&#160;server.</p>
+<div class="paragraph">
+<p>You are logged in automatically.</p>
+</div>
+</li>
+</ol>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Alternatively, you can skip the first three steps and enter your login and password in the fields displayed on the Foreman web UI.
+This is also the only option if the host from which you are accessing the Foreman web UI is not an FreeIPA client.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Navigation_Tabs_in_the_Web_UI_admin"><a class="anchor" href="#Navigation_Tabs_in_the_Web_UI_admin"></a>1.5. Navigation Tabs in the Foreman web UI</h3>
 <div class="paragraph">
 <p>Use the navigation tabs to browse the Foreman web UI.</p>
 </div>
@@ -251,7 +507,7 @@ This includes Content Views, Activation Keys, and Life Cycle Environments.</p></
 </table>
 </div>
 <div class="sect2">
-<h3 id="Changing_the_Password_admin"><a class="anchor" href="#Changing_the_Password_admin"></a>1.3. Changing the Password</h3>
+<h3 id="Changing_the_Password_admin"><a class="anchor" href="#Changing_the_Password_admin"></a>1.6. Changing the Password</h3>
 <div class="paragraph">
 <p>These steps show how to change your password.</p>
 </div>
@@ -280,7 +536,7 @@ This includes Content Views, Activation Keys, and Life Cycle Environments.</p></
 </div>
 </div>
 <div class="sect2">
-<h3 id="Resetting_the_Administrative_User_Password_admin"><a class="anchor" href="#Resetting_the_Administrative_User_Password_admin"></a>1.4. Resetting the Administrative User Password</h3>
+<h3 id="Resetting_the_Administrative_User_Password_admin"><a class="anchor" href="#Resetting_the_Administrative_User_Password_admin"></a>1.7. Resetting the Administrative User Password</h3>
 <div class="paragraph">
 <p>Use the following procedures to reset the administrative password to randomly generated characters or to set a new administrative password.</p>
 </div>
@@ -344,7 +600,7 @@ Reset to user: admin, password: qwJxBptxb7Gfcjj5</pre>
 </div>
 </div>
 <div class="sect2">
-<h3 id="Setting_a_Custom_Message_on_the_Login_Page_admin"><a class="anchor" href="#Setting_a_Custom_Message_on_the_Login_Page_admin"></a>1.5. Setting a Custom Message on the Login Page</h3>
+<h3 id="Setting_a_Custom_Message_on_the_Login_Page_admin"><a class="anchor" href="#Setting_a_Custom_Message_on_the_Login_Page_admin"></a>1.8. Setting a Custom Message on the Login Page</h3>
 <div class="olist arabic">
 <div class="title">Procedure</div>
 <ol class="arabic">
