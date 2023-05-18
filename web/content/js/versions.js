@@ -204,10 +204,6 @@ const navVersions = [
             path: "Content_Management_Guide"
           },
           {
-            title: "Converting a Host to RHEL",
-            path: "Converting_a_Host_to_RHEL"
-          },
-          {
             title: "Deploying Foreman on AWS",
             path: "Deploying_on_AWS"
           },
@@ -278,10 +274,6 @@ const navVersions = [
           {
             title: "Content Management Guide",
             path: "Content_Management_Guide"
-          },
-          {
-            title: "Converting a Host to RHEL",
-            path: "Converting_a_Host_to_RHEL"
           },
           {
             title: "Deploying Foreman on AWS",
