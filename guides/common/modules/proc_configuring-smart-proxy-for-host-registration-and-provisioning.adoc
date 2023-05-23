@@ -1,0 +1,57 @@
+[id="configuring-{smart-proxy-context}-for-host-registration-and-provisioning_{context}"]
+= Configuring {SmartProxy} for Host Registration and Provisioning
+
+Use this procedure to configure {SmartProxy} so that you can register and provision hosts using your {SmartProxyServer} instead of your {ProjectServer}.
+
+.Procedure
+ifdef::foreman-deb,foreman-el[]
+. Enable the Registration and Templates features on your {SmartProxyServer} and set the template URL:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {installer-scenario-smartproxy} \
+--foreman-proxy-registration true \
+--foreman-proxy-templates true \
+--foreman-proxy-template-url "https://_{smartproxy-example-com}_:8000"
+----
+. On your {SmartProxyServer}, open the corresponding ports:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# firewall-cmd --permanent --zone=public --add-port=8000/tcp
+# firewall-cmd --reload
+----
+endif::[]
+ifdef::satellite[]
+* On {ProjectServer}, add the {SmartProxy} to the list of trusted proxies.
++
+This is required for {Project} to recognize hosts' IP addresses forwarded over the `X-Forwarded-For` HTTP header set by {SmartProxy}.
+For security reasons, {Project} recognizes this HTTP header only from localhost by default.
+You can enter trusted proxies as valid IPv4 or IPv6 addresses of {SmartProxies}, or network ranges.
++
+WARNING: Do not use a network range that is too wide, because this poses a potential security risk.
++
+Enter the following command.
+Note that the command overwrites the list that is currently stored in {Project}.
+Therefore, if you have set any trusted proxies previously, you must include them in the command as well:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foreman-installer} \
+--foreman-trusted-proxies "127.0.0.1/8" \
+--foreman-trusted-proxies "::1" \
+--foreman-trusted-proxies "_My_IP_address_" \
+--foreman-trusted-proxies "_My_IP_range_"
+----
++
+The localhost entries are required, do not omit them.
+
+.Verification
+. List the current trusted proxies using the full help of {Project} installer:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foreman-installer} --full-help | grep -A 2 "trusted-proxies"
+----
+. The current listing contains all trusted proxies you require.
+endif::[]
