@@ -44,6 +44,10 @@ const navVersions = [
             "path": "Managing_Configurations_Puppet"
           },
           {
+            "title": "Managing Security Compliance",
+            "path": "Managing_Security_Compliance"
+          },
+          {
             "title": "Administering Foreman",
             "path": "Administering_Project"
           },
@@ -156,6 +160,10 @@ const navVersions = [
             "path": "Managing_Configurations_Puppet"
           },
           {
+            "title": "Managing Security Compliance",
+            "path": "Managing_Security_Compliance"
+          },
+          {
             "title": "Administering Foreman",
             "path": "Administering_Project"
           },
@@ -236,6 +244,10 @@ const navVersions = [
             "path": "Managing_Configurations_Puppet"
           },
           {
+            "title": "Managing Security Compliance",
+            "path": "Managing_Security_Compliance"
+          },
+          {
             "title": "Administering Foreman",
             "path": "Administering_Project"
           },
@@ -314,6 +326,10 @@ const navVersions = [
           {
             "title": "Configuring Hosts Using Puppet",
             "path": "Managing_Configurations_Puppet"
+          },
+          {
+            "title": "Managing Security Compliance",
+            "path": "Managing_Security_Compliance"
           },
           {
             "title": "Administering Foreman",
