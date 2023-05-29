@@ -44,6 +44,10 @@ const navVersions = [
             "path": "Managing_Configurations_Puppet"
           },
           {
+            "title": "Managing Security Compliance",
+            "path": "Managing_Security_Compliance"
+          },
+          {
             "title": "Administering Foreman",
             "path": "Administering_Project"
           },
@@ -156,6 +160,10 @@ const navVersions = [
             "path": "Managing_Configurations_Puppet"
           },
           {
+            "title": "Managing Security Compliance",
+            "path": "Managing_Security_Compliance"
+          },
+          {
             "title": "Administering Foreman",
             "path": "Administering_Project"
           },
@@ -168,6 +176,93 @@ const navVersions = [
     ]
   },
   {
+<<<<<<< HEAD
+=======
+    "title": "Foreman 3.7 - Katello 4.9 (RC)",
+    "path": "3.7",
+    "builds": [
+      {
+        "title": "Katello on EL",
+        "filename": "index-katello.html",
+        "guides": [
+          {
+            "title": "Release Notes",
+            "path": "Release_Notes"
+          },
+          {
+            "title": "Planning Guide",
+            "path": "Planning_for_Project"
+          },
+          {
+            "title": "Quickstart Guide",
+            "path": "Quickstart"
+          },
+          {
+            "title": "Installing Katello Server",
+            "path": "Installing_Server"
+          },
+          {
+            "title": "Installing Smart Proxy with Content",
+            "path": "Installing_Proxy"
+          },
+          {
+            "title": "Upgrading and Updating",
+            "path": "Upgrading_and_Updating"
+          },
+          {
+            "title": "Tuning Performance",
+            "path": "Tuning_Performance"
+          },
+          {
+            "title": "Configuring Smart Proxies with a Load Balancer",
+            "path": "Configuring_Load_Balancer"
+          },
+          {
+            "title": "Managing Organizations and Locations in Foreman",
+            "path": "Managing_Organizations_and_Locations"
+          },
+          {
+            "title": "Managing Content",
+            "path": "Managing_Content"
+          },
+          {
+            "title": "Deploying Foreman on AWS",
+            "path": "Deploying_Project_on_AWS"
+          },
+          {
+            "title": "Provisioning Hosts",
+            "path": "Provisioning_Hosts"
+          },
+          {
+            "title": "Managing Hosts",
+            "path": "Managing_Hosts"
+          },
+          {
+            "title": "Configuring Hosts Using Ansible",
+            "path": "Managing_Configurations_Ansible"
+          },
+          {
+            "title": "Configuring Hosts Using Puppet",
+            "path": "Managing_Configurations_Puppet"
+          },
+          {
+            "title": "Managing Security Compliance",
+            "path": "Managing_Security_Compliance"
+          },
+          {
+            "title": "Administering Foreman",
+            "path": "Administering_Project"
+          },
+          {
+            "title": "Application Centric Deployment",
+            "path": "Deploying_Hosts_AppCentric"
+          }
+        ]
+      }
+    ]
+  },
+  {
+>>>>>>> 80613970c (Add Managing Security Compliance to navigation 3.6+)
     "title": "Foreman 3.6 - Katello 4.8 (supported)",
     "path": "3.6",
     "builds": [
@@ -234,6 +329,10 @@ const navVersions = [
           {
             "title": "Configuring Hosts Using Puppet",
             "path": "Managing_Configurations_Puppet"
+          },
+          {
+            "title": "Managing Security Compliance",
+            "path": "Managing_Security_Compliance"
           },
           {
             "title": "Administering Foreman",
