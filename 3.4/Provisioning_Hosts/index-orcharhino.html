@@ -27,7 +27,7 @@
 <h1>Provisioning Hosts</h1>
 <div class="details">
 <span id="revnumber">version 6.3 (unsupported),</span>
-<span id="revdate">published May 30 2023</span>
+<span id="revdate">published Jun 01 2023</span>
 </div>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
@@ -219,15 +219,16 @@
 <li><a href="#Uninstalling_Microsoft_Azure_Plugin_azure-provisioning">17.7. Uninstalling Microsoft Azure Plugin</a></li>
 </ul>
 </li>
-<li><a href="#Initialization_Script_for_Provisioning_Examples_provisioning">Appendix A: Initialization Script for Provisioning Examples</a></li>
-<li><a href="#Provisioning_FIPS_Compliant_Hosts_provisioning">Appendix B: Provisioning FIPS-Compliant Hosts</a>
+<li><a href="#configuring-orcharhino-proxy-for-host-registration-and-provisioning_provisioning">Appendix A: Configuring orcharhino&#160;Proxy for Host Registration and Provisioning</a></li>
+<li><a href="#Initialization_Script_for_Provisioning_Examples_provisioning">Appendix B: Initialization Script for Provisioning Examples</a></li>
+<li><a href="#Provisioning_FIPS_Compliant_Hosts_provisioning">Appendix C: Provisioning FIPS-Compliant Hosts</a>
 <ul class="sectlevel2">
-<li><a href="#Changing_the_Provisioning_Password_Hashing_Algorithm_provisioning">B.1. Changing the Provisioning Password Hashing Algorithm</a></li>
-<li><a href="#Setting_the_FIPS_Enabled_Parameter_provisioning">B.2. Setting the FIPS-Enabled Parameter</a></li>
-<li><a href="#Verifying_FIPS_Mode_Is_Enabled_provisioning">B.3. Verifying FIPS Mode is Enabled</a></li>
+<li><a href="#Changing_the_Provisioning_Password_Hashing_Algorithm_provisioning">C.1. Changing the Provisioning Password Hashing Algorithm</a></li>
+<li><a href="#Setting_the_FIPS_Enabled_Parameter_provisioning">C.2. Setting the FIPS-Enabled Parameter</a></li>
+<li><a href="#Verifying_FIPS_Mode_Is_Enabled_provisioning">C.3. Verifying FIPS Mode is Enabled</a></li>
 </ul>
 </li>
-<li><a href="#Host_Parameter_Hierarchy_provisioning">Appendix C: Host Parameter Hierarchy</a></li>
+<li><a href="#Host_Parameter_Hierarchy_provisioning">Appendix D: Host Parameter Hierarchy</a></li>
 </ul>
 </div>
 </div>
@@ -1229,40 +1230,18 @@ For more information, see <a href="#adding-installation-media_provisioning">Addi
 <div class="paragraph">
 <p>Perform these steps to provision hosts running Ubuntu 20.04.3+ or Ubuntu 22.04.</p>
 </div>
+<div class="ulist">
+<div class="title">Prerequisite</div>
+<ul>
+<li>
+<p>Ensure you have configured your orcharhino&#160;Proxies for provisioning.
+For more information, see <a href="#configuring-orcharhino-proxy-for-host-registration-and-provisioning_provisioning">Configuring orcharhino&#160;Proxy for Host Registration and Provisioning</a>.</p>
+</li>
+</ul>
+</div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
 <ol class="arabic">
-<li>
-<p>On your orcharhino&#160;Proxy, ensure <em>Smart Proxy HTTP forward</em> is enabled:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># grep "^:enabled: true$" /etc/foreman-proxy/settings.d/templates.yml</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Note that this is enabled by default.</p>
-</div>
-</li>
-<li>
-<p>On your orcharhino&#160;Proxy, open the corresponding port:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># firewall-cmd --permanent --zone=public --add-port=8000/tcp
-# firewall-cmd --reload</pre>
-</div>
-</div>
-</li>
-<li>
-<p>On your orcharhino&#160;Server, add your orcharhino&#160;Proxy to the list of trusted proxies:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># foreman-installer \
---foreman-trusted-proxies "127.0.0.1" \
---foreman-trusted-proxies "::1" \
---foreman-trusted-proxies "<em>Your_IP</em>"</pre>
-</div>
-</div>
-</li>
 <li>
 <p>Provide the extracted ISO and ISO image itself on each orcharhino&#160;Proxy.
 For more information, see <a href="#Creating_an_Installation_Medium_for_Ubuntu_22_04_provisioning">Creating an Installation Medium for Ubuntu 22.04</a>.</p>
@@ -3225,26 +3204,25 @@ It has the following workflow:</p>
 <p>Virtual machine starts</p>
 </li>
 <li>
-<p>iPXE retrieves the network credentials using DHCP</p>
+<p>iPXE retrieves the network credentials, including an HTTP URL, using DHCP</p>
 </li>
 <li>
-<p>iPXE retrieves the HTTP address using DHCP</p>
+<p>iPXE loads the iPXE bootstrap template from orcharhino&#160;Server or orcharhino&#160;Proxy</p>
 </li>
 <li>
-<p>iPXE loads the iPXE bootstrap template from orcharhino&#160;Proxy</p>
-</li>
-<li>
-<p>iPXE loads the iPXE template with MAC as a URL parameter from orcharhino&#160;Proxy</p>
+<p>iPXE loads the iPXE template with MAC as a URL parameter from orcharhino&#160;Server or orcharhino&#160;Proxy</p>
 </li>
 <li>
 <p>iPXE loads the kernel and initial RAM disk of the installer</p>
 </li>
 </ol>
 </div>
-<div class="paragraph">
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
 <p>Ensure that the hypervisor that you want to use supports iPXE.
 The following virtualization hypervisors support iPXE:</p>
-</div>
 <div class="ulist">
 <ul>
 <li>
@@ -3254,10 +3232,17 @@ The following virtualization hypervisors support iPXE:</p>
 <p>oVirt</p>
 </li>
 <li>
-<p>RHEV</p>
+<p>RHEV (deprecated)</p>
 </li>
 <li>
 <p>VMWare (<a href="https://ipxe.org/howto/vmware">via custom firmware</a>)</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>If you want to use orcharhino&#160;Proxies instead of your orcharhino&#160;Server, ensure that you have configured your orcharhino&#160;Proxies accordingly.
+For more information, see <a href="#configuring-orcharhino-proxy-for-host-registration-and-provisioning_provisioning">Configuring orcharhino&#160;Proxy for Host Registration and Provisioning</a>.</p>
 </li>
 </ul>
 </div>
@@ -3324,25 +3309,27 @@ If you want to change the default values in the template, clone the template and
 <p>From the <strong>iPXE template</strong> list, select <strong>Review</strong> to verify that the <strong>Kickstart default iPXE</strong> template is the correct template.</p>
 </li>
 <li>
-<p>On orcharhino&#160;Server, run:</p>
+<p>Set the HTTP URL.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>If you want to use orcharhino&#160;Server for booting, run the following command on orcharhino&#160;Server:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap">foreman-installer --foreman-proxy-dhcp-ipxefilename "http://orcharhino.example.com/unattended/iPXE?bootstrap=1"</pre>
+<pre class="nowrap"># foreman-installer \
+--foreman-proxy-dhcp-ipxefilename "http://orcharhino.example.com/unattended/iPXE?bootstrap=1"</pre>
 </div>
 </div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>Ensure that <code>--foreman-trusted-proxies</code> is configured correctly on the orcharhino&#160;Server.</p>
+</li>
+<li>
+<p>If you want to use orcharhino&#160;Proxy for booting, run the following command on orcharhino&#160;Proxy:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer --foreman-proxy-dhcp-ipxe-bootstrap true</pre>
 </div>
-</td>
-</tr>
-</table>
+</div>
+</li>
+</ul>
 </div>
 </li>
 </ol>
@@ -3375,10 +3362,7 @@ You can choose to either load <code>ipxe.lkrn</code> or <code>undionly-ipxe.0</c
 <p>PXELinux chainloads iPXE <code>ipxe.lkrn</code> or <code>undionly-ipxe.0</code></p>
 </li>
 <li>
-<p>iPXE retrieves the network credentials using DHCP again</p>
-</li>
-<li>
-<p>iPXE retrieves HTTP address using DHCP</p>
+<p>iPXE retrieves the network credentials, including an HTTP URL, using DHCP again</p>
 </li>
 <li>
 <p>iPXE chainloads the iPXE template from the template orcharhino&#160;Proxy</p>
@@ -3387,6 +3371,15 @@ You can choose to either load <code>ipxe.lkrn</code> or <code>undionly-ipxe.0</c
 <p>iPXE loads the kernel and initial RAM disk of the installer</p>
 </li>
 </ol>
+</div>
+<div class="ulist">
+<div class="title">Prerequisite</div>
+<ul>
+<li>
+<p>If you want to use orcharhino&#160;Proxies instead of your orcharhino&#160;Server, ensure that you have configured your orcharhino&#160;Proxies accordingly.
+For more information, see <a href="#configuring-orcharhino-proxy-for-host-registration-and-provisioning_provisioning">Configuring orcharhino&#160;Proxy for Host Registration and Provisioning</a>.</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
 <div class="title">Configuring orcharhino&#160;Server to use iPXE</div>
@@ -3475,25 +3468,27 @@ If you want to change the default values in the template, clone the template and
 <p>Set <strong>PXE Loader</strong> to <strong>PXELinux BIOS</strong> to chainboot iPXE via PXELinux, or to <strong>iPXE Chain BIOS</strong> to load <code>undionly-ipxe.0</code> directly.</p>
 </li>
 <li>
-<p>On orcharhino&#160;Server, run:</p>
+<p>Set the HTTP URL.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>If you want to use orcharhino&#160;Server for booting, run the following command on orcharhino&#160;Server:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap">foreman-installer --foreman-proxy-dhcp-ipxefilename "http://orcharhino.example.com/unattended/iPXE?bootstrap=1"</pre>
+<pre class="nowrap"># foreman-installer \
+--foreman-proxy-dhcp-ipxefilename "http://orcharhino.example.com/unattended/iPXE?bootstrap=1"</pre>
 </div>
 </div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>Ensure that <code>--foreman-trusted-proxies</code> is configured correctly on the orcharhino&#160;Server.</p>
+</li>
+<li>
+<p>If you want to use orcharhino&#160;Proxy for booting, run the following command on orcharhino&#160;Proxy:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer --foreman-proxy-dhcp-ipxe-bootstrap true</pre>
 </div>
-</td>
-</tr>
-</table>
+</div>
+</li>
+</ul>
 </div>
 </li>
 </ol>
@@ -7282,22 +7277,14 @@ You can use the <a href="#Adding_VMware_Images_to_Server_provisioning">Adding VM
 </li>
 </ol>
 </div>
-<div class="paragraph">
+<div class="ulist">
 <div class="title">Configuring orcharhino&#160;Proxy to Forward the user data Template</div>
-<p>If you deploy orcharhino with the orcharhino&#160;Proxy templates feature, you must configure orcharhino to recognize hosts' IP addresses forwarded over the X-Forwarded-For HTTP header to serve correct template payload.</p>
-</div>
-<div class="paragraph">
-<p>For security reasons, orcharhino recognizes this HTTP header only from localhost.
-For each individual orcharhino&#160;Proxy, you must configure a setting to recognize hosts' IP addresses.
-To add an IP address (e.g. 192.0.2.10) or range (e.g. 192.0.2.0/24), use the following command:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># foreman-installer --foreman-trusted-proxies 127.0.0.1/8 --foreman-trusted-proxies ::1 --foreman-trusted-proxies 192.0.2.10</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>The localhost entries are required, do not omit them.</p>
+<ul>
+<li>
+<p>If you want to use orcharhino&#160;Proxies instead of your orcharhino&#160;Server, ensure that you have configured your orcharhino&#160;Proxies accordingly.
+For more information, see <a href="#configuring-orcharhino-proxy-for-host-registration-and-provisioning_provisioning">Configuring orcharhino&#160;Proxy for Host Registration and Provisioning</a>.</p>
+</li>
+</ul>
 </div>
 </div>
 <div class="sect2">
@@ -10007,7 +9994,73 @@ If you want to delete the orphaned host, navigate to <strong>Hosts &gt; All Host
 </div>
 </div>
 <div class="sect1">
-<h2 id="Initialization_Script_for_Provisioning_Examples_provisioning"><a class="anchor" href="#Initialization_Script_for_Provisioning_Examples_provisioning"></a>Appendix A: Initialization Script for Provisioning Examples</h2>
+<h2 id="configuring-orcharhino-proxy-for-host-registration-and-provisioning_provisioning"><a class="anchor" href="#configuring-orcharhino-proxy-for-host-registration-and-provisioning_provisioning"></a>Appendix A: Configuring orcharhino&#160;Proxy for Host Registration and Provisioning</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Use this procedure to configure orcharhino&#160;Proxy so that you can register and provision hosts using your orcharhino&#160;Proxy instead of your orcharhino&#160;Server.</p>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>On orcharhino&#160;Server, add the orcharhino&#160;Proxy to the list of trusted proxies.</p>
+<div class="paragraph">
+<p>This is required for orcharhino to recognize hosts' IP addresses forwarded over the <code>X-Forwarded-For</code> HTTP header set by orcharhino&#160;Proxy.
+For security reasons, orcharhino recognizes this HTTP header only from localhost by default.
+You can enter trusted proxies as valid IPv4 or IPv6 addresses of orcharhino&#160;Proxies, or network ranges.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Warning</div>
+</td>
+<td class="content">
+Do not use a network range that is too wide, because this poses a potential security risk.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Enter the following command.
+Note that the command overwrites the list that is currently stored in orcharhino.
+Therefore, if you have set any trusted proxies previously, you must include them in the command as well:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer \
+--foreman-trusted-proxies "127.0.0.1/8" \
+--foreman-trusted-proxies "::1" \
+--foreman-trusted-proxies "<em>My_IP_address</em>" \
+--foreman-trusted-proxies "<em>My_IP_range</em>"</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The localhost entries are required, do not omit them.</p>
+</div>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Verification</div>
+<ol class="arabic">
+<li>
+<p>List the current trusted proxies using the full help of orcharhino installer:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer --full-help | grep -A 2 "trusted-proxies"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>The current listing contains all trusted proxies you require.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="Initialization_Script_for_Provisioning_Examples_provisioning"><a class="anchor" href="#Initialization_Script_for_Provisioning_Examples_provisioning"></a>Appendix B: Initialization Script for Provisioning Examples</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>If you have not followed the examples in <em>Managing Content</em>, you can use the following initialization script to create an environment for provisioning examples.</p>
@@ -10131,7 +10184,7 @@ hammer content-view version promote \
 </div>
 </div>
 <div class="sect1">
-<h2 id="Provisioning_FIPS_Compliant_Hosts_provisioning"><a class="anchor" href="#Provisioning_FIPS_Compliant_Hosts_provisioning"></a>Appendix B: Provisioning FIPS-Compliant Hosts</h2>
+<h2 id="Provisioning_FIPS_Compliant_Hosts_provisioning"><a class="anchor" href="#Provisioning_FIPS_Compliant_Hosts_provisioning"></a>Appendix C: Provisioning FIPS-Compliant Hosts</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>orcharhino supports provisioning hosts that comply with the National Institute of Standards and Technology&#8217;s <a href="https://csrc.nist.gov/publications/detail/fips/140/2/final">Security Requirements for Cryptographic Modules</a> standard, reference number FIPS 140-2, referred to here as FIPS.</p>
@@ -10157,7 +10210,7 @@ hammer content-view version promote \
 To confirm that these settings are enabled, complete the steps in <a href="#Verifying_FIPS_Mode_Is_Enabled_provisioning">Verifying FIPS Mode is Enabled</a>.</p>
 </div>
 <div class="sect2">
-<h3 id="Changing_the_Provisioning_Password_Hashing_Algorithm_provisioning"><a class="anchor" href="#Changing_the_Provisioning_Password_Hashing_Algorithm_provisioning"></a>B.1. Changing the Provisioning Password Hashing Algorithm</h3>
+<h3 id="Changing_the_Provisioning_Password_Hashing_Algorithm_provisioning"><a class="anchor" href="#Changing_the_Provisioning_Password_Hashing_Algorithm_provisioning"></a>C.1. Changing the Provisioning Password Hashing Algorithm</h3>
 <div class="paragraph">
 <p>To provision FIPS-compliant hosts, you must first set the password hashing algorithm that you use in provisioning to SHA256.
 This configuration setting must be applied for each operating system you want to deploy as FIPS-compliant.</p>
@@ -10190,7 +10243,7 @@ This configuration setting must be applied for each operating system you want to
 </div>
 </div>
 <div class="sect2">
-<h3 id="Setting_the_FIPS_Enabled_Parameter_provisioning"><a class="anchor" href="#Setting_the_FIPS_Enabled_Parameter_provisioning"></a>B.2. Setting the FIPS-Enabled Parameter</h3>
+<h3 id="Setting_the_FIPS_Enabled_Parameter_provisioning"><a class="anchor" href="#Setting_the_FIPS_Enabled_Parameter_provisioning"></a>C.2. Setting the FIPS-Enabled Parameter</h3>
 <div class="paragraph">
 <p>To provision a FIPS-compliant host, you must create a host group and set the host group parameter <code>fips_enabled</code> to <code>true</code>.
 If this is not set to <code>true</code>, or is absent, the FIPS-specific changes do not apply to the system.
@@ -10212,7 +10265,7 @@ You can set this parameter when you provision a host or for a host group.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="Verifying_FIPS_Mode_Is_Enabled_provisioning"><a class="anchor" href="#Verifying_FIPS_Mode_Is_Enabled_provisioning"></a>B.3. Verifying FIPS Mode is Enabled</h3>
+<h3 id="Verifying_FIPS_Mode_Is_Enabled_provisioning"><a class="anchor" href="#Verifying_FIPS_Mode_Is_Enabled_provisioning"></a>C.3. Verifying FIPS Mode is Enabled</h3>
 <div class="paragraph">
 <p>To verify these FIPS compliance changes have been successful, you must provision a host and check its configuration.</p>
 </div>
@@ -10239,7 +10292,7 @@ You can set this parameter when you provision a host or for a host group.</p>
 </div>
 </div>
 <div class="sect1">
-<h2 id="Host_Parameter_Hierarchy_provisioning"><a class="anchor" href="#Host_Parameter_Hierarchy_provisioning"></a>Appendix C: Host Parameter Hierarchy</h2>
+<h2 id="Host_Parameter_Hierarchy_provisioning"><a class="anchor" href="#Host_Parameter_Hierarchy_provisioning"></a>Appendix D: Host Parameter Hierarchy</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>You can access host parameters when provisioning hosts.
@@ -10297,7 +10350,7 @@ Hosts inherit their parameters from the following locations, in order of increas
 <div id="footer">
 <div id="footer-text">
 Version 6.3 (unsupported)<br>
-Last updated May 2023
+Last updated Jun 2023
 </div>
 </div>
 </body>
