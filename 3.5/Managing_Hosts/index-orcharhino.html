@@ -27,7 +27,7 @@
 <h1>Managing Hosts</h1>
 <div class="details">
 <span id="revnumber">version 6.3,</span>
-<span id="revdate">published May 30 2023</span>
+<span id="revdate">published Jun 01 2023</span>
 </div>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
@@ -189,7 +189,8 @@
 <li><a href="#removing-packages-from-a-host_managing-hosts">15.4. Removing Packages from a Host</a></li>
 </ul>
 </li>
-<li><a href="#Template_Writing_Reference_managing-hosts">Appendix A: Template Writing Reference</a>
+<li><a href="#configuring-orcharhino-proxy-for-host-registration-and-provisioning_managing-hosts">Appendix A: Configuring orcharhino&#160;Proxy for Host Registration and Provisioning</a></li>
+<li><a href="#Template_Writing_Reference_managing-hosts">Appendix B: Template Writing Reference</a>
 <ul class="sectlevel2">
 <li><a href="#Accessing_the_Template_Writing_Reference_managing-hosts">Accessing the Template Writing Reference in the orcharhino management UI</a></li>
 <li><a href="#Using_Autocompletion_in_Templates_managing-hosts">Using Autocompletion in Templates</a></li>
@@ -204,7 +205,7 @@
 <li><a href="#Example_Template_Snippets_managing-hosts">Example Template Snippets</a></li>
 </ul>
 </li>
-<li><a href="#Job_Template_Examples_and_Extensions_managing-hosts">Appendix B: Job Template Examples and Extensions</a>
+<li><a href="#Job_Template_Examples_and_Extensions_managing-hosts">Appendix C: Job Template Examples and Extensions</a>
 <ul class="sectlevel2">
 <li><a href="#Customizing_Job_Templates_managing-hosts">Customizing Job Templates</a></li>
 <li><a href="#default-job-template-categories_managing-hosts">Default Job Template Categories</a></li>
@@ -214,7 +215,7 @@
 <li><a href="#Including_Power_Actions_in_Templates_managing-hosts">Including Power Actions in Templates</a></li>
 </ul>
 </li>
-<li><a href="#overview-of-the-host-columns_managing-hosts">Appendix C: Overview of the Host Columns</a></li>
+<li><a href="#overview-of-the-host-columns_managing-hosts">Appendix D: Overview of the Host Columns</a></li>
 </ul>
 </div>
 </div>
@@ -1464,22 +1465,8 @@ You can set default templates by navigating to <strong>Administer &gt; Settings<
 For more information, see <a href="https://docs.theforeman.org/3.5/Managing_Content/index-orcharhino.html#Managing_Activation_Keys_content-management">Managing Activation Keys</a> in <em>Managing Content</em>.</p>
 </li>
 <li>
-<p>Optional: If you want to register hosts through orcharhino&#160;Proxy, ensure that the <strong>Registration</strong> and <strong>Templates</strong> features are enabled on this orcharhino&#160;Proxy.</p>
-<div class="paragraph">
-<p>In the orcharhino management UI, navigate to <strong>Infrastructure</strong> &gt; <strong>orcharhino&#160;Proxies</strong>, click the orcharhino&#160;Proxy that you want to use, and locate the <strong>Registration</strong> feature in the <strong>Active features</strong> list.</p>
-</div>
-<div class="paragraph">
-<p>Optional: If the <strong>Registration</strong> feature is not enabled on your orcharhino&#160;Proxy, enter the following command on the orcharhino&#160;Proxy to enable it.
-Use a FQDN, not an IP address:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># foreman-installer \
---foreman-proxy-registration true \
---foreman-proxy-templates true \
---foreman-proxy-template-url 'http://orcharhino-proxy.example.com'</pre>
-</div>
-</div>
+<p>If you want to use orcharhino&#160;Proxies instead of your orcharhino&#160;Server, ensure that you have configured your orcharhino&#160;Proxies accordingly.
+For more information, see <a href="#configuring-orcharhino-proxy-for-host-registration-and-provisioning_managing-hosts">Configuring orcharhino&#160;Proxy for Host Registration and Provisioning</a>.</p>
 </li>
 </ul>
 </div>
@@ -8717,7 +8704,73 @@ You get a REX job notification once the remote execution job is complete.</p>
 </div>
 </div>
 <div class="sect1">
-<h2 id="Template_Writing_Reference_managing-hosts"><a class="anchor" href="#Template_Writing_Reference_managing-hosts"></a>Appendix A: Template Writing Reference</h2>
+<h2 id="configuring-orcharhino-proxy-for-host-registration-and-provisioning_managing-hosts"><a class="anchor" href="#configuring-orcharhino-proxy-for-host-registration-and-provisioning_managing-hosts"></a>Appendix A: Configuring orcharhino&#160;Proxy for Host Registration and Provisioning</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Use this procedure to configure orcharhino&#160;Proxy so that you can register and provision hosts using your orcharhino&#160;Proxy instead of your orcharhino&#160;Server.</p>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>On orcharhino&#160;Server, add the orcharhino&#160;Proxy to the list of trusted proxies.</p>
+<div class="paragraph">
+<p>This is required for orcharhino to recognize hosts' IP addresses forwarded over the <code>X-Forwarded-For</code> HTTP header set by orcharhino&#160;Proxy.
+For security reasons, orcharhino recognizes this HTTP header only from localhost by default.
+You can enter trusted proxies as valid IPv4 or IPv6 addresses of orcharhino&#160;Proxies, or network ranges.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Warning</div>
+</td>
+<td class="content">
+Do not use a network range that is too wide, because this poses a potential security risk.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Enter the following command.
+Note that the command overwrites the list that is currently stored in orcharhino.
+Therefore, if you have set any trusted proxies previously, you must include them in the command as well:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer \
+--foreman-trusted-proxies "127.0.0.1/8" \
+--foreman-trusted-proxies "::1" \
+--foreman-trusted-proxies "<em>My_IP_address</em>" \
+--foreman-trusted-proxies "<em>My_IP_range</em>"</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The localhost entries are required, do not omit them.</p>
+</div>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Verification</div>
+<ol class="arabic">
+<li>
+<p>List the current trusted proxies using the full help of orcharhino installer:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer --full-help | grep -A 2 "trusted-proxies"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>The current listing contains all trusted proxies you require.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="Template_Writing_Reference_managing-hosts"><a class="anchor" href="#Template_Writing_Reference_managing-hosts"></a>Appendix B: Template Writing Reference</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Embedded Ruby (ERB) is a tool for generating text files based on templates that combine plain text with Ruby code.
@@ -9769,7 +9822,7 @@ In this example <code>luks_stat</code> is a custom fact that you can parse in th
 </div>
 </div>
 <div class="sect1">
-<h2 id="Job_Template_Examples_and_Extensions_managing-hosts"><a class="anchor" href="#Job_Template_Examples_and_Extensions_managing-hosts"></a>Appendix B: Job Template Examples and Extensions</h2>
+<h2 id="Job_Template_Examples_and_Extensions_managing-hosts"><a class="anchor" href="#Job_Template_Examples_and_Extensions_managing-hosts"></a>Appendix C: Job Template Examples and Extensions</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Use this section as a reference to help modify, customize, and extend your job templates to suit your requirements.</p>
@@ -9959,7 +10012,7 @@ This procedure prevents orcharhino from interpreting the disconnect exception up
 </div>
 </div>
 <div class="sect1">
-<h2 id="overview-of-the-host-columns_managing-hosts"><a class="anchor" href="#overview-of-the-host-columns_managing-hosts"></a>Appendix C: Overview of the Host Columns</h2>
+<h2 id="overview-of-the-host-columns_managing-hosts"><a class="anchor" href="#overview-of-the-host-columns_managing-hosts"></a>Appendix D: Overview of the Host Columns</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Below is the complete overview of columns that can be displayed in the host table divided into content categories.
@@ -10101,7 +10154,7 @@ For more information on how to customize columns in the host table, see <a href=
 <div id="footer">
 <div id="footer-text">
 Version 6.3<br>
-Last updated May 2023
+Last updated Jun 2023
 </div>
 </div>
 </body>
