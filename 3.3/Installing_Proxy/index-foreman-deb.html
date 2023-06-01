@@ -27,7 +27,7 @@
 <h1>Installing an External Smart Proxy Server on Debian/Ubuntu</h1>
 <div class="details">
 <span id="revnumber">version 3.3,</span>
-<span id="revdate">published May 30 2023</span>
+<span id="revdate">published Jun 01 2023</span>
 </div>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
@@ -53,8 +53,9 @@
 </li>
 <li><a href="#performing-additional-configuration-on-capsule-server">3. Performing Additional Configuration on Smart&#160;Proxy&#160;Server</a>
 <ul class="sectlevel2">
-<li><a href="#enabling-power-management-on-managed-hosts_smart-proxy">3.1. Enabling Power Management on Managed Hosts</a></li>
-<li><a href="#configuring-dns-dhcp-and-tftp_smart-proxy">3.2. Configuring DNS, DHCP, and TFTP on Smart&#160;Proxy&#160;server</a></li>
+<li><a href="#configuring-smart-proxy-for-host-registration-and-provisioning_smart-proxy">3.1. Configuring Smart&#160;Proxy for Host Registration and Provisioning</a></li>
+<li><a href="#enabling-power-management-on-managed-hosts_smart-proxy">3.2. Enabling Power Management on Managed Hosts</a></li>
+<li><a href="#configuring-dns-dhcp-and-tftp_smart-proxy">3.3. Configuring DNS, DHCP, and TFTP on Smart&#160;Proxy&#160;server</a></li>
 </ul>
 </li>
 <li><a href="#configuring-external-services">4. Configuring Smart&#160;Proxy&#160;server with External Services</a>
@@ -893,7 +894,91 @@ If the base operating system clock is configured incorrectly, certificate verifi
 <p>Use this chapter to configure additional settings on your Smart&#160;Proxy&#160;server.</p>
 </div>
 <div class="sect2">
-<h3 id="enabling-power-management-on-managed-hosts_smart-proxy"><a class="anchor" href="#enabling-power-management-on-managed-hosts_smart-proxy"></a>3.1. Enabling Power Management on Managed Hosts</h3>
+<h3 id="configuring-smart-proxy-for-host-registration-and-provisioning_smart-proxy"><a class="anchor" href="#configuring-smart-proxy-for-host-registration-and-provisioning_smart-proxy"></a>3.1. Configuring Smart&#160;Proxy for Host Registration and Provisioning</h3>
+<div class="paragraph">
+<p>Use this procedure to configure Smart&#160;Proxy so that you can register and provision hosts using your Smart&#160;Proxy&#160;server instead of your Foreman&#160;server.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Enable the Registration and Templates features on your Smart&#160;Proxy&#160;server and set the template URL:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer --no-enable-foreman \
+--foreman-proxy-registration true \
+--foreman-proxy-templates true \
+--foreman-proxy-template-url "https://<em>smartproxy.example.com</em>:8000"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>On your Smart&#160;Proxy&#160;server, open the corresponding ports:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># firewall-cmd --permanent --zone=public --add-port=8000/tcp
+# firewall-cmd --reload</pre>
+</div>
+</div>
+</li>
+<li>
+<p>On Foreman&#160;server, add the Smart&#160;Proxy to the list of trusted proxies.</p>
+<div class="paragraph">
+<p>This is required for Foreman to recognize hosts' IP addresses forwarded over the <code>X-Forwarded-For</code> HTTP header set by Smart&#160;Proxy.
+For security reasons, Foreman recognizes this HTTP header only from localhost by default.
+You can enter trusted proxies as valid IPv4 or IPv6 addresses of Smart&#160;Proxies, or network ranges.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Warning</div>
+</td>
+<td class="content">
+Do not use a network range that is too wide, because this poses a potential security risk.
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Enter the following command.
+Note that the command overwrites the list that is currently stored in Foreman.
+Therefore, if you have set any trusted proxies previously, you must include them in the command as well:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer \
+--foreman-trusted-proxies "127.0.0.1/8" \
+--foreman-trusted-proxies "::1" \
+--foreman-trusted-proxies "<em>My_IP_address</em>" \
+--foreman-trusted-proxies "<em>My_IP_range</em>"</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The localhost entries are required, do not omit them.</p>
+</div>
+</li>
+</ol>
+</div>
+<div class="olist arabic">
+<div class="title">Verification</div>
+<ol class="arabic">
+<li>
+<p>List the current trusted proxies using the full help of Foreman installer:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer --full-help | grep -A 2 "trusted-proxies"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>The current listing contains all trusted proxies you require.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="enabling-power-management-on-managed-hosts_smart-proxy"><a class="anchor" href="#enabling-power-management-on-managed-hosts_smart-proxy"></a>3.2. Enabling Power Management on Managed Hosts</h3>
 <div class="paragraph">
 <p>To perform power management tasks on managed hosts using the intelligent platform management interface (IPMI) or a similar protocol, you must enable the baseboard management controller (BMC) module on Smart&#160;Proxy&#160;server.</p>
 </div>
@@ -924,7 +1009,7 @@ For more information, see <a href="https://docs.theforeman.org/3.3/Managing_Host
 </div>
 </div>
 <div class="sect2">
-<h3 id="configuring-dns-dhcp-and-tftp_smart-proxy"><a class="anchor" href="#configuring-dns-dhcp-and-tftp_smart-proxy"></a>3.2. Configuring DNS, DHCP, and TFTP on Smart&#160;Proxy&#160;server</h3>
+<h3 id="configuring-dns-dhcp-and-tftp_smart-proxy"><a class="anchor" href="#configuring-dns-dhcp-and-tftp_smart-proxy"></a>3.3. Configuring DNS, DHCP, and TFTP on Smart&#160;Proxy&#160;server</h3>
 <div class="paragraph">
 <p>To configure the DNS, DHCP, and TFTP services on Smart&#160;Proxy&#160;server, use the <code>foreman-installer</code> command with the options appropriate for your environment.
 To view a complete list of configurable options, enter the <code>foreman-installer --scenario foreman --help</code> command.</p>
@@ -2474,7 +2559,7 @@ Set this to the address for Foreman&#160;server on <code>eth1</code>.</p>
 <div id="footer">
 <div id="footer-text">
 Version 3.3<br>
-Last updated May 2023
+Last updated Jun 2023
 </div>
 </div>
 </body>
