@@ -176,8 +176,6 @@ const navVersions = [
     ]
   },
   {
-<<<<<<< HEAD
-=======
     "title": "Foreman 3.7 - Katello 4.9 (RC)",
     "path": "3.7",
     "builds": [
@@ -262,7 +260,6 @@ const navVersions = [
     ]
   },
   {
->>>>>>> 80613970c (Add Managing Security Compliance to navigation 3.6+)
     "title": "Foreman 3.6 - Katello 4.8 (supported)",
     "path": "3.6",
     "builds": [
