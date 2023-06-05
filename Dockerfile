@@ -12,7 +12,6 @@ RUN dnf upgrade -y && \
                    rubygem-asciidoctor-pdf && \
     dnf groupinstall -y development-tools
 
-RUN gem install compass:0.12.7 \
-                zurb-foundation:4.3.2
+RUN gem install sass
 
 WORKDIR /foreman-documentation/guides
