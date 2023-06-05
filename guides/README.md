@@ -19,7 +19,7 @@ Then continue with the `make prep` step below.
 In RHEL perform:
 
 	dnf module enable ruby:2.7
-	dnf -y groupinstall development-tools
+	dnf -y groupinstall "Development Tools"
 	dnf -y install ruby ruby-devel rubygem-bundler python3-pip
 	pip3 install linkchecker
 
