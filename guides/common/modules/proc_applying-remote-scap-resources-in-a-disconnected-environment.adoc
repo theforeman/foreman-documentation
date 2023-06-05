@@ -1,0 +1,60 @@
+[id="applying-remote-scap-resources-in-a-disconnected-environment_{context}"]
+= Applying Remote SCAP Resources in a Disconnected Environment
+
+SCAP data streams can contain remote resources, such as OVAL files, that the SCAP client can fetch over the internet when it runs on hosts.
+If your host does not have internet access, you must download remote SCAP resources and distribute them to your host as local files.
+
+.Prerequisites
+* You have registered your host with remote execution enabled.
+* Fetching remote resources must be disabled, which is the default.
+For more information, see xref:inclusion-of-remote-scap-resources_{context}[].
+
+.Procedure
+. On your {ProjectServer}, examine the data stream you use in your compliance policy to find out which missing resource you must download:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# oscap info _/usr/share/xml/scap/ssg/content/ssg-rhel8-ds.xml_ | grep "WARNING"
+WARNING: Datastream component 'scap_org.open-scap_cref_security-data-oval-com.redhat.rhsa-RHEL8.xml.bz2'
+points out to the remote 'https://access.redhat.com/security/data/oval/com.redhat.rhsa-RHEL8.xml.bz2'.
+Use '--fetch-remote-resources' option to download it.
+WARNING: Skipping 'https://access.redhat.com/security/data/oval/com.redhat.rhsa-RHEL8.xml.bz2' file
+which is referenced from datastream
+----
+. Examine what name of the local file is expected by the data stream:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# oscap info _/usr/share/xml/scap/ssg/content/ssg-rhel8-ds.xml_
+...
+		Referenced check files:
+			ssg-rhel8-oval.xml
+				system: http://oval.mitre.org/XMLSchema/oval-definitions-5
+			ssg-rhel8-ocil.xml
+				system: http://scap.nist.gov/schema/ocil/2
+			*security-data-oval-com.redhat.rhsa-RHEL8.xml.bz2*
+				system: http://oval.mitre.org/XMLSchema/oval-definitions-5
+...
+----
+. On an online machine, download the missing resource:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# curl -o _security-data-oval-com.redhat.rhsa-RHEL8.xml.bz2_ _https://www.redhat.com/security/data/oval/com.redhat.rhsa-RHEL8.xml.bz2_
+----
++
+Ensure to name the downloaded file as referenced by the data stream.
+. Add the file as new {customfiletype} content into your disconnected {ProjectServer}.
+For more information, see {ContentManagementDocURL}Managing_Custom_File_Type_Content_content-management[Managing {customfiletypetitle} Content] in _{ContentManagementDocTitle}_.
++
+Note the URL on which your repository is published, such as `http://_{foreman-example-com}_/pulp/content/_My_Organization_Label_/Library/custom/_My_Product_Label_/_My_Repo_Label_/`.
+. Schedule a remote job to upload the file to the home directory of `root` on your host.
+For example, use the `Run Command - Script Default` job template and enter the following command:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# curl -o /root/_security-data-oval-com.redhat.rhsa-RHEL8.xml.bz2_ http://_{foreman-example-com}_/pulp/content/_My_Organization_Label_/Library/custom/_My_Product_Label_/_My_Repo_Label_/_security-data-oval-com.redhat.rhsa-RHEL8.xml.bz2_
+----
++
+For more information about running remote jobs, see {ManagingHostsDocURL}executing-a-remote-job_managing-hosts[Executing a Remote Job] in _{ManagingHostsDocTitle}_.
+. Continue with deploying your compliance policy.
