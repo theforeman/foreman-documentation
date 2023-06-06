@@ -67,16 +67,17 @@
 <li><a href="#disabling-registration-with-insights_satellite">4.2. Disabling Registration to Red Hat Insights</a></li>
 <li><a href="#Enabling_the_Client_Repository_satellite">4.3. Enabling the Satellite Client 6 Repository</a></li>
 <li><a href="#Synchronizing_the_Client_Repository_satellite">4.4. Synchronizing the Satellite Client 6 Repository</a></li>
-<li><a href="#configuring-for-uefi-http-boot-provisioning-in-an-ipv6-network_satellite">4.5. Configuring Satellite for UEFI HTTP Boot Provisioning in an IPv6 Network</a></li>
-<li><a href="#Configuring_Server_with_an_HTTP_Proxy_satellite">4.6. Configuring Satellite&#160;Server with an HTTP Proxy</a></li>
-<li><a href="#enabling-power-management-on-managed-hosts_satellite">4.7. Enabling Power Management on Managed Hosts</a></li>
-<li><a href="#configuring-dns-dhcp-and-tftp_satellite">4.8. Configuring DNS, DHCP, and TFTP on Satellite&#160;Server</a></li>
-<li><a href="#disabling-dns-dhcp-tftp-for-unmanaged-networks_satellite">4.9. Disabling DNS, DHCP, and TFTP for Unmanaged Networks</a></li>
-<li><a href="#Configuring_Server_for_Outgoing_Emails_satellite">4.10. Configuring Satellite&#160;Server for Outgoing Emails</a></li>
-<li><a href="#configuring-an-alternate-cname_satellite">4.11. Configuring an Alternate CNAME for Satellite</a></li>
-<li><a href="#Configuring_Server_with_a_Custom_SSL_Certificate_satellite">4.12. Configuring Satellite&#160;Server with a Custom SSL Certificate</a></li>
-<li><a href="#using-external-databases_satellite">4.13. Using External Databases with Satellite</a></li>
-<li><a href="#tuning-with-predefined-profiles_satellite">4.14. Tuning Satellite&#160;Server with Predefined Profiles</a></li>
+<li><a href="#configuring-remote-execution-for-pull-client-on-satellite-server_satellite">4.5. Configuring Remote Execution for Pull Client on Satellite&#160;Server</a></li>
+<li><a href="#configuring-for-uefi-http-boot-provisioning-in-an-ipv6-network_satellite">4.6. Configuring Satellite for UEFI HTTP Boot Provisioning in an IPv6 Network</a></li>
+<li><a href="#Configuring_Server_with_an_HTTP_Proxy_satellite">4.7. Configuring Satellite&#160;Server with an HTTP Proxy</a></li>
+<li><a href="#enabling-power-management-on-managed-hosts_satellite">4.8. Enabling Power Management on Managed Hosts</a></li>
+<li><a href="#configuring-dns-dhcp-and-tftp_satellite">4.9. Configuring DNS, DHCP, and TFTP on Satellite&#160;Server</a></li>
+<li><a href="#disabling-dns-dhcp-tftp-for-unmanaged-networks_satellite">4.10. Disabling DNS, DHCP, and TFTP for Unmanaged Networks</a></li>
+<li><a href="#Configuring_Server_for_Outgoing_Emails_satellite">4.11. Configuring Satellite&#160;Server for Outgoing Emails</a></li>
+<li><a href="#configuring-an-alternate-cname_satellite">4.12. Configuring an Alternate CNAME for Satellite</a></li>
+<li><a href="#Configuring_Server_with_a_Custom_SSL_Certificate_satellite">4.13. Configuring Satellite&#160;Server with a Custom SSL Certificate</a></li>
+<li><a href="#using-external-databases_satellite">4.14. Using External Databases with Satellite</a></li>
+<li><a href="#tuning-with-predefined-profiles_satellite">4.15. Tuning Satellite&#160;Server with Predefined Profiles</a></li>
 </ul>
 </li>
 <li><a href="#Configuring_External_Authentication_satellite">5. Configuring External Authentication</a>
@@ -2136,7 +2137,73 @@ see <a href="https://www.redhat.com/en/resources/els-datasheet">Red&#160;Hat Ent
 </div>
 </div>
 <div class="sect2">
-<h3 id="configuring-for-uefi-http-boot-provisioning-in-an-ipv6-network_satellite"><a class="anchor" href="#configuring-for-uefi-http-boot-provisioning-in-an-ipv6-network_satellite"></a>4.5. Configuring Satellite for UEFI HTTP Boot Provisioning in an IPv6 Network</h3>
+<h3 id="configuring-remote-execution-for-pull-client-on-satellite-server_satellite"><a class="anchor" href="#configuring-remote-execution-for-pull-client-on-satellite-server_satellite"></a>4.5. Configuring Remote Execution for Pull Client on Satellite&#160;Server</h3>
+<div class="paragraph">
+<p>By default, Remote Execution uses SSH as the transport mechanism for the Script provider.
+However, Remote Execution also offers pull-based transport, which you can use if your infrastructure prohibits outgoing connections from Satellite to hosts.</p>
+</div>
+<div class="paragraph">
+<p>This comprises <code>pull-mqtt</code> mode on Satellite in combination with a pull client running on hosts.
+If you still use Katello Agent, configure the <code>pull-mqtt</code> mode for migration which is a deprecated method of pull-based transport.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The <code>pull-mqtt</code> mode works only with the Script provider.
+Ansible and other providers will continue to use their default transport settings.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>To use <code>pull-mqtt</code> mode on Satellite&#160;Server, follow the procedure below:</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Enable the pull-based transport on your Satellite&#160;Server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"> # satellite-installer --scenario satellite \
+--foreman-proxy-plugin-remote-execution-script-mode pull-mqtt</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Configure the firewall to allow MQTT service on port 1883:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># firewall-cmd --add-port="1883/tcp"
+# firewall-cmd --runtime-to-permanent</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In <code>pull-mqtt</code> mode, hosts subscribe for job notifications to either your Satellite or any Capsule&#160;Server through which they are registered.
+Therefore, it is recommended to ensure that Satellite&#160;Server sends remote execution jobs to that same Satellite (or Capsule).</p>
+</div>
+</li>
+<li>
+<p>In the Satellite web UI, navigate to <strong>Administer</strong> &gt; <strong>Settings</strong>.</p>
+</li>
+<li>
+<p>On the <strong>Content</strong> tab, set the value of <strong>Prefer registered through Capsule for remote execution</strong> to <strong>Yes</strong>.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>After you set up the pull-based transport on Satellite, you must also configure it on each host.
+For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.12/html-single/managing_hosts/index#transport-modes-for-remote-execution_managing-hosts">Transport Modes for Remote Execution</a> in <em>Managing Hosts</em>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="configuring-for-uefi-http-boot-provisioning-in-an-ipv6-network_satellite"><a class="anchor" href="#configuring-for-uefi-http-boot-provisioning-in-an-ipv6-network_satellite"></a>4.6. Configuring Satellite for UEFI HTTP Boot Provisioning in an IPv6 Network</h3>
 <div class="paragraph">
 <p>Use this procedure to configure Satellite to provision hosts in an IPv6 network with UEFI HTTP Boot provisioning.</p>
 </div>
@@ -2189,12 +2256,12 @@ Satellite cannot identify clients that are booting from the network by a remote 
 </div>
 </div>
 <div class="sect2">
-<h3 id="Configuring_Server_with_an_HTTP_Proxy_satellite"><a class="anchor" href="#Configuring_Server_with_an_HTTP_Proxy_satellite"></a>4.6. Configuring Satellite&#160;Server with an HTTP Proxy</h3>
+<h3 id="Configuring_Server_with_an_HTTP_Proxy_satellite"><a class="anchor" href="#Configuring_Server_with_an_HTTP_Proxy_satellite"></a>4.7. Configuring Satellite&#160;Server with an HTTP Proxy</h3>
 <div class="paragraph">
 <p>Use the following procedures to configure Satellite with an HTTP proxy.</p>
 </div>
 <div class="sect3">
-<h4 id="adding-a-default-http-proxy_satellite"><a class="anchor" href="#adding-a-default-http-proxy_satellite"></a>4.6.1. Adding a Default HTTP Proxy to Satellite</h4>
+<h4 id="adding-a-default-http-proxy_satellite"><a class="anchor" href="#adding-a-default-http-proxy_satellite"></a>4.7.1. Adding a Default HTTP Proxy to Satellite</h4>
 <div class="paragraph">
 <p>If your network uses an HTTP Proxy, you can configure Satellite&#160;Server to use an HTTP proxy for requests to the Red&#160;Hat Content Delivery Network (CDN) or another content source.
 Use the FQDN instead of the IP address where possible to avoid losing connectivity because of network changes.</p>
@@ -2274,7 +2341,7 @@ To use the CLI instead of the Satellite web UI, see the <a href="#cli-adding-a-d
 </div>
 </div>
 <div class="sect3">
-<h4 id="configuring-selinux-to-ensure-access-on-custom-ports_satellite"><a class="anchor" href="#configuring-selinux-to-ensure-access-on-custom-ports_satellite"></a>4.6.2. Configuring SELinux to Ensure Access to Satellite on Custom Ports</h4>
+<h4 id="configuring-selinux-to-ensure-access-on-custom-ports_satellite"><a class="anchor" href="#configuring-selinux-to-ensure-access-on-custom-ports_satellite"></a>4.7.2. Configuring SELinux to Ensure Access to Satellite on Custom Ports</h4>
 <div class="paragraph">
 <p>SELinux ensures access of Red&#160;Hat Satellite and Subscription Manager only to specific ports.
 In the case of the HTTP cache, the TCP ports are 8080, 8118, 8123, and 10001&#8202;&#8211;&#8202;10010.
@@ -2305,7 +2372,7 @@ http_cache_port_t       tcp    8080, 8118, 8123, 10001-10010
 </div>
 </div>
 <div class="sect3">
-<h4 id="using-an-http-proxy-for-all-http-requests_satellite"><a class="anchor" href="#using-an-http-proxy-for-all-http-requests_satellite"></a>4.6.3. Using an HTTP Proxy for all Satellite HTTP Requests</h4>
+<h4 id="using-an-http-proxy-for-all-http-requests_satellite"><a class="anchor" href="#using-an-http-proxy-for-all-http-requests_satellite"></a>4.7.3. Using an HTTP Proxy for all Satellite HTTP Requests</h4>
 <div class="paragraph">
 <p>If your Satellite&#160;Server must remain behind a firewall that blocks HTTP and HTTPS, you can configure a proxy for communication with external systems, including compute resources.</p>
 </div>
@@ -2341,7 +2408,7 @@ http_cache_port_t       tcp    8080, 8118, 8123, 10001-10010
 </div>
 </div>
 <div class="sect3">
-<h4 id="excluding-hosts-from-receiving-proxied-requests_satellite"><a class="anchor" href="#excluding-hosts-from-receiving-proxied-requests_satellite"></a>4.6.4. Excluding Hosts from Receiving Proxied Requests</h4>
+<h4 id="excluding-hosts-from-receiving-proxied-requests_satellite"><a class="anchor" href="#excluding-hosts-from-receiving-proxied-requests_satellite"></a>4.7.4. Excluding Hosts from Receiving Proxied Requests</h4>
 <div class="paragraph">
 <p>If you use an HTTP Proxy for all Satellite HTTP or HTTPS requests, you can prevent certain hosts from communicating through the proxy.</p>
 </div>
@@ -2374,7 +2441,7 @@ http_cache_port_t       tcp    8080, 8118, 8123, 10001-10010
 </div>
 </div>
 <div class="sect3">
-<h4 id="resetting-the-http-proxy_satellite"><a class="anchor" href="#resetting-the-http-proxy_satellite"></a>4.6.5. Resetting the HTTP Proxy</h4>
+<h4 id="resetting-the-http-proxy_satellite"><a class="anchor" href="#resetting-the-http-proxy_satellite"></a>4.7.5. Resetting the HTTP Proxy</h4>
 <div class="paragraph">
 <p>If you want to reset the current HTTP proxy setting, unset the <strong>Default HTTP Proxy</strong> setting.</p>
 </div>
@@ -2405,7 +2472,7 @@ http_cache_port_t       tcp    8080, 8118, 8123, 10001-10010
 </div>
 </div>
 <div class="sect2">
-<h3 id="enabling-power-management-on-managed-hosts_satellite"><a class="anchor" href="#enabling-power-management-on-managed-hosts_satellite"></a>4.7. Enabling Power Management on Managed Hosts</h3>
+<h3 id="enabling-power-management-on-managed-hosts_satellite"><a class="anchor" href="#enabling-power-management-on-managed-hosts_satellite"></a>4.8. Enabling Power Management on Managed Hosts</h3>
 <div class="paragraph">
 <p>To perform power management tasks on managed hosts using the intelligent platform management interface (IPMI) or a similar protocol, you must enable the baseboard management controller (BMC) module on Satellite&#160;Server.</p>
 </div>
@@ -2435,7 +2502,7 @@ For more information, see <a href="https://access.redhat.com/documentation/en-us
 </div>
 </div>
 <div class="sect2">
-<h3 id="configuring-dns-dhcp-and-tftp_satellite"><a class="anchor" href="#configuring-dns-dhcp-and-tftp_satellite"></a>4.8. Configuring DNS, DHCP, and TFTP on Satellite&#160;Server</h3>
+<h3 id="configuring-dns-dhcp-and-tftp_satellite"><a class="anchor" href="#configuring-dns-dhcp-and-tftp_satellite"></a>4.9. Configuring DNS, DHCP, and TFTP on Satellite&#160;Server</h3>
 <div class="paragraph">
 <p>To configure the DNS, DHCP, and TFTP services on Satellite&#160;Server, use the <code>satellite-installer</code> command with the options appropriate for your environment.
 To view a complete list of configurable options, enter the <code>satellite-installer --scenario satellite --help</code> command.</p>
@@ -2524,7 +2591,7 @@ You can view the settings used, including the <code>initial_admin_password</code
 </div>
 </div>
 <div class="sect2">
-<h3 id="disabling-dns-dhcp-tftp-for-unmanaged-networks_satellite"><a class="anchor" href="#disabling-dns-dhcp-tftp-for-unmanaged-networks_satellite"></a>4.9. Disabling DNS, DHCP, and TFTP for Unmanaged Networks</h3>
+<h3 id="disabling-dns-dhcp-tftp-for-unmanaged-networks_satellite"><a class="anchor" href="#disabling-dns-dhcp-tftp-for-unmanaged-networks_satellite"></a>4.10. Disabling DNS, DHCP, and TFTP for Unmanaged Networks</h3>
 <div class="paragraph">
 <p>If you want to manage TFTP, DHCP, and DNS services manually, you must prevent Satellite from maintaining these services on the operating system and disable orchestration to avoid DHCP and DNS validation errors.
 However, Satellite does not remove the back-end services on the operating system.</p>
@@ -2584,7 +2651,7 @@ When associating a Capsule to turn orchestration on, ensure the required DHCP an
 </div>
 </div>
 <div class="sect2">
-<h3 id="Configuring_Server_for_Outgoing_Emails_satellite"><a class="anchor" href="#Configuring_Server_for_Outgoing_Emails_satellite"></a>4.10. Configuring Satellite&#160;Server for Outgoing Emails</h3>
+<h3 id="Configuring_Server_for_Outgoing_Emails_satellite"><a class="anchor" href="#Configuring_Server_for_Outgoing_Emails_satellite"></a>4.11. Configuring Satellite&#160;Server for Outgoing Emails</h3>
 <div class="paragraph">
 <p>To send email messages from Satellite&#160;Server, you can use either an SMTP server, or the <code>sendmail</code> command.</p>
 </div>
@@ -2790,14 +2857,14 @@ For information on configuring email notifications for individual users or user 
 </div>
 </div>
 <div class="sect2">
-<h3 id="configuring-an-alternate-cname_satellite"><a class="anchor" href="#configuring-an-alternate-cname_satellite"></a>4.11. Configuring an Alternate CNAME for Satellite</h3>
+<h3 id="configuring-an-alternate-cname_satellite"><a class="anchor" href="#configuring-an-alternate-cname_satellite"></a>4.12. Configuring an Alternate CNAME for Satellite</h3>
 <div class="paragraph">
 <p>You can configure an alternate CNAME for Satellite.
 This might be useful if you want to deploy the Satellite web interface on a different domain name than the one that is used by client systems to connect to Satellite.
 You must plan the alternate CNAME configuration in advance prior to installing Capsules and registering hosts to Satellite to avoid redeploying new certificates to hosts.</p>
 </div>
 <div class="sect3">
-<h4 id="configuring-satellite-with-an-alternate-cname_satellite"><a class="anchor" href="#configuring-satellite-with-an-alternate-cname_satellite"></a>4.11.1. Configuring Satellite with an Alternate CNAME</h4>
+<h4 id="configuring-satellite-with-an-alternate-cname_satellite"><a class="anchor" href="#configuring-satellite-with-an-alternate-cname_satellite"></a>4.12.1. Configuring Satellite with an Alternate CNAME</h4>
 <div class="paragraph">
 <p>Use this procedure to configure Satellite with an alternate CNAME.
 Note that the procedures for users of a default Satellite certificate and custom certificate differ.</p>
@@ -2825,7 +2892,7 @@ For more information, see <a href="https://access.redhat.com/documentation/en-us
 </div>
 </div>
 <div class="sect3">
-<h4 id="configuring-hosts-to-use-an-alternate-cname-for-content-management_satellite"><a class="anchor" href="#configuring-hosts-to-use-an-alternate-cname-for-content-management_satellite"></a>4.11.2. Configuring Hosts to Use an Alternate Satellite CNAME for Content Management</h4>
+<h4 id="configuring-hosts-to-use-an-alternate-cname-for-content-management_satellite"><a class="anchor" href="#configuring-hosts-to-use-an-alternate-cname-for-content-management_satellite"></a>4.12.2. Configuring Hosts to Use an Alternate Satellite CNAME for Content Management</h4>
 <div class="paragraph">
 <p>If Satellite is configured with an alternate CNAME, you can configure hosts to use the alternate Satellite CNAME for content management.
 To do this, you must point hosts to the alternate Satellite CNAME prior to registering the hosts to Satellite.
@@ -2863,7 +2930,7 @@ baseurl=https://<em>alternate_fqdn.example.com</em>/pulp/content/</pre>
 </div>
 </div>
 <div class="sect2">
-<h3 id="Configuring_Server_with_a_Custom_SSL_Certificate_satellite"><a class="anchor" href="#Configuring_Server_with_a_Custom_SSL_Certificate_satellite"></a>4.12. Configuring Satellite&#160;Server with a Custom SSL Certificate</h3>
+<h3 id="Configuring_Server_with_a_Custom_SSL_Certificate_satellite"><a class="anchor" href="#Configuring_Server_with_a_Custom_SSL_Certificate_satellite"></a>4.13. Configuring Satellite&#160;Server with a Custom SSL Certificate</h3>
 <div class="paragraph">
 <p>By default, Red&#160;Hat Satellite uses a self-signed SSL certificate to enable encrypted communications between Satellite&#160;Server, external Capsule&#160;Servers, and all hosts.
 If you cannot use a Satellite self-signed certificate, you can configure Satellite&#160;Server to use an SSL certificate signed by an external Certificate Authority.</p>
@@ -2890,7 +2957,7 @@ For more information, see <a href="https://access.redhat.com/documentation/en-us
 </ol>
 </div>
 <div class="sect3">
-<h4 id="creating-a-custom-certificate_satellite"><a class="anchor" href="#creating-a-custom-certificate_satellite"></a>4.12.1. Creating a Custom SSL Certificate for Satellite&#160;Server</h4>
+<h4 id="creating-a-custom-certificate_satellite"><a class="anchor" href="#creating-a-custom-certificate_satellite"></a>4.13.1. Creating a Custom SSL Certificate for Satellite&#160;Server</h4>
 <div class="paragraph">
 <p>Use this procedure to create a custom SSL certificate for Satellite&#160;Server.
 If you already have a custom SSL certificate for Satellite&#160;Server, skip this procedure.</p>
@@ -3027,7 +3094,7 @@ In response to the request, you can expect to receive a Certificate Authority bu
 </div>
 </div>
 <div class="sect3">
-<h4 id="Deploying_a_Custom_SSL_Certificate_to_Server_satellite"><a class="anchor" href="#Deploying_a_Custom_SSL_Certificate_to_Server_satellite"></a>4.12.2. Deploying a Custom SSL Certificate to Satellite&#160;Server</h4>
+<h4 id="Deploying_a_Custom_SSL_Certificate_to_Server_satellite"><a class="anchor" href="#Deploying_a_Custom_SSL_Certificate_to_Server_satellite"></a>4.13.2. Deploying a Custom SSL Certificate to Satellite&#160;Server</h4>
 <div class="paragraph">
 <p>Use this procedure to configure your Satellite&#160;Server to use a custom SSL certificate signed by a Certificate Authority.
 The <code>katello-certs-check</code> command validates the input certificate files and returns the commands necessary to deploy a custom SSL certificate to Satellite&#160;Server.</p>
@@ -3114,7 +3181,7 @@ It is required, for example, when upgrading Satellite&#160;Server.
 </div>
 </div>
 <div class="sect3">
-<h4 id="deploying-a-custom-ssl-certificate-to-hosts_satellite"><a class="anchor" href="#deploying-a-custom-ssl-certificate-to-hosts_satellite"></a>4.12.3. Deploying a Custom SSL Certificate to Hosts</h4>
+<h4 id="deploying-a-custom-ssl-certificate-to-hosts_satellite"><a class="anchor" href="#deploying-a-custom-ssl-certificate-to-hosts_satellite"></a>4.13.3. Deploying a Custom SSL Certificate to Hosts</h4>
 <div class="paragraph">
 <p>After you configure Satellite&#160;Server to use a custom SSL certificate, you must also install the <code>katello-ca-consumer</code> package on every host that is registered to this Satellite&#160;Server.</p>
 </div>
@@ -3134,7 +3201,7 @@ It is required, for example, when upgrading Satellite&#160;Server.
 </div>
 </div>
 <div class="sect2">
-<h3 id="using-external-databases_satellite"><a class="anchor" href="#using-external-databases_satellite"></a>4.13. Using External Databases with Satellite</h3>
+<h3 id="using-external-databases_satellite"><a class="anchor" href="#using-external-databases_satellite"></a>4.14. Using External Databases with Satellite</h3>
 <div class="paragraph">
 <p>As part of the installation process for Red&#160;Hat Satellite, the <strong>satellite-installer</strong> command installs PostgreSQL databases on the same server as Satellite.
 In certain Satellite deployments, using external databases instead of the default local databases can help with the server load.</p>
@@ -3164,7 +3231,7 @@ Edit the parameters of <code>satellite-installer</code> to point to the new data
 </ol>
 </div>
 <div class="sect3">
-<h4 id="postgresql-as-an-external-database-considerations_satellite"><a class="anchor" href="#postgresql-as-an-external-database-considerations_satellite"></a>4.13.1. PostgreSQL as an External Database Considerations</h4>
+<h4 id="postgresql-as-an-external-database-considerations_satellite"><a class="anchor" href="#postgresql-as-an-external-database-considerations_satellite"></a>4.14.1. PostgreSQL as an External Database Considerations</h4>
 <div class="paragraph">
 <p>Foreman, Katello, and Candlepin use the PostgreSQL database.
 If you want to use PostgreSQL as an external database, the following information can help you decide if this option is right for your Satellite configuration.
@@ -3208,7 +3275,7 @@ If you have slow queries, contact Red Hat Support.</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="preparing-a-host-for-external-databases_satellite"><a class="anchor" href="#preparing-a-host-for-external-databases_satellite"></a>4.13.2. Preparing a Host for External Databases</h4>
+<h4 id="preparing-a-host-for-external-databases_satellite"><a class="anchor" href="#preparing-a-host-for-external-databases_satellite"></a>4.14.2. Preparing a Host for External Databases</h4>
 <div class="paragraph">
 <p>Install a freshly provisioned system with the latest Red&#160;Hat Enterprise Linux 8 to host the external databases.</p>
 </div>
@@ -3271,7 +3338,7 @@ For more information about modules and lifecycle streams on Red&#160;Hat Enterpr
 </div>
 </div>
 <div class="sect3">
-<h4 id="installing-postgresql_satellite"><a class="anchor" href="#installing-postgresql_satellite"></a>4.13.3. Installing PostgreSQL</h4>
+<h4 id="installing-postgresql_satellite"><a class="anchor" href="#installing-postgresql_satellite"></a>4.14.3. Installing PostgreSQL</h4>
 <div class="paragraph">
 <p>You can install only the same version of PostgreSQL that is installed with the <code>satellite-installer</code> tool during an internal database installation.
 Satellite supports PostgreSQL version 12.</p>
@@ -3408,7 +3475,7 @@ If the connection succeeds, the commands return <code>1</code>.</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="Configuring_Server_to_Use_External_Databases_satellite"><a class="anchor" href="#Configuring_Server_to_Use_External_Databases_satellite"></a>4.13.4. Configuring Satellite&#160;Server to use External Databases</h4>
+<h4 id="Configuring_Server_to_Use_External_Databases_satellite"><a class="anchor" href="#Configuring_Server_to_Use_External_Databases_satellite"></a>4.14.4. Configuring Satellite&#160;Server to use External Databases</h4>
 <div class="paragraph">
 <p>Use the <code>satellite-installer</code> command to configure Satellite to connect to an external PostgreSQL database.</p>
 </div>
@@ -3463,7 +3530,7 @@ If the connection succeeds, the commands return <code>1</code>.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="tuning-with-predefined-profiles_satellite"><a class="anchor" href="#tuning-with-predefined-profiles_satellite"></a>4.14. Tuning Satellite&#160;Server with Predefined Profiles</h3>
+<h3 id="tuning-with-predefined-profiles_satellite"><a class="anchor" href="#tuning-with-predefined-profiles_satellite"></a>4.15. Tuning Satellite&#160;Server with Predefined Profiles</h3>
 <div class="paragraph">
 <p>If your Satellite deployment includes more than 5000 hosts, you can use predefined tuning profiles to improve performance of Satellite.</p>
 </div>
