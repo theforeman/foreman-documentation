@@ -45,7 +45,7 @@ endif
 all: html
 
 prepare:
-	@mkdir -p $(BUILD_DIR) $(DEST_DIR) $(IMAGES_DIR) $(DEST_DIR)/sass-cache
+	@mkdir -p $(BUILD_DIR) $(DEST_DIR) $(IMAGES_DIR)
 
 html: prepare $(IMAGES_TS) $(DEST_HTML)
 
@@ -67,7 +67,7 @@ open-pdf: pdf
 	${BROWSER_OPEN} "$(realpath $(ROOTDIR)/$(DEST_PDF))"
 
 $(DEST_DIR)/$(BUILD).css: $(CSS_SOURCES)
-	bundle exec sass --sourcemap=none --cache-location $(DEST_DIR)/sass-cache --style $(CSS_STYLE) -I $(COMMON_DIR)/css $(COMMON_DIR)/css/default.scss $@
+	bundle exec sass --sourcemap=none --no-cache --style $(CSS_STYLE) -I $(COMMON_DIR)/css $(COMMON_DIR)/css/default.scss $@
 
 $(IMAGES_TS): $(IMAGES)
 	@[[ -h ./images/common ]] || echo "FAILURE: Missing ./images dir with ./images/common symlink to commons!"
