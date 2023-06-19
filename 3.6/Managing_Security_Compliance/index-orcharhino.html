@@ -57,10 +57,11 @@
 </li>
 <li><a href="#deploying-compliance-policies_security-compliance">10. Deploying Compliance Policies</a>
 <ul class="sectlevel2">
-<li><a href="#Deploying_a_Policy_in_a_Host_Group_Using_Ansible_security-compliance">10.1. Deploying a Policy in a Host Group Using Ansible</a></li>
-<li><a href="#Deploying_a_Policy_on_a_Host_Using_Ansible_security-compliance">10.2. Deploying a Policy on a Host Using Ansible</a></li>
-<li><a href="#Deploying_a_Policy_in_a_Host_Group_Using_Puppet_security-compliance">10.3. Deploying a Policy in a Host Group Using Puppet</a></li>
-<li><a href="#Deploying_a_Policy_on_a_Host_Using_Puppet_security-compliance">10.4. Deploying a Policy on a Host Using Puppet</a></li>
+<li><a href="#inclusion-of-remote-scap-resources_security-compliance">10.1. Inclusion of Remote SCAP Resources</a></li>
+<li><a href="#Deploying_a_Policy_in_a_Host_Group_Using_Ansible_security-compliance">10.2. Deploying a Policy in a Host Group Using Ansible</a></li>
+<li><a href="#Deploying_a_Policy_on_a_Host_Using_Ansible_security-compliance">10.3. Deploying a Policy on a Host Using Ansible</a></li>
+<li><a href="#Deploying_a_Policy_in_a_Host_Group_Using_Puppet_security-compliance">10.4. Deploying a Policy in a Host Group Using Puppet</a></li>
+<li><a href="#Deploying_a_Policy_on_a_Host_Using_Puppet_security-compliance">10.5. Deploying a Policy on a Host Using Puppet</a></li>
 </ul>
 </li>
 <li><a href="#running-a-security-compliance-scan-on-demand_security-compliance">11. Running a Security Compliance Scan on Demand</a></li>
@@ -724,12 +725,81 @@ If you use Ansible, you must run the Ansible role manually again or have configu
 <p>Deployment of a compliance policy includes installing the SCAP client, updating the CRON schedule file, and uploading the SCAP content selected in the policy onto a host.</p>
 </div>
 <div class="sect2">
-<h3 id="Deploying_a_Policy_in_a_Host_Group_Using_Ansible_security-compliance"><a class="anchor" href="#Deploying_a_Policy_in_a_Host_Group_Using_Ansible_security-compliance"></a>10.1. Deploying a Policy in a Host Group Using Ansible</h3>
+<h3 id="inclusion-of-remote-scap-resources_security-compliance"><a class="anchor" href="#inclusion-of-remote-scap-resources_security-compliance"></a>10.1. Inclusion of Remote SCAP Resources</h3>
+<div class="paragraph">
+<p>SCAP data streams can reference remote resources, such as OVAL files, that the SCAP client fetches over the internet when it runs on hosts.
+If a data stream requires a remote resource, you can see a warning from the OpenSCAP Scanner tool on your orcharhino&#160;Server, such as:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># oscap info <em>/usr/share/xml/scap/ssg/content/ssg-rhel8-ds.xml</em> | grep "WARNING"
+WARNING: Datastream component 'scap_org.open-scap_cref_security-data-oval-com.redhat.rhsa-RHEL8.xml.bz2'
+points out to the remote 'https://access.redhat.com/security/data/oval/com.redhat.rhsa-RHEL8.xml.bz2'.
+Use '--fetch-remote-resources' option to download it.
+WARNING: Skipping 'https://access.redhat.com/security/data/oval/com.redhat.rhsa-RHEL8.xml.bz2' file
+which is referenced from datastream</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>By default, the SCAP client is configured to ignore the remote resources, which causes the XCCDF rules that rely on the resources to be skipped and result in the <code>notchecked</code> status.
+In a connected network environment, you can enable the download of remote resources on hosts in orcharhino.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Using the Ansible deployment method</dt>
+<dd>
+<p>Override the following Ansible variable:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Name: <code>foreman_scap_client_fetch_remote_resources</code></p>
+</li>
+<li>
+<p>Type: <code>boolean</code></p>
+</li>
+<li>
+<p>Value: <code>true</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For more information, see <a href="https://docs.theforeman.org/3.6/Managing_Configurations_Ansible/index-orcharhino.html#Overriding_Ansible_Variables_in_orcharhino_ansible">Overriding Ansible Variables in orcharhino</a> in <em>Configuring Hosts Using Ansible</em>.</p>
+</div>
+</dd>
+<dt class="hdlist1">Using the Puppet deployment method</dt>
+<dd>
+<p>Configure the following Puppet Smart Class Parameter:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Name: <code>fetch_remote_resources</code></p>
+</li>
+<li>
+<p>Type: <code>boolean</code></p>
+</li>
+<li>
+<p>Value: <code>true</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For more information, see <a href="https://docs.theforeman.org/3.6/Managing_Configurations_Puppet/index-orcharhino.html#Configuring_Puppet_Smart_Class_Parameters_managing-configurations-puppet">Configuring Puppet Smart Class Parameters</a> in <em>Configuring Hosts Using Puppet</em>.</p>
+</div>
+</dd>
+</dl>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Deploying_a_Policy_in_a_Host_Group_Using_Ansible_security-compliance"><a class="anchor" href="#Deploying_a_Policy_in_a_Host_Group_Using_Ansible_security-compliance"></a>10.2. Deploying a Policy in a Host Group Using Ansible</h3>
 <div class="paragraph">
 <p>Use this procedure to deploy a compliance policy in a host group using Ansible.</p>
 </div>
 <div class="paragraph">
 <p>After you complete the procedure, the Ansible role will install the SCAP client and configure OpenSCAP scans on the host according to the selected compliance policy.</p>
+</div>
+<div class="paragraph">
+<p>The SCAP content in the compliance policy might require remote resources.
+For more information, see <a href="#inclusion-of-remote-scap-resources_security-compliance">Inclusion of Remote SCAP Resources</a>.</p>
 </div>
 <div class="ulist">
 <div class="title">Prerequisites</div>
@@ -774,12 +844,16 @@ For more information, see <a href="#Installing_the_OpenSCAP_Plugin_security-comp
 </div>
 </div>
 <div class="sect2">
-<h3 id="Deploying_a_Policy_on_a_Host_Using_Ansible_security-compliance"><a class="anchor" href="#Deploying_a_Policy_on_a_Host_Using_Ansible_security-compliance"></a>10.2. Deploying a Policy on a Host Using Ansible</h3>
+<h3 id="Deploying_a_Policy_on_a_Host_Using_Ansible_security-compliance"><a class="anchor" href="#Deploying_a_Policy_on_a_Host_Using_Ansible_security-compliance"></a>10.3. Deploying a Policy on a Host Using Ansible</h3>
 <div class="paragraph">
 <p>Use this procedure to configure OpenSCAP scans on a host.</p>
 </div>
 <div class="paragraph">
 <p>After you complete the procedure, the Ansible role will install the SCAP client and configure OpenSCAP scans on the host according to the selected compliance policy.</p>
+</div>
+<div class="paragraph">
+<p>The SCAP content in the compliance policy might require remote resources.
+For more information, see <a href="#inclusion-of-remote-scap-resources_security-compliance">Inclusion of Remote SCAP Resources</a>.</p>
 </div>
 <div class="ulist">
 <div class="title">Prerequisites</div>
@@ -842,12 +916,16 @@ For more information, see <a href="#Installing_the_OpenSCAP_Plugin_security-comp
 </div>
 </div>
 <div class="sect2">
-<h3 id="Deploying_a_Policy_in_a_Host_Group_Using_Puppet_security-compliance"><a class="anchor" href="#Deploying_a_Policy_in_a_Host_Group_Using_Puppet_security-compliance"></a>10.3. Deploying a Policy in a Host Group Using Puppet</h3>
+<h3 id="Deploying_a_Policy_in_a_Host_Group_Using_Puppet_security-compliance"><a class="anchor" href="#Deploying_a_Policy_in_a_Host_Group_Using_Puppet_security-compliance"></a>10.4. Deploying a Policy in a Host Group Using Puppet</h3>
 <div class="paragraph">
 <p>Use this procedure to configure all the OpenSCAP requirements for a host group.</p>
 </div>
 <div class="paragraph">
 <p>After you complete the procedure, Puppet will configure OpenSCAP scans on the hosts on the next Puppet run.</p>
+</div>
+<div class="paragraph">
+<p>The SCAP content in your compliance policy might require remote resources.
+For more information, see <a href="#inclusion-of-remote-scap-resources_security-compliance">Inclusion of Remote SCAP Resources</a>.</p>
 </div>
 <div class="ulist">
 <div class="title">Prerequisites</div>
@@ -892,12 +970,16 @@ For more information, see <a href="#Installing_the_OpenSCAP_Plugin_security-comp
 </div>
 </div>
 <div class="sect2">
-<h3 id="Deploying_a_Policy_on_a_Host_Using_Puppet_security-compliance"><a class="anchor" href="#Deploying_a_Policy_on_a_Host_Using_Puppet_security-compliance"></a>10.4. Deploying a Policy on a Host Using Puppet</h3>
+<h3 id="Deploying_a_Policy_on_a_Host_Using_Puppet_security-compliance"><a class="anchor" href="#Deploying_a_Policy_on_a_Host_Using_Puppet_security-compliance"></a>10.5. Deploying a Policy on a Host Using Puppet</h3>
 <div class="paragraph">
 <p>Use this procedure to configure all the OpenSCAP requirements for an existing host.</p>
 </div>
 <div class="paragraph">
 <p>After you complete the procedure, Puppet will configure OpenSCAP scans on the host on the next Puppet run.</p>
+</div>
+<div class="paragraph">
+<p>The SCAP content in your compliance policy might require remote resources.
+For more information, see <a href="#inclusion-of-remote-scap-resources_security-compliance">Inclusion of Remote SCAP Resources</a>.</p>
 </div>
 <div class="ulist">
 <div class="title">Prerequisites</div>
