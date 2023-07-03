@@ -1,23 +1,24 @@
 [id="Renaming_Smart_Proxy_{context}"]
 = Renaming {SmartProxyServerTitle}
 
-The host name of {SmartProxyServer} is referenced by {ProjectServer} components, and all hosts registered to it.
-This procedure ensures that you update all references to the new host name.
+The host name of {SmartProxyServer} is referenced by {ProjectServer} components and all hosts registered to it.
+This procedure ensures that in addition to renaming {SmartProxyServer}, you also update all references to the new host name.
 
-[NOTE]
+[WARNING]
 ====
-* Both the `hostname` and `hostname -f` commands must return the FQDN of {SmartProxyServer} or the `{project-change-hostname}` script will fail to complete.
-
-* If the `hostname` command returns the shortname of {SmartProxyServer} instead of the FQDN, use `hostnamectl set-hostname _old_fqdn_` to set the old FQDN correctly before attempting to use the `{project-change-hostname}` script.
+Renaming your {SmartProxyServer} host shuts down all {Project} services on that host.
+The services restart after the renaming is complete.
 ====
 
 .Prerequisites
-* Backup {SmartProxyServer}.
-The `{project-change-hostname}` script makes irreversible changes to {SmartProxyServer}.
-If the renaming process is not successful, you must restore it from a backup.
-+
-Perform a backup before changing a host name.
+* Back up your {SmartProxyServer} before renaming.
+If you fail to successfully rename it, restore it from the backup.
 For more information, see xref:backing-up-{project-context}-server-and-{smart-proxy-context}_{context}[].
+
+* Run the `hostname` and `hostname -f` commands on {SmartProxyServer}.
+If both commands do not return the FQDN of {SmartProxyServer}, the `{project-change-hostname}` script will fail to complete.
++
+If the `hostname` command returns the shortname of {SmartProxyServer} instead of the FQDN, use `hostnamectl set-hostname _My_Old_FQDN_` to set the old FQDN correctly before attempting to use the `{project-change-hostname}` script.
 
 .Procedure
 . On {ProjectServer}, generate a new certificates archive file for {SmartProxyServer}.
@@ -35,14 +36,14 @@ Ensure that you enter the full path to the `.tar` file.
 +
 * If you are using a custom SSL certificate, create a new SSL certificate for {SmartProxyServer}.
 For more information, see {InstallingSmartProxyDocURL}configuring-capsule-custom-server-certificate_{smart-proxy-context}[Configuring {SmartProxyServer} with a Custom SSL Certificate] in _{InstallingSmartProxyDocTitle}_.
-. On {ProjectServer}, copy the certificates archive file to {SmartProxyServer}, providing the `root` user’s password when prompted.
-In this example the archive file is copied to the `root` user’s home directory, but you may prefer to copy it elsewhere.
+. On {ProjectServer}, copy the certificates archive file to {SmartProxyServer}.
+For example, to copy the archive file to the `root` user's home directory:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 # scp /root/_new-{smartproxy-example-com}-certs.tar_ root@_{smartproxy-example-com}_:
 ----
-. On {SmartProxyServer}, run the `{project-change-hostname}` script and provide the host's new name, {Project} credentials, and certificates archive filename.
+. On {SmartProxyServer}, run the `{project-change-hostname}` script and provide the host's new name, {Project} credentials, and certificates archive file name.
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
@@ -52,11 +53,11 @@ In this example the archive file is copied to the `root` user’s home directory
 ----
 +
 Ensure that you enter the full path to the `.tar` file.
-. Optional: If you have created a custom certificate for {SmartProxyServer}, on {SmartProxyServer}, to deploy the certificate, enter the `{foreman-installer}` command that the `{certs-generate}` command returns.
+. If you have created a custom certificate for {SmartProxyServer}, deploy the certificate on {SmartProxyServer} by entering the `{foreman-installer}` command that the `{certs-generate}` command returned in a previous step.
 For more information, see {InstallingSmartProxyDocURL}deploying-a-custom-ssl-certificate-to-capsule-server_{smart-proxy-context}[Deploying a Custom SSL Certificate to {SmartProxyServer}] in _{InstallingSmartProxyDocTitle}_.
 . On all {SmartProxy} clients, enter the following commands to reinstall the bootstrap RPM, reregister clients, and refresh their subscriptions.
 +
-You can use remote execution feature to perform this step.
+You can use the remote execution feature to perform this step.
 For more information, see {ManagingHostsDocURL}Configuring_and_Setting_Up_Remote_Jobs_managing-hosts[Configuring and Setting up Remote Jobs] in _{ManagingHostsDocTitle}_.
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
@@ -72,7 +73,8 @@ For more information, see {ManagingHostsDocURL}Configuring_and_Setting_Up_Remote
 # subscription-manager refresh
 ----
 +
-. In the {ProjectWebUI}, navigate to *Infrastructure* > *{SmartProxies}*.
-. Locate {SmartProxyServer} in the list, and click *Edit* to the right of it.
-. Edit the *Name* and *URL* fields to match {SmartProxyServer}'s new host name, then click *Submit*.
-. On your DNS server, add a record for {SmartProxyServer}'s new host name, and delete the record for the previous host name.
+. Update the {SmartProxy} host name in the {ProjectWebUI}.
+.. In the {ProjectWebUI}, navigate to *Infrastructure* > *{SmartProxies}*.
+.. Locate {SmartProxyServer} in the list, and click *Edit*.
+.. Edit the *Name* and *URL* fields to match {SmartProxyServer}'s new host name, then click *Submit*.
+.. On your DNS server, add a record for the new hostname of your {SmartProxyServer}, and delete the record of the previous host name.
