@@ -7,10 +7,16 @@ This git repository contains PoC of improving Foreman documentation.
 ## Foreman Guides
 
 This is a tree of documentation based on Red Hat Satellite 6 official books.
-Contributions are welcome.
 See README in the guides/ subdirectory for more information.
 
 * [guides](guides/README.md)
+
+## Contributing
+
+Contributions are welcome.
+
+New contributions are subject to technical review for accuracy and editorial review for consistency.
+For an overview of what to expect from editorial review, see [Peer review guide for technical documentation](https://redhat-documentation.github.io/peer-review/#checklist).
 
 ## Static Site
 
