@@ -27,7 +27,7 @@
 <h1>Managing Content</h1>
 <div class="details">
 <span id="revnumber">version 3.6 (unsupported),</span>
-<span id="revdate">published Jul 12 2023</span>
+<span id="revdate">published Jul 13 2023</span>
 </div>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
@@ -5468,25 +5468,62 @@ The <strong>Module Streams</strong> option filters modular RPMs and errata, but 
 <div class="sect2">
 <h3 id="Resolving_Package_Dependencies_content-management"><a class="anchor" href="#Resolving_Package_Dependencies_content-management"></a>8.8. Resolving Package Dependencies</h3>
 <div class="paragraph">
-<p>In Foreman, you can use the package dependency resolution feature to ensure that any dependencies that packages have within a Content View are added to the dependent repository as part of the Content View publication process.</p>
+<p>In Foreman, you can use the package dependency resolution feature, also known as dependency solving, to ensure that any dependencies that packages have within a Content View are added to the dependent repository as part of the Content View publication process.</p>
 </div>
 <div class="paragraph">
-<p>You can select to resolve package dependencies for any Content View that you want, or you can change the default setting to enable or disable resolving package dependencies for all new Content Views.</p>
+<p>Dependency solving is relevant only in limited contexts.
+In the most common use cases, such as adding a security errata to a Content View with incremental update, dependency solving is likely unnecessary and can cause significant delays to Content View publication.</p>
 </div>
 <div class="paragraph">
-<p>Note that resolving package dependencies can cause significant delays to Content View promotion.
-The package dependency resolution feature does not consider packages that are installed on your system independently of the Content View or solve dependencies across repositories.</p>
+<p>The package dependency resolution feature does not take into account which packages are installed on your clients.
+Dependency solving considers only packages within the repositories of the Content View.
+For example, if a Content View has only AppStream in it, dependency solving will not know to pull dependent BaseOS content in at publish time.
+For more information, see <a href="https://docs.theforeman.org/3.6/Managing_Content/index-katello.html#Limitations_to_Repository_Dependency_Resolution_content-management">Limitations to Repository Dependency Resolution</a> in <em>Managing Content</em>.</p>
 </div>
 <div class="paragraph">
 <div class="title">Resolving Package Dependencies and Filters</div>
-<p>Filters do not resolve any dependencies of the packages listed in the filters.
+<p>Filters, by default, do not resolve any dependencies of the packages listed in the filters.
 This might require some level of testing to determine what dependencies are required.</p>
 </div>
 <div class="paragraph">
 <p>If you add a filter that excludes some packages that are required and the Content View has dependency resolution enabled, Foreman ignores the rules you create in your filter in favor of resolving the package dependency.</p>
 </div>
 <div class="paragraph">
-<p>If you create a content filter for security purposes, to resolve a package dependency, Foreman can add packages that you might consider insecure.</p>
+<p>If you create a content filter for security purposes but choose to resolve dependencies, Foreman can add packages that you might consider insecure.</p>
+</div>
+<div class="paragraph">
+<div class="title">Filtering and Dependency Solving Recommendations</div>
+<p>Be mindful when combining exclusion filters with dependency solving.
+Consider this example: You recreate Red&#160;Hat Enterprise Linux 8.3 via Content View filters and include select errata from a later Red&#160;Hat Enterprise Linux 8 y-release.
+To achieve this, you exclude all errata after the Red&#160;Hat Enterprise Linux 8.3 release date minus some select few that are needed, and enable dependency solving.
+Dependency solving may pull in more packages than expected, which would cause the client to stray further from being a Red&#160;Hat Enterprise Linux 8.3 machine.
+If dependency solving pulls in too many unwanted packages, consider identifying by hand the core basic dependencies that the extra packages and errata need.
+If, in the above case, the user does not need the extra errata and packages, then Content View filtering is not needed at all.
+You can enable and use the Red&#160;Hat Enterprise Linux 8.3 repository on the <strong>Content</strong> &gt; <strong>Red Hat Repositories</strong> page in the Foreman web UI.</p>
+</div>
+<div class="paragraph">
+<p>In some cases, excluding packages may make dependency solving impossible for DNF.
+For example, if you make a Red&#160;Hat Enterprise Linux 8.3 repository with a few excluded packages, <code>dnf update</code> could fail.
+Instead of turning on dependency solving to resolve the issue, investigate the error from DNF and adjust the filters to stop excluding the missing dependency.
+If dependency solving is enabled, the repository may stray from Red&#160;Hat Enterprise Linux 8.3 as discussed above.</p>
+</div>
+<div class="paragraph">
+<p>If a Content View version is out of date, packages that are part of a newer erratum may depend on packages that are not within the Content View version.
+Before incrementally adding the erratum with dependency solving, consider publishing a new Content View version instead.
+Incrementally adding the erratum with dependency solving might pull in many new packages, which could alter the intended scope of the Content View version.</p>
+</div>
+<div class="paragraph">
+<p>If a single package is incrementally added to a Content View version, dependency solving may be needed to install that package.
+Keep in mind that the dependency solving recommendations above also apply to incremental updates.</p>
+</div>
+<div class="paragraph">
+<p>If dependency solving must be used, consider using more Content Views with fewer repositories and combining them together using composite Content Views.
+Dependency solving time increases significantly with more repositories because every repository in a Content View is examined for dependencies.</p>
+</div>
+<div class="paragraph">
+<div class="title">Enabling Dependency Solving</div>
+<p>You can select to resolve package dependencies per Content View or have it enabled by default in <strong>Settings &gt; Content &gt; "content view Dependency Solving Default"</strong>.
+Foreman community does not recommend enabling Content View dependency solving by default unless the pitfalls above are well-understood.</p>
 </div>
 </div>
 <div class="sect2">
@@ -9379,6 +9416,10 @@ For example, if the Content View is version 1.0, it becomes Content View version
 </div>
 <div class="paragraph">
 <p>To use the CLI instead of the Foreman web UI, see the <a href="#cli-adding-errata-to-an-incremental-content-view">CLI procedure</a>.</p>
+</div>
+<div class="paragraph">
+<p>Be careful when incrementally adding enhancement errata.
+Enhancements are typically scoped to the most current software in a repository, so you may find incompatibilities if your content view version is old.</p>
 </div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
