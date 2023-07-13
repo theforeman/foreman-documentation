@@ -1,18 +1,56 @@
 [id="Resolving_Package_Dependencies_{context}"]
 = Resolving Package Dependencies
 
-In {Project}, you can use the package dependency resolution feature to ensure that any dependencies that packages have within a Content View are added to the dependent repository as part of the Content View publication process.
+In {Project}, you can use the package dependency resolution feature, also known as dependency solving, to ensure that any dependencies that packages have within a Content View are added to the dependent repository as part of the Content View publication process.
 
-You can select to resolve package dependencies for any Content View that you want, or you can change the default setting to enable or disable resolving package dependencies for all new Content Views.
+Dependency solving is relevant only in limited contexts.
+In the most common use cases, such as adding a security errata to a Content View with incremental update, dependency solving is likely unnecessary and can cause significant delays to Content View publication.
 
-Note that resolving package dependencies can cause significant delays to Content View promotion.
-The package dependency resolution feature does not consider packages that are installed on your system independently of the Content View or solve dependencies across repositories.
+The package dependency resolution feature does not take into account which packages are installed on your clients.
+Dependency solving considers only packages within the repositories of the Content View.
+ifeval::["{client-os-family}" == "Red Hat"]
+For example, if a Content View has only AppStream in it, dependency solving will not know to pull dependent BaseOS content in at publish time.
+endif::[]
+For more information, see {ContentManagementDocURL}Limitations_to_Repository_Dependency_Resolution_content-management[Limitations to Repository Dependency Resolution] in _{ContentManagementDocTitle}_.
 
 .Resolving Package Dependencies and Filters
-
-Filters do not resolve any dependencies of the packages listed in the filters.
+Filters, by default, do not resolve any dependencies of the packages listed in the filters.
 This might require some level of testing to determine what dependencies are required.
 
 If you add a filter that excludes some packages that are required and the Content View has dependency resolution enabled, {Project} ignores the rules you create in your filter in favor of resolving the package dependency.
 
-If you create a content filter for security purposes, to resolve a package dependency, {Project} can add packages that you might consider insecure.
+If you create a content filter for security purposes but choose to resolve dependencies, {Project} can add packages that you might consider insecure.
+
+.Filtering and Dependency Solving Recommendations
+Be mindful when combining exclusion filters with dependency solving.
+ifeval::["{client-os-family}" == "Red Hat"]
+Consider this example: You recreate {RHEL} 8.3 via Content View filters and include select errata from a later {RHEL} 8 y-release.
+To achieve this, you exclude all errata after the {RHEL} 8.3 release date minus some select few that are needed, and enable dependency solving.
+Dependency solving may pull in more packages than expected, which would cause the client to stray further from being a {RHEL} 8.3 machine.
+endif::[]
+If dependency solving pulls in too many unwanted packages, consider identifying by hand the core basic dependencies that the extra packages and errata need.
+ifeval::["{client-os-family}" == "Red Hat"]
+If, in the above case, the user does not need the extra errata and packages, then Content View filtering is not needed at all.
+You can enable and use the {RHEL} 8.3 repository on the *Content* > *Red Hat Repositories* page in the {ProjectWebUI}.
+endif::[]
+
+ifeval::["{client-os-family}" == "Red Hat"]
+In some cases, excluding packages may make dependency solving impossible for DNF.
+For example, if you make a {RHEL} 8.3 repository with a few excluded packages, `dnf update` could fail.
+Instead of turning on dependency solving to resolve the issue, investigate the error from DNF and adjust the filters to stop excluding the missing dependency.
+If dependency solving is enabled, the repository may stray from {RHEL} 8.3 as discussed above.
+endif::[]
+
+If a Content View version is out of date, packages that are part of a newer erratum may depend on packages that are not within the Content View version.
+Before incrementally adding the erratum with dependency solving, consider publishing a new Content View version instead.
+Incrementally adding the erratum with dependency solving might pull in many new packages, which could alter the intended scope of the Content View version.
+
+If a single package is incrementally added to a Content View version, dependency solving may be needed to install that package.
+Keep in mind that the dependency solving recommendations above also apply to incremental updates.
+
+If dependency solving must be used, consider using more Content Views with fewer repositories and combining them together using composite Content Views.
+Dependency solving time increases significantly with more repositories because every repository in a Content View is examined for dependencies.
+
+.Enabling Dependency Solving
+You can select to resolve package dependencies per Content View or have it enabled by default in *Settings > Content > "content view Dependency Solving Default"*.
+{Team} does not recommend enabling Content View dependency solving by default unless the pitfalls above are well-understood.
