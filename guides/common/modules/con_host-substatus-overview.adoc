@@ -1,55 +1,275 @@
 [id="host-substatus-overview_{context}"]
 = Host sub-status overview
 
-A sub-status monitors only part of a host's capabilities.
+A sub-status monitors only a part of a host's capabilities.
 
-Currently, {Project} ships only with *Build* and *Configuration* sub-statuses.
+To view the sub-statuses of a host, in the {ProjectWebUI}, navigate to *Hosts* > *All Hosts* and click on the host whose full status you want to inspect.
+You can view the global host status next to the name of the host and the host sub-statuses on the *Host status* card.
+
+Each sub-status has its own set of possible values that are mapped to the three global status values.
+
+Below are listed sub-statuses that {Project} contains.
+ifdef::foreman-el,foreman-deb,katello[]
 There can be more sub-statuses depending on which plug-ins you add to your {Project}.
+endif::[]
 
-The *build* sub-status is relevant for managed hosts.
-
-The *configuration* sub-status is only relevant if {Project} uses a configuration management system like Ansible, Puppet, or Salt.
-
-To view the sub-status for a host, in the {ProjectWebUI}, navigate to *Hosts* > *All Hosts* and click the host whose full status you want to inspect.
-You can also view substatus information in the hover help for each host.
-
-In the *Properties* table of the host details' page, you can view both the global host status and all sub-statuses.
-
-Each sub-status can define its own set of possible values that are mapped to the three global status values.
-
-The *Build* sub-status has two possible values {endash} *pending* and *built* that are both mapped to global *OK* value.
-
-The *Configuration* status has more possible values that map to the global status as follows:
-
-.Sub-statuses that map to the global *OK* status
-
-Active::
-During the last run, some resources were applied.
-
-Pending::
-During the last run, some resources would be applied but your configuration management integration was configured to run in `noop` mode.
-
-No changes::
-During the last run, nothing changed.
-
-No reports::
-This can be both a *Warning* or *OK* sub-status.
-This occurs when there are no reports but the host uses, for example, an associated configuration management proxy or `always_show_configuration_status` setting is set to `true`, it maps to *Warning*.
-
-.Sub-status that maps to the global *Error* status
-
-Error::
-This indicates an error during configuration, for example, a run failed to install a package.
-
-.Sub-statuses that map to the global *Warning* status
-
-Out of sync::
-A configuration report was not received within the expected interval, based on the `outofsync_interval`.
+Configuration::
+This sub-status is only relevant if {Project} uses a configuration management system like Ansible, Puppet, or Salt.
++
+Possible values:
++
+[options="header"]
+|===
+| Label | Global host status
+| Alerts disabled | OK
+| Active | OK
+| Pending | OK
+| No changes | OK
+| No reports | OK / Warning
+| Out of sync | Warning
+| Error | Error
+|===
++
+Additional information about the values of this sub-status:
++
+* *Active*: During the last configuration, some resources were applied.
+* *Pending*: During the last configuration, some resources would be applied but your configuration management integration was configured to run in `noop` mode.
+* *No changes*: During the last configuration, nothing changed.
+* *No reports*: This can be both a *Warning* or *OK* status.
+When there are no reports but the host uses an associated {SmartProxy} for configuration management or the `always_show_configuration_status` setting is set to `true`, it maps to *Warning*.
+Otherwise it maps to *OK*.
+* *Error*: This indicates an error during configuration.
+For example, a configuration run failed to install a package.
+* *Out of sync*: A configuration report was not received within the expected interval, based on the `outofsync_interval` setting.
 Reports are identified by an origin and can have different intervals based upon it.
 
-No reports::
-When your host uses a configuration management system but {Project} does not receive reports, it maps to *Warning*.
-Otherwise it is mapped to OK.
+Build::
+This sub-status is only relevant for hosts provisioned from {Project} or hosts registered through global registration.
++
+Possible values:
++
+[options="header"]
+|===
+| Label | Global host status | Number value
+| Installed | OK | 0
+| Pending installation | OK | 1
+| Token expired | Error | 2
+| Installation error | Error | 3
+|===
+
+ifndef::foreman-deb[]
+Compliance::
+Indicates if the host is compliant with OpenSCAP policies.
++
+Possible values:
++
+[options="header"]
+|===
+| Label | Global host status | Number value
+| Compliant | OK | 0
+| Inconclusive | Warning | 1
+| At least one incompliant | Error | 2
+|===
+endif::[]
+
+ifdef::satellite,orcharhino[]
+OVAL scan::
+Indicates if there are any vulnerabilities found on the host
++
+Possible values:
++
+[options="header"]
+|===
+| Label | Global host status | Number value
+| No vulnerabilities found | OK | 0
+| Vulnerabilities found | Warning | 1
+| Vulnerabilities with available patch found | Error | 2
+|===
+endif::[]
+
+Execution::
+Status of the last completed remote excution job.
+ifdef::foreman-el,foreman-deb[]
++
+Only applies if you have the Remote Execution plug-in installed.
+endif::[]
++
+Possible values:
++
+[options="header"]
+|===
+| Label | Global host status | Number value
+| Last execution succeeded / No execution finished yet | OK | 0
+| Last execution failed | Error | 1
+| Unknown execution status | OK | 2 or 3
+| Last execution cancelled | OK | 4
+|===
+
+ifdef::satellite,orcharhino[]
+Inventory::
+Indicates if the host is synchronized to {RHCloud}.
+{ProjectServer} performs the synchronization itself but only uploads basic information to {RHCloud}.
+ifdef::orcharhino[]
++
+Only applies if you have the Red Hat Cloud plug-in installed.
+endif::[]
++
+Possible values:
++
+[options="header"]
+|===
+| Label | Global host status | Number value
+| Host was not uploaded to your RH cloud inventory | Warning | 0
+| Successfully uploaded to your RH cloud inventory | OK | 1
+|===
+
+Insights::
+Indicates if the host is synchronized to {RHCloud}.
+This synchronization is performend by the host.
+The host uploads more information than the {ProjectServer}.
++
+Possible values:
++
+[options="header"]
+|===
+| Label | Global host status | Number value
+| Reporting | OK | 0
+| Not reporting | Error | 1
+|===
+endif::[]
+
+ifdef::satellite,katello,orcharhino[]
+Errata::
+Indicates if Errata is available on the host.
++
+Possible values:
++
+[options="header"]
+|===
+| Label | Global host status | Number value
+| Up to date | OK | 0
+| Unknown | Warning | 1
+| Needed errata | Error | 2
+| Needed security errata | Error | 3
+|===
+
+Subscription::
+Indicates if the host has a valid RHEL subscription.
++
+Possible values:
++
+[options="header"]
+|===
+| Label | Global host status | Number value
+| Fully entitled | OK | 0
+| Partially entitled | Warning | 1
+| Unentitled | Error | 2
+| Unknown | Warning | 3
+| Unsubscribed hypervisor | Warning | 4
+| SCA enabled | OK | 5
+|===
+
+Service level::
+Indicates if a subscription matching your specified *Service level* syspurpose value can be attached.
++
+Possible values:
++
+[options="header"]
+|===
+| Label | Global host status | Number value
+| Unknown | OK | 0
+| Mismatched | Warning | 1
+| Matched | OK | 2
+| Not specified | OK | 3
+|===
+
+Role::
+Indicates if a subscription matching your specified *Role* syspurpose value can be attached.
++
+Possible values:
++
+[options="header"]
+|===
+| Label | Global host status | Number value
+| Unknown | OK | 0
+| Mismatched | Warning | 1
+| Matched | OK | 2
+| Not specified | OK | 3
+|===
+
+Usage::
+Indicates if a subscription matching your specified *Usage* syspurpose value can be attached.
++
+Possible values:
++
+[options="header"]
+|===
+| Label | Global host status | Number value
+| Unknown | OK | 0
+| Mismatched | Warning | 1
+| Matched | OK | 2
+| Not specified | OK | 3
+|===
+
+Addons::
+Indicates if a subscription matching your specified *Addons* syspurpose value can be attached.
++
+Possible values:
++
+[options="header"]
+|===
+| Label | Global host status | Number value
+| Unknown | OK | 0
+| Mismatched | Warning | 1
+| Matched | OK | 2
+| Not specified | OK | 3
+|===
+
+System purpose::
+Indicates if a subscription matching your specified syspurpose values can be attached.
++
+Possible values:
++
+[options="header"]
+|===
+| Label | Global host status | Number value
+| Unknown | OK | 0
+| Mismatched | Warning | 1
+| Matched | OK | 2
+| Not specified | OK | 3
+|===
+
+RHEL Lifecycle::
+Indicates the current state of the {RHEL} operating system installed on the host.
++
+Possible values:
++
+[options="header"]
+|===
+| Label | Global host status | Number value
+| Unknown | OK | 0
+| Full support | OK | 1
+| Maintenance support | OK | 2
+| Approaching end of maintenance support | Warning | 3
+| Extended support | OK | 4
+| Approaching end of support | Warning | 5
+| Support ended | Error | 6
+|===
+
+Traces::
+Indicates if the host needs a reboot or a process restart.
++
+Possible values:
++
+[options="header"]
+|===
+| Label | Global host status | Number value
+| Unknown | Warning | -1
+| Up to date | OK | 0
+| Required process restart | Error | 1
+| Required reboot | Error | 2
+|===
+endif::[]
 
 .Search syntax
 If you want to search for hosts according to their sub-status, use the syntax for searching in {Project} that is outlined in the {AdministeringDocURL}Searching_and_Bookmarking_admin[Searching and Bookmarking] chapter of the _Administering {Project}_ guide, and then build your searches out using the following status-related examples:
