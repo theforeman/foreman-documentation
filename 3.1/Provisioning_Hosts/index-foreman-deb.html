@@ -27,7 +27,7 @@
 <h1>Provisioning Hosts</h1>
 <div class="details">
 <span id="revnumber">version 3.1 (unsupported),</span>
-<span id="revdate">published Jul 17 2023</span>
+<span id="revdate">published Jul 19 2023</span>
 </div>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
@@ -2843,26 +2843,25 @@ It has the following workflow:</p>
 <p>Virtual machine starts</p>
 </li>
 <li>
-<p>iPXE retrieves the network credentials using DHCP</p>
+<p>iPXE retrieves the network credentials, including an HTTP URL, using DHCP</p>
 </li>
 <li>
-<p>iPXE retrieves the HTTP address using DHCP</p>
+<p>iPXE loads the iPXE bootstrap template from Foreman&#160;server or Smart&#160;Proxy</p>
 </li>
 <li>
-<p>iPXE loads the iPXE bootstrap template from Smart&#160;Proxy</p>
-</li>
-<li>
-<p>iPXE loads the iPXE template with MAC as a URL parameter from Smart&#160;Proxy</p>
+<p>iPXE loads the iPXE template with MAC as a URL parameter from Foreman&#160;server or Smart&#160;Proxy</p>
 </li>
 <li>
 <p>iPXE loads the kernel and initial RAM disk of the installer</p>
 </li>
 </ol>
 </div>
-<div class="paragraph">
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
 <p>Ensure that the hypervisor that you want to use supports iPXE.
 The following virtualization hypervisors support iPXE:</p>
-</div>
 <div class="ulist">
 <ul>
 <li>
@@ -2872,10 +2871,17 @@ The following virtualization hypervisors support iPXE:</p>
 <p>oVirt</p>
 </li>
 <li>
-<p>RHEV</p>
+<p>RHEV (deprecated)</p>
 </li>
 <li>
 <p>VMWare (<a href="https://ipxe.org/howto/vmware">via custom firmware</a>)</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>If you want to use Smart&#160;Proxy&#160;servers instead of your Foreman&#160;server, ensure that you have configured your Smart&#160;Proxy&#160;servers accordingly.
+For more information, see <a href="https://docs.theforeman.org/3.1/Installing_Proxy/index-foreman-deb.html#configuring-smart-proxy-for-host-registration-and-provisioning_smart-proxy">Configuring Smart&#160;Proxy for Host Registration and Provisioning</a> in <em>Installing an External Smart Proxy Server on Debian/Ubuntu</em>.</p>
 </li>
 </ul>
 </div>
@@ -2942,25 +2948,28 @@ If you want to change the default values in the template, clone the template and
 <p>From the <strong>iPXE template</strong> list, select <strong>Review</strong> to verify that the <strong>Kickstart default iPXE</strong> template is the correct template.</p>
 </li>
 <li>
-<p>On Foreman&#160;server, run:</p>
+<p>Set the HTTP URL.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>If you want to use Foreman&#160;server for booting, run the following command on Foreman&#160;server:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap">foreman-installer --foreman-proxy-dhcp-ipxefilename "http://foreman.example.com/unattended/iPXE?bootstrap=1"</pre>
+<pre class="nowrap"># foreman-installer \
+--foreman-proxy-dhcp-ipxefilename "http://<em>foreman.example.com</em>/unattended/iPXE?bootstrap=1"</pre>
 </div>
 </div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>Ensure that <code>--foreman-trusted-proxies</code> is configured correctly on the Foreman&#160;server.</p>
+</li>
+<li>
+<p>If you want to use Smart&#160;Proxy for booting, run the following command on Smart&#160;Proxy:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer \
+--foreman-proxy-dhcp-ipxefilename "http://<em>smartproxy.example.com</em>/unattended/iPXE?bootstrap=1"</pre>
 </div>
-</td>
-</tr>
-</table>
+</div>
+</li>
+</ul>
 </div>
 </li>
 </ol>
@@ -2993,10 +3002,7 @@ You can choose to either load <code>ipxe.lkrn</code> or <code>undionly-ipxe.0</c
 <p>PXELinux chainloads iPXE <code>ipxe.lkrn</code> or <code>undionly-ipxe.0</code></p>
 </li>
 <li>
-<p>iPXE retrieves the network credentials using DHCP again</p>
-</li>
-<li>
-<p>iPXE retrieves HTTP address using DHCP</p>
+<p>iPXE retrieves the network credentials, including an HTTP URL, using DHCP again</p>
 </li>
 <li>
 <p>iPXE chainloads the iPXE template from the template Smart&#160;Proxy</p>
@@ -3005,6 +3011,15 @@ You can choose to either load <code>ipxe.lkrn</code> or <code>undionly-ipxe.0</c
 <p>iPXE loads the kernel and initial RAM disk of the installer</p>
 </li>
 </ol>
+</div>
+<div class="ulist">
+<div class="title">Prerequisite</div>
+<ul>
+<li>
+<p>If you want to use Smart&#160;Proxy&#160;servers instead of your Foreman&#160;server, ensure that you have configured your Smart&#160;Proxy&#160;servers accordingly.
+For more information, see <a href="https://docs.theforeman.org/3.1/Installing_Proxy/index-foreman-deb.html#configuring-smart-proxy-for-host-registration-and-provisioning_smart-proxy">Configuring Smart&#160;Proxy for Host Registration and Provisioning</a> in <em>Installing an External Smart Proxy Server on Debian/Ubuntu</em>.</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
 <div class="title">Configuring Foreman&#160;server to use iPXE</div>
@@ -3093,25 +3108,28 @@ If you want to change the default values in the template, clone the template and
 <p>Set <strong>PXE Loader</strong> to <strong>PXELinux BIOS</strong> to chainboot iPXE via PXELinux, or to <strong>iPXE Chain BIOS</strong> to load <code>undionly-ipxe.0</code> directly.</p>
 </li>
 <li>
-<p>On Foreman&#160;server, run:</p>
+<p>Set the HTTP URL.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>If you want to use Foreman&#160;server for booting, run the following command on Foreman&#160;server:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap">foreman-installer --foreman-proxy-dhcp-ipxefilename "http://foreman.example.com/unattended/iPXE?bootstrap=1"</pre>
+<pre class="nowrap"># foreman-installer \
+--foreman-proxy-dhcp-ipxefilename "http://<em>foreman.example.com</em>/unattended/iPXE?bootstrap=1"</pre>
 </div>
 </div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>Ensure that <code>--foreman-trusted-proxies</code> is configured correctly on the Foreman&#160;server.</p>
+</li>
+<li>
+<p>If you want to use Smart&#160;Proxy for booting, run the following command on Smart&#160;Proxy:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer \
+--foreman-proxy-dhcp-ipxefilename "http://<em>smartproxy.example.com</em>/unattended/iPXE?bootstrap=1"</pre>
 </div>
-</td>
-</tr>
-</table>
+</div>
+</li>
+</ul>
 </div>
 </li>
 </ol>
@@ -6784,20 +6802,14 @@ You can use the <a href="#Adding_VMware_Images_to_Server_provisioning">Adding VM
 </li>
 </ol>
 </div>
-<div class="paragraph">
+<div class="ulist">
 <div class="title">Configuring Smart&#160;Proxy to Forward the user data Template</div>
-<p>If you deploy Foreman with the Smart&#160;Proxy templates feature, you must configure Foreman to recognize hosts' IP addresses forwarded over the X-Forwarded-For HTTP header to serve correct template payload.</p>
-</div>
-<div class="paragraph">
-<p>For security reasons, Foreman recognizes this HTTP header only from localhost.
-For each individual Smart&#160;Proxy, you must configure a regular expression to recognize hosts' IP addresses.
-From the Foreman web UI, you can do this by navigating to <strong>Administer</strong> &gt; <strong>Settings</strong> &gt; <strong>Provisioning</strong>, and changing the <strong>Remote address</strong> setting.
-From the CLI, you can do this by entering the following command:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># hammer settings set --name remote_addr --value '(localhost(4|6|4to6)?|192.168.122.(1|2|3))'</pre>
-</div>
+<ul>
+<li>
+<p>If you want to use Smart&#160;Proxy&#160;servers instead of your Foreman&#160;server, ensure that you have configured your Smart&#160;Proxy&#160;servers accordingly.
+For more information, see <a href="https://docs.theforeman.org/3.1/Installing_Proxy/index-foreman-deb.html#configuring-smart-proxy-for-host-registration-and-provisioning_smart-proxy">Configuring Smart&#160;Proxy for Host Registration and Provisioning</a> in <em>Installing an External Smart Proxy Server on Debian/Ubuntu</em>.</p>
+</li>
+</ul>
 </div>
 </div>
 <div class="sect2">
