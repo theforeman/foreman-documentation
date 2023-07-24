@@ -27,7 +27,7 @@
 <h1>Administering Foreman</h1>
 <div class="details">
 <span id="revnumber">version 3.2 (unsupported),</span>
-<span id="revdate">published Jul 20 2023</span>
+<span id="revdate">published Jul 24 2023</span>
 </div>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
@@ -130,9 +130,10 @@
 <li><a href="#Retrieving_the_Status_of_Services_admin">12.3. Retrieving the Status of Services</a></li>
 <li><a href="#Restarting_Services_admin">12.4. Restarting Services</a></li>
 <li><a href="#Enabling_Individual_Loggers_admin">12.5. Enabling Individual Loggers</a></li>
-<li><a href="#Configuring_Logging_to_Journal_admin">12.6. Configuring Logging to Journal</a></li>
+<li><a href="#Configuring_Logging_to_Journal_or_File-based_Logging_admin">12.6. Configuring Logging to Journal or File-based Logging</a></li>
 <li><a href="#Log_File_Directories_admin">12.7. Log File Directories Provided by Foreman</a></li>
 <li><a href="#Utilities_for_Collecting_Log_Information_admin">12.8. Utilities for Collecting Log Information</a></li>
+<li><a href="#system-journal-metadata_admin">12.9. System Journal Metadata</a></li>
 </ul>
 </li>
 <li><a href="#Configuring_External_Authentication_admin">13. Configuring External Authentication</a>
@@ -4949,10 +4950,38 @@ Default value: true.</p>
 <p>Logs additional fact statistics, numbers of added, updated, and removed facts.
 Default value: true.</p>
 </dd>
+<dt class="hdlist1"><code>background</code></dt>
+<dd>
+<p>Logs information from the background processing component.</p>
+</dd>
+<dt class="hdlist1"><code>blob</code></dt>
+<dd>
+<p>Logs contents of rendered templates for auditing purposes.</p>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Important</div>
+</td>
+<td class="content">
+The <code>blob</code> logger might contain sensitive data.
+</td>
+</tr>
+</table>
+</div>
+</dd>
+<dt class="hdlist1"><code>dynflow</code></dt>
+<dd>
+<p>Logs information from the Dynflow process.</p>
+</dd>
 <dt class="hdlist1"><code>ldap</code></dt>
 <dd>
 <p>Logs high level LDAP queries and LDAP operations.
 Default value: false.</p>
+</dd>
+<dt class="hdlist1"><code>notifications</code></dt>
+<dd>
+<p>Logs information from the notifications component.</p>
 </dd>
 <dt class="hdlist1"><code>permissions</code></dt>
 <dd>
@@ -4963,6 +4992,14 @@ Default value: false.</p>
 <dd>
 <p>Logs SQL queries made through Rails ActiveRecord.
 Default value: false.</p>
+</dd>
+<dt class="hdlist1"><code>telemetry</code></dt>
+<dd>
+<p>Logs debugging information from telemetry.</p>
+</dd>
+<dt class="hdlist1"><code>templates</code></dt>
+<dd>
+<p>Logs information from the template renderer component.</p>
 </dd>
 </dl>
 </div>
@@ -4992,28 +5029,66 @@ For example, to enable <code>sql</code> and <code>ldap</code> loggers, enter the
 </div>
 </div>
 <div class="sect2">
-<h3 id="Configuring_Logging_to_Journal_admin"><a class="anchor" href="#Configuring_Logging_to_Journal_admin"></a>12.6. Configuring Logging to Journal</h3>
+<h3 id="Configuring_Logging_to_Journal_or_File-based_Logging_admin"><a class="anchor" href="#Configuring_Logging_to_Journal_or_File-based_Logging_admin"></a>12.6. Configuring Logging to Journal or File-based Logging</h3>
 <div class="paragraph">
-<p>You can configure Foreman to manage logging with Journal.
-Journal then forwards log messages to <code>rsyslog</code> and <code>rsyslog</code> writes the log messages to <code>/var/log/messages</code>.
-Note that after this change the log messages do not appear in <code>/var/log/foreman/production.log</code> or <code>/var/log/foreman-proxy.log</code> any more.</p>
-</div>
-<div class="paragraph">
-<p>For more information about Journal, see <a href="https://github.com/lzap/foreman-elasticsearch" class="bare">https://github.com/lzap/foreman-elasticsearch</a>.</p>
+<p>Foreman uses file-based logging by default.
+You can use the <code>foreman-installer</code> command to reconfigure logging.</p>
 </div>
 <div class="olist arabic">
-<div class="title">Procedure</div>
+<div class="title">Procedure for configuring logging with Journal</div>
 <ol class="arabic">
 <li>
-<p>Enter the following <code>foreman-installer</code> command to configure logging to <code>journald</code>:</p>
+<p>Enter the following <code>foreman-installer</code> command to configure logging to the <code>journald</code> service:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># foreman-installer \
 --foreman-logging-layout pattern \
---foreman-logging-level info \
 --foreman-logging-type journald \
 --foreman-proxy-log JOURNAL</pre>
 </div>
+</div>
+</li>
+<li>
+<p>Optional: To inspect the log messages, use the <code>journalctl</code> utility.
+For example:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><code>journalctl --unit foreman</code> and <code>journalctl --unit foreman-proxy</code> show messages for the <code>foreman</code> and <code>foreman-proxy</code> units</p>
+</li>
+<li>
+<p><code>journalctl REQUEST=<em>request_ID</em></code> shows messages for a specified request</p>
+</li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure for configuring file-based logging</div>
+<ol class="arabic">
+<li>
+<p>Enter the following <code>foreman-installer</code> command to configure file-based logging:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer \
+--reset-foreman-logging-layout \
+--reset-foreman-logging-type \
+--reset-foreman-proxy-log</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Optional: To inspect the log messages, view these files:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><code>/var/log/foreman/production.log</code></p>
+</li>
+<li>
+<p><code>/var/log/foreman-proxy.log</code></p>
+</li>
+</ul>
 </div>
 </li>
 </ol>
@@ -5116,6 +5191,145 @@ Foreman community recommends that you send this information directly to the inte
 </table>
 </div>
 </div>
+<div class="sect2">
+<h3 id="system-journal-metadata_admin"><a class="anchor" href="#system-journal-metadata_admin"></a>12.9. System Journal Metadata</h3>
+<div class="paragraph">
+<p>The following table lists metadata that the <code>journald</code> service uses in Foreman.
+You can use this metadata to filter your queries.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 6. System Journal Metadata</caption>
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">AUDIT_ACTION</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Audit action performed</p>
+<p class="tableblock">Example: Create, update, or delete</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">AUDIT_TYPE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Audit resource type</p>
+<p class="tableblock">Example: Host, Subnet, or ContentView</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">AUDIT_ID</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Audit resource database ID as a number</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">AUDIT_ATTRIBUTE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Audit resource field or an updated database column</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">AUDIT_FIELD_OLD</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Old audit value of an update action</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">AUDIT_FIELD_NEW</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">New audit value of an update action</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">AUDIT_ID</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Record database ID of the audit subject</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">AUDIT_ATTRIBUTE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Attribute name or column on which an action was performed</p>
+<p class="tableblock">Example: Name or description</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">EXCEPTION_MESSAGE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Exception message when error is logged</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">EXCEPTION_CLASS</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Exception Ruby class when error is logged</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">EXCEPTION_BACKTRACE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Exception backtrace as a multiline string when error is logged</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">LOC_ID</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Location database ID</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">LOC_NAME</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Location name</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">LOC_LABEL</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Location label</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">LOGGER</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>Logger name</p>
+</div>
+<div class="paragraph">
+<p>To see the current list of loggers enabled by default, enter this command:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># awk '/add_loggers/,/^$/' /usr/share/foreman/config/application.rb</pre>
+</div>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ORG_ID</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Organization database ID</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ORG_NAME</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Organization name</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ORG_LABEL</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Organization label</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">REMOTE_IP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Remote IP address of a client</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">REQUEST</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Request ID generated by the Action Dispatch module</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SESSION</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Random ID generated per session or a request for a sessionless request</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TEMPLATE_NAME</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Template name</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TEMPLATE_DIGEST</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Digest (SHA256) of rendered template contents</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TEMPLATE_HOST_NAME</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Host name for a rendered template if present</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TEMPLATE_HOST_ID</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Host database ID for a rendered template if present</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">USER_LOGIN</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">User login name</p></td>
+</tr>
+</tbody>
+</table>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -5184,7 +5398,7 @@ Foreman has a realm feature that automatically manages the life cycle of any sys
 For more information, see <a href="#External_Authentication_for_Provisioned_Hosts_admin">External Authentication for Provisioned Hosts</a>.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 6. Authentication Overview</caption>
+<caption class="title">Table 7. Authentication Overview</caption>
 <colgroup>
 <col style="width: 33.3333%;">
 <col style="width: 33.3333%;">
@@ -5397,7 +5611,7 @@ See <a href="#Assigning_Roles_to_a_User_admin">Assigning Roles to a User</a> to 
 <p>The following table provides a description for each setting in the <strong>Account</strong> tab.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 7. Account Tab Settings</caption>
+<caption class="title">Table 8. Account Tab Settings</caption>
 <colgroup>
 <col style="width: 22.2222%;">
 <col style="width: 77.7778%;">
@@ -5482,7 +5696,7 @@ The example below uses a dedicated service account called <em>redhat</em> that h
 Note that LDAP attribute names are case sensitive.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 8. Example Settings for Active Directory, Free IPA or Red&#160;Hat Identity Management and POSIX LDAP Connections</caption>
+<caption class="title">Table 9. Example Settings for Active Directory, Free IPA or Red&#160;Hat Identity Management and POSIX LDAP Connections</caption>
 <colgroup>
 <col style="width: 14.2857%;">
 <col style="width: 28.5714%;">
@@ -5582,7 +5796,7 @@ The login name attribute <code>sAMAccountName</code> (which is not listed in the
 <p>As an administrator, you can create LDAP filters to restrict the access of specific users to Foreman.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 9. Example filters for allowing specific users to login</caption>
+<caption class="title">Table 10. Example filters for allowing specific users to login</caption>
 <colgroup>
 <col style="width: 25%;">
 <col style="width: 75%;">
@@ -8414,7 +8628,7 @@ The following widgets are available:</p>
 <p>An overview of the configuration states and the number of hosts associated with it during the last reporting interval.
 The following table shows the descriptions of the possible configuration states.</p>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 10. Host Configuration States</caption>
+<caption class="title">Table 11. Host Configuration States</caption>
 <colgroup>
 <col style="width: 11.1111%;">
 <col style="width: 33.3333%;">
@@ -8523,7 +8737,7 @@ All products that are in the queue for synchronization, are unsynchronized or ha
 A subscription is a purchased certificate that unlocks access to software, upgrades, and security fixes for hosts.
 The following table shows the possible states of subscriptions.</p>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 11. Host Subscription States</caption>
+<caption class="title">Table 12. Host Subscription States</caption>
 <colgroup>
 <col style="width: 11.1111%;">
 <col style="width: 33.3333%;">
@@ -8573,7 +8787,7 @@ These hosts should be monitored to ensure they are configured as expected.</p></
 <p>An overview of the status of reports received from the <code>virt-who</code> daemon running on hosts in the environment.
 The following table shows the possible states.</p>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 12. Virt-who Configuration States</caption>
+<caption class="title">Table 13. Virt-who Configuration States</caption>
 <colgroup>
 <col style="width: 22.2222%;">
 <col style="width: 77.7778%;">
@@ -9603,7 +9817,7 @@ For descriptions of value formats, see <a href="#Query_Values_admin">Values</a>.
 Other symbols and special characters that might appear in a prediction-built query, such as colons, do not have special meaning and are treated as free text.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 13. Comparison Operators Accepted by Search</caption>
+<caption class="title">Table 14. Comparison Operators Accepted by Search</caption>
 <colgroup>
 <col style="width: 16.6666%;">
 <col style="width: 16.6666%;">
@@ -9707,7 +9921,7 @@ On the Dashboard with an overview of hosts, the search will return all hosts tha
 Alternative notations of the operators are also accepted:</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 14. Logical Operators Accepted by Search</caption>
+<caption class="title">Table 15. Logical Operators Accepted by Search</caption>
 <colgroup>
 <col style="width: 20%;">
 <col style="width: 10%;">
