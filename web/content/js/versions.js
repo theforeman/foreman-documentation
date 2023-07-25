@@ -120,8 +120,8 @@ const navVersions = [
             "path": "Installing_Proxy"
           },
           {
-            "title": "Upgrading and Updating",
-            "path": "Upgrading_and_Updating"
+            "title": "Upgrading Katello",
+            "path": "Upgrading_Project"
           },
           {
             "title": "Tuning Performance",
@@ -204,8 +204,8 @@ const navVersions = [
             "path": "Installing_Proxy"
           },
           {
-            "title": "Upgrading and Updating",
-            "path": "Upgrading_and_Updating"
+            "title": "Upgrading Foreman",
+            "path": "Upgrading_Project"
           },
           {
             "title": "Tuning Performance",
