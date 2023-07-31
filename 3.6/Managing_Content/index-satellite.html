@@ -96,13 +96,15 @@
 <li><a href="#Creating_a_Composite_Content_View_content-management">7.6. Creating a Composite Content View</a></li>
 <li><a href="#Content_Filter_Overview_content-management">7.7. Content Filter Overview</a></li>
 <li><a href="#Resolving_Package_Dependencies_content-management">7.8. Resolving Package Dependencies</a></li>
-<li><a href="#Content_Filter_Examples_content-management">7.9. Content Filter Examples</a></li>
-<li><a href="#Creating_a_Content_Filter_for_Yum_Content_content-management">7.10. Creating a Content Filter for Yum Content</a></li>
-<li><a href="#Deleting_Multiple_Content_View_Versions_content-management">7.11. Deleting Multiple Content View Versions</a></li>
-<li><a href="#Clearing_the_Search_Filter_content-management">7.12. Clearing the Search Filter</a></li>
-<li><a href="#Standardizing_Content_View_Empty_States_content-management">7.13. Standardizing Content View Empty States</a></li>
-<li><a href="#Comparing_Content_View_Versions_content-management">7.14. Comparing Content View Versions</a></li>
-<li><a href="#Distributing_Archived_Content_View_Versions_content-management">7.15. Distributing Archived Content View Versions</a></li>
+<li><a href="#enabling-dependency-solving-per-content-view_content-management">7.9. Enabling Dependency Solving Per Content View</a></li>
+<li><a href="#enabling-dependency-solving-globally_content-management">7.10. Enabling Dependency Solving Globally</a></li>
+<li><a href="#Content_Filter_Examples_content-management">7.11. Content Filter Examples</a></li>
+<li><a href="#Creating_a_Content_Filter_for_Yum_Content_content-management">7.12. Creating a Content Filter for Yum Content</a></li>
+<li><a href="#Deleting_Multiple_Content_View_Versions_content-management">7.13. Deleting Multiple Content View Versions</a></li>
+<li><a href="#Clearing_the_Search_Filter_content-management">7.14. Clearing the Search Filter</a></li>
+<li><a href="#Standardizing_Content_View_Empty_States_content-management">7.15. Standardizing Content View Empty States</a></li>
+<li><a href="#Comparing_Content_View_Versions_content-management">7.16. Comparing Content View Versions</a></li>
+<li><a href="#Distributing_Archived_Content_View_Versions_content-management">7.17. Distributing Archived Content View Versions</a></li>
 </ul>
 </li>
 <li><a href="#Synchronizing_Content_Between_Servers_content-management">8. Synchronizing Content Between Satellite&#160;Servers</a>
@@ -3150,7 +3152,7 @@ This might consume multiple system resources on Capsules, network bandwidth betw
 <h2 id="Managing_Content_Views_content-management"><a class="anchor" href="#Managing_Content_Views_content-management"></a>7. Managing Content Views</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Red&#160;Hat Satellite uses Content Views to create customized repositories from the repositories.
+<p>Red&#160;Hat Satellite uses Content Views to create customized groupings of repository snapshots.
 To do this, you must define which repositories to use and then apply certain filters to the content.
 These filters include package filters, package group filters, errata filters, module stream filters, and container image tag filters.
 You can use Content Views to define which software versions a particular environment uses.
@@ -3911,66 +3913,167 @@ The <strong>Module Streams</strong> option filters modular RPMs and errata, but 
 <div class="sect2">
 <h3 id="Resolving_Package_Dependencies_content-management"><a class="anchor" href="#Resolving_Package_Dependencies_content-management"></a>7.8. Resolving Package Dependencies</h3>
 <div class="paragraph">
-<p>In Satellite, you can use the package dependency resolution feature, also known as dependency solving, to ensure that any dependencies that packages have within a Content View are added to the dependent repository as part of the Content View publication process.</p>
+<p>Satellite can add dependencies of packages in a Content View to the dependent repository when publishing the Content View.
+To configure this, you can enable <em>dependency solving</em>.</p>
 </div>
 <div class="paragraph">
-<p>Dependency solving is relevant only in limited contexts.
-In the most common use cases, such as adding a security errata to a Content View with incremental update, dependency solving is likely unnecessary and can cause significant delays to Content View publication.</p>
+<p>For example, dependency solving is useful when you incrementally add a single package to a Content View version.
+You might need to enable dependency solving to install that package.</p>
 </div>
 <div class="paragraph">
-<p>The package dependency resolution feature does not take into account which packages are installed on your clients.
-Dependency solving considers only packages within the repositories of the Content View.
-For example, if a Content View has only AppStream in it, dependency solving will not know to pull dependent BaseOS content in at publish time.
-For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.13/html-single/managing_content/index#Limitations_to_Repository_Dependency_Resolution_content-management">Limitations to Repository Dependency Resolution</a> in <em>Managing Content</em>.</p>
+<p>However, dependency solving is unnecessary in most situations.
+For example:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>When incrementally adding a security errata to a Content View, dependency solving can cause significant delays to Content View publication without major benefits.</p>
+</li>
+<li>
+<p>Packages from a newer erratum might have dependencies that are incompatible with packages from an older Content View version.
+Incrementally adding the erratum using dependency solving might include unwanted packages.
+As an alternative, consider updating the Content View.</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Dependency solving only considers packages within the repositories of the Content View.
+It does not consider packages installed on clients.
+For example, if a Content View includes only AppStream, dependency solving does not include dependent BaseOS content at publish time.</p>
 </div>
 <div class="paragraph">
-<div class="title">Resolving Package Dependencies and Filters</div>
-<p>Filters, by default, do not resolve any dependencies of the packages listed in the filters.
-This might require some level of testing to determine what dependencies are required.</p>
+<p>For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.13/html-single/managing_content/index#Limitations_to_Repository_Dependency_Resolution_content-management">Limitations to Repository Dependency Resolution</a> in <em>Managing Content</em>.</p>
+</div>
+</td>
+</tr>
+</table>
 </div>
 <div class="paragraph">
-<p>If you add a filter that excludes some packages that are required and the Content View has dependency resolution enabled, Satellite ignores the rules you create in your filter in favor of resolving the package dependency.</p>
+<p>Dependency solving can lead to the following problems:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Significant delay in Content View publication</dt>
+<dd>
+<p>Satellite examines every repository in a Content View for dependencies.
+Therefore, publish time increases with more repositories.</p>
+<div class="paragraph">
+<p>To mitigate this problem, use multiple Content Views with fewer repositories and combine them into composite Content Views.</p>
+</div>
+</dd>
+<dt class="hdlist1">Ignored Content View filters on dependent packages</dt>
+<dd>
+<p>Satellite prioritizes resolving package dependencies over the rules in your filter.</p>
+<div class="paragraph">
+<p>For example, if you create a filter for security purposes but enable dependency solving, Satellite can add packages that you might consider insecure.</p>
 </div>
 <div class="paragraph">
-<p>If you create a content filter for security purposes but choose to resolve dependencies, Satellite can add packages that you might consider insecure.</p>
+<p>To mitigate this problem, carefully test filtering rules to determine the required dependencies.
+If dependency solving includes unwanted packages, manually identify the core basic dependencies that the extra packages and errata need.</p>
+</div>
+</dd>
+</dl>
+</div>
+<div id="Combining_exclusion_filters_with_dependency_solving_content-management" class="exampleblock">
+<div class="title">Example 1. Combining exclusion filters with dependency solving</div>
+<div class="content">
+<div class="paragraph">
+<p>You want to recreate Red&#160;Hat Enterprise Linux&#160;8.3 using Content View filters and include selected errata from a later Red&#160;Hat Enterprise Linux&#160;8 minor release.
+To achieve this, you create filters to exclude most of the errata after the Red&#160;Hat Enterprise Linux&#160;8.3 release date, except a few that you need.
+Then, you enable dependency solving.</p>
 </div>
 <div class="paragraph">
-<div class="title">Filtering and Dependency Solving Recommendations</div>
-<p>Be mindful when combining exclusion filters with dependency solving.
-Consider this example: You recreate Red&#160;Hat Enterprise Linux 8.3 via Content View filters and include select errata from a later Red&#160;Hat Enterprise Linux 8 y-release.
-To achieve this, you exclude all errata after the Red&#160;Hat Enterprise Linux 8.3 release date minus some select few that are needed, and enable dependency solving.
-Dependency solving may pull in more packages than expected, which would cause the client to stray further from being a Red&#160;Hat Enterprise Linux 8.3 machine.
-If dependency solving pulls in too many unwanted packages, consider identifying by hand the core basic dependencies that the extra packages and errata need.
-If, in the above case, the user does not need the extra errata and packages, then Content View filtering is not needed at all.
-You can enable and use the Red&#160;Hat Enterprise Linux 8.3 repository on the <strong>Content</strong> &gt; <strong>Red Hat Repositories</strong> page in the Satellite web UI.</p>
+<p>In this situation, dependency solving might include more packages than expected.
+As a result, the host diverges from being a Red&#160;Hat Enterprise Linux&#160;8.3 machine.</p>
 </div>
 <div class="paragraph">
-<p>In some cases, excluding packages may make dependency solving impossible for DNF.
-For example, if you make a Red&#160;Hat Enterprise Linux 8.3 repository with a few excluded packages, <code>dnf update</code> could fail.
-Instead of turning on dependency solving to resolve the issue, investigate the error from DNF and adjust the filters to stop excluding the missing dependency.
-If dependency solving is enabled, the repository may stray from Red&#160;Hat Enterprise Linux 8.3 as discussed above.</p>
+<p>If you do not need the extra errata and packages, do not configure Content View filtering.
+Instead, enable and use the Red&#160;Hat Enterprise Linux&#160;8.3 repository on the <strong>Content</strong> &gt; <strong>Red Hat Repositories</strong> page in the Satellite web UI.</p>
+</div>
+</div>
+</div>
+<div id="Excluding_packages_and_dependency_solving_with_DNF_content-management" class="exampleblock">
+<div class="title">Example 2. Excluding packages sometimes makes dependency solving imposible for DNF</div>
+<div class="content">
+<div class="paragraph">
+<p>If you make a Red&#160;Hat Enterprise Linux&#160;8.3 repository with a few excluded packages, <code>dnf update</code> can sometimes fail.</p>
 </div>
 <div class="paragraph">
-<p>If a Content View version is out of date, packages that are part of a newer erratum may depend on packages that are not within the Content View version.
-Before incrementally adding the erratum with dependency solving, consider publishing a new Content View version instead.
-Incrementally adding the erratum with dependency solving might pull in many new packages, which could alter the intended scope of the Content View version.</p>
+<p>Do not enable dependency solving to resolve the problem.
+Instead, investigate the error from <code>dnf</code> and adjust the filters to stop excluding the missing dependency.</p>
 </div>
 <div class="paragraph">
-<p>If a single package is incrementally added to a Content View version, dependency solving may be needed to install that package.
-Keep in mind that the dependency solving recommendations above also apply to incremental updates.</p>
+<p>Else, dependency solving might cause the repository to diverge from Red&#160;Hat Enterprise Linux&#160;8.3.</p>
 </div>
-<div class="paragraph">
-<p>If dependency solving must be used, consider using more Content Views with fewer repositories and combining them together using composite Content Views.
-Dependency solving time increases significantly with more repositories because every repository in a Content View is examined for dependencies.</p>
 </div>
-<div class="paragraph">
-<div class="title">Enabling Dependency Solving</div>
-<p>You can select to resolve package dependencies per Content View or have it enabled by default in <strong>Settings &gt; Content &gt; "content view Dependency Solving Default"</strong>.
-Red&#160;Hat does not recommend enabling Content View dependency solving by default unless the pitfalls above are well-understood.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="Content_Filter_Examples_content-management"><a class="anchor" href="#Content_Filter_Examples_content-management"></a>7.9. Content Filter Examples</h3>
+<h3 id="enabling-dependency-solving-per-content-view_content-management"><a class="anchor" href="#enabling-dependency-solving-per-content-view_content-management"></a>7.9. Enabling Dependency Solving Per Content View</h3>
+<div class="paragraph">
+<p>You can enable dependency solving for a Content View or by default for your whole Satellite environment.
+Use this procedure to enable it for a Content View.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisite</div>
+<ul>
+<li>
+<p>Dependency solving is useful only in limited contexts.
+Before enabling it, ensure you read and understand <a href="#Resolving_Package_Dependencies_content-management">Resolving Package Dependencies</a></p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Content</strong> &gt; <strong>Content Views</strong>.</p>
+</li>
+<li>
+<p>From the list of content views, select the required Content View.</p>
+</li>
+<li>
+<p>On the <strong>Details</strong> tab, toggle <strong>Solve dependencies</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="enabling-dependency-solving-globally_content-management"><a class="anchor" href="#enabling-dependency-solving-globally_content-management"></a>7.10. Enabling Dependency Solving Globally</h3>
+<div class="paragraph">
+<p>You can enable dependency solving for a Content View or by default for your whole Satellite environment.
+Use this procedure to enable it for the whole environment.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisite</div>
+<ul>
+<li>
+<p>Dependency solving is useful only in limited contexts.
+Before enabling it, ensure you read and understand <a href="#Resolving_Package_Dependencies_content-management">Resolving Package Dependencies</a></p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Administer</strong> &gt; <strong>Settings</strong>.</p>
+</li>
+<li>
+<p>On the <strong>Content</strong> tab, change the value for <strong>content view Dependency Solving Default</strong> to <strong>yes</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Content_Filter_Examples_content-management"><a class="anchor" href="#Content_Filter_Examples_content-management"></a>7.11. Content Filter Examples</h3>
 <div class="paragraph">
 <p>Use any of the following examples with the procedure that follows to build custom content filters.</p>
 </div>
@@ -4104,7 +4207,7 @@ Add a rule to exclude all <code>*</code> packages, or specify the package names 
 </div>
 </div>
 <div class="sect2">
-<h3 id="Creating_a_Content_Filter_for_Yum_Content_content-management"><a class="anchor" href="#Creating_a_Content_Filter_for_Yum_Content_content-management"></a>7.10. Creating a Content Filter for Yum Content</h3>
+<h3 id="Creating_a_Content_Filter_for_Yum_Content_content-management"><a class="anchor" href="#Creating_a_Content_Filter_for_Yum_Content_content-management"></a>7.12. Creating a Content Filter for Yum Content</h3>
 <div class="paragraph">
 <p>You can filter Content Views containing Yum content to include or exclude specific packages, package groups, errata, or module streams.
 Filters are based on a combination of the <em>name</em>, <em>version</em>, and <em>architecture</em>.</p>
@@ -4227,7 +4330,7 @@ Use the <code>--inclusion false</code> option to set the filter to an Exclude fi
 </div>
 </div>
 <div class="sect2">
-<h3 id="Deleting_Multiple_Content_View_Versions_content-management"><a class="anchor" href="#Deleting_Multiple_Content_View_Versions_content-management"></a>7.11. Deleting Multiple Content View Versions</h3>
+<h3 id="Deleting_Multiple_Content_View_Versions_content-management"><a class="anchor" href="#Deleting_Multiple_Content_View_Versions_content-management"></a>7.13. Deleting Multiple Content View Versions</h3>
 <div class="paragraph">
 <p>You can delete multiple Content View versions simultaneously.</p>
 </div>
@@ -4265,7 +4368,7 @@ Use the <code>--inclusion false</code> option to set the filter to an Exclude fi
 </div>
 </div>
 <div class="sect2">
-<h3 id="Clearing_the_Search_Filter_content-management"><a class="anchor" href="#Clearing_the_Search_Filter_content-management"></a>7.12. Clearing the Search Filter</h3>
+<h3 id="Clearing_the_Search_Filter_content-management"><a class="anchor" href="#Clearing_the_Search_Filter_content-management"></a>7.14. Clearing the Search Filter</h3>
 <div class="paragraph">
 <p>If you search for specific content types using keywords in the <strong>Search</strong> text box and the search returns no results, click <strong>Clear search</strong> to clear all the search queries and reset the <strong>Search</strong> text box.</p>
 </div>
@@ -4274,7 +4377,7 @@ Use the <code>--inclusion false</code> option to set the filter to an Exclude fi
 </div>
 </div>
 <div class="sect2">
-<h3 id="Standardizing_Content_View_Empty_States_content-management"><a class="anchor" href="#Standardizing_Content_View_Empty_States_content-management"></a>7.13. Standardizing Content View Empty States</h3>
+<h3 id="Standardizing_Content_View_Empty_States_content-management"><a class="anchor" href="#Standardizing_Content_View_Empty_States_content-management"></a>7.15. Standardizing Content View Empty States</h3>
 <div class="paragraph">
 <p>If there are no filters listed for a content view, click <strong>Create filter</strong>.
 A modal opens to show you the next steps to create a filter.
@@ -4282,7 +4385,7 @@ Follow these steps to add a new filter to create new content types.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="Comparing_Content_View_Versions_content-management"><a class="anchor" href="#Comparing_Content_View_Versions_content-management"></a>7.14. Comparing Content View Versions</h3>
+<h3 id="Comparing_Content_View_Versions_content-management"><a class="anchor" href="#Comparing_Content_View_Versions_content-management"></a>7.16. Comparing Content View Versions</h3>
 <div class="paragraph">
 <p>Use this procedure to compare Content View Version functionality for Satellite.</p>
 </div>
@@ -4310,7 +4413,7 @@ You can compare different Content View versions by selecting them from the dropd
 </div>
 </div>
 <div class="sect2">
-<h3 id="Distributing_Archived_Content_View_Versions_content-management"><a class="anchor" href="#Distributing_Archived_Content_View_Versions_content-management"></a>7.15. Distributing Archived Content View Versions</h3>
+<h3 id="Distributing_Archived_Content_View_Versions_content-management"><a class="anchor" href="#Distributing_Archived_Content_View_Versions_content-management"></a>7.17. Distributing Archived Content View Versions</h3>
 <div class="paragraph">
 <p>The setting <strong>Distribute archived content view versions</strong> enables hosting of non-promoted Content View version repositories in the Satellite content web application along with other repositories.
 This is useful while debugging to see what content is present in your Content View versions.</p>
@@ -7333,12 +7436,21 @@ This means the filter successfully excluded the all non-security errata from the
 <p>If errata are available but not installable, you can create an incremental Content View version to add the errata to your content hosts.
 For example, if the Content View is version 1.0, it becomes Content View version 1.1, and when you publish, it becomes Content View version 2.0.</p>
 </div>
-<div class="paragraph">
-<p>To use the CLI instead of the Satellite web UI, see the <a href="#cli-adding-errata-to-an-incremental-content-view">CLI procedure</a>.</p>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Important</div>
+</td>
+<td class="content">
+If your content view version is old, you might encounter incompatibilities when incrementally adding enhanacement errata.
+This is because enhancements are typically designed for the most current software in a repository.
+</td>
+</tr>
+</table>
 </div>
 <div class="paragraph">
-<p>Be careful when incrementally adding enhancement errata.
-Enhancements are typically scoped to the most current software in a repository, so you may find incompatibilities if your content view version is old.</p>
+<p>To use the CLI instead of the Satellite web UI, see <a href="#cli-adding-errata-to-an-incremental-content-view">CLI procedure</a>.</p>
 </div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
