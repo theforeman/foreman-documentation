@@ -1,0 +1,50 @@
+[id="Renewing_a_Custom_SSL_Certificate_on_{project-context}_{context}"]
+= Renewing a {customssltitle} Certificate on {ProjectServer}
+
+Use this procedure to update your {customssl} certificate for {ProjectServer}.
+
+.Prerequisite
+* You must create a new Certificate Signing Request (CSR) and send it to the Certificate Authority to sign the certificate.
+Refer to the {InstallingServerDocURL}Configuring_Server_with_a_Custom_SSL_Certificate_{context}[Configuring {ProjectServer} with a Custom SSL Certificate] guide before creating a new CSR because the Server certificate must have X.509 v3 `Key Usage` and `Extended Key Usage` extensions with required values.
+In return, you will receive the {ProjectServer} certificate and CA bundle.
+
+.Procedure
+* Before deploying a renewed custom certificate on your {ProjectServer}, validate the {customssl} input files.
+Note that for the `katello-certs-check` command to work correctly, Common Name (CN) in the certificate must match the FQDN of {ProjectServer}:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# katello-certs-check -t {project-context} \
+-b /root/_{project-context}_cert/ca_cert_bundle.pem_ \
+-c /root/_{project-context}_cert/{project-context}_cert.pem_ \
+-k /root/_{project-context}_cert/{project-context}_cert_key.pem_
+----
++
+If the command is successful, it returns the following `{foreman-installer}` command.
+You can use this command to deploy the renewed CA certificates to {ProjectServer}:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {installer-scenario} \
+--certs-server-cert "/root/_{project-context}_cert/{project-context}_cert.pem_" \
+--certs-server-key "/root/_{project-context}_cert/{project-context}_key.pem_" \
+--certs-server-ca-cert "/root/_{project-context}_cert/ca_cert_bundle.pem_" \
+--certs-update-server \
+--certs-update-server-ca
+----
+
+[IMPORTANT]
+====
+Do not delete the certificate files after you deploy the certificate.
+They are required when upgrading {ProjectServer}.
+====
+
+[NOTE]
+====
+If a new consumer package `katello-ca-consumer-latest.noarch.rpm` is generated due to a different Certificate Signing Authority, all the clients registered to {ProjectServer} must be updated.
+====
+
+.Verification
+. Access the {ProjectWebUI} from your local machine.
+For example, https://{foreman-example-com}.
+. In your browser, view the certificate details to verify the deployed certificate.
