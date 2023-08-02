@@ -1,0 +1,57 @@
+[id="Adding_a_Remote_Console_Connection_for_a_Managed_Host_on_Proxmox_{context}"]
+= Adding a Remote Console Connection for a Managed Host on Proxmox
+
+Use this procedure to add a remote console connection using VNC for a managed host on Proxmox.
+
+.Limitation
+* This procedure only works for hosts based on `qemu`.
+It does not work for LXC container on Proxmox.
+
+.Procedure
+. On your Proxmox, open the required port for VNC:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# firewall-cmd --add-port=_My_Port_/tcp --permanent
+----
++
+The port is the sum of `5900` and the VMID of your managed host.
+You can view the VMID on the *VM* tab for your managed host in the {ProjectWebUI}.
+For example, if your managed host has the VMID 142, open port `6042` on your Proxmox.
++
+To enable a remote console connection for multiple managed hosts, open a range of ports using `firewall-cmd --add-port=5900-_My_Upper_Port_Range_Limit_/tcp --permanent`.
+. Reload the firewall configuration:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# firewall-cmd --reload
+----
+. On your Proxmox, enable VNC for your managed host in `/etc/pve/nodes/_My_Proxmox_Instance_/qemu-server/_My_VMID_.conf`:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+-vnc 0.0.0.0:_My_VMID_
+----
++
+For more information, see https://pve.proxmox.com/wiki/VNC_Client_Access[VNC Client Access] in the Proxmox documentation.
+. Restart your managed host on Proxmox.
+. Optional: Verify that the required port for VNC is open:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# netstat -ltunp
+----
+ifndef::foreman-deb[]
+. On your {ProjectServer}, allow the `websockify` capability in SELinux:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# setsebool -P websockify_can_connect_all on
+----
+endif::[]
+ifdef::katello,satellite,orcharhino[]
+. If you use a {customssl} certificate, import the SSL certificate from {ProjectServer} into your browser.
+For more information, see {AdministeringDocURL}Importing_the_Katello_Root_CA_Certificate_admin[Importing the Katello Root CA Certificate] in _{AdministeringDocTitle}_.
++
+The remote console connection to your managed host will fail if you choose to temporarily accept not checking the certificates in your browser.
+endif::[]
