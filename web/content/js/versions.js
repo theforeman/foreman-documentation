@@ -44,6 +44,10 @@ const navVersions = [
             "path": "Managing_Configurations_Puppet"
           },
           {
+            "title": "Configuring Hosts Using Salt",
+            "path": "Managing_Configurations_Salt"
+          },
+          {
             "title": "Managing Security Compliance",
             "path": "Managing_Security_Compliance"
           },
@@ -160,6 +164,10 @@ const navVersions = [
             "path": "Managing_Configurations_Puppet"
           },
           {
+            "title": "Configuring Hosts Using Salt",
+            "path": "Managing_Configurations_Salt"
+          },
+          {
             "title": "Managing Security Compliance",
             "path": "Managing_Security_Compliance"
           },
@@ -242,6 +250,10 @@ const navVersions = [
           {
             "title": "Configuring Hosts Using Puppet",
             "path": "Managing_Configurations_Puppet"
+          },
+          {
+            "title": "Configuring Hosts Using Salt",
+            "path": "Managing_Configurations_Salt"
           },
           {
             "title": "Managing Security Compliance",
