@@ -3,6 +3,7 @@
 
 Please cherry-pick my commits into:
 
+* [ ] Foreman 3.8/Katello 4.10
 * [ ] Foreman 3.7/Katello 4.9 (planned Satellite 6.14)
 * [ ] Foreman 3.6/Katello 4.8
 * [ ] Foreman 3.5/Katello 4.7 (Satellite 6.13)
