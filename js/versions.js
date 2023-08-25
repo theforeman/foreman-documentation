@@ -184,7 +184,7 @@ const navVersions = [
     ]
   },
   {
-    "title": "Foreman 3.8 - Katello 4.10 (supported)",
+    "title": "Foreman 3.8 - Katello 4.10 (RC)",
     "path": "3.8",
     "builds": [
       {
