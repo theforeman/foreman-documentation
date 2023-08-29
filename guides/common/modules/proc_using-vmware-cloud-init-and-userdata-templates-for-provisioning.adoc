@@ -3,7 +3,7 @@
 
 You can use VMware with the `Cloud-init` and `Userdata` templates to insert user data into the new virtual machine, to make further VMware customization, and to enable the VMware-hosted virtual machine to call back to {Project}.
 
-You can use the same procedures to set up a VMware compute resource within {Project}, with a few modifications to the work flow.
+You can use the same procedures to set up a VMware compute resource within {Project}, with a few modifications to the workflow.
 
 .VMware cloud-init Provisioning Overview
 ifdef::satellite[]
@@ -16,7 +16,7 @@ ifdef::foreman-el,foreman-deb,katello[]
 image::common/user-data-sequence-foreman.svg[]
 endif::[]
 
-When you set up the compute resource and images for VMware provisioning in {Project}, the following sequence of provisioning events occur:
+When you set up the compute resource and images for VMware provisioning in {Project}, the following sequence of provisioning events occurs:
 
 * The user provisions one or more virtual machines using the {ProjectWebUI}, API, or hammer
 * {Project} calls the VMware vCenter to clone the virtual machine template
@@ -26,16 +26,30 @@ When you set up the compute resource and images for VMware provisioning in {Proj
 * VMware vCenter applies customization for the virtual machine's identity, including the host name, IP, and DNS
 * The virtual machine builds, `cloud-init` is invoked and calls back {Project} on port `80`, which then redirects to `443`
 
-.Port and Firewall Requirements
+.Prerequisites
+* Configure port and firewall settings to open any necessary connections.
 Because of the `cloud-init` service, the virtual machine always calls back to {Project} even if you register the virtual machine to {SmartProxy}.
+<<<<<<< HEAD
 Ensure that you configure port and firewall settings to open any necessary connections.
 
 For more information about port and firewall requirements, see {InstallingServerDocURL}satellite-ports-and-firewalls-requirements_{project-context}[Port and Firewall Requirements] in the _Installing {Project}_ and {InstallingSmartProxyDocURL}capsule-ports-and-firewalls-requirements_{smart-proxy-context}[Ports and Firewalls Requirements] in _Installing {SmartProxyServer}_.
+=======
+ifndef::orcharhino[]
+For more information about port and firewall requirements, see {InstallingServerDocURL}Ports_and_Firewalls_Requirements_{project-context}[Port and Firewall Requirements] in _{InstallingServerDocTitle}_ and {InstallingSmartProxyDocURL}capsule-ports-and-firewalls-requirements_{smart-proxy-context}[Ports and Firewalls Requirements] in _{InstallingSmartProxyDocTitle}_.
+endif::[]
+include::snip_prerequisite-configured-smart-proxy-registration-provisioning.adoc[]
+>>>>>>> 985d1df78 (Improve VMware userdata section)
 
-.Associating the `userdata` and `Cloud-init` Templates with the Operating System
-. In the {ProjectWebUI}, navigate to *Hosts* > *Operating Systems*, and select the operating system that you want to use for provisioning.
-. Click the *Template* tab.
-. From the *Cloud-init template* list, select *Cloudinit default*.
+.Associating the `Userdata` and `Cloud-init` Templates with the Operating System
+. In the {ProjectWebUI}, navigate to *Hosts* > *Templates* > *Provisioning Templates*.
+. Search for the *CloudInit default* template and click its name.
+. Click the *Association* tab.
+. Select all operating systems to which the template applies and click *Submit*.
+. Repeat the steps above for the *UserData open-vm-tools* template.
+. Navigate to *Hosts* > *Provisioning Setup* > *Operating Systems*.
+. Select the operating system that you want to use for provisioning.
+. Click the *Templates* tab.
+. From the *Cloud-init template* list, select *CloudInit default*.
 . From the *User data template* list, select *UserData open-vm-tools*.
 . Click *Submit* to save the changes.
 
@@ -45,7 +59,7 @@ To prepare an image, you must first configure the settings that you require on a
 
 To use the `cloud-init` template for provisioning, you must configure a virtual machine so that `cloud-init` is installed, enabled, and configured to call back to {ProjectServer}.
 
-For security purposes, you must install a CA certificate to use HTTPs for all communication.
+For security purposes, you must install a CA certificate to use HTTPS for all communication.
 This procedure includes steps to clean the virtual machine so that no unwanted information transfers to the image you use for provisioning.
 
 If you have an image with `cloud-init`, you must still follow this procedure to enable `cloud-init` to communicate with {Project} because `cloud-init` is disabled by default.
@@ -55,7 +69,7 @@ These instructions are for {EL} or Fedora, follow similar steps for other Linux 
 endif::[]
 
 .Procedure
-. On the virtual machine that you use to create the image, install `cloud-init`, `open-vm-tools`, and `perl`:
+. On the virtual machine that you use to create the image, install the `cloud-init`, `open-vm-tools`, and `perl` packages:
 +
 [options="nowrap" subs="+quotes"]
 ----
@@ -81,6 +95,8 @@ datasource:
     seedfrom: https://{foreman-example-com}/userdata/
 EOM
 ----
++
+If you intend to provision through {SmartProxyServer}, use the URL of your {SmartProxyServer} in the `seedfrom` option, such as `https://_{smartproxy-example-com}_:8000/userdata/`.
 . Configure modules to use in `cloud-init`:
 +
 [options="nowrap" subs="+quotes"]
@@ -113,23 +129,26 @@ EOM
 ----
 # update-ca-trust enable
 ----
+ifdef::katello,satellite,orcharhino[]
 . Download the `katello-server-ca.crt` file from {ProjectServer}:
-ifdef::foreman-el,katello[]
-You must have the Katello plugin installed to complete this step.
-For {ProjectServer} deployments, copy the CA certificate from the Apache configuration.
-endif::[]
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
 # wget -O /etc/pki/ca-trust/source/anchors/cloud-init-ca.crt http://_{foreman-example-com}_/pub/katello-server-ca.crt
 ----
-. To update the record of certificates, enter the following command:
++
+If you intend to provision through {SmartProxyServer}, download the file from your {SmartProxyServer} URL, such as `https://_{smartproxy-example-com}_/pub/katello-server-ca.crt`.
+endif::[]
+ifndef::katello,satellite,orcharhino[]
+. Copy the CA certificate from the Apache configuration to `/etc/pki/ca-trust/source/anchors/cloud-init-ca.crt`.
+endif::[]
+. Update the record of certificates:
 +
 [options="nowrap" subs="+quotes"]
 ----
 # update-ca-trust extract
 ----
-. Use the following commands to clean the image:
+. Clean the image:
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
@@ -138,7 +157,7 @@ endif::[]
 # package-cleanup --oldkernels --count=1
 # {package-clean} all
 ----
-. Use the following commands to reduce logspace, remove old logs, and truncate logs:
+. Reduce logspace, remove old logs, and truncate logs:
 +
 ----
 # logrotate -f /etc/logrotate.conf
@@ -181,10 +200,5 @@ endif::[]
 # rm -f ~root/.bash_history
 # unset HISTFILE
 ----
-+
-
-You can now create an image from this virtual machine.
-You can use the xref:Adding_VMware_Images_to_Server_{context}[] section to add the image to {Project}.
-
-.Configuring {SmartProxy} to Forward the user data Template
-include::snip_prerequisite-configured-smart-proxy-registration-provisioning.adoc[]
+. Create an image from this virtual machine.
+. xref:Adding_VMware_Images_to_Server_{context}[Add your image to {Project}].
