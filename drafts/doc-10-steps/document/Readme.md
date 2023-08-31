@@ -1,3 +1,0 @@
-# document
-
-Document lives here.
