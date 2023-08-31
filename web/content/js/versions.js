@@ -62,6 +62,10 @@ const navVersions = [
           {
             "title": "Application Centric Deployment",
             "path": "Deploying_Hosts_AppCentric"
+          },
+          {
+            "title": "Monitoring Foreman",
+            "path": "Monitoring_Project"
           }
         ]
       },
@@ -100,6 +104,10 @@ const navVersions = [
           {
             "title": "Administering Foreman",
             "path": "Administering_Project"
+          },
+          {
+            "title": "Monitoring Foreman",
+            "path": "Monitoring_Project"
           }
         ]
       },
@@ -182,6 +190,10 @@ const navVersions = [
           {
             "title": "Application Centric Deployment",
             "path": "Deploying_Hosts_AppCentric"
+          },
+          {
+            "title": "Monitoring Foreman",
+            "path": "Monitoring_Project"
           }
         ]
       }
