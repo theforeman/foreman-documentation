@@ -1,7 +1,10 @@
 [id="Exporting_Templates_{context}"]
 = Exporting Templates
 
-You can export templates to a version control server, such as a Git repository.
+Use this procedure to export templates to a git repository.
+
+To use the CLI instead of the {ProjectWebUI}, see the xref:cli_Exporting_Templates_{context}[].
+To use the API, see the xref:api_Exporting_Templates_{context}[].
 
 .Procedure
 . In the {ProjectWebUI}, navigate to *Hosts* > *Sync Templates*.
@@ -14,25 +17,51 @@ For more information about each field, see xref:Configuring_the_TemplateSync_plu
 The {ProjectWebUI} displays the status of the export.
 The status is not persistent; if you leave the status page, you cannot return to it.
 
+[id="cli_Exporting_Templates_{context}"]
 .CLI procedure
-. Clone a local copy of your Git repository:
+. To export the templates to a repository, enter the following command:
 +
 [options="nowrap", subs="+quotes,attributes"]
 ----
-$ git clone https://github.com/theforeman/community-templates __/custom/templates__
-----
-. Change the owner of your local directory to the `foreman` user, and change the SELinux context with the following commands:
-+
-[options="nowrap", subs="+quotes,attributes"]
-----
-# chown -R foreman:foreman __/custom/templates__
-# chcon -R -t httpd_sys_rw_content_t __/custom/templates__
-----
-. To export the templates to your local repository, enter the following command:
-+
-[options="nowrap", subs="+quotes,attributes"]
-----
-hammer export-templates --organization 'Default Organization' --repo __/custom/templates__
+hammer export-templates \
+--organization "_My_Organization_" \
+--repo "_https://git.example.com/path/to/repository_"
 ----
 +
-When exporting templates, avoid temporary directories like `/tmp` or `/var/tmp` because the backend service runs with systemd private temporary directories.
+[NOTE]
+====
+This command clones the repository, makes changes in a commit, and pushes back to the repository.
+You can use the `--branch "_My_Branch_"` option to export the templates to a specific branch.
+====
+
+[id="api_Exporting_Templates_{context}"]
+.API Procedure
+
+. Send a `POST` request to `api/v2/templates/export`:
++
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+# curl -H "Accept:application/json" \
+-H "Content-Type:application/json" \
+-u _login_:__password__ \
+-k https://_{foreman-example-com}_/api/v2/templates/export \
+-X POST
+----
++
+If the export is successful, you receive `{"message":"Success"}`.
+
+[NOTE]
+====
+You can override default API settings by specifying them in the request with the `-d` parameter.
+The following example exports templates to the `git.example.com/templates` repository:
+
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+# curl -H "Accept:application/json" \
+-H "Content-Type:application/json" \
+-u login:password \
+-k https://_{foreman-example-com}_/api/v2/templates/export \
+-X POST \
+-d "{\"repo\":\"git.example.com/templates\"}"
+----
+====
