@@ -24,6 +24,10 @@ const navVersions = [
             "path": "Installing_Proxy"
           },
           {
+            "title": "Upgrading Foreman to Nightly",
+            "path": "Upgrading_Project"
+          },
+          {
             "title": "Deploying Foreman on AWS",
             "path": "Deploying_Project_on_AWS"
           },
@@ -124,7 +128,7 @@ const navVersions = [
             "path": "Installing_Proxy"
           },
           {
-            "title": "Upgrading Katello",
+            "title": "Upgrading Katello to Nightly",
             "path": "Upgrading_Project"
           },
           {
@@ -240,7 +244,7 @@ const navVersions = [
             "path": "Installing_Proxy"
           },
           {
-            "title": "Upgrading Katello",
+            "title": "Upgrading Katello to 4.10",
             "path": "Upgrading_Project"
           },
           {
@@ -328,7 +332,7 @@ const navVersions = [
             "path": "Installing_Proxy"
           },
           {
-            "title": "Upgrading Foreman",
+            "title": "Upgrading Katello to 4.9",
             "path": "Upgrading_Project"
           },
           {
