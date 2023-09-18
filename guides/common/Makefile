@@ -7,7 +7,6 @@ ROOTDIR = $(realpath .)
 NAME = $(notdir $(ROOTDIR))
 DEST_DIR = $(BUILD_DIR)/$(subst doc-,,$(NAME))
 DEST_HTML = $(DEST_DIR)/index-$(BUILD).html
-DEST_PDF = $(BUILD_DIR)/$(subst doc-,,$(NAME))-$(BUILD).pdf
 IMAGES_DIR = $(DEST_DIR)/images
 IMAGES_TS = $(DEST_DIR)/.timestamp-images
 CSS_SOURCES = $(shell find $(COMMON_DIR)/css -type f)
@@ -40,7 +39,7 @@ endif
 endif
 
 .SHELLFLAGS = -o pipefail -c
-.PHONY = all prepare html pdf clean browser server linkchecker open-pdf
+.PHONY = all prepare html clean browser server linkchecker
 
 all: html
 
@@ -49,10 +48,8 @@ prepare:
 
 html: prepare $(IMAGES_TS) $(DEST_HTML)
 
-pdf: prepare $(DEST_PDF)
-
 clean:
-	@rm -rf "$(DEST_DIR)" "$(DEST_PDF)"
+	@rm -rf "$(DEST_DIR)"
 
 browser: html
 	${BROWSER_OPEN} "file://$(realpath $(ROOTDIR)/$(DEST_HTML))"
@@ -62,9 +59,6 @@ serve: html
 
 linkchecker: html
 	linkchecker -r1 -f $(COMMON_DIR)/linkchecker.ini --check-extern "file://$(realpath $(ROOTDIR)/$(DEST_HTML))"
-
-open-pdf: pdf
-	${BROWSER_OPEN} "$(realpath $(ROOTDIR)/$(DEST_PDF))"
 
 $(DEST_DIR)/$(BUILD).css: $(CSS_SOURCES)
 	bundle exec sass --sourcemap=none --no-cache --style $(CSS_STYLE) -I $(COMMON_DIR)/css $(COMMON_DIR)/css/default.scss $@
@@ -80,8 +74,3 @@ $(DEST_HTML): $(SOURCES) $(DEPENDENCIES) $(DOCINFO_SOURCES) $(DEST_DIR)/$(BUILD)
 	@! grep -Eq "^asciidoctor: (ERROR|WARNING)" $@.log
 	@echo CHECKING FOR ORPHAN XREFS HTML LINKS
 	@! grep -RE '<a href="#[a-zA-Z0-9_-]+">\[[a-zA-Z0-9_-]+\]</a>' $@
-
-$(DEST_PDF): $(SOURCES) $(DEPENDENCIES)
-	bundle exec asciidoctor-pdf -a build=$(BUILD) -a imagesdir=./images -d book --trace -o $@ $< 2>&1 | tee $@.log 1>&2
-	@echo CHECKING FOR ASCIIDOCTOR-PDF ERRORS AND WARNINGS
-	@! grep -Eq "^asciidoctor: (ERROR|WARNING)" $@.log
