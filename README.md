@@ -45,7 +45,7 @@ Stable versions are symlink to the nightly (current) version, this can cause iss
 
 ## Deployment
 
-Github actions perform HTML (with link validation), PDF and WEB artifact creation and if succeeded and branch is master or stable, artifacts are downloaded, extracted and deployed (commited into gh-pages). Deployment does not delete files, in order to remove some unwanted content, manual deletion and push into gh-pages must be performed.
+Github actions perform HTML (with link validation) and WEB artifact creation and if succeeded and branch is master or stable, artifacts are downloaded, extracted and deployed (commited into gh-pages). Deployment does not delete files, in order to remove some unwanted content, manual deletion and push into gh-pages must be performed.
 
 When a commit is pushed into `master`:
 
