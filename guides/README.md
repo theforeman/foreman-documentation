@@ -41,18 +41,12 @@ Install ruby gems, in the `foreman-documentation` folder:
 	make prep
 
 Then simply run `make` or `make html` which builds HTML artifacts.
-Generating PDF output is slow, therefore command `make pdf` must be used separately.
-To make both formats in one command, use `make html pdf`.
 
 Few additional make targets are available on the guide level.
 To quickly build HTML version and open new tab in a browser do:
 
 	cd doc-Provisioning_Hosts
 	make browser
-
-Similarly, to build and open PDF version do:
-
-	make open-pdf
 
 To speed up the build process, make sure to use `-j` option. Ideally, set it to amount of cores plus one:
 
@@ -65,7 +59,7 @@ An alias is often useful:
 Currently there are three different versions:
 
 
-`make BUILD=foreman-el` - This is the default that is generated with `make html` or `pdf`.
+`make BUILD=foreman-el` - This is the default that is generated with `make html`.
 
 `make BUILD=satellite` - This generates a downstream preview of the guide.
 
@@ -99,12 +93,6 @@ This requires the cloned git repository plus an application such as Podman or Do
    On SELinux enabled systems, run this command:
 
 	rm -rf guides/build && podman run --rm -v $(pwd):/foreman-documentation:Z foreman_documentation make html
-
-## Reading or Publishing
-
-We do not publish the content yet to prevent users confusion, however this section will cover steps required to publish the content.
-We should make sure that only the last stable version of the HTML document is indexed by search engines, old and nightly builds should not be indexed.
-All PDFs should be available for download though.
 
 ## Disabling the linkchecker for a specific URL pattern
 

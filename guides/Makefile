@@ -1,13 +1,11 @@
 SHELL := /bin/bash
 SUBDIRS = $(shell ls -d doc-*)
 
-.PHONY: all clean html pdf linkchecker linkchecker-tryer serve subdirs $(SUBDIRS)
+.PHONY: all clean html linkchecker linkchecker-tryer serve subdirs $(SUBDIRS)
 
 all: html
 
 html: subdirs
-
-pdf: subdirs
 
 subdirs: $(SUBDIRS)
 
