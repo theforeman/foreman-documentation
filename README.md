@@ -21,6 +21,11 @@ Contributions are welcome.
 New contributions are subject to technical review for accuracy and editorial review for consistency.
 For an overview of what to expect from editorial review, see [Peer review guide for technical documentation](https://redhat-documentation.github.io/peer-review/#checklist).
 
+Documentation in this repository follows a modular structure described in the [Modular documentation reference guide](https://redhat-documentation.github.io/modular-docs/).
+To write new documentation, you can use [modular documentation templates](https://github.com/redhat-documentation/modular-docs/tree/main/modular-docs-manual/files).
+If you are not familiar with modular documentation, the structure and templates might seem overwhelming.
+Feel free to reach out to the maintainers of the foreman-documentation repository, they can help you get started.
+
 ## Static Site
 
 The landing page for [docs.theforeman.org](https://docs.theforeman.org) is available as a generated static site.
