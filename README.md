@@ -18,6 +18,12 @@ See README in the guides/ subdirectory for more information.
 
 Contributions are welcome.
 
+Documentation in this repository follows a modular structure described in the [Modular documentation reference guide](https://redhat-documentation.github.io/modular-docs/).
+To write new documentation, you can use [modular documentation templates](https://github.com/redhat-documentation/modular-docs/tree/main/modular-docs-manual/files) or copy an existing file from `guides/common/modules/` and adapt it.
+
+If you are not familiar with modular documentation, the structure and templates might seem overwhelming.
+If you need help to get started, open an issue or ping [`@docs`](https://community.theforeman.org/g/docs) on the [Foreman Community Forum](https://community.theforeman.org/).
+
 New contributions are subject to technical review for accuracy and editorial review for consistency.
 For an overview of what to expect from editorial review, see [Peer review guide for technical documentation](https://redhat-documentation.github.io/peer-review/#checklist).
 
