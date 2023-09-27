@@ -1,97 +1,82 @@
-[id="Increasing_the_Logging_Levels_to_Help_with_Debugging_{context}"]
-= Increasing the Logging Levels to Help with Debugging
+[id="Increasing_Logging_Levels_to_Help_with_Debugging_{context}"]
+= Increasing Logging Levels to Help with Debugging
 
-By default, {Project} comes with `:INFO` level logging enabled.
-You can increase or decrease the log levels on your {Project}.
+You can increase the logging level of {Project} components to troubleshoot {Project}.
+Increasing the logging level to `debug` provides the most detailed information.
+The default logging level is `info`.
 
-ifndef::foreman-deb[]
-.Enabling debug level logging on all components
+== Increasing the Logging Level for the Foreman Application
+To increase logging for the Foreman Application:
+
+. Set the logging level to `debug`:
++
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-# hammer admin logging --all --level-debug
-# {foreman-maintain} service restart
+# {foreman-installer} --foreman-logging-level debug
 ----
-
-.Enabling debug level logging for a specific component
+. After you complete debugging, reset the logging level to the default value:
++
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-# hammer admin logging --components "_Component_" --level-debug
+# {foreman-installer} --reset-foreman-logging-level
 ----
 
-.Reverting debug level logging to `INFO`
+For more information about {Project} logging settings, use `{foreman-installer}` with the `--full-help` option:
+
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-# hammer admin logging --all --level-production
-# {foreman-maintain} service restart
+# {foreman-installer} --full-help | grep logging
 ----
 
-// These paths mirror hardcoded paths in hammer-cli-foreman-admin which is a bug in itself
-// Do not attempt to "fix" this here without fixing the project itself
-.Listing all components and changed configuration files
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
-# hammer admin logging --list
------------|-------------------------------------|-------------------------------------
-COMPONENT  | AUTO-DETECTED BY EXISTENCE OF       | DESTINATIONS
------------|-------------------------------------|-------------------------------------
-dhcpd      | /etc/dhcp/dhcpd.conf                | syslog /var/log/dhcpd-debug.log
-postgresql | /var/lib/pgsql/data/postgresql.conf | syslog /var/lib/pgsql/data/pg_log/
-proxy      | /etc/foreman-proxy/settings.yml     | /var/log/foreman-proxy/proxy.log
-qpidd      | /etc/qpid/qpidd.conf                | syslog
-rails      | /etc/foreman/settings.yaml          | /var/log/foreman/production.log
-tomcat     | /etc/candlepin/candlepin.conf       | /var/log/candlepin/ /var/log/tomcat/
-virt-who   | /etc/sysconfig/virt-who             | syslog
------------|-------------------------------------|-------------------------------------
-----
-endif::[]
+== Increasing the Logging Level for Hammer
+You can find the log in `~/.hammer/log/hammer.log`.
 
-== Increasing the Logging Level For Hammer
+To increase logging for Hammer:
 
-You can find the log for Hammer in `~/.hammer/log/hammer.log`.
-Edit `/etc/hammer/cli_config.yml` and set the `:log_level:`:
+* In `/etc/hammer/cli_config.yml`, set the `:log_level:` option to `debug`:
 
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 :log_level: 'debug'
 ----
 
-== Increasing the Logging Level On {SmartProxy}
+== Increasing the Logging Level for {SmartProxy}
+You can find the log in `/var/log/foreman-proxy/proxy.log`.
 
-You can find the log for {SmartProxy} in `/var/log/foreman-proxy/proxy.log`.
-Uncomment the `DEBUG` line in `/etc/foreman-proxy/settings.yml`:
+To increase logging for {SmartProxy}:
 
+. Set the logging level to `debug`:
++
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-:log_level: DEBUG
+# {foreman-installer} --foreman-proxy-log-level DEBUG
 ----
-
-Ensure to restart the `foreman-proxy` service afterwards:
-
+. After you complete debugging, reset the logging level to the default value:
++
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-# systemctl restart foreman-proxy
+# {foreman-installer} --reset-foreman-proxy-log-level
 ----
 
-[CAUTION]
+[NOTE]
 ====
-Running the installer will revert this change back.
+Running {foreman-installer} will revert the setting back to default.
 ====
 
 ifdef::katello,orcharhino,satellite[]
-== Increasing the Logging Level For Candlepin
+== Increasing the Logging Level for Candlepin
+You can find the logs in `/var/log/candlepin/candlepin.log` and `/var/log/candlepin/error.log`.
 
-You can find the log for Candlepin in `/var/log/candlepin/candlepin.log`.
-Errors are also logged to a separate file for easier debugging `/var/log/candlepin/error.log`.
+To increase logging for Candlepin:
 
-Extend `/etc/candlepin/candlepin.conf`:
-
+. In `/etc/candlepin/candlepin.conf`, set the logging level to `DEBUG`:
++
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 log4j.logger.org.candlepin=DEBUG
 ----
-
-Ensure to restart the `tomcat` service afterwards:
-
+. Restart the `tomcat` service:
++
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 # systemctl restart tomcat
@@ -106,143 +91,86 @@ log4j.logger.org.candlepin.resource.HypervisorResource=WARN
 ----
 endif::[]
 
-== Increasing the Logging Level On {Project}
-
-You can find the log for {Project} in `/var/log/foreman/production.log`.
-
-{Project} stores logs for Apache in:
-
-* `/var/log/httpd/foreman_error.log`
-* `/var/log/httpd/foreman_access.log`
-* `/var/log/httpd/foreman_ssl_error.log`
-* `/var/log/httpd/foreman_ssl_access.log`
-
-.Procedure
-. Set the logging level in `/etc/foreman/settings.yaml`:
-+
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
-:logging:
-  :production:
-    :type: file
-    :layout: pattern
-    :level: debug
-----
-. Enable selected loggers in `/etc/foreman/settings.yaml`:
-+
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
-:loggers:
-  :ldap:
-    :enabled: true
-  :permissions:
-    :enabled: true
-  :sql:
-    :enabled: true
-----
-+
-Note that to see logging from some area, debug logging has to be set.
-. Restart {Project} services:
-+
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
-# {foreman-maintain} service restart
-----
-
-You can find the complete list of loggers with their default values in `/usr/share/foreman/config/application.rb` in the `Foreman::Logging.add_loggers` command.
-
 ifdef::katello,orcharhino,satellite[]
-== Increasing the Logging Level For Qpid Dispatch Router
+== Increasing the Logging Level for Qpid Dispatch Router
 
-Qpid logs to syslog and can be viewed in `/var/log/messages` or with `journalctl`.
-Enable debug logging in `/etc/qpid-dispatch/qdrouterd.conf`:
+Qpid logs to `syslog`.
+You can view the log in `/var/log/messages` or with `journalctl`.
 
+To increase logging for Qpid Dispatch Router:
+
+. In `/etc/qpid-dispatch/qdrouterd.conf`, set the logging level to `debug`:
++
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 enable: debug+
 ----
-
-Ensure to restart the Qpid Dispatch Router afterwards:
-
+. Restart the Qpid Dispatch Router:
++
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 # systemctl restart qdrouterd
 ----
 
-[CAUTION]
+[NOTE]
 ====
-Running the installer will revert this change back.
+Running {foreman-installer} will revert the setting to default.
 ====
 
 == Increasing the Logging Level For Qpid Broker
+Qpid logs to `syslog`.
+You can view the log in `/var/log/messages` or with `journalctl`.
 
-Qpid logs to syslog and can be viewed in `/var/log/messages` or with `journalctl`.
-Set the log level in `/etc/qpid/qpidd.conf`:
+To increase logging for Qpid Broker:
 
+. In `/etc/qpid/qpidd.conf`, set the logging level to `debug`:
++
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 log-enable=debug+
 ----
-
-Ensure to restart the Qpid Broker afterwards:
-
+. Restart Qpid Broker:
++
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 # systemctl restart qpidd
 ----
 
-[CAUTION]
+[NOTE]
 ====
-Running the installer will revert this change.
+Running {foreman-installer} will revert the setting to default.
 ====
 endif::[]
 
 == Increasing the Logging Level For Redis
 
 You can find the log for Redis in `/var/log/redis/redis.log`.
-Set the log level in `/etc/opt/rh/rh-redis5/redis.conf`:
 
+To increase logging for Redis:
+
+. In `/etc/redis.conf`, set the logging level to `debug`:
++
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 loglevel debug
 ----
-
-Ensure to restart the Redis service afterwards:
-
+. Restart the Redis service:
++
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-# systemctl restart rh-redis5-redis
+# systemctl restart redis
 ----
 
-== Increasing the Logging Level For Postgres
-
-You can find the log for Postgres in `{postgresql-log-dir}`.
-Uncomment the `log_statement` in `{postgresql-conf-dir}/postgresql.conf`:
-
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
-log_statement = 'all'
-----
-
-Ensure to restart {Project} services afterwards:
-
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
-# {foreman-maintain} service restart
-----
-
-[CAUTION]
+[NOTE]
 ====
-Based on the size of your {Project} installation, this can cause disk space to fill up very quickly.
-Only turn this on if absolutely needed.
+Running {foreman-installer} will revert the setting to default.
 ====
-
-For more debug log settings, refer to the https://www.postgresql.org/docs/current/runtime-config-logging.html[Postgresql documentation].
 
 == Increasing the Logging Level For {Project} Installer
 
 You can find the log files in `/var/log/foreman-installer/`.
-To increase the log level of the {Project} Installer during an install:
+
+To increase the logging level of the {Project} installer, add the `--verbose-log-level debug` option during the installation:
 
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
@@ -252,16 +180,19 @@ To increase the log level of the {Project} Installer during an install:
 ifdef::katello,orcharhino,satellite[]
 == Increasing the Logging Level For Pulp
 
-By default, Pulp logs to syslog and can be viewed in `/var/log/messages` or with `journalctl`.
-Add the following config to the `/etc/pulp/settings.py` file:
+By default, Pulp logs to `syslog`.
+You can view the log in `/var/log/messages` or with `journalctl`.
 
+To increase logging for Pulp:
+
+. In `/etc/pulp/settings.py`, set the logging level to `DEBUG`:
++
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 LOGGING = {"dynaconf_merge": True, "loggers": {'': {'handlers': ['console'], 'level': 'DEBUG'}}}
 ----
-
-Ensure to restart the Pulp services afterwards:
-
+. Restart the Pulp services:
++
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 # systemctl restart \
@@ -270,42 +201,40 @@ pulpcore-content \
 pulpcore-resource-manager \
 pulpcore-worker@1 \
 pulpcore-worker@2 \
-rh-redis5-redis
+redis
 ----
 endif::[]
 
 == Increasing the Logging Level For Puppet Agent
+You can find the logs in `/var/log/puppetlabs/puppet/`.
 
-You can increase the logging level for Puppet agent on your {ProjectServer}.
-
-.Procedure
-. Add the following line to the `[agent]` block in the `/etc/puppetlabs/puppet/puppet.conf` file:
-+
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
-[agent]
-    log_level = debug
-----
-
-You can find the logs in `/var/log/puppetlabs/puppet/`
-
-== Increasing the Logging Level For Puppet Server
-
-You can increase the logging level for Puppet server on your {ProjectServer}.
+To increase logging for Puppet agent:
 
 ifdef::satellite[]
-.Prerequisite
-* Puppet must be enabled in your {Project}.
+. Ensure Puppet is enabled in your {Project}.
 For more information, see {ManagingConfigurationsPuppetDocURL}Enabling_Puppet_Integration_managing-configurations-puppet[Enabling Puppet Integration with Satellite] in _{ManagingConfigurationsPuppetDocTitle}_.
 endif::[]
-
-.Procedure
-. Add the following line to the `[master]` block in `/etc/puppetlabs/puppet/puppet.conf` file:
+. Set the logging level to `debug`:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-[master]
-    log_level = debug
+# {foreman-installer} --puppet-agent-additional-settings log_level:debug
+----
+
+== Increasing the Logging Level For Puppet Server
+You can find the logs in `/var/log/puppetlabs/puppetserver/`.
+
+To increase logging for Puppet server:
+
+ifdef::satellite[]
+. Ensure Puppet is enabled in your {Project}.
+For more information, see {ManagingConfigurationsPuppetDocURL}Enabling_Puppet_Integration_managing-configurations-puppet[Enabling Puppet Integration with Satellite] in _{ManagingConfigurationsPuppetDocTitle}_.
+endif::[]
+. Set the logging level to `debug`:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {foreman-installer} --puppet-server-additional-settings log_level:debug
 ----
 . Restart the Puppet server:
 +
@@ -314,17 +243,17 @@ endif::[]
 # {foreman-maintain} service restart --only puppetserver
 ----
 
-You can find the logs in `/var/log/puppetlabs/puppetserver/`.
-
 ifdef::foreman-el,orcharhino[]
 == Increasing the Logging Level For Salt
+Salt Master logs to `/var/log/salt/master`.
+Salt Minions log to `/var/log/salt/minion`.
 
-You can increase the log level for Salt Master (`/etc/salt/master`) and Salt Minion (`/etc/salt/minion`) by changing the following option:
+To increase the logging level for Salt Master or Salt Minion:
+
+* In `/etc/salt/master` or `/etc/salt/minion`, set the logging level to `debug`:
 
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 log_level: debug
 ----
-
-Salt Master logs to `/var/log/salt/master` and Salt Minions log to `/var/log/salt/minion`.
 endif::[]
