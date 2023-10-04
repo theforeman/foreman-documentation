@@ -1,0 +1,81 @@
+[id="creating-a-custom-ssl-certificate_{context}"]
+= Creating a Custom SSL Certificate for {ProductName}
+
+ifeval::["{context}" == "{project-context}"]
+Use this procedure to create a custom SSL certificate for {ProductName}.
+If you already have a custom SSL certificate for {ProductName}, skip this procedure.
+endif::[]
+
+ifeval::["{context}" == "{smart-proxy-context}"]
+On {ProjectServer}, create a custom certificate for your {ProductName}.
+If you already have a custom SSL certificate for {ProductName}, skip this procedure.
+endif::[]
+
+.Procedure
+. To store all the source certificate files, create a directory that is accessible only to the `root` user:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# mkdir /root/{context}_cert
+----
+. Create a private key with which to sign the certificate signing request (CSR).
++
+Note that the private key must be unencrypted.
+If you use a password-protected private key, remove the private key password.
++
+If you already have a private key for this {ProductName}, skip this step.
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# openssl genrsa -out `/root/{context}_cert/{context}_cert_key.pem` 4096
+----
+. Create the `/root/{context}_cert/openssl.cnf` configuration file for the CSR and include the following content:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+[ req ]
+req_extensions = v3_req
+distinguished_name = req_distinguished_name
+x509_extensions = usr_cert
+prompt = no
+
+[ req_distinguished_name ]
+CN = _{context}.example.com_
+
+[ v3_req ]
+basicConstraints = CA:FALSE
+keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+extendedKeyUsage = serverAuth, clientAuth, codeSigning, emailProtection
+subjectAltName = @alt_names
+
+[ usr_cert ]
+basicConstraints=CA:FALSE
+nsCertType = client, server, email
+keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+extendedKeyUsage = serverAuth, clientAuth, codeSigning, emailProtection
+nsComment = "OpenSSL Generated Certificate"
+subjectKeyIdentifier=hash
+authorityKeyIdentifier=keyid,issuer
+
+[ alt_names ]
+DNS.1 = _{context}.example.com_
+----
+. Generate CSR:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# openssl req -new \
+-key _/root/{context}_cert/{context}_cert_key.pem_ \ <1>
+-config _/root/{context}_cert/openssl.cnf_ \ <2>
+-out _/root/{context}_cert/{context}_cert_csr.pem_ <3>
+----
+<1> Path to the private key.
+<2> Path to the configuration file.
+<3> Path to the CSR to generate.
+
+. Send the certificate signing request to the certificate authority (CA).
+The same CA must sign certificates for {ProjectServer} and {SmartProxyServer}.
++
+When you submit the request, specify the lifespan of the certificate.
+The method for sending the certificate request varies, so consult the CA for the preferred method.
+In response to the request, you can expect to receive a CA bundle and a signed certificate, in separate files.
