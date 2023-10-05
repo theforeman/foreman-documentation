@@ -169,8 +169,10 @@
 <li><a href="#Installing_the_SCC_Manager_Plugin_content-management">11.3. Installing the SCC Manager Plug-in</a></li>
 <li><a href="#Adding_an_SCC_Account_to_Server_content-management">11.4. Adding an SCC Account to orcharhino</a></li>
 <li><a href="#Switching_SCC_Accounts_content-management">11.5. Switching SCC Accounts</a></li>
-<li><a href="#Importing_SUSE_Products_content-management">11.6. Importing SUSE Products</a></li>
-<li><a href="#Synchronizing_SUSE_Content_content-management">11.7. Synchronizing SUSE Content</a></li>
+<li><a href="#Updating_an_SCC_Account_content-management">11.6. Updating an SCC Account</a></li>
+<li><a href="#Importing_SUSE_Products_content-management">11.7. Importing SUSE Products</a></li>
+<li><a href="#Synchronizing_SUSE_Content_content-management">11.8. Synchronizing SUSE Content</a></li>
+<li><a href="#Removing_an_SCC_Account_from_orcharhino_content-management">11.9. Removing an SCC Account from orcharhino</a></li>
 </ul>
 </li>
 <li><a href="#Managing_Errata_content-management">12. Managing Errata</a>
@@ -865,7 +867,7 @@ For example, if your base URL is <code><a href="https://server.example.com" clas
 </ol>
 </div>
 <div id="cli-configuring-custom-alternate-content-sources_content-management" class="olist arabic">
-<div class="title">CLI Procedure</div>
+<div class="title">CLI procedure</div>
 <ol class="arabic">
 <li>
 <p>On orcharhino&#160;Server, enter the following command:</p>
@@ -954,7 +956,7 @@ For example, if your base URL is <code><a href="https://server.example.com" clas
 </ol>
 </div>
 <div id="cli-configuring-simplified-alternate-content-sources_content-management" class="olist arabic">
-<div class="title">CLI Procedure</div>
+<div class="title">CLI procedure</div>
 <ol class="arabic">
 <li>
 <p>Create a simplified ACS:</p>
@@ -1060,7 +1062,7 @@ Ensure that you pass the repo labels of the desired repositories.</p>
 </ol>
 </div>
 <div id="cli-configuring-rhui-alternate-content-sources_content-management" class="olist arabic">
-<div class="title">CLI Procedure</div>
+<div class="title">CLI procedure</div>
 <ol class="arabic">
 <li>
 <p>On orcharhino&#160;Server, enter the following command:</p>
@@ -8393,6 +8395,10 @@ The provisioning templates are stored in the <code>/usr/share/foreman/app/views/
 </div>
 <div class="sect2">
 <h3 id="Adding_an_SCC_Account_to_Server_content-management"><a class="anchor" href="#Adding_an_SCC_Account_to_Server_content-management"></a>11.4. Adding an SCC Account to orcharhino</h3>
+<div class="paragraph">
+<p>Use the following procedure to add your SCC account to orcharhino.
+To use the CLI instead of the orcharhino management UI, see the <a href="#cli-Adding_an_SCC_Account_to_Server_content-management">CLI procedure</a>.</p>
+</div>
 <div class="ulist">
 <div class="title">Prerequisite</div>
 <ul>
@@ -8471,6 +8477,67 @@ Note that you have to re-enter your password if you have already saved your SCC 
 </li>
 </ol>
 </div>
+<div id="cli-Adding_an_SCC_Account_to_Server_content-management" class="olist arabic">
+<div class="title">CLI procedure</div>
+<ol class="arabic">
+<li>
+<p>Optional: Import the public GPG key from SUSE into orcharhino.</p>
+<div class="paragraph">
+<p>For more information, see <a href="https://docs.theforeman.org/nightly/Managing_Content/index-orcharhino.html#cli-importing-a-gpg-key">Importing a GPG Key</a> in <em>Managing Content</em>.</p>
+</div>
+</li>
+<li>
+<p>Add your SCC account to orcharhino:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer scc_manager scc_accounts create \
+--base-url "https://scc.suse.com/" \
+--interval <em>My_Interval</em> \
+--katello-gpg-key-id <em>My_GPG_Key_ID</em> \
+--location-id <em>My_Location_ID</em> \
+--login "<em>My_SCC_Account_Name</em>" \
+--name "<em>My_Account_Name</em>" \
+--organization-id <em>My_Organization_ID</em> \
+--password "<em>My_SCC_Account_Password" \
+--sync-date _My_Sync_Date</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Test your SCC account credentials:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer scc_manager scc_accounts test_connection \
+--id <em>My_SCC_Account_ID</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Ensure the command returns <code>Testing connection for SCC account succeeded</code>.</p>
+</div>
+</li>
+<li>
+<p>Synchronize the list of available SUSE products to orcharhino:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer scc_manager scc_accounts sync \
+--id <em>My_SCC_Account_ID</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Check the status of the task:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer task info \
+--id <em>My_Task_ID</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The synchronization is complete once the command returns <code>State: stopped</code> and <code>Result: success</code>.</p>
+</div>
+</li>
+</ol>
+</div>
 </div>
 <div class="sect2">
 <h3 id="Switching_SCC_Accounts_content-management"><a class="anchor" href="#Switching_SCC_Accounts_content-management"></a>11.5. Switching SCC Accounts</h3>
@@ -8527,9 +8594,53 @@ Content that is no longer available for your new SCC account cannot be synchroni
 </div>
 </div>
 <div class="sect2">
-<h3 id="Importing_SUSE_Products_content-management"><a class="anchor" href="#Importing_SUSE_Products_content-management"></a>11.6. Importing SUSE Products</h3>
+<h3 id="Updating_an_SCC_Account_content-management"><a class="anchor" href="#Updating_an_SCC_Account_content-management"></a>11.6. Updating an SCC Account</h3>
 <div class="paragraph">
-<p>Use this procedure to import products from SUSE into orcharhino.</p>
+<p>Use the following procedure to update your SCC account in orcharhino.
+To use the CLI instead of the orcharhino management UI, see the <a href="#cli-Updating_an_SCC_Account_content-management">CLI procedure</a>.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the orcharhino management UI, navigate to <strong>Content</strong> &gt; <strong>SUSE Subscriptions</strong>.</p>
+</li>
+<li>
+<p>Select your SCC account and update it as required.</p>
+<div class="paragraph">
+<p>For more information, see <a href="#Adding_an_SCC_Account_to_Server_content-management">Adding an SCC Account to orcharhino</a>.</p>
+</div>
+</li>
+<li>
+<p>Click <strong>Submit</strong> to update your SCC account.</p>
+</li>
+</ol>
+</div>
+<div id="cli-Updating_an_SCC_Account_content-management" class="ulist">
+<div class="title">CLI procedure</div>
+<ul>
+<li>
+<p>Update your SCC account in orcharhino:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer scc_manager scc_accounts update \
+--id <em>My_SCC_Account_ID</em> \
+--password "<em>My_SCC_Account_Password" \
+_My_Options</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For a list of options, run <code>hammer scc_manager scc_accounts update --help</code>.</p>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Importing_SUSE_Products_content-management"><a class="anchor" href="#Importing_SUSE_Products_content-management"></a>11.7. Importing SUSE Products</h3>
+<div class="paragraph">
+<p>Use this procedure to import products from SUSE into orcharhino.
+To use the CLI instead of the orcharhino management UI, see the <a href="#cli-Importing_SUSE_Products_content-management">CLI procedure</a>.</p>
 </div>
 <div class="ulist">
 <div class="title">Prerequisite</div>
@@ -8576,9 +8687,53 @@ By default, <em>debug</em> and <em>source</em> repositories are excluded.</p>
 </li>
 </ol>
 </div>
+<div id="cli-Importing_SUSE_Products_content-management" class="olist arabic">
+<div class="title">CLI procedure</div>
+<ol class="arabic">
+<li>
+<p>List all available SUSE products:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer scc_manager scc_accounts scc_products list \
+--scc-account-id <em>My_SCC_Account_ID</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>View information about a SUSE product:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer scc_manager scc_accounts scc_products info \
+--id <em>My_SUSE_Product_ID</em> \
+--scc-account-id <em>My_SCC_Account_ID</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Subscribe to a SUSE product:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer scc_manager scc_accounts scc_products subscribe \
+--id <em>My_SUSE_Product_ID</em> \
+--scc-account-id <em>My_SCC_Account_ID</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Optional: Subscribe to multiple SUSE products:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer scc_manager scc_accounts bulk_subscribe \
+--id <em>My_SUSE_Account_ID</em> \
+--scc-subscribe-product-ids <em>My_SUSE_Product_ID_1</em>,<em>My_SUSE_Product_ID_2</em>,<em>My_SUSE_Product_ID_3</em></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
 </div>
 <div class="sect2">
-<h3 id="Synchronizing_SUSE_Content_content-management"><a class="anchor" href="#Synchronizing_SUSE_Content_content-management"></a>11.7. Synchronizing SUSE Content</h3>
+<h3 id="Synchronizing_SUSE_Content_content-management"><a class="anchor" href="#Synchronizing_SUSE_Content_content-management"></a>11.8. Synchronizing SUSE Content</h3>
 <div class="paragraph">
 <p>Use this procedure to synchronize SUSE content to your orcharhino to deploy, register, and serve content to managed hosts.</p>
 </div>
@@ -8642,6 +8797,58 @@ For more information, see <a href="#Creating_a_Composite_Content_View_content-ma
 <p>On the <strong>Subscriptions</strong> tab, select the necessary subscriptions, for example <code>SLES 15 SP3</code>, <code>SLES 15 SP3 orcharhino client</code>, and <code>Puppet</code>.</p>
 </li>
 </ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Removing_an_SCC_Account_from_orcharhino_content-management"><a class="anchor" href="#Removing_an_SCC_Account_from_orcharhino_content-management"></a>11.9. Removing an SCC Account from orcharhino</h3>
+<div class="paragraph">
+<p>Use the following procedure to remove your SCC account from orcharhino.
+To use the CLI instead of the orcharhino management UI, see the <a href="#cli-Removing_an_SCC_Account_from_orcharhino_content-management">CLI procedure</a>.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Warning</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If you want to switch SCC accounts and retain your synchronized content, do not delete your old SCC account, even if it is expired.
+Instead, change the login and password of your SCC account.
+If you delete your old SCC account, you cannot reuse existing repositories, products, content views, and composite content views.
+For more information, see <a href="#Switching_SCC_Accounts_content-management">Switching SCC Accounts</a>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the orcharhino management UI, navigate to <strong>Content</strong> &gt; <strong>SUSE Subscriptions</strong>.</p>
+</li>
+<li>
+<p>For your SCC account, click <strong>Delete</strong> in the <strong>Actions</strong> menu.</p>
+</li>
+<li>
+<p>Click <strong>Confirm</strong> to remove your SCC account from orcharhino.</p>
+</li>
+</ol>
+</div>
+<div id="cli-Removing_an_SCC_Account_from_orcharhino_content-management" class="ulist">
+<div class="title">CLI procedure</div>
+<ul>
+<li>
+<p>Remove your SCC account from orcharhino:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer scc_manager scc_accounts delete \
+--id <em>My_SCC_Account_ID</em></pre>
+</div>
+</div>
+</li>
+</ul>
 </div>
 </div>
 </div>
@@ -9212,7 +9419,7 @@ This is because enhancements are typically designed for the most current softwar
 </table>
 </div>
 <div class="paragraph">
-<p>To use the CLI instead of the orcharhino management UI, see <a href="#cli-adding-errata-to-an-incremental-content-view">CLI procedure</a>.</p>
+<p>To use the CLI instead of the orcharhino management UI, see the <a href="#cli-adding-errata-to-an-incremental-content-view">CLI procedure</a>.</p>
 </div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
@@ -10442,7 +10649,7 @@ Clear this field if the repository does not require authentication.</p>
 </ol>
 </div>
 <div class="olist arabic">
-<div class="title">CLI Procedure</div>
+<div class="title">CLI procedure</div>
 <ol class="arabic">
 <li>
 <p>Create a product for your OSTree content:</p>
@@ -10604,7 +10811,7 @@ Click <strong>Add Repository</strong> to add the OSTree content from this reposi
 </ol>
 </div>
 <div class="olist arabic">
-<div class="title">CLI Procedure</div>
+<div class="title">CLI procedure</div>
 <ol class="arabic">
 <li>
 <p>Obtain a list of repository IDs:</p>
@@ -12983,7 +13190,7 @@ See <a href="#configuring-server-to-sync-content-using-exports_content-managemen
 </ol>
 </div>
 <div class="olist arabic">
-<div class="title">CLI Procedure</div>
+<div class="title">CLI procedure</div>
 <ol class="arabic">
 <li>
 <p>Log in to your orcharhino&#160;Server using SSH.</p>
@@ -13101,7 +13308,7 @@ For more information, see <a href="https://docs.theforeman.org/nightly/Managing_
 </ol>
 </div>
 <div class="olist arabic">
-<div class="title">CLI Procedure</div>
+<div class="title">CLI procedure</div>
 <ol class="arabic">
 <li>
 <p>Connect to your downstream orcharhino&#160;Server using SSH.</p>
