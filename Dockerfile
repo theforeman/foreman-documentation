@@ -1,4 +1,4 @@
-FROM fedora:34
+FROM fedora:38
 
 RUN dnf upgrade -y && \
     dnf install -y findutils \
@@ -9,8 +9,7 @@ RUN dnf upgrade -y && \
                    redhat-rpm-config \
                    ruby-devel \
                    rubygem-asciidoctor && \
-    dnf groupinstall -y development-tools
-
-RUN gem install sass
+    dnf groupinstall -y development-tools && \
+    gem install sass
 
 WORKDIR /foreman-documentation/guides
