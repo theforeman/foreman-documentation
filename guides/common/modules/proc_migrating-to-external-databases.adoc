@@ -5,22 +5,15 @@ Back up and transfer existing data, then use the `{foreman-installer}` command t
 
 .Prerequisite
 
-* You have installed and configured a PostgreSQL server on a {RHEL} server.
+* You have installed and configured an external PostgreSQL server.
 
 .Procedure
 
-. On {ProjectServer}, stop {Project} services:
+. On {ProjectServer}, stop all {Project} services except for PostgreSQL:
 +
 [options="nowrap", subs="+quotes,attributes"]
 ----
-# {foreman-maintain} service stop
-----
-+
-. Start the *PostgreSQL* services:
-+
-[options="nowrap", subs="+quotes,attributes"]
-----
-# systemctl start postgresql
+# {foreman-maintain} service stop --exclude postgresql
 ----
 +
 . Back up the internal databases:
@@ -35,8 +28,10 @@ Back up and transfer existing data, then use the `{foreman-installer}` command t
 [options="nowrap", subs="+quotes,attributes"]
 ----
 PGPASSWORD='_Foreman_Password_' pg_restore -h _postgres.example.com_ -U foreman -d foreman < _/var/migration_backup/foreman.dump_
+ifdef::katello,orcharhino,satellite[]
 PGPASSWORD='_Candlepin_Password_' pg_restore -h _postgres.example.com_ -U candlepin -d candlepin < _/var/migration_backup/candlepin.dump_
 PGPASSWORD='_Pulpcore_Password_' pg_restore -h _postgres.example.com_ -U pulp -d pulpcore < _/var/migration_backup/pulpcore.dump_
+endif::[]
 ----
 +
 . Use the `{foreman-installer}` command to update {Project} to point to the new databases:
@@ -44,19 +39,34 @@ PGPASSWORD='_Pulpcore_Password_' pg_restore -h _postgres.example.com_ -U pulp -d
 [options="nowrap", subs="+quotes,attributes"]
 ----
 {installer-scenario} \
-    --foreman-db-host _postgres.example.com_ \
-    --foreman-db-password _Foreman_Password_ \
-    --foreman-db-database foreman \
-    --foreman-db-manage false \
-    --foreman-db-username foreman \
+ifdef::katello,orcharhino,satellite[]
+    --katello-candlepin-manage-db false \
     --katello-candlepin-db-host _postgres.example.com_ \
     --katello-candlepin-db-name candlepin \
-    --katello-candlepin-db-password _Candlepin_Password_ \
-    --katello-candlepin-manage-db false \
     --katello-candlepin-db-user candlepin \
+    --katello-candlepin-db-password _Candlepin_Password_ \
     --foreman-proxy-content-pulpcore-manage-postgresql false \
     --foreman-proxy-content-pulpcore-postgresql-host _postgres.example.com_ \
     --foreman-proxy-content-pulpcore-postgresql-db-name pulpcore \
+    --foreman-proxy-content-pulpcore-postgresql-user pulp \
     --foreman-proxy-content-pulpcore-postgresql-password _Pulpcore_Password_ \
-    --foreman-proxy-content-pulpcore-postgresql-user pulp
+endif::[]
+    --foreman-db-manage false \
+    --foreman-db-host _postgres.example.com_ \
+    --foreman-db-database foreman \
+    --foreman-db-username foreman \
+    --foreman-db-password _Foreman_Password_
+----
+. Remove the PostgreSQL package on {ProjectServer}.
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# {package-remove} {postgresql-server-package}
+----
++
+. Remove the PostgreSQL data directory.
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# rm -rf {postgresql-data-dir}
 ----
