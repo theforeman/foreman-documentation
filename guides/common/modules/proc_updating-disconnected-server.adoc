@@ -6,11 +6,11 @@ Update your air-gapped {Project} setup where the connected {ProjectServer}, whic
 .Prerequisites
 * Back up your {ProjectServer}.
 For more information, see {AdministeringDocURL}backing-up-{project-context}-server-and-{smart-proxy-context}_admin[Backing Up {ProjectServer} and {SmartProxyServer}] in _{AdministeringDocTitle}_.
-* Install `reposync` that is required for the updating procedure.
+* Install `reposync` that is required for the updating procedure:
 +
 [options="nowrap" subs="attributes"]
 ----
-{package-install} 'dnf-command(reposync)'
+# {package-install} 'dnf-command(reposync)'
 ----
 
 .Procedure on the connected {ProjectServer}
@@ -75,16 +75,19 @@ sslverify = 1
 +
 [options="nowrap" subs="attributes"]
 ----
-# dnf reposync --delete --download-metadata -p ~/{Project}-repos -n \
- --disableplugin=foreman-protector \
- --repoid {RepoRHEL8BaseOS} \
- --repoid {RepoRHEL8AppStream} \
- --repoid {RepoRHEL8ServerSatelliteServerProjectVersion} \
- --repoid {RepoRHEL8ServerSatelliteMaintenanceProjectVersion}
+# dnf reposync \
+--delete \
+--disableplugin=foreman-protector \
+--download-metadata \
+--repoid {RepoRHEL8AppStream} \
+--repoid {RepoRHEL8BaseOS} \
+--repoid {RepoRHEL8ServerSatelliteMaintenanceProjectVersion} \
+--repoid {RepoRHEL8ServerSatelliteServerProjectVersion} \
+-n \
+-p ~/{Project}-repos
 ----
 +
 This downloads the contents of the repositories from the connected {ProjectServer} and stores them in the directory `~/{Project}-repos`.
-+
 . Verify that the RPMs have been downloaded and the repository data directory is generated in each of the sub-directories of `~/{Project}-repos`.
 . Archive the contents of the directory:
 +
@@ -127,7 +130,6 @@ name={ProjectName} Maintenance 6 for RHEL 8 Server RPMs x86_64
 baseurl=file:///root/{Project}-repos/{RepoRHEL8ServerSatelliteMaintenanceProjectVersion}
 enabled=1
 ----
-+
 . In the configuration file, replace the `/root/{Project}-repos` with the extracted location.
 . Check the available versions to confirm the next minor version is listed:
 +
@@ -135,13 +137,14 @@ enabled=1
 ----
 # {foreman-maintain} upgrade list-versions
 ----
-+
 . Use the health check option to determine if the system is ready for upgrade.
 On first use of this command, `{foreman-maintain}` prompts you to enter the hammer admin user credentials and saves them in the `/etc/foreman-maintain/foreman-maintain-hammer.yml` file.
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
-# {foreman-maintain} upgrade check --whitelist="check-upstream-repository,repositories-validate" --target-version {ProjectVersion}.__z__
+# {foreman-maintain} upgrade check \
+--target-version {ProjectVersion}._z_ \
+--whitelist="check-upstream-repository,repositories-validate"
 ----
 +
 . Review the results and address any highlighted error conditions before performing the upgrade.
@@ -153,7 +156,9 @@ If you lose connection to the command shell where the upgrade command is running
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
-# {foreman-maintain} upgrade run --whitelist="check-upstream-repository,repositories-setup,repositories-validate" --target-version {ProjectVersion}.__z__
+# {foreman-maintain} upgrade run \
+--target-version {ProjectVersion}._z_ \
+--whitelist="check-upstream-repository,repositories-setup,repositories-validate"
 ----
 
 include::snip_steps-needs-reboot.adoc[]
