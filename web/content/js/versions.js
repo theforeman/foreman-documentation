@@ -64,7 +64,7 @@ const navVersions = [
             "path": "Deploying_Hosts_AppCentric"
           },
           {
-            "title": "Monitoring Foreman",
+            "title": "Monitoring Foreman Performance",
             "path": "Monitoring_Project"
           }
         ]
@@ -106,7 +106,7 @@ const navVersions = [
             "path": "Administering_Project"
           },
           {
-            "title": "Monitoring Foreman",
+            "title": "Monitoring Foreman Performance",
             "path": "Monitoring_Project"
           }
         ]
@@ -192,7 +192,7 @@ const navVersions = [
             "path": "Deploying_Hosts_AppCentric"
           },
           {
-            "title": "Monitoring Foreman",
+            "title": "Monitoring Foreman Performance",
             "path": "Monitoring_Project"
           }
         ]
