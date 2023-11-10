@@ -1,0 +1,137 @@
+[id="Major-Project-Components_{context}"]
+= Major {Project} Components
+
+[role="_abstract"]
+{ProjectServer} and {SmartProxyServers} are each installed on dedicated {EL} systems. {ProjectServer} is the central component to manage the environment. {SmartProxyServers} mirror content from {ProjectServer} to managed hosts.
+
+//A Capsule Server mirrors content from Satellite Server to provide content federation and localized services in remote geographical locations. Host systems pull content and configuration from Capsule Server in their location. Additional Capsule Servers can be created to provide managed host scaling in a local or remote location, or to provide managed host isolation.
+
+== {ProjectServer} Overview
+
+The {ProjectServer} is the central component of a {Project} deployment. The {ProjectServer} is where you perform operations such as the following:
+
+* Content life cycle management
+* Configuration of {SmartProxyServers} and managed hosts through GUI, CLI, and API
+* System provisioning
+* Patch management
+* Subscription management
+
+The {ProjectServer} delegates content distribution, host provisioning, and communication to the {SmartProxyServers}. The {ProjectServer} also includes a default, integrated {SmartProxyServer}.
+
+On the {ProjectServer}, you can define multiple _organizations_ and _locations_ to help organize content, managed hosts, and configurations.
+
+Organizations:: 
+Organizations typically represent different business units, departments, or teams, such as Finance, Marketing, or Web Development Team. By creating organizations, you can create logical containers to isolate and manage their configurations separately according to their specific requirements.
+Locations:: Locations represent physical locations, such as countries or cities. By creating locations, you can define geographical sites where systems are located, which is useful, for example, in environments with multiple data centers.
+
+{ProjectServer} also contains a fine-grained authentication system to provide {Project} operators with permissions to access precisely the parts of the infrastructure that lie in their area of responsibility.
+
+[id="{SmartProxy}-Overview_{context}"]
+== {SmartProxy} Overview
+
+{SmartProxyServers} mirror content from {ProjectServer} to establish content sources in various geographical locations. {SmartProxyServers} also run localized services to discover, provision, control, and configure hosts.
+This enables host systems to pull content and configuration from {SmartProxyServers} in their location and not from the central {ProjectServer}.
+
+Using Content Views, you can specify the exact subset of content that {SmartProxyServer} makes available to hosts.
+See also xref:Content-Flow-in_{ProjectNameID}_{context}[] for a closer look at life cycle management with the use of Content Views.
+
+The base system running a {SmartProxyServer} is also a managed host of {ProjectServer}.
+
+include::modules/con_overview-of-hosts.adoc[leveloffset=+1]
+
+include::modules/ref_list-of-key-open-source-components-of-projectserver.adoc[leveloffset=+1]
+
+== {SmartProxy} Features
+
+You can use {SmartProxy} to run services required for infrastructure and host management:
+
+DHCP:: {SmartProxy} can manage a DHCP server, including integration with an existing solution such as ISC DHCP servers, Active Directory, and Libvirt instances.
+
+DNS:: {SmartProxy} can manage a DNS server, including integration with an existing solution such as ISC BIND and Active Directory.
+
+TFTP:: {SmartProxy} can integrate with any UNIX-based TFTP server.
+
+Realm:: {SmartProxy} can manage Kerberos realms or domains so that hosts can join them automatically during provisioning.
+{SmartProxy} can integrate with an existing infrastructure, including {FreeIPA} and Active Directory.
+
+Puppet server:: {SmartProxy} can act as a configuration management server by running Puppet server.
+
+Puppet Certificate Authority:: {SmartProxy} can integrate with Puppet's CA to provide certificates to hosts.
+
+Baseboard Management Controller (BMC):: {SmartProxy} can provide power management for hosts using IPMI or Redfish.
+
+Provisioning template proxy:: {SmartProxy} can serve provisioning templates to hosts.
+
+OpenSCAP:: {SmartProxy} can perform security compliance scans on hosts.
+
+Remote Execution (REX):: {SmartProxy} can run remote job execution on hosts.
+
+ifdef::satellite[]
+You can use {SmartProxy} to mirror content from {ProjectServer}:
+endif::[]
+ifndef::satellite[]
+If you have the Katello plug-in installed, you can use {SmartProxy} to mirror content from {ProjectServer}:
+endif::[]
+
+Repository synchronization:: The content from {ProjectServer} (more precisely from selected life cycle environments) is pulled to {SmartProxyServer} for content delivery (enabled by Pulp).
+
+Content delivery:: Hosts configured to use {SmartProxyServer} download content from that {SmartProxy} rather than from the central {ProjectServer} (enabled by Pulp).
+
+Host action delivery:: {SmartProxyServer} executes scheduled actions on hosts.
+
+Red Hat Subscription Management (RHSM) proxy:: Hosts are registered to their associated {SmartProxyServers} rather than to the central {ProjectServer} or the Red{nbsp}Hat Customer Portal (provided by Candlepin).
+
+You can enable only selected features on any {SmartProxy} to configure a {SmartProxyServer} for a specific limited purpose. Common configurations include the following:
+
+Infrastructure {SmartProxies}: DNS + DHCP + TFTP:: {SmartProxies} with these services provide infrastructure services for hosts.
+With provisioning template proxy enabled, infrastructure {SmartProxy} has all necessary services for provisioning new hosts.
+
+Content {SmartProxies}: Pulp:: {SmartProxies} with this service provide content synchronized from {ProjectServer} to hosts.
+
+Configuration {SmartProxies}: Pulp + Puppet + PuppetCA:: {SmartProxies} with these services provide content and run configuration services for hosts.
+
+All-in-one {SmartProxies}: DNS + DHCP + TFTP + Pulp + Puppet + PuppetCA:: {SmartProxies} with these services provide a full set of {SmartProxy} features.
+All-in-one {SmartProxies} enable host isolation by providing a single point of connection for managed hosts.
+
+== {SmartProxy} Networking
+
+The communication between managed hosts and {ProjectServer} is routed through {SmartProxyServer} that can also manage multiple services on behalf of hosts.
+Many of these services use dedicated network ports, but {SmartProxyServer} ensures that a single source IP address is used for all communications from the host to {ProjectServer}, which simplifies firewall administration.
+
+The goal of {SmartProxy} isolation is to provide a single endpoint for all of the host's network communications so that in remote network segments, you need only open firewall ports to the {SmartProxy} itself.
+The following diagram shows how the {Project} components interact in the scenario with hosts connecting to an isolated {SmartProxy}.
+
+ifndef::satellite[]
+include::../common/modules/snip_red-hat-images.adoc[]
+endif::[]
+
+.{Project} Topology with Isolated {SmartProxy}
+
+[id="figu-Satellite_Topology_with_Isolated_Capsule"]
+image::topology-isolated-satellite.png[{ProjectName} topology with an isolated host]
+
+The following diagram shows how the {Project} components interact when hosts connect directly to {ProjectServer}.
+Note that as the base system of an external {SmartProxy} is a Client of the {Project}, this diagram is relevant even if you do not intend to have directly connected hosts.
+
+ifndef::satellite[]
+include::../common/modules/snip_red-hat-images.adoc[]
+endif::[]
+
+.{Project} Topology with Internal {SmartProxy}
+
+image::topology-direct-satellite.png[{ProjectName} topology with a direct host]
+
+.Additional resources
+You can find complete instructions for configuring the host-based firewall to open the required ports in the following documents:
+
+* {InstallingServerDocURL}Ports_and_Firewalls_Requirements_{project-context}[Ports and Firewalls Requirements] in _{InstallingServerDocTitle}_
+ifdef::satellite[]
+* {InstallingServerDisconnectedDocURL}Ports_and_Firewalls_Requirements_{project-context}[Ports and Firewalls Requirements] in _{InstallingServerDisconnectedDocTitle}_
+endif::[]
+* {InstallingSmartProxyDocURL}capsule-ports-and-firewalls-requirements_{smart-proxy-context}[Ports and Firewalls Requirements] in _{InstallingSmartProxyDocTitle}_
+
+[role="_additional-resources"]
+== Additional Resources
+
+* See {InstallingSmartProxyDocURL}[_{InstallingSmartProxyDocTitle}_] for details on {SmartProxy} requirements, installation, and scalability considerations.
+* See {ConfiguringLoadBalancerDocURL}[_{ConfiguringLoadBalancerDocTitle}_] for details on distributing load among {SmartProxies}.
