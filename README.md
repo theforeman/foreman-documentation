@@ -23,6 +23,7 @@ To write new documentation, you can use [modular documentation templates](https:
 
 If you are not familiar with modular documentation, the structure and templates might seem overwhelming.
 If you need help to get started, open an issue or ping [`@docs`](https://community.theforeman.org/g/docs) on the [Foreman Community Forum](https://community.theforeman.org/).
+If you are unsure where to place your content, have a look at the `docinfo.xml` files within each directory in `guides/`.
 
 New contributions are subject to technical review for accuracy and editorial review for consistency.
 For an overview of what to expect from editorial review, see [Peer review guide for technical documentation](https://redhat-documentation.github.io/peer-review/#checklist).
