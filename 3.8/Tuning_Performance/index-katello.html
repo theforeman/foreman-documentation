@@ -27,14 +27,14 @@
 <h1>Tuning Performance of Foreman</h1>
 <div class="details">
 <span id="revnumber">version 3.8,</span>
-<span id="revdate">published Dec 14 2023</span>
+<span id="revdate">published Dec 18 2023</span>
 </div>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
 <li><a href="#Introduction_to_Performance_Tuning_performance-tuning">1. Introduction to Performance Tuning</a></li>
 <li><a href="#Performance_Tuning_Quickstart_performance-tuning">2. Performance Tuning Quickstart</a></li>
-<li><a href="#Performance_Tuning_System_Requirements_performance-tuning">3. Performance Tuning System Requirements</a></li>
+<li><a href="#System_Requirements_for_Tuning_performance-tuning">3. System Requirements for Tuning</a></li>
 <li><a href="#Determining_Hardware_and_OS_Configuration_performance-tuning">4. Determining Hardware and OS Configuration</a>
 <ul class="sectlevel2">
 <li><a href="#Benchmarking_Disk_Performance_performance-tuning">4.1. Benchmarking Disk Performance</a></li>
@@ -48,7 +48,7 @@
 <li><a href="#Puma_Tunings_performance-tuning">5.2. Puma Tunings</a></li>
 <li><a href="#Apache_HTTPD_Performance_Tuning_performance-tuning">5.3. Apache HTTPD Performance Tuning</a></li>
 <li><a href="#Dynflow_Tuning_performance-tuning">5.4. Dynflow Tuning</a></li>
-<li><a href="#REX_pull_based_transport_performance-tuning">5.5. REX pull-based transport</a></li>
+<li><a href="#Pull_based_REX_transport_tuning_performance-tuning">5.5. Pull-Based REX Transport Tuning</a></li>
 <li><a href="#PostgreSQL_Tuning_performance-tuning">5.6. PostgreSQL Tuning</a></li>
 <li><a href="#Redis_Tuning_performance-tuning">5.7. Redis Tuning</a></li>
 <li><a href="#Smart_Proxy_Configuration_Tuning_performance-tuning">5.8. Smart&#160;Proxy Configuration Tuning</a></li>
@@ -153,7 +153,7 @@ For more information, see <a href="#Puma_Tunings_performance-tuning">Puma Tuning
 </div>
 </div>
 <div class="sect1">
-<h2 id="Performance_Tuning_System_Requirements_performance-tuning"><a class="anchor" href="#Performance_Tuning_System_Requirements_performance-tuning"></a>3. Performance Tuning System Requirements</h2>
+<h2 id="System_Requirements_for_Tuning_performance-tuning"><a class="anchor" href="#System_Requirements_for_Tuning_performance-tuning"></a>3. System Requirements for Tuning</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>You can find the hardware and software requirements in <a href="https://docs.theforeman.org/3.8/Installing_Server/index-katello.html#Preparing_your_Environment_for_Installation_foreman">Preparing your Environment for Installation</a> in <em>Installing Foreman&#160;Server with Katello 4.10 Plugin on CentOS/RHEL</em>.</p>
@@ -941,10 +941,16 @@ dynflow-sidekiq@worker-3.service        loaded    active   running   Foreman job
 </div>
 </div>
 <div class="sect2">
-<h3 id="REX_pull_based_transport_performance-tuning"><a class="anchor" href="#REX_pull_based_transport_performance-tuning"></a>5.5. REX pull-based transport</h3>
+<h3 id="Pull_based_REX_transport_tuning_performance-tuning"><a class="anchor" href="#Pull_based_REX_transport_tuning_performance-tuning"></a>5.5. Pull-Based REX Transport Tuning</h3>
 <div class="paragraph">
-<p>For pull-based remote execution, Foreman uses MQTT as its messaging protocol which includes an MQTT client running on each host.
-In order to tune the MQTT server (<code>mosquitto</code>) and increase the number of hosts connected to it, you can follow the following procedure on the Foreman&#160;server:</p>
+<p>Foreman has a pull-based transport mode for remote execution.
+This transport mode uses MQTT as its messaging protocol and includes an MQTT client running on each host.
+For more information, see <a href="https://docs.theforeman.org/3.8/Managing_Hosts/index-katello.html#transport-modes-for-remote-execution_managing-hosts">Transport Modes for Remote Execution</a> in <em>Managing Hosts</em>.</p>
+</div>
+<div class="sect3">
+<h4 id="Increasing_host_limit_for_pull_based_REX_transport_performance-tuning"><a class="anchor" href="#Increasing_host_limit_for_pull_based_REX_transport_performance-tuning"></a>5.5.1. Increasing Host Limit for Pull-Based REX Transport</h4>
+<div class="paragraph">
+<p>You can tune the <code>mosquitto</code> MQTT server and increase the number of hosts connected to it.</p>
 </div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
@@ -961,7 +967,7 @@ In order to tune the MQTT server (<code>mosquitto</code>) and increase the numbe
 </div>
 </li>
 <li>
-<p>To increase the default number of hosts accepted by the MQTT server, create the following system unit definition file and set its contents as specified in the below given example (this will allow the <code>mosquitto</code> service to handle ~5000 hosts):</p>
+<p>Create a config file to increase the default number of hosts accepted by the MQTT service:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap">cat &gt;/etc/systemd/system/mosquitto.service.d/limits.conf &lt;&lt;<em>EOF</em>
@@ -969,6 +975,9 @@ In order to tune the MQTT server (<code>mosquitto</code>) and increase the numbe
 LimitNOFILE=5000
 <em>EOF</em></pre>
 </div>
+</div>
+<div class="paragraph">
+<p>This example sets the limit to allow the <code>mosquitto</code> service to handle 5000 hosts.</p>
 </div>
 </li>
 <li>
@@ -981,6 +990,73 @@ LimitNOFILE=5000
 </div>
 </li>
 </ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="Decreasing_performance_impact_of_the_pull-based_REX_transport_performance-tuning"><a class="anchor" href="#Decreasing_performance_impact_of_the_pull-based_REX_transport_performance-tuning"></a>5.5.2. Decreasing Performance Impact of the Pull-Based REX Transport</h4>
+<div class="paragraph">
+<p>When Foreman&#160;server is configured with the pull-based transport mode for remote execution jobs using the Script provider, Smart&#160;Proxy&#160;server sends notifications about new jobs to clients through MQTT.
+This notification does not include the actual workload that the client is supposed to execute.
+After a client receives a notification about a new remote execution job, it queries Smart&#160;Proxy&#160;server for its actual workload.
+During the job, the client periodically sends outputs of the job to Smart&#160;Proxy&#160;server, further increasing the number of requests to Smart&#160;Proxy&#160;server.</p>
+</div>
+<div class="paragraph">
+<p>These requests to Smart&#160;Proxy&#160;server together with high concurrency allowed by the MQTT protocol can cause exhaustion of available connections on Smart&#160;Proxy&#160;server.
+Some requests might fail, making some child tasks of remote execution jobs unresponsive.
+This also depends on actual job workload, as some jobs are causing additional load to Foreman&#160;server, making it compete for resources if clients are registered to Foreman&#160;server.</p>
+</div>
+<div class="paragraph">
+<p>To avoid this, configure your Foreman&#160;server and Smart&#160;Proxy&#160;server with the following parameters:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>MQTT Time To Live &#8211; Time interval in seconds given to the host to pick up the job before considering the job undelivered</p>
+</li>
+<li>
+<p>MQTT Resend Interval &#8211; Time interval in seconds at which the notification should be re-sent to the host until the job is picked up or cancelled</p>
+</li>
+<li>
+<p>MQTT Rate Limit &#8211; Number of jobs that are allowed to run at the same time.
+You can limit the concurrency of remote execution by tuning the rate limit which means you are going to put more load on Foreman.</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>Tune the MQTT parameters on your Foreman&#160;server:</p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer \
+--foreman-proxy-plugin-remote-execution-script-mqtt-rate-limit <em>My_MQTT_Rate_Limit</em> \
+--foreman-proxy-plugin-remote-execution-script-mqtt-resend-interval <em>My_MQTT_Resend_Interval</em> \
+--foreman-proxy-plugin-remote-execution-script-mqtt-ttl <em>My_MQTT_Time_To_Live</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Smart&#160;Proxy&#160;server logs are in <code>/var/log/foreman-proxy/proxy.log</code>.
+Smart&#160;Proxy&#160;server uses Webrick HTTP server (no httpd or Puma involved), so there is no simple way to increase its capacity.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Depending on the workload, number of hosts, available resources, and applied tuning, you might hit the <a href="https://bugzilla.redhat.com/show_bug.cgi?id=2244811">Bug 2244811</a>, which causes Smart&#160;Proxy to consume too much memory and eventually be killed, making the rest of the job fail.
+At the moment there is no universally applicable workaround.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
 </div>
 </div>
 <div class="sect2">
