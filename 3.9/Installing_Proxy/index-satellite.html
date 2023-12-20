@@ -45,21 +45,21 @@
 <li><a href="#Registering_Proxy_to_Server_capsule">2.1. Registering to Satellite&#160;Server</a></li>
 <li><a href="#attaching-infrastructure-subscription_capsule">2.2. Attaching the Satellite Infrastructure Subscription</a></li>
 <li><a href="#configuring-repositories-proxy_capsule">2.3. Configuring Repositories</a></li>
-<li><a href="#Installing_Proxy_Packages_capsule">2.4. Installing Capsule&#160;Server Packages</a></li>
-<li><a href="#synchronizing-the-system-clock-with-chronyd_capsule">2.5. Synchronizing the System Clock With chronyd</a></li>
-<li><a href="#configuring-capsule-server-with-ssl-certificates">2.6. Configuring Capsule&#160;Server with SSL Certificates</a></li>
-<li><a href="#assigning-organization-location-capsule-server_capsule">2.7. Assigning the Correct Organization and Location to Capsule&#160;Server in the Satellite web UI</a></li>
+<li><a href="#using-fapolicyd-on-server_capsule">2.4. Optional: Using fapolicyd on Capsule&#160;Server</a></li>
+<li><a href="#Installing_Proxy_Packages_capsule">2.5. Installing Capsule&#160;Server Packages</a></li>
+<li><a href="#synchronizing-the-system-clock-with-chronyd_capsule">2.6. Synchronizing the System Clock With chronyd</a></li>
+<li><a href="#configuring-capsule-server-with-ssl-certificates">2.7. Configuring Capsule&#160;Server with SSL Certificates</a></li>
+<li><a href="#assigning-organization-location-capsule-server_capsule">2.8. Assigning the Correct Organization and Location to Capsule&#160;Server in the Satellite web UI</a></li>
 </ul>
 </li>
 <li><a href="#performing-additional-configuration-on-capsule-server">3. Performing Additional Configuration on Capsule&#160;Server</a>
 <ul class="sectlevel2">
 <li><a href="#configuring-capsule-for-host-registration-and-provisioning_capsule">3.1. Configuring Capsule for Host Registration and Provisioning</a></li>
-<li><a href="#enabling-katello-agent_capsule">3.2. Enabling Katello Agent on External Capsules</a></li>
-<li><a href="#configuring-remote-execution-for-pull-client_capsule">3.3. Configuring Remote Execution for Pull Client</a></li>
-<li><a href="#Enabling_OpenSCAP_on_capsule_Servers_capsule">3.4. Enabling OpenSCAP on Capsule&#160;Servers</a></li>
-<li><a href="#Adding_Lifecycle_Environments_capsule">3.5. Adding Lifecycle Environments to Capsule&#160;Servers</a></li>
-<li><a href="#enabling-power-management-on-managed-hosts_capsule">3.6. Enabling Power Management on Managed Hosts</a></li>
-<li><a href="#configuring-dns-dhcp-and-tftp_capsule">3.7. Configuring DNS, DHCP, and TFTP on Capsule&#160;Server</a></li>
+<li><a href="#configuring-remote-execution-for-pull-client_capsule">3.2. Configuring Remote Execution for Pull Client</a></li>
+<li><a href="#Enabling_OpenSCAP_on_capsule_Servers_capsule">3.3. Enabling OpenSCAP on Capsule&#160;Servers</a></li>
+<li><a href="#Adding_Lifecycle_Environments_capsule">3.4. Adding Lifecycle Environments to Capsule&#160;Servers</a></li>
+<li><a href="#enabling-power-management-on-managed-hosts_capsule">3.5. Enabling Power Management on Managed Hosts</a></li>
+<li><a href="#configuring-dns-dhcp-and-tftp_capsule">3.6. Configuring DNS, DHCP, and TFTP on Capsule&#160;Server</a></li>
 </ul>
 </li>
 <li><a href="#configuring-external-services">4. Configuring Capsule&#160;Server with External Services</a>
@@ -210,9 +210,6 @@ The freshly provisioned system must not have the following users provided by ext
 <p>puppet</p>
 </li>
 <li>
-<p>qdrouterd</p>
-</li>
-<li>
 <p>redis</p>
 </li>
 </ul>
@@ -319,10 +316,6 @@ This is a requirement for the <code>puppetserver</code> service to work.</p>
 </li>
 <li>
 <p>Because most Capsule&#160;Server data is stored in the <code>/var</code> directory, mounting <code>/var</code> on LVM storage can help the system to scale.</p>
-</li>
-<li>
-<p>The <code>/var/lib/qpidd/</code> directory uses slightly more than 2 MB per Content Host managed by the <code>goferd</code> service.
-For example, 10 000 Content Hosts require 20 GB of disk space in <code>/var/lib/qpidd/</code>.</p>
 </li>
 <li>
 <p>Use high-bandwidth, low-latency storage for the <code>/var/lib/pulp/</code> directories.
@@ -563,15 +556,6 @@ For more information on Satellite Topology, see <a href="https://access.redhat.c
 <td class="tableblock halign-left valign-top"><p class="tableblock">Content hosts for REX job notification (optional)</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">5646, 5647</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">TCP</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">AMQP</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Client</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Goferd message bus</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Forward message to client (optional)</p>
-<p class="tableblock">Katello agent to communicate with Qpid dispatcher</p></td>
-</tr>
-<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">8000</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">TCP</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">HTTP</p></td>
@@ -765,14 +749,6 @@ This behavior can be turned off using <code>satellite-installer --foreman-proxy-
 <td class="tableblock halign-left valign-top"><p class="tableblock">Client</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Power management</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">BMC On/Off/Cycle/Status</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">5646</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">TCP</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">AMQP</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Satellite&#160;Server</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Katello agent</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Forward message to Qpid dispatch router on Capsule (optional)</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">7911</p></td>
@@ -1195,7 +1171,7 @@ If SCA is enabled on Satellite&#160;Server, you can skip this step:</p>
 <td class="content">
 <div class="paragraph">
 <p>If there is any warning about conflicts with Ruby or PostgreSQL while enabling <code>satellite-capsule:el8</code> module, see <a href="#troubleshooting-dnf-modules_capsule">Troubleshooting DNF modules</a>.
-For more information about modules and lifecycle streams on Red&#160;Hat Enterprise Linux 8, see <a href="https://access.redhat.com/support/policy/updates/rhel-app-streams-life-cycle">Red&#160;Hat Enterprise Linux Application Streams Life Cycle</a>.</p>
+For more information about modules and lifecycle streams on Red&#160;Hat Enterprise Linux 8, see <a href="https://access.redhat.com/support/policy/updates/rhel-app-streams-life-cycle">Red&#160;Hat Enterprise Linux Application Streams Lifecycle</a>.</p>
 </div>
 </td>
 </tr>
@@ -1227,7 +1203,74 @@ For more information, see <a href="https://access.redhat.com/documentation/en-us
 </div>
 </div>
 <div class="sect2">
-<h3 id="Installing_Proxy_Packages_capsule"><a class="anchor" href="#Installing_Proxy_Packages_capsule"></a>2.4. Installing Capsule&#160;Server Packages</h3>
+<h3 id="using-fapolicyd-on-server_capsule"><a class="anchor" href="#using-fapolicyd-on-server_capsule"></a>2.4. Optional: Using fapolicyd on Capsule&#160;Server</h3>
+<div class="paragraph">
+<p>By enabling <code>fapolicyd</code> on your Satellite&#160;Server, you can provide an additional layer of security by monitoring and controlling access to files and directories.
+The fapolicyd daemon uses the RPM database as a repository of trusted binaries and scripts.</p>
+</div>
+<div class="paragraph">
+<p>You can turn on or off the fapolicyd on your Satellite&#160;Server or Capsule&#160;Server at any point.</p>
+</div>
+<div class="sect3">
+<h4 id="installing-fapolicyd-on-server_capsule"><a class="anchor" href="#installing-fapolicyd-on-server_capsule"></a>2.4.1. Installing fapolicyd on Capsule&#160;Server</h4>
+<div class="paragraph">
+<p>You can install <code>fapolicyd</code> along with Capsule&#160;Server or can be installed on an existing Capsule&#160;Server.
+If you are installing <code>fapolicyd</code> along with the new Capsule&#160;Server, the installation process will detect the fapolicyd in your Red&#160;Hat Enterprise Linux host and deploy the Capsule&#160;Server rules automatically.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisite</div>
+<ul>
+<li>
+<p>Ensure your host has access to the BaseOS repositories of Red&#160;Hat Enterprise Linux.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Install fapolicyd:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf install fapolicyd</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Start the <code>fapolicyd</code> service:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl enable --now fapolicyd</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">Verification</div>
+<ul>
+<li>
+<p>Verify that the <code>fapolicyd</code> service is running correctly:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl status fapolicyd</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<div class="title">New Satellite&#160;Server or Capsule&#160;Server installations</div>
+<p>In case of new Satellite&#160;Server or Capsule&#160;Server installation, follow the standard installation procedures after installing and enabling fapolicyd on your Red&#160;Hat Enterprise Linux host.</p>
+</div>
+<div class="paragraph">
+<div class="title">Additional resources</div>
+<p>For more information on fapolicyd, see <a href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/security_hardening/assembly_blocking-and-allowing-applications-using-fapolicyd_security-hardening#doc-wrapper">Blocking and allowing applications using fapolicyd</a> in <em>Red Hat Enterprise Linux 8 Security hardening</em>.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Installing_Proxy_Packages_capsule"><a class="anchor" href="#Installing_Proxy_Packages_capsule"></a>2.5. Installing Capsule&#160;Server Packages</h3>
 <div class="paragraph">
 <p>Before installing Capsule&#160;Server packages, you must update all packages that are installed on the base operating system.</p>
 </div>
@@ -1257,7 +1300,7 @@ For more information, see <a href="https://access.redhat.com/documentation/en-us
 </div>
 </div>
 <div class="sect2">
-<h3 id="synchronizing-the-system-clock-with-chronyd_capsule"><a class="anchor" href="#synchronizing-the-system-clock-with-chronyd_capsule"></a>2.5. Synchronizing the System Clock With chronyd</h3>
+<h3 id="synchronizing-the-system-clock-with-chronyd_capsule"><a class="anchor" href="#synchronizing-the-system-clock-with-chronyd_capsule"></a>2.6. Synchronizing the System Clock With chronyd</h3>
 <div class="paragraph">
 <p>To minimize the effects of time drift, you must synchronize the system clock on the base operating system on which you want to install Capsule&#160;Server with Network Time Protocol (NTP) servers.
 If the base operating system clock is configured incorrectly, certificate verification might fail.</p>
@@ -1288,7 +1331,7 @@ If the base operating system clock is configured incorrectly, certificate verifi
 </div>
 </div>
 <div class="sect2">
-<h3 id="configuring-capsule-server-with-ssl-certificates"><a class="anchor" href="#configuring-capsule-server-with-ssl-certificates"></a>2.6. Configuring Capsule&#160;Server with SSL Certificates</h3>
+<h3 id="configuring-capsule-server-with-ssl-certificates"><a class="anchor" href="#configuring-capsule-server-with-ssl-certificates"></a>2.7. Configuring Capsule&#160;Server with SSL Certificates</h3>
 <div class="paragraph">
 <p>Red&#160;Hat Satellite uses SSL certificates to enable encrypted communications between Satellite&#160;Server, external Capsule&#160;Servers, and all hosts.
 Depending on the requirements of your organization, you must configure your Capsule&#160;Server with a default or custom certificate.</p>
@@ -1306,7 +1349,7 @@ For more information, see <a href="#configuring-capsule-custom-server-certificat
 </ul>
 </div>
 <div class="sect3">
-<h4 id="configuring-capsule-default-certificate_capsule"><a class="anchor" href="#configuring-capsule-default-certificate_capsule"></a>2.6.1. Configuring Capsule&#160;Server with a Default SSL Certificate</h4>
+<h4 id="configuring-capsule-default-certificate_capsule"><a class="anchor" href="#configuring-capsule-default-certificate_capsule"></a>2.7.1. Configuring Capsule&#160;Server with a Default SSL Certificate</h4>
 <div class="paragraph">
 <p>Use this section to configure Capsule&#160;Server with an SSL certificate that is signed by Satellite&#160;Server default Certificate Authority (CA).</p>
 </div>
@@ -1394,7 +1437,7 @@ It is required, for example, when upgrading Capsule&#160;Server.
 </div>
 </div>
 <div class="sect3">
-<h4 id="configuring-capsule-custom-server-certificate_capsule"><a class="anchor" href="#configuring-capsule-custom-server-certificate_capsule"></a>2.6.2. Configuring Capsule&#160;Server with a Custom SSL Certificate</h4>
+<h4 id="configuring-capsule-custom-server-certificate_capsule"><a class="anchor" href="#configuring-capsule-custom-server-certificate_capsule"></a>2.7.2. Configuring Capsule&#160;Server with a Custom SSL Certificate</h4>
 <div class="paragraph">
 <p>If you configure Satellite&#160;Server to use a custom SSL certificate, you must also configure each of your external Capsule&#160;Servers with a distinct custom SSL certificate.</p>
 </div>
@@ -1642,7 +1685,7 @@ It is required, for example, when upgrading Capsule&#160;Server.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="assigning-organization-location-capsule-server_capsule"><a class="anchor" href="#assigning-organization-location-capsule-server_capsule"></a>2.7. Assigning the Correct Organization and Location to Capsule&#160;Server in the Satellite web UI</h3>
+<h3 id="assigning-organization-location-capsule-server_capsule"><a class="anchor" href="#assigning-organization-location-capsule-server_capsule"></a>2.8. Assigning the Correct Organization and Location to Capsule&#160;Server in the Satellite web UI</h3>
 <div class="paragraph">
 <p>After installing Capsule&#160;Server packages, if there is more than one organization or location, you must assign the correct organization and location to Capsule to make Capsule visible in the Satellite web UI.</p>
 </div>
@@ -1808,34 +1851,13 @@ Therefore, if you have set any trusted proxies previously, you must include them
 </div>
 </div>
 <div class="sect2">
-<h3 id="enabling-katello-agent_capsule"><a class="anchor" href="#enabling-katello-agent_capsule"></a>3.2. Enabling Katello Agent on External Capsules</h3>
-<div class="paragraph">
-<p>Remote Execution is the primary method of managing packages on Content Hosts. To be able to use the deprecated Katello Agent it must be enabled on each Capsule.</p>
-</div>
-<div class="ulist">
-<div class="title">Procedure</div>
-<ul>
-<li>
-<p>To enable Katello Agent infrastructure, enter the following command:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># satellite-installer --scenario capsule \
---foreman-proxy-content-enable-katello-agent=true</pre>
-</div>
-</div>
-</li>
-</ul>
-</div>
-</div>
-<div class="sect2">
-<h3 id="configuring-remote-execution-for-pull-client_capsule"><a class="anchor" href="#configuring-remote-execution-for-pull-client_capsule"></a>3.3. Configuring Remote Execution for Pull Client</h3>
+<h3 id="configuring-remote-execution-for-pull-client_capsule"><a class="anchor" href="#configuring-remote-execution-for-pull-client_capsule"></a>3.2. Configuring Remote Execution for Pull Client</h3>
 <div class="paragraph">
 <p>By default, Remote Execution uses SSH as the transport mechanism for the Script provider.
 However, Remote Execution also offers pull-based transport, which you can use if your infrastructure prohibits outgoing connections from Capsule to hosts.</p>
 </div>
 <div class="paragraph">
-<p>This is comprised of <code>pull-mqtt</code> mode on Capsule in combination with a pull client running on hosts.
-Configure the <code>pull-mqtt</code> mode to migrate from Katello Agent, which is a deprecated method of pull-based transport.</p>
+<p>This is comprised of <code>pull-mqtt</code> mode on Capsule in combination with a pull client running on hosts.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -1891,7 +1913,7 @@ For more information, see <a href="https://access.redhat.com/documentation/en-us
 </div>
 </div>
 <div class="sect2">
-<h3 id="Enabling_OpenSCAP_on_capsule_Servers_capsule"><a class="anchor" href="#Enabling_OpenSCAP_on_capsule_Servers_capsule"></a>3.4. Enabling OpenSCAP on Capsule&#160;Servers</h3>
+<h3 id="Enabling_OpenSCAP_on_capsule_Servers_capsule"><a class="anchor" href="#Enabling_OpenSCAP_on_capsule_Servers_capsule"></a>3.3. Enabling OpenSCAP on Capsule&#160;Servers</h3>
 <div class="paragraph">
 <p>On Satellite&#160;Server and the integrated Capsule of your Satellite&#160;Server, OpenSCAP is enabled by default.
 To use the OpenSCAP plug-in and content on external Capsules, you must enable OpenSCAP on each Capsule.</p>
@@ -1918,7 +1940,7 @@ For more information, see <a href="https://access.redhat.com/documentation/en-us
 </div>
 </div>
 <div class="sect2">
-<h3 id="Adding_Lifecycle_Environments_capsule"><a class="anchor" href="#Adding_Lifecycle_Environments_capsule"></a>3.5. Adding Lifecycle Environments to Capsule&#160;Servers</h3>
+<h3 id="Adding_Lifecycle_Environments_capsule"><a class="anchor" href="#Adding_Lifecycle_Environments_capsule"></a>3.4. Adding Lifecycle Environments to Capsule&#160;Servers</h3>
 <div class="paragraph">
 <p>If your Capsule&#160;Server has the content functionality enabled, you must add an environment so that Capsule can synchronize content from Satellite&#160;Server and provide content to host systems.</p>
 </div>
@@ -2028,7 +2050,7 @@ This might consume multiple system resources on Capsules, network bandwidth betw
 </div>
 </div>
 <div class="sect2">
-<h3 id="enabling-power-management-on-managed-hosts_capsule"><a class="anchor" href="#enabling-power-management-on-managed-hosts_capsule"></a>3.6. Enabling Power Management on Managed Hosts</h3>
+<h3 id="enabling-power-management-on-managed-hosts_capsule"><a class="anchor" href="#enabling-power-management-on-managed-hosts_capsule"></a>3.5. Enabling Power Management on Managed Hosts</h3>
 <div class="paragraph">
 <p>To perform power management tasks on managed hosts using the intelligent platform management interface (IPMI) or a similar protocol, you must enable the baseboard management controller (BMC) module on Capsule&#160;Server.</p>
 </div>
@@ -2059,7 +2081,7 @@ For more information, see <a href="https://access.redhat.com/documentation/en-us
 </div>
 </div>
 <div class="sect2">
-<h3 id="configuring-dns-dhcp-and-tftp_capsule"><a class="anchor" href="#configuring-dns-dhcp-and-tftp_capsule"></a>3.7. Configuring DNS, DHCP, and TFTP on Capsule&#160;Server</h3>
+<h3 id="configuring-dns-dhcp-and-tftp_capsule"><a class="anchor" href="#configuring-dns-dhcp-and-tftp_capsule"></a>3.6. Configuring DNS, DHCP, and TFTP on Capsule&#160;Server</h3>
 <div class="paragraph">
 <p>To configure the DNS, DHCP, and TFTP services on Capsule&#160;Server, use the <code>satellite-installer</code> command with the options appropriate for your environment.
 To view a complete list of configurable options, enter the <code>satellite-installer --scenario satellite --help</code> command.</p>
@@ -3497,7 +3519,7 @@ In that case, you have to resolve dependencies manually as follows:</p>
 <p>Enable the DNF modules:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># dnf module enable satellite:el8</pre>
+<pre class="nowrap"># dnf module enable satellite-capsule:el8</pre>
 </div>
 </div>
 </li>
