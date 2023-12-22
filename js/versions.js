@@ -200,7 +200,7 @@ const navVersions = [
     ]
   },
   {
-    "title": "Foreman 3.9 - Katello 4.11 (RC)",
+    "title": "Foreman 3.9 - Katello 4.11 (supported)",
     "path": "3.9",
     "builds": [
       {
@@ -224,7 +224,7 @@ const navVersions = [
             "path": "Installing_Proxy"
           },
           {
-            "title": "Upgrading Foreman to Nightly",
+            "title": "Upgrading Foreman to 3.9",
             "path": "Upgrading_Project"
           },
           {
@@ -336,7 +336,7 @@ const navVersions = [
             "path": "Installing_Proxy"
           },
           {
-            "title": "Upgrading Katello to Nightly",
+            "title": "Upgrading Katello to 4.11",
             "path": "Upgrading_Project"
           },
           {
@@ -516,7 +516,7 @@ const navVersions = [
     ]
   },
   {
-    "title": "Foreman 3.7 - Katello 4.9 (supported)",
+    "title": "Foreman 3.7 - Katello 4.9 (unsupported)",
     "path": "3.7",
     "builds": [
       {
