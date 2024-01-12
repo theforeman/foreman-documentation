@@ -212,56 +212,12 @@ const navVersions = [
             "path": "Release_Notes"
           },
           {
-            "title": "Quickstart Guide",
-            "path": "Quickstart"
-          },
-          {
-            "title": "Installing Foreman Server",
-            "path": "Installing_Server"
-          },
-          {
-            "title": "Installing Smart Proxy",
-            "path": "Installing_Proxy"
-          },
-          {
             "title": "Upgrading Foreman to 3.9",
             "path": "Upgrading_Project"
           },
           {
-            "title": "Deploying Foreman on AWS",
-            "path": "Deploying_Project_on_AWS"
-          },
-          {
-            "title": "Provisioning Hosts",
-            "path": "Provisioning_Hosts"
-          },
-          {
-            "title": "Managing Hosts",
-            "path": "Managing_Hosts"
-          },
-          {
             "title": "Configuring Hosts Using Ansible",
             "path": "Managing_Configurations_Ansible"
-          },
-          {
-            "title": "Configuring Hosts Using Puppet",
-            "path": "Managing_Configurations_Puppet"
-          },
-          {
-            "title": "Configuring Hosts Using Salt",
-            "path": "Managing_Configurations_Salt"
-          },
-          {
-            "title": "Managing Security Compliance",
-            "path": "Managing_Security_Compliance"
-          },
-          {
-            "title": "Administering Foreman",
-            "path": "Administering_Project"
-          },
-          {
-            "title": "Application Centric Deployment",
-            "path": "Deploying_Hosts_AppCentric"
           },
           {
             "title": "Monitoring Foreman Performance",
@@ -278,32 +234,8 @@ const navVersions = [
             "path": "Release_Notes"
           },
           {
-            "title": "Quickstart Guide",
-            "path": "Quickstart"
-          },
-          {
-            "title": "Installing Foreman Server",
-            "path": "Installing_Server"
-          },
-          {
-            "title": "Deploying Foreman on AWS",
-            "path": "Deploying_Project_on_AWS"
-          },
-          {
-            "title": "Provisioning Hosts",
-            "path": "Provisioning_Hosts"
-          },
-          {
             "title": "Configuring Hosts Using Ansible",
             "path": "Managing_Configurations_Ansible"
-          },
-          {
-            "title": "Configuring Hosts Using Puppet",
-            "path": "Managing_Configurations_Puppet"
-          },
-          {
-            "title": "Administering Foreman",
-            "path": "Administering_Project"
           },
           {
             "title": "Monitoring Foreman Performance",
