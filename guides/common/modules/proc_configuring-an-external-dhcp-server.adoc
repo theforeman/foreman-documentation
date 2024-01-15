@@ -1,6 +1,9 @@
 [id="configuring-an-external-dhcp-server_{context}"]
-
 = Configuring an External DHCP Server to Use with {ProductName}
+
+ifdef::foreman-deb[]
+NOTE: Note that this procedure describes how to run an external DHCP server on {EL} 8.
+endif::[]
 
 To configure an external DHCP server running {EL} to use with {ProductName}, you must install the ISC DHCP Service and Berkeley Internet Name Domain (BIND) utilities packages.
 You must also share the DHCP configuration and lease files with {ProductName}.
@@ -13,14 +16,12 @@ If the `dhcp-no-override` setting is disabled, clients fetch the bootloader and 
 include::snip_firewalld.adoc[]
 
 .Procedure
-
 . On your {EL} host, install the ISC DHCP Service and Berkeley Internet Name Domain (BIND) utilities packages:
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
 # {client-package-install-el8} dhcp-server bind-utils
 ----
-
 . Generate a security token:
 +
 [options="nowrap"]
@@ -29,14 +30,12 @@ include::snip_firewalld.adoc[]
 ----
 +
 As a result, a key pair that consists of two files is created in the current directory.
-
 . Copy the secret hash from the key:
 +
 [options="nowrap"]
 ----
-# grep ^Key Komapi_key.+*.private  | cut -d ' ' -f2
+# grep ^Key Komapi_key.+*.private | cut -d ' ' -f2
 ----
-
 . Edit the `dhcpd` configuration file for all subnets and add the key.
 The following is an example:
 +
@@ -65,15 +64,12 @@ omapi-key omapi_key;
 ----
 +
 Note that the `option routers` value is the {Project} or {SmartProxy} IP address that you want to use with an external DHCP service.
-
 . Delete the two key files from the directory that they were created in.
-
 . On {ProjectServer}, define each subnet.
 Do not set DHCP {SmartProxy} for the defined Subnet yet.
 +
 To prevent conflicts, set up the lease and reservation ranges separately.
 For example, if the lease range is 192.168.38.10 to 192.168.38.100, in the {ProjectWebUI} define the reservation range as 192.168.38.101 to 192.168.38.250.
-
 . Configure the firewall for external access to the DHCP server:
 +
 [options="nowrap"]
@@ -81,7 +77,6 @@ For example, if the lease range is 192.168.38.10 to 192.168.38.100, in the {Proj
 # firewall-cmd --add-service dhcp \
 && firewall-cmd --runtime-to-permanent
 ----
-
 . On {ProjectServer}, determine the UID and GID of the `foreman` user:
 +
 [options="nowrap" subs="+quotes"]
@@ -91,7 +86,6 @@ __993__
 # id -g foreman
 _990_
 ----
-
 . On the DHCP server, create the `foreman` user and group with the same IDs as determined in a previous step:
 +
 [options="nowrap" subs="+quotes"]
@@ -99,7 +93,6 @@ _990_
 # groupadd -g _990_ foreman
 # useradd -u _993_ -g _990_ -s /sbin/nologin foreman
 ----
-
 . To ensure that the configuration files are accessible, restore the read and execute flags:
 +
 [options="nowrap"]
@@ -108,14 +101,12 @@ _990_
 # chmod o+r /etc/dhcp/dhcpd.conf
 # chattr +i /etc/dhcp/ /etc/dhcp/dhcpd.conf
 ----
-
 . Enable and start the DHCP service:
 +
 [options="nowrap"]
 ----
 # systemctl enable --now dhcpd
 ----
-
 . Export the DHCP configuration and lease files using NFS:
 +
 [options="nowrap" subs="+quotes,attributes"]
@@ -123,14 +114,12 @@ _990_
 # {client-package-install-el8} {nfs-server-package}
 # systemctl enable --now nfs-server
 ----
-
 . Create directories for the DHCP configuration and lease files that you want to export using NFS:
 +
 [options="nowrap"]
 ----
 # mkdir -p /exports/var/lib/dhcpd /exports/etc/dhcp
 ----
-
 . To create mount points for the created directories, add the following line to the `/etc/fstab` file:
 +
 [options="nowrap"]
@@ -138,14 +127,12 @@ _990_
 /var/lib/dhcpd /exports/var/lib/dhcpd none bind,auto 0 0
 /etc/dhcp /exports/etc/dhcp none bind,auto 0 0
 ----
-
 . Mount the file systems in `/etc/fstab`:
 +
 [options="nowrap"]
 ----
 # mount -a
 ----
-
 . Ensure the following lines are present in `/etc/exports`:
 +
 [options="nowrap" subs="+quotes"]
@@ -158,14 +145,12 @@ _990_
 ----
 +
 Note that the IP address that you enter is the {Project} or {SmartProxy} IP address that you want to use with an external DHCP service.
-
 . Reload the NFS server:
 +
 [options="nowrap"]
 ----
 # exportfs -rva
 ----
-
 . Configure the firewall for DHCP omapi port 7911:
 +
 [options="nowrap"]
@@ -173,7 +158,6 @@ Note that the IP address that you enter is the {Project} or {SmartProxy} IP addr
 # firewall-cmd --add-port=7911/tcp
 # firewall-cmd --runtime-to-permanent
 ----
-
 . Optional: Configure the firewall for external access to NFS.
 Clients are configured using NFSv3.
 +
