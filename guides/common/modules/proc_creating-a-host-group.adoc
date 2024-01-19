@@ -1,39 +1,120 @@
 [id="Creating_a_Host_Group_{context}"]
 = Creating a Host Group
 
-A host group functions as a template for common host settings.
+A host group is a template for common host settings.
 Adding host settings and attributes for every new host is time consuming.
 If you use host groups, you can apply common attributes to hosts that you create.
 
-.Host Group Settings
+.Host Group Settings and Nested Host Groups
 
-A host group can define many settings for hosts, such as lifecycle environment, content view, or Ansible roles available to the hosts.
+A host group can define many settings for hosts, such as Lifecycle Environment, Content View, or Ansible roles that are available to the hosts.
 
-When you add a new host to a host group:
+NOTE: When you change the properties of a host group, the new settings do not propagate to the hosts assigned to the host group.
+Only Puppet class settings get updated on hosts after you change them in the host group.
 
-When you change an existing host's host group:
-
-When you create a host with a host group, the host inherits the defined settings from the host group.
-You can then provide additional details to individualize the host.
-
-.Host Group Hierarchy
 You can create a hierarchy of host groups.
-Aim to have one base level host group that represents all hosts in your organization and provide general settings, and then nested groups to provide specific settings.
-For example, you can have a base level host group that defines the operating system, and two nested host groups that inherit the base level host group:
+Aim to have one base level host group that represents all hosts in your organization and provides general settings, and then nested groups that provide specific settings.
 
-* *Hostgroup:* `Base` ({EL} 8.8)
-** *Hostgroup:* `Webserver` (applies the `nginx` Puppet class)
-*** *Host:* `webserver1.example.com` (web server)
-*** *Host:* `webserver2.example.com` (web server)
-** *Hostgroup:* `Storage` (applies the `nfs` Puppet class)
-*** *Host:* `storage1.example.com` (storage server)
-*** *Host:* `storage2.example.com` (storage server)
-** *Host:* `custom.example.com` (custom host)
+.Nested Host Group Hierarchy
+====
+You create a top-level host group named `Base` and two nested host groups named `Webserver` and `Storage`.
+The nested host groups are associated with multiple hosts.
+You also create host `custom.example.com` that is not associated with any host group.
 
-In this example, all hosts use {RHEL} 7.6 as their operating system because of their inheritance of the `Base` host group.
-The two web server hosts inherit the settings from the `Webserver` host group, which includes the `nginx` Puppet class and the settings from the `Base` host group.
-The two storage servers inherit the settings from the `Storage` host group, which includes the `nfs` Puppet class and the settings from the `Base` host group.
-The custom host only inherits the settings from the `Base` host group.
+[cols="1,1,1"]
+|===
+|Top-level host group |Nested host group |Host
+
+.5+|*Base*
+
+This host group applies the `{EL}{nbsp}8.8` operating system setting.
+
+.2+|*Webserver*
+
+This host group applies the `linux-system-roles.selinux` Ansible role.
+
+|*webserver1.example.com*
+|*webserver2.example.com*
+
+.2+|*Storage*
+
+This host group applies the `linux-system-roles.postfix` Ansible role.
+
+|*storage1.example.com*
+|*storage2.example.com*
+
+|
+|*custom.example.com*
+
+|===
+
+In this hierarchy:
+
+* `Base` defines the settings common to all hosts. All hosts use {EL}{nbsp}8.8 as their operating system.
+* `webserver1.example.com` and `webserver2.example.com` use the `linux-system-roles.selinux` Ansible role.
+`storage1.example.com` and `storage2.example.com` use the `linux-system-roles.postfix` Puppet class.
+* `custom.example.com` inherits none of the Puppet classes defined by the host groups.
+====
+
+{Project} applies host settings in the following order when nesting host groups:
+
+* Host settings take priority over host group settings.
+* Nested host group settings take priority over parent host group settings.
+
+.Nested Host Group Settings
+====
+You define different values for the operating system and Ansible role settings on the top-level host group (*Base*) and nested host groups (*Webserver* and *Storage*).
+
+[cols="1,1,1"]
+|===
+|Top-level host group |Nested host group |Host
+
+.3+a|*Base*
+
+This host group applies these settings:
+
+* The `{EL}{nbsp}8.8` operating system
+* The `linux-system-roles.selinux` Ansible role
+
+a|*Webserver*
+
+This host group applies these settings:
+
+* The `{EL}{nbsp}8.9` operating system
+* No Ansible role
+
+a|*webserver1.example.com*
+
+*webserver2.example.com*
+
+a|*Storage*
+
+This host group applies these settings:
+
+* No operating system
+* The `linux-system-roles.postfix` Ansible role
+
+a|*storage1.example.com*
+
+*storage2.example.com*
+
+|
+a|*custom.example.com*
+
+|===
+
+{Project} applies settings from nested groups in the following way:
+
+* *webserver1.example.com* and *webserver2.example.com* inherit these settings:
+** The `{EL}{nbsp}8.9` operating system from host group *Webservers*
+** The `linux-system-roles.selinux` Ansible role from host group *Base*
+* *storage1.example.com* and *storage2.example.com* inherit these settings:
+** The `{EL}{nbsp}8.8` operating system from host group *Webservers*
+** The `linux-system-roles.postfix` Ansible role from host group *Base*
+* *custom.example.com* inherits this setting:
+** The `{EL}{nbsp}8.8` operating system from host group *Base*
+
+====
 
 To use the CLI instead of the {ProjectWebUI}, see the xref:cli-creating-a-host-group_{context}[].
 
