@@ -7,34 +7,23 @@ This git repository contains the following documentation:
 
 For official Foreman documentation, see [Foreman Manual](https://theforeman.org/manuals/latest/index.html).
 
-## Foreman Guides
-
-This is a tree of documentation based on Red Hat Satellite 6 official books.
-See README in the guides/ subdirectory for more information.
-
-* [guides](guides/README.md)
-
 ## Contributing
 
 Contributions are welcome.
+Please, familiarize yourself with [CONTRIBUTING](CONTRIBUTING.md) and [Contribution Guidelines for Foreman guides](guides/README.md#contribution-guidelines).
 
-Documentation in this repository follows a modular structure described in the [Modular documentation reference guide](https://redhat-documentation.github.io/modular-docs/).
-To write new documentation, you can use [modular documentation templates](https://github.com/redhat-documentation/modular-docs/tree/main/modular-docs-manual/files) or copy an existing file from `guides/common/modules/` and adapt it.
+## Repository content
 
-If you are not familiar with modular documentation, the structure and templates might seem overwhelming.
-If you need help to get started, open an issue or ping [`@docs`](https://community.theforeman.org/g/docs) on the [Foreman Community Forum](https://community.theforeman.org/).
-If you are unsure where to place your content, have a look at the `docinfo.xml` files within each directory in `guides/`.
+### Foreman guides
 
-New contributions are subject to technical review for accuracy and editorial review for consistency.
-For an overview of what to expect from editorial review, see [Peer review guide for technical documentation](https://redhat-documentation.github.io/peer-review/#checklist).
+This is a tree of documentation based on Red Hat Satellite 6 official books.
+See [README in the `guides/` subdirectory](guides/README.md) for more information.
 
-## Static Site
+### Static site
 
 The landing page for [docs.theforeman.org](https://docs.theforeman.org) is available as a generated static site.
 The static content is always built from the `master` branch.
-See README in the web/ subdirectory for more information.
-
-* [web](web/README.md)
+See [README in the `web/` subdirectory](web/README.md) for more information.
 
 ## Testing locally
 
