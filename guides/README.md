@@ -1,52 +1,57 @@
-# Foreman Guides
+# Foreman guides
 
 This is upstream source code of [Red Hat Satellite 6](https://access.redhat.com/documentation/en-us/red_hat_satellite) documentation as well as parts of the [orcharhino documentation](https://docs.orcharhino.com/or/docs/index.html).
-All content in this repository uses [AsciiDoctor](https://asciidoctor.org/) syntax and aims to follow [Guidelines for Red Hat Documentation](https://redhat-documentation.github.io/).
-This is a **work in progress**, an attempt to take content written by Red Hat documentation team, modularize it, incorporate [existing documentation](https://theforeman.org/documentation.html) and eventually make this the only and official documentation for Foreman, Katello and all plugins.
 
-Contributions are welcome. Please read the [Contribution guidelines](#contribution-guidelines) before opening a Pull Request.
+This is **work in progress**, an attempt to take content written by Red Hat documentation team, modularize it, incorporate [Foreman Manuals](https://theforeman.org/manuals/), and eventually make this the only and official documentation for Foreman, Katello, and all plugins.
 
-## Building Locally
+Contributions are welcome.
+Please read the [Contribution guidelines](#contribution-guidelines) before opening a Pull Request.
+
+## Building locally
+
+### Installing tools
 
 Install the required tools.
-In Fedora perform:
 
-	dnf -y groupinstall development-tools
-	dnf -y install ruby ruby-devel rubygem-bundler linkchecker
+* In Fedora perform:
 
-Then continue with the `make prep` step below.
+      dnf -y groupinstall development-tools
+      dnf -y install ruby ruby-devel rubygem-bundler linkchecker
 
-In RHEL perform:
+  Then continue to [install Ruby gems](#installing-ruby-gems).
 
-	dnf module enable ruby:2.7
-	dnf -y groupinstall "Development Tools"
-	dnf -y install ruby ruby-devel rubygem-bundler python3-pip
-	pip3 install linkchecker
+* In RHEL perform:
 
-If you prefer to install python packages into home folder rather than system-wide folder (requires root), then add `--user` option to the `pip3` command.
-Then continue with the `make prep` step below.
+      dnf module enable ruby:2.7
+      dnf -y groupinstall "Development Tools"
+      dnf -y install ruby ruby-devel rubygem-bundler python3-pip
+      pip3 install linkchecker
 
-In MacOS required tools can be installed via brew but instead "make" call "gmake":
+  If you prefer to install python packages into home folder rather than system-wide folder (requires root), then add `--user` option to the `pip3` command.
+  Then continue to [install Ruby gems](#installing-ruby-gems).
 
-	brew install ruby make
-	# brew will ask to perform this after ruby installation, do it and restart the terminal
-	echo 'export PATH="/opt/homebrew/opt/ruby/bin:$PATH"' >> ~/.zshrc
+* In MacOS, required tools can be installed via brew but instead of "make" call "gmake":
 
-Alternatively, XCode development environment can be installed to have make utility available on PATH, however, this takes about an hour to download and install and requires several gigabytes of HDD space:
+      brew install ruby make
+      # brew will ask to perform this after ruby installation, do it and restart the terminal
+      echo 'export PATH="/opt/homebrew/opt/ruby/bin:$PATH"' >> ~/.zshrc
 
-	xcode-select --install
+  Alternatively, XCode development environment can be installed to have "make" utility available on PATH, however, this takes about an hour to download and install, and requires several gigabytes of HDD space:
 
-Install ruby gems, in the `foreman-documentation` folder:
+      xcode-select --install
+
+  Then continue to [install Ruby gems](#installing-ruby-gems).
+
+### Installing Ruby gems
+
+In the `foreman-documentation` folder, run:
 
 	make prep
 
-Then simply run `make` or `make html` which builds HTML artifacts.
+### Building HTML artifacts
 
-Few additional make targets are available on the guide level.
-To quickly build HTML version and open new tab in a browser do:
-
-	cd doc-Provisioning_Hosts
-	make browser
+Run `make` or `make html`, either in the `guides/` directory or in `doc-*/` subdirectories.
+When you run "make" in `guides/`, it builds all guides.
 
 To speed up the build process, make sure to use `-j` option. Ideally, set it to amount of cores plus one:
 
@@ -56,76 +61,107 @@ An alias is often useful:
 
 	alias make="make -j$(nproc)"
 
-Currently there are three different versions:
+The final artifacts can be found in the `./build` subdirectory.
+Note that GNU Makefile tracks changes and only builds relevant artifacts.
+To trigger a full rebuild, use `make clean` to delete the build directory and start over.
 
+### Builds
 
-`make BUILD=foreman-el` - This is the default that is generated with `make html`.
+There are the following builds:
 
-`make BUILD=satellite` - This generates a downstream preview of the guide.
+- `make BUILD=foreman-el` - This builds guides for Foreman on Enterprise Linux (EL) without the Katello plug-in.
+This is the default build for `make html`.
+- `make BUILD=foreman-deb` - This builds guides for Foreman on Debian/Ubuntu without the Katello plug-in.
+- `make BUILD=katello` - This builds guides for Foreman on EL with the Katello plug-in.
+- `make BUILD=satellite` - This builds a preview of guides for Satellite.
+- `make BUILD=orcharhino` - This builds a preview of guides for orcharhino.
 
-`make BUILD=katello` - this generates a katello build of the guide
+### Building a single guide
 
-`make BUILD=foreman-deb` - This generates a version for Foreman installed on Debian.
+Few additional make targets are available on the guide level.
+To quickly build HTML version and open new tab in a browser do:
 
-`make BUILD=orcharhino` - This generates a downstream preview of the guide for orcharhino.
+	cd doc-Provisioning_Hosts
+	make browser
 
-The final artifacts can be found in the ./build subdirectory.
-Note that GNU Makefile tracks changes and only builds relevant artifacts, to trigger full rebuild use `make clean` to delete build directory and start over.
+### Checking links
 
 It's also possible to check links; the following command will check all links except example.com domain:
 
 	make linkchecker
 
-## Building Locally Using a Container
+#### Disabling the linkchecker for a specific URL pattern
+
+You can disable the linkcheck job for specific URL pattern, for example for unreleased downstream documentation or to exclude URLs that cannot resolve by design.
+Append your pattern to `guides/common/linkchecker.ini`.
+Example: [64d825cc9](https://github.com/theforeman/foreman-documentation/commit/64d825cc9da3992879dfbfc088988197edc9f33b)
+
+### Building locally by using a container
 
 You can build Foreman documentation locally using a container image.
 This requires the cloned git repository plus an application such as Podman or Docker to build and run container images.
 
 1. Build container image:
 
-	podman build --tag foreman_documentation .
+       podman build --tag foreman_documentation .
 
 2. Build Foreman documentation.
    Run this command in your `foreman-documentation` repository:
 
-	rm -rf guides/build && podman run --rm -v $(pwd):/foreman-documentation foreman_documentation make html
+       rm -rf guides/build && podman run --rm -v $(pwd):/foreman-documentation foreman_documentation make html
 
    On SELinux enabled systems, run this command:
 
-	rm -rf guides/build && podman run --rm -v $(pwd):/foreman-documentation:Z foreman_documentation make html
+       rm -rf guides/build && podman run --rm -v $(pwd):/foreman-documentation:Z foreman_documentation make html
 
-## Disabling the linkchecker for a specific URL pattern
-
-You can disable the linkcheck job for specific URL pattern, for example for unreleased downstream documentation or to exclude URLs that cannot resolve by design.
-Append your pattern to `guides/common/linkchecker.ini`.
-Example: [64d825cc9](https://github.com/theforeman/foreman-documentation/commit/64d825cc9da3992879dfbfc088988197edc9f33b)
 
 ## Contribution guidelines
 
-Please read these guidelines before opening a Pull Request. For more information, see [Guidelines for Red Hat Documentation](https://redhat-documentation.github.io/).
+Please read these guidelines before opening a Pull Request.
+For more information, see [Guidelines for Red Hat Documentation](https://redhat-documentation.github.io/).
 
-### Creating new guides
+New contributions are subject to technical review for accuracy and editorial review for consistency.
+For an overview of what to expect from editorial review, see [Red Hat peer review guide for technical documentation](https://redhat-documentation.github.io/peer-review/#checklist).
 
-Each guide must be in a separate directory in guides/ prefixed with "doc-". The following requirements must be met:
+If you need help to get started, open an issue or ping [`@docs`](https://community.theforeman.org/g/docs) on the [Foreman Community Forum](https://community.theforeman.org/).
 
-* Top-level file `master.adoc`.
-* Directory `topics` with actual content.
-* Symlink `common` to `../common` for shared content.
-* Directory `images` with images.
-* Symlink `images/common` to `../common/images`.
-* File `Makefile` which includes `../common/Makefile`.
-* File `docinfo.xml` for downstream (Red Hat) guides. Presence of this file will cause build check via `ccutil`, a tool used by Red Hat documentation team.
-* Put new content into the `guides/common/modules` directory and stick to one (level one) heading per file.
-* Update `web/content/js/nav.js` to add a new item on the top-level menu.
+If you are unsure into which guide you should place your content, have a look at the `docinfo.xml` files within each `doc-*` directory.
 
-New guides can be typically created as copies of existing guides, just make sure to clean images, topics and `docinfo.xml`.
+### Code conventions
 
-### Variables
+Use the following markup conventions:
+
+* Source files use UTF-8 character encoding.
+* Source files use [AsciiDoc](https://docs.asciidoctor.org/asciidoc/latest/) syntax and aim to follow [AsciiDoc Mark-up Conventions for Red Hat Documentation](https://redhat-documentation.github.io/asciidoc-markup-conventions/).
+* A single line only contains one sentence.
+Please do not wrap lines by hand.
+This makes `git diff` much easier to read and helps when reviewing changes.
+* No trailing whitespace on lines and in files.
+Whitespace after partial files has to be handled in the file using the `include::` directive.
+* Image file names use dashes (`-`) and suffix a build target, e.g. `foreman`.
+See also [Images](#Images).
+* User input is surrounded by underscores (`_`) to indicate variable input, e.g. `hammer organization create --name "_My Organization_" --label "_my_organization_"`.
+* Links to different guides are followed by the title of the guide in italics, for example `in _{ManagingHostsDocTitle}_`.
+
+### Images
+
+Each guide must have an `images/` subdirectory with `images/common` symlink into the `common/images/` directory.
+Images local to the guide shall be kept in the `images/` directory.
+Images which are supposed to be reused across guides shall be kept in the `images/common/` directory.
+Subdirectories can be created and are actually recommended.
+
+To insert an image, use `image::common/global_image.png` or `image::local_image.png`.
+
+You should create upstream diagrams using [diagrams.net](https://www.diagrams.net/).
+Place the editable diagram in `drawio` format in `guides/image-sources/`.
+For inclusion in the content, export diagrams to SVG and place them as described above.
+
+### Using AsciiDoc attributes
 
 The content in this repository is shared between the upstream Foreman community and branded downstream products such as Red Hat Satellite and orcharhino by ATIX.
-Therefore, never write "Foreman", "Satellite", or "orcharhino" words directly, but use the following variables:
+Therefore, never write "Foreman", "Satellite", or "orcharhino" words directly, but use the following attributes:
 
-| Variable | Upstream value | Downstream by Red Hat | Downstream by ATIX |
+| Attribute | Upstream value | Downstream by Red Hat | Downstream by ATIX |
 | -------- | -------------- | --------------------- | ------------------ |
 | {Project} | Foreman | Satellite | orcharhino |
 | {ProjectName} | Foreman | Red Hat Satellite | orcharhino |
@@ -143,25 +179,30 @@ Every build uses common base attributes, more are defined in the build specific 
 * [attributes-satellite.adoc](common/attributes-satellite.adoc): base overrides for satellite build.
 * [attributes-orcharhino.adoc](common/attributes-orcharhino.adoc): base overrides for orcharhino build.
 
-By default, variables cannot be used in shell or code examples.
-To use them, use "attributes" keyword:
+By default, attributes cannot be used in shell or code examples.
+To use them, use the "attributes" keyword:
 
 	[options="nowrap" subs="+quotes,attributes"]
 	----
-	# ls {VariableName}
+	# ls {AttributeName}
 	----
 
-Hide or show specific blocks, paragraphs, warnings or chapters via special variable called "build".
-Its value can be set either to "foreman-el" or "satellite":
+Avoid using phrases like "Starting from version 6.5 or 1.22" because it is not possible to easily translate these strings into all build variants.
 
-	ifeval::["{build}" == "katello"]
-	NOTE: This part is only relevant for deployments with Katello plugin.
-	endif::[]
+#### Conditional content
 
-This syntax does not allow multiple conditionals, in that case use, now preferred, `ifdef` syntax:
+If a piece of your content, such as a block, paragraph, warning, or chapter, is specific for a certain [build](#builds), use special build attributes to show or hide it.
+
+To show a piece of content only for the `katello` build:
 
 	ifdef::katello[]
-	NOTE: This part is only relevant for deployments with Katello plugin.
+	NOTE: This part is only relevant for Foreman with the Katello plugin.
+	endif::[]
+
+To hide a piece of content for `katello` that will be shown for all other builds:
+
+	ifndef::katello[]
+	NOTE: This part is relevant for Foreman without the Katello plugin, but also Satellite and orcharhino.
 	endif::[]
 
 Use comma for logic "or":
@@ -170,7 +211,8 @@ Use comma for logic "or":
 	NOTE: This part is only relevant for deployments with Katello plugin or in Satellite environment.
 	endif::[]
 
-Some files are included in different contexts, there are attributes to find the correct context. In these cases use both `ifdef` and `ifeval`:
+Some files are included in different contexts, there are attributes to find the correct context.
+In these cases use both `ifdef` and `ifeval`:
 
 	ifdef::foreman-el,foreman-deb[]
 	ifeval::["{context}" == "{project-context}"]
@@ -178,30 +220,15 @@ Some files are included in different contexts, there are attributes to find the 
 	endif::[]
 	endif::[]
 
-When doing review, consider checking out the topic branch and putting necessary changes on top of author's work to making many comments on github.
 
-Avoid using phrases like "Starting from version 6.5 or 1.22" because it is not possible to easily translate these strings into all streams.
-
-### Conventions
-
-Use the following markup conventions:
-
-* User input is surrounded by underscores (`_`) to indicate variable input, e.g. `hammer organization create --name "_My Organization_" --label "_my_organization_"`.
-* A single line only contains one sentence.
-Please do not wrap lines by hand.
-This makes `git diff` much easier to read and helps reviewing changes.
-* No trailing whitespace on lines and in files.
-Whitespace after partial files has to be handled in the file using the `include::` directive.
-* Source files use UTF-8 character encoding.
-* Image file names use dashes (`-`) and suffix a build target, e.g. `foreman`.
-See also [Images](#Images).
-* Links to different guides are followed by the title of the guide in italics, for example `in _{ManagingHostsDocTitle}_`.
-
-### Structure
+### File structure
 
 If you create a new file, use the file structure described here.
 
-Files that are included in more than one guide are kept in the `common/` subdirectory, and have prefixes to distinguish their type of content.
+Documentation in this directory follows a modular structure described in the [Modular documentation reference guide](https://redhat-documentation.github.io/modular-docs/).
+To write new documentation, you can use [modular documentation templates](https://github.com/redhat-documentation/modular-docs/tree/main/modular-docs-manual/files) or copy an existing file from `guides/common/modules/` and adapt it.
+
+Included files are kept in the `common/` subdirectory and have prefixes to distinguish their type of content.
 
 Assemblies are kept at the top of the `common/` subdirectory:
 
@@ -219,19 +246,23 @@ See the [reference template](https://raw.githubusercontent.com/redhat-documentat
 * [`snip`](https://redhat-documentation.github.io/modular-docs/#using_text_snippets_or_text_fragments_writing-mod-docs): Files starting with `snip_` contain snippets that are reused throughout multiple guides, e.g. admonitions.
 Snippets do not require an ID.
 
-### Images
+### Creating new guides
 
-Each guide must have an `images/` subdirectory with `images/common` symlink into the `common/images/` directory.
-Images local to the guide shall be kept in the `images/` directory.
-Images which are supposed to be reused across guides shall be kept in the `images/common/` directory.
-Subdirectories can be created and are actually recommended.
+Each guide must be in a separate directory in `guides/` prefixed with `doc-`.
+The following requirements must be met:
 
-To insert an image, use `image::common/global_image.png` or `image::local_image.png`.
+* Top-level file `master.adoc`.
+* Symlink `common` to `../common` for shared content.
+* Directory `images` with images.
+* Symlink `images/common` to `../common/images`.
+* File `Makefile` which includes `../common/Makefile`.
+* File `docinfo.xml` for Red Hat Satellite guides.
+Presence of this file will cause build check via `ccutil`, a tool used by Red Hat documentation team.
+* Put new content into the `guides/common/modules` directory and stick to one (level one) heading per file.
+* Update `web/content/js/nav.js` to add a new item on the top-level menu.
 
-You should create upstream diagrams using [diagrams.net](https://www.diagrams.net/).
-Place the editable diagram in `drawio` format in `guides/image-sources/`.
-For inclusion in the content, export diagrams to SVG and place them as described above.
+New guides can typically be created as copies of existing guides, just make sure to clean images, topics and `docinfo.xml`.
 
+### Reviewing
 
-
-For more information, see the [Modular Documentation Reference Guide](https://redhat-documentation.github.io/modular-docs/).
+If the review would result in many comments in a GitHub pull request, consider checking out the topic branch and putting necessary changes on top of author's work instead of making the comments.

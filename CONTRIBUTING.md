@@ -1,6 +1,6 @@
 # Contributing to Foreman Documentation
 
-The Foreman Community welcomes all feedback, issues, pull requests (PRs), and reviews.
+Foreman community welcomes all feedback, issues, pull requests (PRs), and reviews.
 Every contributor has different backgrounds, interests, and experiences with Foreman and its open source community.
 
 We give ourselves these guidelines to collaborate and contribute to Foreman documentation more efficiently.
@@ -20,7 +20,7 @@ We respect each others time and energy spent on Foreman documentation.
 ## Contributors
 
 * are able to make meaningful contributions to the Foreman documentation, regardless of their experience with git, asciidoc, writing documentation, or Foreman.
-* familiarise themselves with the [Pull Request Checklist](#Pull-Request-Checklist).
+* familiarize themselves with the [Pull Request Checklist](#Pull-Request-Checklist).
 * open additional issues if a contribution is incomplete.
 * are invited to review other PRs.
 
