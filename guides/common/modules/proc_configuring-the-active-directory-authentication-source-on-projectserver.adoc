@@ -1,0 +1,61 @@
+[id="configuring-the-active-directory-authentication-source-on-projectserver_{context}"]
+= Configuring the Active Directory authentication source on {ProjectServer}
+
+Enable Active Directory (AD) users to access {Project} by configuring the corresponding authentication provider on your {ProjectServer}.
+
+.Prerequisites
+* The base system of your {ProjectServer} must be joined to an Active Directory (AD) domain.
+For more information, see link:https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/8/html-single/integrating_rhel_systems_directly_with_windows_active_directory/index#connecting-rhel-systems-directly-to-ad-using-sssd_integrating-rhel-systems-directly-with-active-directory[Connecting RHEL systems directly to AD using SSSD].
+
+.Procedure
+. Configure the System Security Services Daemon (SSSD) to use the AD access control provider to evaluate and enforce Group Policy Object (GPO) access control rules for the `foreman` PAM service:
+.. In the `[domain/_ad.example.com_]` section of your `/etc/sssd/sssd.conf` file, configure the `ad_gpo_access_control` and `ad_gpo_map_service` options as follows:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+[domain/_ad.example.com_]
+ad_gpo_access_control = enforcing
+ad_gpo_map_service = +foreman
+----
+ifndef::orcharhino[]
++
+For more information on GPOs, see the following documents:
++
+* link:{RHELDocsBaseURL}9/html/integrating_rhel_systems_directly_with_windows_active_directory/managing-direct-connections-to-ad_integrating-rhel-systems-directly-with-active-directory#how-sssd-interprets-gpo-access-control-rules_applying-group-policy-object-access-control-in-rhel[How SSSD interprets GPO access control rules] in _Integrating RHEL systems directly with Windows Active Directory (RHEL{nbsp}9)_
+* link:{RHELDocsBaseURL}8/html/integrating_rhel_systems_directly_with_windows_active_directory/managing-direct-connections-to-ad_integrating-rhel-systems-directly-with-active-directory#applying-group-policy-object-access-control-in-rhel_managing-direct-connections-to-ad[How SSSD interprets GPO access control rules] in _Integrating RHEL systems directly with Windows Active Directory (RHEL{nbsp}8)_
+endif::[]
+.. Restart the `sssd` service:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# systemctl restart sssd
+----
+. Configure AD as the authentication source for your {ProjectServer}:
+.. Create an Apache keytab file if it does not already exist on your system:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# touch /etc/httpd/conf/http.keytab
+----
++
+You can leave the file empty.
+The `{foreman-installer}` command fails to configure the authentication source if the file is missing.
+.. Enable the authentication source:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {foreman-installer} --foreman-ipa-authentication=true
+----
+.. Restart Apache:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# systemctl restart httpd
+----
+
+.Verification
+* Log in to {ProjectwebUI} by entering the credentials of a user defined in AD.
+Enter the user name in the user principal name (UPN) format, for example _ad_user@ad.example.com_.
+
+.Additional resources
+* `sssd-ad(5)` man page on your system
