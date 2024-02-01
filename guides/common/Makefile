@@ -61,7 +61,7 @@ linkchecker: html
 	linkchecker -r1 -f $(COMMON_DIR)/linkchecker.ini --check-extern "file://$(realpath $(ROOTDIR)/$(DEST_HTML))"
 
 $(DEST_DIR)/$(BUILD).css: $(CSS_SOURCES)
-	bundle exec sass --sourcemap=none --no-cache --style $(CSS_STYLE) -I $(COMMON_DIR)/css $(COMMON_DIR)/css/default.scss $@
+	bundle exec sass --no-cache --style $(CSS_STYLE) -I $(COMMON_DIR)/css $(COMMON_DIR)/css/default.scss $@
 
 $(IMAGES_TS): $(IMAGES)
 	@[[ -h ./images/common ]] || echo "FAILURE: Missing ./images dir with ./images/common symlink to commons!"
