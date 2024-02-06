@@ -262,7 +262,3 @@ Presence of this file will cause build check via `ccutil`, a tool used by Red Ha
 * Update `web/content/js/nav.js` to add a new item on the top-level menu.
 
 New guides can typically be created as copies of existing guides, just make sure to clean images, topics and `docinfo.xml`.
-
-### Reviewing
-
-If the review would result in many comments in a GitHub pull request, consider checking out the topic branch and putting necessary changes on top of author's work instead of making the comments.
