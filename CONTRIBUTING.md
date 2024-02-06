@@ -42,6 +42,8 @@ See [LICENSE](LICENSE).
 * [ ] If I make more than one change on my branch, I create more than one commit and rebase my branch to master.
 * [ ] My PR does not solely rely on internal resources to answer the _why_, but instead contains at least a basic description for the community.
 * [ ] When creating my PR, I select all branches I want my change to get cherry-picked to.
+* [ ] I am familiar to proper capitalization for project-specific terminology.
+See [Capitalization](#Capitalization).
 
 ## Crafting Great Pull Requests
 
@@ -53,6 +55,37 @@ Please explain why someone else should merge your proposed change:
 * Are there any regressions or downsides to my PR?
 * Does my PR make multiple changes and therefore require multiple commits?
 Ideally, each individual change correlates to an individual commit.
+
+## Capitalization
+
+All headings are sentence case.
+We capitalize the following terms:
+
+* Ansible
+* Candlepin
+* Chef
+* Content View
+* Discovery (service)
+* Hammer
+* Insights (Red Hat product)
+* Kickstart
+* Library (environment)
+* OpenSCAP
+* PostgreSQL
+* Pulp
+* Puppet
+* Python
+* Red Hat Network
+* Redis
+* Salt
+* Salt Minions
+* Tracer (utility)
+
+We do not capitalize the following terms:
+
+* Red Hat subscription manifest
+* manifest
+* subscription
 
 ## Further Information
 
