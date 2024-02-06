@@ -2,7 +2,7 @@
 
 This is upstream source code of [Red Hat Satellite 6](https://access.redhat.com/documentation/en-us/red_hat_satellite) documentation as well as parts of the [orcharhino documentation](https://docs.orcharhino.com/or/docs/index.html).
 
-This is **work in progress**, an attempt to take content written by Red Hat documentation team, modularize it, incorporate [Foreman Manuals](https://theforeman.org/manuals/), and eventually make this the only and official documentation for Foreman, Katello, and all plug-ins.
+This is **work in progress**, an attempt to take content written by Red Hat documentation team, modularize it, incorporate [Foreman Manuals](https://theforeman.org/manuals/), and eventually make this the only and official documentation for Foreman, Katello, and all plugins.
 
 Contributions are welcome.
 Please read the [Contribution guidelines](#contribution-guidelines) before opening a Pull Request.
@@ -69,10 +69,10 @@ To trigger a full rebuild, use `make clean` to delete the build directory and st
 
 There are the following builds:
 
-- `make BUILD=foreman-el` - This builds guides for Foreman on Enterprise Linux (EL) without the Katello plug-in.
+- `make BUILD=foreman-el` - This builds guides for Foreman on Enterprise Linux (EL) without the Katello plugin.
 This is the default build for `make html`.
-- `make BUILD=foreman-deb` - This builds guides for Foreman on Debian/Ubuntu without the Katello plug-in.
-- `make BUILD=katello` - This builds guides for Foreman on EL with the Katello plug-in.
+- `make BUILD=foreman-deb` - This builds guides for Foreman on Debian/Ubuntu without the Katello plugin.
+- `make BUILD=katello` - This builds guides for Foreman on EL with the Katello plugin.
 - `make BUILD=satellite` - This builds a preview of guides for Satellite.
 - `make BUILD=orcharhino` - This builds a preview of guides for orcharhino.
 
@@ -196,19 +196,19 @@ If a piece of your content, such as a block, paragraph, warning, or chapter, is 
 To show a piece of content only for the `katello` build:
 
 	ifdef::katello[]
-	NOTE: This part is only relevant for Foreman with the Katello plug-in.
+	NOTE: This part is only relevant for Foreman with the Katello plugin.
 	endif::[]
 
 To hide a piece of content for `katello` that will be shown for all other builds:
 
 	ifndef::katello[]
-	NOTE: This part is relevant for Foreman without the Katello plug-in, but also Satellite and orcharhino.
+	NOTE: This part is relevant for Foreman without the Katello plugin, but also Satellite and orcharhino.
 	endif::[]
 
 Use comma for logic "or":
 
 	ifdef::katello,satellite[]
-	NOTE: This part is only relevant for deployments with Katello plug-in or in Satellite environment.
+	NOTE: This part is only relevant for deployments with Katello plugin or in Satellite environment.
 	endif::[]
 
 Some files are included in different contexts, there are attributes to find the correct context.
