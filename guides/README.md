@@ -23,7 +23,7 @@ In RHEL perform:
 	dnf -y install ruby ruby-devel rubygem-bundler python3-pip
 	pip3 install linkchecker
 
-If you prefer to install python packages into home folder rather than system-wide folder (requires root), then add `--user` option to the `pip3` command.
+If you prefer to install Python packages into home folder rather than system-wide folder (requires root), then add `--user` option to the `pip3` command.
 Then continue with the `make prep` step below.
 
 In MacOS required tools can be installed via brew but instead "make" call "gmake":
