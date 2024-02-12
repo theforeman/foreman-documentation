@@ -64,7 +64,6 @@ We capitalize the following terms:
 * Ansible
 * Candlepin
 * Chef
-* Content View
 * Discovery (service)
 * Hammer
 * Insights (Red Hat product)
@@ -84,6 +83,7 @@ We capitalize the following terms:
 We do not capitalize the following terms:
 
 * Red Hat subscription manifest
+* content view
 * manifest
 * subscription
 
