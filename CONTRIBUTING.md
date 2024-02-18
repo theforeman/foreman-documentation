@@ -78,13 +78,14 @@ We capitalize the following terms:
 * Redis
 * Salt
 * Salt Minions
+* Subscription Manager (Red Hat product)
 * Tracer (utility)
 
 We do not capitalize the following terms:
 
-* Red Hat subscription manifest
 * content view
 * manifest
+* Red Hat subscription manifest
 * subscription
 
 ## Further Information
