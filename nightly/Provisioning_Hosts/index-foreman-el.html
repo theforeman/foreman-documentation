@@ -68,6 +68,7 @@
 <li><a href="#creating-compute-profiles_provisioning">2.24. Creating compute profiles</a></li>
 <li><a href="#setting-a-default-encrypted-root-password_provisioning">2.25. Setting a default encrypted root password for hosts</a></li>
 <li><a href="#using-novnc-to-access-virtual-machines_provisioning">2.26. Using noVNC to access virtual machines</a></li>
+<li><a href="#removing-a-virtual-machine-upon-host-deletion_provisioning">2.27. Removing a virtual machine upon host deletion</a></li>
 </ul>
 </li>
 <li><a href="#Configuring_Networking_provisioning">3. Configuring networking</a>
@@ -551,23 +552,6 @@ If you use image-based provisioning, the host does not follow the standard PXE b
 The compute resource creates a copy of the image for the host to use.
 Depending on image settings in Foreman, seed data can be passed in for initial configuration, for example using <code>cloud-init</code>.
 Foreman can connect using SSH to the host and execute a template to finish the customization.</p>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>By default, deleting the provisioned profile host from Foreman does not destroy the actual VM on the external compute resource.
-To destroy the VM when deleting the host entry on Foreman, navigate to <strong>Administer</strong> &gt; <strong>Settings</strong> &gt; <strong>Provisioning</strong> and configure this behavior using the <strong>destroy_vm_on_host_delete</strong> setting.
-If you do not destroy the associated VM and attempt to create a new VM with the same resource name later, it will fail because that VM name already exists in the external compute resource.
-You can still register the existing VM to Foreman using the standard host registration workflow you would use for any already provisioned host.</p>
-</div>
-</td>
-</tr>
-</table>
-</div>
 </dd>
 </dl>
 </div>
@@ -1947,6 +1931,75 @@ For more information, see <a href="https://docs.theforeman.org/nightly/Administe
 Ensure the machine is powered on and then select <strong>Console</strong>.</p>
 </li>
 </ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="removing-a-virtual-machine-upon-host-deletion_provisioning"><a class="anchor" href="#removing-a-virtual-machine-upon-host-deletion_provisioning"></a>2.27. Removing a virtual machine upon host deletion</h3>
+<div class="paragraph">
+<p>By default, when you delete a host provisioned by Foreman, Foreman does not remove the actual VM on the compute resource.
+You can configure Foreman to remove the VM when deleting the host entry on Foreman.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If you do not remove the associated VM and attempt to create a new VM with the same FQDN later, it will fail because that VM already exists in the compute resource.
+You can still re-register the existing VM to Foreman.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>To use the CLI instead of the Foreman web UI, see the <a href="#cli-removing-a-virtual-machine-upon-host-deletion_provisioning">CLI procedure</a>.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Your Foreman account has a role that grants the <code>view_settings</code> and <code>edit_settings</code> permissions.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Administer</strong> &gt; <strong>Settings</strong> &gt; <strong>Provisioning</strong>.</p>
+</li>
+<li>
+<p>Change the value of the <strong>Destroy associated VM on host delete</strong> setting to <strong>Yes</strong>.</p>
+</li>
+</ol>
+</div>
+<div id="cli-removing-a-virtual-machine-upon-host-deletion_provisioning" class="ulist">
+<div class="title">CLI procedure</div>
+<ul>
+<li>
+<p>Configure Foreman to remove a VM upon host deletion by using Hammer:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer settings set \
+--name destroy_vm_on_host_delete \
+--value true \
+--location "<em>My_Location</em>" \
+--organization "<em>My_Organization</em>"</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+<div class="ulist _additional-resources">
+<div class="title">Next steps</div>
+<ul>
+<li>
+<p>You can delete a host and Foreman removes its associated VM in the compute resource.</p>
+</li>
+</ul>
 </div>
 </div>
 </div>
@@ -5460,6 +5513,10 @@ If you want to use a non-root user on the KVM server, you must add the user to t
 <li>
 <p>For a list of permissions a non-admin user requires to provision hosts, see <a href="#permissions-required-to-provision-hosts_provisioning">Permissions required to provision hosts</a>.</p>
 </li>
+<li>
+<p>You can configure Foreman to remove the associated virtual machine when you delete a host.
+For more information, see <a href="#removing-a-virtual-machine-upon-host-deletion_provisioning">Removing a virtual machine upon host deletion</a>.</p>
+</li>
 </ul>
 </div>
 <div class="sect2">
@@ -5993,6 +6050,15 @@ Instead, create a new oVirt user with the following permissions:</p>
 </li>
 </ul>
 </div>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p>You can configure Foreman to remove the associated virtual machine when you delete a host.
+For more information, see <a href="#removing-a-virtual-machine-upon-host-deletion_provisioning">Removing a virtual machine upon host deletion</a>.</p>
 </li>
 </ul>
 </div>
@@ -7472,6 +7538,15 @@ If you want to delete the orphaned host, navigate to <strong>Hosts &gt; All Host
 </li>
 </ol>
 </div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p>You can configure Foreman to remove the associated virtual machine when you delete a host.
+For more information, see <a href="#removing-a-virtual-machine-upon-host-deletion_provisioning">Removing a virtual machine upon host deletion</a>.</p>
+</li>
+</ul>
+</div>
 </div>
 <div class="sect2">
 <h3 id="Importing_a_Virtual_Machine_from_VMware_vmware-provisioning"><a class="anchor" href="#Importing_a_Virtual_Machine_from_VMware_vmware-provisioning"></a>11.10. Importing a virtual machine into Foreman from VMware</h3>
@@ -7568,6 +7643,15 @@ https://<em>foreman.example.com</em>/api/compute_resources/<em>compute_resource_
 <div class="paragraph">
 <p>Proxmox is open source software made for virtualization using KVM hypervisor and LXC containers.
 Foreman can interact with Proxmox, including creating virtual machines and controlling their power management states.</p>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p>You can configure Foreman to remove the associated virtual machine when you delete a host.
+For more information, see <a href="#removing-a-virtual-machine-upon-host-deletion_provisioning">Removing a virtual machine upon host deletion</a>.</p>
+</li>
+</ul>
 </div>
 <div class="sect2">
 <h3 id="Installing_the_Proxmox_Plug-in_proxmox-provisioning"><a class="anchor" href="#Installing_the_Proxmox_Plug-in_proxmox-provisioning"></a>12.1. Installing the Proxmox plug-in</h3>
@@ -7928,6 +8012,15 @@ This deletes the virtual machine from your Proxmox compute resource while retain
 </li>
 </ol>
 </div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p>You can configure Foreman to remove the associated virtual machine when you delete a host.
+For more information, see <a href="#removing-a-virtual-machine-upon-host-deletion_provisioning">Removing a virtual machine upon host deletion</a>.</p>
+</li>
+</ul>
+</div>
 </div>
 <div class="sect2">
 <h3 id="Importing_a_Virtual_Machine_from_Proxmox_into_foreman_proxmox-provisioning"><a class="anchor" href="#Importing_a_Virtual_Machine_from_Proxmox_into_foreman_proxmox-provisioning"></a>12.7. Importing a virtual machine from Proxmox into Foreman</h3>
@@ -8070,6 +8163,10 @@ For more information about network service configuration for Smart&#160;Proxy&#1
 <li>
 <p>For a list of permissions a non-admin user requires to provision hosts, see <a href="#permissions-required-to-provision-hosts_provisioning">Permissions required to provision hosts</a>.</p>
 </li>
+<li>
+<p>You can configure Foreman to remove the associated virtual machine when you delete a host.
+For more information, see <a href="#removing-a-virtual-machine-upon-host-deletion_provisioning">Removing a virtual machine upon host deletion</a>.</p>
+</li>
 </ul>
 </div>
 <div class="sect2">
@@ -8173,6 +8270,15 @@ For more information, see <a href="https://docs.theforeman.org/nightly/Provision
 <li>
 <p>An image added to OpenStack Image Storage (glance) service for image-based provisioning.
 For more information, see the <a href="https://access.redhat.com/documentation/en-us/red_hat_openstack_platform/16.0/html/instances_and_images_guide/index">OpenStack <em>Instances and Images Guide</em></a>.</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p>You can configure Foreman to remove the associated virtual machine when you delete a host.
+For more information, see <a href="#removing-a-virtual-machine-upon-host-deletion_provisioning">Removing a virtual machine upon host deletion</a>.</p>
 </li>
 </ul>
 </div>
@@ -9140,6 +9246,15 @@ If you want to delete an orphaned host, navigate to <strong>Hosts</strong> &gt; 
 </li>
 </ol>
 </div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p>You can configure Foreman to remove the associated virtual machine when you delete a host.
+For more information, see <a href="#removing-a-virtual-machine-upon-host-deletion_provisioning">Removing a virtual machine upon host deletion</a>.</p>
+</li>
+</ul>
+</div>
 </div>
 <div class="sect2">
 <h3 id="Uninstalling_Amazon_EC2_Plug-in_ec2-provisioning"><a class="anchor" href="#Uninstalling_Amazon_EC2_Plug-in_ec2-provisioning"></a>15.12. Uninstalling Amazon EC2 Plug-in</h3>
@@ -9600,6 +9715,15 @@ This deletes the virtual machine from the Google GCE compute resource while reta
 If you want to delete the orphaned host, navigate to <strong>Hosts &gt; All Hosts</strong> and delete the host manually.</p>
 </li>
 </ol>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p>You can configure Foreman to remove the associated virtual machine when you delete a host.
+For more information, see <a href="#removing-a-virtual-machine-upon-host-deletion_provisioning">Removing a virtual machine upon host deletion</a>.</p>
+</li>
+</ul>
 </div>
 </div>
 </div>
@@ -10192,6 +10316,15 @@ This deletes the virtual machine from the Microsoft Azure compute resource while
 If you want to delete the orphaned host, navigate to <strong>Hosts &gt; All Hosts</strong> and delete the host manually.</p>
 </li>
 </ol>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p>You can configure Foreman to remove the associated virtual machine when you delete a host.
+For more information, see <a href="#removing-a-virtual-machine-upon-host-deletion_provisioning">Removing a virtual machine upon host deletion</a>.</p>
+</li>
+</ul>
 </div>
 </div>
 <div class="sect2">
