@@ -64,6 +64,7 @@ We capitalize the following terms:
 * Ansible
 * Candlepin
 * Chef
+* Deb (content type)
 * Discovery (service)
 * Hammer
 * Insights (Red Hat product)
@@ -80,6 +81,7 @@ We capitalize the following terms:
 * Salt Minions
 * Subscription Manager (Red Hat product)
 * Tracer (utility)
+* Yum (content type)
 
 We do not capitalize the following terms:
 
