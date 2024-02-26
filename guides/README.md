@@ -100,6 +100,32 @@ You can disable the linkcheck job for specific URL pattern, for example for unre
 Append your pattern to `guides/common/linkchecker.ini`.
 Example: [64d825cc9](https://github.com/theforeman/foreman-documentation/commit/64d825cc9da3992879dfbfc088988197edc9f33b)
 
+## Generating a TOC file
+
+For properly testing link integrity in the code, you will need to generate a TOC file. This file can be generated using `make toc` command either from a container or locally.
+
+This command generates a JSON file that later can be consumed by link validation code.
+The basic structure of the file is a nested path parts in the documentation links. For example:
+``` json
+{
+  "administering_project": {
+    "accessing_server_admin": [
+      "Logging_in_admin",
+      "Using_FreeIPA_credentials_to_log_in_to_the_foreman_Hammer_CLI_admin",
+      "Using_FreeIPA_credentials_to_log_in_to_the_foreman_web_UI-with-a-Firefox-browser_admin",
+      "Using_FreeIPA_credentials_to_log_in_to_the_foreman_web_UI-with-a-Chrome-browser_admin",
+      "Navigation_Tabs_in_the_Web_UI_admin",
+      "Changing_the_Password_admin",
+      "Resetting_the_Administrative_User_Password_admin",
+      "Setting_a_Custom_Message_on_the_Login_Page_admin"
+    ],
+  }
+}
+```
+which can be used for validating `administering_project/accessing_server_admin#Logging_in_admin` link.
+
+Note: The translation of book file names to root part of the link path is dependent on [`upstream_filename_to_link.json`](./upstream_filename_to_link.json) file. For example `build/Administering_Project/index-foreman-el.html` would be translated to `.../administering_project/...` path in the TOC. File names that are missing from this JSON file would be omitted from the TOC.
+
 ## Contribution guidelines
 
 Please read these guidelines before opening a Pull Request. For more information, see [Guidelines for Red Hat Documentation](https://redhat-documentation.github.io/).
