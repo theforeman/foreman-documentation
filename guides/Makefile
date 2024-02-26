@@ -24,3 +24,7 @@ linkchecker-tryer:
 	find build -type f -name index\*html | xargs linkchecker -r1 -f common/linkchecker.ini --check-extern | ./scripts/linkchecker-tryer
 
 ccutil: $(SUBDIRS)
+
+toc:
+	make BUILD=satellite html
+	F2L=upstream_filename_to_satellite_link.json ./scripts/extract_links_toc build/**/index-satellite.html > build/toc.json
