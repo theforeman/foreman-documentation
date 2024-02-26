@@ -27,7 +27,7 @@
 <h1>Provisioning Hosts</h1>
 <div class="details">
 <span id="revnumber">version nightly (unsupported),</span>
-<span id="revdate">published Feb 25 2024</span>
+<span id="revdate">published Feb 26 2024</span>
 </div>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
@@ -68,6 +68,7 @@
 <li><a href="#creating-compute-profiles_provisioning">2.24. Creating compute profiles</a></li>
 <li><a href="#setting-a-default-encrypted-root-password_provisioning">2.25. Setting a default encrypted root password for hosts</a></li>
 <li><a href="#using-novnc-to-access-virtual-machines_provisioning">2.26. Using noVNC to access virtual machines</a></li>
+<li><a href="#removing-a-virtual-machine-upon-host-deletion_provisioning">2.27. Removing a virtual machine upon host deletion</a></li>
 </ul>
 </li>
 <li><a href="#Configuring_Networking_provisioning">3. Configuring networking</a>
@@ -77,7 +78,7 @@
 <li><a href="#Network_Resources_provisioning">3.3. Network resources</a></li>
 <li><a href="#DHCP_Options_provisioning">3.4. Foreman and DHCP options</a></li>
 <li><a href="#Troubleshooting_DHCP_Problems_provisioning">3.5. Troubleshooting DHCP problems in Foreman</a></li>
-<li><a href="#Prerequisites_for_Image_Based_Provisioning_provisioning">3.6. Prerequisites for image based provisioning</a></li>
+<li><a href="#Prerequisites_for_Image_Based_Provisioning_provisioning">3.6. Prerequisites for image-based provisioning</a></li>
 <li><a href="#Configuring_Network_Services_provisioning">3.7. Configuring network services</a></li>
 <li><a href="#Adding_a_Domain_to_Server_provisioning">3.8. Adding a domain to Foreman&#160;server</a></li>
 <li><a href="#Adding_a_Subnet_to_Server_provisioning">3.9. Adding a subnet to Foreman&#160;server</a></li>
@@ -172,7 +173,7 @@
 </li>
 <li><a href="#Provisioning_Virtual_Machines_Kubevirt_kubevirt-provisioning">13. Provisioning virtual machines on KubeVirt</a>
 <ul class="sectlevel2">
-<li><a href="#adding-kubevirt-connection_kubevirt-provisioning">13.1. Adding a KubeVirt Connection to Foreman&#160;server</a></li>
+<li><a href="#adding-kubevirt-connection_kubevirt-provisioning">13.1. Adding a KubeVirt connection to Foreman&#160;server</a></li>
 </ul>
 </li>
 <li><a href="#Provisioning_Cloud_Instances_OpenStack_openstack-provisioning">14. Provisioning cloud instances on OpenStack</a>
@@ -554,23 +555,6 @@ If you use image-based provisioning, the host does not follow the standard PXE b
 The compute resource creates a copy of the image for the host to use.
 Depending on image settings in Foreman, seed data can be passed in for initial configuration, for example using <code>cloud-init</code>.
 Foreman can connect using SSH to the host and execute a template to finish the customization.</p>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>By default, deleting the provisioned profile host from Foreman does not destroy the actual VM on the external compute resource.
-To destroy the VM when deleting the host entry on Foreman, navigate to <strong>Administer</strong> &gt; <strong>Settings</strong> &gt; <strong>Provisioning</strong> and configure this behavior using the <strong>destroy_vm_on_host_delete</strong> setting.
-If you do not destroy the associated VM and attempt to create a new VM with the same resource name later, it will fail because that VM name already exists in the external compute resource.
-You can still register the existing VM to Foreman using the standard host registration workflow you would use for any already provisioned host.</p>
-</div>
-</td>
-</tr>
-</table>
-</div>
 </dd>
 </dl>
 </div>
@@ -1989,6 +1973,75 @@ Ensure the machine is powered on and then select <strong>Console</strong>.</p>
 </ol>
 </div>
 </div>
+<div class="sect2">
+<h3 id="removing-a-virtual-machine-upon-host-deletion_provisioning"><a class="anchor" href="#removing-a-virtual-machine-upon-host-deletion_provisioning"></a>2.27. Removing a virtual machine upon host deletion</h3>
+<div class="paragraph">
+<p>By default, when you delete a host provisioned by Foreman, Foreman does not remove the actual VM on the compute resource.
+You can configure Foreman to remove the VM when deleting the host entry on Foreman.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If you do not remove the associated VM and attempt to create a new VM with the same FQDN later, it will fail because that VM already exists in the compute resource.
+You can still re-register the existing VM to Foreman.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>To use the CLI instead of the Foreman web UI, see the <a href="#cli-removing-a-virtual-machine-upon-host-deletion_provisioning">CLI procedure</a>.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Your Foreman account has a role that grants the <code>view_settings</code> and <code>edit_settings</code> permissions.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Administer</strong> &gt; <strong>Settings</strong> &gt; <strong>Provisioning</strong>.</p>
+</li>
+<li>
+<p>Change the value of the <strong>Destroy associated VM on host delete</strong> setting to <strong>Yes</strong>.</p>
+</li>
+</ol>
+</div>
+<div id="cli-removing-a-virtual-machine-upon-host-deletion_provisioning" class="ulist">
+<div class="title">CLI procedure</div>
+<ul>
+<li>
+<p>Configure Foreman to remove a VM upon host deletion by using Hammer:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer settings set \
+--name destroy_vm_on_host_delete \
+--value true \
+--location "<em>My_Location</em>" \
+--organization "<em>My_Organization</em>"</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+<div class="ulist _additional-resources">
+<div class="title">Next steps</div>
+<ul>
+<li>
+<p>You can delete a host and Foreman removes its associated VM in the compute resource.</p>
+</li>
+</ul>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -2368,9 +2421,9 @@ If a lease is deleted, <code>{ deleted; }</code> is appended to the declaration.
 </div>
 </div>
 <div class="sect2">
-<h3 id="Prerequisites_for_Image_Based_Provisioning_provisioning"><a class="anchor" href="#Prerequisites_for_Image_Based_Provisioning_provisioning"></a>3.6. Prerequisites for image based provisioning</h3>
+<h3 id="Prerequisites_for_Image_Based_Provisioning_provisioning"><a class="anchor" href="#Prerequisites_for_Image_Based_Provisioning_provisioning"></a>3.6. Prerequisites for image-based provisioning</h3>
 <div class="paragraph">
-<div class="title">Post-Boot Configuration Method</div>
+<div class="title">Post-boot configuration method</div>
 <p>Images that use the <code>finish</code> post-boot configuration scripts require a managed DHCP server, such as Foreman&#8217;s integrated Smart&#160;Proxy or an external Smart&#160;Proxy.
 The host must be created with a subnet associated with a DHCP Smart&#160;Proxy, and the IP address of the host must be a valid IP address from the DHCP range.</p>
 </div>
@@ -2408,7 +2461,7 @@ This is required for the virtual machine to receive post-configuration scripts f
 </ul>
 </div>
 <div class="paragraph">
-<div class="title">Pre-Boot Initialization Configuration Method</div>
+<div class="title">Pre-boot initialization configuration method</div>
 <p>Images that use the <code>cloud-init</code> scripts require a DHCP server to avoid having to include the IP address in the image.
 A managed DHCP Smart&#160;Proxy is preferred.
 The image must have the <code>cloud-init</code> service configured to start when the system boots and fetch a script or configuration data to use in completing the configuration.</p>
@@ -2735,12 +2788,12 @@ In the <code>/etc/sysconfig/iptables-config</code> file, locate <code>IPTABLES_M
 Foreman&#160;server must have information about the domain and Smart&#160;Proxy&#160;server responsible for domain name assignment.</p>
 </div>
 <div class="paragraph">
-<div class="title">Checking for Existing Domains</div>
+<div class="title">Checking for existing domains</div>
 <p>Foreman&#160;server might already have the relevant domain created as part of Foreman&#160;server installation.
 Switch the context to <code>Any Organization</code> and <code>Any Location</code> then check the domain list to see if it exists.</p>
 </div>
 <div class="paragraph">
-<div class="title">DNS Server Configuration Considerations</div>
+<div class="title">DNS server configuration considerations</div>
 <p>During the DNS record creation, Foreman performs conflict DNS lookups to verify that the host name is not in active use.
 This check runs against one of the following DNS servers:</p>
 </div>
@@ -2951,6 +3004,9 @@ For example, user defined Boolean or string parameters to use in templates.</p>
 <div class="paragraph">
 <p>You can use Smart&#160;Proxy&#160;server to connect to your Infoblox application to create and manage DHCP and DNS records, and to reserve IP addresses.</p>
 </div>
+<div class="paragraph">
+<p>The supported Infoblox version is NIOS 8.0 or higher.</p>
+</div>
 <div class="sect2">
 <h3 id="Infoblox_Limitations_provisioning"><a class="anchor" href="#Infoblox_Limitations_provisioning"></a>4.1. Infoblox limitations</h3>
 <div class="paragraph">
@@ -3042,13 +3098,13 @@ Note that you cannot manage records in separate views.</p>
 <p>You can also install DHCP and DNS Infoblox modules simultaneously by combining this procedure and <a href="#Installing_the_DNS_Infoblox_Module_provisioning">Installing the DNS Infoblox module</a>.</p>
 </div>
 <div class="paragraph">
-<div class="title">DHCP Infoblox Record Type Considerations</div>
-<p>Use only the <code>--foreman-proxy-plugin-dhcp-infoblox-record-type fixedaddress</code> option to configure the DHCP and DNS modules.</p>
+<div class="title">DHCP Infoblox record type considerations</div>
+<p>If you want to use the DHCP and DNS Infoblox modules together, configure the DHCP Infoblox module with the <code>fixedaddress</code> record type only.
+The <code>host</code> record type causes DNS conflicts and is not supported.</p>
 </div>
 <div class="paragraph">
-<p>Configuring both DHCP and DNS Infoblox modules with the <code>host</code> record type setting causes DNS conflicts and is not supported.
-If you install the Infoblox module on Smart&#160;Proxy&#160;server with the <code>--foreman-proxy-plugin-dhcp-infoblox-record-type</code> option set to <code>host</code>, you must unset both DNS Smart&#160;Proxy and Reverse DNS Smart&#160;Proxy options because Infoblox does the DNS management itself.
-You cannot use the <code>host</code> option without creating conflicts and, for example, being unable to rename hosts in Foreman.</p>
+<p>If you configure the DHCP Infoblox module with the <code>host</code> record type, you have to unset both DNS Smart&#160;Proxy and Reverse DNS Smart&#160;Proxy options on your Infoblox-managed subnets, because Infoblox does DNS management by itself.
+Using the <code>host</code> record type leads to creating conflicts and being unable to rename hosts in Foreman.</p>
 </div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
@@ -3059,30 +3115,24 @@ You cannot use the <code>host</code> option without creating conflicts and, for 
 <div class="content">
 <pre class="nowrap"># foreman-installer --enable-foreman-proxy-plugin-dhcp-infoblox \
 --foreman-proxy-dhcp true \
---foreman-proxy-dhcp-managed false \
 --foreman-proxy-dhcp-provider infoblox \
 --foreman-proxy-dhcp-server <em>infoblox.example.com</em> \
---foreman-proxy-plugin-dhcp-infoblox-dns-view default \
---foreman-proxy-plugin-dhcp-infoblox-network-view default \
---foreman-proxy-plugin-dhcp-infoblox-password infoblox \
+--foreman-proxy-plugin-dhcp-infoblox-username <em>admin</em> \
+--foreman-proxy-plugin-dhcp-infoblox-password <em>infoblox</em> \
 --foreman-proxy-plugin-dhcp-infoblox-record-type fixedaddress \
---foreman-proxy-plugin-dhcp-infoblox-username admin</pre>
+--foreman-proxy-plugin-dhcp-infoblox-dns-view default \
+--foreman-proxy-plugin-dhcp-infoblox-network-view default</pre>
 </div>
 </div>
 </li>
 <li>
-<p>In the Foreman web UI, navigate to <strong>Infrastructure</strong> &gt; <strong>Smart&#160;Proxies</strong> and select the Smart&#160;Proxy with the Infoblox DHCP module and click <strong>Refresh</strong>.</p>
+<p>Optional: In the Foreman web UI, navigate to <strong>Infrastructure</strong> &gt; <strong>Smart&#160;Proxies</strong>, select the Smart&#160;Proxy with the DHCP Infoblox module, and ensure that the <strong>dhcp</strong> feature is listed.</p>
 </li>
 <li>
-<p>Ensure that the <strong>dhcp</strong> features are listed.</p>
+<p>In the Foreman web UI, navigate to <strong>Infrastructure</strong> &gt; <strong>Subnets</strong>.</p>
 </li>
 <li>
-<p>For all domains managed through Infoblox, ensure that the DNS Smart&#160;Proxy is set for that domain.
-To verify, in the Foreman web UI, navigate to <strong>Infrastructure</strong> &gt; <strong>Domains</strong>, and inspect the settings of each domain.</p>
-</li>
-<li>
-<p>For all subnets managed through Infoblox, ensure that DHCP Smart&#160;Proxy and Reverse DNS Smart&#160;Proxy is set.
-To verify, in the Foreman web UI, navigate to <strong>Infrastructure</strong> &gt; <strong>Subnets</strong>, and inspect the settings of each subnet.</p>
+<p>For all subnets managed through Infoblox, ensure that the IP address management (<strong>IPAM</strong>) method of the subnet is set to <code>DHCP</code>.</p>
 </li>
 </ol>
 </div>
@@ -3092,9 +3142,6 @@ To verify, in the Foreman web UI, navigate to <strong>Infrastructure</strong> &g
 <div class="paragraph">
 <p>Use this procedure to install the DNS Infoblox module on Smart&#160;Proxy.
 You can also install DHCP and DNS Infoblox modules simultaneously by combining this procedure and <a href="#Installing_the_DHCP_Infoblox_Module_provisioning">Installing the DHCP Infoblox module</a>.</p>
-</div>
-<div class="paragraph">
-<p>DNS records are managed only in the default DNS view, it&#8217;s not possible to specify which DNS view to use.</p>
 </div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
@@ -3107,20 +3154,29 @@ You can also install DHCP and DNS Infoblox modules simultaneously by combining t
 --foreman-proxy-dns true \
 --foreman-proxy-dns-provider infoblox \
 --foreman-proxy-plugin-dns-infoblox-dns-server <em>infoblox.example.com</em> \
---foreman-proxy-plugin-dns-infoblox-dns-view default \
---foreman-proxy-plugin-dns-infoblox-password infoblox \
---foreman-proxy-plugin-dns-infoblox-username admin</pre>
+--foreman-proxy-plugin-dns-infoblox-username <em>admin</em> \
+--foreman-proxy-plugin-dns-infoblox-password <em>infoblox</em> \
+--foreman-proxy-plugin-dns-infoblox-dns-view <em>default</em></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Optionally, you can change the value of the <code>--foreman-proxy-plugin-dns-infoblox-dns-view</code> option to specify a DNS Infoblox view other than the default view.</p>
+<p>Optionally, you can change the value of the <code>--foreman-proxy-plugin-dns-infoblox-dns-view</code> option to specify an Infoblox DNS view other than the default view.</p>
 </div>
 </li>
 <li>
-<p>In the Foreman web UI, navigate to <strong>Infrastructure</strong> &gt; <strong>Smart&#160;Proxies</strong> and select the Smart&#160;Proxy with the Infoblox DNS module and click <strong>Refresh</strong>.</p>
+<p>Optional: In the Foreman web UI, navigate to <strong>Infrastructure</strong> &gt; <strong>Smart&#160;Proxies</strong>, select the Smart&#160;Proxy with the Infoblox DNS module, and ensure that the <strong>dns</strong> feature is listed.</p>
 </li>
 <li>
-<p>Ensure that the <strong>dns</strong> features are listed.</p>
+<p>In the Foreman web UI, navigate to <strong>Infrastructure</strong> &gt; <strong>Domains</strong>.</p>
+</li>
+<li>
+<p>For all domains managed through Infoblox, ensure that the <strong>DNS Proxy</strong> is set for those domains.</p>
+</li>
+<li>
+<p>In the Foreman web UI, navigate to <strong>Infrastructure</strong> &gt; <strong>Subnets</strong>.</p>
+</li>
+<li>
+<p>For all subnets managed through Infoblox, ensure that the <strong>DNS Smart&#160;Proxy</strong> and <strong>Reverse DNS Smart&#160;Proxy</strong> are set for those subnets.</p>
 </li>
 </ol>
 </div>
@@ -3139,10 +3195,10 @@ You can also install DHCP and DNS Infoblox modules simultaneously by combining t
 <p>A network with unmanaged DHCP servers.</p>
 </li>
 <li>
-<p>A PXE service that is blacklisted on your network or restricted by a firewall.</p>
+<p>A PXE service that is unreachable because of, for example, a firewall restriction.</p>
 </li>
 <li>
-<p>An unreliable TFTP UDP-based protocol because of, for example, a low-bandwidth network.</p>
+<p>A TFTP UDP-based protocol that is unreliable because of, for example, a low-bandwidth network.</p>
 </li>
 </ul>
 </div>
@@ -3173,7 +3229,7 @@ For more information, see <a href="https://ipxe.org">ipxe.org</a>.</p>
 </ol>
 </div>
 <div class="paragraph">
-<div class="title">Security Information</div>
+<div class="title">Security information</div>
 <p>The iPXE binary in Red&#160;Hat Enterprise Linux is built without some security features.
 For this reason, you can only use HTTP, and cannot use HTTPS.
 Recompile iPXE from source to use security features like HTTPS.</p>
@@ -3623,7 +3679,7 @@ For more information, see <a href="#Configuring_the_Discovery_Service_provisioni
 </table>
 </div>
 <div class="paragraph">
-<div class="title">BIOS and UEFI Support</div>
+<div class="title">BIOS and UEFI support</div>
 <p>With Foreman, you can perform both BIOS and UEFI based PXE provisioning.
 Both BIOS and UEFI interfaces work as interpreters between the computer&#8217;s operating system and firmware, initializing the hardware components and starting the operating system at boot time.</p>
 </div>
@@ -3834,7 +3890,7 @@ Using this ISO, the host can connect to Foreman&#160;server, boot the installati
 For more information, see <a href="#Implementing_PXE_less_Discovery_provisioning">Implementing PXE-less Discovery</a>.</p>
 </div>
 <div class="paragraph">
-<div class="title">Boot ISO Types</div>
+<div class="title">Boot ISO types</div>
 <p>There are the following types of boot ISOs:</p>
 </div>
 <div class="dlist">
@@ -4495,7 +4551,7 @@ To do this, navigate to <strong>Administer</strong> &gt; <strong>Settings</stron
 <p>To use the Discovery service, you must configure provisioning settings to set Discovery as the default service and set the templates that you want to use.</p>
 </div>
 <div class="paragraph">
-<div class="title">Setting Discovery Service as Default</div>
+<div class="title">Setting Discovery service as default</div>
 <p>For both BIOS and UEFI, to set the Discovery service as the default service that boots for hosts that are not present in your current Foreman inventory, complete the following steps:</p>
 </div>
 <div class="olist arabic">
@@ -4512,7 +4568,7 @@ To do this, navigate to <strong>Administer</strong> &gt; <strong>Settings</stron
 <p>To use a template, in the Foreman web UI, navigate to <strong>Administer</strong> &gt; <strong>Settings</strong> and click the <strong>Provisioning</strong> tab and set the templates that you want to use.</p>
 </div>
 <div class="paragraph">
-<div class="title">Customizing Templates and Snippets</div>
+<div class="title">Customizing templates and snippets</div>
 <p>Templates and snippets are locked to prevent changes.
 If you want to edit a template or snippet, clone it, save it with a unique name, and then edit the clone.</p>
 </div>
@@ -4526,7 +4582,7 @@ If you want to edit a template or snippet, clone it, save it with a unique name,
 <p>This refreshes the default PXE template on Foreman&#160;server.</p>
 </div>
 <div class="dlist">
-<div class="title">Additional Settings</div>
+<div class="title">Additional settings</div>
 <dl>
 <dt class="hdlist1">The proxy.url argument</dt>
 <dd>
@@ -4560,13 +4616,13 @@ For katello scenario deployment, use port 9090.
 </dl>
 </div>
 <div class="paragraph">
-<div class="title">Rendering the Smart&#160;Proxy&#8217;s Host Name</div>
+<div class="title">Rendering the Smart&#160;Proxy&#8217;s host name</div>
 <p>Foreman deploys the same template to all TFTP Smart&#160;Proxies and there is no variable or macro available to render the Smart&#160;Proxy&#8217;s host name.
 The hard-coded <code>proxy.url</code> does not not work with two or more TFTP Smart&#160;Proxies.
 As a workaround, every time you click <strong>Build PXE Defaults</strong>, edit the configuration file in the TFTP directory using SSH, or use a common DNS alias for appropriate subnets.</p>
 </div>
 <div class="paragraph">
-<div class="title">Tagged VLAN Provisioning</div>
+<div class="title">Tagged VLAN provisioning</div>
 <p>If you want to use tagged VLAN provisioning, and you want the discovery service to send a discovery request, add the following information to the <code>KERNEL</code> option in the discovery template:</p>
 </div>
 <div class="listingblock">
@@ -4732,7 +4788,7 @@ Likewise, you can provision hosts with large hard disks as storage servers.</p>
 <p>To use the CLI instead of the Foreman web UI, see the <a href="#cli-creating-discovery-rules_provisioning">CLI procedure</a>.</p>
 </div>
 <div class="paragraph">
-<div class="title">NIC Considerations</div>
+<div class="title">NIC considerations</div>
 <p>Auto provisioning does not currently allow configuring NICs; all systems are being provisioned with the NIC configuration that was detected during discovery.
 However, you can set the NIC in the <code>OS installer recipe</code> scriplet, using a script, or using configuration management at a later stage.</p>
 </div>
@@ -4854,7 +4910,7 @@ You accomplish this using Foreman&#160;server&#8217;s Discovery image.
 Once a discovered node is scheduled for installation, it uses <code>kexec</code> command to reload Linux kernel with OS installer without rebooting the node.</p>
 </div>
 <div class="paragraph">
-<div class="title">Known Issues</div>
+<div class="title">Known issues</div>
 <p>The console might freeze during the process.
 On some hardware, you might experience graphical hardware problems.</p>
 </div>
@@ -4867,7 +4923,7 @@ On some hardware, you might experience graphical hardware problems.</p>
 <p>If you have not yet installed the Discovery service or image, see <a href="#Building_a_Discovery_Image_provisioning">Building a Discovery image</a>.</p>
 </div>
 <div class="olist arabic">
-<div class="title">Attended Use</div>
+<div class="title">Attended use</div>
 <ol class="arabic">
 <li>
 <p>Copy this media to either a CD, DVD, or a USB stick.
@@ -5227,7 +5283,7 @@ This parameter also supports a legacy <code>foreman</code> option, where communi
 </dl>
 </div>
 <div class="paragraph">
-<div class="title">Using the <code>discovery-remaster</code> Tool to Remaster an OS Image</div>
+<div class="title">Using the <code>discovery-remaster</code> tool to remaster an OS image</div>
 <p>Foreman&#160;server provides the <code>discovery-remaster</code> tool.
 This tool remasters the image to include these kernel parameters.
 To remaster the image, run the <code>discovery-remaster</code> tool.
@@ -5416,17 +5472,8 @@ Using Cockpit, you can access Lorax Composer and build images that you can then 
 When you configure Foreman for image provisioning, Anaconda installer partitions disks, downloads and mounts the image and copies files over to a host.
 The preferred image type is TAR.</p>
 </div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
-The blueprint to build the TAR image must always include a kernel package.
-</td>
-</tr>
-</table>
+<div class="paragraph">
+<p>Ensure that your blueprint to build the TAR image includes a kernel package.</p>
 </div>
 <div class="paragraph">
 <p>For more information about integrating Cockpit with Foreman, see <a href="https://docs.theforeman.org/nightly/Managing_Hosts/index-katello.html#Host_Management_and_Monitoring_Using_Cockpit_managing-hosts">Host Management and Monitoring Using Cockpit</a> in <em>Managing Hosts</em>.</p>
@@ -5533,6 +5580,10 @@ If you want to use a non-root user on the KVM server, you must add the user to t
 <ul>
 <li>
 <p>For a list of permissions a non-admin user requires to provision hosts, see <a href="#permissions-required-to-provision-hosts_provisioning">Permissions required to provision hosts</a>.</p>
+</li>
+<li>
+<p>You can configure Foreman to remove the associated virtual machine when you delete a host.
+For more information, see <a href="#removing-a-virtual-machine-upon-host-deletion_provisioning">Removing a virtual machine upon host deletion</a>.</p>
 </li>
 </ul>
 </div>
@@ -5836,7 +5887,7 @@ If the virtual machine detects the defined Smart&#160;Proxy&#160;server through 
 <p>To use the CLI instead of the Foreman web UI, see the <a href="#cli-creating-network-or-image-based-hosts_kvm-provisioning">CLI procedure</a>.</p>
 </div>
 <div class="paragraph">
-<div class="title">DHCP Conflicts</div>
+<div class="title">DHCP conflicts</div>
 <p>For network-based provisioning, if you use a virtual network on the KVM server for provisioning, select a network that does not provide DHCP assignments.
 This causes DHCP conflicts with Foreman&#160;server when booting new hosts.</p>
 </div>
@@ -6071,6 +6122,15 @@ Instead, create a new oVirt user with the following permissions:</p>
 </li>
 </ul>
 </div>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p>You can configure Foreman to remove the associated virtual machine when you delete a host.
+For more information, see <a href="#removing-a-virtual-machine-upon-host-deletion_provisioning">Removing a virtual machine upon host deletion</a>.</p>
 </li>
 </ul>
 </div>
@@ -6518,7 +6578,7 @@ If the virtual machine detects the defined Smart&#160;Proxy&#160;server through 
 <p>To use the CLI instead of the Foreman web UI, see the <a href="#cli-creating-network-or-image-based-hosts_rhv-provisioning">CLI procedure</a>.</p>
 </div>
 <div class="paragraph">
-<div class="title">DHCP Conflicts</div>
+<div class="title">DHCP conflicts</div>
 <p>For network-based provisioning, if you use a virtual network on the oVirt server for provisioning, select a network that does not provide DHCP assignments.
 This causes DHCP conflicts with Foreman&#160;server when booting new hosts.</p>
 </div>
@@ -7110,7 +7170,7 @@ The new host entry triggers the VMware vSphere server to create the virtual mach
 If the virtual machine detects the defined Smart&#160;Proxy&#160;server through the virtual network, the virtual machine boots to PXE and begins to install the chosen operating system.</p>
 </div>
 <div class="paragraph">
-<div class="title">DHCP Conflicts</div>
+<div class="title">DHCP conflicts</div>
 <p>If you use a virtual network on the VMware vSphere server for provisioning, ensure that you select a virtual network that does not provide DHCP assignments.
 This causes DHCP conflicts with Foreman&#160;server when booting new hosts.</p>
 </div>
@@ -7277,7 +7337,7 @@ In the field <strong>Value</strong>, enter the name of the activation key used t
 <div class="content">
 <img src="images/common/user-data-sequence-foreman.svg" alt="user data sequence foreman">
 </div>
-<div class="title">Figure 1. VMware cloud-init Provisioning Overview</div>
+<div class="title">Figure 1. VMware cloud-init provisioning overview</div>
 </div>
 <div class="paragraph">
 <p>When you set up the compute resource and images for VMware provisioning in Foreman, the following sequence of provisioning events occurs:</p>
@@ -7322,7 +7382,7 @@ For more information, see <a href="https://docs.theforeman.org/nightly/Installin
 </ul>
 </div>
 <div class="olist arabic">
-<div class="title">Associating the <code>Userdata</code> and <code>Cloud-init</code> Templates with the Operating System</div>
+<div class="title">Associating the <code>Userdata</code> and <code>Cloud-init</code> templates with the operating system</div>
 <ol class="arabic">
 <li>
 <p>In the Foreman web UI, navigate to <strong>Hosts</strong> &gt; <strong>Templates</strong> &gt; <strong>Provisioning Templates</strong>.</p>
@@ -7360,7 +7420,7 @@ For more information, see <a href="https://docs.theforeman.org/nightly/Installin
 </ol>
 </div>
 <div class="paragraph">
-<div class="title">Preparing an Image to use the cloud-init Template</div>
+<div class="title">Preparing an image to use the cloud-init template</div>
 <p>To prepare an image, you must first configure the settings that you require on a virtual machine that you can then save as an image to use in Foreman.</p>
 </div>
 <div class="paragraph">
@@ -7568,6 +7628,15 @@ If you want to delete the orphaned host, navigate to <strong>Hosts &gt; All Host
 </li>
 </ol>
 </div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p>You can configure Foreman to remove the associated virtual machine when you delete a host.
+For more information, see <a href="#removing-a-virtual-machine-upon-host-deletion_provisioning">Removing a virtual machine upon host deletion</a>.</p>
+</li>
+</ul>
+</div>
 </div>
 <div class="sect2">
 <h3 id="Importing_a_Virtual_Machine_from_VMware_vmware-provisioning"><a class="anchor" href="#Importing_a_Virtual_Machine_from_VMware_vmware-provisioning"></a>11.10. Importing a virtual machine into Foreman from VMware</h3>
@@ -7664,6 +7733,15 @@ https://<em>foreman.example.com</em>/api/compute_resources/<em>compute_resource_
 <div class="paragraph">
 <p>Proxmox is open source software made for virtualization using KVM hypervisor and LXC containers.
 Foreman can interact with Proxmox, including creating virtual machines and controlling their power management states.</p>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p>You can configure Foreman to remove the associated virtual machine when you delete a host.
+For more information, see <a href="#removing-a-virtual-machine-upon-host-deletion_provisioning">Removing a virtual machine upon host deletion</a>.</p>
+</li>
+</ul>
 </div>
 <div class="sect2">
 <h3 id="Installing_the_Proxmox_Plug-in_proxmox-provisioning"><a class="anchor" href="#Installing_the_Proxmox_Plug-in_proxmox-provisioning"></a>12.1. Installing the Proxmox plug-in</h3>
@@ -7907,7 +7985,7 @@ The new host entry triggers the Proxmox node to create the virtual machine.
 If the virtual machine detects the defined Smart&#160;Proxy&#160;server through the virtual network, the virtual machine boots to PXE and begins to install the chosen operating system.</p>
 </div>
 <div class="paragraph">
-<div class="title">DHCP Conflicts</div>
+<div class="title">DHCP conflicts</div>
 <p>If you use a virtual network on the Proxmox node for provisioning, ensure that you select a virtual network that does not provide DHCP assignments.
 This causes DHCP conflicts with Foreman&#160;server when booting new hosts.</p>
 </div>
@@ -8027,6 +8105,15 @@ This deletes the virtual machine from your Proxmox compute resource while retain
 <p>Optional: If you want to delete the orphaned host, navigate to <strong>Hosts</strong> &gt; <strong>All Hosts</strong> and delete the host manually.</p>
 </li>
 </ol>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p>You can configure Foreman to remove the associated virtual machine when you delete a host.
+For more information, see <a href="#removing-a-virtual-machine-upon-host-deletion_provisioning">Removing a virtual machine upon host deletion</a>.</p>
+</li>
+</ul>
 </div>
 </div>
 <div class="sect2">
@@ -8177,10 +8264,14 @@ For more information about network service configuration for Smart&#160;Proxy&#1
 <li>
 <p>For a list of permissions a non-admin user requires to provision hosts, see <a href="#permissions-required-to-provision-hosts_provisioning">Permissions required to provision hosts</a>.</p>
 </li>
+<li>
+<p>You can configure Foreman to remove the associated virtual machine when you delete a host.
+For more information, see <a href="#removing-a-virtual-machine-upon-host-deletion_provisioning">Removing a virtual machine upon host deletion</a>.</p>
+</li>
 </ul>
 </div>
 <div class="sect2">
-<h3 id="adding-kubevirt-connection_kubevirt-provisioning"><a class="anchor" href="#adding-kubevirt-connection_kubevirt-provisioning"></a>13.1. Adding a KubeVirt Connection to Foreman&#160;server</h3>
+<h3 id="adding-kubevirt-connection_kubevirt-provisioning"><a class="anchor" href="#adding-kubevirt-connection_kubevirt-provisioning"></a>13.1. Adding a KubeVirt connection to Foreman&#160;server</h3>
 <div class="paragraph">
 <p>Use this procedure to add KubeVirt as a compute resource in Foreman.</p>
 </div>
@@ -8280,6 +8371,15 @@ For more information, see <a href="https://docs.theforeman.org/nightly/Provision
 <li>
 <p>An image added to OpenStack Image Storage (glance) service for image-based provisioning.
 For more information, see the <a href="https://access.redhat.com/documentation/en-us/red_hat_openstack_platform/16.0/html/instances_and_images_guide/index">OpenStack <em>Instances and Images Guide</em></a>.</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p>You can configure Foreman to remove the associated virtual machine when you delete a host.
+For more information, see <a href="#removing-a-virtual-machine-upon-host-deletion_provisioning">Removing a virtual machine upon host deletion</a>.</p>
 </li>
 </ul>
 </div>
@@ -8678,7 +8778,7 @@ You can attach these permissions from AWS.</p>
 </ul>
 </div>
 <div class="paragraph">
-<div class="title">Time Settings and Amazon Web Services</div>
+<div class="title">Time settings and Amazon Web Services</div>
 <p>Amazon Web Services uses time settings as part of the authentication process.
 Ensure that Foreman&#160;server&#8217;s time is correctly synchronized.
 Ensure that an NTP service, such as <code>ntpd</code> or <code>chronyd</code>, is running properly on Foreman&#160;server.
@@ -9260,6 +9360,15 @@ If you want to delete an orphaned host, navigate to <strong>Hosts</strong> &gt; 
 </li>
 </ol>
 </div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p>You can configure Foreman to remove the associated virtual machine when you delete a host.
+For more information, see <a href="#removing-a-virtual-machine-upon-host-deletion_provisioning">Removing a virtual machine upon host deletion</a>.</p>
+</li>
+</ul>
+</div>
 </div>
 <div class="sect2">
 <h3 id="Uninstalling_Amazon_EC2_Plug-in_ec2-provisioning"><a class="anchor" href="#Uninstalling_Amazon_EC2_Plug-in_ec2-provisioning"></a>15.12. Uninstalling Amazon EC2 Plug-in</h3>
@@ -9724,6 +9833,15 @@ This deletes the virtual machine from the Google GCE compute resource while reta
 If you want to delete the orphaned host, navigate to <strong>Hosts &gt; All Hosts</strong> and delete the host manually.</p>
 </li>
 </ol>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p>You can configure Foreman to remove the associated virtual machine when you delete a host.
+For more information, see <a href="#removing-a-virtual-machine-upon-host-deletion_provisioning">Removing a virtual machine upon host deletion</a>.</p>
+</li>
+</ul>
 </div>
 </div>
 </div>
@@ -10321,6 +10439,15 @@ If you want to delete the orphaned host, navigate to <strong>Hosts &gt; All Host
 </li>
 </ol>
 </div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p>You can configure Foreman to remove the associated virtual machine when you delete a host.
+For more information, see <a href="#removing-a-virtual-machine-upon-host-deletion_provisioning">Removing a virtual machine upon host deletion</a>.</p>
+</li>
+</ul>
+</div>
 </div>
 <div class="sect2">
 <h3 id="Uninstalling_Microsoft_Azure_Plug-in_azure-provisioning"><a class="anchor" href="#Uninstalling_Microsoft_Azure_Plug-in_azure-provisioning"></a>17.7. Uninstalling Microsoft Azure Plug-in</h3>
@@ -10357,8 +10484,10 @@ If you want to delete the orphaned host, navigate to <strong>Hosts &gt; All Host
 <div class="title">Note</div>
 </td>
 <td class="content">
-The following chapter describes Red Hat content management provided by Katello plug-in.
-Deployments without the plug-in use Installation Media to fetch content from remote or local mirrors.
+<div class="paragraph">
+<p>The following chapter describes Red Hat content management provided by Katello plug-in.
+Deployments without the plug-in use Installation Media to fetch content from remote or local mirrors.</p>
+</div>
 </td>
 </tr>
 </table>
