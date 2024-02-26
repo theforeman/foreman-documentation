@@ -3,7 +3,7 @@ DEST := result
 PORT := 5000
 VERSION_LINKS := 3.11 3.10 3.9 3.8 3.7 3.6 3.5 3.4 3.3 3.2 3.1 3.0 2.5 2.4
 
-.PHONY: all clean html web compile serve prep FORCE
+.PHONY: all clean html web compile serve prep FORCE toc
 
 UNAME = $(shell uname)
 ifeq ($(UNAME), Linux)
@@ -39,5 +39,8 @@ compile: web html
 
 serve: compile
 	python3 -m http.server --directory ./$(DEST) $(PORT)
+
+toc: html
+	$(MAKE) -C guides/ toc
 
 FORCE:

@@ -1,0 +1,35 @@
+#!/usr/bin/ruby
+
+# This is a utility to extract the structure of the documentation as a TOC-like json file
+# this json file will be used later to verify links to the documentation in the Foreman UI.
+
+require 'nokogiri'
+require 'json'
+
+unless (f2l_file = ENV['F2L'])
+  STDERR.puts "Must specify folder to link file: F2L="
+  exit 1
+end
+
+filename_to_link = JSON.parse(File.read(f2l_file))
+
+files = ARGV
+
+toc = {}
+
+files.each do |file|
+  next unless (link_name = filename_to_link[file])
+
+  document = Nokogiri::HTML.parse(File.open(file))
+
+  file_toc = document.css('h2').to_h do |chapter|
+    [
+      chapter['id'].downcase,
+      (chapter.parent.css('h3') + chapter.parent.css('div[id]')).map {|subchapter| subchapter['id']}
+    ]
+  end
+
+  toc[link_name] = file_toc
+end
+
+$stdout << JSON.pretty_generate(toc)
