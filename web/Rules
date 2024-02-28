@@ -5,7 +5,7 @@ layout "/**/*.erb", :erb
 
 # images, plain files, icons and JS
 passthrough "/img/**"
-passthrough "/js/**"
+passthrough "/js/**/*.js"
 passthrough "/CNAME"
 passthrough "/favicon.ico"
 
@@ -17,6 +17,12 @@ compile "/css/default.scss" do
   write ext: 'css'
 end
 
+# Build the menu navigation
+compile "/js/*.js.erb" do
+  filter :erb
+  write item.identifier.without_ext
+end
+
 # HTML compilation with ERB
 # a_page.html.erb -> a_page/index.html
 compile "/**/*.html.erb" do
@@ -26,21 +32,17 @@ compile "/**/*.html.erb" do
 end
 
 # AsciiDoc compilation
-# release-3.0.adoc -> release/3.0/index.html
-compile "/release-*.adoc" do
-  filter :asciidoctor
-  layout "/default.html.erb"
-  _, version = item.identifier.components.last.split("-")
-  if version == "nightly.adoc"
-    write "/release/#{version.split(".").first}/index.html"
-  else
-    write "/release/#{version.split(".")[0..1].join(".")}/index.html"
-  end
-end
-
-# AsciiDoc compilation
 # a_page.adoc -> a_page/index.html
 compile "/**/*.adoc" do
+  filter :asciidoctor
+  layout "/default.html.erb"
+  write ext: 'html'
+end
+
+# AsciiDoc with ERB compilation
+# a_page.adoc.erb -> a_page/index.html
+compile "/**/*.adoc.erb" do
+  filter :erb
   filter :asciidoctor
   layout "/default.html.erb"
   write ext: 'html'

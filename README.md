@@ -65,8 +65,14 @@ When a commit is pushed into `X.Y`:
   * Notify the Doc team on the [TheForeman Doc chat](https://matrix.to/#/#theforeman-doc:matrix.org) Matrix channel
 * Update master
   * Update `ProjectVersionPrevious` to `X.Y` in `guides/common/attributes.adoc`
-  * Create a copy of [/web/content/release-nightly.md](https://github.com/theforeman/foreman-documentation/tree/master/web/content/release-nightly.md) as `release-X.Y.md` and edit it accordingly.
-  * Add the new release versions to the site's index page and navigation bar by editing [/web/content/index.adoc](https://github.com/theforeman/foreman-documentation/blob/master/web/content/index.adoc) and [/web/content/js/versions.js](https://github.com/theforeman/foreman-documentation/blob/master/web/content/js/versions.js).
+  * Create a copy of [/web/releases/nightly.json](https://github.com/theforeman/foreman-documentation/tree/master/web/releases/nightly.json) as `X.Y.json` and edit it accordingly.
+    * Set the `state` to `RC`
+    * Change `katello` to the right version
+    * Change `Nightly` in titles to the appropriate version
+    * Remove guides which aren't ready for stable branches.
+  * Create a copy of [/web/releases/nightly.adoc](https://github.com/theforeman/foreman-documentation/tree/master/web/releases/nightly.adoc) as `X.Y.adoc` and edit it accordingly.
+    * Change `FOREMAN_VER` and `KATELLO_VER` to their respective versions
+    * Remove guides which aren't ready for stable branches.
   * Test the changes by following the instructions in [/web/README.md](https://github.com/theforeman/foreman-documentation/tree/master/web/README.md) to deploy the website locally.
   * Add the new Foreman version to [/.github/PULL_REQUEST_TEMPLATE.md](https://github.com/theforeman/foreman-documentation/blob/master/.github/PULL_REQUEST_TEMPLATE.md).
   * Update `VERSION_LINKS` in the root `Makefile`.
