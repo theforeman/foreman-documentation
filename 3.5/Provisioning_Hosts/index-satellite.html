@@ -83,20 +83,22 @@
 <li><a href="#Installing_the_DNS_Infoblox_Module_provisioning">4.5. Installing the DNS Infoblox Module</a></li>
 </ul>
 </li>
-<li><a href="#Configuring_iPXE_to_Reduce_Provisioning_Times_provisioning">5. Configuring iPXE to Reduce Provisioning Times</a>
+<li><a href="#Using_PXE_to_Provision_Hosts_provisioning">5. Using PXE to Provision Hosts</a>
 <ul class="sectlevel2">
-<li><a href="#Booting_Virtual_Machines_provisioning">5.1. Booting Virtual Machines</a></li>
-<li><a href="#Chainbooting_iPXE_from_PXELinux_provisioning">5.2. Chainbooting iPXE from PXELinux</a></li>
+<li><a href="#Prerequisites_for_Bare_Metal_Provisioning_provisioning">5.1. Prerequisites for Bare Metal Provisioning</a></li>
+<li><a href="#Configuring_the_Security_Token_Validity_Duration_provisioning">5.2. Configuring the Security Token Validity Duration</a></li>
+<li><a href="#Creating_Hosts_with_Unattended_Provisioning_provisioning">5.3. Creating Hosts with Unattended Provisioning</a></li>
+<li><a href="#Creating_Hosts_with_PXE_less_Provisioning_provisioning">5.4. Creating Hosts with PXE-less Provisioning</a></li>
+<li><a href="#Creating_Hosts_with_UEFI_HTTP_Boot_Provisioning_provisioning">5.5. Creating Hosts with UEFI HTTP Boot Provisioning</a></li>
+<li><a href="#Deploying_SSH_Keys_During_Provisioning_provisioning">5.6. Deploying SSH Keys During Provisioning</a></li>
 </ul>
 </li>
-<li><a href="#Using_PXE_to_Provision_Hosts_provisioning">6. Using PXE to Provision Hosts</a>
+<li><a href="#using-ipxe-to-reduce-provisioning-times_provisioning">6. Using iPXE to reduce provisioning times</a>
 <ul class="sectlevel2">
-<li><a href="#Prerequisites_for_Bare_Metal_Provisioning_provisioning">6.1. Prerequisites for Bare Metal Provisioning</a></li>
-<li><a href="#Configuring_the_Security_Token_Validity_Duration_provisioning">6.2. Configuring the Security Token Validity Duration</a></li>
-<li><a href="#Creating_Hosts_with_Unattended_Provisioning_provisioning">6.3. Creating Hosts with Unattended Provisioning</a></li>
-<li><a href="#Creating_Hosts_with_PXE_less_Provisioning_provisioning">6.4. Creating Hosts with PXE-less Provisioning</a></li>
-<li><a href="#Creating_Hosts_with_UEFI_HTTP_Boot_Provisioning_provisioning">6.5. Creating Hosts with UEFI HTTP Boot Provisioning</a></li>
-<li><a href="#Deploying_SSH_Keys_During_Provisioning_provisioning">6.6. Deploying SSH Keys During Provisioning</a></li>
+<li><a href="#prerequisites-for-using-ipxe_provisioning">6.1. Prerequisites for using iPXE</a></li>
+<li><a href="#Configuring_iPXE_Environment_provisioning">6.2. Configuring iPXE environment</a></li>
+<li><a href="#Booting_Virtual_Machines_provisioning">6.3. Booting Virtual Machines</a></li>
+<li><a href="#Chainbooting_iPXE_from_PXELinux_provisioning">6.4. Chainbooting iPXE from PXELinux</a></li>
 </ul>
 </li>
 <li><a href="#Configuring_the_Discovery_Service_provisioning">7. Configuring the Discovery Service</a>
@@ -2787,437 +2789,7 @@ You can also install DHCP and DNS Infoblox modules simultaneously by combining t
 </div>
 </div>
 <div class="sect1">
-<h2 id="Configuring_iPXE_to_Reduce_Provisioning_Times_provisioning"><a class="anchor" href="#Configuring_iPXE_to_Reduce_Provisioning_Times_provisioning"></a>5. Configuring iPXE to Reduce Provisioning Times</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>You can use Satellite to configure PXELinux to chainboot iPXE in BIOS mode and boot using the HTTP protocol if you have the following restrictions that prevent you from using PXE:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>A network with unmanaged DHCP servers.</p>
-</li>
-<li>
-<p>A PXE service that is blacklisted on your network or restricted by a firewall.</p>
-</li>
-<li>
-<p>An unreliable TFTP UDP-based protocol because of, for example, a low-bandwidth network.</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>For more information about iPXE support, see <a href="https://access.redhat.com/solutions/2674001">Supported architectures for provisioning</a> article.</p>
-</div>
-<div class="paragraph">
-<div class="title">iPXE Overview</div>
-<p>iPXE is an open source network boot firmware.
-It provides a full PXE implementation enhanced with additional features, including booting from HTTP server.
-For more information, see <a href="https://ipxe.org">ipxe.org</a>.</p>
-</div>
-<div class="paragraph">
-<p>There are three methods of using iPXE with Red&#160;Hat Satellite:</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Booting virtual machines using hypervisors that use iPXE as primary firmware.</p>
-</li>
-<li>
-<p>Using PXELinux through TFTP to chainload iPXE directly on bare metal hosts.</p>
-</li>
-<li>
-<p>Using PXELinux through UNDI, which uses HTTP to transfer the kernel and the initial RAM disk on bare-metal hosts.</p>
-</li>
-</ol>
-</div>
-<div class="paragraph">
-<div class="title">Security Information</div>
-<p>The iPXE binary in Red&#160;Hat Enterprise Linux is built without some security features.
-For this reason, you can only use HTTP, and cannot use HTTPS.
-All security-related features of iPXE in Red&#160;Hat Enterprise Linux are not supported.
-For more information, see <a href="https://access.redhat.com/solutions/3483601">Red&#160;Hat Enterprise Linux HTTPS support in iPXE</a>.</p>
-</div>
-<div class="ulist">
-<div class="title">Prerequisites</div>
-<ul>
-<li>
-<p>A host exists on Red&#160;Hat Satellite to use.</p>
-</li>
-<li>
-<p>The MAC address of the provisioning interface matches the host configuration.</p>
-</li>
-<li>
-<p>The provisioning interface of the host has a valid DHCP reservation.</p>
-</li>
-<li>
-<p>The NIC is capable of PXE booting.
-For more information, see <a href="https://ipxe.org/appnote/hardware_drivers">supported hardware on ipxe.org</a> for a list of hardware drivers expected to work with an iPXE-based boot disk.</p>
-</li>
-<li>
-<p>The NIC is compatible with iPXE.</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>To prepare iPXE environment, you must perform this procedure on all Capsules.</p>
-</div>
-<div class="olist arabic">
-<div class="title">Procedure</div>
-<ol class="arabic">
-<li>
-<p>Enable the <strong>tftp</strong> and <strong>httpboot</strong> services:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># satellite-installer --foreman-proxy-httpboot true --foreman-proxy-tftp true</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Install the <code>ipxe-bootimgs</code> package:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># dnf install ipxe-bootimgs</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Correct the SELinux file contexts:</p>
-<div class="listingblock">
-<div class="content">
-<pre># restorecon -RvF /var/lib/tftpboot/</pre>
-</div>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Copy the iPXE firmware with the Linux kernel header to the TFTP directory:</p>
-<div class="listingblock">
-<div class="content">
-<pre># cp /usr/share/ipxe/ipxe.lkrn /var/lib/tftpboot/</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Copy the UNDI iPXE firmware to the TFTP directory:</p>
-<div class="listingblock">
-<div class="content">
-<pre># cp /usr/share/ipxe/undionly.kpxe /var/lib/tftpboot/undionly-ipxe.0</pre>
-</div>
-</div>
-</li>
-</ul>
-</div>
-</li>
-</ol>
-</div>
-<div class="sect2">
-<h3 id="Booting_Virtual_Machines_provisioning"><a class="anchor" href="#Booting_Virtual_Machines_provisioning"></a>5.1. Booting Virtual Machines</h3>
-<div class="paragraph">
-<p>Some virtualization hypervisors use iPXE as primary firmware for PXE booting.
-Because of this, you can boot virtual machines without TFTP and PXELinux.</p>
-</div>
-<div class="paragraph">
-<div class="title">Chainbooting virtual machine workflow</div>
-<p>Using virtualization hypervisors removes the need for TFTP and PXELinux.
-It has the following workflow:</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Virtual machine starts</p>
-</li>
-<li>
-<p>iPXE retrieves the network credentials, including an HTTP URL, using DHCP</p>
-</li>
-<li>
-<p>iPXE loads the iPXE bootstrap template from Satellite&#160;Server or Capsule</p>
-</li>
-<li>
-<p>iPXE loads the iPXE template with MAC as a URL parameter from Satellite&#160;Server or Capsule</p>
-</li>
-<li>
-<p>iPXE loads the kernel and initial RAM disk of the installer</p>
-</li>
-</ol>
-</div>
-<div class="ulist">
-<div class="title">Prerequisites</div>
-<ul>
-<li>
-<p>Ensure that the hypervisor that you want to use supports iPXE.
-The following virtualization hypervisors support iPXE:</p>
-<div class="ulist">
-<ul>
-<li>
-<p>libvirt</p>
-</li>
-<li>
-<p>Red&#160;Hat&#160;Virtualization</p>
-</li>
-<li>
-<p>RHEV (deprecated)</p>
-</li>
-</ul>
-</div>
-</li>
-<li>
-<p>If you want to use Capsule&#160;Servers instead of your Satellite&#160;Server, ensure that you have configured your Capsule&#160;Servers accordingly.
-For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.13/html-single/installing_capsule_server/index#configuring-capsule-for-host-registration-and-provisioning_capsule">Configuring Capsule for Host Registration and Provisioning</a> in <em>Installing Capsule Server</em>.</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<div class="title">Configuring Satellite&#160;Server to use iPXE</div>
-<p>You can use the default template to configure iPXE booting for hosts.
-If you want to change the default values in the template, clone the template and edit the clone.</p>
-</div>
-<div class="olist arabic">
-<div class="title">Procedure</div>
-<ol class="arabic">
-<li>
-<p>In the Satellite web UI, navigate to <strong>Hosts</strong> &gt; <strong>Provisioning Templates</strong>, enter <code>Kickstart default iPXE</code> and click <strong>Search</strong>.</p>
-</li>
-<li>
-<p>Optional: If you want to change the template, click <strong>Clone</strong>, enter a unique name, and click <strong>Submit</strong>.</p>
-</li>
-<li>
-<p>Click the name of the template you want to use.</p>
-</li>
-<li>
-<p>If you clone the template, you can make changes you require on the <strong>Template</strong> tab.</p>
-</li>
-<li>
-<p>Click the <strong>Association</strong> tab, and select the operating systems that your host uses.</p>
-</li>
-<li>
-<p>Click the <strong>Locations</strong> tab, and add the location where the host resides.</p>
-</li>
-<li>
-<p>Click the <strong>Organizations</strong> tab, and add the organization that the host belongs to.</p>
-</li>
-<li>
-<p>Click <strong>Submit</strong> to save the changes.</p>
-</li>
-<li>
-<p>In the Satellite web UI, navigate to <strong>Hosts</strong> &gt; <strong>Operating systems</strong> and select the operating system of your host.</p>
-</li>
-<li>
-<p>Click the <strong>Templates</strong> tab.</p>
-</li>
-<li>
-<p>From the <strong>iPXE Template</strong> list, select the template you want to use.</p>
-</li>
-<li>
-<p>Click <strong>Submit</strong> to save the changes.</p>
-</li>
-<li>
-<p>In the Satellite web UI, navigate to <strong>Hosts</strong> &gt; <strong>All Hosts</strong>.</p>
-</li>
-<li>
-<p>In the <strong>Hosts</strong> page, select the host that you want to use.</p>
-</li>
-<li>
-<p>Select the <strong>Operating System</strong> tab.</p>
-</li>
-<li>
-<p>Set <strong>PXE Loader</strong> to <strong>iPXE Embedded</strong>.</p>
-</li>
-<li>
-<p>Select the <strong>Templates</strong> tab.</p>
-</li>
-<li>
-<p>From the <strong>iPXE template</strong> list, select <strong>Review</strong> to verify that the <strong>Kickstart default iPXE</strong> template is the correct template.</p>
-</li>
-<li>
-<p>Set the HTTP URL.</p>
-<div class="ulist">
-<ul>
-<li>
-<p>If you want to use Satellite&#160;Server for booting, run the following command on Satellite&#160;Server:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># satellite-installer \
---foreman-proxy-dhcp-ipxefilename "http://<em>satellite.example.com</em>/unattended/iPXE?bootstrap=1"</pre>
-</div>
-</div>
-</li>
-<li>
-<p>If you want to use Capsule for booting, run the following command on Capsule:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># satellite-installer --foreman-proxy-dhcp-ipxe-bootstrap true</pre>
-</div>
-</div>
-</li>
-</ul>
-</div>
-</li>
-</ol>
-</div>
-</div>
-<div class="sect2">
-<h3 id="Chainbooting_iPXE_from_PXELinux_provisioning"><a class="anchor" href="#Chainbooting_iPXE_from_PXELinux_provisioning"></a>5.2. Chainbooting iPXE from PXELinux</h3>
-<div class="paragraph">
-<p>Use this procedure to set up iPXE to use a built-in driver for network communication or UNDI interface.
-To use HTTP with iPXE, use iPXE build with built-in drivers (<code>ipxe.lkrn</code>).
-Universal Network Device Interface (UNDI) is a minimalistic UDP/IP stack that implements TFTP client, however, cannot support other protocols like HTTP (<code>undionly-ipxe.0</code>).
-You can choose to either load <code>ipxe.lkrn</code> or <code>undionly-ipxe.0</code> file depending on the networking hardware capabilities and iPXE driver availability.</p>
-</div>
-<div class="olist arabic">
-<div class="title">Chainbooting iPXE directly or with UNDI workflow</div>
-<ol class="arabic">
-<li>
-<p>Host powers on</p>
-</li>
-<li>
-<p>PXE driver retrieves the network credentials using DHCP</p>
-</li>
-<li>
-<p>PXE driver retrieves the PXELinux firmware <code>pxelinux.0</code> using TFTP</p>
-</li>
-<li>
-<p>PXELinux searches for the configuration file on the TFTP server</p>
-</li>
-<li>
-<p>PXELinux chainloads iPXE <code>ipxe.lkrn</code> or <code>undionly-ipxe.0</code></p>
-</li>
-<li>
-<p>iPXE retrieves the network credentials, including an HTTP URL, using DHCP again</p>
-</li>
-<li>
-<p>iPXE chainloads the iPXE template from the template Capsule</p>
-</li>
-<li>
-<p>iPXE loads the kernel and initial RAM disk of the installer</p>
-</li>
-</ol>
-</div>
-<div class="ulist">
-<div class="title">Prerequisite</div>
-<ul>
-<li>
-<p>If you want to use Capsule&#160;Servers instead of your Satellite&#160;Server, ensure that you have configured your Capsule&#160;Servers accordingly.
-For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.13/html-single/installing_capsule_server/index#configuring-capsule-for-host-registration-and-provisioning_capsule">Configuring Capsule for Host Registration and Provisioning</a> in <em>Installing Capsule Server</em>.</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<div class="title">Configuring Satellite&#160;Server to use iPXE</div>
-<p>You can use the default template to configure iPXE booting for hosts.
-If you want to change the default values in the template, clone the template and edit the clone.</p>
-</div>
-<div class="olist arabic">
-<div class="title">Procedure</div>
-<ol class="arabic">
-<li>
-<p>In the Satellite web UI, navigate to <strong>Hosts</strong> &gt; <strong>Provisioning Templates</strong>.</p>
-</li>
-<li>
-<p>Enter <code>PXELinux chain iPXE</code> to use <code>ipxe.lkrn</code> or, for BIOS systems, enter <code>PXELinux chain iPXE UNDI</code> to use <code>undionly-ipxe.0</code>, and click <strong>Search</strong>.</p>
-</li>
-<li>
-<p>Optional: If you want to change the template, click <strong>Clone</strong>, enter a unique name, and click <strong>Submit</strong>.</p>
-</li>
-<li>
-<p>Click the name of the template you want to use.</p>
-</li>
-<li>
-<p>If you clone the template, you can make changes you require on the <strong>Template</strong> tab.</p>
-</li>
-<li>
-<p>Click the <strong>Association</strong> tab, and select the operating systems that your host uses.</p>
-</li>
-<li>
-<p>Click the <strong>Locations</strong> tab, and add the location where the host resides.</p>
-</li>
-<li>
-<p>Click the <strong>Organizations</strong> tab, and add the organization that the host belongs to.</p>
-</li>
-<li>
-<p>Click <strong>Submit</strong> to save the changes.</p>
-</li>
-<li>
-<p>In the <strong>Provisioning Templates</strong> page, enter <code>Kickstart default iPXE</code> into the search field and click <strong>Search</strong>.</p>
-</li>
-<li>
-<p>Optional: If you want to change the template, click <strong>Clone</strong>, enter a unique name, and click <strong>Submit</strong>.</p>
-</li>
-<li>
-<p>Click the name of the template you want to use.</p>
-</li>
-<li>
-<p>If you clone the template, you can make changes you require on the <strong>Template</strong> tab.</p>
-</li>
-<li>
-<p>Click the <strong>Association</strong> tab, and associate the template with the operating system that your host uses.</p>
-</li>
-<li>
-<p>Click the <strong>Locations</strong> tab, and add the location where the host resides.</p>
-</li>
-<li>
-<p>Click the <strong>Organizations</strong> tab, and add the organization that the host belongs to.</p>
-</li>
-<li>
-<p>Click <strong>Submit</strong> to save the changes.</p>
-</li>
-<li>
-<p>In the Satellite web UI, navigate to <strong>Hosts</strong> &gt; <strong>Operating systems</strong> and select the operating system of your host.</p>
-</li>
-<li>
-<p>Click the <strong>Templates</strong> tab.</p>
-</li>
-<li>
-<p>From the <strong>PXELinux template</strong> list, select the template you want to use.</p>
-</li>
-<li>
-<p>From the <strong>iPXE template</strong> list, select the template you want to use.</p>
-</li>
-<li>
-<p>Click <strong>Submit</strong> to save the changes.</p>
-</li>
-<li>
-<p>In the Satellite web UI, navigate to <strong>Configure</strong> &gt; <strong>Host Groups</strong>, and select the host group you want to configure.</p>
-</li>
-<li>
-<p>Select the <strong>Operating System</strong> tab.</p>
-</li>
-<li>
-<p>Select the <strong>Architecture</strong> and <strong>Operating system</strong>.</p>
-</li>
-<li>
-<p>Set <strong>PXE Loader</strong> to <strong>PXELinux BIOS</strong> to chainboot iPXE via PXELinux, or to <strong>iPXE Chain BIOS</strong> to load <code>undionly-ipxe.0</code> directly.</p>
-</li>
-<li>
-<p>Set the HTTP URL.</p>
-<div class="ulist">
-<ul>
-<li>
-<p>If you want to use Satellite&#160;Server for booting, run the following command on Satellite&#160;Server:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># satellite-installer \
---foreman-proxy-dhcp-ipxefilename "http://<em>satellite.example.com</em>/unattended/iPXE?bootstrap=1"</pre>
-</div>
-</div>
-</li>
-<li>
-<p>If you want to use Capsule for booting, run the following command on Capsule:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># satellite-installer --foreman-proxy-dhcp-ipxe-bootstrap true</pre>
-</div>
-</div>
-</li>
-</ul>
-</div>
-</li>
-</ol>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="Using_PXE_to_Provision_Hosts_provisioning"><a class="anchor" href="#Using_PXE_to_Provision_Hosts_provisioning"></a>6. Using PXE to Provision Hosts</h2>
+<h2 id="Using_PXE_to_Provision_Hosts_provisioning"><a class="anchor" href="#Using_PXE_to_Provision_Hosts_provisioning"></a>5. Using PXE to Provision Hosts</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>You can provision bare metal instances with Satellite using one of the following methods:</p>
@@ -3259,7 +2831,7 @@ For UEFI provisioning, you must associate a PXEGrub2 template with the operating
 If you associate both PXELinux and PXEGrub2 templates, Satellite can deploy configuration files for both on a TFTP server, so that you can switch between PXE loaders easily.</p>
 </div>
 <div class="sect2">
-<h3 id="Prerequisites_for_Bare_Metal_Provisioning_provisioning"><a class="anchor" href="#Prerequisites_for_Bare_Metal_Provisioning_provisioning"></a>6.1. Prerequisites for Bare Metal Provisioning</h3>
+<h3 id="Prerequisites_for_Bare_Metal_Provisioning_provisioning"><a class="anchor" href="#Prerequisites_for_Bare_Metal_Provisioning_provisioning"></a>5.1. Prerequisites for Bare Metal Provisioning</h3>
 <div class="paragraph">
 <p>The requirements for bare metal provisioning include:</p>
 </div>
@@ -3293,7 +2865,7 @@ For more information, see <a href="https://access.redhat.com/documentation/en-us
 </div>
 </div>
 <div class="sect2">
-<h3 id="Configuring_the_Security_Token_Validity_Duration_provisioning"><a class="anchor" href="#Configuring_the_Security_Token_Validity_Duration_provisioning"></a>6.2. Configuring the Security Token Validity Duration</h3>
+<h3 id="Configuring_the_Security_Token_Validity_Duration_provisioning"><a class="anchor" href="#Configuring_the_Security_Token_Validity_Duration_provisioning"></a>5.2. Configuring the Security Token Validity Duration</h3>
 <div class="paragraph">
 <p>When performing any kind of provisioning, as a security measure, Satellite automatically generates a unique token and adds this token to the kickstart URL in the PXE configuration file (PXELinux, Grub2).
 By default, the token is valid for 360 minutes.
@@ -3314,7 +2886,7 @@ If token generation is disabled, an attacker can spoof client IP address and dow
 </div>
 </div>
 <div class="sect2">
-<h3 id="Creating_Hosts_with_Unattended_Provisioning_provisioning"><a class="anchor" href="#Creating_Hosts_with_Unattended_Provisioning_provisioning"></a>6.3. Creating Hosts with Unattended Provisioning</h3>
+<h3 id="Creating_Hosts_with_Unattended_Provisioning_provisioning"><a class="anchor" href="#Creating_Hosts_with_Unattended_Provisioning_provisioning"></a>5.3. Creating Hosts with Unattended Provisioning</h3>
 <div class="paragraph">
 <p>Unattended provisioning is the simplest form of host provisioning.
 You enter the host details on Satellite&#160;Server and boot your host.
@@ -3431,7 +3003,7 @@ If you start the physical host and set its boot mode to PXE, the host detects th
 </div>
 </div>
 <div class="sect2">
-<h3 id="Creating_Hosts_with_PXE_less_Provisioning_provisioning"><a class="anchor" href="#Creating_Hosts_with_PXE_less_Provisioning_provisioning"></a>6.4. Creating Hosts with PXE-less Provisioning</h3>
+<h3 id="Creating_Hosts_with_PXE_less_Provisioning_provisioning"><a class="anchor" href="#Creating_Hosts_with_PXE_less_Provisioning_provisioning"></a>5.4. Creating Hosts with PXE-less Provisioning</h3>
 <div class="paragraph">
 <p>Some hardware does not provide a PXE boot interface.
 In Satellite, you can provision a host without PXE boot.
@@ -3639,7 +3211,7 @@ This creates a host entry and the host details page appears.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="Creating_Hosts_with_UEFI_HTTP_Boot_Provisioning_provisioning"><a class="anchor" href="#Creating_Hosts_with_UEFI_HTTP_Boot_Provisioning_provisioning"></a>6.5. Creating Hosts with UEFI HTTP Boot Provisioning</h3>
+<h3 id="Creating_Hosts_with_UEFI_HTTP_Boot_Provisioning_provisioning"><a class="anchor" href="#Creating_Hosts_with_UEFI_HTTP_Boot_Provisioning_provisioning"></a>5.5. Creating Hosts with UEFI HTTP Boot Provisioning</h3>
 <div class="paragraph">
 <p>You can provision hosts from Satellite using the UEFI HTTP Boot.
 This is the only method with which you can provision hosts in IPv6 network.</p>
@@ -3849,7 +3421,7 @@ When you start the physical host and set its boot mode to UEFI HTTP, the host de
 </div>
 </div>
 <div class="sect2">
-<h3 id="Deploying_SSH_Keys_During_Provisioning_provisioning"><a class="anchor" href="#Deploying_SSH_Keys_During_Provisioning_provisioning"></a>6.6. Deploying SSH Keys During Provisioning</h3>
+<h3 id="Deploying_SSH_Keys_During_Provisioning_provisioning"><a class="anchor" href="#Deploying_SSH_Keys_During_Provisioning_provisioning"></a>5.6. Deploying SSH Keys During Provisioning</h3>
 <div class="paragraph">
 <p>Use this procedure to deploy SSH keys added to a user during provisioning.
 For information on adding SSH keys to a user, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.13/html-single/administering_red_hat_satellite/index#Managing_SSH_Keys_for_a_User_admin">Managing SSH Keys for a User</a> in <em>Administering Red&#160;Hat Satellite</em>.</p>
@@ -3894,6 +3466,470 @@ For more information, see <a href="https://access.redhat.com/documentation/en-us
 <p>The SSH keys of the <strong>Owned by</strong> user are added automatically when the <code>create_users</code> snippet is executed during the provisioning process.
 You can set <strong>Owned by</strong> to an individual user or a user group.
 If you set <strong>Owned by</strong> to a user group, the SSH keys of all users in the user group are added automatically.</p>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="using-ipxe-to-reduce-provisioning-times_provisioning"><a class="anchor" href="#using-ipxe-to-reduce-provisioning-times_provisioning"></a>6. Using iPXE to reduce provisioning times</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>iPXE is an open-source network-boot firmware.
+It provides a full PXE implementation enhanced with additional features, such as booting from an HTTP server.
+For more information about iPXE, see <a href="https://ipxe.org">iPXE website</a>.</p>
+</div>
+<div class="paragraph">
+<p>You can use iPXE if the following restrictions prevent you from using PXE:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>A network with unmanaged DHCP servers.</p>
+</li>
+<li>
+<p>A PXE service that is unreachable because of, for example, a firewall restriction.</p>
+</li>
+<li>
+<p>A TFTP UDP-based protocol that is unreliable because of, for example, a low-bandwidth network.</p>
+</li>
+</ul>
+</div>
+<div class="sect2">
+<h3 id="prerequisites-for-using-ipxe_provisioning"><a class="anchor" href="#prerequisites-for-using-ipxe_provisioning"></a>6.1. Prerequisites for using iPXE</h3>
+<div class="paragraph">
+<p>You can use iPXE to boot virtual machines in the following cases:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Your virtual machines run on a hypervisor that uses iPXE as primary firmware.</p>
+</li>
+<li>
+<p>Your virtual machines are in BIOS mode.
+In this case, you can configure PXELinux to chainboot iPXE and boot by using the HTTP protocol.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For booting virtual machines in UEFI mode by using HTTP, you can follow <a href="#Creating_Hosts_with_UEFI_HTTP_Boot_Provisioning_provisioning">Creating Hosts with UEFI HTTP Boot Provisioning</a> instead.</p>
+</div>
+<div class="paragraph">
+<div class="title">Supportability</div>
+<p>Red&#160;Hat does not officially support iPXE in Red&#160;Hat Satellite.
+For more information, see <a href="https://access.redhat.com/solutions/2674001">Supported architectures and kickstart scenarios in Satellite 6</a> in the <em>Red&#160;Hat Knowledgebase</em>.</p>
+</div>
+<div class="ulist">
+<div class="title">Host requirements</div>
+<ul>
+<li>
+<p>The MAC address of the provisioning interface matches the host configuration.</p>
+</li>
+<li>
+<p>The provisioning interface of the host has a valid DHCP reservation.</p>
+</li>
+<li>
+<p>The NIC is capable of PXE booting.
+For more information, see <a href="https://ipxe.org/appnote/hardware_drivers">supported hardware on ipxe.org</a> for a list of hardware drivers expected to work with an iPXE-based boot disk.</p>
+</li>
+<li>
+<p>The NIC is compatible with iPXE.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Configuring_iPXE_Environment_provisioning"><a class="anchor" href="#Configuring_iPXE_Environment_provisioning"></a>6.2. Configuring iPXE environment</h3>
+<div class="paragraph">
+<p>Configure an iPXE environment on all Capsules that you want to use for iPXE provisioning.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Important</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>In Red&#160;Hat Enterprise Linux, security-related features of iPXE are not supported and the iPXE binary is built without security features.
+For this reason, you can only use HTTP but not HTTPS.
+For more information, see <a href="https://access.redhat.com/solutions/3483601">Red&#160;Hat Enterprise Linux HTTPS support in iPXE</a>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>If you want to use Capsule&#160;Servers instead of your Satellite&#160;Server, ensure that you have configured your Capsule&#160;Servers accordingly.
+For more information, see <a href="https://access.redhat.com/documentation/en-us/red_hat_satellite/6.13/html-single/installing_capsule_server/index#configuring-capsule-for-host-registration-and-provisioning_capsule">Configuring Capsule for Host Registration and Provisioning</a> in <em>Installing Capsule Server</em>.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Enable the <strong>TFTP</strong> and <strong>HTTPboot</strong> services on your Capsule:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-installer \
+--foreman-proxy-httpboot true \
+--foreman-proxy-tftp true</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Install the <code>ipxe-bootimgs</code> package on your Capsule:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf install ipxe-bootimgs</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Copy iPXE firmware to the TFTP directory.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Copy the iPXE firmware with the Linux kernel header:</p>
+<div class="listingblock">
+<div class="content">
+<pre># cp /usr/share/ipxe/ipxe.lkrn /var/lib/tftpboot/</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Copy the UNDI iPXE firmware:</p>
+<div class="listingblock">
+<div class="content">
+<pre># cp /usr/share/ipxe/undionly.kpxe /var/lib/tftpboot/undionly-ipxe.0</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Correct the SELinux file contexts:</p>
+<div class="listingblock">
+<div class="content">
+<pre># restorecon -RvF /var/lib/tftpboot/</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Set the HTTP URL.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>If you want to use Satellite&#160;Server for booting, run the following command on Satellite&#160;Server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-installer \
+--foreman-proxy-dhcp-ipxefilename "http://<em>satellite.example.com</em>/unattended/iPXE?bootstrap=1"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>If you want to use Capsule&#160;Server for booting, run the following command on Capsule&#160;Server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-installer --foreman-proxy-dhcp-ipxe-bootstrap true</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Booting_Virtual_Machines_provisioning"><a class="anchor" href="#Booting_Virtual_Machines_provisioning"></a>6.3. Booting Virtual Machines</h3>
+<div class="paragraph">
+<p>Some virtualization hypervisors use iPXE as primary firmware for PXE booting.
+If you use such a hypervisor, you can boot virtual machines without TFTP and PXELinux.</p>
+</div>
+<div class="paragraph">
+<p>Booting a virtual machine has the following workflow:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Virtual machine starts.</p>
+</li>
+<li>
+<p>iPXE retrieves the network credentials, including an HTTP URL, by using DHCP.</p>
+</li>
+<li>
+<p>iPXE loads the iPXE bootstrap template from Capsule.</p>
+</li>
+<li>
+<p>iPXE loads the iPXE template with MAC as a URL parameter from Capsule.</p>
+</li>
+<li>
+<p>iPXE loads the kernel and initial RAM disk of the installer.</p>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Your hypervisor must support iPXE.
+The following virtualization hypervisors support iPXE:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>libvirt</p>
+</li>
+<li>
+<p>Red&#160;Hat&#160;Virtualization (deprecated)</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>You have configured your iPXE environment.
+For more information, see <a href="#Configuring_iPXE_Environment_provisioning">Configuring iPXE environment</a>.</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>You can use the original templates shipped in Satellite as described below.
+If you require modification to an original template, clone the template, edit the clone, and associate the clone instead of the original template.
+For more information, see <a href="#cloning-provisioning-templates_provisioning">Cloning Provisioning Templates</a>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Hosts</strong> &gt; <strong>Provisioning Templates</strong>.</p>
+</li>
+<li>
+<p>Search for the <code>Kickstart default iPXE</code> template.</p>
+</li>
+<li>
+<p>Click the name of the template.</p>
+</li>
+<li>
+<p>Click the <strong>Association</strong> tab and select the operating systems that your host uses.</p>
+</li>
+<li>
+<p>Click the <strong>Locations</strong> tab and add the location where the host resides.</p>
+</li>
+<li>
+<p>Click the <strong>Organizations</strong> tab and add the organization that the host belongs to.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong> to save the changes.</p>
+</li>
+<li>
+<p>In the Satellite web UI, navigate to <strong>Hosts</strong> &gt; <strong>Operating systems</strong> and select the operating system of your host.</p>
+</li>
+<li>
+<p>Click the <strong>Templates</strong> tab.</p>
+</li>
+<li>
+<p>From the <strong>iPXE template</strong> list, select the <code>Kickstart default iPXE</code> template.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong> to save the changes.</p>
+</li>
+<li>
+<p>In the Satellite web UI, navigate to <strong>Hosts</strong> &gt; <strong>All Hosts</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Hosts</strong> page, select the host that you want to use.</p>
+</li>
+<li>
+<p>Select the <strong>Operating System</strong> tab.</p>
+</li>
+<li>
+<p>Set <strong>PXE Loader</strong> to <code>iPXE Embedded</code>.</p>
+</li>
+<li>
+<p>Select the <strong>Templates</strong> tab.</p>
+</li>
+<li>
+<p>In <strong>Provisioning Templates</strong>, click <strong>Resolve</strong> and verify that the <strong>iPXE template</strong> resolves to the required template.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong> to save host settings.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Chainbooting_iPXE_from_PXELinux_provisioning"><a class="anchor" href="#Chainbooting_iPXE_from_PXELinux_provisioning"></a>6.4. Chainbooting iPXE from PXELinux</h3>
+<div class="paragraph">
+<p>You can set up iPXE to use a built-in driver for network communication (<code>ipxe.lkrn</code>) or Universal Network Device Interface (UNDI) (<code>undionly-ipxe.0</code>).
+You can choose to load either file depending on the networking hardware capabilities and iPXE driver availability.</p>
+</div>
+<div class="paragraph">
+<p>UNDI is a minimalistic UDP/IP stack that implements TFTP client.
+However, UNDI cannot support other protocols like HTTP.
+To use HTTP with iPXE, use the iPXE build with built-in drivers (<code>ipxe.lkrn</code>).</p>
+</div>
+<div class="paragraph">
+<p>Chainbooting iPXE has the following workflow:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Host powers on.</p>
+</li>
+<li>
+<p>PXE driver retrieves the network credentials by using DHCP.</p>
+</li>
+<li>
+<p>PXE driver retrieves the PXELinux firmware <code>pxelinux.0</code> by using TFTP.</p>
+</li>
+<li>
+<p>PXELinux searches for the configuration file on the TFTP server.</p>
+</li>
+<li>
+<p>PXELinux chainloads iPXE <code>ipxe.lkrn</code> or <code>undionly-ipxe.0</code>.</p>
+</li>
+<li>
+<p>iPXE retrieves the network credentials, including an HTTP URL, by using DHCP again.</p>
+</li>
+<li>
+<p>iPXE chainloads the iPXE template from your Templates Capsule.</p>
+</li>
+<li>
+<p>iPXE loads the kernel and initial RAM disk of the installer.</p>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>You have configured your iPXE environment.
+For more information, see <a href="#Configuring_iPXE_Environment_provisioning">Configuring iPXE environment</a>.</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>You can use the original templates shipped in Satellite as described below.
+If you require modification to an original template, clone the template, edit the clone, and associate the clone instead of the original template.
+For more information, see <a href="#cloning-provisioning-templates_provisioning">Cloning Provisioning Templates</a>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Hosts</strong> &gt; <strong>Provisioning Templates</strong>.</p>
+</li>
+<li>
+<p>Search for the required PXELinux template:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><code>PXELinux chain iPXE</code> to use <code>ipxe.lkrn</code></p>
+</li>
+<li>
+<p><code>PXELinux chain iPXE UNDI</code> to use <code>undionly-ipxe.0</code></p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Click the name of the template you want to use.</p>
+</li>
+<li>
+<p>Click the <strong>Association</strong> tab and select the operating systems that your host uses.</p>
+</li>
+<li>
+<p>Click the <strong>Locations</strong> tab and add the location where the host resides.</p>
+</li>
+<li>
+<p>Click the <strong>Organizations</strong> tab and add the organization that the host belongs to.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong> to save the changes.</p>
+</li>
+<li>
+<p>On the <strong>Provisioning Templates</strong> page, search for the <code>Kickstart default iPXE</code> template.</p>
+</li>
+<li>
+<p>Click the name of the template.</p>
+</li>
+<li>
+<p>Click the <strong>Association</strong> tab and associate the template with the operating system that your host uses.</p>
+</li>
+<li>
+<p>Click the <strong>Locations</strong> tab and add the location where the host resides.</p>
+</li>
+<li>
+<p>Click the <strong>Organizations</strong> tab and add the organization that the host belongs to.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong> to save the changes.</p>
+</li>
+<li>
+<p>In the Satellite web UI, navigate to <strong>Hosts</strong> &gt; <strong>Operating systems</strong> and select the operating system of your host.</p>
+</li>
+<li>
+<p>Click the <strong>Templates</strong> tab.</p>
+</li>
+<li>
+<p>From the <strong>PXELinux template</strong> list, select the template you want to use.</p>
+</li>
+<li>
+<p>From the <strong>iPXE template</strong> list, select the <code>Kickstart default iPXE</code> template.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong> to save the changes.</p>
+</li>
+<li>
+<p>In the Satellite web UI, navigate to <strong>Configure</strong> &gt; <strong>Host Groups</strong>, and select the host group you want to configure.</p>
+</li>
+<li>
+<p>Select the <strong>Operating System</strong> tab.</p>
+</li>
+<li>
+<p>Select the <strong>Architecture</strong> and <strong>Operating system</strong>.</p>
+</li>
+<li>
+<p>Set the <strong>PXE Loader</strong>:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Select <code>PXELinux BIOS</code> to chainboot iPXE (<code>ipxe.lkrn</code>) from PXELinux.</p>
+</li>
+<li>
+<p>Select <code>iPXE Chain BIOS</code> to load <code>undionly-ipxe.0</code> directly.</p>
+</li>
+</ul>
 </div>
 </li>
 </ol>
