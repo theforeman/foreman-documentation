@@ -3,7 +3,7 @@ DEST := result
 PORT := 5000
 VERSION_LINKS := 3.10 3.9 3.8 3.7 3.6 3.5 3.4 3.3 3.2 3.1 3.0 2.5 2.4
 
-.PHONY: all clean html web compile serve prep FORCE
+.PHONY: all clean html html-upstream html-downstream web compile serve prep FORCE
 
 UNAME = $(shell uname)
 ifeq ($(UNAME), Linux)
@@ -24,7 +24,11 @@ clean:
 	$(MAKE) -C guides/ clean
 	rm -rf $(DEST) web/output/
 
-html: build-foreman-el build-foreman-deb build-katello
+html: html-upstream html-downstream
+
+html-upstream: build-foreman-el build-foreman-deb build-katello
+
+html-downstream: build-satellite build-orcharhino
 
 build-%: FORCE prep
 	$(MAKE) -C guides/ html BUILD=$*
