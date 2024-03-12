@@ -60,6 +60,12 @@ serve: html
 linkchecker: html
 	linkchecker -r1 -f $(COMMON_DIR)/linkchecker.ini --check-extern "file://$(realpath $(ROOTDIR)/$(DEST_HTML))"
 
+ccutil:
+	if [[ -f docinfo.xml ]] ; then \
+		sed -i "1 i:build: satellite\n" master.adoc ; \
+		ccutil compile --lang=en-US --format html-single ; \
+	fi
+
 $(DEST_DIR)/$(BUILD).css: $(CSS_SOURCES)
 	bundle exec sass --sourcemap=none --no-cache --style $(CSS_STYLE) -I $(COMMON_DIR)/css $(COMMON_DIR)/css/default.scss $@
 
