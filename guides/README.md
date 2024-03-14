@@ -123,7 +123,7 @@ For more information, see [Guidelines for Red Hat Documentation](https://redhat-
 New contributions are subject to technical review for accuracy and editorial review for consistency.
 For an overview of what to expect from editorial review, see [Red Hat peer review guide for technical documentation](https://redhat-documentation.github.io/peer-review/#checklist).
 
-If you need help to get started, open an issue or ping [`@docs`](https://community.theforeman.org/g/docs) on the [Foreman Community Forum](https://community.theforeman.org/).
+If you need help to get started, open an issue, ask the docs team on [Matrix](https://matrix.to/#/#theforeman-doc:matrix.org), or ping [`@docs`](https://community.theforeman.org/g/docs) on the [Foreman Community Forum](https://community.theforeman.org/).
 
 If you are unsure into which guide you should place your content, have a look at the `docinfo.xml` files within each `doc-*` directory.
 
