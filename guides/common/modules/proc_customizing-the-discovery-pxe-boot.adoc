@@ -1,82 +1,41 @@
 [id="Customizing_the_Discovery_PXE_Boot_{context}"]
 = Customizing the Discovery PXE boot
 [[Discovery_Templates_and_Snippets_Settings_{context}]]
-
 [[Provisioning_Template_PXELinux_Discovery_Snippet_{context}]]
-.Provisioning templates and Discovery snippets for PXE boot
 
-PXE boot menus are built from the following global provisioning templates:
+{Project} builds PXE boot menus from the global provisioning templates: `PXELinux global default` for BIOS provisioning, `PXEGrub global default`, and `PXEGrub2 global default` for UEFI provisioning.
+The PXE boot menus are available on {ProjectServer} and all {SmartProxies} that have the TFTP feature enabled.
 
-* `PXELinux global default` for BIOS provisioning
-* `PXEgrub2 global default` for UEFI provisioning
-
-The Discovery menu items are rendered by the following snippets:
+The Discovery menu item uses a Linux kernel for the operating system, which passes kernel parameters to configure the Discovery service.
+You can customize the passed kernel parameters by changing the following snippets:
 
 Snippet `pxelinux_discovery`:: This snippet is included in the `PXELinux global default` template.
 +
-The `KERNEL` and `APPEND` options boot the Discovery image and ramdisk.
-The `APPEND` option contains a `proxy.url` parameter, with the `foreman_server_url` macro as its argument.
-This macro resolves to the full URL of {ProjectServer}.
+The `KERNEL` and `APPEND` options boot the Discovery kernel and initial ramdisk.
+The `APPEND` option contains a further kernel parameters.
 
-Snippet `pxegrub2_discovery`:: This snippet is included in the `PXEgrub2 global default` template.
+Snippet `pxegrub_discovery`:: This snippet is included in the `PXEGrub global default` template.
+However, Discovery is http://projects.theforeman.org/issues/15997[not supported with GRUB 1.x].
 
-
-
-The global template is available on {ProjectServer} and all {SmartProxies} that have the TFTP feature enabled.
+Snippet `pxegrub2_discovery`:: This snippet is included in the `PXEGrub2 global default` template.
 
 To view provisioning templates and snippets, navigate to *Hosts* > *Templates* > *Provisioning Templates*.
+Templates and snippets are locked to prevent changes.
+If you want to edit a template or snippet, clone it, save it with a unique name, and then edit the clone.
+For information about the kernel parameters, see xref:kernel-parameters-for-discovery-customization_{context}[].
 
-
-.Notable kernel arguments
-
-`fdi.vlan.primary`::
-If you want to use tagged VLAN provisioning and you want the Discovery service to send a discovery request, add the following information to the `KERNEL` option in the discovery template:
-+
-[options="nowrap" subs="+quotes"]
-----
-fdi.vlan.primary=_example_VLAN_ID_
-----
-
-
-.Notable ramdisk arguments
-
-`proxy.url`::
-During the {Project} installation process, if you use the default option `--enable-foreman-plugin-discovery`, you can edit the `proxy.url` argument in the template to set the URL of {SmartProxyServer} that provides the discovery service.
-You can change the `proxy.url` argument to the IP address or FQDN of another provisioning {SmartProxy} that you want to use, but ensure that you append the port number, for example, `9090`.
-If you use an alternative port number with the `--foreman-proxy-ssl-port` option during {Project} installation, you must add that port number.
-You can also edit the `proxy.url` argument to use a {Project} IP address or FQDN so that the discovered hosts communicate directly with {ProjectServer}.
-
-`proxy.type`::
-If you use a {SmartProxyServer} FQDN for the `proxy.url` argument, ensure that you set the `proxy.type` argument to `proxy`.
-If you use a {Project} FQDN, update the `proxy.type` argument to `foreman`.
-+
-[options="nowrap" subs="+quotes,attributes"]
-----
-proxy.url=https://_{smartproxy-example-com}_:{smartproxy_port} proxy.type=proxy
-----
-ifdef::foreman-el,katello[]
-+
-[NOTE]
-For katello scenario deployment, use port 9090.
-endif::[]
-
-[NOTE]
-====
-.Booting from multiple {SmartProxies}
+.Discovering hosts from multiple {SmartProxies}
 {Project} deploys the same template to all TFTP {SmartProxies} and there is no variable or macro available to render the {SmartProxy}'s host name.
 The hard-coded `proxy.url` does not not work with two or more TFTP {SmartProxies}.
 As a workaround, every time you click *Build PXE Defaults*, edit the configuration file in the TFTP directory using SSH, or use a common DNS alias for appropriate subnets.
 To use {SmartProxy} to proxy the discovery steps, edit `/var/lib/tftpboot/pxelinux.cfg/default` or `/var/lib/tftpboot/grub2/grub.cfg` and change the URL to {SmartProxyServer} FQDN you want to use.
-====
 
 .Procedure
-Templates and snippets are locked to prevent changes.
-If you want to edit a template or snippet, clone it, save it with a unique name, and then edit the clone.
-
-To use your templates, in the {ProjectWebUI}, navigate to *Administer* > *Settings* and click the *Provisioning* tab and set the templates that you want to use.
-
-When you change the template or a snippet it includes, the changes must be propagated to {ProjectServer}'s default PXE template.
-
+. Clone and edit snippet.
+. Clone and edit template.
+Include your snippet instead of the original one.
+. Set your custom template in global settings.
+In the {ProjectWebUI}, navigate to *Administer* > *Settings* and click the *Provisioning* tab and set the templates that you want to use.
+. Build PXE default.
 In the {ProjectWebUI}, navigate to *Hosts* > *Templates* > *Provisioning Templates* and click *Build PXE Default*.
-
-This refreshes the default PXE template on {ProjectServer}.
+This refreshes the default PXE boot menus on {ProjectServer} and any TFTP {SmartProxies}.
