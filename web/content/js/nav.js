@@ -7,7 +7,7 @@ function buildNavigation() {
     currentVer = "nightly";
   }
   const navBuilds = navVersions.find(function(version) {
-    return version['path'] == currentVer;
+    return version['foreman'] == currentVer;
   }).builds;
 
   return `<nav>
@@ -40,9 +40,9 @@ function buildNavigation() {
         <div class="dropdown-menu dropdown-menu-left">`
     + navVersions.map(function(version) {
       if (document.location.pathname == "/") {
-        var dl = `/release/${version.path}`;
+        var dl = `/release/${version.foreman}`;
       } else {
-        var dl = document.location.toString().replace(versionRe, `/${version.path}/`);
+        var dl = document.location.toString().replace(versionRe, `/${version.foreman}/`);
       }
       return(`<div class="dropdown-div"><a class="dropdown-item" href=${dl}>${version.title}</a></div>`
       )}).join("")
