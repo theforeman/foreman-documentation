@@ -8,7 +8,8 @@ RUN dnf upgrade -y && \
                    make \
                    redhat-rpm-config \
                    ruby-devel \
-                   rubygem-asciidoctor && \
+                   rubygem-asciidoctor \
+                   rubygem-nokogiri && \
     dnf groupinstall -y development-tools && \
     gem install sass
 

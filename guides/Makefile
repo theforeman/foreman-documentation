@@ -22,3 +22,6 @@ linkchecker:
 
 linkchecker-tryer:
 	find build -type f -name index\*html | xargs linkchecker -r1 -f common/linkchecker.ini --check-extern | ./scripts/linkchecker-tryer
+
+toc: html
+	F2L=upstream_filename_to_link.json ruby scripts/extract_links_toc build/**/index-*.html > build/toc.json
