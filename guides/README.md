@@ -2,7 +2,7 @@
 
 This is upstream source code of [Red Hat Satellite 6](https://access.redhat.com/documentation/en-us/red_hat_satellite) documentation as well as parts of the [orcharhino documentation](https://docs.orcharhino.com/or/docs/index.html).
 All content in this repository uses [AsciiDoctor](https://asciidoctor.org/) syntax and aims to follow [Guidelines for Red Hat Documentation](https://redhat-documentation.github.io/).
-This is a **work in progress**, an attempt to take content written by Red Hat documentation team, modularize it, incorporate [existing documentation](https://theforeman.org/documentation.html) and eventually make this the only and official documentation for Foreman, Katello and all plug-ins.
+This is a **work in progress**, an attempt to take content written by Red Hat documentation team, modularize it, incorporate [existing documentation](https://theforeman.org/documentation.html) and eventually make this the only and official documentation for Foreman, Katello and all plugins.
 
 Contributions are welcome. Please read the [Contribution guidelines](#contribution-guidelines) before opening a Pull Request.
 
@@ -155,19 +155,19 @@ Hide or show specific blocks, paragraphs, warnings or chapters via special varia
 Its value can be set either to "foreman-el" or "satellite":
 
 	ifeval::["{build}" == "katello"]
-	NOTE: This part is only relevant for deployments with Katello plug-in.
+	NOTE: This part is only relevant for deployments with Katello plugin.
 	endif::[]
 
 This syntax does not allow multiple conditionals, in that case use, now preferred, `ifdef` syntax:
 
 	ifdef::katello[]
-	NOTE: This part is only relevant for deployments with Katello plug-in.
+	NOTE: This part is only relevant for deployments with Katello plugin.
 	endif::[]
 
 Use comma for logic "or":
 
 	ifdef::katello,satellite[]
-	NOTE: This part is only relevant for deployments with Katello plug-in or in Satellite environment.
+	NOTE: This part is only relevant for deployments with Katello plugin or in Satellite environment.
 	endif::[]
 
 Some files are included in different contexts, there are attributes to find the correct context. In these cases use both `ifdef` and `ifeval`:
