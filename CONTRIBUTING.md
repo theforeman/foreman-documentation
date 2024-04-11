@@ -66,6 +66,7 @@ We capitalize the following terms:
 * Chef
 * Deb (content type)
 * Discovery (service)
+* Enterprise Linux (umbrella term for RHEL-derivatives)
 * Hammer
 * Insights (Red Hat product)
 * Kickstart
