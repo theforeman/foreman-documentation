@@ -1,4 +1,4 @@
-[id="creating-a-custom-ssl-certificate_{context_title}"]
+[id="creating-a-custom-ssl-certificate_{context}"]
 = Creating a custom SSL certificate for {ProductName}
 
 ifeval::["{context}" == "{project-context}"]
@@ -11,7 +11,7 @@ On {ProjectServer}, create a custom certificate for your {ProductName}.
 If you already have a custom SSL certificate for {ProductName}, skip this procedure.
 endif::[]
 
-ifeval::["{context}" == "load-balancing"]
+ifdef::load-balancing[]
 This procedure outlines how to create a configuration file for the Certificate Signing Request and include the load balancer and {SmartProxyServer} as Subject Alternative Names (SAN).
 Complete this procedure on each {SmartProxyServer} that you want to configure for load balancing.
 endif::[]
@@ -21,7 +21,7 @@ endif::[]
 +
 [options="nowrap", subs="+quotes,attributes"]
 ----
-# mkdir /root/{context}_cert
+# mkdir /root/{cert-name}_cert
 ----
 . Create a private key with which to sign the certificate signing request (CSR).
 +
@@ -32,11 +32,11 @@ If you already have a private key for this {ProductName}, skip this step.
 +
 [options="nowrap", subs="+quotes,attributes"]
 ----
-# openssl genrsa -out `/root/{context}_cert/{context}_cert_key.pem` 4096
+# openssl genrsa -out `/root/{cert-name}_cert/{cert-name}_cert_key.pem` 4096
 ----
 
-ifeval::["{context}" != "load-balancing"]
-. Create the `/root/{context}_cert/openssl.cnf` configuration file for the CSR and include the following content:
+ifndef::load-balancing[]
+. Create the `/root/{cert-name}_cert/openssl.cnf` configuration file for the CSR and include the following content:
 +
 [options="nowrap", subs="+quotes,attributes"]
 ----
@@ -59,8 +59,8 @@ DNS.1 = _{ssl-common-name}_
 ----
 endif::[]
 
-ifeval::["{context}" == "load-balancing"]
-. Create the `/root/{context}_cert/openssl.cnf` configuration file for the CSR and include the following content:
+ifdef::load-balancing[]
+. Create the `/root/{cert-name}_cert/openssl.cnf` configuration file for the CSR and include the following content:
 +
 [options="nowrap", subs="+quotes,attributes"]
 ----
@@ -110,9 +110,9 @@ organizationalUnitName = _My_Organizational_Unit_Name_ <4>
 [options="nowrap", subs="+quotes,attributes"]
 ----
 # openssl req -new \
--key _/root/{context}_cert/{context}_cert_key.pem_ \ <1>
--config _/root/{context}_cert/openssl.cnf_ \ <2>
--out _/root/{context}_cert/{context}_cert_csr.pem_ <3>
+-key _/root/{cert-name}_cert/{cert-name}_cert_key.pem_ \ <1>
+-config _/root/{cert-name}_cert/openssl.cnf_ \ <2>
+-out _/root/{cert-name}_cert/{cert-name}_cert_csr.pem_ <3>
 ----
 <1> Path to the private key
 <2> Path to the configuration file
@@ -123,16 +123,16 @@ The same CA must sign certificates for {ProjectServer} and {SmartProxyServer}.
 When you submit the request, specify the lifespan of the certificate.
 The method for sending the certificate request varies, so consult the CA for the preferred method.
 In response to the request, you can expect to receive a CA bundle and a signed certificate, in separate files.
-ifeval::["{context}" == "{load-balancing}"]
+ifdef::load-balancing[]
 . Copy the Certificate Authority bundle and {SmartProxyServer} certificate file that you receive from the Certificate Authority, and {SmartProxyServer} private key to your {ProjectServer}.
 . On {ProjectServer}, validate {SmartProxyServer} certificate input files:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 # katello-certs-check \
--c /root/{smart-proxy-context}_cert/{smart-proxy-context}_cert.pem \ <1>
--k /root/{smart-proxy-context}_cert/{smart-proxy-context}_cert_key.pem \ <2>
--b /root/{smart-proxy-context}_cert/ca_cert_bundle.pem <3>
+-c /root/{cert-name}_cert/{cert-name}_cert.pem \ <1>
+-k /root/{cert-name}_cert/{cert-name}_cert_key.pem \ <2>
+-b /root/{cert-name}_cert/ca_cert_bundle.pem <3>
 ----
 <1> {SmartProxyServer} certificate file, provided by your Certificate Authority
 <2> {SmartProxyServer}’s private key that you used to sign the certificate
