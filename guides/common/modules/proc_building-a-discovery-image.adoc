@@ -1,16 +1,14 @@
 [id="Building_a_Discovery_Image_{context}"]
-= Building a Discovery image
+= Building a custom Discovery service
 
-The Discovery image is a minimal operating system that is PXE-booted on hosts to acquire initial hardware information and to check in with {Project}.
-Discovered hosts keep running the Discovery image until they are rebooted into Anaconda, which then initiates the provisioning process.
+The Discovery service uses a minimal operating system that is booted on hosts to acquire initial hardware information and check in with {Project}.
+Discovered hosts keep running the Discovery operating system until they are rebooted into Anaconda, which then initiates the provisioning process.
 
 ifdef::satellite[]
 The operating system image is based on {RHEL} 7.
 endif::[]
 ifndef::satellite[]
-Run the following procedure on {EL} 8.
-
-The Discovery image is based on CentOS Stream 8.
+The following procedure demonstrates the building process on {EL} 8 and uses CentOS Stream 8 repositories.
 endif::[]
 
 ifdef::satellite[]
@@ -18,14 +16,17 @@ The `{fdi-package-name}` package contains this image.
 You must install the package on the {SmartProxy} that provides TFTP services.
 endif::[]
 
-Use this procedure to build a {Project} discovery image or rebuild an image if you change configuration files.
+Use this procedure to build a {Project} Discovery ISO or rebuild an ISO if you change configuration files.
 
-Do not use this procedure on your production {Project} or {SmartProxy}.
-Use either a dedicated environment or copy the synchronized repositories and a kickstart file to a separate server.
+[IMPORTANT]
+====
+Do not use this procedure on your production {ProjectServer} nor {SmartProxyServer}.
+Use either a dedicated environment or copy the repositories and kickstart file to a separate server.
+====
 
 ifndef::satellite[]
 .Prerequisites
-* Ensure that hardware virtualization is available on your host.
+* Ensure that hardware virtualization is available on your server.
 * Install the following packages:
 +
 [options="nowrap" subs="+quotes"]
@@ -66,7 +67,7 @@ $ ./build-livecd fdi-centos8.ks
 $ sudo ./build-livecd-root _custom_ ./result "nomodeset nokaslr"
 ----
 +
-The options `nomodeset` and `nokaslr` instruct the Discovery image kernel to disable mode setting and to disable ASLR (Address Space Layout Randomization).
+The `nomodeset` and `nokaslr` options instruct the Discovery kernel to disable mode setting and address space layout randomization (ASLR).
 . Verify that your `./result/fdi-custom-XXXXXXX.iso` file is created:
 +
 [options="nowrap" subs="+quotes"]
@@ -155,53 +156,6 @@ Use `/var/tmp` because this process requires close to 3GB of space and `/tmp` mi
 ----
 endif::[]
 
-When you create the `.iso` file, you can boot the `.iso` file over a network or locally.
+.Next steps
+* When you create the `.iso` file, you can boot the `.iso` file over a network or locally.
 Complete one of the following procedures.
-
-If you want to boot the `.iso` file over a network, complete the following steps:
-
-.Procedure
-ifdef::satellite[]
-. To extract the initial ramdisk and kernel files from the `.iso` file over a network, enter the following command:
-+
-[options="nowrap" subs="+quotes"]
-----
-# discovery-iso-to-pxe fdi.iso
-----
-endif::[]
-. Create a directory to store your boot files:
-+
-[options="nowrap" subs="+quotes"]
-----
-# mkdir /var/lib/tftpboot/boot/_myimage_
-----
-ifndef::satellite[]
-. Copy the `./tftpboot/initrd0.img` and `./tftpboot/vmlinuz0` files to your new directory.
-endif::[]
-ifdef::satellite[]
-. Copy the `initrd0.img` and `vmlinuz0` files to your new directory.
-endif::[]
-. Edit the `KERNEL` and `APPEND` entries in the `/var/lib/tftpboot/pxelinux.cfg` file to add the information about your own initial ramdisk and kernel files.
-
-If you want to create a hybrid `.iso` file for booting locally, complete the following steps:
-
-.Procedure
-. To convert the `.iso` file to an `.iso` hybrid file for PXE provisioning, enter the following command:
-+
-[options="nowrap" subs="+quotes"]
-----
-# isohybrid --partok fdi.iso
-----
-+
-If you have `grub2` packages installed, you can also use the following command to install a `grub2` bootloader:
-+
-[options="nowrap" subs="+quotes"]
-----
-# isohybrid --partok --uefi fdi.iso
-----
-. To add `md5` checksum to the `.iso` file so it can pass installation media validation tests in {Project}, enter the following command:
-+
-[options="nowrap" subs="+quotes"]
-----
-# implantisomd5 fdi.iso
-----
