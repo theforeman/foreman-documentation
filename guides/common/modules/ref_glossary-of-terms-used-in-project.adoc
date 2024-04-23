@@ -1,17 +1,53 @@
 [id="glossary-of-terms-used-in-{project-context}_{context}"]
 = Glossary of terms used in {Project}
 
+{Project} is a complete lifecycle management tool for physical hosts, virtual machines, and cloud instances.
+Key features include automated host provisioning, configuration management, and content management including patch and errata management.
+You can automate tasks and quickly provision hosts, all through a single unified interface.
+
+This alphabetically ordered glossary provides an overview of {Project} related technical terms.
+
+ifdef::katello,orcharhino,satellite[]
 [[Activation_key]]
-Activation key:: A token for host registration and subscription attachment.
-Activation keys define subscriptions, products, content views, and other parameters to be associated with a newly created host.
+Activation key::
+Activation keys are used by xref:Subscription-Manager[Subscription Manager] to register hosts to {Project}.
+They define content view and lifecycle environment associations, content overrides, system purpose attributes, and other parameters to be associated with a newly created host.
++
+// Reword when multi-CVs is part of Katello; see https://github.com/Katello/katello/pull/10296 and https://projects.theforeman.org/issues/35580
+They are associated to exactly one lifecycle environment and exactly one content view, though this may be a composite content view.
+You can use them on multiple machines and they behave like configuration information rather than traditional software license keys.
+You can also use multiple activation keys with a single host.
+When you register a host using an activation key, certain content from {Project} is provided to the host.
+The content that is made available depends on the content in the activation key's content view and lifecycle environment, any content overrides present, any repository-level restrictions such as operating system or architecture, and system purpose attributes such as release version.
++
+image::common/activation_key.svg[Activation key]
+endif::[]
+
+[[Ansible]]
+Ansible::
+Ansible is an agentless open-source automation engine.
+ifndef::satellite[]
+For hosts running Linux,
+endif::[]
+Ansible uses SSH to connect to hosts.
+ifndef::satellite[]
+For hosts running Microsoft Windows, Ansible relies on WinRM.
+endif::[]
+It uses playbooks and roles to describe and bundle tasks.
+Within {Project}, you can use Ansible to configure hosts and perform xref:Remote-execution-REX[remote execution].
++
+For more information about using Ansible to configure hosts, see {ManagingConfigurationsAnsibleDocURL}[{ManagingConfigurationsAnsibleDocTitle}].
+For more information about automating {Project} using {Project} Ansible collection, see {ManagingConfigurationsAnsibleDocURL}Managing_Project_with_Ansible_Collections_admin[Managing {Project} with Ansible collections] in _{AdministeringDocTitle}_.
 
 [[Answer_file]]
 Answer file:: A configuration file that defines settings for an installation scenario.
 Answer files are defined in the YAML format and stored in the `/etc/foreman-installer/scenarios.d/` directory.
 
 [[ARF_report]]
-ARF report:: The result of an OpenSCAP audit.
+ARF report::
+Asset Reporting Format (ARF) reports are the result of OpenSCAP compliance scans on hosts which have a policy assigned.
 Summarizes the security compliance of hosts managed by {ProjectName}.
+They list compliance criteria and whether the scanned host has passed or failed.
 
 [[Audits]]
 Audits:: Provide a report on changes made by a specific user.
@@ -27,10 +63,8 @@ This ISO enables the host to connect to {ProjectServer}, boot the installation m
 There are several kinds of boot disks: *host image*, *full host image*, *generic image*, and *subnet image*.
 
 ifdef::satellite[]
-[[SmartProxy]]
-{SmartProxy}:: An additional server that can be used in a {ProjectName} deployment to facilitate content federation and distribution (act as a Pulp mirror), and to run other localized services (Puppet server, *DHCP*, *DNS*, *TFTP*, and more).
-{SmartProxies} are useful for {Project} deployment across various geographical locations.
-In upstream Foreman terminology, {SmartProxy} is referred to as Smart Proxy.
+[[Capsule]]
+include::snip_glossary-term-smart-proxy.adoc[]
 endif::[]
 
 [[Catalog]]
@@ -38,41 +72,71 @@ Catalog:: A document that describes the desired system state for one specific ho
 It lists all of the resources that need to be managed, as well as any dependencies between those resources.
 Catalogs are compiled by a Puppet server from Puppet Manifests and data from Puppet Agents.
 
+ifdef::katello,orcharhino,satellite[]
 [[Candlepin]]
 Candlepin:: A service within Katello responsible for subscription management.
+endif::[]
 
 [[Compliance_policy]]
-Compliance policy:: Refers to a scheduled task executed on {ProjectServer} that checks the specified hosts for compliance against SCAP content.
+Compliance policy::
+Compliance policies refer to the application of SCAP content to hosts by using {Project} with its OpenSCAP plugin.
+You can create compliance policies by using the {ProjectWebUI}, Hammer CLI, or API.
+A compliance policy requires the setting of a specific XCCDF profile from a SCAP content, optionally using a tailoring file.
+You can set up scheduled tasks on {Project} that check your hosts for compliance against SCAP content.
+When a compliance policy scan completes, the host sends an xref:ARF_report[ARF report] to {Project}.
 
 [[Compute_profile]]
 Compute profile:: Specifies default attributes for new virtual machines on a compute resource.
 
 [[Compute_resource]]
-Compute resource:: A virtual or cloud infrastructure, which {ProjectName} uses for deployment of hosts and systems.
-Examples include {oVirt}, {OpenStack}, EC2, and VMWare.
+Compute resource::
+A compute resource is an external virtualization or cloud infrastructure that you can attach to {Project}.
+{Project} can provision, configure, and manage hosts within attached compute resources.
+Examples of compute resources include VMware or libvirt and cloud providers such as Microsoft Azure or Amazon EC2.
 
+[[Configuration_Management]]
+Configuration Management::
+Configuration management describes the task of configuring and maintaining hosts.
+In {Project}, you can use
+ifdef::satellite[]
+Ansible and Puppet
+endif::[]
+ifndef::satellite[]
+Ansible, Puppet, and Salt
+endif::[]
+to configure and maintain hosts with {Project} as a single source of infrastructure truth.
+
+ifdef::katello,orcharhino,satellite[]
 [[Container]]
 Container (Docker container):: An isolated application sandbox that contains all runtime dependencies required by an application.
 {Project} supports container provisioning on a dedicated compute resource.
 
 [[Container_image]]
-Container image:: A static snapshot of the container’s configuration.
+Container image:: A static snapshot of the container's configuration.
 {Project} supports various methods of importing container images as well as distributing images to hosts through content views.
 
 [[Content]]
-Content:: A general term for everything {Project} distributes to hosts.
-Includes software packages (RPM files), or Docker images.
+Content::
+A general term for everything {Project} distributes to hosts.
+Content includes software packages such as `.{client-pkg-ext}` packages, errata, or Docker images.
 Content is synchronized into the Library and then promoted into lifecycle environments using content views so that they can be consumed by hosts.
 
 [[Content_delivery_network_CDN]]
 Content delivery network (CDN):: The mechanism used to deliver Red{nbsp}Hat content to {ProjectServer}.
 
-[[Content_host]]
-Content host:: The part of a host that manages tasks related to content and subscriptions.
-
 [[Content_view]]
-Content view:: A subset of Library content created by intelligent filtering.
+Content view::
+Content views are named and versioned collections of repositories.
+When you publish a content view, {Project} creates a new content view version.
+This content view version is a frozen snapshot of the current state of the repositories within the content view.
+Any subsequent changes to the underlying repositories will no longer affect the published content view version.
 Once a content view is published, it can be promoted through the lifecycle environment path, or modified using incremental upgrades.
+
+[[Composite_Content_View]]
+Composite content view::
+Composite content views contain content views, which allows for a more modular approach to manage and version content.
+You can choose which version of each content view is used in a composite content view.
+endif::[]
 
 [[Discovered_host]]
 Discovered host:: A bare-metal host detected on the provisioning network by the Discovery plugin.
@@ -87,9 +151,11 @@ The plugin consists of three components: services running on {ProjectServer} and
 [[Discovery_rule]]
 Discovery rule:: A set of predefined provisioning rules which assigns a host group to discovered hosts and triggers provisioning automatically.
 
+ifdef::katello,orcharhino,satellite[]
 [[Docker_tag]]
 Docker tag:: A mark used to differentiate container images, typically by the version of the application stored in the image.
 In the {ProjectWebUI}, you can filter images by tag under *Content* > *Docker Tags*.
+endif::[]
 
 ifndef::satellite[]
 [[Enterprise_Linux]]
@@ -102,7 +168,8 @@ Enterprise Linux:: An umbrella term for the following {RHEL}-like operating syst
 * {RHEL}
 * Rocky Linux
 
-ifndef::orcharhino[]
+ifndef::satellite,orcharhino[]
++
 {Project} is tested on AlmaLinux and CentOS Stream.
 endif::[]
 endif::[]
@@ -110,15 +177,18 @@ endif::[]
 [[ERB]]
 ERB:: Embedded Ruby (ERB) is a template syntax used in provisioning and job templates.
 
+ifdef::katello,orcharhino,satellite[]
 [[Errata]]
-Errata:: Updated RPM packages containing security fixes, bug fixes, and enhancements.
+Errata::
+Updated packages containing security fixes, bug fixes, and enhancements.
 In relationship to a host, erratum is *applicable* if it updates a package installed on the host and *installable* if it is present in the host's content view (which means it is accessible for installation on the host).
+endif::[]
 
-[[External_node_classifier]]
-External node classifier:: A construct that provides additional data for a server to use when configuring hosts.
-{ProjectName} acts as an External Node Classifier to Puppet servers in a {Project} deployment.
-+
-The External Node Classifier will be removed in a future {Project} version.
+[[External_node_classifier_ENC]]
+External node classifier (ENC)::
+A construct that provides additional data for a server to use when configuring hosts.
+When Puppet obtains information about nodes from an external source instead of its own database, the external source is called External node classifier.
+If the Puppet plugin is installed, {ProjectName} can act as an External node classifier to Puppet servers in a {Project} deployment.
 
 [[Facter]]
 Facter:: A program that provides information (facts) about the system on which it is run; for example, Facter can report total memory, operating system version, architecture, and more.
@@ -129,9 +199,10 @@ Facts:: Host parameters such as total memory, operating system version, or archi
 Facts are reported by Facter and used by Puppet.
 
 [[Foreman]]
-Foreman:: The component mainly responsible for provisioning and content lifecycle management.
-ifdef::satellite[]
-Foreman is the main upstream counterpart of {ProjectName}.
+Foreman::
+Foreman is an open-source component to provision and manage hosts.
+ifdef::satellite,orcharhino[]
+Foreman is the core upstream component of {ProjectName}.
 endif::[]
 
 [[Foreman_Hook]]
@@ -150,20 +221,29 @@ Generic image:: A boot disk for PXE-less provisioning that is not tied to a spec
 The generic image sends the host’s MAC address to {ProjectServer}, which matches it against the host entry.
 
 [[Hammer]]
-Hammer:: A command line tool for managing {ProjectName}.
-You can execute Hammer commands from the command line or utilize them in scripts.
-Hammer also provides an interactive shell.
+Hammer::
+Hammer is a command-line interface tool for {Project}.
+You can execute Hammer commands from the command line or utilize it in scripts.
+You can use Hammer to automate certain recurring tasks as an alternative to {Project} Ansible collection or {Project} API.
 
 [[Host]]
-Host:: Refers to any system, either physical or virtual, that {ProjectName} manages.
+Host::
+A host is a physical, virtual, or cloud instance registered to {Project}.
 
 [[Host_collection]]
 Host collection:: A user defined group of one or more Hosts used for bulk actions such as errata installation.
 
 [[Host_group]]
-Host group:: A template for building a host.
-Host groups hold shared parameters, such as subnet or lifecycle environment, that are inherited by host group members.
-Host groups can be nested to create a hierarchical structure.
+Host group::
+A host group is a template to build hosts that holds shared parameters, such as subnet or lifecycle environment.
+ifdef::satellite[]
+It helps to unify configuration management in Ansible and Puppet by grouping hosts.
+endif::[]
+ifndef::satellite[]
+It helps to unify configuration management in Ansible, Puppet, and Salt by grouping hosts.
+endif::[]
+You can nest host groups to create a hierarchical structure.
+For more information, see {ManagingHostsDocURL}Working_with_Host_Groups_managing-hosts[Working with host groups] in _{ManagingHostsDocTitle}_.
 
 [[Host_image]]
 Host image:: A boot disk used for PXE-less provisioning of a specific host.
@@ -174,36 +254,67 @@ Incremental upgrade (of a content view):: The act of creating a new (minor) cont
 Incremental upgrades provide a way to make in-place modification of an already published content view.
 Useful for rapid updates, for example when applying security errata.
 
+ifdef::katello,orcharhino,satellite[]
+[[Installation_Media]]
+Installation Media::
+Installation media are sets of installation files used to install the base operating system during the provisioning process.
+An installation medium in {Project} represents the installation files for one or more operating systems, which must be accessible over the network, either through an URL or an NFS server location.
+It is usually either a mirror or a CD or DVD image.
+ifdef::orcharhino[]
+Pointing the URL of the installation medium to a local copy, for example `http://{foreman-example-com}/pub/installation_media/`, can improve provisioning time and reduce network load.
+endif::[]
++
+Every operating system depends on exactly one path of an installation medium, whereas installation media paths may serve different operating systems at the same time.
+You can use operating system parameters such as `$version`, `$major`, and `$minor` to parameterize the URL.
+endif::[]
+
 [[Job]]
 Job:: A command executed remotely on a host from {ProjectServer}.
 Every job is defined in a job template.
 
+ifdef::katello,orcharhino,satellite[]
 [[Katello]]
-Katello:: A Foreman plugin responsible for subscription and repository management.
+Katello::
+Katello is an open-source plugin to perform content management and subscription handling.
+It depends on Pulp for content management, which fetches software from repositories and stores various versions of it.
+It also depends on Candlepin for host registration and managing subscription manifests.
+ifdef::satellite,orcharhino[]
+The Katello plugin is always installed on {Project}.
+endif::[]
 
 [[Lazy_sync]]
 Lazy sync:: The ability to change the default download policy of a repository from *Immediate* to *On Demand*.
 The *On Demand* setting saves storage space and synchronization time by only downloading the packages when requested by a host.
+endif::[]
 
 [[Location]]
-Location:: A collection of default settings that represent a physical place.
+Location::
+A collection of default settings that represent a physical place.
+Location is a tag mostly used for geographical separation of hosts within {Project}.
+Examples include different cities or different data centers.
 
+ifdef::katello,orcharhino,satellite[]
 [[Library]]
 Library:: A container for content from all synchronized repositories on {ProjectServer}.
 Libraries exist by default for each organization as the root of every lifecycle environment path and the source of content for every content view.
 
 [[Lifecycle_environment]]
-Lifecycle environment:: A container for content view versions consumed by the content hosts.
-A Lifecycle Environment represents a step in the lifecycle environment path.
+Lifecycle environment::
+A lifecycle environment represents a step in the lifecycle environment path.
+It defines the stage in which certain versions of content are available to hosts, such as _development_, _testing_, and _production_.
+This way, new versions of software can be developed and tested before being deployed in a _production_ environment, thus reducing the risk of disruption by prematurely rolled out updates.
 Content moves through lifecycle environments by publishing and promoting content views.
 
 [[Lifecycle_environment_path]]
-Lifecycle environment path:: A sequence of lifecycle environments through which the content views are promoted.
-You can promote a content view through a typical promotion path; for example, from development to test to production.
+Lifecycle environment path::
+A sequence of lifecycle environments through which content views are promoted.
+You can promote a content view through a typical promotion path, for example, from _development_ to _test_ to _production_.
+All lifecycle environment paths originate from the _Library_ environment, which is always present by default.
 
 [[Manifest]]
 Manifest (Red{nbsp}Hat subscription manifest):: A mechanism for transferring subscriptions from the Red{nbsp}Hat Customer Portal to {ProjectName}.
 Do not confuse with xref:Puppet_manifest[Puppet manifest].
+endif::[]
 
 [[Migrating]]
 Migrating {Project}:: The process of moving an existing {Project} installation to a new instance.
@@ -213,14 +324,21 @@ OpenSCAP:: A project implementing security compliance auditing according to the 
 OpenSCAP is integrated in {Project} to provide compliance auditing for hosts.
 
 ifdef::orcharhino[]
-[[SmartProxy]]
-{SmartProxy}:: An additional server that can be used in a {ProjectName} deployment to facilitate content federation and distribution (act as a Pulp mirror), and to run other localized services (Puppet server, *DHCP*, *DNS*, *TFTP*, and more).
-{SmartProxies} are useful for {Project} deployment across various geographical locations.
-In upstream Foreman terminology, {SmartProxy} is referred to as Smart Proxy.
+[[orcharhino-Customer-Center-OCC]]
+orcharhino Customer Center (OCC)::
+orcharhino Customer Center provides all content from {Team} to install, update, and run {ProjectServer} and {SmartProxyServers}.
+It also provides all {project-client-name}s.
+For more information, see https://atixservice.zendesk.com/hc/de/articles/9464966748444[Registering orcharhino Server to OCC] and https://atixservice.zendesk.com/hc/de/articles/7041824258460[Adding orcharhino Clients manually] in the _ATIX Service Portal_.
+
+[[orcharhino-Proxy]]
+include::snip_glossary-term-smart-proxy.adoc[]
 endif::[]
 
 [[Organization]]
-Organization:: An isolated collection of systems, content, and other functionality within a {Project} deployment.
+Organization::
+An isolated collection of systems, content, and other functionality within {Project}.
+Organization is a tag used for organizational separation of hosts within {Project}.
+Examples include different teams or business units.
 
 [[Parameter]]
 Parameter:: Defines the behavior of {ProjectName} components during provisioning.
@@ -230,34 +348,73 @@ Depending on the parameter complexity, we distinguish between simple parameters 
 [[Parametrized_class]]
 Parametrized class (smart class parameter):: A parameter created by importing a class from Puppet server.
 
+ifdef::katello,orcharhino,satellite[]
+[[Patch-and-release-management]]
+Patch and release management::
+Patch and release management describes the process of acquiring, managing, and installing patches and software updates to your infrastructure.
+Using {Project}, you can keep control of the package versions available to your hosts and deliver applicable errata.
+endif::[]
+
 [[Permission]]
 Permission:: Defines an action related to a selected part of {Project} infrastructure (resource type).
 Each resource type is associated with a set of permissions, for example the *Architecture* resource type has the following permissions: *view_architectures*, *create_architectures*, *edit_architectures*, and *destroy_architectures*.
 You can group permissions into roles and associate them with users or user groups.
 
+ifdef::katello,orcharhino,satellite[]
 [[Product]]
-Product:: A collection of content repositories.
-Products are either provided by Red{nbsp}Hat CDN or created by the {Project} administrator to group custom repositories.
+Product::
+Products are named collections of one or more xref:Repository[repositories].
+ifdef::satellite[]
+When you
+endif::[]
+ifndef::satellite[]
+If you manage Red{nbsp}Hat content and
+endif::[]
+upload a Red Hat manifest, {Project} automatically groups Red{nbsp}Hat content within products.
+ifndef::satellite[]
+If you manage SUSE content using SCC Manager plugin, {Project} automatically groups SUSE content within products.
+For more information, see {ContentManagementDocURL}Managing_SUSE_Content_content-management[Managing SUSE content] in _{ContentManagementDocTitle}_.
+endif::[]
 
 [[Promote]]
 Promote (a content view):: The act of moving a content view from one lifecycle environment to another.
 For more information, see {ContentManagementDocURL}Promoting_a_Content_View_content-management[Promoting a content view] in _{ContentManagementDocTitle}_.
+endif::[]
+
+[[Provisioning]]
+Provisioning::
+The provisioning of a host is the deployment of the base operating system on the host and registration of the host to {Project}.
+Optionally, the process continues with the supply of content and configuration.
+This process is ideally automated.
+Provisioned hosts run on xref:Compute_resource[compute resources] or bare metal, never {ProjectServer} or {SmartProxyServers}.
 
 [[Provisioning_template]]
-Provisioning template:: Defines host provisioning settings.
-Provisioning templates can be associated with host groups, lifecycle environments, or operating systems.
+Provisioning template::
+Provisioning templates are templates that automate deployment of an operating system on hosts.
+ifdef::satellite[]
+{Project} contains provisioning templates for {client-os}.
+endif::[]
+ifndef::satellite[]
+{Project} contains provisioning templates for all supported host operating system families:
 
+* AutoYaST for SUSE Linux Enterprise Server
+* Kickstart for AlmaLinux, Amazon Linux, CentOS, Oracle Linux, Red Hat Enterprise Linux, and Rocky Linux
+* Preseed files for Debian and Ubuntu
+endif::[]
+
+ifdef::katello,orcharhino,satellite[]
 [[Publish]]
 Publish (a content view):: The act of making a content view version available in a lifecycle environment and usable by hosts.
 
 [[Pulp]]
-Pulp:: A service within Katello responsible for repository and content management.
-
-[[Pulp_mirror]]
-Pulp mirror:: A {SmartProxyServer} component that mirrors content.
+Pulp::
+A service within Katello responsible for repository and content management.
+endif::[]
 
 [[Puppet]]
-Puppet:: The configuration management component of {Project}.
+Puppet::
+Puppet is a configuration management tool utilizing a declarative language in a server-client architecture.
+For more information about using Puppet to configure hosts, see {ManagingConfigurationsPuppetDocURL}[{ManagingConfigurationsPuppetDocTitle}].
 
 [[Puppet_agent]]
 Puppet agent:: A service running on a host that applies configuration changes to that host.
@@ -277,18 +434,36 @@ Puppet server:: A {SmartProxyServer} component that provides Puppet Manifests to
 [[Puppet_module]]
 Puppet module:: A self-contained bundle of code (Puppet Manifests) and data (facts) that you can use to manage resources such as users, files, and services.
 
+[[PXE]]
+PXE::
+PXE stands for _preboot execution environment_ and is used to boot operating systems received from the network rather than a local disk.
+It requires a compatible network interface card (NIC) and relies on DHCP and TFTP.
+
 [[Recurring_logic]]
 Recurring logic:: A job executed automatically according to a schedule.
 In the {ProjectWebUI}, you can view those jobs under *Monitor* > *Recurring logics*.
 
+ifdef::katello,orcharhino,satellite[]
 [[Registry]]
 Registry:: An archive of container images.
 {Project} supports importing images from local and external registries.
 {Project} itself can act as an image registry for hosts.
 However, hosts cannot push changes back to the registry.
+endif::[]
 
+[[Remote-execution-REX]]
+Remote execution (REX)::
+Remote execution is the process of using {Project} to run commands on registered hosts.
+
+ifdef::katello,orcharhino,satellite[]
 [[Repository]]
-Repository:: Provides storage for a collection of content.
+Repository::
+A repository is a single source and the smallest unit of content in {Project}.
+You can either synchronize a repository with a URL or manually upload content to {Project}.
+{Project} supports multiple content types.
+For more information, see {ContentManagementDocURL}Content_Types_in_Foreman_content-management[Content types in {Project}] in _{ContentManagementDocTitle}_.
+One or more repositories form a xref:Product[product].
+endif::[]
 
 [[Resource_type]]
 Resource type:: Refers to a part of {Project} infrastructure, for example host, {SmartProxy}, or architecture.
@@ -299,27 +474,60 @@ Role:: Specifies a collection of permissions that are applied to a set of resour
 Roles can be assigned to users and user groups.
 {Project} provides a number of predefined roles.
 
+ifndef::satellite[]
+[[Salt]]
+Salt::
+Salt is a configuration management tool used to maintain hosts in certain defined states, for example have packages installed or services running.
+It is designed to be idempotent.
+For more information about using Salt to configure hosts, see {ManagingConfigurationsSaltDocURL}[{ManagingConfigurationsSaltDocTitle}].
+endif::[]
+
 [[SCAP_content]]
-SCAP content:: A file containing the configuration and security baseline against which hosts are checked.
-Used in compliance policies.
+SCAP content::
+SCAP stands for Security Content Automation Protocol and refers to `.xml` files containing the configuration and security baseline against which hosts are checked.
+{Project} uses SCAP content in compliance policies.
 
 ifndef::orcharhino,satellite[]
-[[SmartProxy]]
-{SmartProxy}:: A {SmartProxy} component that can integrate with external services, such as *DNS* or *DHCP*.
-{SmartProxies} are useful for {Project} deployment across various geographical locations.
+[[Smart-Proxy]]
+include::snip_glossary-term-smart-proxy.adoc[]
 endif::[]
 
 [[Subnet_image]]
 Subnet image:: A type of generic image for PXE-less provisioning that communicates through {SmartProxyServer}.
 
+ifdef::katello,orcharhino,satellite[]
 [[Subscription]]
 Subscription:: An entitlement for receiving content and service from Red{nbsp}Hat.
+endif::[]
 
+[[Subscription-Manager]]
+Subscription Manager::
+Subscription Manager is a client application to register hosts to {Project}.
+ifdef::katello,orcharhino,satellite[]
+`subscription-manager` uses xref:Activation_key[activation keys] to consume content on hosts.
+endif::[]
+
+ifdef::katello,orcharhino[]
+[[SUSE_Subscription]]
+SUSE Subscription::
+You can use {Project} to manage SUSE content.
+For more information, see {ContentManagementDocURL}Managing_SUSE_Content_content-management[Managing SUSE content] in _{ContentManagementDocTitle}_.
+endif::[]
+
+ifdef::katello,orcharhino,satellite[]
 [[Synchronization]]
-Synchronization:: Refers to mirroring content from external resources into the {ProjectName} Library.
+Synchronization::
+Synchronization describes the process of fetching content from external repositories into the {ProjectServer}.
 
 [[Sync_plan]]
-Sync plan:: Provides scheduled execution of content synchronization.
+Sync plan::
+Sync plans describe the scheduled synchronization of content from external content.
+endif::[]
+
+[[Tailoring_files]]
+Tailoring files::
+Tailoring files specify a set of modifications to existing SCAP content.
+They adapt SCAP content to your particular needs without changing the original SCAP content itself.
 
 [[Task]]
 Task:: A background process executed on the {Project} or {SmartProxyServer}, such as repository synchronization or content view publishing.
@@ -345,6 +553,27 @@ User group:: A collection of roles which can be assigned to a collection of user
 User:: Anyone registered to use {ProjectName}.
 Authentication and authorization is possible through built-in logic, through external resources (LDAP, Identity Management, or Active Directory), or with Kerberos.
 
+[[Virtualization]]
+Virtualization::
+Virtualization describes the process of running multiple operating systems with various applications on a single hardware host using hypervisors like
+ifdef::satellite[]
+VMware or libvirt.
+endif::[]
+ifndef::satellite[]
+VMware, Proxmox, or libvirt.
+endif::[]
+It facilitates scalability and cost savings.
+You can attach virtualization infrastructure as compute resources to {Project}.
+ifndef::satellite[]
+Enable appropriate plugins to access this feature.
+endif::[]
+
 [[virt-who]]
 virt-who:: An agent for retrieving IDs of virtual machines from the hypervisor.
 When used with {Project}, virt-who reports those IDs to {ProjectServer} so that it can provide subscriptions for hosts provisioned on virtual machines.
+
+[[XCCDF_profiles]]
+XCCDF profiles::
+Extensible configuration checklist description format (XCCDF) profiles are a component of SCAP content.
+XCCDF is a language to write security checklists and benchmarks.
+An XCCDF file contains security configuration rules for lists of hosts.
