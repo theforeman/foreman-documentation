@@ -1,30 +1,19 @@
 [id="Building_a_Discovery_Image_{context}"]
-= Building a custom Discovery service
+= Building a custom Discovery image
 
-The Discovery service uses a minimal operating system that is booted on hosts to acquire initial hardware information and check in with {Project}.
+You can build a custom Discovery ISO or rebuild an ISO if you change configuration files.
+
+The Discovery image uses a minimal operating system that is booted on hosts to acquire initial hardware information and check in with {Project}.
 Discovered hosts keep running the Discovery operating system until they are rebooted into Anaconda, which then initiates the provisioning process.
-
-ifdef::satellite[]
-The operating system image is based on {RHEL} 7.
-endif::[]
-ifndef::satellite[]
-The following procedure demonstrates the building process on {EL} 8 and uses CentOS Stream 8 repositories.
-endif::[]
-
-ifdef::satellite[]
-The `{fdi-package-name}` package contains this image.
-You must install the package on the {SmartProxy} that provides TFTP services.
-endif::[]
-
-Use this procedure to build a {Project} Discovery ISO or rebuild an ISO if you change configuration files.
 
 [IMPORTANT]
 ====
-Do not use this procedure on your production {ProjectServer} nor {SmartProxyServer}.
-Use either a dedicated environment or copy the repositories and kickstart file to a separate server.
+Do not use your production {ProjectServer} nor {SmartProxyServer} to perform this procedure.
+Use either a dedicated environment or copy the repositories and Kickstart file to a separate server.
 ====
 
-ifndef::satellite[]
+The following procedure demonstrates the building process on {EL} 8 and uses CentOS Stream 8 repositories.
+
 .Prerequisites
 * Ensure that hardware virtualization is available on your server.
 * Install the following packages:
@@ -54,7 +43,7 @@ module --name=ruby --stream=2.7
 module --name=postgresql --stream=12
 module --name=foreman --stream=el8
 ----
-. Prepare the kickstart file:
+. Prepare the Kickstart file:
 +
 [options="nowrap" subs="+quotes"]
 ----
@@ -68,14 +57,9 @@ $ sudo ./build-livecd-root _custom_ ./result "nomodeset nokaslr"
 ----
 +
 The `nomodeset` and `nokaslr` options instruct the Discovery kernel to disable mode setting and address space layout randomization (ASLR).
-. Verify that your `./result/fdi-custom-XXXXXXX.iso` file is created:
 +
-[options="nowrap" subs="+quotes"]
-----
-$ ls -h ./result/*.iso
-----
-
-Use the following command to build a fully automated Discovery image with a static network configuration:
+For example, you can build a fully automated Discovery image with a static network configuration:
++
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 $ sudo ./build-livecd-root _custom_ ./result \
@@ -84,78 +68,17 @@ fdi.pxip=192.168.140.20/24 fdi.pxgw=192.168.140.1 \
 fdi.pxdns=192.168.140.2 proxy.url=https://{foreman-example-com}:8443 \
 proxy.type=foreman fdi.pxmac=52:54:00:be:8e:8c fdi.pxauto=1"
 ----
-
++
 For more information about configuration options, see xref:kernel-parameters-for-discovery-customization_{context}[].
 
-endif::[]
-ifdef::satellite[]
-.Prerequisites
-* Install the `livecd-tools` package:
-+
-[options="nowrap" subs="+quotes,attributes"]
-----
-# {project-package-install} livecd-tools
-----
-
-* For the following {RHEL} 7 repositories required to build the Discovery image, change the download policy to *Immediate*.
-This is required because {Project} downloads all packages only during synchronization of repositories with the immediate download policy.
-+
-** The latest *{RHEL} 7 Server (Kickstart)* repository.
-For example, *{RHEL} 7 Server Kickstart x86_64 7.7*.
-** *Red Hat Satellite Capsule {ProjectVersion} for RHEL 7 Server RPMs x86_64*.
-
-+
-For more information about changing download policies, see {ContentManagementDocURL}changing_the_download_policy_for_a_repository_content-management[Changing the Download Policy for a Repository] in _{ContentManagementDocTitle}_.
-
-* Synchronize the following {RHEL} 7 repositories required to build the Discovery image:
-+
-** The latest *{RHEL} 7 Server (Kickstart)* repository.
-For example, *{RHEL} 7 Server Kickstart x86_64 7.7*.
-** *Red Hat Satellite Capsule {ProjectVersion} for RHEL 7 Server RPMs x86_64*.
-
-+
-For more information about synchronizing repositories, see {ContentManagementDocURL}Synchronizing_Repositories_content-management[Syncing Repositories] in _{ContentManagementDocTitle}_.
-
-.Procedure
-. Open the `/usr/share/foreman-discovery-image/foreman-discovery-image.ks` file for editing:
+.Verification
+* Verify that your `./result/fdi-custom-XXXXXXX.iso` file is created:
 +
 [options="nowrap" subs="+quotes"]
 ----
-# vim /usr/share/foreman-discovery-image/foreman-discovery-image.ks
+$ ls -h ./result/*.iso
 ----
-. Replace the `repo` lines in the kickstart file with the repository URLs:
-+
-[options="nowrap" subs="quotes,attributes"]
-----
-repo --name=rhel --baseurl=file:///var/lib/pulp/published/yum/https/repos/My_Organization/Library/content/dist/rhel/server/7/7.7/x86_64
-repo --name=sat --baseurl=file:///var/lib/pulp/published/yum/https/repos/My_Organization/Library/content/dist/rhel/server/7/7Server/x86_64/sat-capsule/{ProjectVersion}/os
-----
-. Run the `livecd-creator` tool:
-+
-[options="nowrap" subs="+quotes"]
-----
-# livecd-creator \
---cache=var/cache/build-fdi \
---compression-type=xz \
---config /usr/share/foreman-discovery-image/foreman-discovery-image.ks \
---fslabel fdi \
---title="_My_Discovery_Image_" \
---tmpdir /var/tmp
-----
-+
-If you change `fdi` in the `--fslabel` option, you must also change the root label on the kernel command line when loading the image.
-`fdi` or the alternative name is appended to the `.iso` file that is created as part of this procedure.
-The PXE Discovery tool uses this name when converting from `.iso` to PXE.
-+
-Use `/var/tmp` because this process requires close to 3GB of space and `/tmp` might have problems if the system is low on swap space.
-. Verify that your `fdi.iso` file is created:
-+
-[options="nowrap" subs="+quotes"]
-----
-# ls -h *.iso
-----
-endif::[]
 
 .Next steps
-* When you create the `.iso` file, you can boot the `.iso` file over a network or locally.
+* You can boot your Discovery image over a network or locally.
 Complete one of the following procedures.
