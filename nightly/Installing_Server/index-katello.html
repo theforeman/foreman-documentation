@@ -3223,19 +3223,9 @@ For example, to check if entries for <code>puppet</code>, <code>apache</code>, <
 </div>
 <div class="sect2">
 <h3 id="configuring-an-ldap-server-as-an-external-identity-provider-for-project_foreman"><a class="anchor" href="#configuring-an-ldap-server-as-an-external-identity-provider-for-project_foreman"></a>5.1. Configuring an LDAP server as an external identity provider for Foreman</h3>
-<div class="paragraph">
+<div id="Using_LDAP_satellite" class="paragraph">
 <p>Lightweight Directory Access Protocol (LDAP) is a set of open protocols used to access centrally stored information over a network.
-With Foreman, you can manage LDAP entirely through the Foreman web UI.</p>
-</div>
-<div class="sect3">
-<h4 id="Using_LDAP_foreman"><a class="anchor" href="#Using_LDAP_foreman"></a>5.1.1. Using LDAP</h4>
-<div class="paragraph">
-<p>Foreman supports LDAP authentication using one or multiple LDAP directories.</p>
-</div>
-<div class="paragraph">
-<p>If you require Foreman to use <code>TLS</code> to establish a secure LDAP connection (LDAPS), first obtain certificates used by the LDAP server you are connecting to and mark them as trusted on the base operating system of your Foreman&#160;server as described below.
-If your LDAP server uses a certificate chain with intermediate certificate authorities, all of the root and intermediate certificates in the chain must be trusted, so ensure all certificates are obtained.
-If you do not require secure LDAP at this time, proceed to <a href="#Configuring_Project_to_Use_LDAP_foreman">Configuring Foreman to use LDAP</a>.</p>
+With Foreman, you can use one or multiple LDAP directories for external authentication.</p>
 </div>
 <div class="admonitionblock important">
 <table>
@@ -3246,10 +3236,10 @@ If you do not require secure LDAP at this time, proceed to <a href="#Configuring
 <td class="content">
 <div class="paragraph">
 <p>Users cannot use both FreeIPA and LDAP as an authentication method.
-Once a user authenticates using one method, they cannot use the other method.</p>
+After a user authenticates by using one of these methods, they cannot use the other method.</p>
 </div>
 <div class="paragraph">
-<p>To change the authentication method for a user, you have to remove the automatically created user from Foreman.</p>
+<p>To change the authentication method for a user, remove the automatically created user from Foreman.</p>
 </div>
 <div class="paragraph">
 <p>For more information on using FreeIPA as an authentication method, see <a href="#Using_FreeIPA_foreman">Using FreeIPA</a>.</p>
@@ -3258,50 +3248,52 @@ Once a user authenticates using one method, they cannot use the other method.</p
 </tr>
 </table>
 </div>
-</div>
 <div class="sect3">
-<h4 id="Configuring_TLS_for_Secure_LDAP_foreman"><a class="anchor" href="#Configuring_TLS_for_Secure_LDAP_foreman"></a>5.1.2. Configuring TLS for secure LDAP</h4>
+<h4 id="Configuring_TLS_for_Secure_LDAP_foreman"><a class="anchor" href="#Configuring_TLS_for_Secure_LDAP_foreman"></a>5.1.1. Configuring TLS for secure LDAP</h4>
 <div class="paragraph">
-<p>Use the Foreman CLI to configure TLS for secure LDAP (LDAPS).</p>
+<p>If Foreman uses TLS to establish a secure LDAP connection (LDAPS), you must obtain the CA certificates  of your LDAP server and add them to the trusted CA list on the base operating system of your Foreman&#160;server.</p>
+</div>
+<div class="paragraph">
+<p>If your LDAP server uses a certificate chain with intermediate certificate authorities,  you must obtain all root and intermediate certificates and add them to the trusted CA list.</p>
 </div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
 <ol class="arabic">
 <li>
-<p>Obtain the Certificate from the LDAP Server.</p>
+<p>Obtain the CA certificate from the LDAP Server:</p>
 <div class="olist loweralpha">
 <ol class="loweralpha" type="a">
 <li>
-<p>If you use Active Directory Certificate Services, export the Enterprise PKI CA Certificate using the Base-64 encoded X.509 format.
+<p>If you use Active Directory Certificate Services, export the Enterprise PKI CA Certificate using the Base64 encoded X.509 format.
 See <a href="https://access.redhat.com/solutions/1498773">How to configure Active Directory authentication with <code>TLS</code> on Foreman</a> for information on creating and exporting a CA certificate from an Active Directory server.</p>
 </li>
 <li>
-<p>Download the LDAP server certificate to a temporary location onto Foreman&#160;server and remove it when finished.</p>
+<p>Download the LDAP server certificate to a temporary location on the Foreman&#160;server, such as <code>/tmp/<em>example.crt</em></code>.
+You will remove the certificate when finished.</p>
 <div class="paragraph">
-<p>For example, <code>/tmp/example.crt</code>.
-The filename extensions <code>.cer</code> and <code>.crt</code> are only conventions and can refer to DER binary or PEM ASCII format certificates.</p>
+<p>The filename extensions <code>.cer</code> and <code>.crt</code> are only conventions and can refer to DER binary or PEM ASCII format certificates.</p>
 </div>
 </li>
 </ol>
 </div>
 </li>
 <li>
-<p>Trust the Certificate from the LDAP Server.</p>
-<div class="paragraph">
-<p>Foreman&#160;server requires the CA certificates for LDAP authentication to be individual files in <code>/etc/pki/tls/certs/</code> directory.</p>
-</div>
+<p>Add the LDAP certificate to your CA trust list:</p>
 <div class="olist loweralpha">
 <ol class="loweralpha" type="a">
 <li>
-<p>Use the <code>install</code> command to install the imported certificate into the <code>/etc/pki/tls/certs/</code> directory with the correct permissions:</p>
+<p>Install the LDAP certificate in the <code>/etc/pki/tls/certs/</code> directory with the correct permissions:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># install /tmp/<em>example.crt</em> /etc/pki/tls/certs/</pre>
 </div>
 </div>
+<div class="paragraph">
+<p>LDAP certificates must be individual files.</p>
+</div>
 </li>
 <li>
-<p>Enter the following command as <code>root</code> to trust the <em>example.crt</em> certificate obtained from the LDAP server:</p>
+<p>Create a symbolic link to the LDAP certificate:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># ln -s <em>example.crt</em> /etc/pki/tls/certs/$(openssl \
@@ -3321,25 +3313,35 @@ x509 -noout -hash -in \
 </ol>
 </div>
 </li>
+<li>
+<p>Delete the downloaded LDAP certificate from the temporary location on your Foreman&#160;server.</p>
+</li>
 </ol>
 </div>
 </div>
 <div class="sect3">
-<h4 id="Configuring_Project_to_Use_LDAP_foreman"><a class="anchor" href="#Configuring_Project_to_Use_LDAP_foreman"></a>5.1.3. Configuring Foreman to use LDAP</h4>
+<h4 id="Configuring_Project_to_Use_LDAP_foreman"><a class="anchor" href="#Configuring_Project_to_Use_LDAP_foreman"></a>5.1.2. Configuring Foreman to use LDAP</h4>
 <div class="paragraph">
-<p>In the Foreman web UI, configure Foreman to use LDAP.</p>
+<p>Configure an LDAP authentication source to enable users to log in to Foreman with their existing LDAP credentials.</p>
 </div>
-<div class="paragraph">
-<p>Note that if you need single sign-on functionality with Kerberos on Foreman web UI, you should use FreeIPA and AD external authentication instead.
-For more information, see:</p>
-</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Your user account has the following permissions:</p>
 <div class="ulist">
 <ul>
 <li>
-<p><a href="#Using_FreeIPA_foreman">Using FreeIPA</a></p>
+<p><code>view_authenticators</code>, <code>create_authenticators</code>, <code>edit_authenticators</code></p>
 </li>
 <li>
-<p><a href="#configuring-active-directory-as-an-external-identity-provider-for-project_foreman">Configuring Active Directory as an external identity provider for Foreman</a></p>
+<p><code>view_locations</code>, <code>assign_locations</code></p>
+</li>
+<li>
+<p><code>view_organizations</code>, <code>assign_organizations</code></p>
+</li>
+</ul>
+</div>
 </li>
 </ul>
 </div>
@@ -3347,7 +3349,7 @@ For more information, see:</p>
 <div class="title">Procedure</div>
 <ol class="arabic">
 <li>
-<p>Set the Network Information System (NIS) service boolean to true to prevent SELinux from stopping outgoing LDAP connections:</p>
+<p>On your Foreman&#160;server, enable the Network Information System (NIS) service so that SELinux does not block outgoing LDAP connections:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># setsebool -P nis_enabled on</pre>
@@ -3358,251 +3360,206 @@ For more information, see:</p>
 <p>In the Foreman web UI, navigate to <strong>Administer</strong> &gt; <strong>Authentication Sources</strong>.</p>
 </li>
 <li>
-<p>Click <strong>Create LDAP Authentication Source</strong>.</p>
+<p>From the <strong>LDAP</strong> menu, select <strong>Create</strong>.</p>
 </li>
 <li>
-<p>On the <strong>LDAP server</strong> tab, enter the LDAP server&#8217;s name, host name, port, and server type.
-The default port is 389, the default server type is POSIX (alternatively you can select FreeIPA or Active Directory depending on the type of authentication server).
-For <code>TLS</code> encrypted connections, select the <strong>LDAPS</strong> checkbox to enable encryption.
-The port should change to 636, which is the default for LDAPS.</p>
+<p>On the <strong>LDAP server</strong> tab, enter the details of your LDAP server.</p>
+<div class="paragraph">
+<p>For TLS encrypted connections, select <strong>LDAPS</strong> to enable encryption.</p>
+</div>
 </li>
 <li>
-<p>On the <strong>Account</strong> tab, enter the account information and domain name details.
-See <a href="#Description_of_LDAP_Settings_foreman">Description of LDAP settings</a> for descriptions and examples.</p>
+<p>On the <strong>Account</strong> tab, enter the account information and domain name details.</p>
+<div class="paragraph">
+<p>See <a href="#Example_Settings_for_LDAP_Connections_foreman">Example settings for LDAP connections</a> and <a href="#Example_LDAP_Filters_foreman">Example LDAP filters</a>.</p>
+</div>
 </li>
 <li>
-<p>On the <strong>Attribute mappings</strong> tab, map LDAP attributes to Foreman attributes.
-You can map login name, first name, last name, email address, and photo attributes.
-See <a href="#Example_Settings_for_LDAP_Connections_foreman">Example settings for LDAP connections</a> for examples.</p>
+<p>On the <strong>Attribute mappings</strong> tab, map LDAP attributes to Foreman attributes.</p>
 </li>
 <li>
-<p>On the <strong>Locations</strong> tab, select locations from the left table.
-Selected locations are assigned to users created from the LDAP authentication source, and available after their first login.</p>
+<p>On the <strong>Locations</strong> tab, select the locations you want Foreman to assign to users created from the LDAP authentication source.
+These locations are available to users after they log in for the first time.</p>
 </li>
 <li>
-<p>On the <strong>Organizations</strong> tab, select organizations from the left table.
-Selected organizations are assigned to users created from the LDAP authentication source, and available after their first login.</p>
+<p>On the <strong>Organizations</strong> tab, select the organizations you want Foreman to assign to users created from the LDAP authentication source.
+These locations are available to users after they log in for the first time.</p>
 </li>
 <li>
 <p>Click <strong>Submit</strong>.</p>
 </li>
-<li>
-<p>Configure new accounts for LDAP users:</p>
+</ol>
+</div>
 <div class="ulist">
+<div class="title">Next steps</div>
 <ul>
 <li>
-<p>If you did not select <strong>Automatically Create Accounts In Foreman</strong> checkbox, see <a href="https://docs.theforeman.org/nightly/Administering_Project/index-katello.html#Creating_a_User_admin">Creating a User</a> in <em>Administering Foreman</em> to create user accounts manually.</p>
+<p>If you did not select <strong>Automatically Create Accounts In Foreman</strong> on the <strong>Account</strong> tab, create user accounts manually.
+For more information, see <a href="https://docs.theforeman.org/nightly/Administering_Project/index-katello.html#Creating_a_User_admin">Creating a User</a> in <em>Administering Foreman</em>.</p>
 </li>
 <li>
-<p>If you selected the <strong>Automatically Create Accounts In Foreman</strong> checkbox, LDAP users can now log in to Foreman using their LDAP accounts and passwords.
-After they log in for the first time, the Foreman administrator has to assign roles to them manually.
-For more information on assigning user accounts appropriate roles in Foreman, see <a href="https://docs.theforeman.org/nightly/Administering_Project/index-katello.html#Assigning_Roles_to_a_User_admin">Assigning Roles to a User</a> in <em>Administering Foreman</em>.</p>
+<p>If you selected <strong>Automatically Create Accounts In Foreman</strong>, LDAP users can now log in to Foreman using their LDAP accounts and passwords.</p>
+</li>
+<li>
+<p>After users log in for the first time, the Foreman administrator must assign roles to them manually.
+For more information about assigning appropriate roles to user accounts, see <a href="https://docs.theforeman.org/nightly/Administering_Project/index-katello.html#Assigning_Roles_to_a_User_admin">Assigning Roles to a User</a> in <em>Administering Foreman</em>.</p>
 </li>
 </ul>
 </div>
+</div>
+<div class="sect3">
+<h4 id="Example_Settings_for_LDAP_Connections_foreman"><a class="anchor" href="#Example_Settings_for_LDAP_Connections_foreman"></a>5.1.3. Example settings for LDAP connections</h4>
+<div class="exampleblock">
+<div class="title">Example 1. Example settings for Active Directory LDAP connections</div>
+<div class="content">
+<div class="paragraph">
+<p>This example uses a dedicated service account called <em>redhat</em> that has bind, read, and search permissions on the user and group entries.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Account Username</strong>: DOMAIN\redhat</p>
 </li>
-</ol>
+<li>
+<p><strong>Account password</strong>: P@ssword</p>
+</li>
+<li>
+<p><strong>Base DN</strong>: DC=example,DC=COM</p>
+</li>
+<li>
+<p><strong>Login name attribute</strong>: userPrincipalName</p>
+</li>
+<li>
+<p><strong>First name attribute</strong>: givenName</p>
+</li>
+<li>
+<p><strong>Last name attribute</strong>: sn</p>
+</li>
+<li>
+<p><strong>Email address attribute</strong>: mail</p>
+</li>
+<li>
+<p><strong>Photo attribute</strong>: thumbnailPhoto</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The <code>userPrincipalName</code> attribute allows the use of whitespace in usernames. The <code>sAMAccountName</code> attribute, which provides backwards compatibility with legacy Microsoft systems, does not allow the use of whitespace in usernames.</p>
+</div>
+</div>
+</div>
+<div class="exampleblock">
+<div class="title">Example 2. Example settings for FreeIPA LDAP connections</div>
+<div class="content">
+<div class="paragraph">
+<p>This example uses a dedicated service account called <em>redhat</em> that has bind, read, and search permissions on the user and group entries.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Account Username</strong>: uid=redhat,cn=users,cn=accounts,dc=example,dc=com</p>
+</li>
+<li>
+<p><strong>Base DN</strong>: dc=example,dc=com</p>
+</li>
+<li>
+<p><strong>Groups Base DN</strong>: cn=groups,cn=accounts,dc=example,dc=com</p>
+</li>
+<li>
+<p><strong>Login name attribute</strong>: uid</p>
+</li>
+<li>
+<p><strong>First name attribute</strong>: givenName</p>
+</li>
+<li>
+<p><strong>Last name attribute</strong>: sn</p>
+</li>
+<li>
+<p><strong>Email address attribute</strong>: mail</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="exampleblock">
+<div class="title">Example 3. Example settings for POSIX LDAP connections</div>
+<div class="content">
+<div class="paragraph">
+<p>This example uses a dedicated service account called <em>redhat</em> that has bind, read, and search permissions on the user and group entries.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Account Username</strong>: uid=redhat,ou=users,dc=example,dc=com</p>
+</li>
+<li>
+<p><strong>Base DN</strong>: dc=example,dc=com</p>
+</li>
+<li>
+<p><strong>Groups Base DN</strong>: cn=employee,ou=userclass,dc=example,dc=com</p>
+</li>
+<li>
+<p><strong>Login name attribute</strong>: uid</p>
+</li>
+<li>
+<p><strong>First name attribute</strong>: givenName</p>
+</li>
+<li>
+<p><strong>Last name attribute</strong>: sn</p>
+</li>
+<li>
+<p><strong>Email address attribute</strong>: mail</p>
+</li>
+</ul>
+</div>
+</div>
 </div>
 </div>
 <div class="sect3">
-<h4 id="Description_of_LDAP_Settings_foreman"><a class="anchor" href="#Description_of_LDAP_Settings_foreman"></a>5.1.4. Description of LDAP settings</h4>
+<h4 id="Example_LDAP_Filters_foreman"><a class="anchor" href="#Example_LDAP_Filters_foreman"></a>5.1.4. Example LDAP filters</h4>
+<div class="exampleblock">
+<div class="title">Example 4. Example LDAP filters for allowing specific users to login</div>
+<div class="content">
 <div class="paragraph">
-<p>The following table provides a description for each setting in the <strong>Account</strong> tab.</p>
-</div>
-<table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 8. Account tab settings</caption>
-<colgroup>
-<col style="width: 22.2222%;">
-<col style="width: 77.7778%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">Setting</th>
-<th class="tableblock halign-left valign-top">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Account</strong></p></td>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p>The user name of the LDAP account that has read access to the LDAP server.
-User name is not required if the server allows anonymous reading, otherwise use the full path to the user&#8217;s object.
-For example:</p>
+<p>You are using the following LDAP directory structure:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap">uid=$login,cn=users,cn=accounts,dc=example,dc=com</pre>
+<pre class="nowrap">DC=Domain,DC=Example
+   |
+   |----- CN=Users
+         |
+         |----- CN=Group1
+         |----- CN=Group2
+         |----- CN=User1
+         |----- CN=User2
+         |----- CN=User3</pre>
 </div>
 </div>
 <div class="paragraph">
-<p>The <code>$login</code> variable stores the username entered on the login page as a literal string.
-The value is accessed when the variable is expanded.</p>
+<p>Group membership is defined as follows:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>Group1</code> includes users <code>User1</code> and <code>User3</code></p>
+</li>
+<li>
+<p><code>Group2</code> includes users <code>User2</code> and <code>User3</code></p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
-<p>The variable cannot be used with external user groups from an LDAP source because Foreman needs to retrieve the group list without the user logging in.
-Use either an anonymous, or dedicated service user.</p>
-</div></div></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Account password</strong></p></td>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p>The LDAP password for the user defined in the <strong>Account username</strong> field.
-This field can remain blank if the <strong>Account username</strong> is using the <code>$login</code> variable.</p>
-</div></div></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Base DN</strong></p></td>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p>The top level domain name of the LDAP directory.</p>
-</div></div></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Groups base DN</strong></p></td>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p>The top level domain name of the LDAP directory tree that contains groups.</p>
-</div></div></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>LDAP filter</strong></p></td>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p>A filter to restrict LDAP queries.</p>
-</div></div></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Automatically Create Accounts In Foreman</strong></p></td>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p>If this checkbox is selected, Foreman creates user accounts for LDAP users when they log in to Foreman for the first time.
-After they log in for the first time, the Foreman administrator has to assign roles to them manually.
-See <a href="https://docs.theforeman.org/nightly/Administering_Project/index-katello.html#Assigning_Roles_to_a_User_admin">Assigning Roles to a User</a> in <em>Administering Foreman</em> to assign user accounts appropriate roles in Foreman.</p>
-</div></div></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Usergroup Sync</strong></p></td>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p>If this option is selected, the user group membership of a user is automatically synchronized when the user logs in, which ensures the membership is always up to date.
-If this option is cleared, Foreman relies on a cron job to regularly synchronize group membership (every 30 minutes by default).
-For more information, see <a href="#Configuring_External_User_Groups_foreman">Configuring external user groups</a>.</p>
-</div></div></td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="sect3">
-<h4 id="Example_Settings_for_LDAP_Connections_foreman"><a class="anchor" href="#Example_Settings_for_LDAP_Connections_foreman"></a>5.1.5. Example settings for LDAP connections</h4>
-<div class="paragraph">
-<p>The following table shows example settings for different types of LDAP connections.
-The example below uses a dedicated service account called <em>redhat</em> that has bind, read, and search permissions on the user and group entries.
-Note that LDAP attribute names are case sensitive.</p>
+<p>For example, you can define the following search filters:</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 9. Example settings for Active Directory, Free IPA or Red&#160;Hat Identity Management and POSIX LDAP connections</caption>
-<colgroup>
-<col style="width: 14.2857%;">
-<col style="width: 28.5714%;">
-<col style="width: 28.5714%;">
-<col style="width: 28.5715%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">Setting</th>
-<th class="tableblock halign-left valign-top">Active Directory</th>
-<th class="tableblock halign-left valign-top">FreeIPA or Red&#160;Hat Identity Management</th>
-<th class="tableblock halign-left valign-top">POSIX (OpenLDAP)</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Account</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">DOMAIN\redhat</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">uid=redhat,cn=users,
-cn=accounts,dc=example,
-dc=com</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">uid=redhat,ou=users,
-dc=example,dc=com</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Account password</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">P@ssword</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Base DN</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">DC=example,DC=COM</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">dc=example,dc=com</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">dc=example,dc=com</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Groups Base DN</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">CN=Users,DC=example,DC=com</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">cn=groups,cn=accounts,
-dc=example,dc=com</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">cn=employee,ou=userclass,
-dc=example,dc=com</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Login name attribute</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">userPrincipalName</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">uid</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">uid</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">First name attribute</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">givenName</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">givenName</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">givenName</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Last name attribute</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">sn</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">sn</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">sn</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Email address attribute</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">mail</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">mail</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">mail</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Photo attribute</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">thumbnailPhoto</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
-</tr>
-</tbody>
-</table>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
-<div class="paragraph">
-<p><code>userPrincipalName</code> allows the use of whitespace in usernames.
-The login name attribute <code>sAMAccountName</code> (which is not listed in the table above) provides backwards compatibility with legacy Microsoft systems.
-<code>sAMAccountName</code> does not allow the use of whitespace in usernames.</p>
-</div>
-</td>
-</tr>
-</table>
-</div>
-</div>
-<div class="sect3">
-<h4 id="Example_LDAP_Filters_foreman"><a class="anchor" href="#Example_LDAP_Filters_foreman"></a>5.1.6. Example LDAP filters</h4>
-<div class="paragraph">
-<p>As an administrator, you can create LDAP filters to restrict the access of specific users to Foreman.</p>
-</div>
-<table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 10. Example filters for allowing specific users to login</caption>
 <colgroup>
 <col style="width: 25%;">
 <col style="width: 75%;">
 </colgroup>
 <thead>
 <tr>
-<th class="tableblock halign-left valign-top">User</th>
+<th class="tableblock halign-left valign-top">Search result (users)</th>
 <th class="tableblock halign-left valign-top">Filter</th>
 </tr>
 </thead>
@@ -3629,67 +3586,11 @@ The login name attribute <code>sAMAccountName</code> (which is not listed in the
 </tr>
 </tbody>
 </table>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
 <div class="paragraph">
-<p>Group <code>Users</code> is a nested group that contains groups <code>Group1</code> and <code>Group2</code>.
-If you want to filter all users from a nested group, you must add <code>memberOf:1.2.840.113556.1.4.1941:=</code> before the nested group name.
-See the last example in the table above.</p>
-</div>
-</td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-<div class="title">LDAP directory structure</div>
-<p>The LDAP directory structure that the filters in the example use:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">DC=Domain,DC=Example
-   |
-   |----- CN=Users
-         |
-         |----- CN=Group1
-         |----- CN=Group2
-         |----- CN=User1
-         |----- CN=User2
-         |----- CN=User3</pre>
+<p>Because group <code>Users</code> is a nested group that contains groups <code>Group1</code> and <code>Group2</code>, the filter must include <code>memberOf:1.2.840.113556.1.4.1941:=</code> before the nested group name. This enables you to filter all users from the nested group.</p>
 </div>
 </div>
-<div class="paragraph">
-<div class="title">LDAP group membership</div>
-<p>The group membership that the filters in the example use:</p>
 </div>
-<table class="tableblock frame-all grid-all stretch">
-<colgroup>
-<col style="width: 33.3333%;">
-<col style="width: 66.6667%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">Group</th>
-<th class="tableblock halign-left valign-top">Members</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Group1</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">User1,
-User3</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Group2</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">User2,
-User3</p></td>
-</tr>
-</tbody>
-</table>
 </div>
 </div>
 <div class="sect2">
@@ -3711,7 +3612,7 @@ User3</p></td>
 <td class="content">
 <div class="paragraph">
 <p>You can attach FreeIPA as an external authentication source with no single sign-on support.
-For more information, see <a href="#Using_LDAP_foreman">Using LDAP</a>.</p>
+For more information, see <a href="#configuring-an-ldap-server-as-an-external-identity-provider-for-project_foreman">Configuring an LDAP server as an external identity provider for Foreman</a>.</p>
 </div>
 </td>
 </tr>
@@ -3726,10 +3627,10 @@ For more information, see <a href="#Using_LDAP_foreman">Using LDAP</a>.</p>
 <td class="content">
 <div class="paragraph">
 <p>Users cannot use both FreeIPA and LDAP as an authentication method.
-Once a user authenticates using one method, they cannot use the other method.</p>
+After a user authenticates by using one of these methods, they cannot use the other method.</p>
 </div>
 <div class="paragraph">
-<p>To change the authentication method for a user, you have to remove the automatically created user from Foreman.</p>
+<p>To change the authentication method for a user, remove the automatically created user from Foreman.</p>
 </div>
 </td>
 </tr>
@@ -5651,7 +5552,7 @@ Click the <strong>Roles</strong> tab.</p>
 <td class="content">
 <div class="paragraph">
 <p>You can attach Active Directory as an external authentication source with no single sign-on support.
-For more information, see <a href="#Using_LDAP_foreman">Using LDAP</a>.
+For more information, see <a href="#configuring-an-ldap-server-as-an-external-identity-provider-for-project_foreman">Configuring an LDAP server as an external identity provider for Foreman</a>.
 For an example configuration, see <a href="https://access.redhat.com/solutions/1498773">How to configure Active Directory authentication with TLS on Foreman</a>.</p>
 </div>
 </td>
@@ -6292,7 +6193,7 @@ Then assign the required roles to this group.</p>
 <ul>
 <li>
 <p>If you use an LDAP server, configure Foreman to use LDAP authentication.
-For more information see <a href="#Using_LDAP_foreman">Using LDAP</a>.</p>
+For more information, see <a href="#configuring-an-ldap-server-as-an-external-identity-provider-for-project_foreman">Configuring an LDAP server as an external identity provider for Foreman</a>.</p>
 <div class="paragraph">
 <p>When using external user groups from an LDAP source, you cannot use the <code>$login</code> variable as a substitute for the account user name.
 You must use either an anonymous or dedicated service user.</p>
