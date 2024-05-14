@@ -1,83 +1,25 @@
 [id="Configuring_FreeIPA_Authentication_on_Server_{context}"]
-= Configuring {FreeIPA} authentication on {ProjectServer}
+= Configuring the {FreeIPA} authentication source on {ProjectServer}
 
-In the {Project} CLI, configure {FreeIPA} authentication by first creating a host entry on the {FreeIPA} server.
-
-.Procedure #1: Enrolling Sat Server as an IdM host
-. On the {FreeIPA} server, enroll the {ProjectServer} system as a host in the {FreeIPA} domain.
-ifdef::satellite[]
-+
-For more information, see link:{RHELDocsBaseURL}8/html/configuring_and_managing_identity_management/index[{RHEL}{nbsp}8 Configuring and managing Identity Management] or link:{RHELDocsBaseURL}9/html/configuring_and_managing_identity_management/index[{RHEL}{nbsp}9 Managing IdM users, groups, hosts, and access control rules].
-endif::[]
-ifndef::satellite[]
-For example, to add the {ProjectServer} system from the command line:
-+
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
-# ipa host-add --random
-----
-// I don't think --random is what we should be recommending. TBD: Check `ipa help host`.
-endif::[]
-. Create an HTTP service for {ProjectServer}, for example:
-+
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
-# ipa service-add HTTP/_hostname_
-----
-+
-ifdef::satellite[]
-For more information on managing services, see {RHELDocsBaseURL}9/html/accessing_identity_management_services/index[_{RHEL}{nbsp}9 Accessing Identity Management services_].
-endif::[]
-. On {ProjectServer}, install the IPA client:
-ifdef::satellite[]
-+
-[WARNING]
-====
-This command might restart {Project} services during the installation of the package.
-For more information about installing and updating packages on {Project}, see {AdministeringDocURL}Managing_Packages_on_the_Base_Operating_System_admin[Managing Packages on the Base Operating System of {ProjectServer} or {SmartProxyServer}] in _{AdministeringDocTitle}_.
-====
-endif::[]
-+
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
-# {project-package-install} ipa-client
-----
-. On {ProjectServer}, enter the following command as root to configure {FreeIPA}-enrollment:
-+
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
-# ipa-client-install --password _OTP_
-----
-+
-Replace _OTP_ with the one-time password provided by the {FreeIPA} administrator.
-ifdef::foreman-deb[]
-. Ensure that the hostname is set to the fully qualified domain name (FQDN); the short name is not sufficient:
-+
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
-# hostname
-{foreman-example-com}
-----
-+
-Otherwise, `{foreman-installer}` cannot generate the right principal name that is needed to join the realm.
-endif::[]
-
-.Procedure #2: Configuring the ext provider
-
-Intro
+Enable {FreeIPA} users access to {Project} by configuring {aIPA} authentication provider on your {ProjectServer}.
 
 .Prerequisites
+
 * The system on which {ProjectServer} is running must be enrolled in the {FreeIPA} domain.
 
-. Set {FreeIPA} as the authentication provider, using one of the following commands:
-* If you only want to enable access to the {ProjectWebUI} but not the {Project} API, enter:
+.Procedure
+
+. Set {IPA} as the authentication provider for {Project}.
+Specify the {Project} resources you want {IPA} users to access.
+For example:
+** To enable access to the {ProjectWebUI} but not the {Project} API:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 # {foreman-installer} \
 --foreman-ipa-authentication=true
 ----
-* If you want to enable access both to the {ProjectWebUI} and the {Project} API, enter:
+** To enable access to the {ProjectWebUI} and the {Project} API:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
@@ -88,8 +30,8 @@ Intro
 +
 [WARNING]
 ====
-Enabling access to both the {Project} API and the {ProjectWebUI} can lead to security problems.
-After an IdM user receives a Kerberos ticket-granting ticket (TGT) by entering `kinit _user_name_`, an attacker can obtain an API session.
+Enabling access to both the {ProjectWebUI} and the {Project} API poses a security risk.
+After {aIPA} user receives a Kerberos ticket-granting ticket (TGT) by entering `kinit _user_name_`, an attacker can obtain an API session.
 The attack is possible even if the user did not previously enter the {Project} login credentials anywhere, for example in the browser.
 ====
 . Restart {Project} services:
@@ -99,6 +41,7 @@ The attack is possible even if the user did not previously enter the {Project} l
 # {foreman-maintain} service restart
 ----
 
-External users can now log in to {Project} using their {FreeIPA} credentials.
-They can now choose to either log in to {ProjectServer} directly using their username and password or take advantage of the configured Kerberos single sign-on and obtain a ticket on their client machine and be logged in automatically.
-The two-factor authentication with one-time password (2FA OTP) is also supported.
+.Verification
+
+* As {aIPA} user, log in to {Project}.
+// This might be a good place to link to the IPA authentication procedures currently included in Admin Project.
