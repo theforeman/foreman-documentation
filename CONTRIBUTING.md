@@ -87,6 +87,7 @@ We capitalize the following terms:
 We do not capitalize the following terms:
 
 * content view
+* lifecycle environment
 * manifest
 * Red Hat subscription manifest
 * subscription
