@@ -3,6 +3,7 @@
 
 Please cherry-pick my commits into:
 
+* [ ] Foreman 3.11/Katello 4.13
 * [ ] Foreman 3.10/Katello 4.12
 * [ ] Foreman 3.9/Katello 4.11 (Satellite 6.15; orcharhino 6.8)
 * [ ] Foreman 3.8/Katello 4.10
