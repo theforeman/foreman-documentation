@@ -71,6 +71,7 @@ When a commit is pushed into `X.Y`:
   * Update `VERSION_LINKS` in the root `Makefile`.
   * Push the changes into `master`.
 * Check the site if links and landing page appeared correctly. HTML guides should be deployed into `/X.Y`
+* Notify the Doc team on the [TheForeman Doc chat](https://matrix.to/#/#theforeman-doc:matrix.org) Matrix channel
 
 ## License
 
