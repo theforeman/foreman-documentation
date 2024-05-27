@@ -62,6 +62,7 @@ When a commit is pushed into `X.Y`:
     * Set `DocState` to `unsupported`
     * Set `ProjectVersion` to `X.Y` and set the matching `KatelloVersion`
   * Push into `X.Y` branch.
+  * Notify the Doc team on the [TheForeman Doc chat](https://matrix.to/#/#theforeman-doc:matrix.org) Matrix channel
 * Update master
   * Update `ProjectVersionPrevious` to `X.Y` in `guides/common/attributes.adoc`
   * Create a copy of [/web/content/release-nightly.md](https://github.com/theforeman/foreman-documentation/tree/master/web/content/release-nightly.md) as `release-X.Y.md` and edit it accordingly.
