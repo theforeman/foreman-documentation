@@ -1,16 +1,19 @@
-FROM fedora:38
+FROM fedora:40
 
-RUN dnf upgrade -y && \
-    dnf install -y findutils \
-                   gcc \
-                   gcc-c++ \
-                   linkchecker \
-                   make \
-                   redhat-rpm-config \
-                   ruby-devel \
-                   rubygem-asciidoctor \
-                   rubygem-nokogiri && \
+RUN dnf install -y \
+        findutils \
+        gcc \
+        gcc-c++ \
+        linkchecker \
+        make \
+        redhat-rpm-config \
+        ruby-devel \
+        rubygem-asciidoctor && \
     dnf groupinstall -y development-tools && \
-    gem install sass
+    gem install \
+        ffi:1.16.3 \
+        nokogiri \
+        rb-inotify:0.10.1 \
+        sass
 
 WORKDIR /foreman-documentation/guides
