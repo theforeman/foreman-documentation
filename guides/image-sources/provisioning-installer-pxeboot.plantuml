@@ -1,5 +1,7 @@
 @startuml
 
+!include foreman.pstyle
+
 title Installer-based provisioning with PXE boot
 
 actor     User
@@ -14,7 +16,10 @@ participant "Puppet\nserver" as Puppet
 
 autonumber
 
-note over Host : is powered off
+note over Host : powered off
+
+== Create host in Foreman ==
+
 User -> Foreman : clicks **Create Host**
 Foreman -> Proxy : requests free IP address
 Proxy -> DHCP : reads DHCP cofiguration
@@ -38,12 +43,12 @@ User -> Host : powers on the machine
 Host -> DHCP : requests the reserved IP and PXE details
 Host -> TFTP : downloads bootloader
 note over Host : bootloader loads
-Host -> TFTP : bootloader gets MAC-based config
-Host -> TFTP : downloads OS installer image/kernel
+Host -> TFTP : gets MAC-based config for bootloader
+Host -> TFTP : downloads OS installer kernel and init RAM disk
 note over Host : OS installer loads
-Host -> Foreman : requests Kickstart
+Host -> Foreman : requests Kickstart content
 group Template [Kickstart default, Preseed default etc.]
-    Foreman -> Host : provides Kickstart
+    Foreman -> Host : provides Kickstart content
     note over Host : OS is installed
     opt Remote Execution
         Host -> Host : authorize SSH key\nof Foreman Proxy
@@ -53,18 +58,25 @@ group Template [Kickstart default, Preseed default etc.]
     end
     Host -> Foreman : calls home\n(disables build mode)
 end
-group NOT HAPPENING? [MAC-based config remains in TFTP dir\nSo which config file is removed?]
-Foreman -> Proxy : sends TFTP removal request
-Proxy -> TFTP : removes TFTP configuration file
+group #ffcc32 NOT HAPPENING? [MAC-based config remains in TFTP dir\nSo which config file is removed?]
+    Foreman -> Proxy : sends TFTP removal request
+    Proxy -> TFTP : removes TFTP configuration file
 end
 note over Host : reboots
 
-== First boot ==
+== First local boot ==
 
 Host -> DHCP : requests the reserved IP and PXE details
 Host -> TFTP : bootloader is downloaded
 Host -> TFTP : bootloader gets MAC-based config
-note over Host : bootloader is told to boot from HDD
+Foreman -> Host : tells bootloader to boot from HDD
+group Ansible??? [when enabled and Ansible roles assigned]
+    Host -> Proxy : sends initial facts
+    Proxy -> Foreman : forwards initial facts
+    note over Host : performs initial configuration
+    Host -> Proxy : sends initial report
+    Proxy -> Foreman : forwards initial report
+end
 group Puppet [when enabled]
     Host -> Puppet : sends initial facts
     Puppet -> Foreman : forwards initial facts
