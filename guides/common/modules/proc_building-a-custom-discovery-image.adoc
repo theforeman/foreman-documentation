@@ -1,0 +1,98 @@
+[id="Building_a_custom_Discovery_Image_{context}"]
+= Building a custom Discovery image
+
+You can build a custom Discovery ISO or rebuild an ISO if you change configuration files.
+
+The Discovery image uses a minimal operating system that is booted on hosts to acquire initial hardware information and check in with {Project}.
+Discovered hosts keep running the Discovery operating system until they are rebooted into an operating system installer, which then initiates the provisioning process.
+
+[IMPORTANT]
+====
+Do not use your production {ProjectServer} nor {SmartProxyServer} to perform this procedure.
+Use either a dedicated environment or copy the repositories and Kickstart file to a separate server.
+====
+
+The following procedure demonstrates the building process on {EL} 8 and uses CentOS Stream 8 repositories.
+
+.Prerequisites
+* Ensure that hardware virtualization is available on your server.
+* Install the following packages:
++
+[options="nowrap" subs="+quotes"]
+----
+# dnf install git-core lorax anaconda pykickstart wget qemu-kvm
+----
+* Clone the `foreman-discovery-image` repository:
++
+[options="nowrap" subs="+quotes"]
+----
+$ git clone https://github.com/theforeman/foreman-discovery-image.git
+$ cd foreman-discovery-image
+----
+
+.Procedure
+. Replace the contents of the `00-repos-centos8.ks` file with the following:
++
+[options="nowrap" subs="quotes,attributes"]
+----
+url --mirrorlist=http://mirrorlist.centos.org/?release=8&arch=$basearch&repo=baseos
+repo --name="AppStream" --mirrorlist=http://mirrorlist.centos.org/?release=8&arch=$basearch&repo=appstream
+repo --name="foreman-el8" --baseurl=http://yum.theforeman.org/releases/{ProjectVersion}/el8/$basearch/
+repo --name="foreman-plugins-el8" --baseurl=http://yum.theforeman.org/plugins/{ProjectVersion}/el8/$basearch/
+module --name=ruby --stream=2.7
+module --name=postgresql --stream=12
+module --name=foreman --stream=el8
+----
+. Prepare the Kickstart file:
++
+[options="nowrap" subs="+quotes"]
+----
+$ ./build-livecd fdi-centos8.ks
+----
+. Build the ISO image:
++
+[options="nowrap" subs="+quotes"]
+----
+$ sudo ./build-livecd-root _custom_ ./result "nomodeset nokaslr"
+----
++
+`nomodeset` disables mode setting. 
+`nokaslr` disables address space layout randomization.
++
+For example, you can build a fully automated Discovery image with a static network configuration:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+$ sudo ./build-livecd-root _custom_ ./result \
+"nomodeset nokaslr \
+fdi.pxip=192.168.140.20/24 fdi.pxgw=192.168.140.1 \
+fdi.pxdns=192.168.140.2 proxy.url=https://{foreman-example-com}:8443 \
+proxy.type=foreman fdi.pxmac=52:54:00:be:8e:8c fdi.pxauto=1"
+----
++
+For more information about configuration options, see xref:kernel-parameters-for-discovery-customization_{context}[].
+. Verify that your `./result/fdi-custom-XXXXXXX.iso` file is created:
++
+[options="nowrap" subs="+quotes"]
+----
+$ ls -h ./result/*.iso
+----
+. Convert the `.iso` file to an `.iso` hybrid file for local booting:
++
+[options="nowrap" subs="+quotes"]
+----
+# isohybrid --partok fdi.iso
+----
++
+If you have `grub2` packages installed, you can also use the following command to install a `grub2` bootloader:
++
+[options="nowrap" subs="+quotes"]
+----
+# isohybrid --partok --uefi fdi.iso
+----
+. Add `md5` checksum to the `.iso` file so that it can pass installation media validation tests in {Project}:
++
+[options="nowrap" subs="+quotes"]
+----
+# implantisomd5 fdi.iso
+----

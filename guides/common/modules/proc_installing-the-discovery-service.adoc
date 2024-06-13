@@ -1,10 +1,72 @@
 [id="Installing_the_Discovery_Service_{context}"]
 = Installing the Discovery service
 
-Complete the following procedure to enable the Discovery service on {SmartProxyServer}.
+ifdef::satellite[]
+The Discovery service is enabled by default on {ProjectServer}.
+endif::[]
+ifndef::satellite[]
+Enable the Discovery service on {ProjectServer}.
+endif::[]
+Additionally, you can enable the Discovery service on any {SmartProxyServers} that provide the TFTP service.
+
+The Discovery service requires a Discovery image, which is provided with {ProjectName}.
+The Discovery image uses a minimal operating system that is booted on hosts to acquire initial hardware information and check in with {Project}.
+
+ifdef::satellite[]
+The Foreman Discovery image provided with {Project} is based on {EL} 8.
+endif::[]
+ifdef::orcharhino[]
+The Foreman Discovery image provided with {Project} is based on CentOS Stream 8.
+endif::[]
+ifndef::satellite,orcharhino[]
+{Project} provides link:https://downloads.theforeman.org/discovery/releases/[multiple versions] of the Foreman Discovery image (FDI):
+
+* FDI version 4.0 and newer are based on CentOS Stream 8.
+* FDI versions older than 4.0 are based on CentOS Stream 7.
+endif::[]
 
 .Procedure
-. Enter the following commands on {SmartProxyServer}:
+ifdef::orcharhino[]
+. Install the Discovery plugin on {ProjectServer}:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foreman-installer} \
+--enable-foreman-plugin-discovery \
+--enable-foreman-proxy-plugin-discovery
+----
+endif::[]
+ifndef::satellite,orcharhino[]
+. Install the Discovery plugin on {ProjectServer}:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foreman-installer} \
+--enable-foreman-plugin-discovery \
+--enable-foreman-proxy-plugin-discovery \
+--foreman-proxy-plugin-discovery-install-images=true
+----
++
+This command downloads the latest Discovery ISO.
+If you require another version, add the following argument:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+--foreman-proxy-plugin-discovery-source-url=https://downloads.theforeman.org/discovery/releases/_x.y_/
+----
+endif::[]
+ifdef::satellite,orcharhino[]
+. Install `{fdi-package-name}` on {ProjectServer}:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {project-package-install} {fdi-package-name}
+----
++
+The `{fdi-package-name}` package installs the Discovery ISO to the `/usr/share/foreman-discovery-image/` directory.
+The package also extracts the PXE boot image to the `/var/lib/tftpboot/boot/fdi-image` directory.
+endif::[]
+. If you want to use {SmartProxyServer}, install the Discovery plugin on {SmartProxyServer}:
 +
 ifdef::satellite,orcharhino[]
 [options="nowrap" subs="+quotes,attributes"]
@@ -22,19 +84,32 @@ ifndef::satellite,orcharhino[]
 ----
 +
 This command downloads the latest Discovery image.
-If you require another version, add the following argument: `--foreman-proxy-plugin-discovery-source-url=https://downloads.theforeman.org/discovery/releases/_x.y_/`
+If you require another version, add the following argument:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+--foreman-proxy-plugin-discovery-source-url=https://downloads.theforeman.org/discovery/releases/_x.y_/
+----
 endif::[]
 ifdef::satellite,orcharhino[]
-. Install `{fdi-package-name}`:
+. If you want to use {SmartProxyServer}, install `{fdi-package-name}` on {SmartProxyServer}:
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
 # {project-package-install} {fdi-package-name}
 ----
++
+The package also extracts the PXE boot image to the `/var/lib/tftpboot/boot/fdi-image` directory.
+endif::[]
+. Configure the Discovery {SmartProxy} for the subnet with discoverable hosts:
+.. In the {ProjectWebUI}, navigate to *Infrastructure* > *Subnets*.
+.. Select a subnet.
+ifdef::satellite[]
+.. On the *{SmartProxies}* tab, select the Discovery {SmartProxy} that you want to use.
+endif::[]
+ifndef::satellite[]
+.. On the *Proxies* tab, select the Discovery Proxy that you want to use.
 endif::[]
 
-.Subnets
-All subnets with discoverable hosts require an appropriate {SmartProxyServer} selected to provide the Discovery service.
-
-In the {ProjectWebUI}, navigate to *Infrastructure* > *Subnets*, select a subnet, click the {SmartProxies} tab, and select the *Discovery Proxy* that you want to use.
++
 Perform this for each subnet that you want to use.

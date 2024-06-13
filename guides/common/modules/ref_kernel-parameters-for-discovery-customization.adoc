@@ -1,8 +1,7 @@
-[id="Unattended_Use_Customization_and_Image_Remastering_{context}"]
-= Unattended use, customization, and image remastering
+[id="kernel-parameters-for-discovery-customization_{context}"]
+= Kernel parameters for Discovery customization
 
-You can create a customized Discovery ISO to automate the image configuration process after booting.
-The Discovery image uses a Linux kernel for the operating system, which passes kernel parameters to configure the discovery service.
+Discovery uses a Linux kernel for the operating system and passes kernel parameters to configure the Discovery service.
 These kernel parameters include the following entries:
 
 fdi.cachefacts::
@@ -95,55 +94,51 @@ By default, facter runs every 30 seconds.
 
 fdi.vlan.primary::
 VLAN tagging ID to set for the primary interface.
+If you want to use tagged VLAN provisioning and you want the Discovery service to send a discovery request, add the following parameter to the Discovery snippet:
++
+[options="nowrap" subs="+quotes"]
+----
+fdi.vlan.primary=_My_VLAN_ID_
+----
 
 fdi.zips::
 Filenames with extensions to be downloaded and started during boot.
-For more information, see see xref:Extending_the_Discovery_Image_{context}[].
+For more information, see xref:Extending_the_Discovery_Image_{context}[].
 
 fdi.zipserver::
 TFTP server to use to download extensions from.
-For more information, see see xref:Extending_the_Discovery_Image_{context}[].
+For more information, see xref:Extending_the_Discovery_Image_{context}[].
+
+ifndef::orcharhino[]
+net.ifnames and biosdevname::
+Because network interface names are not expected to always be the same https://access.redhat.com/solutions/5984311[between major versions] of {RHEL},
+ifdef::foreman-el,katello[]
+or any other operating system being provisioned,
+endif::[]
+hosts can be created with incorrect network configurations.
+You can disable the new naming scheme by a kernel command line parameter:
+
+* For Dell servers, use the `biosdevname=1` parameter.
+* For other hardware or virtual machines, use the `net.ifnames=1` parameter.
+endif::[]
 
 proxy.type::
 The proxy type.
-This is usually set to `proxy` to connect to {SmartProxyServer}.
-This parameter also supports a legacy `foreman` option, where communication goes directly to {ProjectServer} instead of a {SmartProxyServer}.
+By default, this parameter is set to `foreman`, where communication goes directly to {ProjectServer}.
+Set this parameter to `proxy` if you point to {SmartProxy} in `proxy.url`.
 
 proxy.url::
-The URL of {SmartProxyServer} or {ProjectServer} providing the Discovery service.
-
-.Using the `discovery-remaster` tool to remaster an OS image
-ifdef::satellite[]
-{ProjectServer} provides the `discovery-remaster` tool in the `{fdi-package-name}` package.
-This tool remasters the image to include these kernel parameters.
-To remaster the image, run the `discovery-remaster` tool.
+The URL of the server providing the Discovery service.
+By default, this parameter contains the `foreman_server_url` macro as its argument.
+This macro resolves to the full URL of {ProjectServer}.
+There is no macro for a {SmartProxy} URL.
+You have to set a {SmartProxy} explicitly.
 For example:
-endif::[]
-ifdef::foreman-el,katello[]
-{ProjectServer} provides the `discovery-remaster` tool.
-This tool remasters the image to include these kernel parameters.
-To remaster the image, run the `discovery-remaster` tool.
-For example:
-endif::[]
-
++
 [options="nowrap" subs="+quotes,attributes"]
 ----
-# discovery-remaster ~/iso/foreman-discovery-image-3.4.4-5.iso \
-"fdi.pxip=192.168.140.20/24 fdi.pxgw=192.168.140.1 \
-fdi.pxdns=192.168.140.2 proxy.url=https://_{foreman-example-com}_:{smartproxy_port} \
-proxy.type=proxy fdi.pxfactname1=_customhostname_ fdi.pxfactvalue1=_myhost_ fdi.pxmac=52:54:00:be:8e:8c fdi.pxauto=1"
+proxy.url=https://_{smartproxy-example-com}_:{smartproxy_port} proxy.type=proxy
 ----
-
-Copy this media to either a CD, DVD, or a USB stick.
-For example, to copy to a USB stick at `/dev/sdb`:
-
-[options="nowrap" subs="+quotes"]
-----
-# dd bs=4M \
-if=/usr/share/foreman-discovery-image/foreman-discovery-image-3.4.4-5.iso \
-of=/dev/sdb
-----
-
-Insert the Discovery boot media into a bare-metal host, start the host, and boot from the media.
-
-For more information about provisioning discovered hosts, see xref:Creating_Hosts_from_Discovered_Hosts_{context}[].
++
+You can use an IP address or FQDN in this parameter.
+Add a SSL port number if you point to {SmartProxy}.
