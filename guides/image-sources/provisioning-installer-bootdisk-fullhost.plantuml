@@ -4,6 +4,88 @@
 
 title Installer-based provisioning with full-host bootdisk
 
-' TODO
+
+actor     User
+participant "Provisioned\nHost" as Host
+participant "Foreman" as Foreman
+participant "Foreman\nProxy" as Proxy
+participant "Pulp\n(Katello)" as Pulp
+participant TFTP
+participant DHCP
+participant DNS
+participant "Puppet\nserver" as Puppet
+
+autonumber
+
+note over Host : powered off
+
+== Create host in Foreman ==
+
+User -> Foreman : clicks **Create Host**
+Foreman -> Proxy : requests free IP address
+Proxy -> DHCP : reads DHCP cofiguration
+note over Foreman : pings IP address
+User -> Foreman : submits the **Create host** form
+group Template [Kickstart default *PXE*, Preseed default *PXE* etc.]
+    Foreman -> Proxy : creates TFTP configuration
+end
+Proxy -> TFTP : deploys TFTP configuration file
+Foreman -> Proxy : OS installer boot files download command
+Proxy -> Pulp : downloads kernel and initial RAM disk
+Foreman -> Proxy : creates DHCP reservation
+Proxy -> DHCP : forwards DHCP reservation
+Foreman -> Proxy : creates DNS records
+Proxy -> DNS : forwards DNS records
+note over Foreman : host is created\n(build mode enabled)
+
+== Boot into OS installer ==
+
+User -> Host : powers on the machine
+Host -> DHCP : requests the reserved IP and PXE details
+Host -> TFTP : downloads bootloader
+note over Host : bootloader loads
+Host -> TFTP : gets MAC-based config for bootloader
+Host -> TFTP : downloads OS installer kernel and init RAM disk
+note over Host : OS installer loads
+Host -> Foreman : requests Kickstart content
+group Template [Kickstart default, Preseed default etc.]
+    Foreman -> Host : provides Kickstart content
+    note over Host : OS is installed
+    opt Remote Execution
+        Host -> Host : authorize SSH key\nof Foreman Proxy
+    end
+    opt Puppet
+        Host -> Puppet : signs Puppet client certificate (puppet agent)
+    end
+    Host -> Foreman : calls home\n(disables build mode)
+end
+group #ffcc32 NOT HAPPENING [MAC-based config remains in TFTP dir\nSo which config file is removed?]
+    Foreman -> Proxy : sends TFTP removal request
+    Proxy -> TFTP : removes TFTP configuration file
+end
+note over Host : reboots
+
+== First local boot ==
+
+Host -> DHCP : requests the reserved IP and PXE details
+Host -> TFTP : bootloader is downloaded
+Host -> TFTP : bootloader gets MAC-based config
+Foreman -> Host : tells bootloader to boot from HDD
+group Ansible??? [when enabled and Ansible roles assigned]
+    Host -> Proxy : sends initial facts
+    Proxy -> Foreman : forwards initial facts
+    note over Host : performs initial configuration
+    Host -> Proxy : sends initial report
+    Proxy -> Foreman : forwards initial report
+end
+group Puppet [when enabled]
+    Host -> Puppet : sends initial facts
+    Puppet -> Foreman : forwards initial facts
+    note over Host : performs initial configuration
+    Host -> Puppet : sends initial report
+    Puppet -> Foreman : forwards initial report
+end
+
+note over Host : in operation
 
 @enduml
