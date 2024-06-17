@@ -47,17 +47,49 @@ Apache user must not have access to the keytab file.
 ----
 [service/HTTP]
 mechs = krb5
-cred_store = keytab:/etc/httpd/conf/http.keytab
+cred_store = keytab:/etc/gssproxy/http.keytab
 cred_store = ccache:/var/lib/gssproxy/clients/krb5cc_%U
 euid = __ID_of_Apache_User__
+----
+. Set the correct SELinux context for the future keytab entry:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# semanage fcontext -a -s system_u -t krb5_keytab_t '/etc/gssproxy/http\.keytab'
 ----
 . Create a keytab entry:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-# KRB5_KTNAME=FILE:/etc/httpd/conf/http.keytab net ads keytab add HTTP -U administrator -d3 -s /etc/net-keytab.conf
-# chown root.{apache-user} /etc/httpd/conf/http.keytab
-# chmod 640 /etc/httpd/conf/http.keytab
+# KRB5_KTNAME=FILE:/etc/gssproxy/http.keytab net ads keytab add HTTP -U administrator -d3 -s /etc/net-keytab.conf
+# chown root.root /etc/gssproxy/http.keytab
+# chmod 600 /etc/gssproxy/http.keytab
+----
+// TO BE CONFIRMED: This step should not be needed
+. Add a *Service Principal Name (SPN)* for your AD server.
+You can use a tool such as `adcli`:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# adcli spn --add _My_Service_/{foreman-example-com} _My_Username_
+----
+. Configure SSSD to map Group Policy Objects (GPOs) from AD to the `foreman` PAM service by ensuring the following lines are included in the `/etc/sssd/sssd.conf` file:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+access_provider = ad
+ad_gpo_access_control = enforcing
+ad_gpo_map_service = +foreman
+----
+ifdef::satellite[]
++
+For more information on GPOs, see https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/integrating_rhel_systems_directly_with_windows_active_directory/managing-direct-connections-to-ad_integrating-rhel-systems-directly-with-active-directory#applying-group-policy-object-access-control-in-rhel_managing-direct-connections-to-ad[How SSSD interprets GPO access control rules] in _Integrating RHEL systems directly with Windows Active Directory_.
+endif::[]
+. If you changed the `/etc/sssd/sssd.conf` configuration file, restart the `sssd` service:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# systemctl restart sssd
 ----
 . Enable IPA authentication in {Project}:
 +
@@ -93,25 +125,6 @@ Environment=GSS_USE_PROXY=1
 ----
 # systemctl restart httpd
 ----
-
-[IMPORTANT]
-====
-With direct AD integration, HBAC through {FreeIPA} is not available.
-As an alternative, you can use Group Policy Objects (GPO) that enable administrators to centrally manage policies in AD environments.
-To ensure correct GPO to PAM service mapping, add the following SSSD configuration to `/etc/sssd/sssd.conf`:
-
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
-access_provider = ad
-ad_gpo_access_control = enforcing
-ad_gpo_map_service = +foreman
-----
-
-Here, _foreman_ is the PAM service name.
-ifdef::satellite[]
-For more information on GPOs, see {RHELDocsBaseURL}9/html/integrating_rhel_systems_directly_with_windows_active_directory/managing-direct-connections-to-ad_integrating-rhel-systems-directly-with-active-directory#how-sssd-interprets-gpo-access-control-rules_applying-group-policy-object-access-control-in-rhel[How SSSD interprets GPO access control rules] in _{RHEL}{nbsp}9 Integrating RHEL systems directly with Windows Active Directory_ or {RHELDocsBaseURL}8/html/integrating_rhel_systems_directly_with_windows_active_directory/managing-direct-connections-to-ad_integrating-rhel-systems-directly-with-active-directory#how-sssd-interprets-gpo-access-control-rules_applying-group-policy-object-access-control-in-rhel[How SSSD interprets GPO access control rules] in _{RHEL}{nbsp}8 Integrating RHEL systems directly with Windows Active Directory_.
-endif::[]
-====
 
 .Verification
 Verify that SSO is working as expected.
