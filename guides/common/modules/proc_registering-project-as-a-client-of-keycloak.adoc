@@ -1,48 +1,36 @@
 [id="registering-{project-context}-as-a-client-of-keycloak_{context}"]
 = Registering {Project} as a client of {keycloak}
-Use this procedure to register {Project} to {keycloak} as a client and configure {Project} to use {keycloak} as an authentication source.
 
-You can configure {Project} and {keycloak} with two different authentication methods:
-
-. Users authenticate to {Project} using the {ProjectWebUI}.
-. Users authenticate to {Project} using the {Project} CLI.
-
-You must decide on how you want your users to authenticate in advance because both methods require different {Project} clients to be registered to {keycloak} and configured.
-The steps to register and configure {Project} client in {keycloak} are distinguished within the procedure.
-
-You can also register two different {Project} clients to {keycloak} if you want to use both authentication methods and configure both clients accordingly.
+Users defined in {keycloak} can authenticate to {Project} by using the {ProjectWebUI} or by using Hammer CLI.
+Each authentication method requires you to register a separate {Project} client to {keycloak}.
+If you want users to authenticate by using both {ProjectWebUI} and Hammer CLI, you must register two different {Project} clients to {keycloak}.
 
 .Procedure
 
-// python3-lxml is only needed on EL8 because of https://issues.redhat.com/browse/RHEL-31496
-. On {ProjectServer}, install the following packages:
+On your {ProjectServer}:
+
+. Install the packages required for registering a {keycloak} client:
 +
 [options="nowrap", subs="verbatim,quotes,attributes"]
 ----
 # {project-package-install} mod_auth_openidc keycloak-httpd-client-install python3-lxml
 ----
-
-. Register {Project} to {keycloak} as a client.
-Note that you the registration process for logging in using the web UI and the CLI are different.
-You can register two clients {Project} clients to {keycloak} to be able to log in to {Project} from the web UI and the CLI.
-+
-* If you want you users to authenticate to {Project} using the web UI, create a client as follows:
+// python3-lxml is only needed on EL8 because of https://issues.redhat.com/browse/RHEL-31496
+. If you want users to authenticate by using the {ProjectWebUI}:
+.. Create a client for {Project}.
+Use `foreman-openidc` as the application name.
 +
 [options="nowrap", subs="verbatim,quotes,attributes"]
 ----
 # keycloak-httpd-client-install --app-name foreman-openidc \
---keycloak-server-url "_https://{keycloak-example-com}_" \
+--keycloak-server-url "https://_{keycloak-example-com}_" \
 --keycloak-admin-username "_admin_" \
 --keycloak-realm "_{Project}_Realm_" \
 --keycloak-admin-realm master \
 --keycloak-auth-role root-admin \
 -t openidc -l /users/extlogin --force
 ----
-+
-Enter the password for the administer account when prompted.
-This command creates a client for {Project} in {keycloak}.
-+
-Then, configure {Project} to use {keycloak} as an authentication source:
+.. Configure {Project} to use {keycloak} as an authentication source:
 +
 [options="nowrap", subs="verbatim,quotes,attributes"]
 ----
@@ -50,26 +38,27 @@ Then, configure {Project} to use {keycloak} as an authentication source:
 --foreman-keycloak-app-name "foreman-openidc" \
 --foreman-keycloak-realm "_{Project}_Realm_"
 ----
-+
-* If you want your users to authenticate to {Project} using the CLI, create a client as follows:
+. If you want users to authenticate by using the Hammer CLI, create a client for {Project}.
+Use `hammer-openidc` as the application name.
 +
 [options="nowrap", subs="verbatim,quotes,attributes"]
 ----
 # keycloak-httpd-client-install --app-name hammer-openidc \
---keycloak-server-url "_https://{keycloak-example-com}_" \
+--keycloak-server-url "https://_{keycloak-example-com}_" \
 --keycloak-admin-username "_admin_" \
 --keycloak-realm "_{Project}_Realm_" \
 --keycloak-admin-realm master \
 --keycloak-auth-role root-admin \
 -t openidc -l /users/extlogin --force
 ----
-+
-Enter the password for the administer account when prompted.
-This command creates a client for {Project} in {keycloak}.
-
 . Restart the `httpd` service:
 +
 [options="nowrap", subs="verbatim,quotes,attributes"]
 ----
 # systemctl restart httpd
 ----
+
+[NOTE]
+====
+To disable {keycloak} authentication in {Project}, reset {keycloak} support to the default value by using `{foreman-maintain} --reset-foreman-keycloak`.
+====
