@@ -34,7 +34,7 @@ The FUTURE crypto-policy is not supported for {Project} and {SmartProxy} install
 endif::[]
 
 .Procedure
-ifdef::foreman-el,katello[]
+ifndef::satellite[]
 . Configure the repositories to obtain Leapp.
 +
 Configure the https://copr.fedorainfracloud.org/coprs/g/theforeman/leapp/[@theforeman/leapp COPR Repository], which contains Leapp packages with patches to support {Project} or {SmartProxy} upgrades:
@@ -42,7 +42,6 @@ Configure the https://copr.fedorainfracloud.org/coprs/g/theforeman/leapp/[@thefo
 ----
 # dnf copr enable @theforeman/leapp
 ----
-`
 Note that this is not required for {RHEL} based installations.
 endif::[]
 
@@ -83,10 +82,11 @@ baseurl=http://_server.example.com_/sat6/Maintenance/
 endif::[]
 endif::[]
 
-ifdef::foreman-el,katello[]
+ifndef::satellite[]
 . Install additional OS specific packages (`leapp-data-almalinux` for AlmaLinux, `leapp-data-centos` for CentOS Stream, or `leapp-data-rocky` for Rocky Linux).
 Note that this is not required for {RHEL} based installations.
 +
+[options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 # {project-package-install} leapp-data-centos
 ----
@@ -106,11 +106,11 @@ gpgcheck=1
 name=Foreman plugins {ProjectVersion}
 baseurl=https://yum.theforeman.org/plugins/{ProjectVersion}/el9/$basearch
 enabled=1
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-foreman
+gpgcheck=0
 
-leapp-puppet7]
+[leapp-puppet7]
 name=Puppet 7 Repository el 9 - $basearch
-baseurl=http://yum.puppetlabs.com/puppet7/el/8/$basearch
+baseurl=http://yum.puppetlabs.com/puppet7/el/9/$basearch
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-2025-04-06-puppet7-release
 enabled=1
 gpgcheck=1
@@ -123,10 +123,10 @@ gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-foreman
 enabled=1
 gpgcheck=1
 
-[leapp-katello-candlepin]
+[leapp-candlepin]
 name=Candlepin: an open source entitlement management system.
-baseurl=https://yum.theforeman.org/katello/{KatelloVersion}/candlepin/el9/$basearch/
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-foreman
+baseurl=https://yum.theforeman.org/candlepin/{CandlepinVersion}/el9/$basearch/
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-candlepin
 enabled=1
 gpgcheck=1
 
@@ -141,15 +141,14 @@ endif::[]
 
 endif::[]
 . Let Leapp analyze your system:
+ifeval::["{mode}" != "disconnected"]
 +
 ----
 # leapp preupgrade
 ----
+endif
 ifdef::satellite[]
-+
 ifeval::["{mode}" == "disconnected"]
-Add the `--no-rhsm` and `--enablerepo` parameters:
-endif::[]
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
@@ -161,23 +160,22 @@ endif::[]
 --enablerepo {RepoRHEL9ServerSatelliteMaintenanceProjectVersion}
 ----
 endif::[]
+endif::[]
 
 +
 The first run will most likely report issues and inhibit the upgrade.
 Examine the report in the `/var/log/leapp/leapp-report.txt` file, answer all questions (using `leapp answer`), and manually resolve the other reported problems.
 +
-
 . Ensure `leapp preupgrade` has no issues.
-
 . Run:
+ifeval::["{mode}" != "disconnected"]
 +
 ----
 # leapp upgrade
 ----
-
+endif::[]
 ifdef::satellite[]
-+
-If you run {Project} in a disconnected environment, add the `--no-rhsm` and `--enablerepo` parameters:
+ifeval::["{mode}" == "disconnected"]
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
@@ -189,6 +187,8 @@ If you run {Project} in a disconnected environment, add the `--no-rhsm` and `--e
 --enablerepo {RepoRHEL9ServerSatelliteMaintenanceProjectVersion}
 ----
 endif::[]
+endif::[]
+
 
 . Reboot the system.
 +
@@ -200,7 +200,6 @@ After the system reboots, a live system conducts the upgrade, reboots to fix SEL
 # journalctl -u leapp_resume -f
 ----
 
-ifndef::foreman-deb[]
 . Complete these procedures in  _Upgrading from RHEL 8 to RHEL 9_:  
 .. Unlock packages:
 +
@@ -208,16 +207,14 @@ ifndef::foreman-deb[]
 ----
 # {foreman-maintain} packages unlock
 ----
-.. https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9/html/upgrading_from_rhel_8_to_rhel_9/verifying-the-post-upgrade-state_upgrading-from-rhel-8-to-rhel-9[Verifying the post-upgrade state of the RHEL 9 system]
-.. https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9/html/upgrading_from_rhel_8_to_rhel_9/performing-post-upgrade-tasks-on-the-rhel-9-system_upgrading-from-rhel-8-to-rhel-9[Performing post-upgrade tasks]
+.. https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9/html/upgrading_from_rhel_8_to_rhel_9/verifying-the-post-upgrade-state_upgrading-from-rhel-8-to-rhel-9[Verifying the post-upgrade state]
+.. https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9/html/upgrading_from_rhel_8_to_rhel_9/performing-post-upgrade-tasks-on-the-rhel-9-system_upgrading-from-rhel-8-to-rhel-9[Performing post-upgrade tasks on the RHEL 9 system]
 .. Lock packages:
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
 # {foreman-maintain} packages lock
 ----
-endif::[]
-ifdef::satellite[]
 . Complete the steps for changing SELinux to enforcing mode described in https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9/html/upgrading_from_rhel_8_to_rhel_9/applying-security-policies_upgrading-from-rhel-8-to-rhel-9#changing-selinux-mode-to-enforcing_applying-security-policies[Changing SELinux mode to enforcing] in the _Upgrading from RHEL 8 to RHEL 9_ guide.
 . Unset the `subscription-manager` release:
 +
@@ -225,4 +222,3 @@ ifdef::satellite[]
 ----
 # subscription-manager release --unset
 ----
-endif::[]
