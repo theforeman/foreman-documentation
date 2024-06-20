@@ -1,0 +1,67 @@
+@startuml
+
+!include foreman.pstyle
+
+title Installer-based provisioning with PXE boot
+
+actor     User
+participant "Provisioned\nHost" as Host
+participant "Foreman" as Foreman
+participant "Foreman\nProxy" as Proxy
+participant "Pulp\n(Katello)" as Pulp
+participant TFTP
+participant DHCP
+participant DNS
+participant "Puppet\nserver" as Puppet
+
+autonumber
+
+note over Host : powered off
+
+== Create host in Foreman ==
+
+User -> Foreman : clicks **Create Host**
+Foreman -> Proxy : requests free IP address
+Proxy -> DHCP : reads DHCP cofiguration
+note over Foreman : pings IP address
+User -> Foreman : submits the **Create host** form
+group Templates [All Kickstart default*, Preseed default* etc.]
+    Foreman -> Proxy : renders TFTP configuration files
+end
+Proxy -> TFTP : deploys TFTP configuration files
+Foreman -> Proxy : commands to download OS installer boot files
+Proxy -> Pulp : downloads OS installer kernel and initial RAM disk
+Foreman -> Proxy : creates DHCP reservation
+Proxy -> DHCP : forwards DHCP reservation
+Foreman -> Proxy : creates DNS records
+Proxy -> DNS : forwards DNS records
+note over Foreman : host is created\n(build mode enabled)
+
+== Boot into OS installer ==
+
+User -> Host : powers on the machine
+Host -> DHCP : requests the reserved IP and PXE details
+Host -> TFTP : downloads bootloader
+note over Host : bootloader loads
+Host -> TFTP : gets MAC-based config for bootloader
+Host -> TFTP : downloads OS installer kernel and init RAM disk
+note over Host : OS installer loads
+Host -> Foreman : requests OS content
+Foreman -> Host : provides OS content
+note over Host : OS is installed
+opt Remote Execution
+    Host -> Host : authorizes SSH key\nof Foreman Proxy
+end
+opt Puppet
+    Host -> Puppet : signs Puppet client certificate (Puppet agent)
+end
+Host -> Foreman : calls home\n(disables build mode)
+group #ffcc32 NOT HAPPENING [MAC-based config remains in TFTP dir\nSo which config file is removed?]
+    Foreman -> Proxy : sends TFTP removal request
+    Proxy -> TFTP : removes TFTP configuration file
+end
+note over Host : reboots
+
+!include first-local-boot-init-config.iuml
+
+@enduml
