@@ -1,36 +1,27 @@
 [id="upgrading-{project-context}-or-proxy-in-place-using-leapp_{context}"]
 = Upgrading {Project} or {SmartProxy} to {EL} 9 In-Place Using Leapp
 
-Use this procedure to upgrade your {Project} or {SmartProxy} installation from {EL} 8 to {EL} 9.
+When upgrading your {Project} or {SmartProxy} installation from {EL} 8 to {EL} 9, use the Leapp tool to help detect and resolve issues that could prevent you from upgrading successfully.
 
 .Prerequisites
-* {Project} {ProjectVersion} or {SmartProxy} {ProjectVersion} running on {EL} 8.
 ifdef::satellite[]
 * Review Known Issues before you begin an upgrade.
 For more information, see {ReleaseNotesDocURL}ref_known-issues_assembly_introducing-red-hat-satellite[Known Issues in {ProjectName} {ProjectVersion}].
 endif::[]
+* {Project} {ProjectVersion} or {SmartProxy} {ProjectVersion} running on {EL} 8.
 ifndef::satellite[]
 * Access to available repositories or a local mirror of repositories.
 endif::[]
 
 ifeval::["{mode}" == "disconnected"]
-.Prerequisites for Disconnected Environment
-If you run {Project} in a disconnected environment, ensure it also meets the following prerequisites:
+If you run {Project} in a disconnected environment, ensure you also meet the following prerequisites:
 
 * You require access to {RHEL} and {Project} packages.
-Obtain the ISO files for {RHEL} 9 and {Project}.
+Obtain the ISO files for {RHEL}{nbsp}9 and {Project}.
 For more information, see {UpgradingDisconnectedDocURL}Upgrading_satellite_upgrading-disconnected[Upgrading Red Hat Satellite] in _{UpgradingDisconnectedDocTitle}_.
 * For more information on customizing the Leapp upgrade for your environment, see https://access.redhat.com/articles/4977891[Customizing your {RHEL} in-place upgrade].
 * Since Leapp completes part of the upgrade in a container that has no access to additional ISO mounts, the repositories cannot be served from a locally mounted ISO but must be delivered over the network from a different machine.
 * For more information, see https://access.redhat.com/solutions/7030156[How to in-place upgrade an offline / disconnected RHEL 8 machine to RHEL 9 with Leapp?]
-endif::[]
-
-ifdef::satellite[]
-[NOTE]
-====
-* {Project} supports DEFAULT and FIPS crypto-policies.
-The FUTURE crypto-policy is not supported for {Project} and {SmartProxy} installations.
-====
 endif::[]
 
 .Procedure
@@ -55,7 +46,7 @@ ifdef::satellite[]
 
 ifeval::["{mode}" == "disconnected"]
 . Set up the following repositories to perform the upgrade in a disconnected environment:
-.. `/etc/yum.repos.d/rhel9.repo`:
+.. Add the following lines to `/etc/yum.repos.d/rhel9.repo`:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
@@ -67,7 +58,7 @@ baseurl=http://_server.example.com_/rhel9/BaseOS/
 name={RepoRHEL9AppStream}
 baseurl=http://_server.example.com_/rhel9/AppStream/
 ----
-.. `/etc/yum.repos.d/{project-context}.repo:`
+.. Add the following lines to `/etc/yum.repos.d/{project-context}.repo:`
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
@@ -164,9 +155,9 @@ endif::[]
 
 +
 The first run will most likely report issues and inhibit the upgrade.
-Examine the report in the `/var/log/leapp/leapp-report.txt` file, answer all questions (using `leapp answer`), and manually resolve the other reported problems.
+Examine the report in the `/var/log/leapp/leapp-report.txt` file, answer all questions by using `leapp answer`, and manually resolve the other reported problems.
 +
-. Ensure `leapp preupgrade` has no issues.
+. Run `leapp preupgrade` again and make sure that it does not report any more issues.
 . Let Leapp create the upgrade environment:
 ifeval::["{mode}" != "disconnected"]
 +
@@ -192,15 +183,15 @@ endif::[]
 
 . Reboot the system to start the upgrade.
 +
-After the system reboots, a live system conducts the upgrade, reboots to fix SELinux labels, then reboots into the final {EL} 9 system.
+After the system reboots, a live system conducts the upgrade, reboots to fix SELinux labels and then reboots into the final {EL} 9 system.
 
-. Wait for Leapp to finish the upgrade, you can monitor the process with:
+. Wait for Leapp to finish the upgrade.
+. You can monitor the process with `journalctl`:
 +
 ----
 # journalctl -u leapp_resume -f
 ----
 
-. Complete these procedures in  _Upgrading from RHEL 8 to RHEL 9_:  
 ifdef::satellite[]
 .. Unlock packages:
 +
@@ -209,8 +200,8 @@ ifdef::satellite[]
 # {foreman-maintain} packages unlock
 ----
 endif::[]
-.. https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9/html/upgrading_from_rhel_8_to_rhel_9/verifying-the-post-upgrade-state_upgrading-from-rhel-8-to-rhel-9[Verifying the post-upgrade state]
-.. https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9/html/upgrading_from_rhel_8_to_rhel_9/performing-post-upgrade-tasks-on-the-rhel-9-system_upgrading-from-rhel-8-to-rhel-9[Performing post-upgrade tasks on the RHEL 9 system]
+. Verify the post-upgrade state. For more information, see link:{RHELDocsBaseURL}9/html/upgrading_from_rhel_8_to_rhel_9/verifying-the-post-upgrade-state_upgrading-from-rhel-8-to-rhel-9[Verifying the post-upgrade state] in _Upgrading from RHEL{nbsp}8 toRHEL{nbsp}9_.
+. Perform post-upgrade tasks on the RHEL{nbsp}9 system. For more information, see link:https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9/html/upgrading_from_rhel_8_to_rhel_9/performing-post-upgrade-tasks-on-the-rhel-9-system_upgrading-from-rhel-8-to-rhel-9[Performing post-upgrade tasks on the RHEL{nbsp}9 system] in _Upgrading from RHEL{nbsp}8 to RHEL{nbsp}9_.
 ifdef::satellite[]
 .. Lock packages:
 +
@@ -219,15 +210,17 @@ ifdef::satellite[]
 # {foreman-maintain} packages lock
 ----
 endif::[]
-. Complete the steps for changing SELinux to enforcing mode described in https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9/html/upgrading_from_rhel_8_to_rhel_9/applying-security-policies_upgrading-from-rhel-8-to-rhel-9#changing-selinux-mode-to-enforcing_applying-security-policies[Changing SELinux mode to enforcing] in the _Upgrading from RHEL 8 to RHEL 9_ guide.
+. Change SELinux to enforcing mode. For more information, see link:{RHELDocsBaseURL}9/html/upgrading_from_rhel_8_to_rhel_9/applying-security-policies_upgrading-from-rhel-8-to-rhel-9#changing-selinux-mode-to-enforcing_applying-security-policies[Changing SELinux mode to enforcing] in _Upgrading from RHEL{nbsp}8 to RHEL{nbsp}9_.
 ifeval::["{mode}" != "disconnected"]
+ifdef::satellite[]
 . Unset the `subscription-manager` release:
+endif::[]
+ifndef::satellite[]
+. For {RHEL}-based installations, unset the `subscription-manager` release:
+endif::[]
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
 # subscription-manager release --unset
 ----
-ifndef::satellite[]
-Note that this is only required for {RHEL} based installations.
-endif::[]
 endif::[]
