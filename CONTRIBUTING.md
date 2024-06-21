@@ -69,6 +69,7 @@ We capitalize the following terms:
 * Enterprise Linux (umbrella term for RHEL-derivatives)
 * Hammer
 * Insights (Red Hat product)
+* Katello
 * Kickstart
 * Library (environment)
 * OpenSCAP
