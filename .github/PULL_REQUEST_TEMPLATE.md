@@ -1,6 +1,6 @@
 
 * [ ] I am familiar with the [contributing](https://github.com/theforeman/foreman-documentation/blob/master/CONTRIBUTING.md) guidelines.
-* [ ] Do not squash commits when merging this PR.
+* [x] Squash commits when if needed merging this PR.
 
 Please cherry-pick my commits into:
 
