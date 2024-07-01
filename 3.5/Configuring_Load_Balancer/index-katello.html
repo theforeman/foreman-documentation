@@ -27,7 +27,7 @@
 <h1>Configuring Smart&#160;Proxies with a Load Balancer</h1>
 <div class="details">
 <span id="revnumber">version 3.5 (unsupported),</span>
-<span id="revdate">published Jun 27 2024</span>
+<span id="revdate">published Jul 01 2024</span>
 </div>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
@@ -564,7 +564,7 @@ Complete this procedure on each Smart&#160;Proxy&#160;server that you want to co
 <p>The following section describes how to configure Smart&#160;Proxy&#160;servers that use custom SSL certificates for load balancing without Puppet.</p>
 </div>
 <div class="sect3">
-<h4 id="Creating_Custom_SSL_Certificates_for_smart-proxy_load-balancing"><a class="anchor" href="#Creating_Custom_SSL_Certificates_for_smart-proxy_load-balancing"></a>4.3.1. Creating Custom SSL Certificates for Smart&#160;Proxy&#160;Server</h4>
+<h4 id="creating-a-custom-ssl-certificate_load-balancing"><a class="anchor" href="#creating-a-custom-ssl-certificate_load-balancing"></a>4.3.1. Creating a Custom SSL Certificate for Smart&#160;Proxy&#160;server</h4>
 <div class="paragraph">
 <p>This procedure outlines how to create a configuration file for the Certificate Signing Request and include the load balancer and Smart&#160;Proxy&#160;server as Subject Alternative Names (SAN).
 Complete this procedure on each Smart&#160;Proxy&#160;server that you want to configure for load balancing.</p>
@@ -573,16 +573,15 @@ Complete this procedure on each Smart&#160;Proxy&#160;server that you want to co
 <div class="title">Procedure</div>
 <ol class="arabic">
 <li>
-<p>On Smart&#160;Proxy&#160;server, create a directory to contain all the source certificate files, accessible to only the <code>root</code> user:</p>
+<p>To store all the source certificate files, create a directory that is accessible only to the <code>root</code> user:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># mkdir /root/smart-proxy_cert
-# cd /root/smart-proxy_cert</pre>
+<pre class="nowrap"># mkdir /root/smart-proxy_cert</pre>
 </div>
 </div>
 </li>
 <li>
-<p>Create a private key with which to sign the Certificate Signing Request (CSR).</p>
+<p>Create a private key with which to sign the certificate signing request (CSR).</p>
 <div class="paragraph">
 <p>Note that the private key must be unencrypted.
 If you use a password-protected private key, remove the private key password.</p>
@@ -592,33 +591,27 @@ If you use a password-protected private key, remove the private key password.</p
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># openssl genrsa -out /root/smart-proxy_cert/smart-proxy_cert_key.pem 4096</pre>
+<pre class="nowrap"># openssl genrsa -out <code>/root/smart-proxy_cert/smart-proxy_cert_key.pem</code> 4096</pre>
 </div>
 </div>
 </li>
 <li>
-<p>Create the certificate request configuration file with the following content:</p>
+<p>Create the <code>/root/smart-proxy_cert/openssl.cnf</code> configuration file for the CSR and include the following content:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap">[ req ]
-default_bits       = 4096
+req_extensions = v3_req
 distinguished_name = req_distinguished_name
-req_extensions     = req_ext
+x509_extensions = usr_cert
 prompt = no
 
 [ req_distinguished_name ]
-countryName=<em>2 Letter Country Code</em>
-stateOrProvinceName=<em>State or Province Full Name</em>
-localityName=<em>Locality Name</em>
-0.organizationName=<em>Organization Name</em>
-organizationalUnitName=<em>Smart&#160;Proxy Organization Unit Name</em>
-commonName=<em>smartproxy.example.com</em> <b class="conum">(1)</b>
-emailAddress=<em>Email Address</em>
+commonName = <em>smartproxy.example.com</em> <b class="conum">(1)</b>
 
-[ req_ext ]
-#authorityKeyIdentifier=keyid,issuer
-#basicConstraints=CA:FALSE
+[ v3_req ]
+basicConstraints = CA:FALSE
 keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+extendedKeyUsage = serverAuth, clientAuth, codeSigning, emailProtection
 subjectAltName = @alt_names
 
 [alt_names] <b class="conum">(2)</b>
@@ -641,35 +634,66 @@ If you set a wildcard value, you must add the <code>-t foreman-proxy</code> opti
 </div>
 </li>
 <li>
-<p>Create a Certificate Signing Request (CSR) for the SAN certificate:</p>
+<p>Optional: If you want to add Distinguished Name (DN) details to the CSR, add the following information to the <code>[ req_distinguished_name ]</code> section:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># openssl req -new \
--key /root/smart-proxy_cert/smart-proxy_cert_key.pem \ <b class="conum">(1)</b>
--config SAN_config.cfg \ <b class="conum">(2)</b>
--out /root/smart-proxy_cert/smart-proxy_cert_csr.pem <b class="conum">(3)</b></pre>
+<pre class="nowrap">[req_distinguished_name]
+CN = <em>smartproxy.example.com</em>
+countryName =<em>My_Country_Name</em> <b class="conum">(1)</b>
+stateOrProvinceName = <em>My_State_Or_Province_Name</em> <b class="conum">(2)</b>
+localityName = <em>My_Locality_Name</em> <b class="conum">(3)</b>
+organizationName = <em>My_Organization_Or_Company_Name</em>
+organizationalUnitName = <em>My_Organizational_Unit_Name</em> <b class="conum">(4)</b></pre>
 </div>
 </div>
 <div class="colist arabic">
 <ol>
 <li>
-<p>Smart&#160;Proxy&#160;server’s private key, used to sign the certificate</p>
+<p>Two letter code</p>
 </li>
 <li>
-<p>The certificate request configuration file</p>
+<p>Full name</p>
 </li>
 <li>
-<p>Certificate Signing Request file</p>
+<p>Full name (example: New York)</p>
+</li>
+<li>
+<p>Division responsible for the certificate (example: IT department)</p>
 </li>
 </ol>
 </div>
 </li>
 <li>
-<p>Send the certificate request to the Certificate Authority:</p>
+<p>Generate CSR:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># openssl req -new \
+-key <em>/root/smart-proxy_cert/smart-proxy_cert_key.pem</em> \ <b class="conum">(1)</b>
+-config <em>/root/smart-proxy_cert/openssl.cnf</em> \ <b class="conum">(2)</b>
+-out <em>/root/smart-proxy_cert/smart-proxy_cert_csr.pem</em> <b class="conum">(3)</b></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>Path to the private key</p>
+</li>
+<li>
+<p>Path to the configuration file</p>
+</li>
+<li>
+<p>Path to the CSR to generate</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>Send the certificate signing request to the certificate authority (CA).
+The same CA must sign certificates for Foreman&#160;server and Smart&#160;Proxy&#160;server.</p>
 <div class="paragraph">
 <p>When you submit the request, specify the lifespan of the certificate.
-The method for sending the certificate request varies, so consult the Certificate Authority for the preferred method.
-In response to the request, you can expect to receive a Certificate Authority bundle and a signed certificate, in separate files.</p>
+The method for sending the certificate request varies, so consult the CA for the preferred method.
+In response to the request, you can expect to receive a CA bundle and a signed certificate, in separate files.</p>
 </div>
 </li>
 <li>
@@ -677,12 +701,15 @@ In response to the request, you can expect to receive a Certificate Authority bu
 </li>
 <li>
 <p>On Foreman&#160;server, validate Smart&#160;Proxy&#160;server certificate input files:</p>
+</li>
+</ol>
+</div>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># katello-certs-check \
--c /root/smart-proxy_cert/smart-proxy_cert.pem \ <b class="conum">(1)</b>
--k /root/smart-proxy_cert/smart-proxy_cert_key.pem \ <b class="conum">(2)</b>
--b /root/smart-proxy_cert/ca_cert_bundle.pem <b class="conum">(3)</b></pre>
+<pre># katello-certs-check \
+-c /root/{cert-name}_cert/{cert-name}_cert.pem \ <b class="conum">(1)</b>
+-k /root/{cert-name}_cert/{cert-name}_cert_key.pem \ <b class="conum">(2)</b>
+-b /root/{cert-name}_cert/ca_cert_bundle.pem <b class="conum">(3)</b></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -700,9 +727,6 @@ In response to the request, you can expect to receive a Certificate Authority bu
 </div>
 <div class="paragraph">
 <p>Retain a copy of the example <code>foreman-proxy-certs-generate</code> command that is output by the <code>katello-certs-check</code> command for creating the Certificate Archive File for this Smart&#160;Proxy&#160;server.</p>
-</div>
-</li>
-</ol>
 </div>
 </li>
 </ol>
@@ -796,7 +820,7 @@ Complete this procedure on each Smart&#160;Proxy&#160;server that you want to co
 </ol>
 </div>
 <div class="sect3">
-<h4 id="Creating_Custom_SSL_Certificates_for_smart-proxy_load-balancing-with-custom-ssl-certificates-with-puppet"><a class="anchor" href="#Creating_Custom_SSL_Certificates_for_smart-proxy_load-balancing-with-custom-ssl-certificates-with-puppet"></a>4.4.1. Creating Custom SSL Certificates for Smart&#160;Proxy&#160;Server</h4>
+<h4 id="creating-a-custom-ssl-certificate_load-balancing-with-custom-ssl-certificates-with-puppet"><a class="anchor" href="#creating-a-custom-ssl-certificate_load-balancing-with-custom-ssl-certificates-with-puppet"></a>4.4.1. Creating a Custom SSL Certificate for Smart&#160;Proxy&#160;server</h4>
 <div class="paragraph">
 <p>This procedure outlines how to create a configuration file for the Certificate Signing Request and include the load balancer and Smart&#160;Proxy&#160;server as Subject Alternative Names (SAN).
 Complete this procedure on each Smart&#160;Proxy&#160;server that you want to configure for load balancing.</p>
@@ -805,16 +829,15 @@ Complete this procedure on each Smart&#160;Proxy&#160;server that you want to co
 <div class="title">Procedure</div>
 <ol class="arabic">
 <li>
-<p>On Smart&#160;Proxy&#160;server, create a directory to contain all the source certificate files, accessible to only the <code>root</code> user:</p>
+<p>To store all the source certificate files, create a directory that is accessible only to the <code>root</code> user:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># mkdir /root/smart-proxy_cert
-# cd /root/smart-proxy_cert</pre>
+<pre class="nowrap"># mkdir /root/smart-proxy_cert</pre>
 </div>
 </div>
 </li>
 <li>
-<p>Create a private key with which to sign the Certificate Signing Request (CSR).</p>
+<p>Create a private key with which to sign the certificate signing request (CSR).</p>
 <div class="paragraph">
 <p>Note that the private key must be unencrypted.
 If you use a password-protected private key, remove the private key password.</p>
@@ -824,33 +847,27 @@ If you use a password-protected private key, remove the private key password.</p
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># openssl genrsa -out /root/smart-proxy_cert/smart-proxy_cert_key.pem 4096</pre>
+<pre class="nowrap"># openssl genrsa -out <code>/root/smart-proxy_cert/smart-proxy_cert_key.pem</code> 4096</pre>
 </div>
 </div>
 </li>
 <li>
-<p>Create the certificate request configuration file with the following content:</p>
+<p>Create the <code>/root/smart-proxy_cert/openssl.cnf</code> configuration file for the CSR and include the following content:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap">[ req ]
-default_bits       = 4096
+req_extensions = v3_req
 distinguished_name = req_distinguished_name
-req_extensions     = req_ext
+x509_extensions = usr_cert
 prompt = no
 
 [ req_distinguished_name ]
-countryName=<em>2 Letter Country Code</em>
-stateOrProvinceName=<em>State or Province Full Name</em>
-localityName=<em>Locality Name</em>
-0.organizationName=<em>Organization Name</em>
-organizationalUnitName=<em>Smart&#160;Proxy Organization Unit Name</em>
-commonName=<em>smartproxy.example.com</em> <b class="conum">(1)</b>
-emailAddress=<em>Email Address</em>
+commonName = <em>smartproxy.example.com</em> <b class="conum">(1)</b>
 
-[ req_ext ]
-#authorityKeyIdentifier=keyid,issuer
-#basicConstraints=CA:FALSE
+[ v3_req ]
+basicConstraints = CA:FALSE
 keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+extendedKeyUsage = serverAuth, clientAuth, codeSigning, emailProtection
 subjectAltName = @alt_names
 
 [alt_names] <b class="conum">(2)</b>
@@ -873,35 +890,66 @@ If you set a wildcard value, you must add the <code>-t foreman-proxy</code> opti
 </div>
 </li>
 <li>
-<p>Create a Certificate Signing Request (CSR) for the SAN certificate:</p>
+<p>Optional: If you want to add Distinguished Name (DN) details to the CSR, add the following information to the <code>[ req_distinguished_name ]</code> section:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># openssl req -new \
--key /root/smart-proxy_cert/smart-proxy_cert_key.pem \ <b class="conum">(1)</b>
--config SAN_config.cfg \ <b class="conum">(2)</b>
--out /root/smart-proxy_cert/smart-proxy_cert_csr.pem <b class="conum">(3)</b></pre>
+<pre class="nowrap">[req_distinguished_name]
+CN = <em>smartproxy.example.com</em>
+countryName =<em>My_Country_Name</em> <b class="conum">(1)</b>
+stateOrProvinceName = <em>My_State_Or_Province_Name</em> <b class="conum">(2)</b>
+localityName = <em>My_Locality_Name</em> <b class="conum">(3)</b>
+organizationName = <em>My_Organization_Or_Company_Name</em>
+organizationalUnitName = <em>My_Organizational_Unit_Name</em> <b class="conum">(4)</b></pre>
 </div>
 </div>
 <div class="colist arabic">
 <ol>
 <li>
-<p>Smart&#160;Proxy&#160;server’s private key, used to sign the certificate</p>
+<p>Two letter code</p>
 </li>
 <li>
-<p>The certificate request configuration file</p>
+<p>Full name</p>
 </li>
 <li>
-<p>Certificate Signing Request file</p>
+<p>Full name (example: New York)</p>
+</li>
+<li>
+<p>Division responsible for the certificate (example: IT department)</p>
 </li>
 </ol>
 </div>
 </li>
 <li>
-<p>Send the certificate request to the Certificate Authority:</p>
+<p>Generate CSR:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># openssl req -new \
+-key <em>/root/smart-proxy_cert/smart-proxy_cert_key.pem</em> \ <b class="conum">(1)</b>
+-config <em>/root/smart-proxy_cert/openssl.cnf</em> \ <b class="conum">(2)</b>
+-out <em>/root/smart-proxy_cert/smart-proxy_cert_csr.pem</em> <b class="conum">(3)</b></pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>Path to the private key</p>
+</li>
+<li>
+<p>Path to the configuration file</p>
+</li>
+<li>
+<p>Path to the CSR to generate</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>Send the certificate signing request to the certificate authority (CA).
+The same CA must sign certificates for Foreman&#160;server and Smart&#160;Proxy&#160;server.</p>
 <div class="paragraph">
 <p>When you submit the request, specify the lifespan of the certificate.
-The method for sending the certificate request varies, so consult the Certificate Authority for the preferred method.
-In response to the request, you can expect to receive a Certificate Authority bundle and a signed certificate, in separate files.</p>
+The method for sending the certificate request varies, so consult the CA for the preferred method.
+In response to the request, you can expect to receive a CA bundle and a signed certificate, in separate files.</p>
 </div>
 </li>
 <li>
@@ -909,12 +957,15 @@ In response to the request, you can expect to receive a Certificate Authority bu
 </li>
 <li>
 <p>On Foreman&#160;server, validate Smart&#160;Proxy&#160;server certificate input files:</p>
+</li>
+</ol>
+</div>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># katello-certs-check \
--c /root/smart-proxy_cert/smart-proxy_cert.pem \ <b class="conum">(1)</b>
--k /root/smart-proxy_cert/smart-proxy_cert_key.pem \ <b class="conum">(2)</b>
--b /root/smart-proxy_cert/ca_cert_bundle.pem <b class="conum">(3)</b></pre>
+<pre># katello-certs-check \
+-c /root/{cert-name}_cert/{cert-name}_cert.pem \ <b class="conum">(1)</b>
+-k /root/{cert-name}_cert/{cert-name}_cert_key.pem \ <b class="conum">(2)</b>
+-b /root/{cert-name}_cert/ca_cert_bundle.pem <b class="conum">(3)</b></pre>
 </div>
 </div>
 <div class="colist arabic">
@@ -932,9 +983,6 @@ In response to the request, you can expect to receive a Certificate Authority bu
 </div>
 <div class="paragraph">
 <p>Retain a copy of the example <code>foreman-proxy-certs-generate</code> command that is output by the <code>katello-certs-check</code> command for creating the Certificate Archive File for this Smart&#160;Proxy&#160;server.</p>
-</div>
-</li>
-</ol>
 </div>
 </li>
 </ol>
@@ -1722,7 +1770,7 @@ For more information, see:</p>
 <div id="footer">
 <div id="footer-text">
 Version 3.5 (unsupported)<br>
-Last updated Jun 2024
+Last updated Jul 2024
 </div>
 </div>
 </body>
