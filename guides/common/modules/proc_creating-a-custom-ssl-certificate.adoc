@@ -6,6 +6,11 @@ Use this procedure to create a custom SSL certificate for {ProductName}.
 If you already have a custom SSL certificate for {ProductName}, skip this procedure.
 endif::[]
 
+ifdef::load-balancing[]
+This procedure outlines how to create a configuration file for the Certificate Signing Request and include the load balancer and {SmartProxyServer} as Subject Alternative Names (SAN).
+Complete this procedure on each {SmartProxyServer} that you want to configure for load balancing.
+endif::[]
+
 ifeval::["{context}" == "{smart-proxy-context}"]
 On {ProjectServer}, create a custom certificate for your {ProductName}.
 If you already have a custom SSL certificate for {ProductName}, skip this procedure.
@@ -16,7 +21,7 @@ endif::[]
 +
 [options="nowrap", subs="+quotes,attributes"]
 ----
-# mkdir /root/{context}_cert
+# mkdir /root/{cert-name}_cert
 ----
 . Create a private key with which to sign the certificate signing request (CSR).
 +
@@ -27,9 +32,34 @@ If you already have a private key for this {ProductName}, skip this step.
 +
 [options="nowrap", subs="+quotes,attributes"]
 ----
-# openssl genrsa -out `/root/{context}_cert/{context}_cert_key.pem` 4096
+# openssl genrsa -out `/root/{cert-name}_cert/{cert-name}_cert_key.pem` 4096
 ----
-. Create the `/root/{context}_cert/openssl.cnf` configuration file for the CSR and include the following content:
++
+ifndef::load-balancing[]
+. Create the `/root/{cert-name}_cert/openssl.cnf` configuration file for the CSR and include the following content:
+[options="nowrap", subs="+quotes,attributes"]
+----
+[ req ]
+req_extensions = v3_req
+distinguished_name = req_distinguished_name
+prompt = no
+
+[ req_distinguished_name ]
+CN = _{ssl-common-name}_
+
+[ v3_req ]
+basicConstraints = CA:FALSE
+keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+extendedKeyUsage = serverAuth, clientAuth, codeSigning, emailProtection
+subjectAltName = @alt_names
+
+[ alt_names ]
+DNS.1 = _{ssl-common-name}_
+----
+endif::[]
+
+ifdef::load-balancing[]
+. Create the `/root/{cert-name}_cert/openssl.cnf` configuration file for the CSR and include the following content:
 +
 [options="nowrap", subs="+quotes,attributes"]
 ----
@@ -40,7 +70,7 @@ x509_extensions = usr_cert
 prompt = no
 
 [ req_distinguished_name ]
-CN = _{context}.example.com_
+commonName = _{ssl-common-name}_ <1>
 
 [ v3_req ]
 basicConstraints = CA:FALSE
@@ -48,24 +78,22 @@ keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
 extendedKeyUsage = serverAuth, clientAuth, codeSigning, emailProtection
 subjectAltName = @alt_names
 
-[ usr_cert ]
-basicConstraints=CA:FALSE
-nsCertType = client, server, email
-keyUsage = nonRepudiation, digitalSignature, keyEncipherment
-extendedKeyUsage = serverAuth, clientAuth, codeSigning, emailProtection
-nsComment = "OpenSSL Generated Certificate"
-subjectKeyIdentifier=hash
-authorityKeyIdentifier=keyid,issuer
-
-[ alt_names ]
-DNS.1 = _{context}.example.com_
+[alt_names] <2>
+DNS.1 = _{loadbalancer-example-com}_
+DNS.2 = _{smartproxy-example-com}_
 ----
-Optional: If you want to add Distinguished Name (DN) details to the CSR, add the following information to the `[ req_distinguished_name ]` section:
+<1> The certificate's common name must match the FQDN of {SmartProxyServer}.
+Ensure to change this when running the command on each {SmartProxyServer} that you configure for load balancing.
+You can also set a wildcard value `*`.
+If you set a wildcard value, you must add the `-t {certs-proxy-context}` option when you use the `katello-certs-check` command.
+<2> Under `[alt_names]`, include the FQDN of the load balancer as `DNS.1` and the FQDN of {SmartProxyServer} as `DNS.2`.
+endif::[]
+. Optional: If you want to add Distinguished Name (DN) details to the CSR, add the following information to the `[ req_distinguished_name ]` section:
 +
 [options="nowrap", subs="+quotes,attributes"]
 ----
 [req_distinguished_name]
-CN = _{context}.example.com_
+CN = _{ssl-common-name}_
 countryName =_My_Country_Name_ <1>
 stateOrProvinceName = _My_State_Or_Province_Name_ <2>
 localityName = _My_Locality_Name_ <3>
@@ -81,17 +109,34 @@ organizationalUnitName = _My_Organizational_Unit_Name_ <4>
 [options="nowrap", subs="+quotes,attributes"]
 ----
 # openssl req -new \
--key _/root/{context}_cert/{context}_cert_key.pem_ \ <1>
--config _/root/{context}_cert/openssl.cnf_ \ <2>
--out _/root/{context}_cert/{context}_cert_csr.pem_ <3>
+-key _/root/{cert-name}_cert/{cert-name}_cert_key.pem_ \ <1>
+-config _/root/{cert-name}_cert/openssl.cnf_ \ <2>
+-out _/root/{cert-name}_cert/{cert-name}_cert_csr.pem_ <3>
 ----
 <1> Path to the private key
 <2> Path to the configuration file
 <3> Path to the CSR to generate
-
 . Send the certificate signing request to the certificate authority (CA).
 The same CA must sign certificates for {ProjectServer} and {SmartProxyServer}.
 +
 When you submit the request, specify the lifespan of the certificate.
 The method for sending the certificate request varies, so consult the CA for the preferred method.
 In response to the request, you can expect to receive a CA bundle and a signed certificate, in separate files.
+ifdef::load-balancing[]
+. Copy the Certificate Authority bundle and {SmartProxyServer} certificate file that you receive from the Certificate Authority, and {SmartProxyServer} private key to your {ProjectServer}.
+. On {ProjectServer}, validate {SmartProxyServer} certificate input files:
+[options="nowrap", subs="+quotes,attributes"]
+----
+# katello-certs-check \
+-c /root/{cert-name}_cert/{cert-name}_cert.pem \ <1>
+-k /root/{cert-name}_cert/{cert-name}_cert_key.pem \ <2>
+-b /root/{cert-name}_cert/ca_cert_bundle.pem <3>
+----
+<1> {SmartProxyServer} certificate file, provided by your Certificate Authority
+<2> {SmartProxyServer}’s private key that you used to sign the certificate
+<3> Certificate Authority bundle, provided by your Certificate Authority
++
+If you set the `commonName=` to a wildcard value `*`, you must add the `-t {certs-proxy-context}` option to the `katello-certs-check` command.
++
+Retain a copy of the example `{certs-generate}` command that is output by the `katello-certs-check` command for creating the Certificate Archive File for this {SmartProxyServer}.
+endif::[]
