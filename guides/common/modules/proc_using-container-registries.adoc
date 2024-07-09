@@ -2,31 +2,73 @@
 = Using container registries
 
 Podman and Docker can be used to fetch content from container registries.
+Containers are pushed to the {Project} container registry.
+The {Project} registry follows the Open Containers Initiative (OCI) specification, so you can push content to {Project} by using the same methods that apply to other registries.
+For more information about OCI, see link:https://opencontainers.org/[Open Container Initiative Distribution Specification].
+
+.Prerequisites
+* To push content to an organization or product, a user must have permissions to create repositories.
+The push permission is `edit_products`.
+* To pull content, a user must have permissions as long as *unauthenticated pull* is set to off by default in the lifecycle environment.
+The pull permissions are `view_lifecycle_environments`, `view_products`, `view_content_views`.
 
 ifndef::orcharhino[]
 .Container registries on {SmartProxies}
-
 On {SmartProxies} with content, the https://github.com/Katello/smart_proxy_container_gateway[Container Gateway] {SmartProxy} plugin acts as the container registry.
 It caches authentication information from Katello and proxies incoming requests to Pulp.
 The Container Gateway is available by default on {SmartProxies} with content.
 endif::[]
 
-.Procedure
+.Considerations for pushing content to the {Project} container registry
+* You can only push content to the {ProjectServer} itself.
+If you need pushed content on {SmartProxies} as well, use {SmartProxy} syncing.
+* The pushed container name must contain only lowercase characters.
+* Unless pushed repositories are published in a content view version, they do not follow the Registry Name Pattern.
+This is to ensure that users can push and pull from the same path.
+* Users are required to push and pull from the same path.
+If a user uses the label-based schema, they pull using labels.
+If a user uses the ID-based schema, they pull using IDs.
 
-Logging in to the container registry:
+.Procedure
+. Log in to the container registry:
++
 [options="nowrap", subs="+quotes,attributes"]
 ----
 # podman login {foreman-example-com}
 ----
 
-Listing container images:
+. List container images:
++
 [options="nowrap", subs="+quotes,attributes"]
 ----
 # podman search {foreman-example-com}/
 ----
 
-Pulling container images:
+. Pull container images:
++
 [options="nowrap", subs="+quotes,attributes"]
 ----
 # podman pull {foreman-example-com}/my-image:<optional_tag>
 ----
+
+. Push container images to the {Project} container registry:
+* To indicate which organization, product, and repository the container image belongs to, include the organization and product in the container repository name.
+* Push accepts the following formats:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# podman push _image_ _{foreman-example-com}_/_organization_label_/_product_label_/_repository_name_[:_tag_]
+# podman push _image_ _{foreman-example-com}_/id/<organization_id>/<product_id>/<repository_name>[:_tag_]
+----
+
+* An example of a complete push:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# podman push _d2c94e258dcb_ _{foreman-example-com}_/default_organization/test_product/hello-world:latest
+Getting image source signatures
+Copying blob ac28800ec8bb done   |
+Copying config d2c94e258d done   |
+Writing manifest to image destination
+----
+* After the content push has completed, a repository is created in {Project}.
