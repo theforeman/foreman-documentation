@@ -1,7 +1,7 @@
 [id="upgrading-{project-context}-or-proxy-in-place-using-leapp_{context}"]
 = Upgrading {Project} or {SmartProxy} to {EL} 9 in-place by using Leapp
 
-{Project} and {SmartProxy} are supported on both {EL}8 and {EL}9.
+{Project} and {SmartProxy} are supported on both {EL} 8 and {EL} 9.
 You can upgrade your {Project} and {SmartProxy} operating system from {EL} 8 to {EL} 9. 
 When upgrading your {Project} or {SmartProxy} installation from {EL} 8 to {EL} 9, use the Leapp tool to upgrade as well as to help detect and resolve issues that could prevent you from upgrading successfully.
 
@@ -10,30 +10,32 @@ ifdef::satellite[]
 * Review Known Issues before you begin an upgrade.
 For more information, see {ReleaseNotesDocURL}ref_known-issues_assembly_introducing-red-hat-satellite[Known Issues in {ProjectName} {ProjectVersion}].
 endif::[]
+ifdef::foreman-el,katello[]
+* Review Known Issues before you begin an upgrade.
+For more information, see https://docs.theforeman.org/3.11/Release_Notes/index-katello.html
+.
+endif::[]
 * {Project} {ProjectVersion} or {SmartProxy} {ProjectVersion} running on {EL} 8.
 ifndef::satellite[]
 * Access to available repositories or a local mirror of repositories.
 endif::[]
-
 ifeval::["{mode}" == "disconnected"]
 * You require access to {RHEL} and {Project} packages.
 Obtain the ISO files for {RHEL}{nbsp}9 and {Project}.
 For more information, see xref:Upgrading_satellite_upgrading-disconnected[].
-* Since Leapp completes part of the upgrade in a container that has no access to additional ISO mounts, the repositories cannot be served from a locally mounted ISO but must be delivered over the network from a different machine.
+* Leapp completes part of the upgrade in a container that has no access to additional ISO mounts.
+The required repositories cannot be served from a locally mounted ISO but must be delivered over the network from a different machine.
 endif::[]
 
 .Procedure
 ifndef::satellite[]
-. Configure the repositories to obtain Leapp.
-+
-Configure the https://copr.fedorainfracloud.org/coprs/g/theforeman/leapp/[@theforeman/leapp COPR Repository], which contains Leapp packages with patches to support {Project} or {SmartProxy} upgrades:
+. Enable the https://copr.fedorainfracloud.org/coprs/g/theforeman/leapp/[@theforeman/leapp COPR Repository], which contains Leapp packages with patches to support {Project} or {SmartProxy} upgrades:
 +
 ----
 # dnf copr enable @theforeman/leapp
 ----
 Note that this is not required for {RHEL} based installations.
 endif::[]
-
 . Install required packages:
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 +
@@ -41,7 +43,6 @@ endif::[]
 # {project-package-install} leapp leapp-upgrade-el8toel9
 ----
 ifdef::satellite[]
-
 ifeval::["{mode}" == "disconnected"]
 . Set up the following repositories to perform the upgrade in a disconnected environment:
 .. Add the following lines to `/etc/yum.repos.d/rhel9.repo`:
@@ -70,7 +71,6 @@ baseurl=http://_server.example.com_/sat6/Maintenance/
 ----
 endif::[]
 endif::[]
-
 ifndef::satellite[]
 . Install additional OS specific packages (`leapp-data-almalinux` for AlmaLinux, `leapp-data-centos` for CentOS Stream, or `leapp-data-rocky` for Rocky Linux).
 See `ID` in `/etc/os-release` for your OS code.
@@ -128,10 +128,9 @@ enabled=1
 gpgcheck=1
 endif::[]
 ----
-
 endif::[]
 . Let Leapp analyze your system:
-ifeval::["{mode}" != "disconnected"]
+ifeval::["{mode}" == "connected"]
 +
 ----
 # leapp preupgrade
@@ -151,7 +150,6 @@ ifeval::["{mode}" == "disconnected"]
 ----
 endif::[]
 endif::[]
-
 +
 The first run will most likely report issues and inhibit the upgrade.
 Examine the report in the `/var/log/leapp/leapp-report.txt` file, answer all questions by using `leapp answer`, and manually resolve the other reported problems.
@@ -177,14 +175,12 @@ ifeval::["{mode}" == "disconnected"]
 ----
 endif::[]
 endif::[]
-
-
 . Reboot the system to start the upgrade.
 +
 After the system reboots, a live system conducts the upgrade, reboots to fix SELinux labels and then reboots into the final {EL} 9 system.
 
 . Wait for Leapp to finish the upgrade.
-. You can monitor the process with `journalctl`:
+You can monitor the process with `journalctl`:
 +
 ----
 # journalctl -u leapp_resume -f
@@ -198,8 +194,10 @@ ifdef::satellite[]
 # {foreman-maintain} packages unlock
 ----
 endif::[]
-. Verify the post-upgrade state. For more information, see link:{RHELDocsBaseURL}9/html/upgrading_from_rhel_8_to_rhel_9/verifying-the-post-upgrade-state_upgrading-from-rhel-8-to-rhel-9[Verifying the post-upgrade state] in _Upgrading from RHEL{nbsp}8 to RHEL{nbsp}9_.
-. Perform post-upgrade tasks on the RHEL{nbsp}9 system. For more information, see link:https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9/html/upgrading_from_rhel_8_to_rhel_9/performing-post-upgrade-tasks-on-the-rhel-9-system_upgrading-from-rhel-8-to-rhel-9[Performing post-upgrade tasks on the RHEL{nbsp}9 system] in _Upgrading from RHEL{nbsp}8 to RHEL{nbsp}9_.
+. Verify the post-upgrade state.
+For more information, see link:{RHELDocsBaseURL}9/html/upgrading_from_rhel_8_to_rhel_9/verifying-the-post-upgrade-state_upgrading-from-rhel-8-to-rhel-9[Verifying the post-upgrade state] in _Upgrading from RHEL{nbsp}8 to RHEL{nbsp}9_.
+. Perform post-upgrade tasks on the RHEL{nbsp}9 system.
+For more information, see link:https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9/html/upgrading_from_rhel_8_to_rhel_9/performing-post-upgrade-tasks-on-the-rhel-9-system_upgrading-from-rhel-8-to-rhel-9[Performing post-upgrade tasks on the RHEL{nbsp}9 system] in _Upgrading from RHEL{nbsp}8 to RHEL{nbsp}9_.
 ifdef::satellite[]
 . Lock packages:
 +
@@ -208,8 +206,9 @@ ifdef::satellite[]
 # {foreman-maintain} packages lock
 ----
 endif::[]
-. Change SELinux to enforcing mode. For more information, see link:{RHELDocsBaseURL}9/html/upgrading_from_rhel_8_to_rhel_9/applying-security-policies_upgrading-from-rhel-8-to-rhel-9#changing-selinux-mode-to-enforcing_applying-security-policies[Changing SELinux mode to enforcing] in _Upgrading from RHEL{nbsp}8 to RHEL{nbsp}9_.
-ifeval::["{mode}" != "connected"]
+. Change SELinux to enforcing mode.
+For more information, see link:{RHELDocsBaseURL}9/html/upgrading_from_rhel_8_to_rhel_9/applying-security-policies_upgrading-from-rhel-8-to-rhel-9#changing-selinux-mode-to-enforcing_applying-security-policies[Changing SELinux mode to enforcing] in _Upgrading from RHEL{nbsp}8 to RHEL{nbsp}9_.
+ifeval::["{mode}" == "disconnected"]
 ifdef::satellite[]
 . Unset the `subscription-manager` release:
 endif::[]
