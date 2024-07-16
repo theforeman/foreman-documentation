@@ -62,6 +62,7 @@ All headings are sentence case.
 We capitalize the following terms:
 
 * Ansible
+* Ansible Playbook
 * Candlepin
 * Chef
 * Deb (content type)
@@ -74,6 +75,7 @@ We capitalize the following terms:
 * Library (environment)
 * OpenSCAP
 * PostgreSQL
+* Product (collection of repositories)
 * Pulp
 * Puppet
 * Python
