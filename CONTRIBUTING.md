@@ -75,7 +75,6 @@ We capitalize the following terms:
 * Library (environment)
 * OpenSCAP
 * PostgreSQL
-* Product (collection of repositories)
 * Pulp
 * Puppet
 * Python
