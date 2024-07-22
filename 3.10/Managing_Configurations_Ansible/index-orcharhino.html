@@ -1225,14 +1225,35 @@ If you have already scheduled some jobs to run in the future, and the permission
 <div class="sect2">
 <h3 id="transport-modes-for-remote-execution_ansible"><a class="anchor" href="#transport-modes-for-remote-execution_ansible"></a>4.4. Transport modes for remote execution</h3>
 <div class="paragraph">
-<p>You can configure your orcharhino to use two different modes of transport for remote job execution.</p>
+<p>You can configure your orcharhino to use two different modes of transport for remote job execution.
+You can configure single orcharhino&#160;Proxy to use either one mode or the other but not both.</p>
 </div>
-<div class="paragraph">
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Push-based transport</dt>
+<dd>
 <p>On orcharhino&#160;Proxies in <code>ssh</code> mode, remote execution uses the SSH service to transport job details.
 This is the default transport mode.
 The SSH service must be enabled and active on the target hosts.
 The remote execution orcharhino&#160;Proxy must have access to the SSH port on the target hosts.
 Unless you have a different setting, the standard SSH port is 22.</p>
+<div class="paragraph">
+<p>This transport mode supports both Script and Ansible providers.</p>
+</div>
+</dd>
+<dt class="hdlist1">Pull-based transport</dt>
+<dd>
+<p>On orcharhino&#160;Proxies in <code>pull-mqtt</code> mode, remote execution uses Message Queueing Telemetry Transport (MQTT) to initiate the job execution it receives from orcharhino&#160;Server.
+The host subscribes to the MQTT broker on orcharhino&#160;Proxy for job notifications using the <code>yggdrasil</code> pull client.
+After the host receives a notification from the MQTT broker, it pulls job details from orcharhino&#160;Proxy over HTTPS, runs the job, and reports results back to orcharhino&#160;Proxy.</p>
+<div class="paragraph">
+<p>This transport mode supports the Script provider only.</p>
+</div>
+<div class="paragraph">
+<p>To use the <code>pull-mqtt</code> mode, you must enable it on orcharhino&#160;Proxy and configure the pull client on hosts.</p>
+</div>
+</dd>
+</dl>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -1253,25 +1274,17 @@ Unless you have a different setting, the standard SSH port is 22.</p>
 </tr>
 </table>
 </div>
-<div class="paragraph">
-<p>On orcharhino&#160;Proxies in <code>pull-mqtt</code> mode, remote execution uses Message Queueing Telemetry Transport (MQTT) to publish jobs it receives from orcharhino&#160;Server.
-The host subscribes to the MQTT broker on orcharhino&#160;Proxy for job notifications using the <code>yggdrasil</code> pull client.
-After the host receives a notification, it pulls job details from orcharhino&#160;Proxy over HTTPS, runs the job, and reports results back to orcharhino&#160;Proxy.</p>
-</div>
-<div class="paragraph">
-<p>To use the <code>pull-mqtt</code> mode, you must enable it on orcharhino&#160;Proxy and configure the pull client on the target hosts.</p>
-</div>
 <div class="ulist">
 <div class="title">Additional resources</div>
 <ul>
 <li>
-<p>To enable pull mode on orcharhino&#160;Proxy, see <a href="https://docs.theforeman.org/3.10/Installing_Proxy/index-orcharhino.html#configuring-remote-execution-for-pull-client_orcharhino-proxy">Configuring Remote Execution for Pull Client</a> in <em>Installing orcharhino&#160;Proxy</em>.</p>
+<p>To enable pull mode on orcharhino&#160;Proxy, see <a href="https://docs.theforeman.org/3.10/Installing_Proxy/index-orcharhino.html#configuring-pull-based-transport-for-remote-execution_orcharhino-proxy">Configuring pull-based transport for remote execution</a> in <em>Installing orcharhino&#160;Proxy</em>.</p>
 </li>
 <li>
-<p>To enable pull mode on an existing host, continue with <a href="#Configuring_a_Host_to_Use_the_Pull_Client_ansible">Configuring a host to use the pull client</a>.</p>
+<p>To enable pull mode on a registered host, continue with <a href="#Configuring_a_Host_to_Use_the_Pull_Client_ansible">Configuring a host to use the pull client</a>.</p>
 </li>
 <li>
-<p>To enable pull mode on a new host, continue with either of the following procedures in <em>Managing hosts</em>:</p>
+<p>To enable pull mode on a new host, continue with the following in <em>Managing hosts</em>:</p>
 <div class="ulist">
 <ul>
 <li>
@@ -1299,17 +1312,17 @@ Hosts do not require an SSH connection from their orcharhino&#160;Proxy.</p>
 <p>You have registered the host to orcharhino.</p>
 </li>
 <li>
-<p>The host&#8217;s orcharhino&#160;Proxy is configured to use <code>pull-mqtt</code> mode.
-For more information, see <a href="https://docs.theforeman.org/3.10/Installing_Proxy/index-orcharhino.html#configuring-remote-execution-for-pull-client_orcharhino-proxy">Configuring Remote Execution for Pull Client</a> in <em>Installing orcharhino&#160;Proxy</em>.</p>
+<p>The orcharhino&#160;Proxy through which the host is registered is configured to use <code>pull-mqtt</code> mode.
+For more information, see <a href="https://docs.theforeman.org/3.10/Installing_Proxy/index-orcharhino.html#configuring-remote-execution-for-pull-client_orcharhino-proxy">Configuring pull-based transport for remote execution</a> in <em>Installing orcharhino&#160;Proxy</em>.</p>
 </li>
 <li>
 <p>The ATIX&#160;AG orcharhino&#160;Client repository is enabled and synchronized on orcharhino&#160;Server, and enabled on the host.</p>
 </li>
 <li>
-<p>The host is able to communicate with its orcharhino&#160;Proxy over MQTT using port <code>1883</code>.</p>
+<p>The host can communicate with its orcharhino&#160;Proxy over MQTT using port <code>1883</code>.</p>
 </li>
 <li>
-<p>The host is able to communicate with its orcharhino&#160;Proxy over HTTPS.</p>
+<p>The host can communicate with its orcharhino&#160;Proxy over HTTPS.</p>
 </li>
 </ul>
 </div>
@@ -1339,8 +1352,7 @@ For more information, see <a href="https://docs.theforeman.org/3.10/Installing_P
 </ul>
 </div>
 <div class="paragraph">
-<p>The package installs <code>foreman_ygg_worker</code> and <code>yggdrasil</code> as dependencies and enables the pull mode on the host.
-The host&#8217;s <code>subscription-manager</code> configuration and consumer certificates are used to configure the <code>yggdrasil</code> client on the host, and the pull mode client worker is started.</p>
+<p>The package installs <code>foreman_ygg_worker</code> and <code>yggdrasil</code> as dependencies, configures the <code>yggdrasil</code> client, and starts the pull client worker on the host.</p>
 </div>
 </li>
 </ul>
