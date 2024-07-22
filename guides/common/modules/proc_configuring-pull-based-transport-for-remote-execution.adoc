@@ -1,0 +1,44 @@
+[id="configuring-pull-based-transport-for-remote-execution_{context}"]
+= Configuring pull-based transport for remote execution
+
+By default, remote execution uses push-based SSH as the transport mechanism for the Script provider.
+If your infrastructure prohibits outgoing connections from {ProductName} to hosts, you can use remote execution with pull-based transport instead, because the host initiates the connection to {ProductName}.
+The use of pull-based transport is not limited to those infrastructures.
+
+The pull-based transport comprises `pull-mqtt` mode on {SmartProxies} in combination with a pull client running on hosts.
+
+[NOTE]
+====
+The `pull-mqtt` mode works only with the Script provider.
+Ansible and other providers will continue to use their default transport settings.
+====
+
+ifeval::["{ProductName}" == "{SmartProxyServer}"]
+The mode is configured per {SmartProxyServer}.
+Some {SmartProxyServer}s can be configured to use `pull-mqtt` mode while others use SSH.
+If this is the case, it is possible that one remote job on a given host will use the pull client and the next job on the same host will use SSH.
+If you wish to avoid this scenario, configure all {SmartProxyServer}s to use the same mode.
+endif::[]
+
+.Procedure
+. Enable the pull-based transport on your {ProductName}:
++
+[options="nowrap" subs="quotes,attributes"]
+----
+# {foreman-installer} --foreman-proxy-plugin-remote-execution-script-mode=pull-mqtt
+----
+. Configure the firewall to allow the MQTT service on port 1883:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# firewall-cmd --add-service=mqtt
+----
+include::snip_make-firewall-settings-persistent.adoc[]
+. In `pull-mqtt` mode, hosts subscribe for job notifications to either your {ProjectServer} or any {SmartProxyServer} through which they are registered.
+Ensure that {ProjectServer} sends remote execution jobs to that same {ProjectServer} or {SmartProxyServer}:
+.. In the {ProjectWebUI}, navigate to *Administer* > *Settings*.
+.. On the *Content* tab, set the value of *Prefer registered through {SmartProxy} for remote execution* to *Yes*.
+
+.Next steps
+* Configure your hosts for the pull-based transport.
+For more information, see {ManagingHostsDocURL}transport-modes-for-remote-execution_managing-hosts[Transport modes for remote execution] in _{ManagingHostsDocTitle}_.
