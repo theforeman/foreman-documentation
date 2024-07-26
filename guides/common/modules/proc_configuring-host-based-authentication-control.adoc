@@ -1,62 +1,110 @@
-[id="Configuring_Host_Based_Authentication_Control_{context}"]
-= Configuring host-based authentication control
+[id="Configuring_Host_Based_Access_Control_{context}"]
+= Configuring host-based access control for {FreeIPA} users logging in to {Project}
 
-HBAC rules define which machine within the domain a {FreeIPA} user is allowed to access.
-You can configure HBAC on the {FreeIPA} server to prevent selected users from accessing {ProjectServer}.
-With this approach, you can prevent {Project} from creating database entries for users that are not allowed to log in.
-ifndef::orcharhino[]
-For more information on HBAC, see {RHELDocsBaseURL}9/html/managing_idm_users_groups_hosts_and_access_control_rules/index[_{RHEL}{nbsp}9 Managing IdM users, groups, hosts, and access control rules_] or {RHELDocsBaseURL}8/html/managing_idm_users_groups_hosts_and_access_control_rules/index[_{RHEL}{nbsp}8 Managing IdM users, groups, hosts, and access control rules_].
-endif::[]
+You can use host-based access control (HBAC) rules to manage access control within your {FreeIPA} domain.
+In {FreeIPA}, HBAC rules define which users can access which hosts and which services can be used to gain access.
 
-On the {FreeIPA} server, configure Host-Based Authentication Control (HBAC).
+For example, you can configure HBAC on the {FreeIPA} server to limit access to {ProjectServer} only to selected users or user groups.
+By configuring a HBAC rule in the {FreeIPA} domain, you can ensure {Project} does not create database entries for users who should not have access.
+
+.Prerequisites
+
+* {FreeIPA} user account with privileges to configure HBAC rules
 
 .Procedure
-. On the {FreeIPA} server, to authenticate, enter the following command and enter your password when prompted:
-+
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
-# kinit _admin_
-----
-. To verify that you have authenticated, enter the following command:
-+
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
-# klist
-----
-. Create HBAC service and rule on the {FreeIPA} server and link them together.
-The following examples use the PAM service name _{project-context}-prod_.
-Execute the following commands on the {FreeIPA} server:
-+
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
-# ipa hbacsvc-add {project-context}-prod
-# ipa hbacrule-add allow_{project-context}_prod
-# ipa hbacrule-add-service allow_{project-context}_prod --hbacsvcs={project-context}-prod
-----
-. Add the user who is to have access to the service {project-context}-prod, and the hostname of {ProjectServer}:
-+
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
-# ipa hbacrule-add-user allow_{project-context}_prod --user=_username_
-# ipa hbacrule-add-host allow_{project-context}_prod --hosts=_{foreman-example-com}_
-----
-+
-Alternatively, host groups and user groups can be added to the _allow_{project-context}_prod_ rule.
-. To check the status of the rule, execute:
-+
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
-# ipa hbacrule-find {project-context}-prod
-# ipa hbactest --user=_username_ --host=_{foreman-example-com}_ --service={project-context}-prod
-----
-. Ensure the allow_all rule is disabled on the {FreeIPA} server.
+
+. On the {FreeIPA} server, configure HBAC control. For more information, see {RHELDocsBaseURL}9/html/managing_idm_users_groups_hosts_and_access_control_rules/configuring-host-based-access-control-rules_managing-users-groups-hosts[_{RHEL}{nbsp}9 Managing IdM users, groups, hosts, and access control rules_] or {RHELDocsBaseURL}8/html/managing_idm_users_groups_hosts_and_access_control_rules/configuring-host-based-access-control-rules_managing-users-groups-hosts[_{RHEL}{nbsp}8 Managing IdM users, groups, hosts, and access control rules_].
+.. Create a HBAC service for {ProjectServer}.
+.. Create a new HBAC rule to define the required access control.
+Add the following {FreeIPA} entities to the HBAC rule:
+... The HBAC service for {ProjectServer}
+... The {ProjectServer} host
+... The users or user groups to whom you want to grant access
+.. Make sure the default {FreeIPA} `allow_all` rule is disabled.
 ifndef::orcharhino[]
-For instructions on how to do so without disrupting other services see the https://access.redhat.com/solutions/67895[How to configure HBAC rules in IdM] article on the Red{nbsp}Hat Customer Portal.
+For information about how to disable `allow_all` without disrupting other services, see the https://access.redhat.com/solutions/67895[How to configure HBAC rules in IdM] article on the Red{nbsp}Hat Customer Portal.
 endif::[]
-. Configure the {FreeIPA} integration with {ProjectServer} as described in xref:Configuring_FreeIPA_Authentication_on_Server_{context}[].
-On {ProjectServer}, define the PAM service as root:
+. On your {ProjectServer}, load the host-based access control rules from {FreeIPA}:
 +
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {foreman-installer} --foreman-pam-service=satellite-prod
+----
+
+.Verification
+
+* Log in to the {ProjectWebUI} as a user defined in {FreeIPA}.
+** If the user is included in the HBAC rule, {ProjectWebUI} will grant access.
+** If the user is not included in the HBAC rule, {ProjectWebUI} will not grant access.
+
+.Configuring host-based access control to allow access to {Project} only for selected {FreeIPA} users by using the command line
+====
+
+On the {FreeIPA} server, a user with administrative privileges configures a HBAC rule to allow selected users access to {ProjectServer}:
+
+. Authenticate as the user with privileges required to configure HBAC rules:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+$ kinit _admin_
+----
+. Optional: Verify that you have authenticated successfully:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+$ klist
+----
+. Create a new HBAC service named `{project-context}-prod`:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+$ ipa hbacsvc-add {project-context}-prod
+----
+. Create a new HBAC rule:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+$ ipa hbacrule-add _allow-{project-context}-prod_
+----
+. Add the following {FreeIPA} entities to the HBAC rule:
+.. The `{project-context}-prod` HBAC service:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+$ ipa hbacrule-add-service _allow-{project-context}-prod_ --hbacsvcs={project-context}-prod
+----
++
+.. The {ProjectServer} host:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+$ ipa hbacrule-add-host _allow-{project-context}-prod_ --hosts=_{foreman-example-com}_
+----
++
+.. The users or user groups to whom you want to grant access:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+$ ipa hbacrule-add-user _allow-{project-context}-prod_ --user=_ipa-user_
+----
++
+. Optional: Verify the status of the rule:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+$ ipa hbacrule-find _{project-context}-prod_
+$ ipa hbactest --user=_ipa-user_ --host=_{foreman-example-com}_ --service={project-context}-prod
+----
+. Disable the default `allow_all` rule:
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+$ ipa hbacrule-disable allow_all
+----
+
+On {ProjectServer}, a {Project} administrator re-runs {foreman-installer} to load the host-based access control rules from {FreeIPA}:
+
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 # {foreman-installer} --foreman-pam-service={project-context}-prod
 ----
+====
