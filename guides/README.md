@@ -128,7 +128,7 @@ The basic structure of the file is a nested path parts in the documentation link
     "accessing_server_admin": [
       "Logging_in_admin",
       "Using_FreeIPA_credentials_to_log_in_to_the_foreman_Hammer_CLI_admin",
-      "Using_FreeIPA_credentials_to_log_in_to_the_foreman_web_UI-with-a-Firefox-browser_admin",
+      "Using_FreeIPA_credentials_to_log_in_to_the_foreman_web_UI-with-Mozilla-Firefox_admin",
       "Using_FreeIPA_credentials_to_log_in_to_the_foreman_web_UI-with-a-Chrome-browser_admin",
       "Navigation_Tabs_in_the_Web_UI_admin",
       "Changing_the_Password_admin",
