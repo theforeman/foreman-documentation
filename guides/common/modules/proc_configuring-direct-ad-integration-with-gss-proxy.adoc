@@ -59,6 +59,26 @@ euid = __ID_of_Apache_User__
 # chown root.{apache-user} /etc/httpd/conf/http.keytab
 # chmod 640 /etc/httpd/conf/http.keytab
 ----
+. Configure SSSD to map Group Policy Objects (GPOs) from AD to the `foreman` PAM service:
+.. In your `/etc/sssd/sssd.conf` file, add the following lines to the `domain` section for the Active Directory domain:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+[domain/_EXAMPLE_]
+access_provider = ad
+ad_gpo_access_control = enforcing
+ad_gpo_map_service = +foreman
+----
+ifdef::satellite[]
++
+For more information on GPOs, see link:{RHELDocsBaseURL}9/html/integrating_rhel_systems_directly_with_windows_active_directory/managing-direct-connections-to-ad_integrating-rhel-systems-directly-with-active-directory#how-sssd-interprets-gpo-access-control-rules_applying-group-policy-object-access-control-in-rhel[How SSSD interprets GPO access control rules] in _{RHEL}{nbsp}9 Integrating RHEL systems directly with Windows Active Directory_ or link:{RHELDocsBaseURL}8/html/integrating_rhel_systems_directly_with_windows_active_directory/managing-direct-connections-to-ad_integrating-rhel-systems-directly-with-active-directory#applying-group-policy-object-access-control-in-rhel_managing-direct-connections-to-ad[How SSSD interprets GPO access control rules] in _{RHEL}{nbsp}8 Integrating RHEL systems directly with Windows Active Directory_.
+endif::[]
+.. Restart the `sssd` service:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# systemctl restart sssd
+----
 . Enable IPA authentication in {Project}:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
@@ -94,25 +114,6 @@ Environment=GSS_USE_PROXY=1
 # systemctl restart httpd
 ----
 
-[IMPORTANT]
-====
-With direct AD integration, HBAC through {FreeIPA} is not available.
-As an alternative, you can use Group Policy Objects (GPO) that enable administrators to centrally manage policies in AD environments.
-To ensure correct GPO to PAM service mapping, add the following SSSD configuration to `/etc/sssd/sssd.conf`:
-
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
-access_provider = ad
-ad_gpo_access_control = enforcing
-ad_gpo_map_service = +foreman
-----
-
-Here, _foreman_ is the PAM service name.
-ifdef::satellite[]
-For more information on GPOs, see {RHELDocsBaseURL}9/html/integrating_rhel_systems_directly_with_windows_active_directory/managing-direct-connections-to-ad_integrating-rhel-systems-directly-with-active-directory#how-sssd-interprets-gpo-access-control-rules_applying-group-policy-object-access-control-in-rhel[How SSSD interprets GPO access control rules] in _{RHEL}{nbsp}9 Integrating RHEL systems directly with Windows Active Directory_ or {RHELDocsBaseURL}8/html/integrating_rhel_systems_directly_with_windows_active_directory/managing-direct-connections-to-ad_integrating-rhel-systems-directly-with-active-directory#how-sssd-interprets-gpo-access-control-rules_applying-group-policy-object-access-control-in-rhel[How SSSD interprets GPO access control rules] in _{RHEL}{nbsp}8 Integrating RHEL systems directly with Windows Active Directory_.
-endif::[]
-====
-
 .Verification
 Verify that SSO is working as expected.
 
@@ -143,3 +144,7 @@ This returns the following response:
 ----
 <html><body>You are being <a href="https://__{foreman-example-com}/__users/4-ldapuserexample-com/edit">redirected</a>.</body></html>
 ----
+
+.Additional resources
+
+* For more information about the options to configure an Active Directory provider for SSSD, see the `sssd-ad(5)` man page.
