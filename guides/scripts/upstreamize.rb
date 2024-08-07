@@ -26,8 +26,9 @@ report.write("# Upstreamization report from #{Time.now.utc}\n")
             output.write(line)
             next
           end
-          line.gsub!(%r{https?://access.redhat.com/documentation/en-us/red_hat_satellite/\d\.\d/html/}, '{BaseURL}')
-          line.gsub!(%r{https?://access.redhat.com/documentation/en-us/red_hat_satellite/{ProjectVersion}/html/}, '{BaseURL}')
+          line.gsub!(%r{https?://access.redhat.com/documentation/en-us/red_hat_satellite/\d\.\d+/html(?:-single)?/}, '{BaseURL}')
+          line.gsub!(%r{https?://access.redhat.com/documentation/en-us/red_hat_satellite/{ProjectVersion}/html(?:-single)?/}, '{BaseURL}')
+          line.gsub!(%r{https?://access.redhat.com/documentation/en-us/}, '{RHDocsBaseURL}')
           line.gsub!(/Red( |\u{00A0}|{nbsp}) Hat Satellite( |\u{00A0}|{nbsp})6.\d/, '{ProjectNameX}')
           line.gsub!(/Red( |\u{00A0}|{nbsp})Hat Satellite( |\u{00A0}|{nbsp})6/, '{ProjectNameX}')
           line.gsub!(/Red( |\u{00A0}|{nbsp})Hat Satellite/, '{ProjectName}')
