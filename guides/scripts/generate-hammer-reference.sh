@@ -15,7 +15,7 @@ print_help() {
     echo -e "SOURCE_FILE    path to the Hammer-generated full-help in MarkDown"
     echo
     echo -e "Options:"
-    echo -e "  --target-dir, -T DIR
+    echo -e "  --target-dir, -T DIR"
     echo -e "               Path to a folder where the reference assembly"
     echo -e "               will be placed. Default: $ASMB_DIR"
     echo -e "                 Modules will be placed in DIR/modules/"
@@ -82,7 +82,7 @@ echo -e >$details_tmp # reset
 details_file="$mod_path/ref_hammer-option-details.adoc"
 details_header='[id="hammer-option-details"]\n= Option details\n\nHammer options accept the following option types and values:'
 
-asmb_header='[id="hammer-reference"]\n= Hammer reference\n\nYou can review the usage of Hammer statements.\nThese usage statements are current to the versions of Hammer and its components released for {ProjectXY}.\n'
+asmb_header='include::modules/con_hammer-reference.adoc[]\n'
 asmb_footer='include::modules/ref_hammer-option-details.adoc[leveloffset=+1]'
 
 # Create folders
