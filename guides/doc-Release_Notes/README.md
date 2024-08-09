@@ -66,3 +66,17 @@ ifdef::katello[]
 include::topics/katello-4.2.0.adoc[leveloffset=+1]
 endif::[]
 ```
+
+## Updating contributors
+
+Use [committers.rb](https://github.com/theforeman/theforeman.org/blob/gh-pages/scripts/committers.rb) to generate the list of committers. Generically, this is:
+
+```
+theforeman.org/scripts/committers.rb --multi-line FOREMAN_FROM FOREMAN_TO
+```
+
+You need to provide the Foreman tags FROM and TO. For example, `3.10.0-rc1` and `3.11.1`. And store that output to `topics/foreman-contributors.adoc`
+
+```
+theforeman.org/scripts/committers.rb --multi-line 3.10.0-rc1 3.11.1 > topics/foreman-contributors.adoc
+```
