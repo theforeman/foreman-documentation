@@ -1,0 +1,233 @@
+[[sect-Working_with_Life_Cycle_Environments]]
+=== Working with life cycle environments
+
+Satellite divides application life cycles into life cycle environments, which represent each stage of the application life cycle. Life cycle environments are linked to from an environment path. To create linked life cycle environments with the API, use the `prior_id` parameter.
+
+You can find the built-in API reference for life cycle environments at `https://_satellite.example.com_/apidoc/v2/lifecycle_environments.html`. The API routes include `/katello/api/environments` and `/katello/api/organizations/:organization_id/environments`.
+
+include::snip_note-python3-vs-python.adoc[]
+
+.Listing life cycle environments
+Use this API call to list all the current life cycle environments on your Satellite for the default organization with ID `1`.
+
+Example request:
+[options="nowrap" subs="+quotes"]
+----
+$ curl --header "Accept:application/json" \
+--header "Content-Type:application/json" \
+--request GET --user _sat_username:sat_password_ --insecure \
+https://_satellite.example.com_/katello/api/organizations/1/environments \
+| python3 -m json.tool`
+----
+
+Example response:
+[options="nowrap" subs="+quotes"]
+----
+      _output omitted_
+   "description": null,
+   *"id": 1,*
+   *"label": "Library",*
+   "library": true,
+   *"name": "Library",*
+   "organization": {
+        "id": 1,
+        "label": "Default_Organization",
+        "name": "Default Organization"
+   },
+   "permissions": {
+       "destroy_lifecycle_environments": false,
+       "edit_lifecycle_environments": true,
+       "promote_or_remove_content_views_to_environments": true,
+       "view_lifecycle_environments": true
+   },
+   *"prior": null,*
+   *"successor": null,*
+   _output truncated_
+----
+
+[[proc-Creating_Linked_Life_Cycle_Environments]]
+.Creating linked life cycle environments
+Use this example to create a path of life cycle environments.
+
+This procedure uses the default Library environment with ID `1` as the starting point for creating life cycle environments.
+
+. Choose an existing life cycle environment that you want to use as a starting point. List the environment using its ID, in this case, the environment with ID `1`:
++
+Example request:
++
+[options="nowrap" subs="+quotes"]
+----
+$ curl --request GET --user _sat_username:sat_password_ --insecure \
+https://_satellite.example.com_/katello/api/environments/1 \
+| python3 -m json.tool
+----
++
+Example response:
++
+[options="nowrap" subs="+quotes"]
+----
+	_output omitted_
+   *"id": 1,*
+   *"label": "Library",*
+	_output omitted_
+    *"prior": null,*
+    *"successor": null,*
+  _output truncated_
+----
+
+. Create a JSON file, for example, `life-cycle.json`, with the following content:
++
+----
+{"organization_id":1,"label":"api-dev","name":"API Development","prior":1}
+----
+
+. Create a life cycle environment using the `prior` option set to `1`.
++
+Example request:
++
+[options="nowrap" subs="+quotes"]
+----
+$ curl --header "Accept:application/json" \
+--header "Content-Type:application/json" \
+--request POST --user _sat_username:sat_password_ --insecure \
+--data @life-cycle.json \
+https://_satellite.example.com_/katello/api/environments \
+| python3 -m json.tool
+----
++
+Example response:
++
+[options="nowrap" subs="+quotes"]
+----
+      _output omitted_
+    "description": null,
+    *"id": 2,*
+    "label": "api-dev",
+    "library": false,
+    "name": "API Development",
+    "organization": {
+        "id": 1,
+        "label": "Default_Organization",
+        "name": "Default Organization"
+    },
+    "permissions": {
+        "destroy_lifecycle_environments": true,
+        "edit_lifecycle_environments": true,
+        "promote_or_remove_content_views_to_environments": true,
+        "view_lifecycle_environments": true
+    },
+   *"prior":* {
+        *"id": 1,*
+        "name": "Library"
+    },
+    _output truncated_
+----
++
+In the command output, you can see the ID for this life cycle environment is `2`, and the life cycle environment prior to this one is `1`. Use the life cycle environment with ID `2` to create a successor to this environment.
+
+. Edit the previously created `life-cycle.json` file, updating the `label`, `name`, and `prior` values.
++
+----
+{"organization_id":1,"label":"api-qa","name":"API QA","prior":2}
+----
+
+. Create a life cycle environment, using the `prior` option set to `2`.
++
+Example request:
++
+[options="nowrap" subs="+quotes"]
+----
+$ curl --header "Accept:application/json" \
+--header "Content-Type:application/json" \
+--request POST --user _sat_username:sat_password_ --insecure \
+--data @life-cycle.json \
+https://_satellite.example.com_/katello/api/environments \
+| python3 -m json.tool
+----
++
+Example response:
++
+[options="nowrap" subs="+quotes"]
+----
+      _output omitted_
+   "description": null,
+   *"id": 3,*
+    "label": "api-qa",
+    "library": false,
+    "name": "API QA",
+    "organization": {
+        "id": 1,
+        "label": "Default_Organization",
+        "name": "Default Organization"
+    },
+    "permissions": {
+        "destroy_lifecycle_environments": true,
+        "edit_lifecycle_environments": true,
+        "promote_or_remove_content_views_to_environments": true,
+        "view_lifecycle_environments": true
+    },
+   *"prior":* {
+        *"id": 2,*
+        "name": "API Development"
+    },
+    "successor": null,
+    _output truncated_
+----
++
+In the command output, you can see the ID for this life cycle environment is `3`, and the life cycle environment prior to this one is `2`.
+
+
+.Updating a life cycle environment
+
+You can update a life cycle environment using a PUT command.
+
+This example request updates a description of the life cycle environment with ID `3`.
+
+Example request:
+[options="nowrap" subs="+quotes"]
+----
+$ curl --header "Accept:application/json" \
+--header "Content-Type:application/json" \
+--request POST --user _sat_username:sat_password_ --insecure \
+--data '{"description":"Quality Acceptance Testing"}' \
+https://_satellite.example.com_/katello/api/environments/3 \
+| python3 -m json.tool
+----
+
+Example response:
+[options="nowrap" subs="+quotes"]
+----
+      _output omitted_
+    *"description": "Quality Acceptance Testing",*
+    "id": 3,
+    "label": "api-qa",
+    "library": false,
+    "name": "API QA",
+    "organization": {
+        "id": 1,
+        "label": "Default_Organization",
+        "name": "Default Organization"
+    },
+    "permissions": {
+        "destroy_lifecycle_environments": true,
+        "edit_lifecycle_environments": true,
+        "promote_or_remove_content_views_to_environments": true,
+        "view_lifecycle_environments": true
+    },
+    "prior": {
+        "id": 2,
+        "name": "API Development"
+    },
+    _output truncated_
+----
+
+.Deleting a life cycle environment
+
+You can delete a life cycle environment provided it has no successor. Therefore, delete them in reverse order using a command in the following format:
+
+Example request:
+[options="nowrap" subs="+quotes"]
+----
+$ curl --request DELETE --user _sat_username:sat_password_ --insecure \
+https://_satellite.example.com_/katello/api/environments/_:id_
+----

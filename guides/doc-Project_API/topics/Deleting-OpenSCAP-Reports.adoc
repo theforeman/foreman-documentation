@@ -1,0 +1,145 @@
+[[sect-API_Guide-Deleting-OpenSCAP-Reports]]
+=== Deleting OpenSCAP reports
+
+In Satellite Server, you can delete one or more OpenSCAP reports. However, when you delete reports, you must delete one page at a time. If you want to delete all Openscap reports, use the bash script that follows.
+
+NOTE: The example request and the example script below use `python3` to format the response from the {ProjectServer}.
+On RHEL 7 and some older systems, you must use `python` instead of `python3`.
+
+.Deleting an OpenSCAP report
+
+To delete an OpenSCAP report, complete the following steps:
+
+. List all OpenSCAP reports. Note the IDs of the reports that you want to delete.
++
+Example request:
++
+[options="nowrap" subs="+quotes"]
+----
+curl --insecure --user _username_:_password_ \
+https://_satellite.example.com_/api/v2/compliance/arf_reports/ | python3 -m json.tool
+----
++
+Example response:
++
+[options="nowrap" subs="+quotes"]
+----
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100  3252    0  3252    0     0   4319      0 --:--:-- --:--:-- --:--:--  4318
+{
+    "page": 1,
+    "per_page": 20,
+    "results": [
+        {
+            "created_at": "2017-05-16 13:27:09 UTC",
+            "failed": 0,
+            "host": "_host1.example.com_",
+            "id": 404,
+            "othered": 0,
+            "passed": 0,
+            "updated_at": "2017-05-16 13:27:09 UTC"
+        },
+        {
+            "created_at": "2017-05-16 13:26:07 UTC",
+            "failed": 0,
+            "host": "_host2.example.com_,
+            "id": 405,
+            "othered": 0,
+            "passed": 0,
+            "updated_at": "2017-05-16 13:26:07 UTC"
+        },
+        {
+            "created_at": "2017-05-16 13:25:07 UTC",
+            "failed": 0,
+            "host": "_host3.example.com_",
+            "id": 406,
+            "othered": 0,
+            "passed": 0,
+            "updated_at": "2017-05-16 13:25:07 UTC"
+        },
+        {
+            "created_at": "2017-05-16 13:24:07 UTC",
+            "failed": 0,
+            "host": "_host4.example.com_",
+            "id": 407,
+            "othered": 0,
+            "passed": 0,
+            "updated_at": "2017-05-16 13:24:07 UTC"
+        },
+    ],
+    "search": null,
+    "sort": {
+        "by": null,
+        "order": null
+    },
+    "subtotal": 29,
+    "total": 29
+----
++
+. Using an ID from the previous step, delete the OpenSCAP report. Repeat for each ID that you want to delete.
++
+Example request:
++
+[options="nowrap" subs="+quotes"]
+----
+# curl --insecure --user _username_:_password_ \
+--header "Content-Type: application/json" \
+--request DELETE https://_satellite.example.com_/api/v2/compliance/arf_reports/405
+----
++
+Example response:
++
+[options="nowrap" subs="+quotes"]
+----
+HTTP/1.1 200 OK
+Date: Thu, 18 May 2017 07:14:36 GMT
+Server: Apache/2.4.6 (Red Hat Enterprise Linux)
+X-Frame-Options: SAMEORIGIN
+X-XSS-Protection: 1; mode=block
+X-Content-Type-Options: nosniff
+Foreman_version: 1.11.0.76
+Foreman_api_version: 2
+Apipie-Checksum: 2d39dc59aed19120d2359f7515e10d76
+Cache-Control: max-age=0, private, must-revalidate
+X-Request-Id: f47eb877-35c7-41fe-b866-34274b56c506
+X-Runtime: 0.661831
+X-Powered-By: Phusion Passenger 4.0.18
+Set-Cookie: request_method=DELETE; path=/
+Set-Cookie: _session_id=d58fe2649e6788b87f46eabf8a461edd; path=/; secure; HttpOnly
+ETag: "2574955fc0afc47cb5394ce95553f428"
+Status: 200 OK
+Vary: Accept-Encoding
+Transfer-Encoding: chunked
+Content-Type: application/json; charset=utf-8
+----
+
+
+.Example BASH script to delete all OpenSCAP reports
+
+Use the following bash script to delete all the OpenSCAP reports:
+
+[source, Bash, options="nowrap" subs="+quotes"]
+----
+#!/bin/bash
+
+#this script removes all the arf reports from the satellite server
+
+#settings
+USER=_username_
+PASS=_password_
+URI=https://_satellite.example.com_
+
+#check amount of reports
+ while [ $(curl --insecure --user $USER:$PASS $URI/api/v2/compliance/arf_reports/ | python3 -m json.tool | grep \"\total\": | cut --fields=2 --delimiter":" | cut --fields=1 --delimiter"," | sed "s/ //g") -gt 0 ]; do
+
+#fetch reports
+ for i in $(curl --insecure --user $USER:$PASS $URI/api/v2/compliance/arf_reports/ | python3 -m json.tool | grep \"\id\": | cut --fields=2 --delimiter":" | cut --fields=1 --delimiter"," | sed "s/ //g")
+
+#delete reports
+  do
+  curl --insecure --user $USER:$PASS --header "Content-Type: application/json" --request DELETE $URI/api/v2/compliance/arf_reports/$i
+  done
+done
+
+----
