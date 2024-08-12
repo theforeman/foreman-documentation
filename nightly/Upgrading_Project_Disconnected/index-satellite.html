@@ -47,6 +47,7 @@
 <li><a href="#Upgrading_the_External_Database_upgrading-disconnected">2.6. Upgrading the external database</a></li>
 </ul>
 </li>
+<li><a href="#upgrading-satellite-or-capsule-in-place-using-leapp_upgrading-disconnected">3. Upgrading Satellite or Capsule to RHEL 9 in-place by using Leapp</a></li>
 </ul>
 </div>
 </div>
@@ -956,6 +957,180 @@ Otherwise reconfigure Satellite to use the new name:</p>
 </li>
 </ol>
 </div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="upgrading-satellite-or-capsule-in-place-using-leapp_upgrading-disconnected"><a class="anchor" href="#upgrading-satellite-or-capsule-in-place-using-leapp_upgrading-disconnected"></a>3. Upgrading Satellite or Capsule to RHEL 9 in-place by using Leapp</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Satellite and Capsule are supported on both Red&#160;Hat Enterprise Linux 8 and Red&#160;Hat Enterprise Linux 9.
+You can upgrade your Satellite and Capsule operating system from Red&#160;Hat Enterprise Linux 8 to Red&#160;Hat Enterprise Linux 9.
+Use the Leapp tool to upgrade as well as to help detect and resolve issues that could prevent you from upgrading successfully.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Review Known Issues before you begin an upgrade.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.16/html-single/release_notes/index#ref_known-issues_assembly_introducing-red-hat-satellite">Known Issues in Red&#160;Hat Satellite 6.16</a>.</p>
+</li>
+<li>
+<p>Satellite 6.16 or Capsule 6.16 running on Red&#160;Hat Enterprise Linux 8.</p>
+</li>
+<li>
+<p>You require access to Red&#160;Hat Enterprise Linux and Satellite packages.
+Obtain the ISO files for Red&#160;Hat Enterprise Linux&#160;9 and Satellite.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.16/html-single/installing_satellite_server_in_a_disconnected_network_environment/index#downloading-the-binary-dvd-images_satellite">Downloading the Binary DVD Images</a> in <em>Installing Satellite&#160;Server in a disconnected network environment</em>.</p>
+</li>
+<li>
+<p>Leapp completes part of the upgrade in a container that has no access to additional ISO mounts.
+The required repositories cannot be served from a locally mounted ISO but must be delivered over the network from a different machine.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Install required packages:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-maintain packages install leapp leapp-upgrade-el8toel9</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Set up the following repositories to perform the upgrade in a disconnected environment:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Add the following lines to <code>/etc/yum.repos.d/rhel9.repo</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">[BaseOS]
+name=rhel-9-for-x86_64-baseos-rpms
+baseurl=http://<em>server.example.com</em>/rhel9/BaseOS/
+
+[AppStream]
+name=rhel-9-for-x86_64-appstream-rpms
+baseurl=http://<em>server.example.com</em>/rhel9/AppStream/</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Add the following lines to <code>/etc/yum.repos.d/satellite.repo:</code></p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">[satellite-6.16-for-rhel-9-x86_64-rpms]
+name=satellite-6.16-for-rhel-9-x86_64-rpms
+baseurl=http://<em>server.example.com</em>/sat6/Satellite/
+
+[satellite-maintenance-6.16-for-rhel-9-x86_64-rpms]
+name=satellite-maintenance-6.16-for-rhel-9-x86_64-rpms
+baseurl=http://<em>server.example.com</em>/sat6/Maintenance/</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>Let Leapp analyze your system:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># leapp preupgrade \
+--no-rhsm \
+--enablerepo BaseOS \
+--enablerepo AppStream \
+--enablerepo satellite-6.16-for-rhel-9-x86_64-rpms \
+--enablerepo satellite-maintenance-6.16-for-rhel-9-x86_64-rpms</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The first run will most likely report issues and inhibit the upgrade.
+Examine the report in the <code>/var/log/leapp/leapp-report.txt</code> file, answer all questions by using <code>leapp answer</code>, and manually resolve other reported problems.</p>
+</div>
+</li>
+<li>
+<p>Run <code>leapp preupgrade</code> again and make sure that it does not report any more issues.</p>
+</li>
+<li>
+<p>Let Leapp create the upgrade environment:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># leapp upgrade \
+--no-rhsm \
+--enablerepo BaseOS \
+--enablerepo AppStream \
+--enablerepo satellite-6.16-for-rhel-9-x86_64-rpms \
+--enablerepo satellite-maintenance-6.16-for-rhel-9-x86_64-rpms</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Reboot the system to start the upgrade.</p>
+<div class="paragraph">
+<p>After the system reboots, a live system conducts the upgrade, reboots to fix SELinux labels and then reboots into the final Red&#160;Hat Enterprise Linux 9 system.</p>
+</div>
+</li>
+<li>
+<p>Wait for Leapp to finish the upgrade.
+You can monitor the process with <code>journalctl</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre># journalctl -u leapp_resume -f</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Unlock packages:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-maintain packages unlock</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Verify the post-upgrade state.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/upgrading_from_rhel_8_to_rhel_9/verifying-the-post-upgrade-state_upgrading-from-rhel-8-to-rhel-9">Verifying the post-upgrade state</a> in <em>Upgrading from RHEL&#160;8 to RHEL&#160;9</em>.</p>
+</li>
+<li>
+<p>Perform post-upgrade tasks on the RHEL&#160;9 system.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/upgrading_from_rhel_8_to_rhel_9/performing-post-upgrade-tasks-on-the-rhel-9-system_upgrading-from-rhel-8-to-rhel-9">Performing post-upgrade tasks on the RHEL&#160;9 system</a> in <em>Upgrading from RHEL&#160;8 to RHEL&#160;9</em>.</p>
+</li>
+<li>
+<p>Lock packages:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-maintain packages lock</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Change SELinux to enforcing mode.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/upgrading_from_rhel_8_to_rhel_9/applying-security-policies_upgrading-from-rhel-8-to-rhel-9#changing-selinux-mode-to-enforcing_applying-security-policies">Changing SELinux mode to enforcing</a> in <em>Upgrading from RHEL&#160;8 to RHEL&#160;9</em>.</p>
+</li>
+<li>
+<p>Unset the <code>subscription-manager</code> release:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># subscription-manager release --unset</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p>For more information on customizing the Leapp upgrade for your environment, see <a href="https://access.redhat.com/articles/4977891">Customizing your Red&#160;Hat Enterprise Linux in-place upgrade</a>.</p>
+</li>
+<li>
+<p>For more information, see <a href="https://access.redhat.com/solutions/7030156">How to in-place upgrade an offline / disconnected RHEL 8 machine to RHEL 9 with Leapp?</a></p>
+</li>
+</ul>
 </div>
 </div>
 </div>
