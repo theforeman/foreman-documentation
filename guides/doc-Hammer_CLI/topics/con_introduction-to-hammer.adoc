@@ -50,6 +50,7 @@ You can search the help output using `grep`, or redirect it to a text viewer, fo
 ----
 $ hammer | less
 ----
+
 [[sect-CLI_Guide-Authentication]]
 == Authentication
 
@@ -128,10 +129,12 @@ You can also add your credentials to the `~/.hammer/cli.modules.d/foreman.yml` c
  :password: '_password_'
 ----
 
+Use only spaces for indentation in hammer configuration files, do not use tabs.
+
 [IMPORTANT]
 ====
-Use only spaces for indentation in hammer configuration files.
-Do not use tabs for indentation in hammer configuration files.
+If you change your credentials on {ProjectServer}, you must update the configuration file manually.
+The installer does not overwrite the configuration file.
 ====
 
 [[sect-CLI_Guide-Authentication-Command_Line]]
@@ -153,56 +156,75 @@ Examples in this guide assume that you have saved credentials in the configurati
 [[sect-CLI_Guide-Standalone_Use_of_Hammer]]
 == Using standalone Hammer
 
-You can install `hammer` on a host running {RHEL} 8 that has no {ProjectServer} installed, and use it to connect the host to a remote {Project}.
+You can install Hammer on a host running {install-on-os} that has no {ProjectServer} installed, and use it to connect from the host to a remote {Project}.
 
 .Prerequisites
+ifdef::katello,orcharhino,satellite[]
 * Ensure that you register the host to {ProjectServer} or {SmartProxyServer}.
 For more information, see {ManagingHostsDocURL}Registering_Hosts_managing-hosts[Registering Hosts] in _{ManagingHostsDocTitle}_.
-ifdef::katello,orcharhino,satellite[]
-* Ensure that you synchronize the following repositories on {ProjectServer}:
+* Ensure that the following repositories are enabled and synchronized on {ProjectServer}:
 ifdef::satellite[]
 ** {RepoRHEL8BaseOS}
 ** {RepoRHEL8AppStream}
 ** {RepoRHEL8ServerSatelliteUtils}
 endif::[]
-ifndef::satellite[]
+ifdef::katello,orcharhino[]
 ** {EL} 8 BaseOS
 ** {EL} 8 AppStream
-** ??? what is the Utils alternative for Foreman/Katello?
+endif::[]
+ifdef::katello[]
+** https://yum.theforeman.org/releases/{ProjectVersion}/el8/x86_64/foreman-release.rpm[{Project} release RPM]
 endif::[]
 
 +
 For more information, see {ContentManagementDocURL}Synchronizing_Repositories_content-management[Synchronizing Repositories] in _{ContentManagementDocTitle}_.
 endif::katello,orcharhino,satellite[]
+ifndef::katello,orcharhino,satellite[]
+* Ensure that the CA certificate of {ProjectServer} is deployed to the truststore on the host.
+endif::[]
 
 .Procedure
-. Enable the required repositories on the host:
-+
-ifdef::satellite[]
-[options="nowrap" subs="+quotes,attributes"]
-----
-# subscription-manager repos --enable={RepoRHEL8BaseOS} \
---enable={RepoRHEL8AppStream} \
---enable={RepoRHEL8ServerSatelliteUtils}
-----
+. Enable the required repositories on the host.
+ifdef::katello,orcharhino,satellite[]
+For more information, see {ManagingHostsDocURL}Enabling_Custom_Repositories_on_Content_Hosts_managing-hosts[Enabling repositories on hosts] in _{ManagingHostsDocTitle}_.
 endif::[]
-ifndef::satellite[]
-??? is there an alternative for Foreman/Katello?
-endif::[]
-. Enable the {Project} Utils module:
+ifdef::foreman-el[]
 +
 [options="nowrap" subs="verbatim,quotes,attributes"]
 ----
-# dnf module enable satellite-utils:el8
+# {client-package-install-el8} https://yum.theforeman.org/releases/{ProjectVersion}/el8/x86_64/foreman-release.rpm
 ----
-. Install Hammer Ruby gem:
+endif::[]
+ifdef::foreman-deb[]
++
+:distribution-codename: My_Distribution_Codename
+[options="nowrap" subs="verbatim,quotes,attributes"]
+----
+# wget https://deb.theforeman.org/foreman.asc -O /etc/apt/trusted.gpg.d/foreman.asc
+# echo "deb http://deb.theforeman.org/ _{distribution-codename}_ {ProjectVersion}" | sudo tee /etc/apt/sources.list.d/foreman.list
+# echo "deb http://deb.theforeman.org/ plugins {ProjectVersion}" | sudo tee -a /etc/apt/sources.list.d/foreman.list
+----
+endif::[]
+ifndef::foreman-deb[]
+. Enable the following module:
 +
 [options="nowrap" subs="verbatim,quotes,attributes"]
 ----
-# {client-package-install-el8} rubygem-hammer_cli_katello
+# dnf module enable {dnf-module-utils}
 ----
+endif::[]
+. Install Hammer CLI:
 +
-. Edit the `:host:` entry in the `/etc/hammer/cli.modules.d/foreman.yml` file to include the {Project} IP address or FQDN.
+[options="nowrap" subs="verbatim,quotes,attributes"]
+----
+ifdef::foreman-deb[]
+# {client-package-install-deb} {project-context}-cli
+endif::[]
+ifndef::foreman-deb[]
+# {client-package-install-el8} {project-context}-cli
+endif::[]
+----
+. Set the `:host:` entry in the `/etc/hammer/cli.modules.d/foreman.yml` file to the {Project} URL:
 +
 [options="nowrap", subs="+quotes,attributes"]
 ----
@@ -288,49 +310,7 @@ For example, set the number of entries displayed per request in the Hammer outpu
 
 This setting is an equivalent of the `--per-page` Hammer option.
 
-[[sect-CLI_Guide-Configuring_Hammer_Logging]]
-== Configuring Hammer logging
-
-You can set `hammer` to log debugging information for various {Project} components.
-
-You can set debug or normal configuration options for all {Project} components.
-
-[NOTE]
-====
-After changing hammer's logging behavior, you must restart {Project} services.
-----
-# {foreman-maintain} service restart
-----
-====
-
-* To set debug level for all components, use the following command:
-+
-----
-# hammer admin logging --all --level-debug
-# {foreman-maintain} service restart
-----
-
-* To set production level logging, use the following command:
-+
-----
-# hammer admin logging --all --level-production
-# {foreman-maintain} service restart
-----
-
-* To list the currently recognized components, that you can set logging for:
-+
-----
-# hammer admin logging --list
-----
-
-* To list all available logging options:
-+
-----
-# hammer admin logging --help
-
-Usage:
-    hammer admin logging [OPTIONS]
-----
+include::../common/modules/proc_increasing-the-logging-level-for-hammer.adoc[]
 
 
 [[sect-CLI_Guide-Invoking_the_Hammer_Shell]]
