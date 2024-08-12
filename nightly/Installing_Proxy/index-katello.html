@@ -88,6 +88,15 @@
 <li><a href="#configuring_dns_route53_smart-proxy">6.3. Configuring dns_route53</a></li>
 </ul>
 </li>
+<li><a href="#Using_Infoblox_as_DHCP_and_DNS_Providers_smart-proxy">7. Using Infoblox as DHCP and DNS providers</a>
+<ul class="sectlevel2">
+<li><a href="#Infoblox_Limitations_smart-proxy">7.1. Infoblox limitations</a></li>
+<li><a href="#Infoblox_Prerequisites_smart-proxy">7.2. Infoblox prerequisites</a></li>
+<li><a href="#Installing_the_Infoblox_CA_Certificate_smart-proxy">7.3. Installing the Infoblox CA certificate</a></li>
+<li><a href="#Installing_the_DHCP_Infoblox_Module_smart-proxy">7.4. Installing the DHCP Infoblox module</a></li>
+<li><a href="#Installing_the_DNS_Infoblox_Module_smart-proxy">7.5. Installing the DNS Infoblox module</a></li>
+</ul>
+</li>
 <li><a href="#smart-proxy-server-scalability-considerations_smart-proxy">Appendix A: Smart&#160;Proxy&#160;server scalability considerations</a></li>
 <li><a href="#troubleshooting-dnf-modules_smart-proxy">Appendix B: Troubleshooting DNF modules</a>
 <ul class="sectlevel2">
@@ -3534,6 +3543,197 @@ For more information, see <a href="https://aws.amazon.com/route53/">aws.amazon.c
 </div>
 </li>
 </ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="Using_Infoblox_as_DHCP_and_DNS_Providers_smart-proxy"><a class="anchor" href="#Using_Infoblox_as_DHCP_and_DNS_Providers_smart-proxy"></a>7. Using Infoblox as DHCP and DNS providers</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>You can use Smart&#160;Proxy&#160;server to connect to your Infoblox application to create and manage DHCP and DNS records, and to reserve IP addresses.</p>
+</div>
+<div class="paragraph">
+<p>The supported Infoblox version is NIOS 8.0 or higher.</p>
+</div>
+<div class="sect2">
+<h3 id="Infoblox_Limitations_smart-proxy"><a class="anchor" href="#Infoblox_Limitations_smart-proxy"></a>7.1. Infoblox limitations</h3>
+<div class="paragraph">
+<p>All DHCP and DNS records can be managed only in a single Network or DNS view.
+After you install the Infoblox modules on Smart&#160;Proxy&#160;server and set up the view using the <code>foreman-installer</code> command, you cannot edit the view.</p>
+</div>
+<div class="paragraph">
+<p>Smart&#160;Proxy&#160;server communicates with a single Infoblox node using the standard HTTPS web API.
+If you want to configure clustering and High Availability, make the configurations in Infoblox.</p>
+</div>
+<div class="paragraph">
+<p>Hosting PXE-related files by using the TFTP functionality of Infoblox is not supported.
+You must use Smart&#160;Proxy&#160;server as a TFTP server for PXE provisioning.
+For more information, see <a href="https://docs.theforeman.org/nightly/Provisioning_Hosts/index-katello.html#Configuring_Networking_provisioning">Configuring networking</a> in <em>Provisioning hosts</em>.</p>
+</div>
+<div class="paragraph">
+<p>Foreman IPAM feature cannot be integrated with Infoblox.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Infoblox_Prerequisites_smart-proxy"><a class="anchor" href="#Infoblox_Prerequisites_smart-proxy"></a>7.2. Infoblox prerequisites</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>You must have Infoblox account credentials to manage DHCP and DNS entries in Foreman.</p>
+</li>
+<li>
+<p>Ensure that you have Infoblox administration roles with the names: <code>DHCP Admin</code> and <code>DNS Admin</code>.</p>
+</li>
+<li>
+<p>The administration roles must have permissions or belong to an admin group that permits the accounts to perform tasks through the Infoblox API.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Installing_the_Infoblox_CA_Certificate_smart-proxy"><a class="anchor" href="#Installing_the_Infoblox_CA_Certificate_smart-proxy"></a>7.3. Installing the Infoblox CA certificate</h3>
+<div class="paragraph">
+<p>You must install Infoblox HTTPS CA certificate on the base system of Smart&#160;Proxy&#160;server.</p>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>Download the certificate from the Infoblox web UI or you use the following OpenSSL commands to download the certificate:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># update-ca-trust enable
+# openssl s_client -showcerts -connect <em>infoblox.example.com</em>:443 &lt;/dev/null | \
+openssl x509 -text &gt;/etc/pki/ca-trust/source/anchors/infoblox.crt
+# update-ca-trust extract</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code><em>infoblox.example.com</em></code> entry must match the host name for the Infoblox application in the X509 certificate.</p>
+</div>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Verification</div>
+<ul>
+<li>
+<p>Test the CA certificate by using a <code>curl</code> query:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># curl -u admin:password https://<em>infoblox.example.com</em>/wapi/v2.0/network</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example positive response:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">[
+    {
+        "_ref": "network/ZG5zLm5ldHdvcmskMTkyLjE2OC4yMDIuMC8yNC8w:<em>infoblox.example.com</em>/24/default",
+        "network": "192.168.202.0/24",
+        "network_view": "default"
+    }
+]</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Installing_the_DHCP_Infoblox_Module_smart-proxy"><a class="anchor" href="#Installing_the_DHCP_Infoblox_Module_smart-proxy"></a>7.4. Installing the DHCP Infoblox module</h3>
+<div class="paragraph">
+<p>Install the DHCP Infoblox module on Smart&#160;Proxy&#160;server.
+Note that you cannot manage records in separate views.</p>
+</div>
+<div class="paragraph">
+<p>You can also install DHCP and DNS Infoblox modules simultaneously by combining this procedure and <a href="#Installing_the_DNS_Infoblox_Module_smart-proxy">Installing the DNS Infoblox module</a>.</p>
+</div>
+<div class="paragraph">
+<div class="title">DHCP Infoblox record type considerations</div>
+<p>If you want to use the DHCP and DNS Infoblox modules together, configure the DHCP Infoblox module with the <code>fixedaddress</code> record type only.
+The <code>host</code> record type causes DNS conflicts and is not supported.</p>
+</div>
+<div class="paragraph">
+<p>If you configure the DHCP Infoblox module with the <code>host</code> record type, you have to unset both DNS Smart&#160;Proxy and Reverse DNS Smart&#160;Proxy options on your Infoblox-managed subnets, because Infoblox does DNS management by itself.
+Using the <code>host</code> record type leads to creating conflicts and being unable to rename hosts in Foreman.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On Smart&#160;Proxy&#160;server, enter the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer --enable-foreman-proxy-plugin-dhcp-infoblox \
+--foreman-proxy-dhcp true \
+--foreman-proxy-dhcp-provider infoblox \
+--foreman-proxy-dhcp-server <em>infoblox.example.com</em> \
+--foreman-proxy-plugin-dhcp-infoblox-username <em>admin</em> \
+--foreman-proxy-plugin-dhcp-infoblox-password <em>infoblox</em> \
+--foreman-proxy-plugin-dhcp-infoblox-record-type fixedaddress \
+--foreman-proxy-plugin-dhcp-infoblox-dns-view default \
+--foreman-proxy-plugin-dhcp-infoblox-network-view default</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Optional: In the Foreman web UI, navigate to <strong>Infrastructure</strong> &gt; <strong>Smart&#160;Proxies</strong>, select the Smart&#160;Proxy with the DHCP Infoblox module, and ensure that the <strong>dhcp</strong> feature is listed.</p>
+</li>
+<li>
+<p>In the Foreman web UI, navigate to <strong>Infrastructure</strong> &gt; <strong>Subnets</strong>.</p>
+</li>
+<li>
+<p>For all subnets managed through Infoblox, ensure that the IP address management (<strong>IPAM</strong>) method of the subnet is set to <code>DHCP</code>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Installing_the_DNS_Infoblox_Module_smart-proxy"><a class="anchor" href="#Installing_the_DNS_Infoblox_Module_smart-proxy"></a>7.5. Installing the DNS Infoblox module</h3>
+<div class="paragraph">
+<p>Install the DNS Infoblox module on Smart&#160;Proxy&#160;server.
+You can also install DHCP and DNS Infoblox modules simultaneously by combining this procedure and <a href="#Installing_the_DHCP_Infoblox_Module_smart-proxy">Installing the DHCP Infoblox module</a>.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On Smart&#160;Proxy&#160;server, enter the following command to configure the Infoblox module:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer --enable-foreman-proxy-plugin-dns-infoblox \
+--foreman-proxy-dns true \
+--foreman-proxy-dns-provider infoblox \
+--foreman-proxy-plugin-dns-infoblox-dns-server <em>infoblox.example.com</em> \
+--foreman-proxy-plugin-dns-infoblox-username <em>admin</em> \
+--foreman-proxy-plugin-dns-infoblox-password <em>infoblox</em> \
+--foreman-proxy-plugin-dns-infoblox-dns-view <em>default</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Optionally, you can change the value of the <code>--foreman-proxy-plugin-dns-infoblox-dns-view</code> option to specify an Infoblox DNS view other than the default view.</p>
+</div>
+</li>
+<li>
+<p>Optional: In the Foreman web UI, navigate to <strong>Infrastructure</strong> &gt; <strong>Smart&#160;Proxies</strong>, select the Smart&#160;Proxy with the Infoblox DNS module, and ensure that the <strong>dns</strong> feature is listed.</p>
+</li>
+<li>
+<p>In the Foreman web UI, navigate to <strong>Infrastructure</strong> &gt; <strong>Domains</strong>.</p>
+</li>
+<li>
+<p>For all domains managed through Infoblox, ensure that the <strong>DNS Proxy</strong> is set for those domains.</p>
+</li>
+<li>
+<p>In the Foreman web UI, navigate to <strong>Infrastructure</strong> &gt; <strong>Subnets</strong>.</p>
+</li>
+<li>
+<p>For all subnets managed through Infoblox, ensure that the <strong>DNS Smart&#160;Proxy</strong> and <strong>Reverse DNS Smart&#160;Proxy</strong> are set for those subnets.</p>
+</li>
+</ol>
 </div>
 </div>
 </div>

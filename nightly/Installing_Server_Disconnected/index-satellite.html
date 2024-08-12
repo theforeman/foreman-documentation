@@ -74,8 +74,9 @@
 <ul class="sectlevel2">
 <li><a href="#configuring-external-dns_satellite">4.1. Configuring Satellite&#160;Server with external DNS</a></li>
 <li><a href="#configuring-external-dhcp_satellite">4.2. Configuring Satellite&#160;Server with external DHCP</a></li>
-<li><a href="#configuring-external-tftp_satellite">4.3. Configuring Satellite&#160;Server with external TFTP</a></li>
-<li><a href="#configuring-external-idm-dns_satellite">4.4. Configuring Satellite&#160;Server with external IdM DNS</a></li>
+<li><a href="#Using_Infoblox_as_DHCP_and_DNS_Providers_satellite">4.3. Using Infoblox as DHCP and DNS providers</a></li>
+<li><a href="#configuring-external-tftp_satellite">4.4. Configuring Satellite&#160;Server with external TFTP</a></li>
+<li><a href="#configuring-external-idm-dns_satellite">4.5. Configuring Satellite&#160;Server with external IdM DNS</a></li>
 </ul>
 </li>
 <li><a href="#applying-custom-configuration_satellite">Appendix A: Applying custom configuration to Red&#160;Hat Satellite</a></li>
@@ -4606,7 +4607,196 @@ $ exit</pre>
 </div>
 </div>
 <div class="sect2">
-<h3 id="configuring-external-tftp_satellite"><a class="anchor" href="#configuring-external-tftp_satellite"></a>4.3. Configuring Satellite&#160;Server with external TFTP</h3>
+<h3 id="Using_Infoblox_as_DHCP_and_DNS_Providers_satellite"><a class="anchor" href="#Using_Infoblox_as_DHCP_and_DNS_Providers_satellite"></a>4.3. Using Infoblox as DHCP and DNS providers</h3>
+<div class="paragraph">
+<p>You can use Satellite&#160;Server to connect to your Infoblox application to create and manage DHCP and DNS records, and to reserve IP addresses.</p>
+</div>
+<div class="paragraph">
+<p>The supported Infoblox version is NIOS 8.0 or higher.</p>
+</div>
+<div class="sect3">
+<h4 id="Infoblox_Limitations_satellite"><a class="anchor" href="#Infoblox_Limitations_satellite"></a>4.3.1. Infoblox limitations</h4>
+<div class="paragraph">
+<p>All DHCP and DNS records can be managed only in a single Network or DNS view.
+After you install the Infoblox modules on Satellite&#160;Server and set up the view using the <code>satellite-installer</code> command, you cannot edit the view.</p>
+</div>
+<div class="paragraph">
+<p>Satellite&#160;Server communicates with a single Infoblox node using the standard HTTPS web API.
+If you want to configure clustering and High Availability, make the configurations in Infoblox.</p>
+</div>
+<div class="paragraph">
+<p>Hosting PXE-related files by using the TFTP functionality of Infoblox is not supported.
+You must use Satellite&#160;Server as a TFTP server for PXE provisioning.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.16/html-single/provisioning_hosts/index#Configuring_Networking_provisioning">Configuring networking</a> in <em>Provisioning hosts</em>.</p>
+</div>
+<div class="paragraph">
+<p>Satellite IPAM feature cannot be integrated with Infoblox.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="Infoblox_Prerequisites_satellite"><a class="anchor" href="#Infoblox_Prerequisites_satellite"></a>4.3.2. Infoblox prerequisites</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>You must have Infoblox account credentials to manage DHCP and DNS entries in Satellite.</p>
+</li>
+<li>
+<p>Ensure that you have Infoblox administration roles with the names: <code>DHCP Admin</code> and <code>DNS Admin</code>.</p>
+</li>
+<li>
+<p>The administration roles must have permissions or belong to an admin group that permits the accounts to perform tasks through the Infoblox API.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="Installing_the_Infoblox_CA_Certificate_satellite"><a class="anchor" href="#Installing_the_Infoblox_CA_Certificate_satellite"></a>4.3.3. Installing the Infoblox CA certificate</h4>
+<div class="paragraph">
+<p>You must install Infoblox HTTPS CA certificate on the base system of Satellite&#160;Server.</p>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>Download the certificate from the Infoblox web UI or you use the following OpenSSL commands to download the certificate:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># update-ca-trust enable
+# openssl s_client -showcerts -connect <em>infoblox.example.com</em>:443 &lt;/dev/null | \
+openssl x509 -text &gt;/etc/pki/ca-trust/source/anchors/infoblox.crt
+# update-ca-trust extract</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code><em>infoblox.example.com</em></code> entry must match the host name for the Infoblox application in the X509 certificate.</p>
+</div>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Verification</div>
+<ul>
+<li>
+<p>Test the CA certificate by using a <code>curl</code> query:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># curl -u admin:password https://<em>infoblox.example.com</em>/wapi/v2.0/network</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example positive response:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">[
+    {
+        "_ref": "network/ZG5zLm5ldHdvcmskMTkyLjE2OC4yMDIuMC8yNC8w:<em>infoblox.example.com</em>/24/default",
+        "network": "192.168.202.0/24",
+        "network_view": "default"
+    }
+]</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="Installing_the_DHCP_Infoblox_Module_satellite"><a class="anchor" href="#Installing_the_DHCP_Infoblox_Module_satellite"></a>4.3.4. Installing the DHCP Infoblox module</h4>
+<div class="paragraph">
+<p>Install the DHCP Infoblox module on Satellite&#160;Server.
+Note that you cannot manage records in separate views.</p>
+</div>
+<div class="paragraph">
+<p>You can also install DHCP and DNS Infoblox modules simultaneously by combining this procedure and <a href="#Installing_the_DNS_Infoblox_Module_satellite">Installing the DNS Infoblox module</a>.</p>
+</div>
+<div class="paragraph">
+<div class="title">DHCP Infoblox record type considerations</div>
+<p>If you want to use the DHCP and DNS Infoblox modules together, configure the DHCP Infoblox module with the <code>fixedaddress</code> record type only.
+The <code>host</code> record type causes DNS conflicts and is not supported.</p>
+</div>
+<div class="paragraph">
+<p>If you configure the DHCP Infoblox module with the <code>host</code> record type, you have to unset both DNS Capsule and Reverse DNS Capsule options on your Infoblox-managed subnets, because Infoblox does DNS management by itself.
+Using the <code>host</code> record type leads to creating conflicts and being unable to rename hosts in Satellite.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On Satellite&#160;Server, enter the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-installer --enable-foreman-proxy-plugin-dhcp-infoblox \
+--foreman-proxy-dhcp true \
+--foreman-proxy-dhcp-provider infoblox \
+--foreman-proxy-dhcp-server <em>infoblox.example.com</em> \
+--foreman-proxy-plugin-dhcp-infoblox-username <em>admin</em> \
+--foreman-proxy-plugin-dhcp-infoblox-password <em>infoblox</em> \
+--foreman-proxy-plugin-dhcp-infoblox-record-type fixedaddress \
+--foreman-proxy-plugin-dhcp-infoblox-dns-view default \
+--foreman-proxy-plugin-dhcp-infoblox-network-view default</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Optional: In the Satellite web UI, navigate to <strong>Infrastructure</strong> &gt; <strong>Capsules</strong>, select the Capsule with the DHCP Infoblox module, and ensure that the <strong>dhcp</strong> feature is listed.</p>
+</li>
+<li>
+<p>In the Satellite web UI, navigate to <strong>Infrastructure</strong> &gt; <strong>Subnets</strong>.</p>
+</li>
+<li>
+<p>For all subnets managed through Infoblox, ensure that the IP address management (<strong>IPAM</strong>) method of the subnet is set to <code>DHCP</code>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="Installing_the_DNS_Infoblox_Module_satellite"><a class="anchor" href="#Installing_the_DNS_Infoblox_Module_satellite"></a>4.3.5. Installing the DNS Infoblox module</h4>
+<div class="paragraph">
+<p>Install the DNS Infoblox module on Satellite&#160;Server.
+You can also install DHCP and DNS Infoblox modules simultaneously by combining this procedure and <a href="#Installing_the_DHCP_Infoblox_Module_satellite">Installing the DHCP Infoblox module</a>.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On Satellite&#160;Server, enter the following command to configure the Infoblox module:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-installer --enable-foreman-proxy-plugin-dns-infoblox \
+--foreman-proxy-dns true \
+--foreman-proxy-dns-provider infoblox \
+--foreman-proxy-plugin-dns-infoblox-dns-server <em>infoblox.example.com</em> \
+--foreman-proxy-plugin-dns-infoblox-username <em>admin</em> \
+--foreman-proxy-plugin-dns-infoblox-password <em>infoblox</em> \
+--foreman-proxy-plugin-dns-infoblox-dns-view <em>default</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Optionally, you can change the value of the <code>--foreman-proxy-plugin-dns-infoblox-dns-view</code> option to specify an Infoblox DNS view other than the default view.</p>
+</div>
+</li>
+<li>
+<p>Optional: In the Satellite web UI, navigate to <strong>Infrastructure</strong> &gt; <strong>Capsules</strong>, select the Capsule with the Infoblox DNS module, and ensure that the <strong>dns</strong> feature is listed.</p>
+</li>
+<li>
+<p>In the Satellite web UI, navigate to <strong>Infrastructure</strong> &gt; <strong>Domains</strong>.</p>
+</li>
+<li>
+<p>For all domains managed through Infoblox, ensure that the <strong>DNS Proxy</strong> is set for those domains.</p>
+</li>
+<li>
+<p>In the Satellite web UI, navigate to <strong>Infrastructure</strong> &gt; <strong>Subnets</strong>.</p>
+</li>
+<li>
+<p>For all subnets managed through Infoblox, ensure that the <strong>DNS Capsule</strong> and <strong>Reverse DNS Capsule</strong> are set for those subnets.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="configuring-external-tftp_satellite"><a class="anchor" href="#configuring-external-tftp_satellite"></a>4.4. Configuring Satellite&#160;Server with external TFTP</h3>
 <div class="paragraph">
 <p>You can configure Satellite&#160;Server with external TFTP services.</p>
 </div>
@@ -4668,7 +4858,7 @@ $ exit</pre>
 </div>
 </div>
 <div class="sect2">
-<h3 id="configuring-external-idm-dns_satellite"><a class="anchor" href="#configuring-external-idm-dns_satellite"></a>4.4. Configuring Satellite&#160;Server with external IdM DNS</h3>
+<h3 id="configuring-external-idm-dns_satellite"><a class="anchor" href="#configuring-external-idm-dns_satellite"></a>4.5. Configuring Satellite&#160;Server with external IdM DNS</h3>
 <div class="paragraph">
 <p>When Satellite&#160;Server adds a DNS record for a host, it first determines which Capsule is providing DNS for that domain.
 It then communicates with the Capsule that is configured to provide DNS service for your deployment and adds the record.
@@ -4719,7 +4909,7 @@ For more information about configuring realm enrollment, see
 </table>
 </div>
 <div class="sect3">
-<h4 id="configuring-dynamic-dns-update-with-gss-tsig-authentication_satellite"><a class="anchor" href="#configuring-dynamic-dns-update-with-gss-tsig-authentication_satellite"></a>4.4.1. Configuring dynamic DNS update with GSS-TSIG authentication</h4>
+<h4 id="configuring-dynamic-dns-update-with-gss-tsig-authentication_satellite"><a class="anchor" href="#configuring-dynamic-dns-update-with-gss-tsig-authentication_satellite"></a>4.5.1. Configuring dynamic DNS update with GSS-TSIG authentication</h4>
 <div class="paragraph">
 <p>You can configure the IdM server to use the generic security service algorithm for secret key transaction (GSS-TSIG) technology defined in <a href="https://tools.ietf.org/html/rfc3645">RFC3645</a>.
 To configure the IdM server to use the GSS-TSIG technology, you must install the IdM client on the Satellite&#160;Server base operating system.</p>
@@ -4981,7 +5171,7 @@ For example, <code>example.com</code>.</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="configuring-dynamic-dns-update-with-tsig-authentication_satellite"><a class="anchor" href="#configuring-dynamic-dns-update-with-tsig-authentication_satellite"></a>4.4.2. Configuring dynamic DNS update with TSIG authentication</h4>
+<h4 id="configuring-dynamic-dns-update-with-tsig-authentication_satellite"><a class="anchor" href="#configuring-dynamic-dns-update-with-tsig-authentication_satellite"></a>4.5.2. Configuring dynamic DNS update with TSIG authentication</h4>
 <div class="paragraph">
 <p>You can configure an IdM server to use the secret key transaction authentication for DNS (TSIG) technology that uses the <code>rndc.key</code> key file for authentication.
 The TSIG protocol is defined in <a href="https://tools.ietf.org/html/rfc2845">RFC2845</a>.</p>
@@ -5171,7 +5361,7 @@ send\n" | nsupdate -k /etc/rndc.key</pre>
 </div>
 </div>
 <div class="sect3">
-<h4 id="reverting-to-internal-dns-service_satellite"><a class="anchor" href="#reverting-to-internal-dns-service_satellite"></a>4.4.3. Reverting to internal DNS service</h4>
+<h4 id="reverting-to-internal-dns-service_satellite"><a class="anchor" href="#reverting-to-internal-dns-service_satellite"></a>4.5.3. Reverting to internal DNS service</h4>
 <div class="paragraph">
 <p>You can revert to using Satellite&#160;Server and Capsule&#160;Server as your DNS providers.
 You can use a backup of the answer file that was created before configuring external DNS, or you can create a backup of the answer file.
