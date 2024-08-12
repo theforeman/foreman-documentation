@@ -45,15 +45,6 @@ See [LICENSE](LICENSE).
 * [ ] I am familiar to proper capitalization for project-specific terminology.
 See [Capitalization](#Capitalization).
 
-## Crafting Great Pull Requests
-
-Please explain why someone else should merge your proposed change:
-
-* Are there any alternatives to my PR?
-* Are there any regressions or downsides to my PR?
-* Does my PR make multiple changes and therefore require multiple commits?
-Ideally, each individual change correlates to an individual commit.
-
 ## Capitalization
 
 All headings are sentence case.
