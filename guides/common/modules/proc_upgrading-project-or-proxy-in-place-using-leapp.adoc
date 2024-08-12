@@ -1,0 +1,229 @@
+[id="upgrading-{project-context}-or-{smart-proxy-context}-in-place-using-leapp_{context}"]
+= Upgrading {Project} or {SmartProxy} to {EL-abbr} 9 in-place by using Leapp
+
+{Project} and {SmartProxy} are supported on both {EL} 8 and {EL} 9.
+You can upgrade your {Project} and {SmartProxy} operating system from {EL} 8 to {EL} 9. 
+Use the Leapp tool to upgrade as well as to help detect and resolve issues that could prevent you from upgrading successfully.
+
+.Prerequisites
+ifdef::satellite[]
+* Review Known Issues before you begin an upgrade.
+For more information, see {ReleaseNotesDocURL}ref_known-issues_assembly_introducing-red-hat-satellite[Known Issues in {ProjectName} {ProjectVersion}].
+endif::[]
+ifdef::foreman-el,foreman-deb,katello[]
+* Review upgrade warnings before you begin an upgrade.
+For more information, see {ReleaseNotesDocURL}[Release notes].
+endif::[]
+* {Project} {ProjectVersion} or {SmartProxy} {ProjectVersion} running on {EL} 8.
+ifndef::satellite[]
+* Access to available repositories or a local mirror of repositories.
+endif::[]
+ifeval::["{mode}" == "disconnected"]
+* You require access to {RHEL} and {Project} packages.
+Obtain the ISO files for {RHEL}{nbsp}9 and {Project}.
+For more information, see {InstallingServerDisconnectedDocURL}downloading-the-binary-dvd-images_satellite[Downloading the Binary DVD Images] in _{InstallingServerDisconnectedDocTitle}_. 
+* Leapp completes part of the upgrade in a container that has no access to additional ISO mounts.
+The required repositories cannot be served from a locally mounted ISO but must be delivered over the network from a different machine.
+endif::[]
+
+.Procedure
+ifndef::satellite[]
+. Enable the https://copr.fedorainfracloud.org/coprs/g/theforeman/leapp/[@theforeman/leapp COPR Repository], which contains Leapp packages with patches to support {Project} or {SmartProxy} upgrades:
++
+----
+# dnf copr enable @theforeman/leapp
+----
+Note that this is not required for {RHEL} installations.
+endif::[]
+. Install required packages:
+[options="nowrap", subs="+quotes,verbatim,attributes"]
++
+----
+# {project-package-install} leapp leapp-upgrade-el8toel9
+----
+ifdef::satellite[]
+ifeval::["{mode}" == "disconnected"]
+. Set up the following repositories to perform the upgrade in a disconnected environment:
+.. Add the following lines to `/etc/yum.repos.d/rhel9.repo`:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+[BaseOS]
+name={RepoRHEL9BaseOS}
+baseurl=http://_server.example.com_/rhel9/BaseOS/
+
+[AppStream]
+name={RepoRHEL9AppStream}
+baseurl=http://_server.example.com_/rhel9/AppStream/
+----
+.. Add the following lines to `/etc/yum.repos.d/{project-context}.repo:`
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+[{RepoRHEL9ServerSatelliteServerProjectVersion}]
+name={RepoRHEL9ServerSatelliteServerProjectVersion}
+baseurl=http://_server.example.com_/sat6/Satellite/
+
+[{RepoRHEL9ServerSatelliteMaintenanceProjectVersion}]
+name={RepoRHEL9ServerSatelliteMaintenanceProjectVersion}
+baseurl=http://_server.example.com_/sat6/Maintenance/
+----
+endif::[]
+endif::[]
+ifndef::satellite[]
+. Install additional OS specific packages (`leapp-data-almalinux` for AlmaLinux, `leapp-data-centos` for CentOS Stream, or `leapp-data-rocky` for Rocky Linux).
+See `ID` in `/etc/os-release` for your operating system code.
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {project-package-install} leapp-data-$ID
+----
+Note that this is not required for {RHEL} installations.
+. Add {Project} specific repositories to `/etc/leapp/files/leapp_upgrade_repositories.repo`:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+[leapp-foreman]
+name=Foreman {ProjectVersion}
+baseurl=https://yum.theforeman.org/releases/{ProjectVersion}/el9/$basearch
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-foreman
+enabled=1
+gpgcheck=1
+
+[leapp-foreman-plugins]
+name=Foreman plugins {ProjectVersion}
+baseurl=https://yum.theforeman.org/plugins/{ProjectVersion}/el9/$basearch
+enabled=1
+gpgcheck=0
+
+[leapp-puppet7]
+name=Puppet 7 Repository el 9 - $basearch
+baseurl=http://yum.puppetlabs.com/puppet7/el/9/$basearch
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-2025-04-06-puppet7-release
+enabled=1
+gpgcheck=1
+
+ifdef::katello[]
+[leapp-katello]
+name=Katello {KatelloVersion}
+baseurl=https://yum.theforeman.org/katello/{KatelloVersion}/katello/el9/$basearch/
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-foreman
+enabled=1
+gpgcheck=1
+
+[leapp-candlepin]
+name=Candlepin: an open source entitlement management system.
+baseurl=https://yum.theforeman.org/candlepin/{CandlepinVersion}/el9/$basearch/
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-candlepin
+enabled=1
+gpgcheck=1
+
+[leapp-pulpcore]
+name=pulpcore: Fetch, Upload, Organize, and Distribute Software Packages.
+baseurl=https://yum.theforeman.org/pulpcore/{PulpcoreVersion}/el9/$basearch/
+gpgkey=https://yum.theforeman.org/pulpcore/{PulpcoreVersion}/GPG-RPM-KEY-pulpcore
+enabled=1
+gpgcheck=1
+endif::[]
+----
+endif::[]
+. Let Leapp analyze your system:
+ifeval::["{mode}" == "connected"]
++
+----
+# leapp preupgrade
+----
+endif::[]
+ifdef::satellite[]
+ifeval::["{mode}" == "disconnected"]
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# leapp preupgrade \
+--no-rhsm \
+--enablerepo BaseOS \
+--enablerepo AppStream \
+--enablerepo {RepoRHEL9ServerSatelliteServerProjectVersion} \
+--enablerepo {RepoRHEL9ServerSatelliteMaintenanceProjectVersion}
+----
+endif::[]
+endif::[]
++
+The first run will most likely report issues and inhibit the upgrade.
+Examine the report in the `/var/log/leapp/leapp-report.txt` file, answer all questions by using `leapp answer`, and manually resolve other reported problems.
+. Run `leapp preupgrade` again and make sure that it does not report any more issues.
+. Let Leapp create the upgrade environment:
+ifeval::["{mode}" == "connected"]
++
+----
+# leapp upgrade
+----
+endif::[]
+ifdef::satellite[]
+ifeval::["{mode}" == "disconnected"]
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# leapp upgrade \
+--no-rhsm \
+--enablerepo BaseOS \
+--enablerepo AppStream \
+--enablerepo {RepoRHEL9ServerSatelliteServerProjectVersion} \
+--enablerepo {RepoRHEL9ServerSatelliteMaintenanceProjectVersion}
+----
+endif::[]
+endif::[]
+. Reboot the system to start the upgrade.
++
+After the system reboots, a live system conducts the upgrade, reboots to fix SELinux labels and then reboots into the final {EL} 9 system.
+
+. Wait for Leapp to finish the upgrade.
+You can monitor the process with `journalctl`:
++
+----
+# journalctl -u leapp_resume -f
+----
+
+ifdef::satellite[]
+. Unlock packages:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foreman-maintain} packages unlock
+----
+endif::[]
+. Verify the post-upgrade state.
+For more information, see link:{RHELDocsBaseURL}9/html/upgrading_from_rhel_8_to_rhel_9/verifying-the-post-upgrade-state_upgrading-from-rhel-8-to-rhel-9[Verifying the post-upgrade state] in _Upgrading from RHEL{nbsp}8 to RHEL{nbsp}9_.
+. Perform post-upgrade tasks on the RHEL{nbsp}9 system.
+For more information, see link:{RHELDocsBaseURL}9/html/upgrading_from_rhel_8_to_rhel_9/performing-post-upgrade-tasks-on-the-rhel-9-system_upgrading-from-rhel-8-to-rhel-9[Performing post-upgrade tasks on the RHEL{nbsp}9 system] in _Upgrading from RHEL{nbsp}8 to RHEL{nbsp}9_.
+ifdef::satellite[]
+. Lock packages:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foreman-maintain} packages lock
+----
+endif::[]
+. Change SELinux to enforcing mode.
+For more information, see link:{RHELDocsBaseURL}9/html/upgrading_from_rhel_8_to_rhel_9/applying-security-policies_upgrading-from-rhel-8-to-rhel-9#changing-selinux-mode-to-enforcing_applying-security-policies[Changing SELinux mode to enforcing] in _Upgrading from RHEL{nbsp}8 to RHEL{nbsp}9_.
+ifeval::["{mode}" == "disconnected"]
+ifdef::satellite[]
+. Unset the `subscription-manager` release:
+endif::[]
+ifndef::satellite[]
+. For {EL} installations, unset the `subscription-manager` release:
+endif::[]
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# subscription-manager release --unset
+----
+endif::[]
+
+ifndef::orcharhino[]
+.Additional resources
+* For more information on customizing the Leapp upgrade for your environment, see https://access.redhat.com/articles/4977891[Customizing your {RHEL} in-place upgrade].
+ifeval::["{mode}" == "disconnected"]
+* For more information, see https://access.redhat.com/solutions/7030156[How to in-place upgrade an offline / disconnected RHEL 8 machine to RHEL 9 with Leapp?]
+endif::[]
+endif::[]
