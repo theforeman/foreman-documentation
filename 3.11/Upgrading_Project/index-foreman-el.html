@@ -49,6 +49,7 @@
 <li><a href="#Upgrading_the_External_Database_upgrading-connected">2.5. Upgrading the external database</a></li>
 </ul>
 </li>
+<li><a href="#upgrading-foreman-or-smart-proxy-in-place-using-leapp_upgrading-connected">3. Upgrading Foreman or Smart&#160;Proxy to EL 9 in-place by using Leapp</a></li>
 </ul>
 </div>
 </div>
@@ -593,6 +594,151 @@ Otherwise reconfigure Foreman to use the new name:</p>
 </li>
 </ol>
 </div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="upgrading-foreman-or-smart-proxy-in-place-using-leapp_upgrading-connected"><a class="anchor" href="#upgrading-foreman-or-smart-proxy-in-place-using-leapp_upgrading-connected"></a>3. Upgrading Foreman or Smart&#160;Proxy to EL 9 in-place by using Leapp</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Foreman and Smart&#160;Proxy are supported on both Enterprise Linux 8 and Enterprise Linux 9.
+You can upgrade your Foreman and Smart&#160;Proxy operating system from Enterprise Linux 8 to Enterprise Linux 9.
+Use the Leapp tool to upgrade as well as to help detect and resolve issues that could prevent you from upgrading successfully.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Review upgrade warnings before you begin an upgrade.
+For more information, see <a href="https://docs.theforeman.org/3.11/Release_Notes/index-foreman-el.html#">Release notes</a>.</p>
+</li>
+<li>
+<p>Foreman 3.11 or Smart&#160;Proxy 3.11 running on Enterprise Linux 8.</p>
+</li>
+<li>
+<p>Access to available repositories or a local mirror of repositories.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Enable the <a href="https://copr.fedorainfracloud.org/coprs/g/theforeman/leapp/">@theforeman/leapp COPR Repository</a>, which contains Leapp packages with patches to support Foreman or Smart&#160;Proxy upgrades:</p>
+<div class="listingblock">
+<div class="content">
+<pre># dnf copr enable @theforeman/leapp</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note that this is not required for Red&#160;Hat Enterprise Linux installations.</p>
+</div>
+</li>
+<li>
+<p>Install required packages:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf install leapp leapp-upgrade-el8toel9</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Install additional OS specific packages (<code>leapp-data-almalinux</code> for AlmaLinux, <code>leapp-data-centos</code> for CentOS Stream, or <code>leapp-data-rocky</code> for Rocky Linux).
+See <code>ID</code> in <code>/etc/os-release</code> for your operating system code.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf install leapp-data-$ID</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note that this is not required for Red&#160;Hat Enterprise Linux installations.</p>
+</div>
+</li>
+<li>
+<p>Add Foreman specific repositories to <code>/etc/leapp/files/leapp_upgrade_repositories.repo</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">[leapp-foreman]
+name=Foreman 3.11
+baseurl=https://yum.theforeman.org/releases/3.11/el9/$basearch
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-foreman
+enabled=1
+gpgcheck=1
+
+[leapp-foreman-plugins]
+name=Foreman plugins 3.11
+baseurl=https://yum.theforeman.org/plugins/3.11/el9/$basearch
+enabled=1
+gpgcheck=0
+
+[leapp-puppet7]
+name=Puppet 7 Repository el 9 - $basearch
+baseurl=http://yum.puppetlabs.com/puppet7/el/9/$basearch
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-2025-04-06-puppet7-release
+enabled=1
+gpgcheck=1</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Let Leapp analyze your system:</p>
+<div class="listingblock">
+<div class="content">
+<pre># leapp preupgrade</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The first run will most likely report issues and inhibit the upgrade.
+Examine the report in the <code>/var/log/leapp/leapp-report.txt</code> file, answer all questions by using <code>leapp answer</code>, and manually resolve other reported problems.</p>
+</div>
+</li>
+<li>
+<p>Run <code>leapp preupgrade</code> again and make sure that it does not report any more issues.</p>
+</li>
+<li>
+<p>Let Leapp create the upgrade environment:</p>
+<div class="listingblock">
+<div class="content">
+<pre># leapp upgrade</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Reboot the system to start the upgrade.</p>
+<div class="paragraph">
+<p>After the system reboots, a live system conducts the upgrade, reboots to fix SELinux labels and then reboots into the final Enterprise Linux 9 system.</p>
+</div>
+</li>
+<li>
+<p>Wait for Leapp to finish the upgrade.
+You can monitor the process with <code>journalctl</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre># journalctl -u leapp_resume -f</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Verify the post-upgrade state.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/upgrading_from_rhel_8_to_rhel_9/verifying-the-post-upgrade-state_upgrading-from-rhel-8-to-rhel-9">Verifying the post-upgrade state</a> in <em>Upgrading from RHEL&#160;8 to RHEL&#160;9</em>.</p>
+</li>
+<li>
+<p>Perform post-upgrade tasks on the RHEL&#160;9 system.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/upgrading_from_rhel_8_to_rhel_9/performing-post-upgrade-tasks-on-the-rhel-9-system_upgrading-from-rhel-8-to-rhel-9">Performing post-upgrade tasks on the RHEL&#160;9 system</a> in <em>Upgrading from RHEL&#160;8 to RHEL&#160;9</em>.</p>
+</li>
+<li>
+<p>Change SELinux to enforcing mode.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/upgrading_from_rhel_8_to_rhel_9/applying-security-policies_upgrading-from-rhel-8-to-rhel-9#changing-selinux-mode-to-enforcing_applying-security-policies">Changing SELinux mode to enforcing</a> in <em>Upgrading from RHEL&#160;8 to RHEL&#160;9</em>.</p>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p>For more information on customizing the Leapp upgrade for your environment, see <a href="https://access.redhat.com/articles/4977891">Customizing your Red&#160;Hat Enterprise Linux in-place upgrade</a>.</p>
+</li>
+</ul>
 </div>
 </div>
 </div>
