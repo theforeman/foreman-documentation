@@ -10,7 +10,7 @@ We respect each others time and energy spent on Foreman documentation.
 ## Maintainers
 
 * help less experienced community members with git, Github, PRs, asciidoc, and asciidoctor.
-* expect a basic effort in contributions.
+* expect a basic effort in contributions, including the [pull request template](PULL_REQUEST_TEMPLATE.md) being filled out.
 * only merge PRs if the Github Actions are green.
 * read the proposed change and make friendly and helpful comments.
 * ping community members with more experience if they are unsure about specific details.
@@ -44,17 +44,6 @@ See [LICENSE](LICENSE).
 * [ ] When creating my PR, I select all branches I want my change to get cherry-picked to.
 * [ ] I am familiar to proper capitalization for project-specific terminology.
 See [Capitalization](#Capitalization).
-
-## Crafting Great Pull Requests
-
-Please explain why someone else should merge your proposed change:
-
-* What has been changed?
-* Why has it been changed?
-* Are there any alternatives to my PR?
-* Are there any regressions or downsides to my PR?
-* Does my PR make multiple changes and therefore require multiple commits?
-Ideally, each individual change correlates to an individual commit.
 
 ## Capitalization
 
