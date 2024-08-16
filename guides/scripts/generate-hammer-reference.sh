@@ -2,6 +2,8 @@
 
 SRC=
 ASMB_DIR=common # assembly destination folder
+MOD_DIR=modules
+ASMB_FILENAME=assembly_hammer-reference.adoc
 NOOP= # dry run
 DEBUG=
 
@@ -18,10 +20,10 @@ print_help() {
     echo -e "  --target-dir, -T DIR"
     echo -e "               Path to a folder where the reference assembly"
     echo -e "               will be placed. Default: $ASMB_DIR"
-    echo -e "                 Modules will be placed in DIR/modules/"
+    echo -e "               Modules will be placed in $ASMB_DIR/$MOD_DIR/"
     echo -e "  --help, -h   Print help and exit"
     echo -e "  --noop       Dry run (don't do anything, only preview output)"
-    echo -e "  --debug, -d  Debug mode (verbose output)"
+    echo -e "  --debug, -d  Debug mode (verbose output and keep tmp file)"
 }
 
 bye() {
@@ -70,11 +72,11 @@ SRC=$1
 
 # Define internal variables
 if [ -n "$ASMB_DIR" ]; then
-    mod_path=$ASMB_DIR/modules # module destination folder
-    asmb_file=$ASMB_DIR/assembly_hammer-reference.adoc
+    mod_path=$ASMB_DIR/$MOD_DIR # module destination folder
+    asmb_file=$ASMB_DIR/$ASMB_FILENAME
 else
-    mod_path=modules
-    asmb_file=assembly_hammer-reference.adoc
+    mod_path=$MOD_DIR
+    asmb_file=$ASMB_FILENAME
 fi
 details_tmp="$mod_path/tmp_hammer-option-details"
 echo -e >$details_tmp # reset
@@ -82,8 +84,8 @@ echo -e >$details_tmp # reset
 details_file="$mod_path/ref_hammer-option-details.adoc"
 details_header='[id="hammer-option-details"]\n= Option details\n\nHammer options accept the following option types and values:'
 
-asmb_header='include::modules/con_hammer-reference.adoc[]\n'
-asmb_footer='include::modules/ref_hammer-option-details.adoc[leveloffset=+1]'
+asmb_header='// DO NOT EDIT MANUALLY\n// Use the generate-hammer-reference.sh script to update\n\ninclude::modules/con_hammer-reference.adoc[]\n\n'
+asmb_footer='include::modules/ref_hammer-option-details.adoc[leveloffset=+1]\n'
 
 # Create folders
 { [ -n "$NOOP" ] || mkdir -p $mod_path ; } && echo -e "Created folders: " $mod_path
