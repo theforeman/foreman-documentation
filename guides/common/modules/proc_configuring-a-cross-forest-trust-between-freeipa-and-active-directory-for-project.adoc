@@ -1,0 +1,63 @@
+[id="Configuring-a-cross-forest-trust-between-{FreeIPA-context}-and-Active-Directory-for-{Project}_{context}"]
+= Configuring a cross-forest trust between {FreeIPA} and Active Directory for {Project}
+
+When your {FreeIPA} deployment includes a cross-forest trust with Active Directory (AD), configure host-based access control (HBAC) and the System Security Services Daemon (SSSD) to enable AD users to log in to {Project}.
+
+.Prerequisites
+* An existing {FreeIPA} server with a cross-forest trust with AD established.
+For more information, see link:{RHELDocsBaseURL}8/html-single/installing_identity_management/index#installing-trust-between-idm-and-ad_installing-identity-management[{RHEL}{nbsp}8 _Installing trust between IdM and AD_].
+
+.Procedure
+
+On your {FreeIPA} server:
+
+. Enable HBAC:
+.. Create an external group and add the AD group to it.
+.. Add the new external group to a POSIX group.
+.. Use the POSIX group in a HBAC rule.
+
+On your {FreeIPA} server and all replicas in your {FreeIPA} topology, configure SSSD to transfer additional attributes of AD users:
+
+. Add the AD user attributes to the _nss_ and _domain_ sections in `/etc/sssd/sssd.conf`.
+For example:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+[domain/EXAMPLE.com]
+...
+krb5_store_password_if_offline = True
+ldap_user_extra_attrs=email:mail, lastname:sn, firstname:givenname
+
+[nss]
+user_attributes=+email, +firstname, +lastname
+
+[ifp]
+allowed_uids = ipaapi, root
+user_attributes=+email, +firstname, +lastname
+----
+. Clear the SSSD cache:
+.. Stop SSSD:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# systemctl stop sssd
+----
+.. Clear the cache:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# sss_cache -E
+----
+.. Start SSSD:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# systemctl start sssd
+----
+. Verify the AD attributes value by using the `dbus-send` command on your {ProjectServer} and on your {FreeIPA} server.
+Make sure that both outputs match.
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# dbus-send --print-reply --system --dest=org.freedesktop.sssd.infopipe /org/freedesktop/sssd/infopipe org.freedesktop.sssd.infopipe.GetUserAttr string:ad-user@ad-domain array:string:email,firstname,lastname
+----
