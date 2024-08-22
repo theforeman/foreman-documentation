@@ -57,13 +57,14 @@ When a commit is pushed into `X.Y`:
 
 ## Branching new release
 
-* Create a new `X.Y` branch.
+* On `master`, pull the latest changes and create a new `X.Y` branch.
+* On `X.Y`:
   * Update `guides/common/attributes.adoc`
     * Set `DocState` to `unsupported`
     * Set `ProjectVersion` to `X.Y` and set the matching `KatelloVersion`
   * Push into `X.Y` branch.
   * Notify the Doc team on the [TheForeman Doc chat](https://matrix.to/#/#theforeman-doc:matrix.org) Matrix channel
-* Update master
+* On `master`:
   * Update `ProjectVersionPrevious` to `X.Y` in `guides/common/attributes.adoc`
   * Create a copy of [/web/releases/nightly.json](https://github.com/theforeman/foreman-documentation/tree/master/web/releases/nightly.json) as `X.Y.json` and edit it accordingly.
     * Set the `state` to `RC`
