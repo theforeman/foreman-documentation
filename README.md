@@ -59,24 +59,24 @@ When a commit is pushed into `X.Y`:
 
 * On `master`, pull the latest changes and create a new `X.Y` branch.
 * On `X.Y`:
-  * Update `guides/common/attributes.adoc`
-    * Set `DocState` to `unsupported`
-    * Set `ProjectVersion` to `X.Y` and set the matching `KatelloVersion`
+  * Update `guides/common/attributes.adoc`.
+    * Set `DocState` to `unsupported`.
+    * Set `ProjectVersion` to `X.Y` and set the matching `KatelloVersion`.
   * Push into `X.Y` branch.
-  * Notify the Doc team on the [TheForeman Doc chat](https://matrix.to/#/#theforeman-doc:matrix.org) Matrix channel
+  * Notify the Doc team on the [TheForeman Doc chat](https://matrix.to/#/#theforeman-doc:matrix.org) Matrix channel.
 * On `master`:
-  * Update `ProjectVersionPrevious` to `X.Y` in `guides/common/attributes.adoc`
+  * Update `ProjectVersionPrevious` to `X.Y` in `guides/common/attributes.adoc`.
   * Create a copy of [/web/releases/nightly.json](https://github.com/theforeman/foreman-documentation/tree/master/web/releases/nightly.json) as `X.Y.json` and edit it accordingly.
-    * Set the `state` to `RC`
-    * Change `katello` to the right version
-    * Change `Nightly` in titles to the appropriate version
+    * Set the `state` to `RC`.
+    * Change `katello` to the right version.
+    * Change `Nightly` in titles to the appropriate version.
     * Remove guides which aren't ready for stable branches.
   * Create a copy of [/web/releases/nightly.adoc](https://github.com/theforeman/foreman-documentation/tree/master/web/releases/nightly.adoc) as `X.Y.adoc` and edit it accordingly. Remove guides which aren't ready for stable branches.
   * Test the changes by following the instructions in [/web/README.md](https://github.com/theforeman/foreman-documentation/tree/master/web/README.md) to deploy the website locally.
   * Add the new Foreman version to [/.github/PULL_REQUEST_TEMPLATE.md](https://github.com/theforeman/foreman-documentation/blob/master/.github/PULL_REQUEST_TEMPLATE.md).
   * Update `VERSION_LINKS` in the root `Makefile`.
   * Push the changes into `master`.
-* Check the site if links and landing page appeared correctly. HTML guides should be deployed into `/X.Y`
+* Check the site if links and landing page appeared correctly. HTML guides should be deployed into `/X.Y`.
 
 ## License
 
