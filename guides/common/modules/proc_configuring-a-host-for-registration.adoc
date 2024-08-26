@@ -2,24 +2,79 @@
 = Configuring a host for registration
 
 Configure your host for registration to {ProjectServer} or {SmartProxyServer}.
+You can use a configuration management tool to configure multiple hosts at once.
 
 .Prerequisites
 * The host must be using a supported operating system.
 For more information, see xref:supported-clients-in-registration_{context}[].
+ifdef::satellite,orcharhino,katello[]
+* {ProjectServer} and any {SmartProxyServers} must have a time-synchronization tool enabled and running and be synchronized with the same NTP server.
+For more information, see the following resources:
+** link:{InstallingServerDocURL}synchronizing-the-system-clock-with-chronyd_{project-context}[Synchronizing the system clock with chronyd] in _{InstallingServerDocTitle}_
+ifdef::satellite[]
+** link:{InstallingServerDisconnectedDocURL}synchronizing-the-system-clock-with-chronyd_{project-context}[Synchronizing the system clock with chronyd] in _{InstallingServerDisconnectedDocTitle}_
+endif::[]
+** link:{InstallingSmartProxyDocURL}synchronizing-the-system-clock-with-chronyd_{smart-proxy-context}[Synchronizing the system clock with chronyd] in _{InstallingSmartProxyDocTitle}_
+endif::[]
 
 .Procedure
-* Ensure that a time-synchronization tool is enabled and running on the host.
+ifdef::satellite,orcharhino,katello[]
+. Enable and start a time-synchronization tool on your host.
+The host must be synchronized with the same NTP server as {ProjectServer} and any {SmartProxyServers}.
 ifdef::client-content-dnf[]
-** For {EL} 7 and newer:
+** On {EL} 7 and later:
 +
 ----
 # systemctl enable --now chronyd
 ----
-** For {EL} 6:
+** On {EL} 6:
 +
 ----
 # chkconfig --add ntpd
 # chkconfig ntpd on
 # service ntpd start
+----
+endif::[]
+endif::[]
+. Deploy the SSL CA file on your host so that the host can make a secured registration call.
+.. Find where {Project} stores the SSL CA file by navigating to *Administer* > *Settings* > *Authentication* and locating the value of the *SSL CA file* setting.
+.. Transfer the SSL CA file to your host securely, for example by using `scp`.
+.. Login to your host by using SSH.
+.. Copy the certificate to the truststore:
+ifdef::client-content-dnf[]
+ifndef::satellite[]
+* On {EL}:
+endif::[]
++
+[options="nowrap" subs="+quotes,verbatim,attributes"]
+----
+# cp _My_SSL_CA_file_.pem /etc/pki/ca-trust/source/anchors
+----
+endif::[]
+ifdef::client-content-apt[]
+* On {DL}:
++
+[options="nowrap" subs="+quotes,verbatim,attributes"]
+----
+# cp _My_SSL_CA_file_.pem /usr/local/share/ca-certificates/
+----
+endif::[]
+.. Update the truststore:
+ifdef::client-content-dnf[]
+ifndef::satellite[]
+* On {EL}:
+endif::[]
++
+[options="nowrap" subs="+quotes,verbatim,attributes"]
+----
+# update-ca-trust
+----
+endif::[]
+ifdef::client-content-apt[]
+* On {DL}:
++
+[options="nowrap" subs="+quotes,verbatim,attributes"]
+----
+# update-ca-certificates
 ----
 endif::[]
