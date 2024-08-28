@@ -4871,7 +4871,7 @@ Use <code>foreman-openidc</code> as the application name.</p>
 </div>
 </li>
 <li>
-<p>Configure Satellite to use Red&#160;Hat Single Sign-On as an authentication source:</p>
+<p>Configure Satellite to use Red&#160;Hat Single Sign-On as an authentication source for Satellite web UI:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># satellite-installer --foreman-keycloak true \
@@ -4884,7 +4884,11 @@ Use <code>foreman-openidc</code> as the application name.</p>
 </div>
 </li>
 <li>
-<p>If you want users to authenticate by using the Hammer CLI, create a client for Satellite.
+<p>If you want users to authenticate by using the Hammer CLI:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Create a client for Satellite.
 Use <code>hammer-openidc</code> as the application name.</p>
 <div class="listingblock">
 <div class="content">
@@ -4896,6 +4900,27 @@ Use <code>hammer-openidc</code> as the application name.</p>
 --keycloak-auth-role root-admin \
 -t openidc -l /users/extlogin --force</pre>
 </div>
+</div>
+</li>
+<li>
+<p>Configure Satellite to use Red&#160;Hat Single Sign-On as an authentication source for Hammer CLI:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-installer --foreman-keycloak true \
+--foreman-keycloak-app-name "hammer-openidc" \
+--foreman-keycloak-realm "<em>Satellite_Realm</em>"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Reset Red&#160;Hat Single Sign-On support to the default value to ensure that users are not authenticated also in Satellite web UI:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-installer --reset-foreman-keycloak</pre>
+</div>
+</div>
+</li>
+</ol>
 </div>
 </li>
 </ul>
@@ -5340,45 +5365,7 @@ The particular login methods available to users depend on how you configured int
 </ul>
 </div>
 <div class="paragraph">
-<p>To authenticate to the Satellite CLI with Hammer by using the code grant type:</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Ensure that Hammer is configured to enforce session usage in <code>~/.hammer/cli.modules.d/foreman.yml</code>:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">:foreman:
-  :use_sessions: true</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Initiate an authentication session:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># hammer auth login oauth \
---two-factor \
---oidc-token-endpoint 'https://<em>rhsso.example.com</em>/auth/realms/<em>Satellite_realm</em>/protocol/openid-connect/token' \
---oidc-authorization-endpoint 'https://<em>rhsso.example.com</em>/auth' \
---oidc-client-id '<em>satellite.example.com</em>-foreman-openidc' \
---oidc-redirect-uri urn:ietf:wg:oauth:2.0:oob</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>You will be prompted to enter a success code.</p>
-</div>
-</li>
-<li>
-<p>To retrieve the success code, navigate to the URL that the command returns.</p>
-</li>
-<li>
-<p>Enter the success code in CLI.</p>
-</li>
-</ol>
-</div>
-<div class="paragraph">
-<p>To authenticate to the Satellite web UI by using Red&#160;Hat Single Sign-On TOTP authentication:</p>
+<p>To authenticate to the Satellite web UI by using Red&#160;Hat Single Sign-On TOTP:</p>
 </div>
 <div class="olist arabic">
 <ol class="arabic">
@@ -5392,6 +5379,70 @@ Satellite redirects you to the Red&#160;Hat Single Sign-On login screen.</p>
 <li>
 <p>On your first login attempt, Red&#160;Hat Single Sign-On requests you to configure your client by scanning the bar code and entering your PIN.
 Once authenticated, your browser redirects you back to Satellite and logs you in.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>To authenticate to the Satellite CLI with Hammer:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Ensure that Hammer is configured to enforce session usage in <code>~/.hammer/cli.modules.d/foreman.yml</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">:foreman:
+  :use_sessions: true</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Initiate an authentication session with <code>hammer auth login oauth</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer auth login oauth \
+--oidc-token-endpoint 'https://<em>rhsso.example.com</em>/auth/realms/<em>Satellite_realm</em>/protocol/openid-connect/token' \
+--oidc-authorization-endpoint 'https://<em>rhsso.example.com</em>/auth' \
+--oidc-client-id '<em>satellite.example.com</em>-hammer-openidc' \
+--oidc-redirect-uri urn:ietf:wg:oauth:2.0:oob</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>To authenticate to the Satellite CLI with Hammer by using Red&#160;Hat Single Sign-On TOTP:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Ensure that Hammer is configured to enforce session usage in <code>~/.hammer/cli.modules.d/foreman.yml</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">:foreman:
+  :use_sessions: true</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Initiate an authentication session by using <code>--two-factor</code> with <code>hammer auth login oauth</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer auth login oauth \
+--two-factor \
+--oidc-token-endpoint 'https://<em>rhsso.example.com</em>/auth/realms/<em>Satellite_realm</em>/protocol/openid-connect/token' \
+--oidc-authorization-endpoint 'https://<em>rhsso.example.com</em>/auth' \
+--oidc-client-id '<em>satellite.example.com</em>-hammer-openidc' \
+--oidc-redirect-uri urn:ietf:wg:oauth:2.0:oob</pre>
+</div>
+</div>
+</li>
+<li>
+<p>You will be prompted to enter a success code.
+To retrieve the success code, navigate to the URL that the command returns.</p>
+</li>
+<li>
+<p>Enter the success code in CLI.</p>
 </li>
 </ol>
 </div>
@@ -5512,7 +5563,7 @@ Use <code>foreman-openidc</code> as the application name.</p>
 </div>
 </li>
 <li>
-<p>Configure Satellite to use Red&#160;Hat build of Keycloak as an authentication source:</p>
+<p>Configure Satellite to use Red&#160;Hat build of Keycloak as an authentication source for Satellite web UI:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># satellite-installer --foreman-keycloak true \
@@ -5525,7 +5576,11 @@ Use <code>foreman-openidc</code> as the application name.</p>
 </div>
 </li>
 <li>
-<p>If you want users to authenticate by using the Hammer CLI, create a client for Satellite.
+<p>If you want users to authenticate by using the Hammer CLI:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Create a client for Satellite.
 Use <code>hammer-openidc</code> as the application name.</p>
 <div class="listingblock">
 <div class="content">
@@ -5537,6 +5592,27 @@ Use <code>hammer-openidc</code> as the application name.</p>
 --keycloak-auth-role root-admin \
 -t openidc -l /users/extlogin --force</pre>
 </div>
+</div>
+</li>
+<li>
+<p>Configure Satellite to use Red&#160;Hat build of Keycloak as an authentication source for Hammer CLI:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-installer --foreman-keycloak true \
+--foreman-keycloak-app-name "hammer-openidc" \
+--foreman-keycloak-realm "<em>Satellite_Realm</em>"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Reset Red&#160;Hat build of Keycloak support to the default value to ensure that users are not authenticated also in Satellite web UI:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-installer --reset-foreman-keycloak</pre>
+</div>
+</div>
+</li>
+</ol>
 </div>
 </li>
 </ul>
@@ -5980,45 +6056,7 @@ The particular login methods available to users depend on how you configured int
 </ul>
 </div>
 <div class="paragraph">
-<p>To authenticate to the Satellite CLI with Hammer by using the code grant type:</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Ensure that Hammer is configured to enforce session usage in <code>~/.hammer/cli.modules.d/foreman.yml</code>:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">:foreman:
-  :use_sessions: true</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Initiate an authentication session:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># hammer auth login oauth \
---two-factor \
---oidc-token-endpoint 'https://<em>rhbk.example.com</em>/auth/realms/<em>Satellite_realm</em>/protocol/openid-connect/token' \
---oidc-authorization-endpoint 'https://<em>rhbk.example.com</em>/auth' \
---oidc-client-id '<em>satellite.example.com</em>-foreman-openidc' \
---oidc-redirect-uri urn:ietf:wg:oauth:2.0:oob</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>You will be prompted to enter a success code.</p>
-</div>
-</li>
-<li>
-<p>To retrieve the success code, navigate to the URL that the command returns.</p>
-</li>
-<li>
-<p>Enter the success code in CLI.</p>
-</li>
-</ol>
-</div>
-<div class="paragraph">
-<p>To authenticate to the Satellite web UI by using Red&#160;Hat build of Keycloak TOTP authentication:</p>
+<p>To authenticate to the Satellite web UI by using Red&#160;Hat build of Keycloak TOTP:</p>
 </div>
 <div class="olist arabic">
 <ol class="arabic">
@@ -6032,6 +6070,70 @@ Satellite redirects you to the Red&#160;Hat build of Keycloak login screen.</p>
 <li>
 <p>On your first login attempt, Red&#160;Hat build of Keycloak requests you to configure your client by scanning the bar code and entering your PIN.
 Once authenticated, your browser redirects you back to Satellite and logs you in.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>To authenticate to the Satellite CLI with Hammer:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Ensure that Hammer is configured to enforce session usage in <code>~/.hammer/cli.modules.d/foreman.yml</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">:foreman:
+  :use_sessions: true</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Initiate an authentication session with <code>hammer auth login oauth</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer auth login oauth \
+--oidc-token-endpoint 'https://<em>rhbk.example.com</em>/auth/realms/<em>Satellite_realm</em>/protocol/openid-connect/token' \
+--oidc-authorization-endpoint 'https://<em>rhbk.example.com</em>/auth' \
+--oidc-client-id '<em>satellite.example.com</em>-hammer-openidc' \
+--oidc-redirect-uri urn:ietf:wg:oauth:2.0:oob</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>To authenticate to the Satellite CLI with Hammer by using Red&#160;Hat build of Keycloak TOTP:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Ensure that Hammer is configured to enforce session usage in <code>~/.hammer/cli.modules.d/foreman.yml</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">:foreman:
+  :use_sessions: true</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Initiate an authentication session by using <code>--two-factor</code> with <code>hammer auth login oauth</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer auth login oauth \
+--two-factor \
+--oidc-token-endpoint 'https://<em>rhbk.example.com</em>/auth/realms/<em>Satellite_realm</em>/protocol/openid-connect/token' \
+--oidc-authorization-endpoint 'https://<em>rhbk.example.com</em>/auth' \
+--oidc-client-id '<em>satellite.example.com</em>-hammer-openidc' \
+--oidc-redirect-uri urn:ietf:wg:oauth:2.0:oob</pre>
+</div>
+</div>
+</li>
+<li>
+<p>You will be prompted to enter a success code.
+To retrieve the success code, navigate to the URL that the command returns.</p>
+</li>
+<li>
+<p>Enter the success code in CLI.</p>
 </li>
 </ol>
 </div>
