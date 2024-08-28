@@ -27,7 +27,7 @@
 <h1>Installing Foreman&#160;Server with Katello 4.14 plugin on Enterprise Linux</h1>
 <div class="details">
 <span id="revnumber">version 3.12 (unsupported),</span>
-<span id="revdate">published Aug 27 2024</span>
+<span id="revdate">published Aug 28 2024</span>
 </div>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
@@ -4457,7 +4457,7 @@ Use <code>foreman-openidc</code> as the application name.</p>
 </div>
 </li>
 <li>
-<p>Configure Foreman to use Keycloak as an authentication source:</p>
+<p>Configure Foreman to use Keycloak as an authentication source for Foreman web UI:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># foreman-installer --foreman-keycloak true \
@@ -4470,7 +4470,11 @@ Use <code>foreman-openidc</code> as the application name.</p>
 </div>
 </li>
 <li>
-<p>If you want users to authenticate by using the Hammer CLI, create a client for Foreman.
+<p>If you want users to authenticate by using the Hammer CLI:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Create a client for Foreman.
 Use <code>hammer-openidc</code> as the application name.</p>
 <div class="listingblock">
 <div class="content">
@@ -4482,6 +4486,27 @@ Use <code>hammer-openidc</code> as the application name.</p>
 --keycloak-auth-role root-admin \
 -t openidc -l /users/extlogin --force</pre>
 </div>
+</div>
+</li>
+<li>
+<p>Configure Foreman to use Keycloak as an authentication source for Hammer CLI:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer --foreman-keycloak true \
+--foreman-keycloak-app-name "hammer-openidc" \
+--foreman-keycloak-realm "<em>Foreman_Realm</em>"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Reset Keycloak support to the default value to ensure that users are not authenticated also in Foreman web UI:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer --reset-foreman-keycloak</pre>
+</div>
+</div>
+</li>
+</ol>
 </div>
 </li>
 </ul>
@@ -5065,45 +5090,7 @@ The particular login methods available to users depend on how you configured int
 </ul>
 </div>
 <div class="paragraph">
-<p>To authenticate to the Foreman CLI with Hammer by using the code grant type:</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Ensure that Hammer is configured to enforce session usage in <code>~/.hammer/cli.modules.d/foreman.yml</code>:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">:foreman:
-  :use_sessions: true</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Initiate an authentication session:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># hammer auth login oauth \
---two-factor \
---oidc-token-endpoint 'https://<em>keycloak.example.com</em>/auth/realms/<em>Foreman_realm</em>/protocol/openid-connect/token' \
---oidc-authorization-endpoint 'https://<em>keycloak.example.com</em>/auth' \
---oidc-client-id '<em>foreman.example.com</em>-foreman-openidc' \
---oidc-redirect-uri urn:ietf:wg:oauth:2.0:oob</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>You will be prompted to enter a success code.</p>
-</div>
-</li>
-<li>
-<p>To retrieve the success code, navigate to the URL that the command returns.</p>
-</li>
-<li>
-<p>Enter the success code in CLI.</p>
-</li>
-</ol>
-</div>
-<div class="paragraph">
-<p>To authenticate to the Foreman web UI by using Keycloak TOTP authentication:</p>
+<p>To authenticate to the Foreman web UI by using Keycloak TOTP:</p>
 </div>
 <div class="olist arabic">
 <ol class="arabic">
@@ -5117,6 +5104,70 @@ Foreman redirects you to the Keycloak login screen.</p>
 <li>
 <p>On your first login attempt, Keycloak requests you to configure your client by scanning the bar code and entering your PIN.
 Once authenticated, your browser redirects you back to Foreman and logs you in.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>To authenticate to the Foreman CLI with Hammer:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Ensure that Hammer is configured to enforce session usage in <code>~/.hammer/cli.modules.d/foreman.yml</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">:foreman:
+  :use_sessions: true</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Initiate an authentication session with <code>hammer auth login oauth</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer auth login oauth \
+--oidc-token-endpoint 'https://<em>keycloak.example.com</em>/auth/realms/<em>Foreman_realm</em>/protocol/openid-connect/token' \
+--oidc-authorization-endpoint 'https://<em>keycloak.example.com</em>/auth' \
+--oidc-client-id '<em>foreman.example.com</em>-hammer-openidc' \
+--oidc-redirect-uri urn:ietf:wg:oauth:2.0:oob</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>To authenticate to the Foreman CLI with Hammer by using Keycloak TOTP:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Ensure that Hammer is configured to enforce session usage in <code>~/.hammer/cli.modules.d/foreman.yml</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">:foreman:
+  :use_sessions: true</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Initiate an authentication session by using <code>--two-factor</code> with <code>hammer auth login oauth</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer auth login oauth \
+--two-factor \
+--oidc-token-endpoint 'https://<em>keycloak.example.com</em>/auth/realms/<em>Foreman_realm</em>/protocol/openid-connect/token' \
+--oidc-authorization-endpoint 'https://<em>keycloak.example.com</em>/auth' \
+--oidc-client-id '<em>foreman.example.com</em>-hammer-openidc' \
+--oidc-redirect-uri urn:ietf:wg:oauth:2.0:oob</pre>
+</div>
+</div>
+</li>
+<li>
+<p>You will be prompted to enter a success code.
+To retrieve the success code, navigate to the URL that the command returns.</p>
+</li>
+<li>
+<p>Enter the success code in CLI.</p>
 </li>
 </ol>
 </div>
@@ -5258,7 +5309,7 @@ Use <code>foreman-openidc</code> as the application name.</p>
 </div>
 </li>
 <li>
-<p>Configure Foreman to use Keycloak as an authentication source:</p>
+<p>Configure Foreman to use Keycloak as an authentication source for Foreman web UI:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># foreman-installer --foreman-keycloak true \
@@ -5271,7 +5322,11 @@ Use <code>foreman-openidc</code> as the application name.</p>
 </div>
 </li>
 <li>
-<p>If you want users to authenticate by using the Hammer CLI, create a client for Foreman.
+<p>If you want users to authenticate by using the Hammer CLI:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Create a client for Foreman.
 Use <code>hammer-openidc</code> as the application name.</p>
 <div class="listingblock">
 <div class="content">
@@ -5283,6 +5338,27 @@ Use <code>hammer-openidc</code> as the application name.</p>
 --keycloak-auth-role root-admin \
 -t openidc -l /users/extlogin --force</pre>
 </div>
+</div>
+</li>
+<li>
+<p>Configure Foreman to use Keycloak as an authentication source for Hammer CLI:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer --foreman-keycloak true \
+--foreman-keycloak-app-name "hammer-openidc" \
+--foreman-keycloak-realm "<em>Foreman_Realm</em>"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Reset Keycloak support to the default value to ensure that users are not authenticated also in Foreman web UI:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer --reset-foreman-keycloak</pre>
+</div>
+</div>
+</li>
+</ol>
 </div>
 </li>
 </ul>
@@ -5865,45 +5941,7 @@ The particular login methods available to users depend on how you configured int
 </ul>
 </div>
 <div class="paragraph">
-<p>To authenticate to the Foreman CLI with Hammer by using the code grant type:</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Ensure that Hammer is configured to enforce session usage in <code>~/.hammer/cli.modules.d/foreman.yml</code>:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">:foreman:
-  :use_sessions: true</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Initiate an authentication session:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># hammer auth login oauth \
---two-factor \
---oidc-token-endpoint 'https://<em>keycloak.example.com</em>/auth/realms/<em>Foreman_realm</em>/protocol/openid-connect/token' \
---oidc-authorization-endpoint 'https://<em>keycloak.example.com</em>/auth' \
---oidc-client-id '<em>foreman.example.com</em>-foreman-openidc' \
---oidc-redirect-uri urn:ietf:wg:oauth:2.0:oob</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>You will be prompted to enter a success code.</p>
-</div>
-</li>
-<li>
-<p>To retrieve the success code, navigate to the URL that the command returns.</p>
-</li>
-<li>
-<p>Enter the success code in CLI.</p>
-</li>
-</ol>
-</div>
-<div class="paragraph">
-<p>To authenticate to the Foreman web UI by using Keycloak TOTP authentication:</p>
+<p>To authenticate to the Foreman web UI by using Keycloak TOTP:</p>
 </div>
 <div class="olist arabic">
 <ol class="arabic">
@@ -5917,6 +5955,70 @@ Foreman redirects you to the Keycloak login screen.</p>
 <li>
 <p>On your first login attempt, Keycloak requests you to configure your client by scanning the bar code and entering your PIN.
 Once authenticated, your browser redirects you back to Foreman and logs you in.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>To authenticate to the Foreman CLI with Hammer:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Ensure that Hammer is configured to enforce session usage in <code>~/.hammer/cli.modules.d/foreman.yml</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">:foreman:
+  :use_sessions: true</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Initiate an authentication session with <code>hammer auth login oauth</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer auth login oauth \
+--oidc-token-endpoint 'https://<em>keycloak.example.com</em>/auth/realms/<em>Foreman_realm</em>/protocol/openid-connect/token' \
+--oidc-authorization-endpoint 'https://<em>keycloak.example.com</em>/auth' \
+--oidc-client-id '<em>foreman.example.com</em>-hammer-openidc' \
+--oidc-redirect-uri urn:ietf:wg:oauth:2.0:oob</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>To authenticate to the Foreman CLI with Hammer by using Keycloak TOTP:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Ensure that Hammer is configured to enforce session usage in <code>~/.hammer/cli.modules.d/foreman.yml</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">:foreman:
+  :use_sessions: true</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Initiate an authentication session by using <code>--two-factor</code> with <code>hammer auth login oauth</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hammer auth login oauth \
+--two-factor \
+--oidc-token-endpoint 'https://<em>keycloak.example.com</em>/auth/realms/<em>Foreman_realm</em>/protocol/openid-connect/token' \
+--oidc-authorization-endpoint 'https://<em>keycloak.example.com</em>/auth' \
+--oidc-client-id '<em>foreman.example.com</em>-hammer-openidc' \
+--oidc-redirect-uri urn:ietf:wg:oauth:2.0:oob</pre>
+</div>
+</div>
+</li>
+<li>
+<p>You will be prompted to enter a success code.
+To retrieve the success code, navigate to the URL that the command returns.</p>
+</li>
+<li>
+<p>Enter the success code in CLI.</p>
 </li>
 </ol>
 </div>
