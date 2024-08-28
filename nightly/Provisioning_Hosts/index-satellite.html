@@ -4052,6 +4052,10 @@ The DHCP range is set in the Satellite web UI, whereas the lease pool range is s
 </ul>
 </div>
 </li>
+<li>
+<p>Ensure the host or virtual machine being discovered has at least 1200 MB of memory.
+Insufficient memory can cause various random kernel panic errors because the Discovery image is extracted in memory.</p>
+</li>
 </ul>
 </div>
 </div>
@@ -5106,76 +5110,118 @@ Add a SSL port number if you point to Capsule.</p>
 <div class="sect2">
 <h3 id="Troubleshooting_Discovery_provisioning"><a class="anchor" href="#Troubleshooting_Discovery_provisioning"></a>6.10. Troubleshooting Discovery</h3>
 <div class="paragraph">
-<p>If a machine is not listed in the Satellite web UI in <strong>Hosts</strong> &gt; <strong>Discovered Hosts</strong>, inspect the following configuration areas to help isolate the error:</p>
+<p>If a machine is not listed in the Satellite web UI in <strong>Hosts</strong> &gt; <strong>Discovered Hosts</strong>, it means that Discovery has failed.
+Inspect the following configuration areas to help isolate the problem:</p>
 </div>
+<div class="ulist">
+<div class="title">Inspecting prerequisites</div>
+<ul>
+<li>
+<p>Ensure that your Satellite and hosts meet the requirements.
+For more information, see <a href="#prerequisites-for-using-discovery_provisioning">Prerequisites for using Discovery</a>.</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Inspecting problems on Satellite</div>
+<ul>
+<li>
+<p>Ensure you have set Discovery for booting and built the PXE boot configuration files.
+For more information, see <a href="#setting-discovery-as-the-default-PXE-boot-option_provisioning">Setting Discovery as the default PXE boot option</a>.</p>
+</li>
+<li>
+<p>Verify that these configuration files are present on your TFTP Capsule and have <code>discovery</code> set as the default boot option:</p>
 <div class="ulist">
 <ul>
 <li>
-<p>In the Satellite web UI, navigate to <strong>Hosts</strong> &gt; <strong>Templates</strong> &gt; <strong>Provisioning Templates</strong>.</p>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Click <strong>Build PXE Default</strong> to redeploy the default PXELinux template.</p>
+<p><code>/var/lib/tftpboot/pxelinux.cfg/default</code></p>
 </li>
-</ol>
+<li>
+<p><code>/var/lib/tftpboot/grub2/grub.cfg</code></p>
+</li>
+</ul>
 </div>
 </li>
 <li>
-<p>Verify the <code>pxelinux.cfg/default</code> configuration file on the TFTP Capsule.</p>
+<p>Verify that the values of the <code>proxy.url</code> and <code>proxy.type</code> options in the PXE Discovery snippet you are using.
+The default snippets are named <code>pxelinux_discovery</code>, <code>pxegrub_discovery</code>, or <code>pxegrub2_discovery</code>.</p>
 </li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Inspecting problems with networking</div>
+<ul>
 <li>
 <p>Ensure adequate network connectivity between hosts, Capsule&#160;Server, and Satellite&#160;Server.</p>
 </li>
 <li>
-<p>Check the PXELinux template in use and determine the PXE discovery snippet it includes.
-Snippets are named as follows: <code>pxelinux_discovery</code>, <code>pxegrub_discovery</code>, or <code>pxegrub2_discovery</code>.
-Verify the <code>proxy.url</code> and <code>proxy.type</code> options in the PXE discovery snippet.</p>
+<p>Ensure that the DHCP server provides IP addresses to the booted Discovery image correctly.</p>
 </li>
 <li>
-<p>Ensure that DNS is working correctly for the discovered nodes, or use an IP address in the <code>proxy.url</code> option in the PXE discovery snippet included in the PXELinux template you are using.</p>
-</li>
-<li>
-<p>Ensure that the DHCP server is delivering IP addresses to the booted image correctly.</p>
-</li>
-<li>
-<p>Ensure the discovered host or virtual machine has at least 1200 MB of memory.
-Less memory can lead to various random kernel panic errors because the image is extracted in-memory.</p>
+<p>Ensure that DNS is working correctly for the discovered hosts or use an IP address in the <code>proxy.url</code> option in the PXE Discovery snippet included in the PXE template you are using.</p>
 </li>
 </ul>
-</div>
-<div class="paragraph">
-<p>For gathering important system facts, use the <code>discovery-debug</code> command.
-It prints out system logs, network configuration, list of facts, and other information on the standard output.
-The typical use case is to redirect this output and copy it with the <code>scp</code> command for further investigation.</p>
-</div>
-<div class="paragraph">
-<p>The first virtual console on the discovered host is reserved for <strong>systemd</strong> logs.
-Particularly useful system logs are tagged as follows:</p>
 </div>
 <div class="ulist">
+<div class="title">Inspecting problems on the host</div>
 <ul>
 <li>
-<p><code>discover-host</code> — initial facts upload</p>
-</li>
-<li>
-<p><code>foreman-discovery</code> — facts refresh, reboot remote commands</p>
-</li>
-<li>
-<p><code>nm-prepare</code> — boot script which pre-configures NetworkManager</p>
-</li>
-<li>
-<p><code>NetworkManager</code> — networking information</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>Use TTY2 or higher to log in to a discovered host.
-The root account and SSH access are disabled by default, but you can enable SSH and set the root password using the following kernel command-line options in the Default PXELinux template on the APPEND line:</p>
-</div>
+<p>If the host boots into the Discovery image but Discovery is not successful, enable the root account and SSH access on the Discovery image.
+You can enable SSH and set the root password by using the following Discovery kernel options:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap">fdi.ssh=1 fdi.rootpw=<em>My_Password</em></pre>
 </div>
+</div>
+</li>
+<li>
+<p>Using TTY2 or higher, log in to a Discovery-booted host to review system logs.
+For example, these logs are useful for troubleshooting:</p>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>discover-host</code></dt>
+<dd>
+<p>Initial facts upload</p>
+</dd>
+<dt class="hdlist1"><code>foreman-discovery</code></dt>
+<dd>
+<p>Facts refresh, reboot remote commands</p>
+</dd>
+<dt class="hdlist1"><code>nm-prepare</code></dt>
+<dd>
+<p>Boot script which pre-configures NetworkManager</p>
+</dd>
+<dt class="hdlist1"><code>NetworkManager</code></dt>
+<dd>
+<p>Networking information</p>
+</dd>
+</dl>
+</div>
+</li>
+<li>
+<p>For gathering important system facts, use the <code>discovery-debug</code> command on the Discovery-booted host.
+It prints out system logs, network configuration, list of facts, and other information on the standard output.
+You can redirect this output to a file and copy it with the <code>scp</code> command for further investigation.</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p>For more information about changing the Discovery kernel options, see the following resources:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="#Customizing_the_Discovery_PXE_Boot_provisioning">Customizing the Discovery PXE boot</a></p>
+</li>
+<li>
+<p><a href="#customizing-the-discovery-iso_provisioning">Customizing the Discovery ISO</a></p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
 </div>
 </div>
 </div>
