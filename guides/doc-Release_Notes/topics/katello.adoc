@@ -4,12 +4,66 @@
 [id="katello-headline-features"]
 == Headline Features
 
-There are no highlights with Katello {KatelloVersion}.
+=== New All Hosts index page improvements
+
+There are some significant improvements in the experimental new All Hosts index page with this release.
+To use the new page by default, in Settings, set Show new host overview page to Yes.
+
+*Host bulk actions* - You can now select one or more hosts and click the vertical ellipsis menu to perform the following actions:
+
+* Manage content
+* Packages (install / remove / upgrade)
+* Errata
+* Content source
+* Content view environments - change the content view and lifecycle environment of hosts
+
+*Single-host actions* - In addition to actions added by Foreman, you can click the vertical ellipsis in the rightmost table column (without selecting the host) to change content view environments on a single host.
+
+*Column selector* - You can now click Manage Columns and customize columns displayed in the table.
+The column options are the same as those on the legacy All Hosts page. 
+Any changes made in either the new experimental *All Hosts* page and the legacy *All Hosts* page reflect on each other.
+
+=== Assign multiple content view environments to hosts
+
+You can now assign multiple content view environments to a host through subscription-manager or Hammer. A multi-environment host will have access to enabled repositories from all of its assigned content view environments. This strategy may be more convenient than composite content views for instances where frequent publishes are required.
+
+Through hammer, pass the `content-view-environments` param to `hammer host update` in a comma-separated list in the format `<lifecycle_environment_label>/<content_view_label>` . Ex `hammer host update --id xxx --content-view-environments lce1/cv1,lce2/cv2`
+
+On the host, run `subscription-manager environments --set` and pass in a comma-separated list. 
+Ex. `subscription-manager environments --set lce1/cv1,lce2/cv2` .
+To see the list of possible content view environments, use `subscription-manager environments --list`
+To see the currently assigned content view environment(s), use `subscription-manager environments --list-enabled`
+
+The web UI does not yet support assigning multiple environments. 
+However, multi-environment hosts will now be displayed in the web UI on the new All Hosts page and new host details page.
+
+On the new All Hosts page, there is a new 'Content view environments' column available to add. This will display all assigned environments for a host. The existing 'Content view' and 'Lifecycle environment' columns will continue to work, but will only display the first assigned environment.
+
+If you reassign a host's content view environments using the web UI, the host will no longer be a multi-environment host.
+
+Assigning or registering a host to multiple environments requires the *Allow multiple content views* setting to be on. 
+If you turn this setting off, existing multi-environment hosts will continue to work, but you will not be able to assign multiple environments to hosts going forward.
+
+You can also assign multiple environments at registration using `subscription-manager register --environments`, but global registration and activation keys are not yet supported.
 
 [id="katello-upgrade-warnings"]
 == Upgrade Warnings
 
-There are no upgrade warnings with Katello {KatelloVersion}.
+Container content users will want to run 'foreman-maintain advanced procedure run pulpcore-container-handle-image-metadata' to pre-migrate data to avoid a lengthy migration in the future. There will be multiple releases to allow this before it is mandatory.
+
+=== Port 8443 disabled by default
+
+On {SmartProxyServer}, the deprecated port 8443 has been disabled by default on new installations and upgrades.
+Clients are expected to be using port 443 when communicating through a {SmartProxyServer}.
+If there are older clients still using port 8443, they should be re-configured either by using remote execution, the katello-ca-consumer RPM, or updating `/etc/rhsm/rhsm.conf` using `subscription-manager --port 443`.
+
+For users that temporarily need access to port 8443 again, the installer can be executed with `{foreman-installer} --foreman-proxy-content-reverse-proxy true`.
+This should only be used as a temporary solution as port 8443 will be removed permanently in the next release.
+
+=== Pulp performance issue
+
+Extra Pulpcore indexes to address a https://github.com/pulp/pulpcore/issues/5367[performance issue] will be added during the upgrade.
+If you've manually created these indexes, please remove them before proceeding with the upgrade to ensure that the migration runs successfully.
 
 [id="katello-deprecations"]
 == Deprecations
