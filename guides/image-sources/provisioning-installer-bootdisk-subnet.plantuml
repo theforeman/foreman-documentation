@@ -1,0 +1,60 @@
+@startuml
+
+!include foreman.pstyle
+!$networkboot = 1
+
+title Installer-based provisioning with subnet bootdisk
+
+actor       User
+participant "Provisioned\nHost" as Host
+participant "Foreman" as Foreman
+participant "Foreman\nProxy" as Proxy
+'participant "Pulp\n(Katello)" as Pulp
+'participant TFTP
+participant DHCP
+participant DNS
+!if ($puppet)
+participant "Puppet\nserver" as Puppet
+!endif
+
+note over Host : powered off
+
+User -> Foreman : downloads the bootdisk of the subnet
+note over User : writes the bootdisk\nto a USB/CD/DVD drive
+
+== Boot into OS installer ==
+
+User -> Host : configures the machine to boot\nfrom the USB/CD/DVD drive
+User -> Host : powers on the machine
+Host -> DHCP : requests the reserved IP
+note over Host : boots from the USB/CD/DVD drive
+note over Host : bootloader loads
+User -> Host : eliminates the USB/CD/DVD drive\n(too soon?)
+Host -> Proxy : gets MAC-based bootloader config
+Host -> Proxy : downloads OS installer kernel\nand initial RAM disk
+note over Host : OS installer loads
+Host -> Proxy : requests installer configuration
+group Template [Provision]
+   Proxy -> Proxy : renders installer configuration
+end
+Proxy -> Host : gets installer configuration
+!include prov-installation-media.iuml
+note over Host : OS is installed
+!include prov-initial-configuration.iuml
+Host -> Foreman : calls home\n(disables build mode)
+
+note over Host : reboots
+
+== First local boot ==
+
+!include prov-first-local-boot-hdd.iuml
+
+!if ($puppet)
+== First Puppet run ==
+
+!include puppet-run.iuml
+!endif
+
+note over Host : in operation
+
+@enduml

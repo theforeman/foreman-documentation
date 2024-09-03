@@ -1,0 +1,66 @@
+@startuml
+
+!include foreman.pstyle
+!$networkboot = 0
+
+title Installer-based provisioning with full-host bootdisk
+
+actor       User
+participant "Provisioned\nHost" as Host
+participant "Foreman" as Foreman
+participant "Foreman\nProxy" as Proxy
+'participant "Pulp\n(Katello)" as Pulp
+'participant TFTP
+'participant DHCP
+participant DNS
+!if ($puppet)
+participant "Puppet\nserver" as Puppet
+!endif
+
+note over Host : powered off
+
+== Create host in Foreman ==
+
+User -> Foreman : clicks **Create Host**
+User -> Foreman : assigns static IP address
+User -> Foreman : submits the **Create host** form
+group Templates [*PXE* installer boot]
+    Foreman -> Proxy : renders bootloader configuration files
+end
+Proxy -> Proxy : deploys bootloader configuration files
+Foreman -> Proxy : commands to download installation media
+note over Proxy : downloads installation media
+Foreman -> Proxy : creates DNS records
+Proxy -> DNS : forwards DNS records
+note over Foreman : host is created\n(build mode enabled)
+
+User -> Foreman : downloads the bootdisk ISO of the host
+note over User : writes the bootdisk ISO\nto a USB/CD/DVD drive
+
+== Boot into OS installer ==
+
+User -> Host : configures the machine to boot\nfrom the USB/CD/DVD drive
+User -> Host : powers on the machine
+Host -> Host : uses IP from the bootdisk
+note over Host : boots from the USB/CD/DVD drive
+note over Host : loads OS installer
+User -> Host : eliminates the USB/CD/DVD drive\n(too soon?)
+!include prov-installation-media.iuml
+note over Host : OS is installed
+!include prov-initial-configuration.iuml
+Host -> Foreman : calls home\n(disables build mode)
+note over Host : reboots
+
+== First local boot ==
+
+!include prov-first-local-boot-hdd.iuml
+
+!if ($puppet)
+== First Puppet run ==
+
+!include puppet-run.iuml
+!endif
+
+note over Host : in operation
+
+@enduml
