@@ -3072,6 +3072,111 @@ Password for user@EXAMPLE.COM:</pre>
 </ol>
 </div>
 </div>
+<div class="sect3">
+<h4 id="Configuring-a-cross-forest-trust-between-FreeIPA-and-Active-Directory-for-Foreman_foreman"><a class="anchor" href="#Configuring-a-cross-forest-trust-between-FreeIPA-and-Active-Directory-for-Foreman_foreman"></a>5.2.8. Configuring a cross-forest trust between FreeIPA and Active Directory for Foreman</h4>
+<div class="paragraph">
+<p>When your FreeIPA deployment includes a cross-forest trust with Active Directory (AD), configure host-based access control (HBAC) and the System Security Services Daemon (SSSD) to enable AD users to log in to Foreman.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>An existing FreeIPA server with a cross-forest trust with AD established.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/8/html-single/installing_identity_management/index#installing-trust-between-idm-and-ad_installing-identity-management">Red&#160;Hat Enterprise Linux&#160;8 <em>Installing trust between IdM and AD</em></a>.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<div class="title">Procedure</div>
+<p>On your FreeIPA server:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Enable HBAC:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Create an external group and add the AD group to it.</p>
+</li>
+<li>
+<p>Add the new external group to a POSIX group.</p>
+</li>
+<li>
+<p>Use the POSIX group in a HBAC rule.</p>
+</li>
+</ol>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>On your FreeIPA server and all replicas in your FreeIPA topology, configure SSSD to transfer additional attributes of AD users:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Add the AD user attributes to the <em>nss</em> and <em>domain</em> sections in <code>/etc/sssd/sssd.conf</code>.
+For example:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">[domain/EXAMPLE.com]
+...
+krb5_store_password_if_offline = True
+ldap_user_extra_attrs=email:mail, lastname:sn, firstname:givenname
+
+[nss]
+user_attributes=+email, +firstname, +lastname
+
+[ifp]
+allowed_uids = ipaapi, root
+user_attributes=+email, +firstname, +lastname</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Clear the SSSD cache:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Stop SSSD:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl stop sssd</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Clear the cache:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># sss_cache -E</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Start SSSD:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl start sssd</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>Verify the AD attributes value by using the <code>dbus-send</code> command on your Foreman&#160;server and on your FreeIPA server.
+Make sure that both outputs match.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dbus-send --print-reply --system --dest=org.freedesktop.sssd.infopipe /org/freedesktop/sssd/infopipe org.freedesktop.sssd.infopipe.GetUserAttr string:ad-user@ad-domain array:string:email,firstname,lastname</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
 </div>
 <div class="sect2">
 <h3 id="configuring-keycloak-wildfly-authentication-for-project_keycloak-wildfly"><a class="anchor" href="#configuring-keycloak-wildfly-authentication-for-project_keycloak-wildfly"></a>5.3. Configuring Wildfly-based Keycloak authentication for Foreman</h3>
