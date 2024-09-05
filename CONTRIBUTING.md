@@ -12,6 +12,8 @@ We respect each others time and energy spent on Foreman documentation.
 * help less experienced community members with git, Github, PRs, asciidoc, and asciidoctor.
 * expect a basic effort in contributions, including the [pull request template](PULL_REQUEST_TEMPLATE.md) being filled out.
 * only merge PRs if the Github Actions are green.
+* only merge PRs that have the `style review done` and `tech review done` labels set, indicating that a technical author has provided editorial review and a subject matter expert (SME) has provided technical review.
+For an overview of what to expect from editorial review, see [Red Hat peer review guide for technical documentation](https://redhat-documentation.github.io/peer-review/#checklist).
 * read the proposed change and make friendly and helpful comments.
 * ping community members with more experience if they are unsure about specific details.
 * try to review PRs in a timely manner.
