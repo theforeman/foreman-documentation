@@ -1,0 +1,142 @@
+[id="modifying-a-smart-class-parameter-by-using-an-external-file"]
+= Modifying a Smart Class parameter by using an external file
+
+You can modify a Puppet Smart Class parameter by using an external file.
+
+Using external files simplifies working with JSON data.
+You can use an editor with syntax highlighting to avoid and locate mistakes.
+
+[id="proc-API_Guide-Modifying_a_Smart_Class_Parameter_Using_an_External_File"]
+.Modifying a Smart Class parameter by using an external file
+
+This example uses a MOTD Puppet manifest.
+
+. Search for the Puppet Class by name, `motd` in this case.
++
+Example request:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+$ curl --header "Accept:application/json" \
+--header "Content-Type:application/json" \
+--request GET --user _My_User_Name_:__My_Password__ \
+https://_{foreman-example-com}_/api/smart_class_parameters?search=puppetclass_name=motd \
+| python3 -m json.tool
+----
+. Examine the following output.
+Each Smart Class Parameter has an ID that is global for the same {Project} instance.
+The `content` parameter of the `motd` class has `id=3`.
+Do not confuse this with the Puppet Class ID that displays before the Puppet Class name.
++
+Example response:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+{
+	"avoid_duplicates": false,
+		*"created_at": "2017-02-06 12:37:48 UTC",* # Remove this line.
+			*"default_value": "",* # Add a new value here.
+			"description": "",
+		"hidden_value": "",
+		"hidden_value?": false,
+		"id": 3,
+		"merge_default": false,
+		"merge_overrides": false,
+		*"override": false,* # Set the override value to `true`.
+			"override_value_order": "fqdn\nhostgroup\nos\ndomain",
+		*"override_values": [],* # Remove this line.
+			"override_values_count": 0,
+		"parameter": "content",
+		"parameter_type": "string",
+		"puppetclass_id": 3,
+		"puppetclass_name": "motd",
+		"required": false,
+		*"updated_at": "2017-02-07 11:56:55 UTC",* # Remove this line.
+			"use_puppet_default": false,
+		"validator_rule": null,
+		"validator_type": ""
+}
+----
+. Use the parameter ID `3` to get the information specific to the `motd` parameter and redirect the output to a file, for example, *output_file.json*.
++
+Example request:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+$ curl --header "Accept:application/json" \
+--header "Content-Type:application/json" --request GET \
+--user _My_User_Name_:__My_Password__ \
+https://_{foreman-example-com}_/api/smart_class_parameters/3 \
+| python3 -m json.tool > output_file.json
+----
+. Copy the file created in the previous step to a new file for editing, for example, `changed_file.json`:
++
+----
+$ cp output_file.json changed_file.json
+----
+. Modify the required values in the file.
+In this example, change the content parameter of the `motd` module, which requires changing the `override` option from `false` to `true`:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+{
+	"avoid_duplicates": false,
+		*"created_at": "2017-02-06 12:37:48 UTC",* # Remove this line.
+			*"default_value": "",* # Add a new value here.
+			"description": "",
+		"hidden_value": "",
+		"hidden_value?": false,
+		"id": 3,
+		"merge_default": false,
+		"merge_overrides": false,
+		*"override": false,* # Set the override value to `true`.
+			"override_value_order": "fqdn\nhostgroup\nos\ndomain",
+		*"override_values": [],* # Remove this line.
+			"override_values_count": 0,
+		"parameter": "content",
+		"parameter_type": "string",
+		"puppetclass_id": 3,
+		"puppetclass_name": "motd",
+		"required": false,
+		*"updated_at": "2017-02-07 11:56:55 UTC",* # Remove this line.
+			"use_puppet_default": false,
+		"validator_rule": null,
+		"validator_type": ""
+}
+----
+. After editing the file, verify that it looks as follows and then save the changes:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+{
+	"avoid_duplicates": false,
+		*"default_value": "_No Unauthorized Access Allowed_",*
+			"description": "",
+		"hidden_value": "",
+		"hidden_value?": false,
+		"id": 3,
+		"merge_default": false,
+		"merge_overrides": false,
+		*"override": true,*
+			"override_value_order": "fqdn\nhostgroup\nos\ndomain",
+		"override_values_count": 0,
+		"parameter": "content",
+		"parameter_type": "string",
+		"puppetclass_id": 3,
+		"puppetclass_name": "motd",
+		"required": false,
+		"use_puppet_default": false,
+		"validator_rule": null,
+		"validator_type": ""
+}
+----
+. Submit the file to {Project}:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+$ curl --header "Accept:application/json" \
+--header "Content-Type:application/json" \
+--request PUT --user _My_User_Name_:__My_Password__ \
+--data @changed_file.json \
+https://_{foreman-example-com}_/api/smart_class_parameters/3
+----
