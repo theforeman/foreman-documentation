@@ -1,0 +1,77 @@
+[id="installing-standalone-hammer"]
+= Installing standalone Hammer
+
+You can install Hammer on a host running {install-on-os} that has no {ProjectServer} installed, and use it to connect from the host to a remote {Project}.
+
+.Prerequisites
+ifdef::katello,orcharhino,satellite[]
+* Ensure that you register the host to {ProjectServer} or {SmartProxyServer}.
+For more information, see {ManagingHostsDocURL}Registering_Hosts_managing-hosts[Registering Hosts] in _{ManagingHostsDocTitle}_.
+* Ensure that the following repositories are enabled and synchronized on {ProjectServer}:
+ifdef::satellite[]
+** {RepoRHEL8BaseOS}
+** {RepoRHEL8AppStream}
+** {RepoRHEL8ServerSatelliteUtils}
+endif::[]
+ifdef::katello,orcharhino[]
+** {EL} 8 BaseOS
+** {EL} 8 AppStream
+endif::[]
+ifdef::katello[]
+** https://yum.theforeman.org/releases/{ProjectVersion}/el8/x86_64/foreman-release.rpm[{Project} release RPM]
+endif::[]
+
++
+For more information, see {ContentManagementDocURL}Synchronizing_Repositories_content-management[Synchronizing Repositories] in _{ContentManagementDocTitle}_.
+endif::katello,orcharhino,satellite[]
+ifndef::katello,orcharhino,satellite[]
+* Ensure that the CA certificate of {ProjectServer} is deployed to the truststore on the host.
+endif::[]
+
+.Procedure
+. Enable the required repositories on the host.
+ifdef::katello,orcharhino,satellite[]
+For more information, see {ManagingHostsDocURL}Enabling_Custom_Repositories_on_Content_Hosts_managing-hosts[Enabling repositories on hosts] in _{ManagingHostsDocTitle}_.
+endif::[]
+ifdef::foreman-el[]
++
+[options="nowrap" subs="verbatim,quotes,attributes"]
+----
+# {client-package-install-el8} https://yum.theforeman.org/releases/{ProjectVersion}/el8/x86_64/foreman-release.rpm
+----
+endif::[]
+ifdef::foreman-deb[]
++
+:distribution-codename: My_Distribution_Codename
+[options="nowrap" subs="verbatim,quotes,attributes"]
+----
+# wget https://deb.theforeman.org/foreman.asc -O /etc/apt/trusted.gpg.d/foreman.asc
+# echo "deb http://deb.theforeman.org/ _{distribution-codename}_ {ProjectVersion}" | sudo tee /etc/apt/sources.list.d/foreman.list
+# echo "deb http://deb.theforeman.org/ plugins {ProjectVersion}" | sudo tee -a /etc/apt/sources.list.d/foreman.list
+----
+endif::[]
+ifndef::foreman-deb[]
+. Enable the following module:
++
+[options="nowrap" subs="verbatim,quotes,attributes"]
+----
+# dnf module enable {dnf-module-utils}
+----
+endif::[]
+. Install Hammer CLI:
++
+[options="nowrap" subs="verbatim,quotes,attributes"]
+----
+ifdef::foreman-deb[]
+# {client-package-install-deb} {project-context}-cli
+endif::[]
+ifndef::foreman-deb[]
+# {client-package-install-el8} {project-context}-cli
+endif::[]
+----
+. Set the `:host:` entry in the `/etc/hammer/cli.modules.d/foreman.yml` file to the {Project} URL:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+:host: 'https://_{foreman-example-com}_'
+----
