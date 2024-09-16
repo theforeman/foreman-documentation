@@ -5,9 +5,64 @@ Enable Active Directory (AD) users to access {Project} by configuring the corres
 
 .Prerequisites
 * The base system of your {ProjectServer} must be joined to an Active Directory (AD) domain.
-For more information, see link:https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/8/html-single/integrating_rhel_systems_directly_with_windows_active_directory/index#connecting-rhel-systems-directly-to-ad-using-sssd_integrating-rhel-systems-directly-with-active-directory[Connecting RHEL systems directly to AD using SSSD].
+To be able configure Kerberos single sign-on for AD users, use Samba Winbind for the integration.
+For more information, see link:https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html-single/integrating_rhel_systems_directly_with_windows_active_directory/index#connecting-rhel-systems-directly-to-ad-using-samba-winbind_integrating-rhel-systems-directly-with-active-directory[Connecting RHEL systems directly to AD using Samba Winbind].
 
 .Procedure
+.
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+mkdir /etc/ipa
+----
+.
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+touch /etc/ipa/default.conf
+----
+.
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+[global]
+server = unused
+realm = AD.EXAMPLE.COM
+----
+.
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+vim /etc/net-keytab.conf
+----
+.
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+[global]
+workgroup = AD.EXAMPLE.COM
+realm = AD.EXAMPLE.COM
+kerberos method = system keytab
+security = ads
+----
+.
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+KRB5_KTNAME=FILE:/etc/httpd/conf/http.keytab net ads keytab add HTTP -U administrator -d3 -s /etc/net-keytab.conf
+----
+.
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+{foreman-installer} --foreman-ipa-authentication=true
+----
+.
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+systemctl restart httpd
+----
 . Configure the System Security Services Daemon (SSSD) to use the AD access control provider to evaluate and enforce Group Policy Object (GPO) access control rules for the `foreman` PAM service:
 .. In the `[domain/_ad.example.com_]` section of your `/etc/sssd/sssd.conf` file, configure the `ad_gpo_access_control` and `ad_gpo_map_service` options as follows:
 +
@@ -30,32 +85,17 @@ endif::[]
 ----
 # systemctl restart sssd
 ----
-. Configure AD as the authentication source for your {ProjectServer}:
-.. Create an Apache keytab file if it does not already exist on your system:
-+
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
-# touch /etc/httpd/conf/http.keytab
-----
-+
-You can leave the file empty.
-The `{foreman-installer}` command fails to configure the authentication source if the file is missing.
-.. Enable the authentication source:
-+
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
-# {foreman-installer} --foreman-ipa-authentication=true
-----
-.. Restart Apache:
-+
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
-# systemctl restart httpd
-----
 
 .Verification
-* Log in to {ProjectwebUI} by entering the credentials of a user defined in AD.
+. Log in to {ProjectwebUI} by entering the credentials of a user defined in AD.
 Enter the user name in the user principal name (UPN) format, for example _ad_user@ad.example.com_.
+.
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+curl -k -u : --negotiate https://{foreman-example-com}/users/extlogin
+<html><body>You are being <a href="{foreman-example-com}/hosts">redirected</a>.</body></html>
+----
 
 .Additional resources
 * `sssd-ad(5)` man page on your system
