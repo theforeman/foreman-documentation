@@ -1,0 +1,47 @@
+@startuml
+
+!include foreman.pstyle
+
+title Image-based provisioning with Finish script configuration
+
+actor       User
+participant "Provisioned\nInstance" as Host
+participant "Foreman" as Foreman
+participant "Foreman\nProxy" as Proxy
+participant "Infrastructure\nCloud" as Cloud
+participant DNS
+!if ($puppet)
+participant "Puppet\nserver" as Puppet
+!endif
+
+note over Foreman : has an image with credentials\ndefined in compute resource
+
+== Create host in Foreman ==
+
+User -> Foreman : clicks on **Create Host**
+User -> Foreman : selects cloud resource, the image and submits
+group Template [Finish]
+   Foreman -> Proxy : renders the Finish script
+end
+Foreman -> Cloud : creates new instance
+Cloud -> Foreman : reports IP address
+Foreman -> Proxy : creates DNS records
+Proxy -> DNS : forwards DNS records
+Foreman -> Cloud : starts the instance
+note over Host : boots up
+Foreman -> Host : executes Finish script via SSH
+
+== Finish script ==
+
+!include prov-initial-configuration.iuml
+Host -> Foreman : calls home\n(disables build mode)
+
+!if ($puppet)
+== First Puppet run ==
+
+!include puppet-run.iuml
+!endif
+
+note over Host : in operation
+
+@enduml
