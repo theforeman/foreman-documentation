@@ -1,0 +1,60 @@
+@startuml
+
+!include foreman.pstyle
+
+title Installer-based provisioning with PXE boot on bare metal
+
+actor       User
+participant "Provisioned\nHost" as Host
+participant "Foreman" as Foreman
+participant "Foreman\nProxy" as Proxy
+participant TFTP
+participant DHCP
+participant DNS
+!if ($puppet)
+participant "Puppet\nserver" as Puppet
+!endif
+
+note over Host : Powered off
+
+== Create host in Foreman ==
+
+!include prov-create-host-pxe.iuml
+
+== Boot into installer ==
+
+User -> Host : Power on the machine
+Host -> DHCP : Request reserved IP and DHCP options
+Host -> TFTP : Download boot loader
+Host -> Host : Load the boot loader
+Host -> TFTP : Get MAC-based configuration for boot loader
+Host -> TFTP : Download installer kernel and initial RAM disk
+Host ->  Host : Load the installer
+Host -> Proxy : Request installer configuration
+group Template [Provision]
+   Proxy -> Proxy : Render installer configuration
+end
+Proxy -> Host : Provide installer configuration, such as a Kickstart file
+!include prov-installation-media.iuml
+note over Host : Operating system installed
+!include prov-initial-configuration.iuml
+Host -> Foreman : Call home\n(disables build mode)
+group Templates [*PXE* local boot]
+    Foreman -> Proxy : Render boot-loader configuration files
+end
+Proxy -> TFTP : Deploy boot-loader configuration files\nto ""/var/lib/tftpboot""
+Host -> Host : Reboot
+
+== First local boot ==
+
+!include prov-first-local-boot-pxe.iuml
+
+!if ($puppet)
+== First Puppet run ==
+
+!include puppet-run.iuml
+!endif
+
+note over Host : In operation
+
+@enduml
