@@ -1,0 +1,109 @@
+[id="configuring-the-active-directory-authentication-source-on-projectserver_{context}"]
+= Configuring the Active Directory authentication source on {ProjectServer}
+
+Enable Active Directory (AD) users to access {Project} by configuring the corresponding authentication provider on your {ProjectServer}.
+
+.Prerequisites
+* The base system of your {ProjectServer} must be joined to an Active Directory (AD) domain.
+To enable AD users to sign in with Kerberos single sign-on, use the System Security Services Daemon (SSSD) and Samba services to join the base system to the AD domain:
++
+Install the following packages on {ProjectServer}:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {project-package-install} adcli krb5-workstation oddjob-mkhomedir oddjob realmd samba-winbind-clients samba-winbind samba-common-tools samba-winbind-krb5-locator sssd
+----
++
+Specify the required software when joining the AD domain:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# realm join _AD.EXAMPLE.COM_ --membership-software=samba --client-software=sssd
+----
++
+For more information on direct AD integration, see link:{RHELDocsBaseURL}9/html-single/integrating_rhel_systems_directly_with_windows_active_directory/index#connecting-rhel-systems-directly-to-ad-using-samba-winbind_integrating-rhel-systems-directly-with-active-directory[Connecting RHEL systems directly to AD using Samba Winbind].
+
+.Procedure
+. Define AD realm configuration in a location where {foreman-installer} expects it:
+.. Create a directory named `/etc/ipa/`:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# mkdir /etc/ipa/
+----
++
+.. Create the `/etc/ipa/default.conf` file with the following contents to configure the Kerberos realm for the AD domain:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+[global]
+realm = _AD.EXAMPLE.COM_
+----
+. Configure the Apache keytab for Kerberos connections:
+.. Update the `/etc/samba/smb.conf` file with the following settings to configure how Samba interacts with AD:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+[global]
+workgroup = _AD.EXAMPLE_
+realm = _AD.EXAMPLE.COM_
+kerberos method = system keytab
+security = ads
+----
++
+.. Add the Kerberos service principal to the keytab file at `/etc/httpd/conf/http.keytab`:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# KRB5_KTNAME=FILE:/etc/httpd/conf/http.keytab net ads keytab add HTTP -U Administrator -s /etc/samba/smb.conf
+----
+. Configure the System Security Services Daemon (SSSD) to use the AD access control provider to evaluate and enforce Group Policy Object (GPO) access control rules for the `foreman` PAM service:
+.. In the `[domain/_ad.example.com_]` section of your `/etc/sssd/sssd.conf` file, configure the `ad_gpo_access_control` and `ad_gpo_map_service` options as follows:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+[domain/_ad.example.com_]
+ad_gpo_access_control = enforcing
+ad_gpo_map_service = +foreman
+----
+ifndef::orcharhino[]
++
+For more information on GPOs, see the following documents:
++
+* link:{RHELDocsBaseURL}9/html/integrating_rhel_systems_directly_with_windows_active_directory/managing-direct-connections-to-ad_integrating-rhel-systems-directly-with-active-directory#how-sssd-interprets-gpo-access-control-rules_applying-group-policy-object-access-control-in-rhel[How SSSD interprets GPO access control rules] in _Integrating RHEL systems directly with Windows Active Directory (RHEL{nbsp}9)_
+* link:{RHELDocsBaseURL}8/html/integrating_rhel_systems_directly_with_windows_active_directory/managing-direct-connections-to-ad_integrating-rhel-systems-directly-with-active-directory#applying-group-policy-object-access-control-in-rhel_managing-direct-connections-to-ad[How SSSD interprets GPO access control rules] in _Integrating RHEL systems directly with Windows Active Directory (RHEL{nbsp}8)_
+endif::[]
+.. Restart SSSD:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# systemctl restart sssd
+----
+. Enable the authentication source:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {foreman-installer} --foreman-ipa-authentication=true
+----
+
+.Verification
+* To verify that AD users can log in to {Project} by entering their credentials, log in to {ProjectwebUI} at \https://{foreman-example-com}.
+Enter the user name in the user principal name (UPN) format, for example: `_ad_user_@_AD.EXAMPLE.COM_`.
+* To verify that AD users can authenticate by using Kerberos single sign-on:
+** Obtain a Kerberos ticket-granting ticket (TGT) on behalf of an AD user:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+$ kinit _ad_user_@_AD.EXAMPLE.COM_
+----
+** Verify user authentication by using your TGT:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+$ curl -k -u : --negotiate https://{foreman-example-com}/users/extlogin
+
+<html><body>You are being <a href="{foreman-example-com}/hosts">redirected</a>.</body></html>
+----
+
+.Additional resources
+* `sssd-ad(5)` man page on your system
