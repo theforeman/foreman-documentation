@@ -5826,7 +5826,19 @@ To retrieve the success code, navigate to the URL that the command returns.</p>
 <div class="sect2">
 <h3 id="configuring-active-directory-as-an-external-identity-provider-for-project_satellite"><a class="anchor" href="#configuring-active-directory-as-an-external-identity-provider-for-project_satellite"></a>5.4. Configuring Active Directory as an external identity provider for Satellite</h3>
 <div class="paragraph">
-<p>This section shows how to use direct Active Directory (AD) as an external authentication source for Satellite&#160;Server.</p>
+<p>If the base system of your Satellite&#160;Server is connected directly to Active Directory (AD), you can configure AD as an external authentication source for Satellite.
+Direct AD integration means that a Linux system is joined directly to the AD domain where the identity is stored.
+The following login methods are available for AD users:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Username and password</p>
+</li>
+<li>
+<p>Kerberos single sign-on</p>
+</li>
+</ul>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -5836,61 +5848,55 @@ To retrieve the success code, navigate to the URL that the command returns.</p>
 </td>
 <td class="content">
 <div class="paragraph">
-<p>You can attach Active Directory as an external authentication source with no single sign-on support.
+<p>You can also connect your Satellite deployment to AD in the following ways:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>By using indirect AD integration.
+With indirect integration, your Satellite&#160;Server is connected to a Identity&#160;Management server which is then connected to AD.
+For more information, see <a href="#configuring-kerberos-single-sign-on-with-Identity_Management-in-project_satellite">Configuring Kerberos single sign-on with Identity&#160;Management in Satellite</a>.</p>
+</li>
+<li>
+<p>By attaching the LDAP server of the AD domain as an external authentication source with no single sign-on support.
 For more information, see <a href="#configuring-an-ldap-server-as-an-external-identity-provider-for-project_satellite">Configuring an LDAP server as an external identity provider for Satellite</a>.
 For an example configuration, see <a href="https://access.redhat.com/solutions/1498773">How to configure Active Directory authentication with TLS on Satellite</a>.</p>
+</li>
+</ul>
 </div>
 </td>
 </tr>
 </table>
 </div>
-<div class="paragraph">
-<p>Direct AD integration means that Satellite&#160;Server is joined directly to the AD domain where the identity is stored.
-The recommended setup consists of two steps:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Enrolling Satellite&#160;Server with the Active Directory server as described in <a href="#Enrolling_Server_with_the_AD_Server_satellite">Enrolling Satellite&#160;Server with the AD server</a>.</p>
-</li>
-<li>
-<p>Configuring direct Active Directory integration with GSS-proxy as described in <a href="#Configuring_Direct_AD_Integration_with_GSS_Proxy_satellite">Configuring direct AD integration with GSS-proxy</a>.</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>For information about integrating Red&#160;Hat Enterprise Linux systems with Active&#160;Directory, see <a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/8/html/integrating_rhel_systems_directly_with_windows_active_directory/index">Red&#160;Hat Enterprise Linux&#160;8 <em>Integrating RHEL systems directly with Windows Active Directory</em></a>.</p>
-</div>
 <div class="sect3">
-<h4 id="GSS_Proxy_satellite"><a class="anchor" href="#GSS_Proxy_satellite"></a>5.4.1. GSS-Proxy</h4>
+<h4 id="configuring-the-active-directory-authentication-source-on-projectserver_satellite"><a class="anchor" href="#configuring-the-active-directory-authentication-source-on-projectserver_satellite"></a>5.4.1. Configuring the Active Directory authentication source on Satellite&#160;Server</h4>
 <div class="paragraph">
-<p>The traditional process of Kerberos authentication in Apache requires the Apache process to have read access to the keytab file.
-GSS-Proxy allows you to implement stricter privilege separation for the Apache server by removing access to the keytab file while preserving Kerberos authentication functionality.
-When using AD as an external authentication source for Satellite, it is recommended to implement GSS-proxy, because the keys in the keytab file are the same as the host keys.</p>
-</div>
-<div class="paragraph">
-<p>Perform the following procedures on Red&#160;Hat Enterprise Linux that acts as a base operating system for your Satellite&#160;Server.
-For the examples in this section <em>EXAMPLE.ORG</em> is the Kerberos realm for the AD domain.
-By completing the procedures, users that belong to the EXAMPLE.ORG realm can log in to Satellite&#160;Server.</p>
-</div>
-</div>
-<div class="sect3">
-<h4 id="Enrolling_Server_with_the_AD_Server_satellite"><a class="anchor" href="#Enrolling_Server_with_the_AD_Server_satellite"></a>5.4.2. Enrolling Satellite&#160;Server with the AD server</h4>
-<div class="paragraph">
-<p>In the Satellite CLI, enroll Satellite&#160;Server with the Active Directory server.</p>
+<p>Enable Active Directory (AD) users to access Satellite by configuring the corresponding authentication provider on your Satellite&#160;Server.</p>
 </div>
 <div class="ulist">
 <div class="title">Prerequisites</div>
 <ul>
 <li>
-<p>GSS-proxy and nfs-utils are installed.</p>
+<p>The base system of your Satellite&#160;Server must be joined to an Active Directory (AD) domain.
+To enable AD users to sign in with Kerberos single sign-on, use the System Security Services Daemon (SSSD) and Samba services to join the base system to the AD domain:</p>
 <div class="paragraph">
-<p>Installing GSS-proxy and nfs-utils:</p>
+<p>Install the following packages on Satellite&#160;Server:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># satellite-maintain packages install gssproxy nfs-utils</pre>
+<pre class="nowrap"># satellite-maintain packages install adcli krb5-workstation oddjob-mkhomedir oddjob realmd samba-winbind-clients samba-winbind samba-common-tools samba-winbind-krb5-locator sssd</pre>
 </div>
+</div>
+<div class="paragraph">
+<p>Specify the required software when joining the AD domain:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># realm join <em>AD.EXAMPLE.COM</em> --membership-software=samba --client-software=sssd</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For more information on direct AD integration, see <a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html-single/integrating_rhel_systems_directly_with_windows_active_directory/index#connecting-rhel-systems-directly-to-ad-using-samba-winbind_integrating-rhel-systems-directly-with-active-directory">Connecting RHEL systems directly to AD using Samba Winbind</a>.</p>
 </div>
 </li>
 </ul>
@@ -5899,119 +5905,54 @@ By completing the procedures, users that belong to the EXAMPLE.ORG realm can log
 <div class="title">Procedure</div>
 <ol class="arabic">
 <li>
-<p>Install the required packages:</p>
+<p>Define AD realm configuration in a location where satellite-installer expects it:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Create a directory named <code>/etc/ipa/</code>:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># satellite-maintain packages install adcli krb5-workstation \
-oddjob oddjob-mkhomedir realmd samba-common-tools sssd</pre>
+<pre class="nowrap"># mkdir /etc/ipa/</pre>
 </div>
 </div>
 </li>
 <li>
-<p>Enroll Satellite&#160;Server with the AD server.
-You may need to have administrator permissions to perform the following command:</p>
+<p>Create the <code>/etc/ipa/default.conf</code> file with the following contents to configure the Kerberos realm for the AD domain:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># realm join -v <em>EXAMPLE.ORG</em> --membership-software=samba -U Administrator</pre>
+<pre class="nowrap">[global]
+realm = <em>AD.EXAMPLE.COM</em></pre>
 </div>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>You must use the Samba client software to enroll with the AD server to create the HTTP keytab in <a href="#Configuring_Direct_AD_Integration_with_GSS_Proxy_satellite">Configuring direct AD integration with GSS-proxy</a>.</p>
-</div>
-</td>
-</tr>
-</table>
 </div>
 </li>
 </ol>
 </div>
-</div>
-<div class="sect3">
-<h4 id="Configuring_Direct_AD_Integration_with_GSS_Proxy_satellite"><a class="anchor" href="#Configuring_Direct_AD_Integration_with_GSS_Proxy_satellite"></a>5.4.3. Configuring direct AD integration with GSS-proxy</h4>
-<div class="paragraph">
-<p>In the Satellite CLI, configure the direct Active Directory integration with GSS-proxy.</p>
-</div>
-<div class="ulist">
-<div class="title">Prerequisites</div>
-<ul>
-<li>
-<p>Satellite is enrolled with the Active Directory server.
-For more information, see <a href="#Enrolling_Server_with_the_AD_Server_satellite">Enrolling Satellite&#160;Server with the AD server</a>.</p>
-</li>
-</ul>
-</div>
-<div class="olist arabic">
-<div class="title">Procedure</div>
-<ol class="arabic">
-<li>
-<p>Create the <code>/etc/ipa/</code> directory and the <code>default.conf</code> file:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># mkdir /etc/ipa
-# touch /etc/ipa/default.conf</pre>
-</div>
-</div>
 </li>
 <li>
-<p>To the <code>default.conf</code> file, add the following content:</p>
+<p>Configure the Apache keytab for Kerberos connections:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Update the <code>/etc/samba/smb.conf</code> file with the following settings to configure how Samba interacts with AD:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap">[global]
-server = unused
-realm = <em>EXAMPLE.ORG</em></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Create the <code>/etc/net-keytab.conf</code> file with the following content:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">[global]
-workgroup = EXAMPLE
-realm = EXAMPLE.ORG
+workgroup = <em>AD.EXAMPLE</em>
+realm = <em>AD.EXAMPLE.COM</em>
 kerberos method = system keytab
 security = ads</pre>
 </div>
 </div>
 </li>
 <li>
-<p>Determine the effective user ID of the Apache user:</p>
+<p>Add the Kerberos service principal to the keytab file at <code>/etc/httpd/conf/http.keytab</code>:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># id apache</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Apache user must not have access to the keytab file.</p>
-</div>
-</li>
-<li>
-<p>Create the <code>/etc/gssproxy/00-http.conf</code> file with the following content:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">[service/HTTP]
-mechs = krb5
-cred_store = keytab:/etc/httpd/conf/http.keytab
-cred_store = ccache:/var/lib/gssproxy/clients/krb5cc_%U
-euid = <em>ID_of_Apache_User</em></pre>
+<pre class="nowrap"># KRB5_KTNAME=FILE:/etc/httpd/conf/http.keytab net ads keytab add HTTP -U Administrator -s /etc/samba/smb.conf</pre>
 </div>
 </div>
 </li>
-<li>
-<p>Create a keytab entry:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># KRB5_KTNAME=FILE:/etc/httpd/conf/http.keytab net ads keytab add HTTP -U administrator -d3 -s /etc/net-keytab.conf
-# chown root.apache /etc/httpd/conf/http.keytab
-# chmod 640 /etc/httpd/conf/http.keytab</pre>
-</div>
+</ol>
 </div>
 </li>
 <li>
@@ -6019,21 +5960,30 @@ euid = <em>ID_of_Apache_User</em></pre>
 <div class="olist loweralpha">
 <ol class="loweralpha" type="a">
 <li>
-<p>In your <code>/etc/sssd/sssd.conf</code> file, add the following lines to the <code>domain</code> section for the Active Directory domain:</p>
+<p>In the <code>[domain/<em>ad.example.com</em>]</code> section of your <code>/etc/sssd/sssd.conf</code> file, configure the <code>ad_gpo_access_control</code> and <code>ad_gpo_map_service</code> options as follows:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap">[domain/<em>EXAMPLE</em>]
-access_provider = ad
+<pre class="nowrap">[domain/<em>ad.example.com</em>]
 ad_gpo_access_control = enforcing
 ad_gpo_map_service = +foreman</pre>
 </div>
 </div>
 <div class="paragraph">
-<p>For more information on GPOs, see <a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/integrating_rhel_systems_directly_with_windows_active_directory/managing-direct-connections-to-ad_integrating-rhel-systems-directly-with-active-directory#how-sssd-interprets-gpo-access-control-rules_applying-group-policy-object-access-control-in-rhel">How SSSD interprets GPO access control rules</a> in <em>Red&#160;Hat Enterprise Linux&#160;9 Integrating RHEL systems directly with Windows Active Directory</em> or <a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/8/html/integrating_rhel_systems_directly_with_windows_active_directory/managing-direct-connections-to-ad_integrating-rhel-systems-directly-with-active-directory#applying-group-policy-object-access-control-in-rhel_managing-direct-connections-to-ad">How SSSD interprets GPO access control rules</a> in <em>Red&#160;Hat Enterprise Linux&#160;8 Integrating RHEL systems directly with Windows Active Directory</em>.</p>
+<p>For more information on GPOs, see the following documents:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/integrating_rhel_systems_directly_with_windows_active_directory/managing-direct-connections-to-ad_integrating-rhel-systems-directly-with-active-directory#how-sssd-interprets-gpo-access-control-rules_applying-group-policy-object-access-control-in-rhel">How SSSD interprets GPO access control rules</a> in <em>Integrating RHEL systems directly with Windows Active Directory (RHEL&#160;9)</em></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/8/html/integrating_rhel_systems_directly_with_windows_active_directory/managing-direct-connections-to-ad_integrating-rhel-systems-directly-with-active-directory#applying-group-policy-object-access-control-in-rhel_managing-direct-connections-to-ad">How SSSD interprets GPO access control rules</a> in <em>Integrating RHEL systems directly with Windows Active Directory (RHEL&#160;8)</em></p>
+</li>
+</ul>
 </div>
 </li>
 <li>
-<p>Restart the <code>sssd</code> service:</p>
+<p>Restart SSSD:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># systemctl restart sssd</pre>
@@ -6044,105 +5994,60 @@ ad_gpo_map_service = +foreman</pre>
 </div>
 </li>
 <li>
-<p>Enable IPA authentication in Satellite:</p>
+<p>Enable the authentication source:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># satellite-installer --foreman-ipa-authentication=true</pre>
 </div>
 </div>
 </li>
-<li>
-<p>Start and enable the <code>gssproxy</code> service:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># systemctl restart gssproxy
-# systemctl enable gssproxy</pre>
-</div>
-</div>
-</li>
-<li>
-<p>To configure the Apache server to use the <code>gssproxy</code> service, create a <code>systemd</code> drop-in file and add the following content to it:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># mkdir -p /etc/systemd/system/httpd.service.d/
-# vi /etc/systemd/system/httpd.service.d/gssproxy.conf
-[Service]
-Environment=GSS_USE_PROXY=1</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Apply changes to the service:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># systemctl daemon-reload</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Start and enable the <code>httpd</code> service:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># systemctl restart httpd</pre>
-</div>
-</div>
-</li>
 </ol>
 </div>
-<div class="paragraph">
+<div class="ulist">
 <div class="title">Verification</div>
-<p>Verify that SSO is working as expected.</p>
-</div>
-<div class="paragraph">
-<p>With a running Apache server, users making HTTP requests against the server are authenticated if the client has a valid Kerberos ticket.</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
+<ul>
 <li>
-<p>Retrieve the Kerberos ticket of the LDAP user, using the following command:</p>
+<p>To verify that AD users can log in to Satellite by entering their credentials, log in to Satellite web UI at https://satellite.example.com.
+Enter the user name in the user principal name (UPN) format, for example: <code><em>ad_user</em>@<em>AD.EXAMPLE.COM</em></code>.</p>
+</li>
+<li>
+<p>To verify that AD users can authenticate by using Kerberos single sign-on:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Obtain a Kerberos ticket-granting ticket (TGT) on behalf of an AD user:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># kinit ldapuser</pre>
+<pre class="nowrap">$ kinit <em>ad_user</em>@<em>AD.EXAMPLE.COM</em></pre>
 </div>
 </div>
 </li>
 <li>
-<p>View the Kerberos ticket, using the following command:</p>
+<p>Verify user authentication by using your TGT:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># klist</pre>
+<pre class="nowrap">$ curl -k -u : --negotiate https://satellite.example.com/users/extlogin
+
+&lt;html&gt;&lt;body&gt;You are being &lt;a href="satellite.example.com/hosts"&gt;redirected&lt;/a&gt;.&lt;/body&gt;&lt;/html&gt;</pre>
 </div>
 </div>
 </li>
-<li>
-<p>View output from successful SSO-based authentication, using the following command:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># curl -k -u : --negotiate https://<em>satellite.example.com/</em>users/extlogin</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>This returns the following response:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">&lt;html&gt;&lt;body&gt;You are being &lt;a href="https://<em>satellite.example.com/</em>users/4-ldapuserexample-com/edit"&gt;redirected&lt;/a&gt;.&lt;/body&gt;&lt;/html&gt;</pre>
-</div>
+</ul>
 </div>
 </li>
-</ol>
+</ul>
 </div>
 <div class="ulist">
 <div class="title">Additional resources</div>
 <ul>
 <li>
-<p>For more information about the options to configure an Active Directory provider for SSSD, see the <code>sssd-ad(5)</code> man page.</p>
+<p><code>sssd-ad(5)</code> man page on your system</p>
 </li>
 </ul>
 </div>
 </div>
 <div class="sect3">
-<h4 id="Kerberos_Configuration_in_Web_Browsers_satellite"><a class="anchor" href="#Kerberos_Configuration_in_Web_Browsers_satellite"></a>5.4.4. Kerberos configuration in web browsers</h4>
+<h4 id="Kerberos_Configuration_in_Web_Browsers_satellite"><a class="anchor" href="#Kerberos_Configuration_in_Web_Browsers_satellite"></a>5.4.2. Kerberos configuration in web browsers</h4>
 <div class="paragraph">
 <p>For information about configuring Firefox, see <a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/configuring_authentication_and_authorization_in_rhel/configuring_applications_for_sso#Configuring_Firefox_to_use_Kerberos_for_SSO">Configuring Firefox to use Kerberos for single sign-on</a> in <em>Red&#160;Hat Enterprise Linux&#160;9 Configuring authentication and authorization in RHEL</em>.</p>
 </div>
