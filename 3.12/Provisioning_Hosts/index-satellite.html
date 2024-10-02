@@ -10005,7 +10005,8 @@ If you create the image on a remote server, connect to the server from your work
 <div class="sect2">
 <h3 id="Configuring_a_Host_for_Registration_provisioning"><a class="anchor" href="#Configuring_a_Host_for_Registration_provisioning"></a>C.3. Configuring a host for registration</h3>
 <div class="paragraph">
-<p>Configure your host for registration to Satellite&#160;Server or Capsule&#160;Server.</p>
+<p>Configure your host for registration to Satellite&#160;Server or Capsule&#160;Server.
+You can use a configuration management tool to configure multiple hosts at once.</p>
 </div>
 <div class="ulist">
 <div class="title">Prerequisites</div>
@@ -10014,17 +10015,35 @@ If you create the image on a remote server, connect to the server from your work
 <p>The host must be using a supported operating system.
 For more information, see <a href="#supported-clients-in-registration_provisioning">Supported clients in registration</a>.</p>
 </li>
+<li>
+<p>Satellite&#160;Server and any Capsule&#160;Servers must have a time-synchronization tool enabled and running and be synchronized with the same NTP server.
+For more information, see the following resources:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.16/html-single/installing_satellite_server_in_a_connected_network_environment/index#synchronizing-the-system-clock-with-chronyd_satellite">Synchronizing the system clock with chronyd</a> in <em>Installing Satellite&#160;Server in a connected network environment</em></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.16/html-single/installing_satellite_server_in_a_disconnected_network_environment/index#synchronizing-the-system-clock-with-chronyd_satellite">Synchronizing the system clock with chronyd</a> in <em>Installing Satellite&#160;Server in a disconnected network environment</em></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.16/html-single/installing_capsule_server/index#synchronizing-the-system-clock-with-chronyd_capsule">Synchronizing the system clock with chronyd</a> in <em>Installing Capsule Server</em></p>
+</li>
 </ul>
 </div>
-<div class="ulist">
+</li>
+</ul>
+</div>
+<div class="olist arabic">
 <div class="title">Procedure</div>
-<ul>
+<ol class="arabic">
 <li>
-<p>Ensure that a time-synchronization tool is enabled and running on the host.</p>
+<p>Enable and start a time-synchronization tool on your host.
+The host must be synchronized with the same NTP server as Satellite&#160;Server and any Capsule&#160;Servers.</p>
 <div class="ulist">
 <ul>
 <li>
-<p>For Red&#160;Hat Enterprise Linux 7 and newer:</p>
+<p>On Red&#160;Hat Enterprise Linux 7 and later:</p>
 <div class="listingblock">
 <div class="content">
 <pre># systemctl enable --now chronyd</pre>
@@ -10032,7 +10051,7 @@ For more information, see <a href="#supported-clients-in-registration_provisioni
 </div>
 </li>
 <li>
-<p>For Red&#160;Hat Enterprise Linux 6:</p>
+<p>On Red&#160;Hat Enterprise Linux 6:</p>
 <div class="listingblock">
 <div class="content">
 <pre># chkconfig --add ntpd
@@ -10044,7 +10063,39 @@ For more information, see <a href="#supported-clients-in-registration_provisioni
 </ul>
 </div>
 </li>
-</ul>
+<li>
+<p>Deploy the SSL CA file on your host so that the host can make a secured registration call.</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Find where Satellite stores the SSL CA file by navigating to <strong>Administer</strong> &gt; <strong>Settings</strong> &gt; <strong>Authentication</strong> and locating the value of the <strong>SSL CA file</strong> setting.</p>
+</li>
+<li>
+<p>Transfer the SSL CA file to your host securely, for example by using <code>scp</code>.</p>
+</li>
+<li>
+<p>Login to your host by using SSH.</p>
+</li>
+<li>
+<p>Copy the certificate to the truststore:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># cp <em>My_SSL_CA_file</em>.pem /etc/pki/ca-trust/source/anchors</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Update the truststore:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># update-ca-trust</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</li>
+</ol>
 </div>
 </div>
 <div class="sect2">
@@ -10056,13 +10107,14 @@ For more information, see <a href="#supported-clients-in-registration_provisioni
 <div class="title">Prerequisites</div>
 <ul>
 <li>
-<p>Your user account has a role assigned that has the <code>create_hosts</code> permission.</p>
+<p>Your user account has a role assigned that grants the <code>create_hosts</code> permission.</p>
 </li>
 <li>
 <p>You must have root privileges on the host that you want to register.</p>
 </li>
 <li>
-<p>Satellite&#160;Server, any Capsule&#160;Servers, and all hosts must be synchronized with the same NTP server, and have a time synchronization tool enabled and running.</p>
+<p>You have configured the host for registration.
+For more information, see <a href="#Configuring_a_Host_for_Registration_provisioning">Configuring a host for registration</a>.</p>
 </li>
 <li>
 <p>An activation key must be available for the host.
@@ -10119,45 +10171,14 @@ A Capsule behind a load balancer takes precedence over a Capsule selected in the
 </li>
 <li>
 <p>On the <strong>General</strong> tab, you can select the <strong>Insecure</strong> option to make the first call insecure.
-During this first call, hosts download the CA file from Satellite.
-Hosts will use this CA file to connect to Satellite with all future calls making them secure.</p>
+During this first call, the host downloads the CA file from Satellite.
+The host will use this CA file to connect to Satellite with all future calls making them secure.</p>
 <div class="paragraph">
 <p>Red&#160;Hat recommends that you avoid insecure calls.</p>
 </div>
 <div class="paragraph">
 <p>If an attacker, located in the network between Satellite and a host, fetches the CA file from the first insecure call, the attacker will be able to access the content of the API calls to and from the registered host and the JSON Web Tokens (JWT).
 Therefore, if you have chosen to deploy SSH keys during registration, the attacker will be able to access the host using the SSH key.</p>
-</div>
-<div class="paragraph">
-<p>Instead, you can manually copy and install the CA file on each host before registering the host.</p>
-</div>
-<div class="paragraph">
-<p>To do this, find where Satellite stores the CA file by navigating to <strong>Administer</strong> &gt; <strong>Settings</strong> &gt; <strong>Authentication</strong> and locating the value of the <strong>SSL CA file</strong> setting.</p>
-</div>
-<div class="paragraph">
-<p>Copy the CA file to the <code>/etc/pki/ca-trust/source/anchors/</code> directory on hosts and enter the following commands:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># update-ca-trust enable
-# update-ca-trust</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Then register the hosts with a secure <code>curl</code> command, such as:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># curl -sS https://satellite.example.com/register ...</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>The following is an example of the <code>curl</code> command with the <code>--insecure</code> option:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># curl -sS --insecure https://satellite.example.com/register ...</pre>
-</div>
 </div>
 </li>
 <li>
