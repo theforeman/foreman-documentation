@@ -41,26 +41,19 @@ endif::[]
 
 .Procedure
 . In the {ProjectWebUI}, navigate to *Hosts* > *Register Host*.
-. Optional: Select a different *Organization*.
-. Optional: Select a different *Location*.
-. Optional: From the *Host Group* list, select the host group to associate the hosts with.
-Fields that inherit value from *Host group*: *Operating system*, *Activation Keys* and *Lifecycle environment*.
-+
-If your host group has any Ansible roles assigned, the Ansible roles will run on your host upon the registration.
-. Optional: From the *Operating system* list, select the operating system of hosts that you want to register.
-ifndef::satellite,orcharhino[]
-Specifying an operating system is required when you register machines without `subscription-manager`, such as Debian or Ubuntu.
-endif::[]
-. Optional: From the *{SmartProxy}* list, select the {SmartProxy} to register hosts through.
-+
-[NOTE]
-====
-A {SmartProxy} behind a load balancer takes precedence over a {SmartProxy} selected in the {ProjectWebUI} as the host's content source.
-====
+. Enter the details for how you want the registered hosts to be configured.
 ifdef::katello,satellite,orcharhino[]
-. In the *Activation Keys* field, enter one or more activation keys to assign to hosts.
+. On the *General* tab, in the *Activation Keys* field, enter one or more activation keys to assign to hosts.
 endif::[]
-. Optional: Select the *Insecure* option, if you want to make the first call insecure.
+. Click *Generate* to generate a `curl` command.
+. Run the `curl` command as `root` on the host that you want to register.
+After registration completes, any Ansible roles assigned to a host group you specified when configuring the registration template will run on the host.
+
+The registration details that you can specify include the following:
+
+* On the *General* tab, in the *{SmartProxy}* field, you can select the {SmartProxy} to register hosts through.
+A {SmartProxy} behind a load balancer takes precedence over a {SmartProxy} selected in the {ProjectWebUI} as the content source of the host.
+* On the *General* tab, you can select the *Insecure* option to make the first call insecure.
 During this first call, hosts download the CA file from {Project}.
 Hosts will use this CA file to connect to {Project} with all future calls making them secure.
 +
@@ -94,78 +87,16 @@ The following is an example of the `curl` command with the `--insecure` option:
 ----
 # curl -sS --insecure https://{foreman-example-com}/register ...
 ----
-. Select the *Advanced* tab.
-. Optional: From the *Setup REX* list, select whether you want to deploy {Project} SSH keys to hosts or not.
-+
-If set to `Yes`, public SSH keys will be installed on the registered host.
-The inherited value is based on the `host_registration_remote_execution` parameter.
-It can be inherited, for example from a host group, an operating system, or an organization.
-When overridden, the selected value will be stored on host parameter level.
-ifdef::client-content-dnf[]
-. Optional: From the *Setup Insights* list, select whether you want to install `insights-client` and register the hosts to Insights.
-+
-The Insights tool is available for {RHEL} only.
-It has no effect on other operating systems.
-+
-You must enable the following repositories on a registered machine:
-
-* {RHEL} 6: `rhel-6-server-rpms`
-* {RHEL} 7: `rhel-7-server-rpms`
-* {RHEL} 8: `rhel-8-for-x86_64-appstream-rpms`
-+
-The `insights-client` package is installed by default on {RHEL} 8 except in environments whereby {RHEL} 8 was deployed with "Minimal Install" option.
-endif::[]
-. Optional: In the *Install packages* field, list the packages (separated with spaces) that you want to install on the host upon registration.
-This can be set by the `host_packages` parameter.
-. Optional: Select the *Update packages* option to update all packages on the host upon registration.
-This can be set by the `host_update_packages` parameter.
-. Optional: In the *Repository* field, enter a repository to be added before the registration is performed.
-For example, it can be useful to make the `subscription-manager` package available for the purpose of the registration.
-ifdef::client-content-dnf[]
-For Red Hat family distributions, enter the URL of the repository, for example `\http://rpm.example.com/`.
-endif::[]
-ifdef::client-content-apt[]
-For Debian OS families, enter the whole line of list file content, for example `deb \http://deb.example.com/ bookworm 1.0`.
-endif::[]
-. Optional: In the *Repository GPG key URL* field, specify the public key to verify the signatures of GPG-signed packages.
-It needs to be specified in the ASCII form with the GPG public key header.
-. Optional: In the *Token lifetime (hours)* field, change the validity duration of the JSON Web Token (JWT) that {Project} uses for authentication.
+* On the *Advanced* tab, in the *Repositories* field, you can list repositories to be added before the registration is performed.
+You do not have to specify repositories if you provide them in an activation key.
+* On the *Advanced* tab, in the *Token lifetime (hours)* field, you can change the validity duration of the JSON Web Token (JWT) that {Project} uses for authentication.
 The duration of this token defines how long the generated `curl` command works.
-You can set the duration to 0{range}999 999 hours or unlimited.
 +
 Note that {Project} applies the permissions of the user who generates the `curl` command to authorization of hosts.
 If the user loses or gains additional permissions, the permissions of the JWT change too.
 Therefore, do not delete, block, or change permissions of the user during the token duration.
 +
 The scope of the JWTs is limited to the registration endpoints only and cannot be used anywhere else.
-. Optional: In the *Remote Execution Interface* field, enter the identifier of a network interface that hosts must use for the SSH connection.
-If you keep this field blank, {Project} uses the default network interface.
-. Optional: From the *REX pull mode* list, select whether you want to deploy {Project} remote execution pull client.
-+
-If set to `Yes`, the remote execution pull client is installed on the registered host.
-The inherited value is based on the `host_registration_remote_execution_pull` parameter.
-It can be inherited, for example from a host group, an operating system, or an organization.
-When overridden, the selected value is stored on the host parameter level.
-+
-The registered host must have access to the {project-client-name} repository.
-+
-ifdef::managing-hosts[]
-For more information about the pull mode, see xref:transport-modes-for-remote-execution_{context}[].
-endif::[]
-ifndef::managing-hosts[]
-For more information about the pull mode, see {ManagingHostsDocURL}transport-modes-for-remote-execution_managing-hosts[Transport Modes for Remote Execution] in _{ManagingHostsDocTitle}_.
-endif::[]
-ifdef::katello,satellite,orcharhino[]
-. Optional: Select the *Ignore errors* option if you want to ignore subscription manager errors.
-. Optional: Select the *Force* option if you want to remove any `katello-ca-consumer` packages before registration and run `subscription-manager` with the `--force` argument.
-endif::[]
-ifdef::katello[]
-If you register {EL} hosts, in the *Activation Keys* field, enter one or more activation keys to assign to registered hosts.
-endif::[]
-
-. Click *Generate*.
-. Copy the generated `curl` command.
-. On the host that you want to register, run the `curl` command as `root`.
 
 .CLI procedure
 . Use the `hammer host-registration generate-command` to generate the `curl` command to register the host.
