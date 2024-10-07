@@ -1,0 +1,70 @@
+[id="using-apipie-bindings-with-ruby"]
+= Using apipie bindings with Ruby
+
+Apipie bindings are the Ruby bindings for apipie documented API calls.
+They fetch and cache the API definition from {Project} and then generate API calls as needed.
+
+[source, ruby, subs="attributes"]
+----
+#!/usr/bin/ruby
+
+require 'apipie-bindings'
+
+org_name = "_My_Organization_"
+environments = [ "Development", "Testing", "Production" ]
+
+# Create an instance of apipie bindings
+@api = ApipieBindings::API.new({
+  :uri => 'https://{foreman-example-com}/',
+  :username => 'admin',
+  :password => 'changeme',
+  :api_version => 2
+})
+
+# Performs an API call with default options
+def call_api(resource_name, action_name, params = {})
+  http_headers = {}
+  apipie_options = { :skip_validation => true }
+  @api.resource(resource_name).call(action_name, params, http_headers, apipie_options)
+end
+
+# Creates a hash with IDs mapping to names for an array of records
+def id_name_map(records)
+  records.inject({}) do |map, record|
+    map.update(record['id'] => record['name'])
+  end
+end
+
+# Get list of existing organizations
+orgs = call_api(:organizations, :index)
+org_list = id_name_map(orgs['results'])
+
+if !org_list.has_value?(org_name)
+  # If our organization is not found, create it
+  puts "Creating organization: \t#\{org_name}"
+  org_id = call_api(:organizations, :create, {'organization' => { :name => org_name }})['id']
+else
+  # Our organization exists, so let's grab it
+  org_id = org_list.key(org_name)
+  puts "Organization \"#\{org_name}\" exists"
+end
+
+# Get list of organization's life cycle environments
+envs = call_api(:lifecycle_environments, :index, {'organization_id' => org_id})
+env_list = id_name_map(envs['results'])
+prior_env_id = env_list.key("Library")
+
+# Exit the script if at least one life cycle environment already exists
+environments.each do |e|
+  if env_list.has_value?(e)
+    puts "ERROR: One of the Environments is not unique to organization"
+    exit
+  end
+end
+
+ # Create life cycle environments
+environments.each do |environment|
+  puts "Creating environment: \t#\{environment}"
+  prior_env_id = call_api(:lifecycle_environments, :create, {"name" => environment, "organization_id" => org_id, "prior_id" => prior_env_id })['id']
+end
+----

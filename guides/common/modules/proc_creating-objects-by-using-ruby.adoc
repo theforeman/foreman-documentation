@@ -1,0 +1,90 @@
+[id="creating-objects-by-using-ruby"]
+= Creating objects by using Ruby
+
+This script connects to the {ProjectNameX} API and creates an organization, and then creates three lifecycle environments in the organization.
+If the organization already exists, the script uses that organization.
+If any of the lifecycle environments already exist in the organization, the script raises an error and quits.
+
+[source, ruby, subs="attributes"]
+----
+#!/usr/bin/ruby
+
+require 'rest-client'
+require 'json'
+
+url = 'https://{foreman-example-com}/api/v2/'
+katello_url = "#\{url}/katello/api/v2/"
+
+$username = '_My_User_Name_'
+$password = '_My_Password_'
+
+org_name = "_My_Organization_"
+environments = [ "Development", "Testing", "Production" ]
+
+# Performs a GET by using the passed URL location
+def get_json(location)
+  response = RestClient::Request.new(
+    :method => :get,
+    :url => location,
+    :user => $username,
+    :password => $password,
+    :headers => { :accept => :json,
+    :content_type => :json }
+  ).execute
+  JSON.parse(response.to_str)
+end
+
+# Performs a POST and passes the data to the URL location
+def post_json(location, json_data)
+  response = RestClient::Request.new(
+    :method => :post,
+    :url => location,
+    :user => $username,
+    :password => $password,
+    :headers => { :accept => :json,
+    :content_type => :json},
+    :payload => json_data
+  ).execute
+  JSON.parse(response.to_str)
+end
+
+# Creates a hash with ids mapping to names for an array of records
+def id_name_map(records)
+  records.inject({}) do |map, record|
+    map.update(record['id'] => record['name'])
+  end
+end
+
+# Get list of existing organizations
+orgs = get_json("#\{katello_url}/organizations")
+org_list = id_name_map(orgs['results'])
+
+if !org_list.has_value?(org_name)
+  # If our organization is not found, create it
+  puts "Creating organization: \t#\{org_name}"
+  org_id = post_json("#\{katello_url}/organizations", JSON.generate({"name"=> org_name}))["id"]
+else
+  # Our organization exists, so let's grab it
+  org_id = org_list.key(org_name)
+  puts "Organization \"#\{org_name}\" exists"
+end
+
+# Get list of organization's lifecycle environments
+envs = get_json("#\{katello_url}/organizations/#\{org_id}/environments")
+env_list = id_name_map(envs['results'])
+prior_env_id = env_list.key("Library")
+
+# Exit the script if at least one life cycle environment already exists
+environments.each do |e|
+  if env_list.has_value?(e)
+    puts "ERROR: One of the Environments is not unique to organization"
+    exit
+  end
+end
+
+ # Create life cycle environments
+environments.each do |environment|
+  puts "Creating environment: \t#\{environment}"
+  prior_env_id = post_json("#\{katello_url}/organizations/#\{org_id}/environments", JSON.generate({"name" => environment, "organization_id" => org_id, "prior_id" => prior_env_id}))["id"]
+end
+----
