@@ -1,0 +1,93 @@
+[id="retrieving-resource-information-by-using-python"]
+= Retrieving resource information by using Python
+
+This is an example script that uses Python for various API requests.
+
+.Python 3 example
+[source, Python, subs="attributes"]
+----
+#!/usr/bin/env python3
+
+import json
+import sys
+
+try:
+    import requests
+except ImportError:
+    print("Please install the python-requests module.")
+    sys.exit(-1)
+
+HOSTNAME = "{foreman-example-com}"
+# URL for the API to your {ProjectServer}
+FOREMAN_API = f"https://\{HOSTNAME}/api/"
+KATELLO_API = f"https://\{HOSTNAME}/katello/api/v2/"
+
+POST_HEADERS = {'content-type': 'application/json'}
+# Default credentials to login to {ProjectX}
+USERNAME = "admin"
+PASSWORD = "password"
+# Ignore SSL for now
+SSL_VERIFY = False
+#SSL_VERIFY = "./path/to/CA-certificate.crt" # Put the path to your CA certificate here to allow SSL_VERIFY
+
+
+def get_json(url):
+    # Performs a GET by using the passed URL location
+    r = requests.get(url, auth=(USERNAME, PASSWORD), verify=SSL_VERIFY)
+    return r.json()
+
+def get_results(url):
+    jsn = get_json(url)
+    if jsn.get('error'):
+        print("Error: " + jsn['error']['message'])
+    else:
+        if jsn.get('results'):
+            return jsn['results']
+        elif 'results' not in jsn:
+            return jsn
+        else:
+            print("No results found")
+    return None
+
+def display_all_results(url):
+    results = get_results(url)
+    if results:
+        print(json.dumps(results, indent=4, sort_keys=True))
+
+def display_info_for_hosts(url):
+    hosts = get_results(url)
+    if hosts:
+        print(f"{'ID':10}{'Name':40}{'IP':30}{'Operating System':30}")
+        for host in hosts:
+            print(f"{str(host['id']):10}{host['name']:40}{str(host['ip']):30}{str(host['operatingsystem_name']):30}")
+
+def display_info_for_subs(url):
+    subs = get_results(url)
+    if subs:
+        print(f"{'ID':10}{'Name':90}{'Start Date':30}")
+        for sub in subs:
+            print(f"{str(sub['id']):10}{sub['name']:90}{str(sub['start_date']):30}")
+
+def main():
+    host = HOSTNAME
+    print(f"Displaying all info for host \{host} ...")
+    display_all_results(FOREMAN_API + 'hosts/' + host)
+
+    print(f"Displaying all facts for host \{host} ...")
+    display_all_results(FOREMAN_API + f'hosts/\{host}/facts')
+
+    host_pattern = 'example'
+    print(f"Displaying basic info for hosts matching pattern '\{host_pattern}'...")
+    display_info_for_hosts(FOREMAN_API + 'hosts?per_page=1&amp;search=name~' + host_pattern)
+
+    print(f"Displaying basic info for subscriptions")
+    display_info_for_subs(KATELLO_API + 'subscriptions')
+
+    environment = 'production'
+    print(f"Displaying basic info for hosts in environment \{environment}...")
+    display_info_for_hosts(FOREMAN_API + 'hosts?search=environment=' + environment)
+
+
+if __name__ == "__main__":
+    main()
+----
