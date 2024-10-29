@@ -2,13 +2,12 @@
 
 !include foreman.pstyle
 
-title Installer-based provisioning with HTTP boot on bare metal
+title Installer-based provisioning with UEFI HTTP boot on bare metal
 
 actor       User
 participant "Provisioned\nHost" as Host
 participant "Foreman" as Foreman
 participant "Foreman\nProxy" as Proxy
-'participant "Pulp\n(Katello)" as Pulp
 participant TFTP
 participant DHCP
 participant DNS
@@ -16,7 +15,7 @@ participant DNS
 participant "Puppet\nserver" as Puppet
 !endif
 
-note over Host : powered off
+note over Host : Powered off
 
 == Create host in Foreman ==
 
@@ -24,27 +23,27 @@ note over Host : powered off
 
 == Boot into OS installer ==
 
-User -> Host : power on the machine
-Host -> DHCP : request reserved IP and DHCP options
-Host -> TFTP : download boot loader
-Host -> Host : load the boot loader
-Host -> Proxy : get MAC-based config for boot loader
-Host -> Proxy : download installer kernel and init RAM disk
-Host ->  Host : load the installer
-Host -> Proxy : request installer configuration
+User -> Host : Power on the machine
+Host -> DHCP : Request reserved IP and DHCP options
+Host -> TFTP : Download boot loader
+Host -> Host : Load the boot loader
+Host -> Proxy : Get MAC-based configuration for boot loader
+Host -> Proxy : Download installer kernel and init RAM disk
+Host ->  Host : Load the installer
+Host -> Proxy : Request installer configuration
 group Template [Provision]
-   Proxy -> Proxy : render installer configuration
+   Proxy -> Proxy : Render installer configuration
 end
-Proxy -> Host : provide installer configuration
+Proxy -> Host : Provide installer configuration
 !include prov-installation-media.iuml
-note over Host : operating system installed
+note over Host : Operating system installed
 !include prov-initial-configuration.iuml
-Host -> Foreman : call home\n(disables build mode)
+Host -> Foreman : Call home\n(disables build mode)
 group Templates [*PXE* local boot]
-    Foreman -> Proxy : render bootloader configuration files
+    Foreman -> Proxy : Render boot-loader configuration files
 end
-Proxy -> Proxy : deploy bootloader configuration files
-Host -> Host : reboot
+Proxy -> Proxy : Deploy boot-loader configuration files\nto ""/var/lib/tftpboot""
+Host -> Host : Reboot
 
 == First local boot ==
 
@@ -56,6 +55,6 @@ Host -> Host : reboot
 !include puppet-run.iuml
 !endif
 
-note over Host : in operation
+note over Host : In operation
 
 @enduml
