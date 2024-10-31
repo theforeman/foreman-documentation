@@ -3,7 +3,7 @@
 This git repository contains the following documentation:
 
 * Official documentation for the Katello project
-* PoC of improving documentation for the Foreman project. See [this milestone](https://github.com/theforeman/foreman-documentation/milestone/3) to check the progress.
+* Work in progress of improving documentation for the Foreman project. See [this milestone](https://github.com/theforeman/foreman-documentation/milestone/3) to check the progress.
 
 For official Foreman documentation, see [Foreman Manual](https://theforeman.org/manuals/latest/index.html).
 
