@@ -3,13 +3,12 @@
 !include foreman.pstyle
 !$networkboot = 1
 
-title Installer-based provisioning with subnet bootdisk
+title Installer-based provisioning with subnet bootdisk on bare metal
 
 actor       User
 participant "Provisioned\nHost" as Host
 participant "Foreman" as Foreman
 participant "Foreman\nProxy" as Proxy
-'participant "Pulp\n(Katello)" as Pulp
 'participant TFTP
 participant DHCP
 participant DNS
@@ -17,33 +16,33 @@ participant DNS
 participant "Puppet\nserver" as Puppet
 !endif
 
-note over Host : powered off
+note over Host : Powered off
 
-User -> Foreman : downloads the bootdisk of the subnet
-note over User : writes the bootdisk\nto a USB/CD/DVD drive
+User -> Foreman : Download the boot disk of the subnet
+User -> User : Write the boot disk\nto an external storage device
+User -> Host : Configure to boot\nfrom the external storage device
 
 == Boot into OS installer ==
 
-User -> Host : configures the machine to boot\nfrom the USB/CD/DVD drive
-User -> Host : powers on the machine
-Host -> DHCP : requests the reserved IP
-note over Host : boots from the USB/CD/DVD drive
-note over Host : bootloader loads
-User -> Host : eliminates the USB/CD/DVD drive\n(too soon?)
-Host -> Proxy : gets MAC-based bootloader config
-Host -> Proxy : downloads OS installer kernel\nand initial RAM disk
-note over Host : OS installer loads
-Host -> Proxy : requests installer configuration
+User -> Host : Power on
+Host -> DHCP : Request the reserved IP address
+Host -> Host : Boot from the external storage device
+Host -> Host : Load boot loader
+User -> Host : Eliminate the external storage device\n(too soon?)
+Host -> Proxy : Get MAC-based boot-loader configuration
+Host -> Proxy : Download installer kernel\nand initial RAM disk
+Host -> Host : Load operating system installer
+Host -> Proxy : Request installer configuration
 group Template [Provision]
-   Proxy -> Proxy : renders installer configuration
+   Proxy -> Proxy : Render installer configuration
 end
-Proxy -> Host : gets installer configuration
+Proxy -> Host : Get installer configuration
 !include prov-installation-media.iuml
-note over Host : OS is installed
+note over Host : Operating system installed
 !include prov-initial-configuration.iuml
-Host -> Foreman : calls home\n(disables build mode)
+Host -> Foreman : Call home\n(disables build mode)
 
-note over Host : reboots
+Host -> Host : Reboot
 
 == First local boot ==
 
@@ -55,6 +54,6 @@ note over Host : reboots
 !include puppet-run.iuml
 !endif
 
-note over Host : in operation
+note over Host : In operation
 
 @enduml
