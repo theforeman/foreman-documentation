@@ -57,17 +57,31 @@ Retain a copy of the example `{foreman-installer}` command from the output for i
 --puppet-server-ca "true" \
 --puppet-server-foreman-url "_https://{foreman-example-com}_"
 ----
-. On {SmartProxyServer}, generate Puppet certificates for all other {SmartProxies} that you configure for load balancing, except this first system where you configure Puppet certificates signing:
+. On {SmartProxyServer} that is the Puppetserver Certificate Authority, stop the Puppet server:
 +
-[options="nowrap", subs="+quotes,attributes"]
+[options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-# puppet cert generate _{smartproxy-example-com}_ \
---dns_alt_names=_{loadbalancer-example-com}_
+# systemctl stop puppetserver
+----
+. Generate Puppet certificates for all other {SmartProxyServers} that you configure for load balancing, except the system where you first configured Puppet certificate signing:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# puppetserver ca generate \
+--ca-client \
+--certname _{smartproxy-example-com}_ \
+--subject-alt-names _{loadbalancer-example-com}_
 ----
 +
-This command creates the following files on the Puppet certificate signing {SmartProxyServer} instance:
+This command creates the following files:
 +
-* `/etc/puppetlabs/puppet/ssl/certs/ca.pem`
-* `/etc/puppetlabs/puppet/ssl/certs/{smartproxy-example-com}.pem`
-* `/etc/puppetlabs/puppet/ssl/private_keys/{smartproxy-example-com}.pem`
-* `/etc/puppetlabs/puppet/ssl/public_keys/{smartproxy-example-com}.pem`
+* `/etc/puppetlabs/puppet/ssl/certs/_{smartproxy-example-com}_.pem`
+* `/etc/puppetlabs/puppet/ssl/private_keys/_{smartproxy-example-com}_.pem`
+* `/etc/puppetlabs/puppet/ssl/public_keys/_{smartproxy-example-com}_.pem`
+* `/etc/puppetlabs/puppetserver/ca/signed/_{smartproxy-example-com}_.pem`
+. Start the Puppet server:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# systemctl start puppetserver
+----
