@@ -1,0 +1,100 @@
+[id="configuring-{smart-proxy-context}-to-provision-{client-os-context}-on-Secure-Boot-enabled-hosts"]
+= Configuring {SmartProxy} to provision {client-os} on Secure Boot enabled hosts
+
+Secure Boot follows a chain of trust from the start of the host to the loading of Linux kernel modules.
+The first shim that is loaded determines which distribution can be booted or loaded by using a `kexec` system call until the next reboot.
+
+To provision {client-os} on Secure Boot enabled hosts with the *Grub2 UEFI SecureBoot* and *Grub2 UEFI HTTPS SecureBoot* PXE loaders, you have to provide signed shim and GRUB2 binaries provided by the vendor of your operating system.
+
+[IMPORTANT]
+====
+You have to perform the following configuration steps on each TFTP {SmartProxy} for a subnet to provision Secure Boot enabled hosts on that subnet.
+====
+
+The following example works for {client-os} on x86_64 architecture.
+
+.Prerequisites
+ifeval::["{client-os}" == "Debian"]
+* Ensure that the `binutils` and `xz-utils` packages are installed on your {SmartProxy}.
+endif::[]
+ifeval::["{client-os}" == "Ubuntu"]
+* Ensure that the `binutils`, `xz-utils`, and `zstd` packages are installed on your {SmartProxy}.
+endif::[]
+ifeval::["{client-pkg-ext}" == "rpm"]
+* Ensure that the `cpio` package is installed on your {SmartProxy}.
+endif::[]
+
+.Procedure
+. Set the path for the shim and GRUB2 binaries for the operating system of your host:
++
+[options="nowrap" subs="+quotes,verbatim,attributes"]
+----
+# BOOTLOADER_PATH="/var/lib/tftpboot/bootloader-universe/pxegrub2/_{secureboot-os-name}_/default/x86_64"
+----
++
+If you require specific versions of the shim and GRUB2 binaries for the version of the operating system of your host, replace `default` with the *Major* and *Minor* version of the operating system separated by a dot.
+If no *Minor* version is set, replace `default` with the *Major* version.
++
+{Team} recommends to not use version-specific shim and GRUB2 binaries unless it is really necessary.
+. Create the directory to store the shim and GRUB2 binaries for the operating system of your host:
++
+[options="nowrap" subs="+quotes,verbatim,attributes"]
+----
+# install -o foreman-proxy -g foreman-proxy -d $BOOTLOADER_PATH
+----
+. Download the shim and GRUB2 packages for the operating system of your host:
++
+[options="nowrap" subs="+quotes,verbatim,attributes"]
+----
+# wget -O /tmp/{grub_efi_downloaded_package_name} _https://{server-example-com}/{grub_efi_downloaded_package_name}_
+# wget -O /tmp/{shim_efi_downloaded_package_name} _https://{server-example-com}/{shim_efi_downloaded_package_name}_
+----
++
+You can download the `{grub_efi_package_name}` package from {grub_efi_download_url}.
+You can download the `{shim_efi_package_name}` package from {shim_efi_download_url}.
+. Extract the shim and GRUB2 binaries:
++
+[options="nowrap" subs="+quotes,verbatim,attributes"]
+----
+# {extract_grub}
+# {extract_shim}
+----
+. Make the shim and GRUB2 binaries available for host provisioning:
++
+[options="nowrap" subs="+quotes,verbatim,attributes"]
+----
+# cp {grub_efi_tmp_binary_path} $BOOTLOADER_PATH/grubx64.efi
+# cp {shim_efi_tmp_binary_path} $BOOTLOADER_PATH/shimx64.efi
+# ln -sr $BOOTLOADER_PATH/grubx64.efi $BOOTLOADER_PATH/boot.efi
+# ln -sr $BOOTLOADER_PATH/shimx64.efi $BOOTLOADER_PATH/boot-sb.efi
+# chmod 644 $BOOTLOADER_PATH/grubx64.efi
+# chmod 644 $BOOTLOADER_PATH/shimx64.efi
+----
+ifeval::["{client-pkg-ext}" == "deb"]
+. Link the `grub.cfg` file from the TFTP servers `grub2` folder to the legacy `grub` folder:
++
+[options="nowrap" subs="+quotes,verbatim,attributes"]
+----
+# ln --relative --symbolic /var/lib/tftpboot/grub2/grub.cfg /var/lib/tftpboot/grub/grub.cfg
+----
+endif::[]
+
+.Verification
+* Verify the contents of your boot loader directory:
++
+[source, none, options="nowrap" subs="+quotes,verbatim,attributes"]
+----
+# tree /var/lib/tftpboot/bootloader-universe
+/var/lib/tftpboot/bootloader-universe
+└── pxegrub2
+    └── _{secureboot-os-name}_
+        └── default
+            └── x86_64
+                ├── boot.efi -> grubx64.efi
+                ├── boot-sb.efi -> shimx64.efi
+                ├── grubx64.efi
+                └── shimx64.efi
+----
+
+.Next steps
+* You can now provision Secure Boot enabled {client-os} hosts by using the *Grub2 UEFI SecureBoot* and *Grub2 UEFI HTTPS SecureBoot* PXE loaders.
