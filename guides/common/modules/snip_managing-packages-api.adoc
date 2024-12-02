@@ -1,30 +1,54 @@
-Create a body of the API request in the JSON format by following the instructions below.
 
 .API procedure
-. Create the `"job_invocation"` object and place rest of the body inside this object.
-. Create the `"inputs"` object with the `"package"` field of the string type specifying the packages you want to {PackageAction}.
-If you are specifying multiple packages, separate them with a whitespace.
-. Create a `"feature"` field of the string type with value `"katello_package_{PackageAction}"`.
-. Create a `"search_query"` field of the string type and input a search query matching the hosts on which you want to {PackageAction} the packages.
-. Optional: If you want to {PackageAction} packages as a specific user, create an `ssh` object with the following fields of the string type:
-* `"effective_user"` with the name of the ssh user
-* `"effective_user_password"` with the password of the ssh user if this password is required
-. Optional: If you want to {PackageAction} packages at a later time, create the `"scheduling"` object.
-The object can contain one or both of the following fields of the string type with date, time, and a timezone in the ISO 8601 format:
-* `"start_at"`- sets the time to {PackageAction} the packages
-* `"start_before"` - sets the latest time to {PackageAction} the packages.
-If it is not possible to {PackageAction} the packages by this time, then this action is cancelled.
-
+. Supply the API request body in the JSON format:
 +
-If you omit time, it defaults to 00:00:00.
-If you omit timezone, it defaults to UTC.
-. Optional: If you want to limit the number of hosts on which the job is run concurrently, create the `"concurrency_control"` object with the `"concurrency_level"` field of the integer type.
-Assign the number of hosts as the field value.
-. Optional: If you want to {PackageAction} packages at a later time and you want the host search query to be evaluated at a time of running the job, create a `"targeting_type"` field of the string type with the `"dynamic_query"` value.
-This is useful if you expect the result of the search query to be different at the time of running the job due to changed status of the hosts.
-If you omit this field, it defaults to `"static_query"`.
-
-. Send a `POST` request with the created body to the `/api/job_invocations` endpoint of your {ProjectServer} and use a tool like Python to see a formatted response.
+Example API request body:
+[options="nowrap", json, subs="+quotes,verbatim,attributes"]
+----
+{
+  "job_invocation" : { <1>
+    "concurrency_control" : {
+      "concurrency_level" : 100 <2>
+    },
+    "feature" : "katello_package_{PackageAction}", <3>
+    "inputs" : {
+      "package" : "nano vim" <4>
+    },
+    "scheduling" : { <5>
+      "start_at" : "2023-09-21T19:00:00+00:00",
+      "start_before" : "2023-09-23T00:00:00+00:00"
+    },
+    "search_query" : "*", <6>
+    "ssh" : { <7>
+      "effective_user" : "My_Username",
+      "effective_user_password" : "My_Password"
+    },
+    "targeting_type" : "dynamic_query" <8>
+  }
+}
+----
+<1> The `"job_invocation"` object, which contains the API request.
+<2> Optional: Limit the number of hosts on which the job is run concurrently.
+<3> The `"feature"` field with value `"katello_package_{PackageAction}"`.
+<4> The `"inputs/package"` object that specifies the packages to {PackageAction}.
+Separate multiple packages with a whitespace.
+<5> Optional: Time boundaries for when to start to {PackageAction} packages.
++
+--
+* You can specify one or both boundaries in the ISO 8601 format.
+* The action is canceled if it is not possible to {PackageAction} the packages by this time.
+* If you omit time, it defaults to 00:00:00.
+* If you omit time zone, it defaults to UTC.
+--
+<6> The search query that matches the hosts on which you want to {PackageAction} the packages.
+<7> Optional: Credentials of an SSH user, if you want to {PackageAction} packages as that user.
+<8> Optional: If you supplied the `"scheduling"` object, you can make the search query be evaluated when the job runs by specifying the `"targeting_type/dynamic_query"` field.
++
+--
+* This is useful if you expect the query to produce a different result at the time of running the job.
+* If you omit this field, it defaults to `"static_query"`.
+--
+. Send a `POST` request with the created body to the `/api/job_invocations` endpoint of your {ProjectServer} and see a formatted response:
 +
 Example API request:
 +
@@ -40,29 +64,3 @@ curl https://_{foreman-example-com}_/api/job_invocations \
 
 .Verification
 * In the {ProjectWebUI}, navigate to *Monitor* > *Jobs* and see the report of the scheduled or completed remote execution job to {PackageAction} the packages on the selected hosts.
-
-.Example API request body
-[options="nowrap", json, subs="+quotes,verbatim,attributes"]
-----
-{
-  "job_invocation" : {
-    "concurrency_control" : {
-      "concurrency_level" : 100
-    },
-    "feature" : "katello_package_{PackageAction}",
-    "inputs" : {
-      "package" : "nano vim"
-    },
-    "scheduling" : {
-      "start_at" : "2023-09-21T19:00:00+00:00",
-      "start_before" : "2023-09-23T00:00:00+00:00"
-    },
-    "search_query" : "*",
-    "ssh" : {
-      "effective_user" : "My_Username",
-      "effective_user_password" : "My_Password"
-    },
-    "targeting_type" : "dynamic_query"
-  }
-}
-----
