@@ -8888,68 +8888,106 @@ The orcharhino management UI shows a notification for the remote execution job.<
 </li>
 </ol>
 </div>
-<div class="paragraph">
-<p>Create a body of the API request in the JSON format by following the instructions below.</p>
-</div>
 <div class="olist arabic">
 <div class="title">API procedure</div>
 <ol class="arabic">
 <li>
-<p>Create the <code>"job_invocation"</code> object and place rest of the body inside this object.</p>
-</li>
-<li>
-<p>Create the <code>"inputs"</code> object with the <code>"package"</code> field of the string type specifying the packages you want to install.
-If you are specifying multiple packages, separate them with a whitespace.</p>
-</li>
-<li>
-<p>Create a <code>"feature"</code> field of the string type with value <code>"katello_package_install"</code>.</p>
-</li>
-<li>
-<p>Create a <code>"search_query"</code> field of the string type and input a search query matching the hosts on which you want to install the packages.</p>
-</li>
-<li>
-<p>Optional: If you want to install packages as a specific user, create an <code>ssh</code> object with the following fields of the string type:</p>
-<div class="ulist">
-<ul>
-<li>
-<p><code>"effective_user"</code> with the name of the ssh user</p>
-</li>
-<li>
-<p><code>"effective_user_password"</code> with the password of the ssh user if this password is required</p>
-</li>
-</ul>
-</div>
-</li>
-<li>
-<p>Optional: If you want to install packages at a later time, create the <code>"scheduling"</code> object.
-The object can contain one or both of the following fields of the string type with date, time, and a timezone in the ISO 8601 format:</p>
-<div class="ulist">
-<ul>
-<li>
-<p><code>"start_at"</code>- sets the time to install the packages</p>
-</li>
-<li>
-<p><code>"start_before"</code> - sets the latest time to install the packages.
-If it is not possible to install the packages by this time, then this action is cancelled.</p>
-</li>
-</ul>
-</div>
+<p>Supply the API request body in the JSON format:</p>
 <div class="paragraph">
-<p>If you omit time, it defaults to 00:00:00.
-If you omit timezone, it defaults to UTC.</p>
+<p>Example API request body:</p>
+</div>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>{
+  "job_invocation" : { <b class="conum">(1)</b>
+    "concurrency_control" : {
+      "concurrency_level" : 100 <b class="conum">(2)</b>
+    },
+    "feature" : "katello_package_{PackageAction}", <b class="conum">(3)</b>
+    "inputs" : {
+      "package" : "nano vim" <b class="conum">(4)</b>
+    },
+    "scheduling" : { <b class="conum">(5)</b>
+      "start_at" : "2023-09-21T19:00:00+00:00",
+      "start_before" : "2023-09-23T00:00:00+00:00"
+    },
+    "search_query" : "*", <b class="conum">(6)</b>
+    "ssh" : { <b class="conum">(7)</b>
+      "effective_user" : "My_Username",
+      "effective_user_password" : "My_Password"
+    },
+    "targeting_type" : "dynamic_query" <b class="conum">(8)</b>
+  }
+}</pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>The <code>"job_invocation"</code> object, which contains the API request.</p>
+</li>
+<li>
+<p>Optional: Limit the number of hosts on which the job is run concurrently.</p>
+</li>
+<li>
+<p>The <code>"feature"</code> field with value <code>"katello_package_install"</code>.</p>
+</li>
+<li>
+<p>The <code>"inputs/package"</code> object that specifies the packages to install.
+Separate multiple packages with a whitespace.</p>
+</li>
+<li>
+<p>Optional: Time boundaries for when to start to install packages.</p>
+<div class="openblock">
+<div class="content">
+<div class="ulist">
+<ul>
+<li>
+<p>You can specify one or both boundaries in the ISO 8601 format.</p>
+</li>
+<li>
+<p>The action is canceled if it is not possible to install the packages by this time.</p>
+</li>
+<li>
+<p>If you omit time, it defaults to 00:00:00.</p>
+</li>
+<li>
+<p>If you omit time zone, it defaults to UTC.</p>
+</li>
+</ul>
+</div>
+</div>
 </div>
 </li>
 <li>
-<p>Optional: If you want to limit the number of hosts on which the job is run concurrently, create the <code>"concurrency_control"</code> object with the <code>"concurrency_level"</code> field of the integer type.
-Assign the number of hosts as the field value.</p>
+<p>The search query that matches the hosts on which you want to install the packages.</p>
 </li>
 <li>
-<p>Optional: If you want to install packages at a later time and you want the host search query to be evaluated at a time of running the job, create a <code>"targeting_type"</code> field of the string type with the <code>"dynamic_query"</code> value.
-This is useful if you expect the result of the search query to be different at the time of running the job due to changed status of the hosts.
-If you omit this field, it defaults to <code>"static_query"</code>.</p>
+<p>Optional: Credentials of an SSH user, if you want to install packages as that user.</p>
 </li>
 <li>
-<p>Send a <code>POST</code> request with the created body to the <code>/api/job_invocations</code> endpoint of your orcharhino&#160;Server and use a tool like Python to see a formatted response.</p>
+<p>Optional: If you supplied the <code>"scheduling"</code> object, you can make the search query be evaluated when the job runs by specifying the <code>"targeting_type/dynamic_query"</code> field.</p>
+<div class="openblock">
+<div class="content">
+<div class="ulist">
+<ul>
+<li>
+<p>This is useful if you expect the query to produce a different result at the time of running the job.</p>
+</li>
+<li>
+<p>If you omit this field, it defaults to <code>"static_query"</code>.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Send a <code>POST</code> request with the created body to the <code>/api/job_invocations</code> endpoint of your orcharhino&#160;Server and see a formatted response:</p>
 <div class="paragraph">
 <p>Example API request:</p>
 </div>
@@ -8966,6 +9004,9 @@ If you omit this field, it defaults to <code>"static_query"</code>.</p>
 </li>
 </ol>
 </div>
+</li>
+</ol>
+</div>
 <div class="ulist">
 <div class="title">Verification</div>
 <ul>
@@ -8973,32 +9014,6 @@ If you omit this field, it defaults to <code>"static_query"</code>.</p>
 <p>In the orcharhino management UI, navigate to <strong>Monitor</strong> &gt; <strong>Jobs</strong> and see the report of the scheduled or completed remote execution job to install the packages on the selected hosts.</p>
 </li>
 </ul>
-</div>
-<div class="listingblock">
-<div class="title">Example API request body</div>
-<div class="content">
-<pre class="highlight nowrap"><code class="language-json" data-lang="json">{
-  "job_invocation" : {
-    "concurrency_control" : {
-      "concurrency_level" : 100
-    },
-    "feature" : "katello_package_install",
-    "inputs" : {
-      "package" : "nano vim"
-    },
-    "scheduling" : {
-      "start_at" : "2023-09-21T19:00:00+00:00",
-      "start_before" : "2023-09-23T00:00:00+00:00"
-    },
-    "search_query" : "*",
-    "ssh" : {
-      "effective_user" : "My_Username",
-      "effective_user_password" : "My_Password"
-    },
-    "targeting_type" : "dynamic_query"
-  }
-}</code></pre>
-</div>
 </div>
 </div>
 <div class="sect2">
@@ -9033,68 +9048,106 @@ The orcharhino management UI shows a notification for the remote execution job.<
 </li>
 </ol>
 </div>
-<div class="paragraph">
-<p>Create a body of the API request in the JSON format by following the instructions below.</p>
-</div>
 <div class="olist arabic">
 <div class="title">API procedure</div>
 <ol class="arabic">
 <li>
-<p>Create the <code>"job_invocation"</code> object and place rest of the body inside this object.</p>
-</li>
-<li>
-<p>Create the <code>"inputs"</code> object with the <code>"package"</code> field of the string type specifying the packages you want to update.
-If you are specifying multiple packages, separate them with a whitespace.</p>
-</li>
-<li>
-<p>Create a <code>"feature"</code> field of the string type with value <code>"katello_package_update"</code>.</p>
-</li>
-<li>
-<p>Create a <code>"search_query"</code> field of the string type and input a search query matching the hosts on which you want to update the packages.</p>
-</li>
-<li>
-<p>Optional: If you want to update packages as a specific user, create an <code>ssh</code> object with the following fields of the string type:</p>
-<div class="ulist">
-<ul>
-<li>
-<p><code>"effective_user"</code> with the name of the ssh user</p>
-</li>
-<li>
-<p><code>"effective_user_password"</code> with the password of the ssh user if this password is required</p>
-</li>
-</ul>
-</div>
-</li>
-<li>
-<p>Optional: If you want to update packages at a later time, create the <code>"scheduling"</code> object.
-The object can contain one or both of the following fields of the string type with date, time, and a timezone in the ISO 8601 format:</p>
-<div class="ulist">
-<ul>
-<li>
-<p><code>"start_at"</code>- sets the time to update the packages</p>
-</li>
-<li>
-<p><code>"start_before"</code> - sets the latest time to update the packages.
-If it is not possible to update the packages by this time, then this action is cancelled.</p>
-</li>
-</ul>
-</div>
+<p>Supply the API request body in the JSON format:</p>
 <div class="paragraph">
-<p>If you omit time, it defaults to 00:00:00.
-If you omit timezone, it defaults to UTC.</p>
+<p>Example API request body:</p>
+</div>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>{
+  "job_invocation" : { <b class="conum">(1)</b>
+    "concurrency_control" : {
+      "concurrency_level" : 100 <b class="conum">(2)</b>
+    },
+    "feature" : "katello_package_{PackageAction}", <b class="conum">(3)</b>
+    "inputs" : {
+      "package" : "nano vim" <b class="conum">(4)</b>
+    },
+    "scheduling" : { <b class="conum">(5)</b>
+      "start_at" : "2023-09-21T19:00:00+00:00",
+      "start_before" : "2023-09-23T00:00:00+00:00"
+    },
+    "search_query" : "*", <b class="conum">(6)</b>
+    "ssh" : { <b class="conum">(7)</b>
+      "effective_user" : "My_Username",
+      "effective_user_password" : "My_Password"
+    },
+    "targeting_type" : "dynamic_query" <b class="conum">(8)</b>
+  }
+}</pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>The <code>"job_invocation"</code> object, which contains the API request.</p>
+</li>
+<li>
+<p>Optional: Limit the number of hosts on which the job is run concurrently.</p>
+</li>
+<li>
+<p>The <code>"feature"</code> field with value <code>"katello_package_update"</code>.</p>
+</li>
+<li>
+<p>The <code>"inputs/package"</code> object that specifies the packages to update.
+Separate multiple packages with a whitespace.</p>
+</li>
+<li>
+<p>Optional: Time boundaries for when to start to update packages.</p>
+<div class="openblock">
+<div class="content">
+<div class="ulist">
+<ul>
+<li>
+<p>You can specify one or both boundaries in the ISO 8601 format.</p>
+</li>
+<li>
+<p>The action is canceled if it is not possible to update the packages by this time.</p>
+</li>
+<li>
+<p>If you omit time, it defaults to 00:00:00.</p>
+</li>
+<li>
+<p>If you omit time zone, it defaults to UTC.</p>
+</li>
+</ul>
+</div>
+</div>
 </div>
 </li>
 <li>
-<p>Optional: If you want to limit the number of hosts on which the job is run concurrently, create the <code>"concurrency_control"</code> object with the <code>"concurrency_level"</code> field of the integer type.
-Assign the number of hosts as the field value.</p>
+<p>The search query that matches the hosts on which you want to update the packages.</p>
 </li>
 <li>
-<p>Optional: If you want to update packages at a later time and you want the host search query to be evaluated at a time of running the job, create a <code>"targeting_type"</code> field of the string type with the <code>"dynamic_query"</code> value.
-This is useful if you expect the result of the search query to be different at the time of running the job due to changed status of the hosts.
-If you omit this field, it defaults to <code>"static_query"</code>.</p>
+<p>Optional: Credentials of an SSH user, if you want to update packages as that user.</p>
 </li>
 <li>
-<p>Send a <code>POST</code> request with the created body to the <code>/api/job_invocations</code> endpoint of your orcharhino&#160;Server and use a tool like Python to see a formatted response.</p>
+<p>Optional: If you supplied the <code>"scheduling"</code> object, you can make the search query be evaluated when the job runs by specifying the <code>"targeting_type/dynamic_query"</code> field.</p>
+<div class="openblock">
+<div class="content">
+<div class="ulist">
+<ul>
+<li>
+<p>This is useful if you expect the query to produce a different result at the time of running the job.</p>
+</li>
+<li>
+<p>If you omit this field, it defaults to <code>"static_query"</code>.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Send a <code>POST</code> request with the created body to the <code>/api/job_invocations</code> endpoint of your orcharhino&#160;Server and see a formatted response:</p>
 <div class="paragraph">
 <p>Example API request:</p>
 </div>
@@ -9111,6 +9164,9 @@ If you omit this field, it defaults to <code>"static_query"</code>.</p>
 </li>
 </ol>
 </div>
+</li>
+</ol>
+</div>
 <div class="ulist">
 <div class="title">Verification</div>
 <ul>
@@ -9118,32 +9174,6 @@ If you omit this field, it defaults to <code>"static_query"</code>.</p>
 <p>In the orcharhino management UI, navigate to <strong>Monitor</strong> &gt; <strong>Jobs</strong> and see the report of the scheduled or completed remote execution job to update the packages on the selected hosts.</p>
 </li>
 </ul>
-</div>
-<div class="listingblock">
-<div class="title">Example API request body</div>
-<div class="content">
-<pre class="highlight nowrap"><code class="language-json" data-lang="json">{
-  "job_invocation" : {
-    "concurrency_control" : {
-      "concurrency_level" : 100
-    },
-    "feature" : "katello_package_update",
-    "inputs" : {
-      "package" : "nano vim"
-    },
-    "scheduling" : {
-      "start_at" : "2023-09-21T19:00:00+00:00",
-      "start_before" : "2023-09-23T00:00:00+00:00"
-    },
-    "search_query" : "*",
-    "ssh" : {
-      "effective_user" : "My_Username",
-      "effective_user_password" : "My_Password"
-    },
-    "targeting_type" : "dynamic_query"
-  }
-}</code></pre>
-</div>
 </div>
 </div>
 <div class="sect2">
@@ -9172,68 +9202,106 @@ The orcharhino management UI shows a notification for the remote execution job.<
 </li>
 </ol>
 </div>
-<div class="paragraph">
-<p>Create a body of the API request in the JSON format by following the instructions below.</p>
-</div>
 <div class="olist arabic">
 <div class="title">API procedure</div>
 <ol class="arabic">
 <li>
-<p>Create the <code>"job_invocation"</code> object and place rest of the body inside this object.</p>
-</li>
-<li>
-<p>Create the <code>"inputs"</code> object with the <code>"package"</code> field of the string type specifying the packages you want to remove.
-If you are specifying multiple packages, separate them with a whitespace.</p>
-</li>
-<li>
-<p>Create a <code>"feature"</code> field of the string type with value <code>"katello_package_remove"</code>.</p>
-</li>
-<li>
-<p>Create a <code>"search_query"</code> field of the string type and input a search query matching the hosts on which you want to remove the packages.</p>
-</li>
-<li>
-<p>Optional: If you want to remove packages as a specific user, create an <code>ssh</code> object with the following fields of the string type:</p>
-<div class="ulist">
-<ul>
-<li>
-<p><code>"effective_user"</code> with the name of the ssh user</p>
-</li>
-<li>
-<p><code>"effective_user_password"</code> with the password of the ssh user if this password is required</p>
-</li>
-</ul>
-</div>
-</li>
-<li>
-<p>Optional: If you want to remove packages at a later time, create the <code>"scheduling"</code> object.
-The object can contain one or both of the following fields of the string type with date, time, and a timezone in the ISO 8601 format:</p>
-<div class="ulist">
-<ul>
-<li>
-<p><code>"start_at"</code>- sets the time to remove the packages</p>
-</li>
-<li>
-<p><code>"start_before"</code> - sets the latest time to remove the packages.
-If it is not possible to remove the packages by this time, then this action is cancelled.</p>
-</li>
-</ul>
-</div>
+<p>Supply the API request body in the JSON format:</p>
 <div class="paragraph">
-<p>If you omit time, it defaults to 00:00:00.
-If you omit timezone, it defaults to UTC.</p>
+<p>Example API request body:</p>
+</div>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>{
+  "job_invocation" : { <b class="conum">(1)</b>
+    "concurrency_control" : {
+      "concurrency_level" : 100 <b class="conum">(2)</b>
+    },
+    "feature" : "katello_package_{PackageAction}", <b class="conum">(3)</b>
+    "inputs" : {
+      "package" : "nano vim" <b class="conum">(4)</b>
+    },
+    "scheduling" : { <b class="conum">(5)</b>
+      "start_at" : "2023-09-21T19:00:00+00:00",
+      "start_before" : "2023-09-23T00:00:00+00:00"
+    },
+    "search_query" : "*", <b class="conum">(6)</b>
+    "ssh" : { <b class="conum">(7)</b>
+      "effective_user" : "My_Username",
+      "effective_user_password" : "My_Password"
+    },
+    "targeting_type" : "dynamic_query" <b class="conum">(8)</b>
+  }
+}</pre>
+</div>
+</div>
+<div class="colist arabic">
+<ol>
+<li>
+<p>The <code>"job_invocation"</code> object, which contains the API request.</p>
+</li>
+<li>
+<p>Optional: Limit the number of hosts on which the job is run concurrently.</p>
+</li>
+<li>
+<p>The <code>"feature"</code> field with value <code>"katello_package_remove"</code>.</p>
+</li>
+<li>
+<p>The <code>"inputs/package"</code> object that specifies the packages to remove.
+Separate multiple packages with a whitespace.</p>
+</li>
+<li>
+<p>Optional: Time boundaries for when to start to remove packages.</p>
+<div class="openblock">
+<div class="content">
+<div class="ulist">
+<ul>
+<li>
+<p>You can specify one or both boundaries in the ISO 8601 format.</p>
+</li>
+<li>
+<p>The action is canceled if it is not possible to remove the packages by this time.</p>
+</li>
+<li>
+<p>If you omit time, it defaults to 00:00:00.</p>
+</li>
+<li>
+<p>If you omit time zone, it defaults to UTC.</p>
+</li>
+</ul>
+</div>
+</div>
 </div>
 </li>
 <li>
-<p>Optional: If you want to limit the number of hosts on which the job is run concurrently, create the <code>"concurrency_control"</code> object with the <code>"concurrency_level"</code> field of the integer type.
-Assign the number of hosts as the field value.</p>
+<p>The search query that matches the hosts on which you want to remove the packages.</p>
 </li>
 <li>
-<p>Optional: If you want to remove packages at a later time and you want the host search query to be evaluated at a time of running the job, create a <code>"targeting_type"</code> field of the string type with the <code>"dynamic_query"</code> value.
-This is useful if you expect the result of the search query to be different at the time of running the job due to changed status of the hosts.
-If you omit this field, it defaults to <code>"static_query"</code>.</p>
+<p>Optional: Credentials of an SSH user, if you want to remove packages as that user.</p>
 </li>
 <li>
-<p>Send a <code>POST</code> request with the created body to the <code>/api/job_invocations</code> endpoint of your orcharhino&#160;Server and use a tool like Python to see a formatted response.</p>
+<p>Optional: If you supplied the <code>"scheduling"</code> object, you can make the search query be evaluated when the job runs by specifying the <code>"targeting_type/dynamic_query"</code> field.</p>
+<div class="openblock">
+<div class="content">
+<div class="ulist">
+<ul>
+<li>
+<p>This is useful if you expect the query to produce a different result at the time of running the job.</p>
+</li>
+<li>
+<p>If you omit this field, it defaults to <code>"static_query"</code>.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Send a <code>POST</code> request with the created body to the <code>/api/job_invocations</code> endpoint of your orcharhino&#160;Server and see a formatted response:</p>
 <div class="paragraph">
 <p>Example API request:</p>
 </div>
@@ -9250,6 +9318,9 @@ If you omit this field, it defaults to <code>"static_query"</code>.</p>
 </li>
 </ol>
 </div>
+</li>
+</ol>
+</div>
 <div class="ulist">
 <div class="title">Verification</div>
 <ul>
@@ -9257,32 +9328,6 @@ If you omit this field, it defaults to <code>"static_query"</code>.</p>
 <p>In the orcharhino management UI, navigate to <strong>Monitor</strong> &gt; <strong>Jobs</strong> and see the report of the scheduled or completed remote execution job to remove the packages on the selected hosts.</p>
 </li>
 </ul>
-</div>
-<div class="listingblock">
-<div class="title">Example API request body</div>
-<div class="content">
-<pre class="highlight nowrap"><code class="language-json" data-lang="json">{
-  "job_invocation" : {
-    "concurrency_control" : {
-      "concurrency_level" : 100
-    },
-    "feature" : "katello_package_remove",
-    "inputs" : {
-      "package" : "nano vim"
-    },
-    "scheduling" : {
-      "start_at" : "2023-09-21T19:00:00+00:00",
-      "start_before" : "2023-09-23T00:00:00+00:00"
-    },
-    "search_query" : "*",
-    "ssh" : {
-      "effective_user" : "My_Username",
-      "effective_user_password" : "My_Password"
-    },
-    "targeting_type" : "dynamic_query"
-  }
-}</code></pre>
-</div>
 </div>
 </div>
 </div>
