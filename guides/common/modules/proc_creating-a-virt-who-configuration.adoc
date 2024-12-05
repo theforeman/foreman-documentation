@@ -1,0 +1,130 @@
+[id="creating-a-virt-who-configuration"]
+= Creating a virt-who configuration
+
+You can create a virt-who configuration on {Project}.
+To use the CLI instead of the {ProjectWebUI}, see the xref:cli-creating-a-virt-who-configuration[].
+
+The virt-who configuration creates a `virt_who_reporter_[id]` user with the `Virt-who Reporter` role, which provides minimal permissions for virt-who reporting to {ProjectServer}.
+This user cannot be manually configured or used to log in to {ProjectServer}.
+
+Local configuration values are stored in the `/etc/virt-who.d/_conf_name_.conf` file and apply only to the hypervisor or virtualization manager.
+
+Global configuration values, such as `Interval`, `Enable debugging output`, `HTTP Proxy`, and `Ignore Proxy`, apply to all virt-who configurations on the same server and are overwritten if you deploy a new virt-who configuration on that server.
+Global configuration values are stored in the `/etc/sysconfig/virt-who` file.
+
+.Prerequisites
+* You have imported a subscription manifest that includes a host-based subscription into {ProjectServer}.
+* VMware vSphere: You have created a virt-who user with read-only access to all objects in the vCenter Data Center and a non-expiring password on the vCenter Server.
+* Microsoft Hyper-V:
+** You have enabled remote management on each hypervisor.
+** You have created a virt-who user with read-only access and a non-expiring password on each hypervisor.
+* {EL} Virtualization (KVM), {OpenStack}:
+** You have registered the hypervisor to {ProjectServer}.
+** You have created a virt-who user with read-only access and a non-expiring password on each hypervisor.
+* {KubeVirt}: You have created a `kubeconfig` file.
+
+.Procedure
+. In the {ProjectWebUI}, navigate to *Infrastructure* > *Virt-who Configurations*.
+. Click *Create Config*.
+. Complete the following fields:
+* *Name*: Configuration name.
+* *Hypervisor Type*: Select one of the following types:
+** *VMware vSphere / vCenter (esx)*.
+** *Microsoft Hyper-V (hyperv)*.
+** *libvirt*: For {EL} Virtualization (KVM) or {OpenStack}.
+** *Container-native virtualization*: For {KubeVirt}.
+** *Nutanix AHV (ahv)*.
+
+* VMware vSphere and Microsoft Hyper-V:
+** *Hypervisor Server*: FQDN or IP address.
+** *Hypervisor Username*: virt-who user name.
+** *Hypervisor Password*: virt-who user password.
+The password is encrypted when you deploy the configuration.
+
+* *Interval*: Virtual machine information reporting interval.
+
+* *{ProjectServer} FQDN*.
+* *Hypervisor ID*: Select *Hostname* or *UUID*.
+
+. Optional: *Filtering*. Select one of the following options for querying hypervisors:
+* *Unlimited* (default): All hypervisors are queried.
+* *Whitelist*: Specific hypervisors are included.
+* *Blacklist*: Specific hypervisors are excluded.
+** *Filter hosts*: Comma-separated list of included hypervisors.
+** *Exclude hosts*: Comma-separated list of excluded hypervisors.
++
+--
+Specify the host name or UUID according to the hypervisor ID you selected.
+
+.Host names
+
+* You can use wildcards, regular expressions, and special characters in the host name.
+* If you use regular expressions, you must escape the backslashes.
+* If you use special characters, you must enclose the host name in quotation marks.
+--
++
+* vCenter Server:
+** *Filter host parents*: Comma-separated list of included cluster IDs.
+** *Exclude host parents*: Comma-separated list of excluded cluster IDs.
+For more information, see link:https://access.redhat.com/solutions/5696481[Using the "Filter Host Parents" and "Exclude Host Parents" Attributes with VMware Clusters] in the _Red{nbsp}Hat Knowledgebase_.
+
+. You can configure the following logging and proxy options:
+
+* *Enable debugging output*: Enables debug logging for virt-who.
+* *HTTP Proxy*.
+Example: `http://_proxy.example.com_:3128`.
++
+To use no proxy, leave this field blank; this has the same result as entering `{asterisk}` in the *Ignore Proxy* field.
+* *Ignore Proxy*: Comma-separated list of host names, IP addresses, or domains to bypass existing proxy settings.
+. {KubeVirt}: Enter the path in the *Path to kubeconfig file* field.
+. Nutanix AHV:
+* Select *Prism Central* or *Prism Element* from the *Prism Flavor* list.
+* Optional: *Enable AHV Debug*: Enables AHV internal debugging.
+This option provides additional AHV information when you enable both debugging options.
+
+. Click *Submit*.
+
+[id="cli-creating-a-virt-who-configuration"]
+.CLI procedure
+* On {ProjectServer}, enter the `hammer virt-who-config create` command according to the following example:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+$ hammer virt-who-config create \
+--name _My_virt-who_Configuration_ \
+--organizations "_My_Organization_" \
+--interval 720 \ <1>
+--filtering-mode none \ <2>
+--hypervisor-id hostname \ <3>
+--hypervisor-type libvirt \ <4>
+--hypervisor-server _hypervisor.example.com_ \ <5>
+--hypervisor-username virt_who_user \ <6>
+--proxy '_http://proxy.example.com_:3128' \ <7>
+--satellite-url _{foreman-example-com}_
+----
+--
+<1> Virtual machine information reporting interval, in minutes.
+<2> Specify `none` for no filtering of hypervisors for virt-who queries.
+Specify `whitelist` or `blacklist` to include or exclude hypervisors for virt-who queries.
+<3> Specify `hostname`, `uuid`, or `hwuuid` for the hypervisor ID format.
+* You can use `uuid` to avoid duplication if you rename a hypervisor.
++
+* You can use `hwuuid` for configurations that apply to a virtualization manager instead of an individual hypervisor.
++
+[NOTE]
+====
+You cannot change `hwuuid` to another option after virt-who starts running because this might cause duplicate entries in Subscription Manager.
+====
+
+<4> Specify the hypervisor type:
+* {EL} Virtualization (KVM) or {OpenStack}: `libvirt`.
+* VMware vSphere: `esx`.
+* Microsoft Hyper-V: `hyperv`.
+* Nutanix AHV: `ahv`
+* {KubeVirt}: `cnv`
+<5> Specify the FQDN or IP address of the hypervisor or the vCenter Server.
+<6> Specify the name of the virt-who user you created on the hypervisor.
++
+For VMware vSphere or Microsoft Hyper-V, specify the virt-who user password: `--hypervisor-password <password>`.
+<7> Optional.
+--
