@@ -1,0 +1,163 @@
+---
+- name: "Check prerequisites on developer-system"
+  connection: local
+  hosts: developer-system
+  vars:
+    repo_path: "/home/user"
+    repo_remote: "git@github.com:theforeman/foreman-documentation.git"
+
+  tasks:
+    - name: "Verify that user input is set"
+      ansible.builtin.assert:
+        that: repo_path != "/home/user"
+        fail_msg: "Supply a variable repo_path pointing to the root of your local clone of foreman-documentation."
+
+    - name: "Verify that foreman-documentation is present"
+      ansible.builtin.git:
+        clone: false
+        dest: "{{ repo_path }}"
+        repo: "{{ repo_remote }}"
+        update: false  # noqa: latest
+        version: "HEAD"
+
+    - name: "Verify that shellscript is present"
+      ansible.builtin.stat:
+        path: "{{ repo_path }}/guides/scripts/generate-hammer-reference.sh"
+      register: result
+
+    - name: "End playbook if shellscript is not present"
+      ansible.builtin.fail:
+        msg: "Shellscript to convert markdown to asciidoc is not present or executable"
+      when:
+        - not result.stat.executable
+        - not result.stat.exists
+
+    - name: "Delete markdown file if present"
+      ansible.builtin.file:
+        path: "{{ repo_path }}/guides/hammer_full_help.md"
+        state: absent
+
+- name: "Generate Hammer CLI help"
+  hosts: foreman-katello
+  vars:
+    foreman_plugins:
+      - foreman-tasks
+      - foreman_acd
+      - foreman_ansible
+      - foreman_azure_rm
+      - foreman_bootdisk
+      - foreman_discovery
+      - foreman_fog_proxmox
+      - foreman_git_templates
+      - foreman_google
+      - foreman_kernel_care
+      - foreman_kubevirt
+      - foreman_leapp
+      - foreman_maintain
+      - foreman_openscap
+      - foreman_puppet
+      - foreman_remote_execution
+      - foreman_remote_execution-cockpit
+      - foreman_resource_quota
+      - foreman_rh_cloud
+      - foreman_salt
+      - foreman_scap_client
+      - foreman_scc_manager
+      - foreman_snapshot_management
+      - foreman_templates
+      - foreman_virt_who_configure
+      - foreman_webhooks
+      # - foreman_concrete
+      # - foreman_datacenter
+      # - foreman_default_hostgroup
+      # - foreman_dhcp_browser
+      # - foreman_dlm
+      # - foreman_expire_hosts
+      # - foreman_graphite
+      # - foreman_hdm
+      # - foreman_host_extra_validator
+      # - foreman_monitoring
+      # - foreman_netbox
+      # - foreman_omaha
+      # - foreman_probing
+      # - foreman_rescue
+      # - foreman_statistics
+      # - foreman_supervisory_authority
+      # - foreman_vault
+      # - foreman_vmwareannotations
+      # - foreman_wreckingball
+
+  tasks:
+    - name: "Update DNF cache"
+      ansible.builtin.dnf:
+        update_cache: true
+
+    - name: "Install Foreman plugins"
+      ansible.builtin.package:
+        name: "rubygem-{{ item }}"
+        state: latest  # noqa: package-latest
+      become: true
+      with_items: "{{ foreman_plugins }}"
+
+    - name: "Install Hammer CLI plugins"
+      ansible.builtin.package:
+        name: "rubygem-hammer_cli_{{ item }}"
+        state: latest  # noqa: package-latest
+      become: true
+      with_items: "{{ foreman_plugins }}"
+      # TODO: find a better solution than ignoring errors:
+      #       * list all available Hammer CLI plugins?
+      #       * create RFE to get Hammer CLI plugins for all Foreman+Katello plugins?
+      #       * query the RPM database?
+      failed_when: false
+
+    - name: "Generate full Hammer CLI help"
+      ansible.builtin.command:
+        cmd: "hammer full-help --md"
+      changed_when: true
+      register: hammer_cli_help_in_markdown
+
+    - name: "Write Hammer CLI help to file"
+      ansible.builtin.copy:
+        content: "{{ hammer_cli_help_in_markdown.stdout }}"
+        dest: "/tmp/hammer_full_help.md"
+        mode: "0644"
+
+    # do not use "ansible.posix.synchronize" to avoid dependency to "rsync"
+    - name: "Copy markdown from Foreman+Katello to local host"
+      ansible.builtin.fetch:
+        dest: "{{ repo_path }}/guides/hammer_full_help.md"
+        flat: true
+        src: "/tmp/hammer_full_help.md"
+
+- name: "Convert markdown to asciidoc"
+  connection: local
+  hosts: developer-system
+
+  tasks:
+    - name: "Verify that markdown file is present"
+      ansible.builtin.stat:
+        path: "{{ repo_path }}/guides/hammer_full_help.md"
+      register: result
+
+    - name: "End playbook if markdown file is not present"
+      ansible.builtin.fail:
+        msg: "Hammer CLI help in markdown is not present"
+      when: not result.stat.exists
+
+    - name: "Convert markdown to asciidoc"
+      ansible.builtin.command:
+        chdir: "{{ repo_path }}/guides/"
+        cmd: "/bin/bash ./scripts/generate-hammer-reference.sh ./hammer_full_help.md"  # overrules hashbang and mitigates failures on ZSH
+      changed_when: true  # TODO: evaluate if we can use the edited assembly
+      register: result
+
+    - name: "Show stdout from converting md to adoc"
+      ansible.builtin.debug:
+        msg: "{{ result.stdout_lines }}"
+
+    - name: "Delete markdown file if present"
+      ansible.builtin.file:
+        path: "{{ repo_path }}/guides/hammer_full_help.md"
+        state: absent
+...

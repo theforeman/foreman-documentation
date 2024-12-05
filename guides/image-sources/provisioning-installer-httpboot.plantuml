@@ -1,0 +1,59 @@
+@startuml
+
+!include foreman.pstyle
+
+title Installer-based provisioning with UEFI HTTP boot on bare metal
+
+actor       User
+participant "Provisioned\nHost" as Host
+participant "Foreman" as Foreman
+participant "Foreman\nProxy\nHTTPboot" as Proxy
+participant DHCP
+participant DNS
+!if ($puppet)
+participant "Puppet\nserver" as Puppet
+!endif
+
+note over Host : Powered off
+
+== Create host in Foreman ==
+
+!include prov-create-host-http.iuml
+
+== Boot into OS installer ==
+
+User -> Host : Power on
+Host -> DHCP : Request reserved IP and DHCP options
+Host -> Proxy : Download boot loader
+Host -> Host : Load the boot loader
+Host -> Proxy : Get MAC-based configuration for boot loader
+Host -> Proxy : Download installer kernel and init RAM disk
+Host ->  Host : Load the installer
+Host -> Proxy : Request installer configuration
+group Template [Provision]
+   Proxy -> Proxy : Render installer configuration
+end
+Proxy -> Host : Provide installer configuration
+!include prov-installation-media.iuml
+note over Host : Operating system installed
+!include prov-initial-configuration.iuml
+Host -> Foreman : Call home\n(disables build mode)
+group Templates [*PXE* local boot]
+    Foreman -> Proxy : Render boot-loader configuration files
+end
+Proxy -> Proxy : Deploy boot-loader configuration files\nto ""/var/lib/tftpboot""
+Host -> Host : Reboot
+
+== First local boot ==
+
+!include prov-first-local-boot-http.iuml
+
+!if ($puppet)
+== First Puppet run ==
+
+!include puppet-run.iuml
+!endif
+
+note over Host : In operation
+
+@enduml
