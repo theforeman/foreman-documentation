@@ -1,0 +1,116 @@
+[id="creating-a-virt-who-configuration_{context}"]
+= Creating a virt-who configuration
+
+You can create a `virt-who` configuration for your hypervisor or virtualization manager.
+Red Hat products and Microsoft Hyper-V require one configuration for each hypervisor that runs {EL} virtual machines.
+VMware vSphere requires one configuration for each vCenter Server.
+
+Most values in this procedure are added to an `/etc/virt-who.d/_conf_name_.conf` file and apply only to the specified hypervisor or virtualization manager.
+*Interval*, *Enable debugging output*, *HTTP Proxy*, and *Ignore Proxy* are global values stored in the `/etc/sysconfig/virt-who` file.
+Global configuration values apply to all `virt-who` configurations on the same server, and are overwritten if you deploy a new `virt-who` configuration on that server.
+
+Every `virt-who` configuration creates a `virt_who_reporter_[id]` user and assigns it the `Virt-who Reporter` role, which provides minimal permissions for `virt-who` reporting to {ProjectServer}.
+This user cannot be manually configured or used to log in to {ProjectServer}.
+
+.Prerequisites
+
+* You have imported a subscription manifest that includes a host-based subscription into {ProjectServer}.
+For more information, see {ContentManagementDocURL}Importing_a_Red_Hat_Subscription_Manifest_into_Server_content-management[Importing a Red Hat Subscription Manifest into Satellite Server] in _Managing Content_.
+* If you are creating a `virt-who` configuration for a {EL} or {oVirt} hypervisor, you have registered the hypervisor to {ProjectServer}.
+* You have created a read-only virt-who user on the hypervisor or virtualization manager:
+** For Red Hat products and Microsoft Hyper-V, create a virt-who user on each hypervisor that runs {EL} virtual machines.
+** For VMware vSphere, create a virt-who user on the vCenter Server.
+The virt-who user requires at least read-only access to all objects in the vCenter Data Center.
+
+.Procedure
+
+. In the {ProjectWebUI}, navigate to *Infrastructure* > *Virt-who Configurations*.
+. Click *Create Config*.
+. Enter a *Name* for the configuration.
+. From the *Hypervisor Type* list, select your virtualization platform:
+* {EL} Virtualization (KVM), {oVirt}, or {OpenStack}: *libvirt*
+* VMware vSphere: *esx*
+* Microsoft Hyper-V: *hyperv*
+* Note that the *rhevm* and *xen* hypervisor types are not supported, and the *kubevirt* hypervisor type is provided as a Technology Preview only.
+
+. In the *Hypervisor Server* field, enter the FQDN or IP address of the server this configuration applies to.
+For VMware vSphere, use the vCenter Server's FQDN or IP address.
+For all other products, use the hypervisor's FQDN or IP address.
+. In the *Hypervisor Username* field, enter the name of the virt-who user that you created on the hypervisor or virtualization manager.
+. In the *Hypervisor Password* field, enter the password for the virt-who user.
+This password is encrypted when you deploy the configuration.
+This field is not required when using the *libvirt* type.
+. From the *Interval* list, select how often virt-who requests new or updated virtual machine information.
+Because the virtual machines are granted temporary subscriptions for up to seven days, frequent queries are not required; you can select an interval that suits the size of your environment. *Every 24 hours* is suitable for most environments.
+. Enter the *Satellite server FQDN*.
+. From the *Hypervisor ID* list, select whether to identify the hypervisors in {ProjectServer} by their host name or UUID.
+. Select a *Filtering* option:
+* The default is *Unlimited*. All hypervisors covered by this configuration are queried by virt-who.
+Use this option if you do not have to limit which hypervisors are queried.
+* You can *Whitelist* or *Blacklist* hypervisors.
+For example, if some hypervisors only run Microsoft Windows Server virtual machines, those hypervisors do not need to be reported by virt-who.
+
+. If you selected *Whitelist* or *Blacklist*: In the *Filter hosts* or *Exclude hosts* field, enter a comma-separated list of hypervisors according to the selected *Hypervisor ID*.
+For example, if hypervisors are identified by their host name, they must be included or excluded by their host name.
+If a hypervisor's name contains special characters, enclose it in quotation marks.
+Wildcards and regular expressions are supported.
+Note that when using regular expressions, backslashes must be escaped.
+. If you selected the *esx* type and *Whitelist* or *Blacklist*: In the *Filter host parents* or *Exclude host parents* field, enter a comma-separated list of cluster IDs.
+For more information, see link:https://access.redhat.com/solutions/5696481[Using the "Filter Host Parents" and "Exclude Host Parents" Attributes with VMware Clusters] in the _Red{nbsp}Hat Knowledgebase_.
++
+Hypervisors in an allowed cluster are reported by `virt-who`.
+Hypervisors in an excluded cluster are not reported by `virt-who`.
+If a cluster name contains special characters, enclose it in quotation marks.
+Wildcards and regular expressions are supported.
+Note that when using regular expressions, backslashes must be escaped.
+. Optional: Select the *Enable debugging output* checkbox if you require debugging output for troubleshooting.
+. Optional: Enter an *HTTP Proxy* to use for communication between the server where virt-who is deployed and the hypervisors or virtualization managers.
+For example, *_\http://proxy.example.com_:3128*.
++
+To use no proxy, leave this field blank; this has the same result as entering `{asterisk}` in the *Ignore Proxy* field.
+. Optional: In the *Ignore Proxy* field, enter a comma-separated list of host names, IP addresses, or domains to bypass existing proxy settings.
+. Click *Submit*.
+
+.For CLI users
+
+* On {ProjectServer}, enter the `hammer virt-who-config create` command:
+This example creates a `virt-who` configuration for an {EL} hypervisor:
++
+[options="nowrap" subs="+quotes"]
+----
+# hammer virt-who-config create \
+--name rhel.example.com \
+--organization "Example Company" \
+--interval 720 \ <1>
+--filtering-mode none \ <2>
+--hypervisor-id hostname \ <3>
+--hypervisor-type libvirt \ <4>
+--hypervisor-server server.example.com \ <5>
+--hypervisor-username virt-who \ <6>
+--proxy '_http://proxy.example.com_:3128' \ <7>
+--satellite-url server.example.com
+----
+
+<1> Choose how often, in minutes, `virt-who` queries the virtualization platform.
+You can select an interval that suits the size of your environment.
+For accurate reporting to the Subscriptions service, twice a day (`720`) is suitable for most environments.
+<2> Choose whether to filter hypervisors.
+Use `none` if you do not have to limit which hypervisors are queried.
+Alternatively, you can `whitelist` or `blacklist` hypervisors.
+For example, if some hypervisors only run Microsoft Windows Server virtual machines, those hypervisors do not need to be reported by virt-who.
+<3> Choose how to identify the hypervisor (or hypervisors) this configuration applies to.
+Use `hostname` to provide meaningful host names in the Satellite web UI.
+Alternatively, you can use `uuid` to avoid duplication if a hypervisor is renamed.
+`hwuuid` can be used only if this configuration applies to a virtualization manager instead of an individual hypervisor, and must not be changed to another option after virt-who starts running because this causes duplicate entries in Subscription Manager.
+<4> Specify the supported type for your virtualization platform:
+* {EL} Virtualization (KVM), {oVirt}, or {OpenStack}: `libvirt`
+* VMware vSphere: `esx`
+* Microsoft Hyper-V: `hyperv`
+* Note that the `rhevm` and `xen` hypervisor types are not supported, and the `kubevirt` hypervisor type is provided as a Technology Preview only.
+<5> Specify the FQDN or IP address of the server this configuration applies to.
+For VMware vSphere, use the vCenter Server's FQDN or IP address.
+For all other products, use the hypervisor's FQDN or IP address.
+<6> Specify the read-only virt-who user that you created on the hypervisor or virtualization manager.
+You do not need to specify a password when using the `libvirt` type.
+For other types, you must specify the virt-who user's password with the `--hypervisor-password` option.
+<7> Optional: Enter an HTTP proxy to use for communication between the server where virt-who is deployed and the hypervisors or virtualization managers.
