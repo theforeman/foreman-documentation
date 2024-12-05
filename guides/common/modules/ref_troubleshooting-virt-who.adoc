@@ -1,0 +1,75 @@
+[id="virt-who-troubleshooting-methods"]
+= Virt-who troubleshooting methods
+
+.Identifying issues when using multiple virt-who configuration files
+
+If you have multiple virt-who configuration files on one server, move one file at a time to a different directory while testing after each file move.
+If the issue no longer occurs, the cause is associated with the most recently moved file.
+After you have resolved the issue, return the virt-who configuration files to their original location.
+
+Alternatively, you can test an individual file after moving it by using the `--config` option to specify its location. For example:
+
+[options="nowrap" subs="+quotes,verbatim"]
+----
+$ virt-who --debug --one-shot --config /tmp/_conf_name_.conf
+----
+
+.Identifying duplicate hypervisors
+
+Duplicate hypervisors can cause subscription and entitlement errors. Enter the following commands to check for duplicate hypervisors:
+
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# systemctl stop virt-who
+# virt-who -op >/tmp/virt-who.json
+# systemctl start virt-who
+# cat /tmp/virt-who.json | json_reformat | grep name | sort | uniq -c | sort -nr | head -n10
+  3    "name": "localhost"
+  1    "name": "rhel1.example.com"
+  1    "name": "rhel2.example.com"
+  1    "name": "rhel3.example.com"
+  1    "name": "rhel4.example.com"
+  1    "name": "rhvh1.example.com"
+  1    "name": "rhvh2.example.com"
+  1    "name": "rhvh3.example.com"
+  1    "name": "rhvh4.example.com"
+  1    "name": "rhvh5.example.com"
+----
+
+In this example, three hypervisors have the same FQDN (`localhost`), and must be corrected to use unique FQDNs.
+
+.Identifying duplicate virtual machines
+
+Enter the following commands to check for duplicate virtual machines:
+
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# systemctl stop virt-who
+# virt-who -op >/tmp/virt-who.json
+# systemctl start virt-who
+# cat /tmp/virt-who.json | json_reformat | grep "guestId" | sort | uniq -c | sort -nr | head -n10
+----
+
+.Checking the number of hypervisors
+
+Enter the following commands to check the number of hypervisors virt-who currently reports:
+
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# systemctl stop virt-who
+# virt-who -op >/tmp/virt-who.json
+# systemctl start virt-who
+# cat /tmp/virt-who.json | json_reformat | grep name | sort | uniq -c | wc -l
+----
+
+.Checking the number of virtual machines
+
+Enter the following commands to check the number of virtual machines that virt-who currently reports:
+
+[options="nowrap" subs="+quotes,verbatim"]
+----
+# systemctl stop virt-who
+# virt-who -op >/tmp/virt-who.json
+# systemctl start virt-who
+# cat /tmp/virt-who.json | json_reformat | grep "guestId" | sort | uniq -c | wc -l
+----
