@@ -1,0 +1,69 @@
+@startuml
+
+!include foreman.pstyle
+!$networkboot = 0
+
+title Installer-based provisioning with full-host boot disk on bare metal
+
+left header
+In the described scenario, Foreman does not manage DHCP.
+end header
+
+actor       User
+participant "Provisioned\nHost" as Host
+participant "Foreman" as Foreman
+participant "Foreman\nProxy" as Proxy
+participant DNS
+!if ($puppet)
+participant "Puppet\nserver" as Puppet
+!endif
+
+note over Host : Powered off
+
+== Create host in Foreman ==
+
+User -> Foreman : Create host
+User -> Foreman : Assign a temporary IP address
+group Templates [*PXE* installer boot]
+    Foreman -> Proxy : Render boot-loader configuration files
+end
+Proxy -> Proxy : Deploy bootloader configuration files\nto ""/var/lib/tftpboot""
+Foreman -> Proxy : Command to download installer kernel\nand initial RAM disk
+Proxy -> Proxy : Download kernel and initial RAM disk
+Foreman -> Proxy : Create DNS records
+Proxy -> DNS : Forward DNS records
+Proxy -> Foreman : Report status of TFTP, DHCP & DNS
+Foreman -> User : Host is created\n(build mode enabled)
+
+User -> Foreman : Download the full boot-disk ISO of the host
+Foreman -> Foreman : Generate the full boot-disk ISO of the host
+Foreman -> User : Return the full boot-disk ISO of the host
+User -> User : Write the boot-disk ISO\nto an external storage device
+User -> Host : Configure to boot\nfrom the external storage device
+
+== Boot into OS installer ==
+
+User -> Host : Power on
+Host -> Host : Use the IP address from the boot disk
+Host -> Host : Boot from the external storage device
+Host -> Host : Load installer kernel\nand initial RAM disk from the boot disk
+User -> Host : Eliminate the external storage device\n(too soon?)
+!include prov-installation-media.iuml
+note over Host : Operating system installed
+!include prov-initial-configuration.iuml
+Host -> Foreman : Call home\n(disables build mode)
+Host -> Host : Reboot
+
+== First local boot ==
+
+!include prov-first-local-boot-hdd.iuml
+
+!if ($puppet)
+== First Puppet run ==
+
+!include puppet-run.iuml
+!endif
+
+note over Host : In operation
+
+@enduml
