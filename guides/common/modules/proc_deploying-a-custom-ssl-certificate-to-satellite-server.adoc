@@ -2,7 +2,6 @@
 = Deploying a Custom SSL Certificate to {ProjectServer}
 
 Use this procedure to configure your {ProjectServer} to use a custom SSL certificate signed by a Certificate Authority.
-The `katello-certs-check` command validates the input certificate files and returns the commands necessary to deploy a custom SSL certificate to {ProjectServer}.
 
 [IMPORTANT]
 ====
@@ -12,79 +11,20 @@ As a result, `{foreman-installer}` fails to execute while enabling features or u
 ====
 
 .Procedure
-. Validate the custom SSL certificate input files.
-Note that for the `katello-certs-check` command to work correctly, Common Name (CN) in the certificate must match the FQDN of {ProjectServer}.
+* Update certificates on your {ProjectServer}:
 +
 [options="nowrap", subs="+quotes,attributes"]
 ----
-# katello-certs-check \
--c __/root/{project-context}_cert/{project-context}_cert.pem__ \      <1>
--k __/root/{project-context}_cert/{project-context}_cert_key.pem__ \  <2>
--b __/root/{project-context}_cert/ca_cert_bundle.pem__        <3>
+# {foreman-installer} \
+--certs-server-cert "_/root/{project-context}_cert/{project-context}_cert.pem_" \ <1>
+--certs-server-key "_/root/{project-context}_cert/{project-context}_cert_key.pem_" \ <2>
+--certs-server-ca-cert "_/root/{project-context}_cert/ca_cert_bundle.pem_" \ <3>
+--certs-update-server --certs-update-server-ca
 ----
 <1> Path to {ProjectServer} certificate file that is signed by a Certificate Authority.
 <2> Path to the private key that was used to sign {ProjectServer} certificate.
 <3> Path to the Certificate Authority bundle.
-+
-If the command is successful, it returns two `{foreman-installer}` commands, one of which you must use to deploy a certificate to {ProjectServer}.
-ifdef::satellite[]
-+
-.Example output of `katello-certs-check`
-[options="nowrap", subs="+quotes,attributes"]
-----
-Validation succeeded.
 
-To install the Red Hat Satellite Server with the custom certificates, run:
-
-  {foreman-installer} --scenario satellite \
-    --certs-server-cert "_/root/{project-context}_cert/{project-context}_cert.pem_" \
-    --certs-server-key "_/root/{project-context}_cert/{project-context}_cert_key.pem_" \
-    --certs-server-ca-cert "_/root/{project-context}_cert/ca_cert_bundle.pem_"
-
-To update the certificates on a currently running Red Hat Satellite installation, run:
-
-  {foreman-installer} --scenario satellite \
-    --certs-server-cert "_/root/{project-context}_cert/{project-context}_cert.pem_" \
-    --certs-server-key "_/root/{project-context}_cert/{project-context}_cert_key.pem_" \
-    --certs-server-ca-cert "_/root/{project-context}_cert/ca_cert_bundle.pem_" \
-    --certs-update-server --certs-update-server-ca
-----
-endif::[]
-ifndef::satellite[]
-+
-.Example output of `katello-certs-check`
-[options="nowrap", subs="+quotes,attributes"]
-----
-Validation succeeded.
-
-To install the Katello main server with the custom certificates, run:
-
-  foreman-installer --scenario katello \
-    --certs-server-cert "_/root/{project-context}_cert/{project-context}_cert.pem_" \
-    --certs-server-key "_/root/{project-context}_cert/{project-context}_cert_key.pem_" \
-    --certs-server-ca-cert "_/root/{project-context}_cert/ca_cert_bundle.pem_"
-
-To update the certificates on a currently running Katello installation, run:
-
-  foreman-installer --scenario katello \
-    --certs-server-cert "_/root/{project-context}_cert/{project-context}_cert.pem_" \
-    --certs-server-key "_/root/{project-context}_cert/{project-context}_cert_key.pem_" \
-    --certs-server-ca-cert "_/root/{project-context}_cert/ca_cert_bundle.pem_" \
-    --certs-update-server --certs-update-server-ca
-----
-endif::[]
-+
-Note that you must not access or modify `/root/ssl-build`.
-. From the output of the `katello-certs-check` command, depending on your requirements, enter the `{foreman-installer}` command that installs a new {Project} with custom SSL certificates or updates certificates on a currently running {Project}.
-+
-If you are unsure which command to run, you can verify that {Project} is installed by checking if the file `/etc/foreman-installer/scenarios.d/.installed` exists.
-If the file exists, run the second `{foreman-installer}` command that updates certificates.
-+
-[IMPORTANT]
-====
-`{foreman-installer}` needs the certificate archive file after you deploy the certificate.
-Do not modify or delete it.
-It is required, for example, when upgrading {ProjectServer}.
-====
+.Verification
 . On a computer with network access to {ProjectServer}, navigate to the following URL: `\https://{foreman-example-com}`.
 . In your browser, view the certificate details to verify the deployed certificate.
