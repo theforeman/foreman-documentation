@@ -9,6 +9,13 @@ Hosts do not require an SSH connection from their {SmartProxyServer}.
 * The {SmartProxy} through which the host is registered is configured to use `pull-mqtt` mode.
 For more information, see {InstallingSmartProxyDocURL}configuring-remote-execution-for-pull-client_{smart-proxy-context}[Configuring pull-based transport for remote execution] in _{InstallingSmartProxyDocTitle}_.
 include::snip_prerequisite-project-client-repository-enabled.adoc[]
+ifdef::foreman-el[]
+* The AppStream repository is available for the host.
+endif::[]
+ifndef::foreman-el[]
+* The AppStream repository for the operating system version of the host is synchronized on {ProjectServer}, available in the content view and the lifecycle environment of the host, and enabled for the host.
+For more information, see {ContentManagementDocURL}Changing_the_Repository_Sets_Status_for-a-Host-in_{project-context}_content-management[Changing the repository sets status for a host in {Project}] in _{ContentManagementDocTitle}_.
+endif::[]
 * The host can communicate with its {SmartProxy} over MQTT using port `1883`.
 * The host can communicate with its {SmartProxy} over HTTPS.
 
@@ -47,13 +54,43 @@ ifdef::client-content-zypper[]
 ----
 endif::[]
 
-+
-The package installs `foreman_ygg_worker` and `yggdrasil` as dependencies, configures the `yggdrasil` client, and starts the pull client worker on the host.
-
 .Verification
-* Check the status of the `yggdrasild` service:
+. Determine which version of the `yggdrasil` package is installed on the host:
++
+ifdef::satellite[]
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+$ rpm --query yggdrasil
+----
+endif::[]
+ifndef::satellite[]
+* On {EL} and {SLES} hosts:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+$ rpm --query yggdrasil
+----
+endif::[]
+ifdef::client-content-apt[]
+* On {DL} hosts:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+$ dpkg-query --show yggdrasil-mqtt
+----
+endif::[]
+. Check the status of the Yggdrasil services:
+* If your host has `yggdrasil` version 0.4.z or later installed:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# systemctl status yggdrasil com.redhat.Yggdrasil1.Worker1.foreman
+----
+* If your host has `yggdrasil` version 0.2.z or earlier installed:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 # systemctl status yggdrasild
 ----
+
+If the services are running, you have successfully configured the host to use the pull client.
