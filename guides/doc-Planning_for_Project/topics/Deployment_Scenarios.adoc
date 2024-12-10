@@ -33,34 +33,137 @@ endif::[]
 
 image::common/system-architecture-satellite.png[Content Flow in {ProjectName}]
 
+[[sect-Architecture_Guide-Content_View_Scenarios]]
+=== Content view scenarios
+
+The following section provides general scenarios for deploying content views as well as lifecycle environments.
+
+The default lifecycle environment called *Library* gathers content from all connected sources.
+It is not recommended to associate hosts directly with the Library as it prevents any testing of content before making it available to hosts.
+Instead, create a lifecycle environment path that suits your content workflow.
+The following scenarios are common:
+
+* *A single lifecycle environment* – content from Library is promoted directly to the production stage.
+This approach limits the complexity but still allows for testing the content within the Library before making it available to hosts.
++
+image::lifecycle-path-basic-satellite.png[A single lifecycle environment]
+
+* *A single lifecycle environment path* – both operating system and applications content is promoted through the same path.
+The path can consist of several stages (for example *Development*, *QA*, *Production*), which enables thorough testing but requires additional effort.
++
+image::lifecycle-path-simple-satellite.png[A single lifecycle environment path]
+
+* *Application specific lifecycle environment paths* – each application has a separate path, which allows for individual application release cycles.
+You can associate specific compute resources with application lifecycle stages to facilitate testing.
+On the other hand, this scenario increases the maintenance complexity.
++
+image::lifecycle-path-diverged-satellite.png[Application specific lifecycle environment paths]
+
+
+The following content view scenarios are common:
+
+* *All in one content view* – a content view that contains all necessary content for the majority of your hosts.
+Reducing the number of content views is an advantage in deployments with constrained resources (time, storage space) or with uniform host types.
+However, this scenario limits the content view capabilities such as time based snapshots or intelligent filtering.
+Any change in content sources affects a proportion of hosts.
+
+* *Host specific content view* – a dedicated content view for each host type.
+This approach can be useful in deployments with a small number of host types (up to 30).
+However, it prevents sharing content across host types as well as separation based on criteria other than the host type (for example between operating system and applications).
+With critical updates every content view has to be updated, which increases maintenance efforts.
+
+* *Host specific composite content view* – a dedicated combination of content views for each host type.
+This approach enables separating host specific and shared content, for example you can have dedicated content views for the operating system and application content.
+By using a composite, you can manage your operating system and applications separately and at different frequencies.
+
+* *Component based content view* – a dedicated content view for a specific application.
+For example a database content view can be included into several composite content views.
+This approach allows for greater standardization but it leads to an increased number of content views.
+
+The optimal solution depends on the nature of your host environment.
+Avoid creating a large number of content views, but keep in mind that the size of a content view affects the speed of related operations (publishing, promoting).
+Also make sure that when creating a subset of packages for the content view, all dependencies are included as well.
+Note that Kickstart repositories should not be added to content views, as they are used for host provisioning only.
+
 ifdef::satellite[]
-[[sect-Architecture_Guide-Disconnected_Satellite]]
-=== Disconnected {Project}
+[[sect-Architecture_Guide-Multiple_Manifest_Scenarios]]
+=== {ProjectServer} with multiple manifests
 
-In high security environments where hosts are required to function in a closed network disconnected from the Internet, {ProjectName} can provision systems with the latest security updates, errata, packages and other content.
-In such case, {ProjectServer} does not have direct access to the Internet, but the layout of other infrastructure components is not affected.
-For information about installing {ProjectServer} from a disconnected network, see {InstallingServerDisconnectedDocURL}[{InstallingServerDisconnectedDocTitle}].
-For information about upgrading a disconnected {Project}, see {UpgradingDocURL}upgrading_a_disconnected_{project-context}[Upgrading a Disconnected {ProjectServer}] in _{UpgradingDocTitle}_.
+If you plan to have more than one Red{nbsp}Hat{nbsp}Network account, or if you want to manage systems belonging to another entity that is also a Red{nbsp}Hat{nbsp}Network account holder, then you and the other account holder can assign subscriptions, as required, to manifests.
+A customer that does not have a {Project} subscription can create a Subscription Asset Manager manifest, which can be used with {Project}, if they have other valid subscriptions.
+You can then use the multiple manifests in one {ProjectServer} to manage multiple organizations.
 
-There are two options for importing content to a disconnected {ProjectServer}:
+If you must manage systems but do not have access to the subscriptions for the RPMs, you must use {RHEL} {Project} Add-On.
+For more information, see https://www.redhat.com/en/technologies/management/satellite[{Project} Add-On].
 
-* *Disconnected {Project} with content ISO* – in this setup, you download ISO images with content from the Red{nbsp}Hat Customer Portal and extract them to {ProjectServer} or a local web server.
-The content on {ProjectServer} is then synchronized locally.
-This allows for complete network isolation of {ProjectServer}, however, the release frequency of content ISO images is around six weeks and not all product content is included.
-To see the products in your subscription for which content ISO images are available, log in to the Red Hat Customer Portal at https://access.redhat.com, navigate to *Downloads* > *{ProjectName}*, and click *Content ISOs*.
-For instructions on how to import content ISOs to a disconnected {Project}, see {ContentManagementDocURL}Configuring_Server_to_Synchronize_Content_with_a_Local_CDN_Server_content-management[Configuring {Project} to Synchronize Content with a Local CDN Server] in _{ContentManagementDocTitle}_.
-Note that Content ISOs previously hosted at redhat.com for import into {ProjectServer} have been deprecated and will be removed in the next {Project} version.
+The following diagram shows two Red{nbsp}Hat{nbsp}Network account holders, who want their systems to be managed by the same {Project} installation.
+In this scenario, Example Corporation 1 can allocate any subset of their 60 subscriptions, in this example they have allocated 30, to a manifest.
+This can be imported into the {Project} as a distinct Organization.
+This allows system administrators the ability to manage Example Corporation 1's systems using {Project} completely independently of Example Corporation 2's organizations (R&D, Operations, and Engineering).
 
-* *Disconnected {Project} with {ISS}* – in this setup, you install a connected {ProjectServer} and export content from it to populate a disconnected {Project} using some storage device.
-This allows for exporting both Red{nbsp}Hat provided and custom content at the frequency you choose, but requires deploying an additional server with a separate subscription.
-For instructions on how to configure {ISS} in {Project}, see {ContentManagementDocURL}Using_ISS[Synchronizing Content Between {ProjectServer}s] in _{ContentManagementDocTitle}_.
+[[satellite_server_with_multiple_manifests_image]]
+.{ProjectServer} with multiple manifests
+image::server-multiple-manifests-satellite.png[{ProjectServer} with multiple manifests]
 
-The above methods for importing content to a disconnected {ProjectServer} can also be used to speed up the initial population of a connected {Project}.
+When creating a Red{nbsp}Hat Subscription Manifest:
+
+
+* Add the subscription for {ProjectServer} to the manifest if planning a disconnected or self-registered {ProjectServer}.
+This is not necessary for a connected {ProjectServer} that is subscribed using the Subscription Manager utility on the base system.
+
+* Add subscriptions for all {SmartProxyServers} you want to create.
+
+* Add subscriptions for all Red{nbsp}Hat products you want to manage with {Project}.
+
+* Note the date when the subscriptions are due to expire and plan for their renewal before the expiry date.
+
+* Create one manifest per organization.
+You can use multiple manifests and they can be from different Red Hat subscriptions.
+
+{ProjectName} allows the use of future-dated subscriptions in the manifest.
+This enables uninterrupted access to repositories when future-dated subscriptions are added to a manifest before the expiry date of existing subscriptions.
+
+Note that the Red{nbsp}Hat Subscription Manifest can be modified and reloaded to {ProjectServer} in case of any changes in your infrastructure, or when adding more subscriptions.
+Manifests should not be deleted.
+If you delete the manifest from the Red Hat Customer Portal or in the {ProjectWebUI} it will unregister all of your content hosts.
 endif::[]
 
-[[sect-Architecture_Guide-Capsule_with_External_Services]]
-=== {SmartProxy} with external services
+[[sect-host-group-structures]]
+=== Host group structures
 
-You can configure a {SmartProxyServer} (integrated or standalone) to use external DNS, DHCP, or TFTP service.
-If you already have a server that provides these services in your environment, you can integrate it with your {Project} deployment.
-For information about how to configure a {SmartProxy} with external services, see {InstallingSmartProxyDocURL}configuring-external-services[Configuring {SmartProxyServer} with External Services] in _{InstallingSmartProxyDocTitle}_.
+The fact that host groups can be nested to inherit parameters from each other allows for designing host group hierarchies that fit particular workflows.
+A well planned host group structure can help to simplify the maintenance of host settings.
+This section outlines four approaches to organizing host groups.
+
+[[figu-Life_Cycle_Environment_Based_Structure]]
+.Host group structuring examples
+
+image::host-group-structures-satellite.png[Host group structuring examples]
+
+
+[[brid-Flat_Structure]]
+*Flat structure*
+
+The advantage of a flat structure is limited complexity, as inheritance is avoided.
+In a deployment with few host types, this scenario is the best option.
+However, without inheritance there is a risk of high duplication of settings between host groups.
+
+[[brid-Lifecycle_Environment_Based_Structure]]
+*Lifecycle environment based structure*
+
+In this hierarchy, the first host group level is reserved for parameters specific to a lifecycle environment.
+The second level contains operating system related definitions, and the third level contains application specific settings.
+Such structure is useful in scenarios where responsibilities are divided among lifecycle environments (for example, a dedicated owner for the *Development*, *QA*, and *Production* lifecycle stages).
+[[brid-Flat_Host_Group_Structure]]
+*Application based structure*
+
+This hierarchy is based on roles of hosts in a specific application.
+For example, it enables defining network settings for groups of back-end and front-end servers.
+The selected characteristics of hosts are segregated, which supports Puppet-focused management of complex configurations.
+However, the content views can only be assigned to host groups at the bottom level of this hierarchy.
+[[brid-Location_Based_Structure]]
+*Location based structure*
+
+In this hierarchy, the distribution of locations is aligned with the host group structure.
+In a scenario where the location ({SmartProxyServer}) topology determines many other attributes, this approach is the best option.
+On the other hand, this structure complicates sharing parameters across locations, therefore in complex environments with a large number of applications, the number of host group changes required for each configuration change increases significantly.
