@@ -23,21 +23,20 @@ note over Host : Powered off
 == Create host in Foreman ==
 
 User -> Foreman : Create host
-User -> Foreman : Assign a temporary IP address
-group Templates [*PXE* installer boot]
-    Foreman -> Proxy : Render boot-loader configuration files
-end
-Proxy -> Proxy : Deploy bootloader configuration files\nto ""/var/lib/tftpboot""
-Foreman -> Proxy : Command to download installer kernel\nand initial RAM disk
-Proxy -> Proxy : Download kernel and initial RAM disk
+User -> Foreman : Assign an MAC address
 Foreman -> Proxy : Create DNS records
 Proxy -> DNS : Forward DNS records
 Proxy -> Foreman : Report status of TFTP, DHCP & DNS
 Foreman -> User : Host is created\n(build mode enabled)
 
-User -> Foreman : Download the full boot-disk ISO of the host
-Foreman -> Foreman : Generate the full boot-disk ISO of the host
-Foreman -> User : Return the full boot-disk ISO of the host
+User -> Foreman : Request to generate the full host boot-disk ISO
+group Template [Boot disk iPXE - host]
+    Foreman -> Proxy : Render boot-loader configuration files
+end
+Foreman -> Proxy : Download kernel and initial RAM disk
+Foreman -> Foreman : Add the boot loader to ISO files
+Foreman -> Foreman : Build the full host boot-disk ISO
+Foreman -> User : Download the full host boot-disk ISO
 User -> User : Write the boot-disk ISO\nto an external storage device
 User -> Host : Configure to boot\nfrom the external storage device
 
@@ -47,12 +46,12 @@ User -> Host : Power on
 Host -> Host : Use the IP address from the boot disk
 Host -> Host : Boot from the external storage device
 Host -> Host : Load installer kernel\nand initial RAM disk from the boot disk
-User -> Host : Eliminate the external storage device\n(too soon?)
 !include prov-installation-media.iuml
 note over Host : Operating system installed
 !include prov-initial-configuration.iuml
 Host -> Foreman : Call home\n(disables build mode)
 Host -> Host : Reboot
+User -> Host : Eliminate the external storage device
 
 == First local boot ==
 
