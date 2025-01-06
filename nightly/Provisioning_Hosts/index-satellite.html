@@ -255,7 +255,12 @@
 <li><a href="#facts-and-nic-filtering_provisioning">3.1. Facts and NIC filtering</a></li>
 <li><a href="#optimizing-performance-by-removing-nics-from-database_provisioning">3.2. Optimizing performance by removing NICs from database</a></li>
 <li><a href="#Network_Resources_provisioning">3.3. Network resources</a></li>
-<li><a href="#DHCP_Options_provisioning">3.4. Satellite and DHCP options</a></li>
+<li><a href="#satellite-and-dhcp-configuration">3.4. Satellite and DHCP configuration</a>
+<ul class="sectlevel3">
+<li><a href="#options-in-managed-dhcpv4">3.4.1. Options in managed DHCPv4</a></li>
+<li><a href="#options-in-unmanaged-dhcpv6">3.4.2. Options in unmanaged DHCPv6</a></li>
+</ul>
+</li>
 <li><a href="#Troubleshooting_DHCP_Problems_provisioning">3.5. Troubleshooting DHCP problems in Satellite</a></li>
 <li><a href="#Prerequisites_for_Image_Based_Provisioning_provisioning">3.6. Prerequisites for image-based provisioning</a></li>
 <li><a href="#Configuring_Network_Services_provisioning">3.7. Configuring network services</a>
@@ -2359,17 +2364,22 @@ These subnets must be under exclusive Satellite control.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="DHCP_Options_provisioning"><a class="anchor" href="#DHCP_Options_provisioning"></a>3.4. Satellite and DHCP options</h3>
+<h3 id="satellite-and-dhcp-configuration"><a class="anchor" href="#satellite-and-dhcp-configuration"></a>3.4. Satellite and DHCP configuration</h3>
 <div class="paragraph">
-<p>Satellite manages DHCP reservations through a DHCP Capsule.
-Satellite also sets the <code>next-server</code> and <code>filename</code> DHCP options.</p>
+<p>Satellite manages DHCP reservations through a DHCP Capsule.</p>
 </div>
+<div class="sect3">
+<h4 id="options-in-managed-dhcpv4"><a class="anchor" href="#options-in-managed-dhcpv4"></a>3.4.1. Options in managed DHCPv4</h4>
 <div class="paragraph">
-<div class="title">The next-server option</div>
+<p>When Satellite manages the DHCP service and can update the DHCP configuration, Satellite sets the <code>next-server</code> and <code>filename</code> DHCP options.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>next-server</code></dt>
+<dd>
 <p>The <code>next-server</code> option provides the IP address of the TFTP server to boot from.
 This option is not set by default and must be set for each TFTP Capsule.
-You can use the <code>satellite-installer</code> command with the <code>--foreman-proxy-tftp-servername</code> option to set the TFTP server in the <code>/etc/foreman-proxy/settings.d/tftp.yml</code> file:</p>
-</div>
+You can use the <code>satellite-installer</code> command with the <code>--foreman-proxy-tftp-servername</code> argument to set the TFTP server in the <code>/etc/foreman-proxy/settings.d/tftp.yml</code> file:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># satellite-installer --foreman-proxy-tftp-servername <em>1.2.3.4</em></pre>
@@ -2402,13 +2412,13 @@ For example, <code>PTR record was invalid</code></p>
 <div class="paragraph">
 <p>If you encounter these problems, check the DNS setup on both Satellite and Capsule, specifically the PTR record resolution.</p>
 </div>
-<div class="paragraph">
-<div class="title">The filename option</div>
+</dd>
+<dt class="hdlist1"><code>filename</code></dt>
+<dd>
 <p>The <code>filename</code> option contains the full path to the file that downloads and executes during provisioning.
 The PXE loader that you select for the host or host group defines which <code>filename</code> option to use.
 When the PXE loader is set to <code>none</code>, Satellite does not populate the <code>filename</code> option into the DHCP record.
 Depending on the PXE loader option, the <code>filename</code> changes as follows:</p>
-</div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
 <col style="width: 33.3333%;">
@@ -2455,6 +2465,36 @@ Depending on the PXE loader option, the <code>filename</code> changes as follows
 </tr>
 </tbody>
 </table>
+</dd>
+</dl>
+</div>
+</div>
+<div class="sect3">
+<h4 id="options-in-unmanaged-dhcpv6"><a class="anchor" href="#options-in-unmanaged-dhcpv6"></a>3.4.2. Options in unmanaged DHCPv6</h4>
+<div class="paragraph">
+<p>To provision hosts over TFTP in an IPv6-only network, configure the DHCP server to respond with the <code>bootfile-url</code> DHCP option.
+Satellite cannot manage the DHCPv6 service, therefore, you have to configure your DHCP server manually.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>bootfile-url</code></dt>
+<dd>
+<p>The URL value of this option has to point to a file on TFTP Capsule that is a first-stage boot loader, such as <code>pxelinux.0</code>.
+Example configuration:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">   "option-data": [
+      {
+         "name": "bootfile-url",
+         "data": "tftp://2001:db8:1::1/pxelinux.0"
+      }
+   ],</pre>
+</div>
+</div>
+</dd>
+</dl>
+</div>
+</div>
 </div>
 <div class="sect2">
 <h3 id="Troubleshooting_DHCP_Problems_provisioning"><a class="anchor" href="#Troubleshooting_DHCP_Problems_provisioning"></a>3.5. Troubleshooting DHCP problems in Satellite</h3>
@@ -3579,8 +3619,7 @@ This creates a host entry and the host details page appears.</p>
 <div class="sect2">
 <h3 id="Creating_Hosts_with_UEFI_HTTP_Boot_Provisioning_provisioning"><a class="anchor" href="#Creating_Hosts_with_UEFI_HTTP_Boot_Provisioning_provisioning"></a>4.5. Creating hosts with UEFI HTTP boot provisioning</h3>
 <div class="paragraph">
-<p>You can provision hosts from Satellite using the UEFI HTTP Boot.
-This is the only method with which you can provision hosts in IPv6 network.</p>
+<p>You can provision hosts from Satellite using the UEFI HTTP Boot.</p>
 </div>
 <div class="paragraph">
 <p>To use the CLI instead of the Satellite web UI, see the <a href="#cli-creating-hosts-with-uefi-http-boot-provisioning_provisioning">CLI procedure</a>.</p>
