@@ -305,7 +305,8 @@
 <li><a href="#removing-packages-from-a-host_managing-hosts">15.4. Removing packages from a host</a></li>
 </ul>
 </li>
-<li><a href="#Template_Writing_Reference_managing-hosts">Appendix A: Template writing reference</a>
+<li><a href="#troubleshooting-remote-jobs-timing-out-after-yggdrails-update">Appendix A: Troubleshooting: Remote jobs timing out after <code>yggdrasil</code> update</a></li>
+<li><a href="#Template_Writing_Reference_managing-hosts">Appendix B: Template writing reference</a>
 <ul class="sectlevel2">
 <li><a href="#Accessing_the_Template_Writing_Reference_managing-hosts">Accessing the template writing reference in the Foreman web UI</a></li>
 <li><a href="#Using_Autocompletion_in_Templates_managing-hosts">Using autocompletion in templates</a></li>
@@ -320,7 +321,7 @@
 <li><a href="#Example_Template_Snippets_managing-hosts">Example template snippets</a></li>
 </ul>
 </li>
-<li><a href="#Job_Template_Examples_and_Extensions_managing-hosts">Appendix B: Job template examples and extensions</a>
+<li><a href="#Job_Template_Examples_and_Extensions_managing-hosts">Appendix C: Job template examples and extensions</a>
 <ul class="sectlevel2">
 <li><a href="#Customizing_Job_Templates_managing-hosts">Customizing job templates</a></li>
 <li><a href="#default-job-template-categories_managing-hosts">Default job template categories</a></li>
@@ -330,7 +331,7 @@
 <li><a href="#Including_Power_Actions_in_Templates_managing-hosts">Including power actions in templates</a></li>
 </ul>
 </li>
-<li><a href="#overview-of-the-host-columns_managing-hosts">Appendix C: Overview of the host columns</a></li>
+<li><a href="#overview-of-the-host-columns_managing-hosts">Appendix D: Overview of the host columns</a></li>
 </ul>
 </div>
 </div>
@@ -8027,7 +8028,79 @@ If you omit this field, it defaults to <code>"static_query"</code>.</p>
 </div>
 </div>
 <div class="sect1">
-<h2 id="Template_Writing_Reference_managing-hosts"><a class="anchor" href="#Template_Writing_Reference_managing-hosts"></a>Appendix A: Template writing reference</h2>
+<h2 id="troubleshooting-remote-jobs-timing-out-after-yggdrails-update"><a class="anchor" href="#troubleshooting-remote-jobs-timing-out-after-yggdrails-update"></a>Appendix A: Troubleshooting: Remote jobs timing out after <code>yggdrasil</code> update</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>On hosts that have weak dependencies disabled and are configured to use the <code>yggdrasil</code> pull client, remote jobs can start failing due to timeouts after the <code>yggdrasil</code> package has been updated to version 0.4.z or later.</p>
+</div>
+<div class="paragraph">
+<p>The pull-based transport configuration relies on the Yggdrasil service and differs based on the version of the <code>yggdrasil</code> package that is installed on the host.
+For pull-based remote execution mode to work correctly after <code>yggdrasil</code> version 0.4.z is installed on the host, the Yggdrasil client configuration must be updated.
+Installing the <code>foreman_ygg_migration</code> package on the host ensures that Foreman applies the required changes to Yggdrasil configuration.</p>
+</div>
+<div class="paragraph">
+<p>On hosts with weak dependencies enabled, Foreman automatically installs the <code>foreman_ygg_migration</code> package.
+No further steps are required.</p>
+</div>
+<div class="paragraph">
+<p>On hosts with weak dependencies disabled, you must install the <code>foreman_ygg_migration</code> package manually.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Determine which version of the <code>yggdrasil</code> package is installed on the host:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ rpm --query yggdrasil</pre>
+</div>
+</div>
+</li>
+<li>
+<p>If your host has <code>yggdrasil</code> version 0.4.z or later installed, the <code>yggdrasil</code> and <code>com.redhat.Yggdrasil1.Worker1.foreman</code> services are expected to be running.
+Check the status of these services:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl status yggdrasil com.redhat.Yggdrasil1.Worker1.foreman</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the above services are not running, it means that Yggdrasil might not be configured correctly.</p>
+</div>
+</li>
+<li>
+<p>Install the <code>foreman_ygg_migration</code> package manually:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf install foreman_ygg_migration</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Installing <code>foreman_ygg_migration</code> ensures that Foreman applies the required Yggdrasil configuration changes and enables remote execution in pull mode to work as expected.</p>
+</div>
+</li>
+</ol>
+</div>
+<div class="olist arabic">
+<div class="title">Verification</div>
+<ol class="arabic">
+<li>
+<p>Check the status of the Yggdrasil services again:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl status yggdrasil com.redhat.Yggdrasil1.Worker1.foreman</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>These services should now be running.</p>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="Template_Writing_Reference_managing-hosts"><a class="anchor" href="#Template_Writing_Reference_managing-hosts"></a>Appendix B: Template writing reference</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Embedded Ruby (ERB) is a tool for generating text files based on templates that combine plain text with Ruby code.
@@ -9079,7 +9152,7 @@ In this example <code>luks_stat</code> is a custom fact that you can parse in th
 </div>
 </div>
 <div class="sect1">
-<h2 id="Job_Template_Examples_and_Extensions_managing-hosts"><a class="anchor" href="#Job_Template_Examples_and_Extensions_managing-hosts"></a>Appendix B: Job template examples and extensions</h2>
+<h2 id="Job_Template_Examples_and_Extensions_managing-hosts"><a class="anchor" href="#Job_Template_Examples_and_Extensions_managing-hosts"></a>Appendix C: Job template examples and extensions</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Use this section as a reference to help modify, customize, and extend your job templates to suit your requirements.</p>
@@ -9333,7 +9406,7 @@ This procedure prevents Foreman from interpreting the disconnect exception upon 
 </div>
 </div>
 <div class="sect1">
-<h2 id="overview-of-the-host-columns_managing-hosts"><a class="anchor" href="#overview-of-the-host-columns_managing-hosts"></a>Appendix C: Overview of the host columns</h2>
+<h2 id="overview-of-the-host-columns_managing-hosts"><a class="anchor" href="#overview-of-the-host-columns_managing-hosts"></a>Appendix D: Overview of the host columns</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Below is the complete overview of columns that can be displayed in the host table divided into content categories.
