@@ -1,0 +1,73 @@
+[id="overview-of-recommended-disaster-recovery-plans"]
+= Overview of recommended disaster recovery plans
+
+Choose a disaster recovery plan that best helps ensure the continuity of {Project} services in your deployment.
+
+Virtualizating your {ProjectServer}::
+How do I back up?:::
+Virtualize your {ProjectServer} and use the hypervisor tools to take virtual machine snapshots of the server.
+This method is suitable if you can run {Project} on top of virtualization.
+How will I recover in case of a disruptive event?:::
+To recover {Project} services, restore a virtual machine snapshot.
++
+[IMPORTANT]
+====
+During recovery, you will need to ensure that the hostname of your {ProjectServer} does not change.
+The IP address can change.
+====
+What is the expected impact?:::
+Expect some amount of data inconsistency after recovery, based on how often you created snapshosts.
+
+Active and passive {ProjectServer}, with external storage::
+How do I back up?:::
+Store the following critical data on network attached storage: content in `/var/lib/pulp` and database in `/var/lib/pgsql`.
+Replicate this storage into a different data center.
+Attach the storage to a {ProjectServer} that is a clone of the primary {ProjectServer} but runs passively.
+How will I recover in case of a disruptive event?:::
+To recover {Project} services, switch DNS records of the active {ProjectServer} with the passive {ProjectServer}.
+This ensures that the passive server becomes the active server.
+All hosts remain connected without configuration updates.
+What is the expected impact?:::
+Expect some amount of data inconsistency after recovery, based on how often you synchronized the data storage.
+
+Active and passive {ProjectServer}, with backup and restore::
+How do I back up?:::
+Ensure periodic backups of your {ProjectServer}.
+Copy this backup to a passive {ProjectServer} and restore them on the passive server.
+How will I recover in case of a disruptive event?:::
+To recover {Project} services, switch DNS records of the active {ProjectServer} with the passive {ProjectServer}.
+This ensures that the passive server becomes the active server.
+All hosts remain connected without configuration updates.
+What is the expected impact?:::
+Expect some amount of data inconsistency after recovery, based on how often you took and restored backups and on how long it takes to complete the restore process.
+
+Dual active {ProjectServer}::
+How do I back up?:::
+Operate an active, independent {ProjectServer} per data center.
+Hosts from each data center are registered to the {ProjectServer} in that data center.
+Then configure automation to ensure recovery in case of a disruptive event.
+For example, you can periodically run a health check and if the health check discovers that the current {ProjectServer} a host is registered to does not resolve, the host is re-registered to the other {ProjectServer}.
++
+To minimize downtime, you can automate the recovery in various ways.
+For example, you can use the {Project} Ansible collection.
+For more information, see {AdministeringDocURL}managing_project_with_ansible_collections_admin[Managing {Project} with Ansible collections] in _{AdministeringDocTitle}_.
+ifdef::katello,orcharhino,satellite[]
++
+[IMPORTANT]
+====
+You must ensure that content synchronization and content view creation are synchronized to create the same content view in each {Project} and prevent drift.
+Content drift occurs when available content deviates from the intended state defined by a content view.
+
+Alternatively, you can choose one of the two {ProjectServer}s to be the source of truth for content synchronization and content view creation.
+In this case, the other {ProjectServer} synchronizes its content from the first {ProjectServer}.
+
+For more information, see {ContentManagementDocURL}/synchronizing_content_between_servers_content-management[Synchronizing content between servers] in _{ContentManagementDocTitle}_.
+====
+endif::[]
+How will I recover in case of a disruptive event?:::
+To recover {Project} services, re-configure hosts to point at the {ProjectServer} in the other data center.
+You will need to re-register each host to the new server.
+ifdef::katello,orcharhino,satellite[]
+What is the expected impact?:::
+Expect inconsistency in content that is available to hosts if you were unable to prevent content drift.
+endif::[]
