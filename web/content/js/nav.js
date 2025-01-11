@@ -22,7 +22,6 @@ function buildNavigation() {
   <span></span>
 </button>
 <ul class="nav-menu">
-  <li class="nav-item"><a href="/">Home</a></li>
   <li class="nav-item"><a href="https://theforeman.org/">About Foreman</a></li>`
     + navBuilds.map(function(build){
       return(
