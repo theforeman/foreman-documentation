@@ -12,7 +12,7 @@ function buildNavigation() {
 
   return `<nav>
   <a href="/">
-    <img class="logo" src="/img/helmet.png" alt="Home">
+    <img class="logo" src="/img/helmet.svg" alt="Home">
   </a>
 <button type="button" class="btn-hamburger" data-action="nav-toggle">
   <span></span>
