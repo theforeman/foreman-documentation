@@ -28,6 +28,8 @@ function buildNavigation() {
 </button>
 <ul class="nav-menu">
   <li class="nav-item"><a href="https://theforeman.org/">About Foreman</a></li>
+  <li class="nav-item"><a href="https://community.theforeman.org/c/support/10">Support forum</a></li>
+  <li class="nav-item"><a href="https://github.com/theforeman/foreman-documentation">Contribute</a></li>
   <li class="nav-item"><a href="${guides_link}">${currentVer} guides</a></li>
   <li class="nav-item dropdown">
     <a href="#" data-action="dropdown-toggle">All versions</a>
