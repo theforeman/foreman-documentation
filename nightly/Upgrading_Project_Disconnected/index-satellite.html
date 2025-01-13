@@ -230,6 +230,7 @@
 <li><a href="#performing-post-upgrade-tasks_upgrading-disconnected">2.4. Performing post-upgrade tasks</a></li>
 <li><a href="#upgrading_capsule_server_upgrading-disconnected">2.5. Upgrading Capsule&#160;Servers</a></li>
 <li><a href="#Upgrading_the_External_Database_upgrading-disconnected">2.6. Upgrading the external database</a></li>
+<li><a href="#upgrading-the-external-database-operating-system">2.7. Upgrading the external database operating system</a></li>
 </ul>
 </li>
 <li><a href="#troubleshooting-permission-issues">Appendix A: Troubleshooting permission issues</a></li>
@@ -1118,17 +1119,13 @@ You can then check the upgrade progress without staying connected to the command
 <div class="sect2">
 <h3 id="Upgrading_the_External_Database_upgrading-disconnected"><a class="anchor" href="#Upgrading_the_External_Database_upgrading-disconnected"></a>2.6. Upgrading the external database</h3>
 <div class="paragraph">
-<p>You can upgrade an external database from Red&#160;Hat Enterprise Linux 8 to Red&#160;Hat Enterprise Linux 9 while upgrading Satellite from 6.16 to 6.17.</p>
+<p>If your Satellite&#160;Server uses an external database, the database will be upgraded when running <code>satellite-installer</code> on your Satellite&#160;Server.</p>
 </div>
 <div class="ulist">
 <div class="title">Prerequisites</div>
 <ul>
 <li>
-<p>Create a new Red&#160;Hat Enterprise Linux 9 based host for PostgreSQL server that follows the external database on Red&#160;Hat Enterprise Linux 9 documentation.
-For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.17/html-single/installing_satellite_server_in_a_connected_network_environment/index#using-external-databases_satellite">Using External Databases with Satellite</a>.</p>
-</li>
-<li>
-<p>Install PostgreSQL version 13 on the new Red&#160;Hat Enterprise Linux host.</p>
+<p>PostgreSQL version 13 is installed on your Red&#160;Hat Enterprise Linux host.</p>
 </li>
 </ul>
 </div>
@@ -1136,14 +1133,58 @@ For more information, see <a href="https://docs.redhat.com/en/documentation/red_
 <div class="title">Procedure</div>
 <ol class="arabic">
 <li>
-<p>Create a backup.</p>
+<p>Update permissions to prepare the <code>postgresql-evr</code> extension for removal:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># runuser -l postgres -c \
+"psql -d foreman -c \"UPDATE pg_extension SET extowner = (SELECT oid FROM pg_authid WHERE rolname='foreman') WHERE extname='evr';\""</pre>
+</div>
+</div>
 </li>
 <li>
-<p>Restore the backup on the new server.</p>
+<p>Follow <a href="#upgrading_a_disconnected_satellite_server_upgrading-disconnected">Upgrading a disconnected Satellite&#160;Server</a>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="upgrading-the-external-database-operating-system"><a class="anchor" href="#upgrading-the-external-database-operating-system"></a>2.7. Upgrading the external database operating system</h3>
+<div class="paragraph">
+<p>If your Satellite uses an external database, you can upgrade the database from Red&#160;Hat Enterprise Linux 8 to Red&#160;Hat Enterprise Linux 9 while upgrading Satellite from 6.16 to 6.17.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Create a host running Red&#160;Hat Enterprise Linux 9 for PostgreSQL server that follows the external database on Red&#160;Hat Enterprise Linux 9 documentation.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.17/html-single/installing_satellite_server_in_a_connected_network_environment/index#using-external-databases">Using external databases with Satellite</a>.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Create a backup of your existing external database.</p>
 </li>
 <li>
-<p>If Satellite reaches the new database server via the old name, no further changes are required.
-Otherwise reconfigure Satellite to use the new name:</p>
+<p>Restore the backup on the new Red&#160;Hat Enterprise Linux 9 server.</p>
+</li>
+<li>
+<p>Verify that Satellite can reach the new database:</p>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># PGPASSWORD='_My_Foreman_Database_Password_' psql -h _postgres.example.com_ -p 5432 -U foreman -d foreman -c "SELECT 1 as ping"</pre>
+</div>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>If your Satellite&#160;Server can reach the new database server by using the old name, no further changes are required.
+Otherwise, reconfigure Satellite to use the new name:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># satellite-installer \

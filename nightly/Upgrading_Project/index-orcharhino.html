@@ -232,6 +232,7 @@
 <li><a href="#performing-post-upgrade-tasks_upgrading-connected">2.3. Performing post-upgrade tasks</a></li>
 <li><a href="#upgrading_orcharhino-proxy_server_upgrading-connected">2.4. Upgrading orcharhino&#160;Proxies</a></li>
 <li><a href="#Upgrading_the_External_Database_upgrading-connected">2.5. Upgrading the external database</a></li>
+<li><a href="#upgrading-the-external-database-operating-system">2.6. Upgrading the external database operating system</a></li>
 </ul>
 </li>
 <li><a href="#troubleshooting-permission-issues">Appendix A: Troubleshooting permission issues</a></li>
@@ -711,17 +712,13 @@ If these files have been deleted, they must be restored from a backup in order f
 <div class="sect2">
 <h3 id="Upgrading_the_External_Database_upgrading-connected"><a class="anchor" href="#Upgrading_the_External_Database_upgrading-connected"></a>2.5. Upgrading the external database</h3>
 <div class="paragraph">
-<p>You can upgrade an external database from Enterprise Linux 8 to Enterprise Linux 9 while upgrading orcharhino from 6.11 to 7.0.</p>
+<p>If your orcharhino&#160;Server uses an external database, the database will be upgraded when running <code>foreman-installer</code> on your orcharhino&#160;Server.</p>
 </div>
 <div class="ulist">
 <div class="title">Prerequisites</div>
 <ul>
 <li>
-<p>Create a new Enterprise Linux 9 based host for PostgreSQL server that follows the external database on Enterprise Linux 9 documentation.
-For more information, see <a href="https://docs.theforeman.org/nightly/Installing_Server/index-orcharhino.html#using-external-databases_orcharhino">Using External Databases with orcharhino</a>.</p>
-</li>
-<li>
-<p>Install PostgreSQL version 13 on the new Enterprise Linux host.</p>
+<p>PostgreSQL version 13 is installed on your Enterprise Linux host.</p>
 </li>
 </ul>
 </div>
@@ -729,14 +726,58 @@ For more information, see <a href="https://docs.theforeman.org/nightly/Installin
 <div class="title">Procedure</div>
 <ol class="arabic">
 <li>
-<p>Create a backup.</p>
+<p>Update permissions to prepare the <code>postgresql-evr</code> extension for removal:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># runuser -l postgres -c \
+"psql -d foreman -c \"UPDATE pg_extension SET extowner = (SELECT oid FROM pg_authid WHERE rolname='foreman') WHERE extname='evr';\""</pre>
+</div>
+</div>
 </li>
 <li>
-<p>Restore the backup on the new server.</p>
+<p>Follow <a href="#upgrading_a_connected_orcharhino_server_upgrading-connected">Upgrading a connected orcharhino&#160;Server</a>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="upgrading-the-external-database-operating-system"><a class="anchor" href="#upgrading-the-external-database-operating-system"></a>2.6. Upgrading the external database operating system</h3>
+<div class="paragraph">
+<p>If your orcharhino uses an external database, you can upgrade the database from Enterprise Linux 8 to Enterprise Linux 9 while upgrading orcharhino from 6.11 to 7.0.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Create a host running Enterprise Linux 9 for PostgreSQL server that follows the external database on Enterprise Linux 9 documentation.
+For more information, see <a href="https://docs.theforeman.org/nightly/Installing_Server/index-orcharhino.html#using-external-databases">Using external databases with orcharhino</a>.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Create a backup of your existing external database.</p>
 </li>
 <li>
-<p>If orcharhino reaches the new database server via the old name, no further changes are required.
-Otherwise reconfigure orcharhino to use the new name:</p>
+<p>Restore the backup on the new Enterprise Linux 9 server.</p>
+</li>
+<li>
+<p>Verify that orcharhino can reach the new database:</p>
+</li>
+</ol>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># PGPASSWORD='_My_Foreman_Database_Password_' psql -h _postgres.example.com_ -p 5432 -U foreman -d foreman -c "SELECT 1 as ping"</pre>
+</div>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>If your orcharhino&#160;Server can reach the new database server by using the old name, no further changes are required.
+Otherwise, reconfigure orcharhino to use the new name:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># foreman-installer \
