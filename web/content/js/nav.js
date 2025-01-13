@@ -22,9 +22,7 @@ function buildNavigation() {
   <span></span>
 </button>
 <ul class="nav-menu">
-  <li class="nav-item"><a href="https://theforeman.org/">About Foreman</a></li>
-  <li class="nav-item"><a href="https://community.theforeman.org/c/support/10">Support</a></li>
-  <li class="nav-item"><a href="https://github.com/theforeman/foreman-documentation">Contribute</a></li>`
+  <li class="nav-item"><a href="https://theforeman.org/">About Foreman</a></li>`
     + navBuilds.map(function(build){
       return(
         `<li class="nav-item dropdown">
