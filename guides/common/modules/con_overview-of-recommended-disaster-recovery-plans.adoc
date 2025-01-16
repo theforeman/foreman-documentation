@@ -3,32 +3,36 @@
 
 Choose a disaster recovery plan that best helps ensure the continuity of {Project} services in your deployment.
 
+//[IMPORTANT]
+//====
+//During recovery, you will need to ensure that the hostname of your {ProjectServer} does not change.
+//The IP address can change.
+//====
+
 Virtualizing your {ProjectServer}::
 How do I back up?:::
 Virtualize your {ProjectServer} and use the hypervisor tools to take virtual machine snapshots of the server.
 This method is suitable if you can run {Project} on top of virtualization.
 How will I recover in case of a disruptive event?:::
 To recover {Project} services, restore a virtual machine snapshot.
-+
-[IMPORTANT]
-====
-During recovery, you will need to ensure that the hostname of your {ProjectServer} does not change.
-The IP address can change.
-====
 What is the expected impact?:::
-Expect some amount of data inconsistency after recovery, based on how often you created snapshots.
+Expect some amount of data inconsistency after recovery, based on how old your last snapshot is.
+You will lose data changes that have occurred since the snapshot you are using to recover was taken.
+//While taking snapshots frequently will result in smaller amounts of data loss, creating the snapshots takes time and the snapshots themselves also take up space.
+//When planning your snapshot taking schedule, compare these factors with your tolerance for data loss.
 
 Active and passive {ProjectServer}, with external storage::
 How do I back up?:::
 Store the following critical data on network attached storage: content in `/var/lib/pulp` and database in `/var/lib/pgsql`.
 Replicate this storage into a different data center.
 Attach the storage to a {ProjectServer} that is a clone of the primary {ProjectServer} but runs passively.
+//You can mount the network attached storage directly by both the active and the passive {ProjectServer}s or you can replicate the network attached storage on some interval to another location.
 How will I recover in case of a disruptive event?:::
 To recover {Project} services, switch DNS records of the active {ProjectServer} with the passive {ProjectServer}.
 This ensures that the passive server becomes the active server.
 All hosts remain connected without configuration updates.
 What is the expected impact?:::
-Expect some amount of data inconsistency after recovery, based on how often you synchronized the data storage.
+If the network attached storage is replicated to another location, expect some amount of data inconsistency after recovery based on the synchronization interval.
 
 Active and passive {ProjectServer}, with backup and restore::
 How do I back up?:::
@@ -38,9 +42,8 @@ How will I recover in case of a disruptive event?:::
 To recover {Project} services, switch DNS records of the active {ProjectServer} with the passive {ProjectServer}.
 This ensures that the passive server becomes the active server.
 All hosts remain connected without configuration updates.
-+
-Lowering your DNS time to live (TTL) value before switching the DNS records will help ensure the DNS records are updated quickly.
-Your TTL affects how long it takes before your hosts are able to reconnect and access the new active {ProjectServer}.
+//Use a low DNS time to live (TTL) value to help ensure that hosts reach the new active {ProjectServer} quickly.
+//Consider your tolerance for how long it takes before your hosts are able to reconnect and access the correct {ProjectServer} and set your TTL according to your needs.
 What is the expected impact?:::
 Expect some amount of data inconsistency after recovery, based on how often you took and restored backups and on how long it takes to complete the restore process.
 
