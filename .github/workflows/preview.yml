@@ -19,9 +19,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
-      - name: Unzip artifact
-        run: unzip pr.zip
-
       - name: Read PR data
         run: echo "PR_DATA=$(cat ./pr.json)" >> $GITHUB_ENV
 
@@ -42,16 +39,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
-      - name: Unzip artifact
-        run: unzip pr.zip
-
       - name: Read PR data
         run: echo "PR_DATA=$(cat ./pr.json)" >> $GITHUB_ENV
-
-      - name: Download other artifacts
-        run: gh run download '${{ github.event.workflow_run.id }}' -n 'foreman-docs-html-${{ fromJSON(env.PR_DATA).branch_name }}' -n foreman-docs-html-base -n foreman-docs-web-master
-        env:
-          GH_TOKEN: ${{ github.token }}
 
       - name: Set preview domain
         run: echo "PREVIEW_DOMAIN=$(echo ${{ github.repository }} | tr / - )-${{ github.job }}-pr-${{ fromJSON(env.PR_DATA).pr_number }}.surge.sh" >> $GITHUB_ENV
@@ -66,14 +55,18 @@ jobs:
 
       - name: Create preview layout
         run: |
-          mkdir -p preview/${{ fromJSON(env.PR_DATA).target_name }}
-          unzip -d preview foreman-docs-web-master.zip
-          unzip -d preview/${{ fromJSON(env.PR_DATA).target_name }} foreman-docs-html-${{ fromJSON(env.PR_DATA).branch_name }}.zip
+          gh run download '${{ github.event.worfklow_run.id }}' --name 'foreman-docs-web-master' --dir preview
+          gh run download '${{ github.event.worfklow_run.id }}' --name 'foreman-docs-html-${{ fromJSON(env.PR_DATA).branch_name }}' --dir 'preview/${{ fromJSON(env.PR_DATA).target_name }}'
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Create old base
+        run: gh run download '${{ github.event.worfklow_run.id }}' --name foreman-docs-html-base --dir old
+        env:
+          GH_TOKEN: ${{ github.token }}
 
       - name: Create diff to old base
         run: |
-          mkdir old
-          unzip -d old foreman-docs-html-base.zip
           diff -Nrwu old/ preview/${{ fromJSON(env.PR_DATA).target_name }}/ | cat > preview/diff.patch
           pygmentize -o preview/diff.html -l diff -f html -O full preview/diff.patch
           diffstat -l -p2 preview/diff.patch > diff.txt
