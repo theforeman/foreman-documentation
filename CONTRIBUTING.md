@@ -85,6 +85,46 @@ We do not capitalize the following terms:
 * Red Hat subscription manifest
 * subscription
 
+## Working with patches
+
+You can create patches to simplify sharing proposed changes compared to comments and suggestions on GitHub.
+
+### Creating patches
+
+1. Fetch the PR from GitHub:
+
+       $ git fetch upstream pull/1234/head:pr_1234_optional_description
+
+2. Make your changes and commit them:
+
+       $ vim guides/common/modules/X
+       $ git add guides/common/modules/X
+       $ git commit -m "Proposed patch"
+
+3. View the patch:
+
+       $ git show
+
+4. Email that patch or post it on GitHub.
+
+### Applying patches
+
+1. Store the patch in your `foreman-documentation` repository.
+2. Apply the patch:
+
+       $ git apply proposed.patch
+
+3. Delete the file:
+
+       $ rm proposed.patch
+
+4. Commit the patch to your branch:
+
+       $ git add guides/common/modules/X
+       $ git commit -m "Proposed patch"
+
+   To be extra nice, credit the person that provided the patch in the commit message.
+
 ## Further Information
 
 * [Contributing Guidelines for Github documentation](https://github.com/github/docs/blob/main/CONTRIBUTING.md)
