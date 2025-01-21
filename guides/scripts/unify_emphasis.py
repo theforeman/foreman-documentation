@@ -26,7 +26,6 @@ pattern_docurl = r"([Ss])*(ee )*(in )*(the )*({)([A-Za-z]*DocURL)(})([A-Za-z_{}-
 # FIXME: These titles have no DocURL?
 """
 list of DocTitles:
-    * AdministeringAnsibleDocTitle
     * AppCentricDeploymentDocTitle
     * ConvertingHostRHELDocTitle
     * DeployingAWSDocTitle
