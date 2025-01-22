@@ -68,8 +68,10 @@ jobs:
       - name: Create diff to old base
         run: |
           diff -Nrwu old/ preview/${{ fromJSON(env.PR_DATA).target_name }}/ | cat > preview/diff.patch
-          pygmentize -o preview/diff.html -l diff -f html -O full preview/diff.patch
-          diffstat -l -p2 preview/diff.patch > diff.txt
+          if [[ -s preview/diff.patch ]] ; then
+            pygmentize -o preview/diff.html -l diff -f html -O full preview/diff.patch
+            diffstat -l -p2 preview/diff.patch > diff.txt
+          fi
 
       - name: Deploy to surge.sh
         run: ./node_modules/.bin/surge ./preview $PREVIEW_DOMAIN --token ${{ secrets.SURGE_TOKEN }}
@@ -78,12 +80,23 @@ jobs:
         run: |
           echo "The PR preview for ${{ fromJSON(env.PR_DATA).head_sha }} is available at [${{ env.PREVIEW_DOMAIN }}](https://${{ env.PREVIEW_DOMAIN }})" >> pr.md
           echo "" >> pr.md
-          echo "The following output files are affected by this PR:" >> pr.md
-          sed -E "s#(.*)#- [\1](https://${{ env.PREVIEW_DOMAIN }}/${{ fromJSON(env.PR_DATA).target_name }}/\1)#" diff.txt >> pr.md
-          echo "" >> pr.md
-          echo '[show diff](https://${{ env.PREVIEW_DOMAIN }}/diff.patch)' >> pr.md
-          echo "" >> pr.md
-          echo '[show diff as HTML](https://${{ env.PREVIEW_DOMAIN }}/diff.html)' >> pr.md
+
+          if [[ -f diff.txt ]] ; then
+            echo "The following output files are affected by this PR:" >> pr.md
+            sed -E "s#(.*)#- [\1](https://${{ env.PREVIEW_DOMAIN }}/${{ fromJSON(env.PR_DATA).target_name }}/\1)#" diff.txt >> pr.md
+          else
+            echo "No diff compared to the current base" >> pr.md
+          fi
+
+          if [[ -f preview/diff.patch ]] ; then
+            echo "" >> pr.md
+            echo '[show diff](https://${{ env.PREVIEW_DOMAIN }}/diff.patch)' >> pr.md
+          fi
+
+          if [[ -f preview/diff.html ]] ; then
+            echo "" >> pr.md
+            echo '[show diff as HTML](https://${{ env.PREVIEW_DOMAIN }}/diff.html)' >> pr.md
+          fi
 
       - name: Comment on PR
         uses: marocchino/sticky-pull-request-comment@v2
