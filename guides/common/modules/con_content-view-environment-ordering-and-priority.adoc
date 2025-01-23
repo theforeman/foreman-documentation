@@ -1,0 +1,58 @@
+[id="content_view_environment_ordering_and_priority_{context}"]
+= Content view environment ordering and priority
+
+When you assign multiple content view environments to a host or activation key, the order you specify determines the priority of the content.
+An activation key with multiple content view environments assigns them to hosts during registration in the same order as they are stored on the activation key.
+
+.Importance of Content View Environment Order
+The order of assigned content view environments is critical in scenarios involving repository conflicts.
+A conflict occurs when two or more content view environments contain a repository with the same repository label.
+For example:
+A host assigned to the content view environments `Library/cv1, dev/cv1` uses the following configuration:
+[options="nowrap" subs="+quotes"]
+----
+hammer host update --name rhel9.example.com --organization-id 1 \
+--content-view-environments “Library/cv1, dev/cv1”
+----
+Both content view environments include the `satellite-client-6-for-rhel-9-x86_64-rpms` repository.
+When you inspect the host's available repositories using the `subscription-manager repos` command, the output reflects the `Library/cv1` content view environment:
+[options="nowrap" subs="+quotes"]
+----
+-# subscription-manager repos
++----------------------------------------------------------+
+    Available Repositories in /etc/yum.repos.d/redhat.repo
++----------------------------------------------------------+
+Repo ID:   satellite-client-6-for-rhel-9-x86_64-rpms
+Repo Name: Red Hat Satellite Client 6 for RHEL 9 x86_64 (RPMs)
+Repo URL:  https://centos9-katello-devel-stable.example.com/pulp/content/Default_Organization/Library/cv1/content/dist/layered/rhel9/x86_64/sat-client/6/os
+Enabled:   0
+----
+[NOTE]
+====
+The `Repo URL` reflects the `Library/cv1` content view environment, meaning the system uses content from `Library/cv1` and ignores `dev/cv1`.
+====
+
+.Reordering Content View Environments
+To change the priority of content view environments, reorder them as follows:
+[options="nowrap" subs="+quotes"]
+----
+hammer host update --name rhel9.example.com --organization-id 1 \
+--content-view-environments "dev/cv1, Library/cv1"
+----
+After reordering, inspecting the repositories again shows the `dev/cv1` content view environment:
+[options="nowrap" subs="+quotes"]
+----
+-# subscription-manager repos
++----------------------------------------------------------+
+    Available Repositories in /etc/yum.repos.d/redhat.repo
++----------------------------------------------------------+
+Repo ID:   satellite-client-6-for-rhel-9-x86_64-rpms
+Repo Name: Red Hat Satellite Client 6 for RHEL 9 x86_64 (RPMs)
+Repo URL:  https://centos9-katello-devel-stable.example.com/pulp/content/Default_Organization/dev/cv1/content/dist/layered/rhel9/x86_64/sat-client/6/os
+Enabled:   0
+----
+The `Repo URL` now reflects the `dev/cv1` content view environment, meaning the system uses content from `dev/cv1` and ignores `Library/cv1`.
+
+.General Rules for Content View Environment Priority
+A host uses the `Repo URL` from the first assigned content view environment that includes the repository.
+If `Library` is included and ordered first, it acts as the sole content view environment because it contains all repositories.
