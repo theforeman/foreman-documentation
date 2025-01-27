@@ -293,7 +293,8 @@
 </ul>
 </li>
 <li><a href="#configuring-provisioning_planning">7.9. Configuring provisioning</a></li>
-<li><a href="#additional-deployment-tasks_planning">7.10. Additional deployment tasks</a></li>
+<li><a href="#overview-of-recommended-disaster-recovery-plans">7.10. Overview of recommended disaster recovery plans</a></li>
+<li><a href="#additional-deployment-tasks_planning">7.11. Additional deployment tasks</a></li>
 </ul>
 </li>
 <li><a href="#common-deployment-scenarios">8. Common deployment scenarios</a>
@@ -305,27 +306,21 @@
 <li><a href="#host-group-structures">8.5. Host group structures</a></li>
 </ul>
 </li>
-<li><a href="#preparing-for-disaster-recovery">9. Preparing for disaster recovery</a>
+<li><a href="#chap-Architecture_Guide-Provisioning_Concepts">9. Provisioning concepts</a>
 <ul class="sectlevel2">
-<li><a href="#overview-of-recommended-disaster-recovery-plans">9.1. Overview of recommended disaster recovery plans</a></li>
-<li><a href="#additional-resources-preparing-for-disaster-recovery">9.2. Additional resources</a></li>
-</ul>
-</li>
-<li><a href="#chap-Architecture_Guide-Provisioning_Concepts">10. Provisioning concepts</a>
-<ul class="sectlevel2">
-<li><a href="#_pxe_booting">10.1. PXE booting</a>
+<li><a href="#_pxe_booting">9.1. PXE booting</a>
 <ul class="sectlevel3">
-<li><a href="#_pxe_sequence">10.1.1. PXE sequence</a></li>
-<li><a href="#_pxe_booting_requirements">10.1.2. PXE booting requirements</a></li>
+<li><a href="#_pxe_sequence">9.1.1. PXE sequence</a></li>
+<li><a href="#_pxe_booting_requirements">9.1.2. PXE booting requirements</a></li>
 </ul>
 </li>
-<li><a href="#http-booting">10.2. HTTP booting</a>
+<li><a href="#http-booting">9.2. HTTP booting</a>
 <ul class="sectlevel3">
-<li><a href="#http-booting-requirements">10.2.1. HTTP booting requirements with managed DHCP</a></li>
-<li><a href="#_http_booting_requirements_with_unmanaged_dhcp">10.2.2. HTTP booting requirements with unmanaged DHCP</a></li>
+<li><a href="#http-booting-requirements">9.2.1. HTTP booting requirements with managed DHCP</a></li>
+<li><a href="#_http_booting_requirements_with_unmanaged_dhcp">9.2.2. HTTP booting requirements with unmanaged DHCP</a></li>
 </ul>
 </li>
-<li><a href="#_secure_boot">10.3. Secure boot</a></li>
+<li><a href="#_secure_boot">9.3. Secure boot</a></li>
 </ul>
 </li>
 <li><a href="#chap-Documentation-Architecture_Guide-Required_Technical_Users">Appendix A: Technical users provided and required by Foreman</a></li>
@@ -2015,7 +2010,132 @@ If you are provisioning virtual machines or cloud instances, you must also integ
 </div>
 </div>
 <div class="sect2">
-<h3 id="additional-deployment-tasks_planning"><a class="anchor" href="#additional-deployment-tasks_planning"></a>7.10. Additional deployment tasks</h3>
+<h3 id="overview-of-recommended-disaster-recovery-plans"><a class="anchor" href="#overview-of-recommended-disaster-recovery-plans"></a>7.10. Overview of recommended disaster recovery plans</h3>
+<div class="paragraph">
+<p>Choose a disaster recovery plan that best helps ensure the continuity of Foreman services in your deployment.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Virtualizing your Foreman&#160;server</dt>
+<dd>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">How do I back up?</dt>
+<dd>
+<p>Virtualize your Foreman&#160;server and use the hypervisor tools to take virtual machine snapshots of the server.
+This method is suitable if you can run Foreman on top of virtualization.</p>
+</dd>
+<dt class="hdlist1">How will I recover in case of a disruptive event?</dt>
+<dd>
+<p>To recover Foreman services, restore a virtual machine snapshot.</p>
+</dd>
+<dt class="hdlist1">Disadvantages and expected impact</dt>
+<dd>
+<p>Expect some amount of data inconsistency after recovery, based on how old your last snapshot is.
+You will lose data changes that have occurred since the snapshot you are using to recover was taken.</p>
+</dd>
+</dl>
+</div>
+</dd>
+<dt class="hdlist1">Active and passive Foreman&#160;server, with external storage</dt>
+<dd>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">How do I back up?</dt>
+<dd>
+<p>Store the following critical data on network attached storage: content in <code>/var/lib/pulp</code> and database in <code>/var/lib/pgsql</code>.
+Replicate this storage into a different data center.
+Attach the storage to a Foreman&#160;server that is a clone of the primary Foreman&#160;server but runs passively.</p>
+</dd>
+<dt class="hdlist1">How will I recover in case of a disruptive event?</dt>
+<dd>
+<p>To recover Foreman services, switch DNS records of the active Foreman&#160;server with the passive Foreman&#160;server.
+This ensures that the passive server becomes the active server.
+All hosts remain connected without configuration updates.</p>
+</dd>
+<dt class="hdlist1">Disadvantages and expected impact</dt>
+<dd>
+<p>If the network attached storage is replicated to another location, expect some amount of data inconsistency after recovery based on the synchronization interval.</p>
+</dd>
+</dl>
+</div>
+</dd>
+<dt class="hdlist1">Active and passive Foreman&#160;server, with backup and restore</dt>
+<dd>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">How do I back up?</dt>
+<dd>
+<p>Ensure periodic backups of your Foreman&#160;server.
+Copy this backup to a passive Foreman&#160;server and restore them on the passive server.</p>
+</dd>
+<dt class="hdlist1">How will I recover in case of a disruptive event?</dt>
+<dd>
+<p>To recover Foreman services, switch DNS records of the active Foreman&#160;server with the passive Foreman&#160;server.
+This ensures that the passive server becomes the active server.
+All hosts remain connected without configuration updates.</p>
+</dd>
+<dt class="hdlist1">Disadvantages and expected impact</dt>
+<dd>
+<p>Expect some amount of data inconsistency after recovery, based on how often you took and restored backups and on how long it takes to complete the restore process.</p>
+</dd>
+</dl>
+</div>
+</dd>
+<dt class="hdlist1">Dual active Foreman&#160;server</dt>
+<dd>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">How do I back up?</dt>
+<dd>
+<p>Operate an active, independent Foreman&#160;server per data center.
+Hosts from each data center are registered to the Foreman&#160;server in that data center.
+Then configure automation to ensure recovery in case of a disruptive event.
+For example, you can periodically run a health check and if the health check discovers that the current Foreman&#160;server a host is registered to does not resolve, the host is re-registered to the other Foreman&#160;server.</p>
+<div class="paragraph">
+<p>To minimize downtime, you can automate the recovery in various ways.
+For example, you can use the Foreman Ansible collection.
+For more information, see <a href="https://docs.theforeman.org/nightly/Administering_Project/index-katello.html#managing-foreman-with-ansible">Managing Foreman with Ansible</a> in <em>Administering Foreman</em>.</p>
+</div>
+</dd>
+<dt class="hdlist1">How will I recover in case of a disruptive event?</dt>
+<dd>
+<p>To recover Foreman services, re-register all hosts to the Foreman&#160;server in the other data center.</p>
+</dd>
+<dt class="hdlist1">Disadvantages and expected impact</dt>
+<dd>
+<p>You must ensure that content synchronization and content view creation are synchronized to create the same content view in each Foreman and prevent content drift.
+Content drift occurs when available content deviates from the intended state defined by a content view.
+If you fail to prevent content drift, expect inconsistency in the content that is available to hosts.</p>
+</dd>
+</dl>
+</div>
+</dd>
+</dl>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p>For a complete guide to disaster recovery, see <a href="https://docs.theforeman.org/nightly/Administering_Project/index-katello.html#preparing-for-disaster-recovery-and-recovering-from-data-loss">Preparing for disaster recovery and recovering from data loss</a> in <em>Administering Foreman</em>.</p>
+</li>
+<li>
+<p>To create backups of your Foreman&#160;server and Smart&#160;Proxy&#160;servers, use the <code>foreman-maintain backup</code> command.
+For more information, see <a href="https://docs.theforeman.org/nightly/Administering_Project/index-katello.html#backing-up-foreman-server-and-smart-proxy_admin">Backing up Foreman&#160;server and Smart&#160;Proxy&#160;server</a> in <em>Administering Foreman</em>.</p>
+</li>
+<li>
+<p>To back up your hosts, you can use remote execution to configure recurring backup tasks that Foreman will run on the hosts.
+For more information, see <a href="https://docs.theforeman.org/nightly/Managing_Hosts/index-katello.html#Configuring_and_Setting_Up_Remote_Jobs_managing-hosts">Configuring and setting up remote jobs</a> in <em>Managing hosts</em>.</p>
+</li>
+<li>
+<p>To create snapshots of hosts, you can use the Snapshot Management plugin.
+For more information, see <a href="https://docs.theforeman.org/nightly/Managing_Hosts/index-katello.html#Creating_Snapshots_of_a_Host_managing-hosts">Creating snapshots of a host</a> in <em>Managing hosts</em>.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="additional-deployment-tasks_planning"><a class="anchor" href="#additional-deployment-tasks_planning"></a>7.11. Additional deployment tasks</h3>
 <div class="paragraph">
 <p>Foreman offers a range of additional capabilities that you can use to further enhance your Foreman deployment.
 For example:</p>
@@ -2284,140 +2404,7 @@ On the other hand, this structure complicates sharing parameters across location
 </div>
 </div>
 <div class="sect1">
-<h2 id="preparing-for-disaster-recovery"><a class="anchor" href="#preparing-for-disaster-recovery"></a>9. Preparing for disaster recovery</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Foreman community recommends preparing a disaster recovery plan to ensure the continuity of Foreman services in case of a disruptive event.
-These guidelines help ensure that you will be able to restore your Foreman deployment to an operational state after an incident.</p>
-</div>
-<div class="sect2">
-<h3 id="overview-of-recommended-disaster-recovery-plans"><a class="anchor" href="#overview-of-recommended-disaster-recovery-plans"></a>9.1. Overview of recommended disaster recovery plans</h3>
-<div class="paragraph">
-<p>Choose a disaster recovery plan that best helps ensure the continuity of Foreman services in your deployment.</p>
-</div>
-<div class="dlist">
-<dl>
-<dt class="hdlist1">Virtualizing your Foreman&#160;server</dt>
-<dd>
-<div class="dlist">
-<dl>
-<dt class="hdlist1">How do I back up?</dt>
-<dd>
-<p>Virtualize your Foreman&#160;server and use the hypervisor tools to take virtual machine snapshots of the server.
-This method is suitable if you can run Foreman on top of virtualization.</p>
-</dd>
-<dt class="hdlist1">How will I recover in case of a disruptive event?</dt>
-<dd>
-<p>To recover Foreman services, restore a virtual machine snapshot.</p>
-</dd>
-<dt class="hdlist1">Disadvantages and expected impact</dt>
-<dd>
-<p>Expect some amount of data inconsistency after recovery, based on how old your last snapshot is.
-You will lose data changes that have occurred since the snapshot you are using to recover was taken.</p>
-</dd>
-</dl>
-</div>
-</dd>
-<dt class="hdlist1">Active and passive Foreman&#160;server, with external storage</dt>
-<dd>
-<div class="dlist">
-<dl>
-<dt class="hdlist1">How do I back up?</dt>
-<dd>
-<p>Store the following critical data on network attached storage: content in <code>/var/lib/pulp</code> and database in <code>/var/lib/pgsql</code>.
-Replicate this storage into a different data center.
-Attach the storage to a Foreman&#160;server that is a clone of the primary Foreman&#160;server but runs passively.</p>
-</dd>
-<dt class="hdlist1">How will I recover in case of a disruptive event?</dt>
-<dd>
-<p>To recover Foreman services, switch DNS records of the active Foreman&#160;server with the passive Foreman&#160;server.
-This ensures that the passive server becomes the active server.
-All hosts remain connected without configuration updates.</p>
-</dd>
-<dt class="hdlist1">Disadvantages and expected impact</dt>
-<dd>
-<p>If the network attached storage is replicated to another location, expect some amount of data inconsistency after recovery based on the synchronization interval.</p>
-</dd>
-</dl>
-</div>
-</dd>
-<dt class="hdlist1">Active and passive Foreman&#160;server, with backup and restore</dt>
-<dd>
-<div class="dlist">
-<dl>
-<dt class="hdlist1">How do I back up?</dt>
-<dd>
-<p>Ensure periodic backups of your Foreman&#160;server.
-Copy this backup to a passive Foreman&#160;server and restore them on the passive server.</p>
-</dd>
-<dt class="hdlist1">How will I recover in case of a disruptive event?</dt>
-<dd>
-<p>To recover Foreman services, switch DNS records of the active Foreman&#160;server with the passive Foreman&#160;server.
-This ensures that the passive server becomes the active server.
-All hosts remain connected without configuration updates.</p>
-</dd>
-<dt class="hdlist1">Disadvantages and expected impact</dt>
-<dd>
-<p>Expect some amount of data inconsistency after recovery, based on how often you took and restored backups and on how long it takes to complete the restore process.</p>
-</dd>
-</dl>
-</div>
-</dd>
-<dt class="hdlist1">Dual active Foreman&#160;server</dt>
-<dd>
-<div class="dlist">
-<dl>
-<dt class="hdlist1">How do I back up?</dt>
-<dd>
-<p>Operate an active, independent Foreman&#160;server per data center.
-Hosts from each data center are registered to the Foreman&#160;server in that data center.
-Then configure automation to ensure recovery in case of a disruptive event.
-For example, you can periodically run a health check and if the health check discovers that the current Foreman&#160;server a host is registered to does not resolve, the host is re-registered to the other Foreman&#160;server.</p>
-<div class="paragraph">
-<p>To minimize downtime, you can automate the recovery in various ways.
-For example, you can use the Foreman Ansible collection.
-For more information, see <a href="https://docs.theforeman.org/nightly/Administering_Project/index-katello.html#managing-foreman-with-ansible">Managing Foreman with Ansible</a> in <em>Administering Foreman</em>.</p>
-</div>
-</dd>
-<dt class="hdlist1">How will I recover in case of a disruptive event?</dt>
-<dd>
-<p>To recover Foreman services, re-register all hosts to the Foreman&#160;server in the other data center.</p>
-</dd>
-<dt class="hdlist1">Disadvantages and expected impact</dt>
-<dd>
-<p>You must ensure that content synchronization and content view creation are synchronized to create the same content view in each Foreman and prevent content drift.
-Content drift occurs when available content deviates from the intended state defined by a content view.
-If you fail to prevent content drift, expect inconsistency in the content that is available to hosts.</p>
-</dd>
-</dl>
-</div>
-</dd>
-</dl>
-</div>
-</div>
-<div class="sect2">
-<h3 id="additional-resources-preparing-for-disaster-recovery"><a class="anchor" href="#additional-resources-preparing-for-disaster-recovery"></a>9.2. Additional resources</h3>
-<div class="ulist">
-<ul>
-<li>
-<p>To create backups of your Foreman&#160;server and Smart&#160;Proxy&#160;servers, use the <code>foreman-maintain backup</code> command.
-For more information, see <a href="https://docs.theforeman.org/nightly/Administering_Project/index-katello.html#backing-up-foreman-server-and-smart-proxy_admin">Backing up Foreman&#160;server and Smart&#160;Proxy&#160;server</a> in <em>Administering Foreman</em>.</p>
-</li>
-<li>
-<p>To back up your hosts, you can use remote execution to configure recurring backup tasks that Foreman will run on the hosts.
-For more information, see <a href="https://docs.theforeman.org/nightly/Managing_Hosts/index-katello.html#Configuring_and_Setting_Up_Remote_Jobs_managing-hosts">Configuring and setting up remote jobs</a> in <em>Managing hosts</em>.</p>
-</li>
-<li>
-<p>To create snapshots of hosts, you can use the Snapshot Management plugin.
-For more information, see <a href="https://docs.theforeman.org/nightly/Managing_Hosts/index-katello.html#Creating_Snapshots_of_a_Host_managing-hosts">Creating snapshots of a host</a> in <em>Managing hosts</em>.</p>
-</li>
-</ul>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="chap-Architecture_Guide-Provisioning_Concepts"><a class="anchor" href="#chap-Architecture_Guide-Provisioning_Concepts"></a>10. Provisioning concepts</h2>
+<h2 id="chap-Architecture_Guide-Provisioning_Concepts"><a class="anchor" href="#chap-Architecture_Guide-Provisioning_Concepts"></a>9. Provisioning concepts</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>An important feature of Foreman is unattended provisioning of hosts.
@@ -2425,13 +2412,13 @@ To achieve this, Foreman uses DNS and DHCP infrastructures, PXE booting, TFTP, a
 Use this chapter to understand the working principle of these concepts.</p>
 </div>
 <div class="sect2">
-<h3 id="_pxe_booting"><a class="anchor" href="#_pxe_booting"></a>10.1. PXE booting</h3>
+<h3 id="_pxe_booting"><a class="anchor" href="#_pxe_booting"></a>9.1. PXE booting</h3>
 <div class="paragraph">
 <p>Preboot execution environment (PXE) provides the ability to boot a system over a network.
 Instead of using local hard drives or a CD-ROM, PXE uses DHCP to provide host with standard information about the network, to discover a TFTP server, and to download a boot image.</p>
 </div>
 <div class="sect3">
-<h4 id="_pxe_sequence"><a class="anchor" href="#_pxe_sequence"></a>10.1.1. PXE sequence</h4>
+<h4 id="_pxe_sequence"><a class="anchor" href="#_pxe_sequence"></a>9.1.1. PXE sequence</h4>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
@@ -2459,7 +2446,7 @@ Instead of using local hard drives or a CD-ROM, PXE uses DHCP to provide host wi
 </div>
 </div>
 <div class="sect3">
-<h4 id="_pxe_booting_requirements"><a class="anchor" href="#_pxe_booting_requirements"></a>10.1.2. PXE booting requirements</h4>
+<h4 id="_pxe_booting_requirements"><a class="anchor" href="#_pxe_booting_requirements"></a>9.1.2. PXE booting requirements</h4>
 <div class="paragraph">
 <p>To provision machines using PXE booting, ensure that you meet the following requirements:</p>
 </div>
@@ -2518,12 +2505,12 @@ For more information, see <a href="#smart-proxy-networking_planning">Smart&#160;
 </div>
 </div>
 <div class="sect2">
-<h3 id="http-booting"><a class="anchor" href="#http-booting"></a>10.2. HTTP booting</h3>
+<h3 id="http-booting"><a class="anchor" href="#http-booting"></a>9.2. HTTP booting</h3>
 <div class="paragraph">
 <p>You can use HTTP booting to boot systems over a network using HTTP.</p>
 </div>
 <div class="sect3">
-<h4 id="http-booting-requirements"><a class="anchor" href="#http-booting-requirements"></a>10.2.1. HTTP booting requirements with managed DHCP</h4>
+<h4 id="http-booting-requirements"><a class="anchor" href="#http-booting-requirements"></a>9.2.1. HTTP booting requirements with managed DHCP</h4>
 <div class="paragraph">
 <p>To provision machines through HTTP booting ensure that you meet the following requirements:</p>
 </div>
@@ -2581,7 +2568,7 @@ For more information, see <a href="#smart-proxy-networking_planning">Smart&#160;
 </div>
 </div>
 <div class="sect3">
-<h4 id="_http_booting_requirements_with_unmanaged_dhcp"><a class="anchor" href="#_http_booting_requirements_with_unmanaged_dhcp"></a>10.2.2. HTTP booting requirements with unmanaged DHCP</h4>
+<h4 id="_http_booting_requirements_with_unmanaged_dhcp"><a class="anchor" href="#_http_booting_requirements_with_unmanaged_dhcp"></a>9.2.2. HTTP booting requirements with unmanaged DHCP</h4>
 <div class="paragraph">
 <p>To provision machines through HTTP booting without managed DHCP ensure that you meet the following requirements:</p>
 </div>
@@ -2657,7 +2644,7 @@ In case DNS is not available, use IP address to configure clients.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_secure_boot"><a class="anchor" href="#_secure_boot"></a>10.3. Secure boot</h3>
+<h3 id="_secure_boot"><a class="anchor" href="#_secure_boot"></a>9.3. Secure boot</h3>
 <div class="paragraph">
 <p>When Foreman is installed on Enterprise Linux using <code>foreman-installer</code>, grub2 and shim boot loaders that are signed by Red Hat are deployed into the TFTP and HTTP UEFI Boot directory.
 PXE loader options named "SecureBoot" configure hosts to load <code>shim.efi</code>.</p>
