@@ -11,17 +11,12 @@ You can use the `--noop` option with the `{foreman-installer}` command to review
 ifdef::satellite[]
 For more information, see the Red Hat Knowledgebase solution https://access.redhat.com/solutions/3351311[How to use the noop option to check for changes in {Project} config files during an upgrade].
 endif::[]
-ifdef::katello,orcharhino,satellite[]
-* The hammer import and export commands have been replaced with `hammer content-import` and `hammer content-export` tooling.
-+
-If you have scripts that are using `hammer content-view version export`, `hammer content-view version export-legacy`, `hammer repository export`, or their respective import commands, you have to adjust them to use the `hammer content-export` command instead, along with its respective import command.
-* If you implemented custom certificates, you must retain the content of both the `/root/ssl-build` directory and the directory in which you created any source files associated with your custom certificates.
-+
-Failure to retain these files during an upgrade causes the upgrade to fail.
-If these files have been deleted, they must be restored from a backup in order for the upgrade to proceed.
-endif::[]
 ====
 
+.Prerequisites
+
+* These instructions are for upgrading a disconnected {ProjectServer} {ProjectVersionPrevious} running on RHEL 9 to {ProjectServer} {ProjectVersion}. If you are running {ProjectServer} {ProjectVersionPrevious} on RHEL 8, you need to first Leapp upgrade {ProjectServer} {ProjectVersionPrevious} to RHEL 9 and then follow the upgrade steps below to upgrade to {ProjectVersion}.
+  
 .Before you begin
 
 * Review and update your firewall configuration before upgrading your {ProjectServer}.
@@ -73,69 +68,43 @@ Reboot these hosts after the upgrade has completed.
 # rm /etc/yum.repos.d/*
 ----
 
-. Obtain the latest ISO files by following the {InstallingServerDisconnectedDocURL}downloading-the-binary-dvd-images_satellite[Downloading the Binary DVD Images] procedure in _{InstallingServerDisconnectedDocTitle}_.
-
-. Create directories to serve as a mount point, mount the ISO images, and configure the `rhel8` repository by following the {InstallingServerDisconnectedDocURL}configuring-the-base-operating-system-with-offline-repositories_satellite[Configuring the base operating system with offline repositories] procedure in _{InstallingServerDisconnectedDocTitle}_.
+.On the connected {ProjectServer}
+. Ensure that you have synchronized the following repositories in your connected {ProjectServer}:
 +
-Do not install or update any packages at this stage.
+* {RepoRHEL9BaseOS}
+* {RepoRHEL9AppStream}
+* {RepoRHEL9ServerSatelliteServerProjectVersion}
+. Export these repositories via Syncable format. `hammer content-export complete repository --id=<repo_id> --format=syncable`
+. Copy the exported directories over to your disconnected {ProjectServer}.
 
-. Configure the {Project} {ProjectVersion} repository from the ISO file.
-
-.. Copy the ISO file's repository data file for the {ProjectName} packages:
+.On the disconnected {ProjectServer}
+. Identify the location of the copied content.
+. Create the repository data file and add the `baseurl` directive.
 +
-[options="nowrap"]
+[options="nowrap" subs="+quotes"]
 ----
-# cp /media/sat6/Satellite/media.repo /etc/yum.repos.d/satellite.repo
-----
+[RHEL 9 Base OS]
+name=Red Hat Enterprise Linux 9 for x86_64 - BaseOS (RPMs)
+metadata_expire=-1
+gpgcheck=0
+cost=500
+baseurl=file:///<export baseos location>/content/dist/rhel9/9/x86_64/baseos/os
 
-.. Edit the `/etc/yum.repos.d/satellite.repo` file:
-+
-----
-# vi /etc/yum.repos.d/satellite.repo
-----
+[RHEL 9 AppStream]
+name=Red Hat Enterprise Linux 9 for x86_64 - AppStream (RPMs)
+mediaid=None
+metadata_expire=-1
+gpgcheck=0
+cost=500
+baseurl=file:///<export appstream location>/content/dist/rhel9/9/x86_64/appstream/os
 
-... Change the default `InstallMedia` repository name to `{Project}-{ProjectVersion}`:
-+
-[options="nowrap" subs="+quotes,attributes"]
-----
-[{Project}-{ProjectVersion}]
-----
-
-... Add the `baseurl` directive:
-+
-[options="nowrap"]
-----
-baseurl=file:///media/sat6/Satellite
-----
-
-. Configure the {ProjectName} Maintenance repository from the ISO file.
-
-.. Copy the ISO file's repository data file for {ProjectName} Maintenance packages:
-+
-[options="nowrap"]
-----
-# cp /media/sat6/Maintenance/media.repo /etc/yum.repos.d/satellite-maintenance.repo
-----
-
-.. Edit the `/etc/yum.repos.d/satellite-maintenance.repo` file:
-+
-[options="nowrap"]
-----
-# vi /etc/yum.repos.d/satellite-maintenance.repo
-----
-
-... Change the default `InstallMedia` repository name to `{Project}-Maintenance`:
-+
-[options="nowrap" subs="+quotes,attributes"]
-----
-[{Project}-Maintenance]
-----
-
-.. Add the `baseurl` directive:
-+
-[options="nowrap"]
-----
-baseurl=file:///media/sat6/Maintenance/
+[Satellite]
+name=Satellite
+mediaid=None
+metadata_expire=-1
+gpgcheck=0
+cost=500
+baseurl=file:///<export location>/content/dist/layered/rhel8/x86_64/satellite/{ProjectVersion}/os/
 ----
 
 . Optional: Because of the lengthy upgrade time, use a utility such as `tmux` to suspend and reattach a communication session.
@@ -147,7 +116,7 @@ If you lose connection to the command shell where the upgrade command is running
 +
 [options="nowrap" subs="attributes"]
 ----
-# {foreman-maintain} self-upgrade
+# {foreman-maintain} self-upgrade --maintenance-repo-label=Satellite
 ----
 
 . If you are using an external database, upgrade your database to PostgreSQL 13.
@@ -157,7 +126,7 @@ These changes are applied to the `/etc/foreman-maintain/foreman-maintain-hammer.
 +
 [options="nowrap" subs="attributes"]
 ----
-# {foreman-maintain} upgrade check --whitelist="repositories-validate,repositories-setup"
+# {foreman-maintain} upgrade check --whitelist="repositories-validate,repositories-setup"  --target-version={ProjectVersion}
 ----
 +
 Review the results and address any highlighted error conditions before performing the upgrade.
@@ -165,10 +134,10 @@ Review the results and address any highlighted error conditions before performin
 +
 [options="nowrap" subs="attributes"]
 ----
-# {foreman-maintain} upgrade run --whitelist="repositories-validate,repositories-setup"
+# {foreman-maintain} upgrade run --whitelist="repositories-validate,repositories-setup" --target-version={ProjectVersion}
 ----
 +
-If the script fails due to missing or outdated packages, you must download and install these separately.
+If the script fails due to missing or outdated packages check your exported content.
 For more information, see {InstallingServerDisconnectedDocURL}resolving-package-dependency-errors_satellite[Resolving Package Dependency Errors] in _{InstallingServerDisconnectedDocTitle}_.
 
 include::snip_steps-needs-reboot.adoc[]
