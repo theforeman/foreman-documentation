@@ -12,7 +12,7 @@ function buildNavigation() {
 
   return `<nav>
   <a href="/">
-    <img class="logo" src="/img/helmet.svg" alt="Home">
+    <img class="logo" src="/img/helmet.png" alt="Home">
   </a>
 <button type="button" class="btn-hamburger" data-action="nav-toggle">
   <span></span>
@@ -22,7 +22,9 @@ function buildNavigation() {
   <span></span>
 </button>
 <ul class="nav-menu">
-  <li class="nav-item"><a href="https://theforeman.org/">About Foreman</a></li>`
+  <li class="nav-item"><a href="https://theforeman.org/">About Foreman</a></li>
+  <li class="nav-item"><a href="https://community.theforeman.org/c/support/10">Support forum</a></li>
+  <li class="nav-item"><a href="https://github.com/theforeman/foreman-documentation">Contribute</a></li>`
     + navBuilds.map(function(build){
       return(
         `<li class="nav-item dropdown">
