@@ -1,9 +1,9 @@
 [id="Configuring_TLS_for_Secure_LDAP_{context}"]
 = Configuring TLS for secure LDAP
 
-If {Project} uses TLS to establish a secure LDAP connection (LDAPS), you must obtain the CA certificates  of your LDAP server and add them to the trusted CA list on the base operating system of your {ProjectServer}.
+If {Project} uses TLS to establish a secure LDAP connection (LDAPS), you must obtain the CA certificates of your LDAP server and add them to the trusted CA list on the base operating system of your {ProjectServer}.
 
-If your LDAP server uses a certificate chain with intermediate certificate authorities,  you must obtain all root and intermediate certificates and add them to the trusted CA list.
+If your LDAP server uses a certificate chain with intermediate certificate authorities, you must obtain all root and intermediate certificates and add them to the trusted CA list.
 
 .Procedure
 . Obtain the CA certificate from the LDAP Server:
@@ -14,28 +14,38 @@ endif::[]
 .. Download the LDAP server certificate to a temporary location on the {ProjectServer}, such as `/tmp/_example.crt_`.
 You will remove the certificate when finished.
 +
+ifdef::foreman-deb[]
+{Project} only accepts the `.crt` file extension for certificates in PEM ASCII format.
+endif::[]
+ifndef::foreman-deb[]
 The filename extensions `.cer` and `.crt` are only conventions and can refer to DER binary or PEM ASCII format certificates.
-. Add the LDAP certificate to your CA trust list:
-.. Install the LDAP certificate in the `/etc/pki/tls/certs/` directory with the correct permissions:
+endif::[]
+. Add the LDAP server certificate to the system truststore:
+.. Import the certificate:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-# install /tmp/_example.crt_ /etc/pki/tls/certs/
+ifdef::foreman-deb[]
+# cp /tmp/_example.crt_ /usr/local/share/ca-certificates
+endif::[]
+ifndef::foreman-deb[]
+# cp /tmp/_example.crt_ /etc/pki/tls/source/anchors
+endif::[]
 ----
-+
-LDAP certificates must be individual files.
-.. Create a symbolic link to the LDAP certificate:
-+
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
-# ln -s _example.crt_ /etc/pki/tls/certs/$(openssl \
-x509 -noout -hash -in \
-/etc/pki/tls/certs/_example.crt_).0
-----
-.. Restart the `httpd` service:
+.. Update the certificate authority truststore:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-# systemctl restart httpd
+ifdef::foreman-deb[]
+# update-ca-certificates
+endif::[]
+ifndef::foreman-deb[]
+# update-ca-trust extract
+endif::[]
 ----
 . Delete the downloaded LDAP certificate from the temporary location on your {ProjectServer}.
+
+ifndef::orcharhino,foreman-deb[]
+.Additional resources
+* For more information about adding certificates to the system truststore, see link:{RHELDocsBaseURL}9/html/securing_networks/using-shared-system-certificates_securing-networks[Using shared system certificates] in _{RHEL}{nbsp}9 Securing networks_.
+endif::[]

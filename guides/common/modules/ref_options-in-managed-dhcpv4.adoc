@@ -1,0 +1,38 @@
+[id="options-in-managed-dhcpv4"]
+= Options in managed DHCPv4
+
+When {Project} manages the DHCP service and can update the DHCP configuration, {Project} sets the `next-server` and `filename` DHCP options.
+
+`next-server`::
+The `next-server` option provides the IP address of the TFTP server to boot from.
+This option is not set by default and must be set for each TFTP {SmartProxy}.
+You can use the `{foreman-installer}` command with the `--foreman-proxy-tftp-servername` argument to set the TFTP server in the `/etc/foreman-proxy/settings.d/tftp.yml` file:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foreman-installer} --foreman-proxy-tftp-servername _1.2.3.4_
+----
++
+Each TFTP {SmartProxy} then reports this setting through the API and {Project} can retrieve the configuration information when it creates the DHCP record.
++
+When the PXE loader is set to `none`, {Project} does not populate the `next-server` option into the DHCP record.
++
+If the `next-server` option remains undefined, {Project} calls the {SmartProxy} API to retrieve the server name as specified by the `--foreman-proxy-tftp-servername` argument in a `{foreman-installer}` run.
+If the {SmartProxy} API call does not return a server name, {Project} uses the hostname of the {SmartProxy}.
+
+`filename`::
+The `filename` option contains the full path to the file that downloads and executes during provisioning.
+The PXE loader that you select for the host or host group defines which `filename` option to use.
+When the PXE loader is set to `none`, {Project} does not populate the `filename` option into the DHCP record.
+Depending on the PXE loader option, the `filename` changes as follows:
++
+|=======
+|PXE loader option | filename entry| Notes
+
+|PXELinux BIOS | `pxelinux.0`|
+|PXELinux UEFI | `pxelinux.efi`|
+|iPXE Chain BIOS | `undionly.kpxe`|
+|PXEGrub2 UEFI | `grub2/grubx64.efi`| x64 can differ depending on architecture
+|iPXE UEFI HTTP | `http://_{smartproxy-example-com}_:8000/httpboot/ipxe-x64.efi` | Requires the `httpboot` feature and renders the `filename` as a full URL where _{smartproxy-example-com}_ is a known host name of {SmartProxy} in {Project}.
+|Grub2 UEFI HTTP | `http://_{smartproxy-example-com}_:8000/httpboot/grub2/grubx64.efi` | Requires the `httpboot` feature and renders the `filename` as a full URL where _{smartproxy-example-com}_ is a known host name of {SmartProxy} in {Project}.
+|=======

@@ -20,8 +20,10 @@ Specify the required software when joining the AD domain:
 ----
 # realm join _AD.EXAMPLE.COM_ --membership-software=samba --client-software=sssd
 ----
+ifndef::orcharhino[]
 +
 For more information on direct AD integration, see link:{RHELDocsBaseURL}9/html-single/integrating_rhel_systems_directly_with_windows_active_directory/index#connecting-rhel-systems-directly-to-ad-using-samba-winbind_integrating-rhel-systems-directly-with-active-directory[Connecting RHEL systems directly to AD using Samba Winbind].
+endif::[]
 
 .Procedure
 . Define AD realm configuration in a location where {foreman-installer} expects it:
@@ -34,7 +36,7 @@ For more information on direct AD integration, see link:{RHELDocsBaseURL}9/html-
 +
 .. Create the `/etc/ipa/default.conf` file with the following contents to configure the Kerberos realm for the AD domain:
 +
-[options="nowrap", subs="+quotes,verbatim,attributes"]
+[source, ini, options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 [global]
 realm = _AD.EXAMPLE.COM_
@@ -42,7 +44,7 @@ realm = _AD.EXAMPLE.COM_
 . Configure the Apache keytab for Kerberos connections:
 .. Update the `/etc/samba/smb.conf` file with the following settings to configure how Samba interacts with AD:
 +
-[options="nowrap", subs="+quotes,verbatim,attributes"]
+[source, ini, options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 [global]
 workgroup = _AD.EXAMPLE_
@@ -60,7 +62,7 @@ security = ads
 . Configure the System Security Services Daemon (SSSD) to use the AD access control provider to evaluate and enforce Group Policy Object (GPO) access control rules for the `foreman` PAM service:
 .. In the `[domain/_ad.example.com_]` section of your `/etc/sssd/sssd.conf` file, configure the `ad_gpo_access_control` and `ad_gpo_map_service` options as follows:
 +
-[options="nowrap", subs="+quotes,verbatim,attributes"]
+[source, ini, options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 [domain/_ad.example.com_]
 ad_gpo_access_control = enforcing
@@ -68,10 +70,7 @@ ad_gpo_map_service = +foreman
 ----
 ifndef::orcharhino[]
 +
-For more information on GPOs, see the following documents:
-+
-* link:{RHELDocsBaseURL}9/html/integrating_rhel_systems_directly_with_windows_active_directory/managing-direct-connections-to-ad_integrating-rhel-systems-directly-with-active-directory#how-sssd-interprets-gpo-access-control-rules_applying-group-policy-object-access-control-in-rhel[How SSSD interprets GPO access control rules] in _Integrating RHEL systems directly with Windows Active Directory (RHEL{nbsp}9)_
-* link:{RHELDocsBaseURL}8/html/integrating_rhel_systems_directly_with_windows_active_directory/managing-direct-connections-to-ad_integrating-rhel-systems-directly-with-active-directory#applying-group-policy-object-access-control-in-rhel_managing-direct-connections-to-ad[How SSSD interprets GPO access control rules] in _Integrating RHEL systems directly with Windows Active Directory (RHEL{nbsp}8)_
+For more information on GPOs, see {RHELDocsBaseURL}9/html/integrating_rhel_systems_directly_with_windows_active_directory/managing-direct-connections-to-ad_integrating-rhel-systems-directly-with-active-directory#how-sssd-interprets-gpo-access-control-rules_applying-group-policy-object-access-control-in-rhel[How SSSD interprets GPO access control rules] in _Integrating RHEL systems directly with Windows Active Directory (RHEL{nbsp}9)_.
 endif::[]
 .. Restart SSSD:
 +
@@ -105,6 +104,34 @@ $ curl -k -u : --negotiate https://{foreman-example-com}/users/extlogin
 <html><body>You are being <a href="{foreman-example-com}/hosts">redirected</a>.</body></html>
 ----
 
+.Troubleshooting
+* Connecting to the AD LDAP can sometimes fail with an error such as the following appearing in the logs:
++
+[source, none, options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+Authentication failed with status code: {
+  "error": { "message": "ERF77-7629 [Foreman::LdapException]: Error while connecting to 'server.com' LDAP server at 'ldap.example.com' during authentication ([Net::LDAP::Error]: Connection reset by peer - SSL_connect)" } }
+----
++
+If you see this error, verify which cipher is used for the connection:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# openssl s_client -connect _ldap.example.com_:636
+----
++
+If the `TLS_DHE_RSA_WITH_AES_256_GCM_SHA384` cipher is used, disable it on either the {ProjectServer} side or on the AD side.
+The `TLS_DHE_RSA_WITH_AES_256_GCM_SHA384` cipher is known to cause incompatibilities.
++
+ifdef::satellite[]
+For more information, see the Red{nbsp}Hat Knowledgebase solution link:https://access.redhat.com/solutions/4870221[API calls to Red Hat Satellite 6 fail intermittently on LDAP authentication].
+endif::[]
+ifdef::foreman-el,katello[]
+For information on configuring system-wide cryptographic policies, see link:{RHELDocsBaseURL}9/html/security_hardening/using-the-system-wide-cryptographic-policies_security-hardening[Using system-wide cryptographic policies] in _{RHEL}{nbsp}9 Security hardening_.
+endif::[]
+
 .Additional resources
 * `sssd-ad(5)` man page on your system
+ifndef::orcharhino[]
 * For information about configuring Mozilla Firefox for Kerberos, see {RHELDocsBaseURL}9/html/configuring_authentication_and_authorization_in_rhel/configuring_applications_for_sso#Configuring_Firefox_to_use_Kerberos_for_SSO[Configuring Firefox to use Kerberos for single sign-on] in _{RHEL}{nbsp}9 Configuring authentication and authorization in RHEL_.
+endif::[]

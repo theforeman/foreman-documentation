@@ -73,6 +73,7 @@ We capitalize the following terms:
 * Redis
 * Salt
 * Salt Minions
+* Secure Boot
 * Subscription Manager (Red Hat product)
 * Tracer (utility)
 * Yum (content type)
