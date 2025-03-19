@@ -423,6 +423,15 @@
 <li><a href="#Retrieving_the_Status_of_Services_dr-virt">14.2.4. Retrieving the status of services</a></li>
 </ul>
 </li>
+<li><a href="#disaster-recovery-for-active-and-passive-foreman-server-with-backup-and-restore">14.3. Disaster recovery for active and passive Foreman&#160;server with backup and restore</a>
+<ul class="sectlevel3">
+<li><a href="#prerequisites-disaster-recovery-with-active-and-passive-project-server-and-backup-and-restore">14.3.1. Prerequisites</a></li>
+<li><a href="#preparing-for-disaster-recovery-with-active-and-passive-project-server-and-backup-and-restore">14.3.2. Preparing for disaster recovery with active and passive Foreman&#160;server and backup and restore</a></li>
+<li><a href="#recovering-from-disaster-with-active-and-passive-server-and-backup-and-restore">14.3.3. Recovering from disaster with active and passive server and backup and restore</a></li>
+<li><a href="#Retrieving_the_Status_of_Services_dr-backup-restore">14.3.4. Retrieving the status of services</a></li>
+<li><a href="#Example_of_a_Weekly_Full_Backup_Followed_by_Daily_Incremental_Backups_dr-backup-restore">14.3.5. Example of a weekly full backup followed by daily incremental backups</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li><a href="#Administration_Settings_admin">Appendix A: Administration settings</a>
@@ -6298,6 +6307,227 @@ When troubleshooting, you can check the status of Foreman services.</p>
 </div>
 </li>
 </ul>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="disaster-recovery-for-active-and-passive-foreman-server-with-backup-and-restore"><a class="anchor" href="#disaster-recovery-for-active-and-passive-foreman-server-with-backup-and-restore"></a>14.3. Disaster recovery for active and passive Foreman&#160;server with backup and restore</h3>
+<div class="paragraph">
+<p>To prepare for disaster recovery, you can configure two Foreman&#160;servers: an active primary server and a passive secondary server.
+You configure periodic backups of the primary server.
+If the primary server fails, you can restore a backup on the secondary server to turn it into your new primary server.</p>
+</div>
+<div class="sect3">
+<h4 id="prerequisites-disaster-recovery-with-active-and-passive-project-server-and-backup-and-restore"><a class="anchor" href="#prerequisites-disaster-recovery-with-active-and-passive-project-server-and-backup-and-restore"></a>14.3.1. Prerequisites</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Review <a href="#overview-of-recommended-disaster-recovery-plans">Overview of recommended disaster recovery plans</a> to ensure that this disaster recovery plan works for you.</p>
+</li>
+<li>
+<p>You have a Foreman&#160;server installed.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="preparing-for-disaster-recovery-with-active-and-passive-project-server-and-backup-and-restore"><a class="anchor" href="#preparing-for-disaster-recovery-with-active-and-passive-project-server-and-backup-and-restore"></a>14.3.2. Preparing for disaster recovery with active and passive Foreman&#160;server and backup and restore</h4>
+<div class="paragraph">
+<p>Create your passive Foreman&#160;server by restoring a backup of your active Foreman&#160;server.
+Configure periodic backups of the active server.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Define a schedule for periodic offline backups of your active Foreman&#160;server.
+Consider your tolerance for potential data loss and your storage options: Taking backups frequently will result in smaller amounts of data loss in case of a disaster, but backups require a significant amount of storage space.</p>
+<div class="paragraph">
+<p>You can combine full backups with incremental backups.
+For an example of a <code>cron</code> job that ensures regular backups, see <a href="#Example_of_a_Weekly_Full_Backup_Followed_by_Daily_Incremental_Backups_dr-backup-restore">Example of a weekly full backup followed by daily incremental backups</a>.</p>
+</div>
+</li>
+<li>
+<p>Schedule periodic offline backups of your active Foreman&#160;server to be taken according to the schedule you defined.
+For information about performing backups, see <a href="#backing-up-foreman-server-and-smart-proxy_admin">Backing up Foreman&#160;server and Smart&#160;Proxy&#160;server</a>.</p>
+</li>
+<li>
+<p>Ensure that the backup directories are encrypted and regularly synchronized to a secure location.
+By default, Foreman stores the backups in the <code><em>/var/foreman-backup</em></code> directory.</p>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Important</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Encrypting or moving the backups to a secure location helps minimize the risk of damage or unauthorized access to the hosts.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Restore the most recent backup on a system that will serve as your passive Foreman&#160;server.
+For information about restoring backups, see <a href="#restoring-foreman-server-or-smart-proxy-from-a-backup_admin">Restoring Foreman&#160;server or Smart&#160;Proxy&#160;server from a backup</a>.</p>
+</li>
+<li>
+<p>Optional: Automate backup restoration to keep the passive server periodically updated with the latest backup.
+A regularly restored passive server helps reduce switchover time if the active server fails.</p>
+<div class="paragraph">
+<p>Consider how often you want the backups to be restored: More frequent updates reduce potential data loss but increase infrastructure and automation costs.</p>
+</div>
+</li>
+<li>
+<p>Power off the passive server.
+Keep the active server powered on.</p>
+</li>
+<li>
+<p>Define your backup retention policy.
+Consider how many backups you want to store: Regularly removing outdated backups helps optimize storage usage.</p>
+</li>
+</ol>
+</div>
+<div class="olist arabic">
+<div class="title">Verification</div>
+<ol class="arabic">
+<li>
+<p>Verify that Foreman takes backups according to the schedule you defined.</p>
+</li>
+<li>
+<p>Perform further testing steps in an isolated staging environment:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Mimic a full outage on the active server.
+To make sure the active server is inaccessible, you can turn the machine off, halt the virtual machine (VM) if your server runs on a VM, or isolate the machine by using a firewall.</p>
+</li>
+<li>
+<p>Switch DNS records of the active server with the DNS records of the passive server.</p>
+</li>
+<li>
+<p>Assess the functionality of the test Foreman&#160;server.
+For more information, see <a href="#Retrieving_the_Status_of_Services_dr-backup-restore">Retrieving the status of services</a>.</p>
+</li>
+<li>
+<p>Perform these verification checks regularly.</p>
+</li>
+</ol>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="recovering-from-disaster-with-active-and-passive-server-and-backup-and-restore"><a class="anchor" href="#recovering-from-disaster-with-active-and-passive-server-and-backup-and-restore"></a>14.3.3. Recovering from disaster with active and passive server and backup and restore</h4>
+<div class="paragraph">
+<p>If your active Foreman&#160;server fails, activate your passive secondary server.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Verify that the failed active server is powered off and that backups are no longer being synchronized to your passive server.</p>
+</li>
+<li>
+<p>Switch DNS records of the active server with the DNS records of the passive server.
+This ensures that hosts remain connected and you do not need to re-register them.</p>
+</li>
+<li>
+<p>Assess the functionality of your new active Foreman&#160;server.
+For more information, see <a href="#Retrieving_the_Status_of_Services_dr-backup-restore">Retrieving the status of services</a>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="Retrieving_the_Status_of_Services_dr-backup-restore"><a class="anchor" href="#Retrieving_the_Status_of_Services_dr-backup-restore"></a>14.3.4. Retrieving the status of services</h4>
+<div class="paragraph">
+<p>Foreman uses a set of back-end services.
+When troubleshooting, you can check the status of Foreman services.</p>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>In the Foreman web UI, navigate to <strong>Administer</strong> &gt; <strong>About</strong>.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>On the <strong>Smart Proxies</strong> tab, view the status of all Smart&#160;Proxies.</p>
+</li>
+<li>
+<p>On the <strong>Compute Resources</strong> tab, view the status of attached compute resource providers.</p>
+</li>
+<li>
+<p>In the <strong>Backend System Status</strong> table, view the status of all back-end services.</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">CLI procedure</div>
+<ul>
+<li>
+<p>Get information from the database and Foreman services:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer ping</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Check the status of the services running in systemd:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-maintain service status</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Run <code>foreman-maintain service --help</code> for more information.</p>
+</div>
+</li>
+<li>
+<p>Perform a health check:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ foreman-maintain health check</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Run <code>foreman-maintain health --help</code> for more information.</p>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="Example_of_a_Weekly_Full_Backup_Followed_by_Daily_Incremental_Backups_dr-backup-restore"><a class="anchor" href="#Example_of_a_Weekly_Full_Backup_Followed_by_Daily_Incremental_Backups_dr-backup-restore"></a>14.3.5. Example of a weekly full backup followed by daily incremental backups</h4>
+<div class="paragraph">
+<p>The following script performs a full backup on a Sunday followed by incremental backups for each of the following days.
+A new subdirectory is created for each day that an incremental backup is performed.
+The script requires a daily cron job.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-bash" data-lang="bash">#!/bin/bash -e
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+DESTINATION=/var/backup_directory
+if [[ $(date +%w) == 0 ]]; then
+  foreman-maintain backup offline --assumeyes $DESTINATION
+else
+  LAST=$(ls -td -- $DESTINATION/*/ | head -n 1)
+  foreman-maintain backup offline --assumeyes --incremental "$LAST" $DESTINATION
+fi
+exit 0</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note that the <code>foreman-maintain backup</code> command requires <code>/sbin</code> and <code>/usr/sbin</code> directories to be in <code>PATH</code> and the <code>--assumeyes</code> option is used to skip the confirmation prompt.</p>
 </div>
 </div>
 </div>
