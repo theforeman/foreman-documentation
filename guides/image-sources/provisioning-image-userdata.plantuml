@@ -1,0 +1,46 @@
+@startuml
+
+!include foreman.pstyle
+
+title Image-based provisioning with cloud-init configuration
+
+actor       User
+participant "Provisioned\nInstance" as Host
+participant "Foreman" as Foreman
+participant "Foreman\nProxy" as Proxy
+participant "Infrastructure\nCloud" as Cloud
+participant DNS
+!if ($puppet)
+participant "Puppet\nserver" as Puppet
+!endif
+
+note over Foreman : Has an image\nwith the //User Data// flag
+note over Host : Powered off
+
+== Create host in Foreman ==
+
+User -> Foreman : Create host\nwith a cloud resource and the image
+group Template [cloud-init]
+   Foreman -> Proxy : Render the cloud-init script
+end
+Foreman -> Cloud : Create a new instance\nwith cloud-init info
+Cloud -> Foreman : Report the IP address
+Foreman -> Proxy : Create DNS records
+Proxy -> DNS : Forward DNS records
+Foreman -> Cloud : Start the instance
+Cloud -> Host : Boot
+
+== Cloud-init script ==
+
+!include prov-initial-configuration.iuml
+Host -> Foreman : Call home\n(disables build mode)
+
+!if ($puppet)
+== First Puppet run ==
+
+!include puppet-run.iuml
+!endif
+
+note over Host : In operation
+
+@enduml
