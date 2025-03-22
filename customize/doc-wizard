@@ -1,0 +1,61 @@
+#!/usr/bin/env ruby
+
+require 'asciidoctor'
+require 'sinatra'
+
+class Guide
+  def initialize(path, base_dir)
+    @path = path
+    @base_dir = base_dir
+  end
+
+  def title
+    # TODO: rendering depends on build
+    #document.title
+    File.basename(@path, '.adoc').gsub('_', ' ').capitalize
+  end
+
+  def document(attributes = {})
+    raise ArgumentError, 'No build specified' unless attributes.key?('build')
+
+    Asciidoctor.load_file(
+      @path,
+      safe: :unsafe,
+      base_dir: @base_dir,
+      attributes: attributes,
+    )
+  end
+end
+
+set :guides_base_dir, File.join(__dir__, '..', 'guides')
+set :build_flavor, ENV.fetch('BUILD', 'katello')
+
+GUIDES = Dir.glob(File.join(__dir__, 'guides', '*.adoc')).to_h do |path|
+  [File.basename(path, '.adoc'), Guide.new(path, settings.guides_base_dir)]
+end
+
+configure do
+  stylesheet = File.join(settings.public_folder, 'css', 'asciidoctor.css')
+  unless File.exist?(stylesheet)
+    FileUtils.mkdir_p(File.dirname(stylesheet))
+    File.write(stylesheet, Asciidoctor::Stylesheets.instance.primary_stylesheet_data)
+  end
+end
+
+get '/' do
+  erb :index, locals: { guides: GUIDES }
+end
+
+get '/guide' do
+  unless (guide = GUIDES[params['guide']])
+    raise Sinatra::NotFound
+  end
+
+  attributes = %w[ipv6 http-proxy custom-ssl external-db'].to_h do |check|
+    ["answer-#{check}", params[check] == 'on']
+  end
+
+  attributes['build'] = settings.build_flavor
+
+  erb(guide.document(attributes).convert)
+end
