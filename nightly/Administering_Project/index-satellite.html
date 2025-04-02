@@ -270,6 +270,13 @@
 <li><a href="#Example_of_a_Weekly_Full_Backup_Followed_by_Daily_Incremental_Backups_dr-backup-restore">6.4.5. Example of a weekly full backup followed by daily incremental backups</a></li>
 </ul>
 </li>
+<li><a href="#disaster-recovery-with-two-active-satellite-servers">6.5. Disaster recovery with two active Satellite&#160;Servers</a>
+<ul class="sectlevel3">
+<li><a href="#prerequisites-disaster-recovery-with-two-active-project-servers">6.5.1. Prerequisites</a></li>
+<li><a href="#preparing-for-disaster-recovery-with-two-active-project-servers">6.5.2. Preparing for disaster recovery with two active Satellite&#160;Servers</a></li>
+<li><a href="#recovering-from-disaster-with-two-active-project-servers">6.5.3. Recovering from disaster with two active Satellite&#160;Servers</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li><a href="#Managing_Organizations_admin">7. Managing organizations</a>
@@ -2164,6 +2171,188 @@ exit 0</code></pre>
 </div>
 <div class="paragraph">
 <p>Note that the <code>satellite-maintain backup</code> command requires <code>/sbin</code> and <code>/usr/sbin</code> directories to be in <code>PATH</code> and the <code>--assumeyes</code> option is used to skip the confirmation prompt.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="disaster-recovery-with-two-active-satellite-servers"><a class="anchor" href="#disaster-recovery-with-two-active-satellite-servers"></a>6.5. Disaster recovery with two active Satellite&#160;Servers</h3>
+<div class="paragraph">
+<p>To prepare for disaster recovery, you can configure two Satellite&#160;Servers and operate each server in a different data center.
+If one of the servers fails, you can re-register all hosts from the failed server to the other server.</p>
+</div>
+<div class="sect3">
+<h4 id="prerequisites-disaster-recovery-with-two-active-project-servers"><a class="anchor" href="#prerequisites-disaster-recovery-with-two-active-project-servers"></a>6.5.1. Prerequisites</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Review <a href="#overview-of-recommended-disaster-recovery-plans">Overview of recommended disaster recovery plans</a> to ensure that this disaster recovery plan works for you.</p>
+</li>
+<li>
+<p>You have a Satellite&#160;Server installed.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="preparing-for-disaster-recovery-with-two-active-project-servers"><a class="anchor" href="#preparing-for-disaster-recovery-with-two-active-project-servers"></a>6.5.2. Preparing for disaster recovery with two active Satellite&#160;Servers</h4>
+<div class="paragraph">
+<p>Create a second Satellite&#160;Server by restoring a backup of your first Satellite&#160;Server.
+Configure both servers to operate independently in their respective data centers, but ensure that their content does not drift apart over time.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Back up your Satellite&#160;Server.
+For more information, see <a href="#backing-up-satellite-server-and-capsule_admin">Backing up Satellite&#160;Server and Capsule&#160;Server</a>.</p>
+</li>
+<li>
+<p>Restore the backup on a system that will serve as your other Satellite&#160;Server.
+For more information, see <a href="#restoring-satellite-server-or-capsule-from-a-backup_admin">Restoring Satellite&#160;Server or Capsule&#160;Server from a backup</a>.</p>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Each server must have a distinct hostname and IP address.
+This enables you to re-register hosts if one of the servers fails.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Ensure that content on your servers remains consistent:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>If you want both servers to manage content synchronization and content view creation, follow these guidelines to prevent content drift:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Regularly synchronize repositories on both servers.
+You can use the following Ansible modules to automate repository synchronization: <code>redhat.satellite.repository_sync</code> and <code>redhat.satellite.sync_plan</code>.</p>
+</li>
+<li>
+<p>Ensure that content views on both servers match.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>If you want one server to manage content synchronization and content view creation, use one of these features to prevent content drift:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>If your disaster recovery site has network access to your primary site, use Inter-Satellite Synchronization (ISS) to ensure your disaster recovery server synchronizes its content from the primary server.</p>
+</li>
+<li>
+<p>If your disaster recovery site does not have network access to your primary site, synchronize content by using export and import.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>If you want one server to manage only content view creation but not content synchronization, you can configure the other server or multiple other servers to import content views from the first server but synchronize content from repositories.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Register hosts to your servers so that each server manages hosts in its respective data center.
+For example, register all hosts in <em>My_Data_Center_1</em> to one Satellite&#160;Server and all hosts in <em>My_Data_Center_2</em> to the other Satellite&#160;Server.</p>
+</li>
+<li>
+<p>Automate running the <code>satellite-maintain health check</code> command on both servers.
+The health check verifies whether the servers remain fully operational.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<div class="title">Verification</div>
+<p>Perform this test in an isolated staging environment:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Mimic a full outage on one of your servers.
+To verify that the server is inaccessible, you can turn the machine off, halt the virtual machine (VM) if your server runs on a VM, or isolate the machine by using a firewall.</p>
+</li>
+<li>
+<p>Verify that your <code>satellite-maintain health check</code> automation reported an error.</p>
+</li>
+<li>
+<p>Re-register all hosts from the inaccessible server to the accessible server.</p>
+</li>
+<li>
+<p>Verify that hosts have been properly re-registered to the accessible server.</p>
+</li>
+<li>
+<p>Perform these verification checks regularly.</p>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p>Ansible playbooks can help you automate failover, re-registration, and synchronization.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.17/html-single/administering_red_hat_satellite/index#managing-satellite-with-ansible">Managing Satellite with Ansible</a> in <em>Administering Red&#160;Hat Satellite</em>.</p>
+</li>
+<li>
+<p>For more information on synchronizing repositories, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.17/html-single/managing_content/index#Synchronizing_Repositories_content-management">Synchronizing repositories</a> in <em>Managing content</em>.</p>
+</li>
+<li>
+<p>For more information on synchronizing content between Satellite&#160;Servers, including ISS, export, and import, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.17/html-single/managing_content/index#Synchronizing_Content_Between_Servers_content-management">Synchronizing content between Satellite&#160;Servers</a> in <em>Managing content</em>.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="recovering-from-disaster-with-two-active-project-servers"><a class="anchor" href="#recovering-from-disaster-with-two-active-project-servers"></a>6.5.3. Recovering from disaster with two active Satellite&#160;Servers</h4>
+<div class="paragraph">
+<p>If the health checks implemented in <a href="#preparing-for-disaster-recovery-with-two-active-project-servers">Preparing for disaster recovery with two active Satellite&#160;Servers</a> report an issue on one of your Satellite&#160;Servers, it might mean that the server has failed.
+If the server is down, you must re-register hosts to the other server.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Verify the status of the server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-maintain health check</pre>
+</div>
+</div>
+</li>
+<li>
+<p>If <code>satellite-maintain health check</code> reported a problem, ensure that the server is powered off.</p>
+</li>
+<li>
+<p>Re-register all hosts from the data center managed by the failed server to the other, functional server.</p>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">Verification</div>
+<ul>
+<li>
+<p>Verify that hosts have been properly re-registered.</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p>Ansible playbooks can help you automate failover, re-registration, and synchronization.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.17/html-single/administering_red_hat_satellite/index#managing-satellite-with-ansible">Managing Satellite with Ansible</a> in <em>Administering Red&#160;Hat Satellite</em>.</p>
+</li>
+</ul>
 </div>
 </div>
 </div>
