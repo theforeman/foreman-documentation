@@ -1,0 +1,80 @@
+[id="integrating-infoblox-dhcp_{context}"]
+= Integrating Infoblox DHCP
+
+Install the DHCP Infoblox provider on {ProductName}. Note that you cannot manage records in separate views.
+
+[NOTE]
+====
+If you want to use the DHCP and DNS Infoblox modules together, configure the DHCP Infoblox module with the `fixedaddress` record type only.
+The `host` record type causes DNS conflicts and is not supported.
+
+If you configure the DHCP Infoblox module with the `host` record type, you have to unset both DNS {SmartProxy} and Reverse DNS {SmartProxy} options on your Infoblox-managed subnets, because Infoblox does DNS management by itself.
+Using the `host` record type leads to creating conflicts and being unable to rename hosts in {Project}.
+====
+
+
+.Limitations
+* You can manage DHCP entries only in a single network and view, and you cannot edit the view after you create it.
+
+* {ProductName} uses the standard HTTPS web API to communicate with Infoblox. By default, it communicates only with a single node. If you require high availability, configure this feature in Infoblox.
+
+
+
+.Prerequisites
+
+* You must have Infoblox account credentials to manage DHCP and DNS entries in {Project}.
+* Ensure that you have Infoblox administration roles with the names: `DHCP Admin` and `DNS Admin`.
+* The administration roles must have permissions or belong to an admin group that permits the accounts to perform tasks through the Infoblox API.
+
+
+.Procedure
+. Download the certificate from the Infoblox server:
++
+[options="nowrap" subs="+quotes"]
+----
+# update-ca-trust enable
+# openssl s_client -showcerts -connect _infoblox.example.com_:443 </dev/null | \
+openssl x509 -text >/etc/pki/ca-trust/source/anchors/infoblox.crt
+# update-ca-trust extract
+----
++
+The `_infoblox.example.com_` entry must match the host name for the Infoblox application in the X509 certificate.
+
+. Test the CA certificate by using a `curl` query:
++
+[options="nowrap" subs="+quotes"]
+----
+# curl -u admin:password https://_infoblox.example.com_/wapi/v2.0/network
+----
++
+Example positive response:
++
+[options="nowrap" subs="+quotes"]
+----
+[
+    {
+        "_ref": "network/ZG5zLm5ldHdvcmskMTkyLjE2OC4yMDIuMC8yNC8w:__infoblox.example.com__/24/default",
+        "network": "192.168.202.0/24",
+        "network_view": "default"
+    }
+]
+----
+
+
+. On {ProductName}, enter the following command:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foreman-installer} --enable-foreman-proxy-plugin-dhcp-infoblox \
+--foreman-proxy-dhcp true \
+--foreman-proxy-dhcp-provider infoblox \
+--foreman-proxy-dhcp-server _infoblox.example.com_ \
+--foreman-proxy-plugin-dhcp-infoblox-username _admin_ \
+--foreman-proxy-plugin-dhcp-infoblox-password _infoblox_ \
+--foreman-proxy-plugin-dhcp-infoblox-record-type fixedaddress \
+--foreman-proxy-plugin-dhcp-infoblox-dns-view default \
+--foreman-proxy-plugin-dhcp-infoblox-network-view default
+----
+. Optional: In the {ProjectWebUI}, navigate to *Infrastructure* > *{SmartProxies}*, select the {SmartProxy} with the DHCP Infoblox module, and ensure that the *dhcp* feature is listed.
+. In the {ProjectWebUI}, navigate to *Infrastructure* > *Subnets*.
+. For all subnets managed through Infoblox, ensure that the IP address management (*IPAM*) method of the subnet is set to `DHCP`.
