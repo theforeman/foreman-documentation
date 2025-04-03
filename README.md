@@ -34,6 +34,7 @@ To build both static site and guides for easy local testing, there is the global
 * `compile`: compiles all content into a single directory `./result`
 * `serve`: serves the result directory via a python web server (the default target)
 
+To use the `Makefile`, you must first install the `gcc`, `gcc-c++`, and `ruby-devel` packages.
 To test the whole site locally, perform `make serve` command and open up `http://localhost:5000`.
 Use `PORT=5008` to change the web server port (5000 by default).
 It builds all contexts so the initial build can be slow, make sure to use `-j` option for faster builds on modern multi-core machines.
