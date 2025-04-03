@@ -1,0 +1,77 @@
+[id="enabling-the-installer-managed-dhcp-service_{context}"]
+= Enabling the installer-managed DHCP service
+
+// MARC: New module. Content is based on https://github.com/theforeman/foreman-documentation/blob/master/guides/common/modules/proc_reverting-to-internal-dns-service.adoc and https://github.com/theforeman/foreman-documentation/blob/master/guides/common/modules/proc_configuring-dns-dhcp-and-tftp.adoc, and adjusted for TFTP.
+// Needs to be checked if it is technically correct.
+
+You can revert to using {ProjectServer} and {SmartProxyServer} as your DHCP providers.
+You can use a backup of the answer file that was created before configuring external DHCP, or you can create a backup of the answer file.
+ifndef::orcharhino[]
+For more information about answer files, see {InstallingServerDocURL}configuring-server_{project-context}[Configuring {ProjectServer}].
+endif::[]
+
+
+.Prerequisites
+
+ifeval::["{context}" == "{project-context}"]
+* Ensure that the following information is available to you:
+** DHCP IP address ranges
+** DHCP gateway IP address
+** DHCP nameserver IP address
+** DNS information
+
+* Use the FQDN instead of the IP address where possible in case of network changes.
+endif::[]
+
+ifeval::["{context}" == "{smart-proxy-context}"]
+* You must have the correct interface name (`dhcp-interface`) for the DHCP server.
+endif::[]
+
+* Contact your network administrator to ensure that you have the correct settings.
+
+
+.Procedure
+On the {Project} or {SmartProxyServer} that you want to configure to manage DHCP service for the domain, complete the following steps:
+
+.Configuring {Project} or {SmartProxy} as a DHCP server
+* If you have created a backup of the answer file before configuring external DNS, restore the answer file and then enter the `{foreman-installer}` command:
++
+[options="nowrap", subs="+quotes,attributes"]
+-----
+# {foreman-installer}
+-----
++
+* If you do not have a suitable backup of the answer file, create a backup of the answer file now.
+To configure {Project} or {SmartProxy} as DHCP server without using an answer file, enter the following `{foreman-installer}` command on {Project} or {SmartProxy}:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foreman-installer} \
+--foreman-proxy-dhcp true \
+--foreman-proxy-dhcp-managed true \
+--foreman-proxy-dhcp-range "192.0.2.100 192.0.2.150" \
+--foreman-proxy-dhcp-gateway 192.0.2.1 \
+--foreman-proxy-dhcp-nameservers 192.0.2.2
+----
++
+ifeval::["{context}" == "{smart-proxy-context}"]
+For more information, see xref:configuring-dns-dhcp-and-tftp-on-productname_{smart-proxy-context}[].
+endif::[]
+ifeval::["{context}" == "{project-context}"]
+For more information, see {InstallingSmartProxyDocURL}configuring-dns-dhcp-and-tftp-on-productname_{smart-proxy-context}[Configuring DNS, DHCP, and TFTP on {SmartProxyServer}].
+endif::[]
+
+After you run the `{foreman-installer}` command to make any changes to your {SmartProxy} configuration, you must update the configuration of each affected {SmartProxy} in the {ProjectWebUI}.
+
+
+.Updating the configuration in the {ProjectWebUI}
+
+. In the {ProjectWebUI}, navigate to *Infrastructure* > *{SmartProxies}*.
+. For each {SmartProxy} that you want to update, from the *Actions* list, select *Refresh*.
+
+. Configure the subnet:
+
+.. In the {ProjectWebUI}, navigate to *Infrastructure* > *Subnets* and select the subnet name.
+.. In the *Subnet* tab, set *IPAM* to *DHCP* or *Internal DB*.
+.. Click *Submit* to save the changes.
+
