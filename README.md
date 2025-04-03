@@ -27,7 +27,7 @@ See [README in the `web/` subdirectory](web/README.md) for more information.
 
 ## Testing locally
 
-To build both static site and guides for easy local testing, there is the global `Makefile` in the root directory with the following targets:
+To build both the static site and the guides for easy local testing, a global `Makefile` is provided in the root directory with the following targets:
 
 * `html`: builds HTML guides with all contexts (`foreman-el`, `foreman-deb`, `katello`, `satellite`, and `orcharhino`)
 * `web`: builds static site using the `nanoc` tool
@@ -35,10 +35,11 @@ To build both static site and guides for easy local testing, there is the global
 * `serve`: serves the result directory via a python web server (the default target)
 
 To use the `Makefile`, you must first install the `gcc`, `gcc-c++`, and `ruby-devel` packages.
-To test the whole site locally, perform `make serve` command and open up `http://localhost:5000`.
+Then, to test the entire site locally, perform `make serve` command and open up `http://localhost:5000`.
 Use `PORT=5008` to change the web server port (5000 by default).
-It builds all contexts so the initial build can be slow, make sure to use `-j` option for faster builds on modern multi-core machines.
-Stable versions are symlink to the nightly (current) version, this can cause issues for deleted (or renamed) guides.
+This builds all contexts, so the initial build might be slow. 
+For faster builds on modern multi-core machines, use the `-j` option.
+Stable versions are symlinks to the nightly (current) version, which can cause issues for deleted (or renamed) guides.
 
 ## Deployment
 
