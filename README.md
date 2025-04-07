@@ -1,6 +1,6 @@
 # Foreman documentation
 
-This git repository contains the following documentation:
+This Git repository contains the following documentation:
 
 * Official documentation for the Katello project
 * PoC of improving documentation for the Foreman project. See [this milestone](https://github.com/theforeman/foreman-documentation/milestone/3) to check the progress.
@@ -16,8 +16,8 @@ Please, familiarize yourself with [CONTRIBUTING](CONTRIBUTING.md) and [Contribut
 
 ### Foreman guides
 
-This is a tree of documentation based on Red Hat Satellite 6 official books.
-See [README in the `guides/` subdirectory](guides/README.md) for more information.
+This README provides information on using the repository.
+For information on working with the documentation content. see the [README in the `guides/` subdirectory](guides/README.md).
 
 ### Static site
 
@@ -25,11 +25,23 @@ The landing page for [docs.theforeman.org](https://docs.theforeman.org) is avail
 The static content is always built from the `master` branch.
 See [README in the `web/` subdirectory](web/README.md) for more information.
 
-## Testing locally
+## Testing site locally
 
-To test out your changes on your local system, use the included `Makefle` to build the documentation locally.
+To build both the static site and the guides for easy local testing, a global `Makefile` is provided in the root directory with the following targets:
 
-For instructions, see link:https://github.com/theforeman/foreman-documentation/blob/master/guides/README.md#building-locally[Building locally].
+* `html`: builds HTML guides with all contexts (`foreman-el`, `foreman-deb`, `katello`, `satellite`, and `orcharhino`)
+* `web`: builds static site using the `nanoc` tool
+* `compile`: compiles all content into a single directory `./result`
+* `serve`: serves the result directory via a python web server (the default target)
+
+To use the `Makefile`, you must first install the `gcc`, `gcc-c++`, and `ruby-devel` packages.
+Then, to test the entire site locally, perform `make serve` command and open up `http://localhost:5000`.
+Use `PORT=5008` to change the web server port (5000 by default).
+This builds all contexts, so the initial build might be slow. 
+For faster builds on modern multi-core machines, use the `-j` option.
+Stable versions are symlinks to the nightly (current) version, which can cause issues for deleted (or renamed) guides.
+
+For instructions on locally building only the guides, see [Building locally](https://github.com/theforeman/foreman-documentation/blob/master/guides/README.md#building-locally).
 
 ## Deployment
 
