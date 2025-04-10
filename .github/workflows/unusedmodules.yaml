@@ -1,0 +1,44 @@
+name: repocheck
+
+on:
+  pull_request:
+    branches:
+      - master
+      - "[0-9]+.[0-9]+"
+
+jobs:
+  unusedmodules:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      - uses: jannekem/run-python-script-action@v1
+        with:
+          script: |
+            import os
+            import glob
+
+            modules_directory = "guides/common/modules"
+            list_of_files = []
+
+            for file in os.listdir(modules_directory):
+                list_of_files.append(os.path.basename(file))
+
+            list_of_assemblies = glob.glob("guides/common/assembly_*.adoc")
+            list_of_master_files = glob.glob("guides/*/master.adoc")
+            list_of_modules = glob.glob("guides/common/modules/*.adoc")
+            combined_lists = list_of_assemblies + list_of_master_files + list_of_modules
+
+            for assembly in combined_lists:
+                with open(assembly, "r") as f:
+                    for line in f:
+                        for file in list_of_files:
+                            if file in line.strip():
+                                list_of_files.remove(file)
+            print("The following unused modules were found.")
+            print("This check does not work for file includes that use an attribute.")
+            for i in list_of_files:
+                print(i)
+
