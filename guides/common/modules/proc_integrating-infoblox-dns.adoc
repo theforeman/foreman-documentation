@@ -1,0 +1,74 @@
+[id="integrating-infoblox-dns_{context}"]
+= Integrating Infoblox DNS
+
+Install the DNS Infoblox provider on {ProductName}.
+
+
+.Limitations
+* You can manage DNS entries only in a single network and view, and you cannot edit the view after you create it.
+
+* {ProductName} uses the standard HTTPS web API to communicate with Infoblox. By default, it communicates only with a single node. If you require high availability, configure this feature in Infoblox.
+
+* You cannot integrate the {Project} IP address management (IPAM) feature into Infoblox.
+
+
+.Prerequisites
+
+* You must have Infoblox account credentials to manage DHCP and DNS entries in {Project}.
+* Ensure that you have Infoblox administration roles with the names: `DHCP Admin` and `DNS Admin`.
+* The administration roles must have permissions or belong to an admin group that permits the accounts to perform tasks through the Infoblox API.
+
+
+.Procedure
+. Download the certificate from the Infoblox server:
++
+[options="nowrap" subs="+quotes"]
+----
+# update-ca-trust enable
+# openssl s_client -showcerts -connect _infoblox.example.com_:443 </dev/null | \
+openssl x509 -text >/etc/pki/ca-trust/source/anchors/infoblox.crt
+# update-ca-trust extract
+----
++
+The `_infoblox.example.com_` entry must match the host name for the Infoblox application in the X509 certificate.
+
+. Test the CA certificate by using a `curl` query:
++
+[options="nowrap" subs="+quotes"]
+----
+# curl -u admin:password https://_infoblox.example.com_/wapi/v2.0/network
+----
++
+Example positive response:
++
+[options="nowrap" subs="+quotes"]
+----
+[
+    {
+        "_ref": "network/ZG5zLm5ldHdvcmskMTkyLjE2OC4yMDIuMC8yNC8w:__infoblox.example.com__/24/default",
+        "network": "192.168.202.0/24",
+        "network_view": "default"
+    }
+]
+----
+
+. On {ProductName}, enter the following command to configure the Infoblox module:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foreman-installer} --enable-foreman-proxy-plugin-dns-infoblox \
+--foreman-proxy-dns true \
+--foreman-proxy-dns-provider infoblox \
+--foreman-proxy-plugin-dns-infoblox-dns-server _infoblox.example.com_ \
+--foreman-proxy-plugin-dns-infoblox-username _admin_ \
+--foreman-proxy-plugin-dns-infoblox-password _infoblox_ \
+--foreman-proxy-plugin-dns-infoblox-dns-view _default_
+----
++
+Optionally, you can change the value of the `--foreman-proxy-plugin-dns-infoblox-dns-view` option to specify an Infoblox DNS view other than the default view.
+. Optional: In the {ProjectWebUI}, navigate to *Infrastructure* > *{SmartProxies}*, select the {SmartProxy} with the Infoblox DNS module, and ensure that the *dns* feature is listed.
+. In the {ProjectWebUI}, navigate to *Infrastructure* > *Domains*.
+. For all domains managed through Infoblox, ensure that the *DNS Proxy* is set for those domains.
+. In the {ProjectWebUI}, navigate to *Infrastructure* > *Subnets*.
+. For all subnets managed through Infoblox, ensure that the *DNS {SmartProxy}* and *Reverse DNS {SmartProxy}* are set for those subnets.
+
