@@ -1,0 +1,59 @@
+@startuml
+
+!include foreman.pstyle
+!$networkboot = 1
+
+title Installer-based provisioning with subnet bootdisk on bare metal
+
+actor       User
+participant "Provisioned\nHost" as Host
+participant "Foreman" as Foreman
+participant "Foreman\nProxy" as Proxy
+'participant TFTP
+participant DHCP
+participant DNS
+!if ($puppet)
+participant "Puppet\nserver" as Puppet
+!endif
+
+note over Host : Powered off
+
+User -> Foreman : Download the boot disk of the subnet
+User -> User : Write the boot disk\nto an external storage device
+User -> Host : Configure to boot\nfrom the external storage device
+
+== Boot into OS installer ==
+
+User -> Host : Power on
+Host -> DHCP : Request the reserved IP address
+Host -> Host : Boot from the external storage device
+Host -> Host : Load boot loader
+User -> Host : Eliminate the external storage device\n(too soon?)
+Host -> Proxy : Get MAC-based boot-loader configuration
+Host -> Proxy : Download installer kernel\nand initial RAM disk
+Host -> Host : Load operating system installer
+Host -> Proxy : Request installer configuration
+group Template [Provision]
+   Proxy -> Proxy : Render installer configuration
+end
+Proxy -> Host : Get installer configuration
+!include prov-installation-media.iuml
+note over Host : Operating system installed
+!include prov-initial-configuration.iuml
+Host -> Foreman : Call home\n(disables build mode)
+
+Host -> Host : Reboot
+
+== First local boot ==
+
+!include prov-first-local-boot-hdd.iuml
+
+!if ($puppet)
+== First Puppet run ==
+
+!include puppet-run.iuml
+!endif
+
+note over Host : In operation
+
+@enduml
