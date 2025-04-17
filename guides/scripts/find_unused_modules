@@ -1,0 +1,50 @@
+#!/usr/bin/env ruby
+
+# frozen_string_literal: true
+
+require 'asciidoctor'
+
+BUILDS = %w[
+  foreman-el
+  foreman-deb
+  katello
+  satellite
+  orcharhino
+].freeze
+
+BASE_DIR = File.dirname(__dir__)
+
+included = Set.new
+
+Dir.glob(File.join(BASE_DIR, '*', 'master.adoc')).each do |path|
+  BUILDS.each do |build|
+    doc = Asciidoctor.load_file(
+      path,
+      doctype: :book,
+      safe: :safe,
+      base_dir: File.dirname(path),
+      attributes: { 'build' => build }
+    )
+
+    included += doc.catalog[:includes].keys
+  end
+end
+
+modules = Dir.glob(File.join(BASE_DIR, 'common', 'modules', '**', '*.adoc'))
+assemblies = Dir.glob(File.join(BASE_DIR, 'common', 'assembly_*.adoc'))
+absolute_included = included.map { |path| File.join(BASE_DIR, "#{path}.adoc") }
+
+doc_root = Pathname.new(File.dirname(BASE_DIR))
+
+unused = ((modules + assemblies) - absolute_included).map do |path|
+  Pathname.new(path).relative_path_from(doc_root).to_s
+end
+
+if unused.any?
+  puts unused
+  if ENV.key?('GITHUB_ACTIONS')
+    unused.each do |file|
+      puts "::warning file=#{file}::File is unused"
+    end
+  end
+end
