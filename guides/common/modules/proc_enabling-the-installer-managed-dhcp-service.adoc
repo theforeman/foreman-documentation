@@ -1,0 +1,66 @@
+[id="enabling-the-installer-managed-dhcp-service"]
+= Enabling the installer-managed DHCP service
+
+If you do not have a DHCP server available in your network, you can use the installer-managed DHCP service. This feature enables you to provide a DHCP service with a low maintenance effort.
+
+Perform the steps on the {Project} or {SmartProxyServer} that you want to configure to manage the DHCP service for the subnet.
+
+
+.Prerequisites
+
+* You know the following network information:
+** The range of IP addresses the DHCP should manage
+** The IP address of the default gateway in the subnet
+** The IP addresses of the name servers for the subnet
+
+
+.Procedure
+
+. Backup the answer files:
++
+[options="nowrap",subs="+quotes,attributes"]
+....
+# mkdir /root/backup-answer-files/
+# cp -p /etc/foreman-installer/scenarios.d/*-answers.yml /root/backup-answer-files/
+....
+
+. Configure {Project} or {SmartProxy} as DHCP server:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foreman-installer} \
+--foreman-proxy-dhcp true \
+--foreman-proxy-dhcp-managed true \
+--foreman-proxy-dhcp-range "192.0.2.100 192.0.2.150" \
+--foreman-proxy-dhcp-gateway 192.0.2.1 \
+--foreman-proxy-dhcp-nameservers 192.0.2.2
+----
+
+. For each affected {SmartProxy}, update the configuration of that {SmartProxy} in the {ProjectWebUI}. See xref:associating-the-dhcp-service-with-a-subnet[].
+
+. Secure the `dhcpd` API on the {SmartProxy} by using an OMAPI key:
+
+.. On your {SmartProxy}, install the required packages:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {project-package-install} {bind-package}
+----
+
+.. Generate a key:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# dnssec-keygen -r /dev/urandom -a HMAC-MD5 -b 512 -n HOST omapi_key
+# cat Komapi_key.+*.private | grep ^Key|cut -d ' ' -f2-
+----
+
+. Use `{foreman-installer}` to secure the `dhcpd` API:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {foreman-installer} \
+--foreman-proxy-dhcp-key-name "_<key_name>_" \
+--foreman-proxy-dhcp-key-secret "_<key_secret>_"
+----
+
