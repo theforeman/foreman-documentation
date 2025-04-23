@@ -1,0 +1,94 @@
+[id="integrating-a-generic-rfc-2136-compatible-remote-dns-server"]
+= Integrating a generic RFC 2136-compatible remote DNS server
+
+You can configure {ProductName} to integrate a remote DNS server that supports dynamic updates as defined in RFC 2136.
+In this case, {ProductName} uses the `nsupdate` utility to update DNS records on the remote server.
+
+
+.Prerequisites
+* The remote DNS service is configured.
+* The remote DNS service supports RFC 2136-compatible dynamic updates
+
+
+.Procedure
+. Copy the `/etc/rndc.key` file from the external DNS server to {ProductName}:
++
+[options="nowrap" subs="+quotes"]
+----
+# scp root@_dns.example.com_:/etc/rndc.key /etc/foreman-proxy/rndc.key
+----
+
+. Configure the ownership, permissions, and SELinux context:
++
+[options="nowrap"]
+----
+ifndef::foreman-deb[]
+# restorecon -v /etc/foreman-proxy/rndc.key
+endif::[]
+# chown -v root:foreman-proxy /etc/foreman-proxy/rndc.key
+# chmod -v 640 /etc/foreman-proxy/rndc.key
+----
+
+. On {ProjectServer}, create a test DNS entry for a host.
+For example, host `_test.example.com_` with an A record of `192.168.25.20` on the IdM server at `192.168.25.1`.
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# echo -e "server 192.168.25.1\n \
+update add _test.example.com_ 3600 IN A 192.168.25.20\n \
+send\n" | nsupdate -k /etc/foreman-proxy/rndc.key
+----
+
+. On {ProjectServer}, verify that you can query the new DNS entry:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# host _test.example.com_ 192.168.25.1
+----
++
+Example output:
++
+[source, none, options="nowrap", subs="+quotes,attributes"]
+----
+Using domain server:
+Name: 192.168.25.1
+Address: 192.168.25.1#53
+Aliases: 
+
+test.example.com has address 192.168.25.20
+----
+
+. If resolved successfully, remove the test DNS entry:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# echo -e "server 192.168.25.1\n \
+update delete _test.example.com_ 3600 IN A 192.168.25.20\n \
+send\n" | nsupdate -k /etc/foreman-proxy/rndc.key
+----
+
+. Confirm that the DNS entry was removed:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# host _test.example.com_ 192.168.25.1
+----
++
+If the command returns `Host _test.example.com_ not found: 3(NXDOMAIN)`, the record was successfully deleted.
+
+
+. Configure {ProjectServer} to use the DNS server:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# {foreman-installer} \
+--foreman-proxy-dns true \
+--foreman-proxy-dns-managed false \
+--foreman-proxy-dns-provider nsupdate \
+--foreman-proxy-dns true \
+--foreman-proxy-dns-server "_<dns_server_ip_address>_" \
+--foreman-proxy-keyfile /etc/foreman-proxy/rndc.key
+----
+
+. For each affected {SmartProxy}, update the configuration of that {SmartProxy} in the {ProjectWebUI}. See xref:associating-the-dns-service-with-a-domain-and-subnet[].
+
