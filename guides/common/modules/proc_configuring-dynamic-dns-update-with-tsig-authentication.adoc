@@ -65,24 +65,16 @@ Enter the following command:
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
-# scp /etc/rndc.key root@_{foreman-example-com}_:/etc/rndc.key
+# scp /etc/rndc.key root@_{foreman-example-com}_:/etc/foreman-proxy/rndc.key
 ----
 
 . To set the correct ownership, permissions, and SELinux context for the `rndc.key` file, enter the following command:
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
-# restorecon -v /etc/rndc.key
-# chown -v root:named /etc/rndc.key
-# chmod -v 640 /etc/rndc.key
-----
-
-.  Assign the `foreman-proxy` user to the `named` group manually.
-Normally, {foreman-installer} ensures that the `foreman-proxy` user belongs to the `named` UNIX group, however, in this scenario {Project} does not manage users and groups, therefore you need to assign the `foreman-proxy` user to the `named` group manually.
-+
-[options="nowrap"]
-----
-# usermod -a -G named foreman-proxy
+# restorecon -v /etc/foreman-proxy/rndc.key
+# chown -v root:foreman-proxy /etc/foreman-proxy/rndc.key
+# chmod -v 640 /etc/foreman-proxy/rndc.key
 ----
 
 . On {ProjectServer}, enter the following `{foreman-installer}` command to configure {Project} to use the external DNS server:
@@ -95,20 +87,10 @@ Normally, {foreman-installer} ensures that the `foreman-proxy` user belongs to t
 --foreman-proxy-dns-server="_IdM_Server_IP_Address_" \
 --foreman-proxy-dns-ttl=86400 \
 --foreman-proxy-dns=true \
---foreman-proxy-keyfile=/etc/rndc.key
+--foreman-proxy-keyfile=/etc/foreman-proxy/rndc.key
 ----
 
 .Testing external updates to the DNS zone in the IdM server
-
-. Ensure that the key in the `/etc/rndc.key` file on {ProjectServer} is the same key file that is used on the IdM server:
-+
-[source,none, options="nowrap" subs="+quotes,attributes"]
-----
-key "rndc-key" {
-        algorithm hmac-md5;
-        secret "_secret-key_==";
-};
-----
 
 . On {ProjectServer}, create a test DNS entry for a host.
 For example, host `_test.example.com_` with an A record of `192.168.25.20` on the IdM server at `192.168.25.1`.
@@ -117,7 +99,7 @@ For example, host `_test.example.com_` with an A record of `192.168.25.20` on th
 ----
 # echo -e "server 192.168.25.1\n \
 update add _test.example.com_ 3600 IN A 192.168.25.20\n \
-send\n" | nsupdate -k /etc/rndc.key
+send\n" | nsupdate -k /etc/foreman-proxy/rndc.key
 ----
 
 . On {ProjectServer}, test the DNS entry:
@@ -147,7 +129,7 @@ Click the name of the zone and search for the host by name.
 ----
 # echo -e "server 192.168.25.1\n \
 update delete _test.example.com_ 3600 IN A 192.168.25.20\n \
-send\n" | nsupdate -k /etc/rndc.key
+send\n" | nsupdate -k /etc/foreman-proxy/rndc.key
 ----
 
 . Confirm that the DNS entry was removed:
