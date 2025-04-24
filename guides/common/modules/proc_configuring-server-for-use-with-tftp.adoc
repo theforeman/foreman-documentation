@@ -1,38 +1,34 @@
 [id="configuring-server-for-use-with-tftp"]
 = Configuring {ProductName} for use with tftp
 
-You can configure {ProductName} with external TFTP services.
+After you prepared the TFTP server and shared the root directory of the TFTP service over the network, integrate the service into {Project}.
 
 
 .Prerequisites
 * You configured the TFTP server.
-* You shared the `/var/lib/tftpboot` on the TFTP server with NFS.
+* You shared the `/exports/var/lib/tftpboot` on the TFTP server with NFS.
 
 
 .Procedure
-. Associate the TFTP service with the appropriate subnets.
-
-. For each affected {SmartProxy}, update the configuration of that {SmartProxy} in the {ProjectWebUI}. See xref:associating-the-tftp-service-with-a-subnet[].
-
-. Create the TFTP directory for NFS:
+. Create the directory into which you later mount the NFS share:
 +
 [options="nowrap"]
 ----
 # mkdir -p /mnt/nfs/var/lib/tftpboot
 ----
 
-. In the `/etc/fstab` file, add the following line:
+. Edit the `/etc/fstab` file, and add entry for the NFS share to mount them automatically when the system boots:
 +
 [options="nowrap" subs="+quotes"]
 ----
-_TFTP_Server_IP_Address_:/exports/var/lib/tftpboot /mnt/nfs/var/lib/tftpboot nfs rw,vers=3,auto,nosharecache,context="system_u:object_r:tftpdir_rw_t:s0" 0 0
+_<tftp_server_fqdn>_:/exports/var/lib/tftpboot  /mnt/nfs/var/lib/tftpboot  nfs  rw,vers=3,auto,nosharecache,context="system_u:object_r:tftpdir_rw_t:s0"  0 0
 ----
 
-. Mount the file systems in `/etc/fstab`:
+. Mount the NFS share:
 +
 [options="nowrap"]
 ----
-# mount -a
+# mount /mnt/nfs/var/lib/tftpboot/
 ----
 
 . Configure {ProjectServer} or {SmartProxyServer} to use the TFTP server:
@@ -40,14 +36,11 @@ _TFTP_Server_IP_Address_:/exports/var/lib/tftpboot /mnt/nfs/var/lib/tftpboot nfs
 [options="nowrap" subs="+quotes,attributes"]
 ----
 # {foreman-installer} \
+--foreman-proxy-managed false \
+--foreman-proxy-tftp true \
 --foreman-proxy-tftp-root /mnt/nfs/var/lib/tftpboot \
---foreman-proxy-tftp true
+--foreman-proxy-tftp-servername _<tftp_server_fqdn>
 ----
 
-. If the TFTP service is running on a different server than the DHCP service, update the `tftp_servername` setting with the FQDN or IP address of the server that the TFTP service is running on:
-+
-[options="nowrap" subs="+quotes,attributes"]
-----
-# {foreman-installer} --foreman-proxy-tftp-servername _TFTP_Server_FQDN_
-----
+. For each affected {SmartProxy}, update the configuration of that {SmartProxy} in the {ProjectWebUI}. See xref:associating-the-tftp-service-with-a-subnet[].
 

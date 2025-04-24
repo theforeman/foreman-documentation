@@ -7,39 +7,45 @@ Install the DNS Infoblox provider on {ProductName}.
 .Limitations
 * You can manage DNS entries only in a single network and view, and you cannot edit the view after you create it.
 
-* {ProductName} uses the standard HTTPS web API to communicate with Infoblox. By default, it communicates only with a single node. If you require high availability, configure this feature in Infoblox.
+* {ProductName} uses the standard HTTPS web API to communicate with Infoblox.
+By default, it communicates only with a single node.
+If you require high availability, configure this feature in Infoblox.
 
 * You cannot integrate the {Project} IP address management (IPAM) feature into Infoblox.
 
 
 .Prerequisites
 
-* You must have Infoblox account credentials to manage DHCP and DNS entries in {Project}.
-* Ensure that you have Infoblox administration roles with the names: `DHCP Admin` and `DNS Admin`.
-* The administration roles must have permissions or belong to an admin group that permits the accounts to perform tasks through the Infoblox API.
+* You have an Infoblox account with the roles `DHCP Admin` and `DNS Admin`.
+* The Infoblox roles have permissions or belong to an admin group that permits the accounts to perform tasks through the Infoblox API.
 
 
 .Procedure
-. Download the certificate from the Infoblox server:
+. Download the certificate from the Infoblox server, and store it in the `/etc/pki/ca-trust/source/anchors/infoblox.crt` file:
 +
 [options="nowrap" subs="+quotes"]
 ----
-# update-ca-trust enable
 # openssl s_client -showcerts -connect _infoblox.example.com_:443 </dev/null | \
 openssl x509 -text >/etc/pki/ca-trust/source/anchors/infoblox.crt
-# update-ca-trust extract
 ----
 +
-The `_infoblox.example.com_` entry must match the host name for the Infoblox application in the X509 certificate.
+The hostname must match the one for the Infoblox application in the X.509 certificate.
 
-. Test the CA certificate by using a `curl` query:
+. Add the Infoblox certificate to the system trust store:
 +
 [options="nowrap" subs="+quotes"]
 ----
-# curl -u admin:password https://_infoblox.example.com_/wapi/v2.0/network
+# update-ca-trust extract
+----
+
+. Test the CA certificate by using it in a query to the Infoblox API:
++
+[options="nowrap" subs="+quotes"]
+----
+# curl -u admin:_<password>_ https://_infoblox.example.com_/wapi/v2.0/network
 ----
 +
-Example positive response:
+Example of a positive response:
 +
 [options="nowrap" subs="+quotes"]
 ----
@@ -52,7 +58,7 @@ Example positive response:
 ]
 ----
 
-. On {ProductName}, enter the following command to configure the Infoblox module:
+. Configure {ProjectServer} or {SmartProxyServer} to connect to the Infoblox DNS service: 
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
@@ -70,6 +76,13 @@ Omit the `--foreman-proxy-plugin-dns-infoblox-dns-view` option if you use the `d
 . For each affected {SmartProxy}, update the configuration of that {SmartProxy} in the {ProjectWebUI}. See xref:associating-the-dns-service-with-a-domain-and-subnet[].
 
 
-. Verification
+.Verification
 
-* In the {ProjectWebUI}, navigate to *Infrastructure* > *{SmartProxies}*, select the {SmartProxy} with the Infoblox DNS module, and ensure that the *dns* feature is listed.
+. Log in to the {ProjectWebUI}.
+
+. Navigate to *Infrastructure* > *{SmartProxies}*.
+
+. Select the {SmartProxy} with the Infoblox DNS module.
+
+. Verify that the *dns* feature is listed.
+

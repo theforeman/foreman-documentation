@@ -1,101 +1,101 @@
 [id="integrating-idm-dns-update-with-gss-tsig-authentication"]
-= Integrating IdM DNS with GSS-TSIG authentication
+= Integrating {FreeIPA} DNS with GSS-TSIG authentication
 
-You can configure the IdM server to use the generic security service algorithm for secret key transaction (GSS-TSIG) technology defined in https://tools.ietf.org/html/rfc3645[RFC3645].
-To configure the IdM server to use the GSS-TSIG technology, you must install the IdM client on the {ProductName} base operating system.
+You can configure the {FreeIPA} server to use the generic security service algorithm for secret key transaction (GSS-TSIG) technology defined in https://tools.ietf.org/html/rfc3645[RFC3645].
+To configure the {FreeIPA} server to use the GSS-TSIG technology, you must install the {FreeIPA} client on the {ProductName} base operating system.
+
 
 .Prerequisites
 
-* You must ensure the IdM server is deployed and the host-based firewall is configured correctly.
-ifdef::satellite[]
-For more information, see {RHELDocsBaseURL}9/html/installing_identity_management/preparing-the-system-for-ipa-server-installation_installing-identity-management#port-requirements-for-idm_preparing-the-system-for-ipa-server-installation[Port requirements for IdM] in _{RHEL}{nbsp}9 Installing Identity Management_.
-endif::[]
-* You must contact the IdM server administrator to ensure that you obtain an account on the IdM server with permissions to create zones on the IdM server.
-* You should create a backup of the answer file.
-You can use the backup to restore the answer file to its original state if it becomes corrupted.
+* The {FreeIPA} server is deployed and functional.
+* The firewall on the {FreeIPA} server allows access to the required ports.
 ifndef::orcharhino[]
-For more information, see {InstallingServerDocURL}configuring-server_{project-context}[Configuring {ProjectServer}].
+See {RHELDocsBaseURL}/9/html/installing_identity_management/preparing-the-system-for-ipa-server-installation_installing-identity-management#port-requirements-for-idm_preparing-the-system-for-ipa-server-installation[Port requirements for {FreeIPA}] in the _{RHEL}{nbsp}9 Installing Identity Management guide_.
 endif::[]
+* You use an {FreeIPA} account that has permissions to create zones on the {FreeIPA} server.
+
 
 .Procedure
-To configure dynamic DNS update with GSS-TSIG authentication, complete the following steps:
 
-.Creating a Kerberos principal on the IdM server
+. Create a Kerberos principal on the {FreeIPA} server:
 
-. Obtain a Kerberos ticket for the account obtained from the IdM administrator:
+.. Obtain a Kerberos ticket:
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
-# kinit _idm_user_
+# kinit _<{FreeIPA}_user>_
 ----
 
-. Create a new Kerberos principal for {ProductName} to use to authenticate on the IdM server:
+.. Create a new Kerberos principal {ProductName} to use to authenticate on the {FreeIPA} server:
+
+*** For a {ProjectServer}, enter:
 +
-ifeval::["{context}" == "{smart-proxy-context}"]
-[options="nowrap" subs="+quotes,attributes"]
-----
-# ipa service-add _{smartproxy-example-com}_
-----
-endif::[]
-ifeval::["{context}" == "{project-context}"]
 [options="nowrap" subs="+quotes,attributes"]
 ----
 # ipa service-add _{smart-proxy-principal}/{foreman-example-com}_
 ----
-endif::[]
 
-.Installing and configuring the idM client
+*** For a {SmartProxyServer}, enter:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# ipa service-add _{smartproxy-example-com}_
+----
 
-. On the base operating system of either the {Project} or {SmartProxy} that is managing the DNS service for your deployment, install the `ipa-client` package:
+
+. Install and configure the {FreeIPA} client on either the {Project} or {SmartProxy} that is managing the DNS service for your deployment:
+
+.. Install the `ipa-client` package:
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
 # {project-package-install} ipa-client
 ----
 
-. Configure the IdM client by running the installation script and following the on-screen prompts:
+.. Install the {FreeIPA} client:
 +
 [options="nowrap"]
 ----
 # ipa-client-install
 ----
++
+Follow the on-screen prompts.
 
-. Obtain a Kerberos ticket:
+.. Obtain a Kerberos ticket:
 +
 [options="nowrap"]
 ----
 # kinit admin
 ----
 
-. Remove any preexisting `keytab`:
+.. Remove any preexisting `keytab`:
 +
 [options="nowrap"]
 ----
 # rm /etc/foreman-proxy/dns.keytab
 ----
 
-. Obtain the `keytab` for this system:
+.. Obtain a `keytab` file for this system:
 +
-
 [options="nowrap" subs="+quotes,attributes"]
 ----
 # ipa-getkeytab -p {smart-proxy-principal}/_{foreman-example-com}@EXAMPLE.COM_ \
--s _idm1.example.com_ -k /etc/foreman-proxy/dns.keytab
+-s _server.example.com_ -k /etc/foreman-proxy/dns.keytab
 ----
 +
 [NOTE]
 ====
 When adding a keytab to a standby system with the same host name as the original system in service, add the `r` option to prevent generating new credentials and rendering the credentials on the original system invalid.
 ====
-+
-. For the `dns.keytab` file, set the group and owner to `foreman-proxy`:
+
+.. Set the owner and group of the `/etc/foreman-proxy/dns.keytab` to `foreman-proxy`:
 +
 [options="nowrap"]
 ----
 # chown foreman-proxy:foreman-proxy /etc/foreman-proxy/dns.keytab
 ----
 
-. Optional: To verify that the `keytab` file is valid, enter the following command:
+.. Optional: Verify that the `keytab` file is valid:
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
@@ -103,14 +103,15 @@ When adding a keytab to a standby system with the same host name as the original
 {smart-proxy-principal}/_{foreman-example-com}@EXAMPLE.COM_
 ----
 
-.Configuring DNS zones in the IdM web UI
+. Add a forward DNS zone in the {FreeIPA} web UI:
 
-. Create and configure the zone that you want to manage:
 .. Navigate to *Network Services* > *DNS* > *DNS Zones*.
-.. Select *Add* and enter the zone name.
+
+.. Select *Add*, and enter the zone name.
 For example, `example.com`.
+
 .. Click *Add and Edit*.
-.. Click the Settings tab and in the *BIND update policy* box, add the following to the semi-colon separated list:
+.. On the *Settings* tab, append the following to the semicolon-separated list in the *BIND update policy* field:
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
@@ -118,15 +119,22 @@ grant {smart-proxy-principal}\047__{foreman-example-com}@EXAMPLE.COM__ wildcard 
 ----
 
 .. Set *Dynamic update* to *True*.
+
 .. Enable *Allow PTR sync*.
+
 .. Click *Save* to save the changes.
 
-. Create and configure the reverse zone:
+. Add a reverse DNS zone in the {FreeIPA} web UI:
+
 .. Navigate to *Network Services* > *DNS* > *DNS Zones*.
+
 .. Click *Add*.
-.. Select *Reverse zone IP network* and add the network address in CIDR format to enable reverse lookups.
+
+.. Select *Reverse zone IP network*, and add the network address in CIDR format to enable reverse lookups.
+
 .. Click *Add and Edit*.
-.. Click the *Settings* tab and in the *BIND update policy* box, add the following to the semi-colon separated list:
+
+.. On the *Settings* tab, append the following to the semicolon-separated list in the *BIND update policy* field:
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
@@ -134,22 +142,21 @@ grant {smart-proxy-principal}\047__{foreman-example-com}@EXAMPLE.COM__ wildcard 
 ----
 
 .. Set *Dynamic update* to *True*.
+
 .. Click *Save* to save the changes.
 
-
-.Configuring the {Project} or {SmartProxyServer} that manages the DNS service for the domain
-
-. Configure your {ProjectServer} or {SmartProxyServer} to connect to your DNS service:
+. Configure {ProjectServer} or {SmartProxyServer} to connect to the {FreeIPA} DNS service:
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
 # {foreman-installer} \
 --foreman-proxy-dns-managed false \
 --foreman-proxy-dns-provider nsupdate_gss \
---foreman-proxy-dns-server "_idm1.example.com_" \
+--foreman-proxy-dns-server "_server.example.com_" \
 --foreman-proxy-dns-tsig-keytab /etc/foreman-proxy/dns.keytab \
 --foreman-proxy-dns-tsig-principal "{smart-proxy-principal}/_{foreman-example-com}@EXAMPLE.COM_" \
 --foreman-proxy-dns true
 ----
+
 . For each affected {SmartProxy}, update the configuration of that {SmartProxy} in the {ProjectWebUI}. See xref:associating-the-dns-service-with-a-domain-and-subnet[].
 
