@@ -1,0 +1,45 @@
+[id="integrating-idm-dns-with-tsig-authentication"]
+= Integrating {FreeIPA} DNS with TSIG authentication
+
+You can configure {FreeIPA} to use the secret key transaction authentication for DNS (TSIG) technology that uses a key file for authentication.
+The TSIG protocol is defined in https://tools.ietf.org/html/rfc2845[RFC2845].
+
+.Prerequisites
+* The {FreeIPA} server is deployed and functional.
+* The firewall on the {FreeIPA} server allows access to the required ports.
+ifndef::orcharhino[]
+See {RHELDocsBaseURL}9/html/installing_identity_management/preparing-the-system-for-ipa-server-installation_installing-identity-management#port-requirements-for-idm_preparing-the-system-for-ipa-server-installation[Port requirements for {FreeIPA}] in the _{RHEL}{nbsp}9 Installing Identity Management guide_.
+endif::[]
+* You have `root` access on the {FreeIPA} server.
+
+.Procedure
+. Perform the following steps on the {FreeIPA} Server:
+.. Insert the following settings at the top of the `/etc/named.conf` file:
++
+[source, none, options="nowrap" subs="+quotes,attributes"]
+----
+include "/etc/rndc.key";
+controls {
+    inet _{FreeIPA}_server_ip_address_ port 953 allow { _{Project}_ip_address_; } keys { "rndc-key"; };
+};
+----
+.. Reload the `named` service:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# systemctl reload named
+----
+. In the {FreeIPA} web UI:
+.. Navigate to *Network Services* > *DNS* > *DNS Zones*
+.. Click the name of the zone.
+.. Open the *Settings* tab.
+.. Enter in the *BIND update policy* field:
++
+[source, none, options="nowrap"]
+----
+grant "rndc-key" zonesub ANY;
+----
+.. Set *Dynamic update* to *True*.
+.. Click *Update* to save the changes.
+. Configure dynamic DNS updates in {ProjectServer} or {SmartProxyServer}.
+For more information, see xref:integrating-a-generic-rfc-2136-compatible-remote-dns-server[].

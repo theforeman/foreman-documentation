@@ -1,0 +1,91 @@
+[id="configuring-server-or-proxy-for-use-with-isc-dhcp"]
+= Configuring {ProjectServer} or {SmartProxyServer} for use with ISC DHCP
+
+You can configure {ProductName} with a non-installer-managed DHCP server. Perform the steps on the {ProjectServer} or {SmartProxyServer}.
+
+.Prerequisites
+* You configured the DHCP service and shared the configuration and lease files over the network.
+For more information, see xref:configuring-isc-dhcp-to-use-with-server[].
+
+.Procedure
+. Install the required package:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {project-package-install} {nfs-client-package}
+----
+. Create the directories into which you later mount the NFS shares:
++
+[options="nowrap"]
+----
+# mkdir -p /mnt/nfs/etc/dhcp /mnt/nfs/var/lib/dhcpd
+----
+. Set the owner of the `/mnt/nfs` and sub-directories to `foreman-proxy`:
++
+[options="nowrap"]
+----
+# chown -R foreman-proxy /mnt/nfs
+----
+. Verify that the NFS server exports the required directories:
++
+[options="nowrap" subs="+quotes"]
+----
+# showmount -e _DHCP_Server_FQDN_
+----
+. Edit the `/etc/fstab` file, and add entries for the NFS shares to mount them automatically when the system boots:
++
+[options="nowrap" subs="+quotes"]
+----
+_dhcp_server_fqdn_:/exports/etc/dhcp       /mnt/nfs/etc/dhcp       nfs  ro,vers=3,auto,nosharecache,context="system_u:object_r:dhcp_etc_t:s0"     0 0
+
+_dhcp_server_fqdn_:/exports/var/lib/dhcpd  /mnt/nfs/var/lib/dhcpd  nfs  ro,vers=3,auto,nosharecache,context="system_u:object_r:dhcpd_state_t:s0"  0 0
+----
+. Mount the NFS shares:
++
+[options="nowrap"]
+----
+# mount /mnt/nfs/etc/dhcp/
+# mount /mnt/nfs/var/lib/dhcpd/
+----
+. Optional: Verify that the `foreman-proxy` user can access the files on the NFS server:
+.. Switch to the `foreman-proxy` user:
++
+[options="nowrap"]
+----
+# su foreman-proxy -s /bin/bash
+----
+.. Display the `/mnt/nfs/etc/dhcp/dhcpd.conf` file:
++
+[options="nowrap"]
+----
+$ cat /mnt/nfs/etc/dhcp/dhcpd.conf
+----
+.. Display the `/mnt/nfs/var/lib/dhcpd/dhcpd.leases` file:
++
+[options="nowrap"]
+----
+$ cat /mnt/nfs/var/lib/dhcpd/dhcpd.leases
+----
+.. Log out the `foreman-proxy` user to switch back to the `root` user:
++
+[options="nowrap"]
+----
+$ exit
+----
+. Configure {ProjectServer} or {SmartProxyServer} to use the DHCP server:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foreman-installer} \
+--foreman-proxy-dhcp true \
+--foreman-proxy-dhcp-provider remote_isc \
+--enable-foreman-proxy-plugin-dhcp-remote-isc \
+--foreman-proxy-dhcp-server _dhcp_server_fqdn_ \
+--foreman-proxy-plugin-dhcp-remote-isc-dhcp-config /mnt/nfs/etc/dhcp/dhcpd.conf \
+--foreman-proxy-plugin-dhcp-remote-isc-dhcp-leases /mnt/nfs/var/lib/dhcpd/dhcpd.leases \
+--foreman-proxy-plugin-dhcp-remote-isc-key-name omapi_key \
+--foreman-proxy-plugin-dhcp-remote-isc-key-secret _key_secret_ \
+--foreman-proxy-plugin-dhcp-remote-isc-omapi-port 7911
+----
+. For each affected {SmartProxy}, update the configuration of that {SmartProxy} in the {ProjectWebUI}.
+For more information, see xref:associating-the-dhcp-service-with-a-subnet[].
