@@ -19,6 +19,7 @@ For an overview of what to expect from editorial review, see [Red Hat peer revie
 * try to review PRs in a timely manner.
 * keep non-trivial PRs open for at least 24 hours (72 hours if over the weekend) to allow for input from the community.
 Examples of trivial PRs: Fixing a typo, fixing markup, or fixing links.
+Non-trivial PRs might not only benefit from additional review but they also represent an opportunity for community members to ask questions and learn.
 
 ## Contributors
 
