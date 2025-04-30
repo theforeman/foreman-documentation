@@ -1,0 +1,128 @@
+[id="integrating-idm-dns-update-with-gss-tsig-authentication"]
+= Integrating {FreeIPA} DNS with GSS-TSIG authentication
+
+You can configure the {FreeIPA} server to use the generic security service algorithm for secret key transaction (GSS-TSIG) technology defined in https://tools.ietf.org/html/rfc3645[RFC3645].
+To configure the {FreeIPA} server to use the GSS-TSIG technology, you must install the {FreeIPA} client on the {ProductName} base operating system.
+
+.Prerequisites
+* The {FreeIPA} server is deployed and functional.
+* The firewall on the {FreeIPA} server allows access to the required ports.
+ifndef::orcharhino[]
+For more information, see {RHELDocsBaseURL}/9/html/installing_identity_management/preparing-the-system-for-ipa-server-installation_installing-identity-management#port-requirements-for-idm_preparing-the-system-for-ipa-server-installation[Port requirements for IdM] in _{RHEL}{nbsp}9 Installing Identity Management_.
+endif::[]
+* The {FreeIPA} account has permissions to create zones on the {FreeIPA} server.
+
+.Procedure
+. Create a Kerberos principal on the {FreeIPA} server:
+.. Obtain a Kerberos ticket:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# kinit _My_{FreeIPA}_User_
+----
+.. Create a new Kerberos principal {ProductName} to use to authenticate on the {FreeIPA} server:
+*** For a {ProjectServer}, enter:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# ipa service-add _{smart-proxy-principal}/{foreman-example-com}_
+----
+*** For a {SmartProxyServer}, enter:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# ipa service-add _{smartproxy-example-com}_
+----
+. Install and configure the {FreeIPA} client on either the {Project} or {SmartProxy} that is managing the DNS service for your deployment:
+.. Install the `ipa-client` package:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {project-package-install} ipa-client
+----
+.. Install the {FreeIPA} client:
++
+[options="nowrap"]
+----
+# ipa-client-install
+----
++
+Follow the on-screen prompts.
+.. Obtain a Kerberos ticket:
++
+[options="nowrap"]
+----
+# kinit admin
+----
+.. Remove any preexisting `keytab`:
++
+[options="nowrap"]
+----
+# rm --force /etc/foreman-proxy/dns.keytab
+----
+.. Obtain a `keytab` file for this system:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# ipa-getkeytab -p {smart-proxy-principal}/_{foreman-example-com}@EXAMPLE.COM_ \
+-s _{freeipaserver-example-com}_ -k /etc/foreman-proxy/dns.keytab
+----
++
+[NOTE]
+====
+When adding a keytab to a standby system with the same host name as the original system in service, add the `r` option to prevent generating new credentials and rendering the credentials on the original system invalid.
+====
+.. Set the owner and group of the `/etc/foreman-proxy/dns.keytab` to `foreman-proxy`:
++
+[options="nowrap"]
+----
+# chown foreman-proxy:foreman-proxy /etc/foreman-proxy/dns.keytab
+----
+.. Optional: Verify that the `keytab` file is valid:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# kinit -kt /etc/foreman-proxy/dns.keytab \
+{smart-proxy-principal}/_{foreman-example-com}@EXAMPLE.COM_
+----
+. Add a forward DNS zone in the {FreeIPA} web UI:
+.. Navigate to *Network Services* > *DNS* > *DNS Zones*.
+.. Select *Add*, and enter the zone name.
+For example, `example.com`.
+.. Click *Add and Edit*.
+.. On the *Settings* tab, append the following to the semicolon-separated list in the *BIND update policy* field:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+grant {smart-proxy-principal}\047__{foreman-example-com}@EXAMPLE.COM__ wildcard * ANY;
+----
+.. Set *Dynamic update* to *True*.
+.. Enable *Allow PTR sync*.
+.. Click *Save* to save the changes.
+. Add a reverse DNS zone in the {FreeIPA} web UI:
+.. Navigate to *Network Services* > *DNS* > *DNS Zones*.
+.. Click *Add*.
+.. Select *Reverse zone IP network*, and add the network address in CIDR format to enable reverse lookups.
+.. Click *Add and Edit*.
+.. On the *Settings* tab, append the following to the semicolon-separated list in the *BIND update policy* field:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+grant {smart-proxy-principal}\047__{foreman-example-com}@EXAMPLE.COM__ wildcard * ANY;
+----
+.. Set *Dynamic update* to *True*.
+.. Click *Save* to save the changes.
+. Configure {ProjectServer} or {SmartProxyServer} to connect to the {FreeIPA} DNS service:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foreman-installer} \
+--foreman-proxy-dns true \
+--foreman-proxy-dns-provider nsupdate_gss \
+--foreman-proxy-dns-managed false \
+--foreman-proxy-dns-server "_{freeipaserver-example-com}_" \
+--foreman-proxy-dns-tsig-keytab /etc/foreman-proxy/dns.keytab \
+--foreman-proxy-dns-tsig-principal "{smart-proxy-principal}/_{foreman-example-com}@EXAMPLE.COM_"
+----
+. For each affected {SmartProxy}, update the configuration of that {SmartProxy} in the {ProjectWebUI}.
+For more information, see xref:associating-the-dns-service-with-a-domain-and-subnet[].
