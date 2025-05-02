@@ -212,7 +212,7 @@
 <h1>Tuning performance of orcharhino</h1>
 <div class="details">
 <span id="revnumber">version 6.11,</span>
-<span id="revdate">published Apr 30 2025</span>
+<span id="revdate">published May 02 2025</span>
 </div>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
@@ -232,20 +232,15 @@
 <li><a href="#Applying_configurations_performance-tuning">5.1. Applying configurations</a></li>
 <li><a href="#Puma_Tunings_performance-tuning">5.2. Puma tunings</a>
 <ul class="sectlevel3">
-<li><a href="#Puma_Threads_performance-tuning">5.2.1. Puma threads</a></li>
-<li><a href="#Puma_Workers_and_Threads_Auto_Tuning_performance-tuning">5.2.2. Puma workers and threads auto-tuning</a></li>
-<li><a href="#Manually_tuning_Puma_workers_and_threads_count_performance-tuning">5.2.3. Manually tuning Puma workers and threads count</a></li>
-<li><a href="#Puma_Workers_and_Threads_Recommendations_performance-tuning">5.2.4. Puma workers and threads recommendations</a></li>
-<li><a href="#Configuring_Puma_Workers_performance-tuning">5.2.5. Configuring Puma workers</a></li>
-<li><a href="#Configuring_Puma_Threads_performance-tuning">5.2.6. Configuring Puma threads</a></li>
-<li><a href="#Configuring_Puma_DB_Pool_performance-tuning">5.2.7. Configuring Puma DB pool</a></li>
-<li><a href="#Manually_tuning_db_pool_performance-tuning">5.2.8. Manually tuning db_pool</a></li>
+<li><a href="#Puma_Workers_and_Threads_Auto_Tuning_performance-tuning">5.2.1. Puma workers and threads auto-tuning</a></li>
+<li><a href="#Manually_tuning_Puma_workers_and_threads_count_performance-tuning">5.2.2. Manually tuning Puma workers and threads count</a></li>
+<li><a href="#Configuring_Puma_Workers_performance-tuning">5.2.3. Configuring Puma workers</a></li>
+<li><a href="#Configuring_Puma_Threads_performance-tuning">5.2.4. Configuring Puma threads</a></li>
 </ul>
 </li>
 <li><a href="#Apache_HTTPD_Performance_Tuning_performance-tuning">5.3. Apache HTTPD performance tuning</a>
 <ul class="sectlevel3">
-<li><a href="#Configuring_the_Open_Files_Limit_for_Apache_HTTPD_performance-tuning">5.3.1. Configuring the open files limit for Apache HTTPD</a></li>
-<li><a href="#tuning_apache_httpd_child_processes_performance-tuning">5.3.2. Tuning Apache httpd child processes</a></li>
+<li><a href="#tuning_apache_httpd_child_processes_performance-tuning">5.3.1. Tuning Apache httpd child processes</a></li>
 </ul>
 </li>
 <li><a href="#Dynflow_Tuning_performance-tuning">5.4. Dynflow tuning</a></li>
@@ -548,43 +543,8 @@ Please always test changing these in non production environment first, with vali
 Our testing environment might be too far from what you will see although we are trying hard to mimic real world environment.</p>
 </div>
 <div class="paragraph">
-<div class="title">Changing systemd service files</div>
-<p>If you have changed some systemd service file, you need to notify systemd daemon to reload the configuration:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre># systemctl daemon-reload</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Restart orcharhino services:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># foreman-maintain service restart</pre>
-</div>
-</div>
-<div class="paragraph">
-<div class="title">Changing configuration files</div>
-<p>If you have changed a configuration file such as <code>/etc/foreman-installer/custom-hiera.yaml</code>, rerun installer to apply your changes:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># foreman-installer</pre>
-</div>
-</div>
-<div class="paragraph">
-<div class="title">Running installer with additional options</div>
-<p>If you need to rerun installer with some new options added:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># foreman-installer <em>new options</em></pre>
-</div>
-</div>
-<div class="paragraph">
 <div class="title">Checking basic sanity of the setup</div>
-<p>Optional: After any change, run this quick orcharhino health-check:</p>
+<p>Optional: After any change, run this quick orcharhino health check:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -599,25 +559,7 @@ Our testing environment might be too far from what you will see although we are 
 For any orcharhino configuration that is supposed to handle a large number of clients or frequent operations, it is important for the Puma to be tuned appropriately.</p>
 </div>
 <div class="sect3">
-<h4 id="Puma_Threads_performance-tuning"><a class="anchor" href="#Puma_Threads_performance-tuning"></a>5.2.1. Puma threads</h4>
-<div class="paragraph">
-<p>To configure the number of Puma threads (per Puma worker), use these values: <code>threads_min</code> and <code>threads_max</code>.</p>
-</div>
-<div class="paragraph">
-<p>Value of <code>threads_min</code> determines how many threads each worker spawns at a worker start.
-Then, as concurrent requests are coming and more threads is needed, worker will be spawning more and more workers up to <code>threads_max</code> limit.</p>
-</div>
-<div class="paragraph">
-<p>We recommend setting <code>threads_min</code> to same value as <code>threads_max</code> as having fewer Puma threads lead to higher memory usage on your orcharhino&#160;Server.</p>
-</div>
-<div class="paragraph">
-<p>For example, we have compared these two setups on a virtual machine with 8 CPUs and 40 GiB RAM using concurrent registrations test.
-They both used <code>--foreman-foreman-service-puma-threads-max=16</code> and <code>--foreman-foreman-service-puma-workers=2</code>.
-Setting the minimum Puma threads to <code>16</code> by using <code>--foreman-foreman-service-puma-threads-min=16</code> results in about 12% less memory usage as compared to <code>0</code>.</p>
-</div>
-</div>
-<div class="sect3">
-<h4 id="Puma_Workers_and_Threads_Auto_Tuning_performance-tuning"><a class="anchor" href="#Puma_Workers_and_Threads_Auto_Tuning_performance-tuning"></a>5.2.2. Puma workers and threads auto-tuning</h4>
+<h4 id="Puma_Workers_and_Threads_Auto_Tuning_performance-tuning"><a class="anchor" href="#Puma_Workers_and_Threads_Auto_Tuning_performance-tuning"></a>5.2.1. Puma workers and threads auto-tuning</h4>
 <div class="paragraph">
 <p>If you do not provide any Puma workers and thread values with <code>foreman-installer</code> or they are not present in your orcharhino configuration, the <code>foreman-installer</code> configures a balanced number of workers.
 It follows this formula:</p>
@@ -645,236 +587,21 @@ Each Puma worker consumes around 1 GiB of RAM.</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="Manually_tuning_Puma_workers_and_threads_count_performance-tuning"><a class="anchor" href="#Manually_tuning_Puma_workers_and_threads_count_performance-tuning"></a>5.2.3. Manually tuning Puma workers and threads count</h4>
+<h4 id="Manually_tuning_Puma_workers_and_threads_count_performance-tuning"><a class="anchor" href="#Manually_tuning_Puma_workers_and_threads_count_performance-tuning"></a>5.2.2. Manually tuning Puma workers and threads count</h4>
 <div class="paragraph">
 <p>If you decide not to rely on <a href="#Puma_Workers_and_Threads_Auto_Tuning_performance-tuning">Puma workers and threads auto-tuning</a>, you can apply custom numbers for these tunables.
-In the example below we are using 2 workers, 5 and 5 threads:</p>
+In the example below we are using 2 workers and 5 threads:</p>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># foreman-installer \
 --foreman-foreman-service-puma-workers=2 \
---foreman-foreman-service-puma-threads-min=5 \
 --foreman-foreman-service-puma-threads-max=5</pre>
 </div>
 </div>
-<div class="paragraph">
-<p>Apply your changes to orcharhino&#160;Server.
-For more information, see <a href="#Applying_configurations_performance-tuning">Applying configurations</a>.</p>
-</div>
 </div>
 <div class="sect3">
-<h4 id="Puma_Workers_and_Threads_Recommendations_performance-tuning"><a class="anchor" href="#Puma_Workers_and_Threads_Recommendations_performance-tuning"></a>5.2.4. Puma workers and threads recommendations</h4>
-<div class="paragraph">
-<p>In order to recommend thread and worker configurations for the different tuning profiles, we conducted Puma tuning testing on orcharhino with different tuning profiles.
-The main test used in this testing was concurrent registration with the following combinations along with different number of workers and threads.
-Our recommendation is based purely on concurrent registration performance, so it might not reflect your exact use-case.
-For example, if your setup is very content oriented with lots of publishes and promotes, you might want to limit resources consumed by Puma in favor of Pulp and PostgreSQL.</p>
-</div>
-<table class="tableblock frame-all grid-all stretch">
-<colgroup>
-<col style="width: 16%;">
-<col style="width: 19%;">
-<col style="width: 7%;">
-<col style="width: 7%;">
-<col style="width: 31%;">
-<col style="width: 20%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">Name</th>
-<th class="tableblock halign-left valign-top">Number of hosts</th>
-<th class="tableblock halign-left valign-top">RAM</th>
-<th class="tableblock halign-left valign-top">Cores</th>
-<th class="tableblock halign-left valign-top">Recommended Puma Threads for both min &amp; max</th>
-<th class="tableblock halign-left valign-top">Recommended Puma Workers</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">default</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">0&#8202;&#8211;&#8202;5000</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">20 GiB</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">4</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">16</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">4&#8202;&#8211;&#8202;6</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">medium</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">5000&#8202;&#8211;&#8202;10000</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">32 GiB</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">8</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">16</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">8&#8202;&#8211;&#8202;12</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">large</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">10000&#8202;&#8211;&#8202;20000</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">64 GiB</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">16</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">16</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">12&#8202;&#8211;&#8202;18</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">extra-large</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">20000&#8202;&#8211;&#8202;60000</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">128 GiB</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">32</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">16</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">16&#8202;&#8211;&#8202;24</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">extra-extra-large</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">60000+</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">256 GiB+</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">48+</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">16</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">20&#8202;&#8211;&#8202;26</p></td>
-</tr>
-</tbody>
-</table>
-<div class="paragraph">
-<p>Tuning number of workers is the more important aspect here and in some case we have seen up to 52% performance increase.
-Although installer uses 5 min/max threads by default, we recommend 16 threads with all the tuning profiles in the table above.
-That is because we have seen up to 23% performance increase with 16 threads (14% for 8 and 10% for 32) when compared to setup with 4 threads.</p>
-</div>
-<div class="paragraph">
-<p>To figure out these recommendations we used concurrent registrations test case which is a very specific use-case.
-It can be different on your orcharhino which might have more balanced use-case (not only registrations).
-Keeping default 5 min/max threads is a good choice as well.</p>
-</div>
-<div class="paragraph">
-<p>These are some of our measurements that lead us to these recommendations:</p>
-</div>
-<table class="tableblock frame-all grid-all stretch">
-<colgroup>
-<col style="width: 17%;">
-<col style="width: 21%;">
-<col style="width: 20%;">
-<col style="width: 21%;">
-<col style="width: 21%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top"></th>
-<th class="tableblock halign-left valign-top">4 workers, 4 threads</th>
-<th class="tableblock halign-left valign-top">4 workers, 8 threads</th>
-<th class="tableblock halign-left valign-top">4 workers, 16 threads</th>
-<th class="tableblock halign-left valign-top">4 workers, 32 threads</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Improvement</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">0%</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">14%</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">23%</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">10%</p></td>
-</tr>
-</tbody>
-</table>
-<div class="paragraph">
-<p>Use 4&#8202;&#8211;&#8202;6 workers on a default setup (4 CPUs) &#8211; we have seen about 25% higher performance with 5 workers when compared to 2 workers, but 8% lower performance with 8 workers when compared to 2 workers &#8211; see table below:</p>
-</div>
-<table class="tableblock frame-all grid-all stretch">
-<colgroup>
-<col style="width: 17%;">
-<col style="width: 21%;">
-<col style="width: 20%;">
-<col style="width: 21%;">
-<col style="width: 21%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top"></th>
-<th class="tableblock halign-left valign-top">2 workers, 16 threads</th>
-<th class="tableblock halign-left valign-top">4 workers, 16 threads</th>
-<th class="tableblock halign-left valign-top">6 workers, 16 threads</th>
-<th class="tableblock halign-left valign-top">8 workers, 16 threads</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Improvement</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">0%</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">26%</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">22%</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">-8%</p></td>
-</tr>
-</tbody>
-</table>
-<div class="paragraph">
-<p>Use 8&#8202;&#8211;&#8202;12 workers on a medium setup (8 CPUs) &#8211; see table below:</p>
-</div>
-<table class="tableblock frame-all grid-all stretch">
-<colgroup>
-<col style="width: 16%;">
-<col style="width: 17%;">
-<col style="width: 16%;">
-<col style="width: 17%;">
-<col style="width: 17%;">
-<col style="width: 17%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top"></th>
-<th class="tableblock halign-left valign-top">2 workers, 16 threads</th>
-<th class="tableblock halign-left valign-top">4 workers, 16 threads</th>
-<th class="tableblock halign-left valign-top">8 workers, 16 threads</th>
-<th class="tableblock halign-left valign-top">12 workers, 16 threads</th>
-<th class="tableblock halign-left valign-top">16 workers, 16 threads</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Improvement</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">0%</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">51%</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">52%</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">52%</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">42%</p></td>
-</tr>
-</tbody>
-</table>
-<div class="paragraph">
-<p>Use 16&#8202;&#8211;&#8202;24 workers on a 32 CPUs setup (this was tested on a 90 GiB RAM machine and memory turned out to be a factor here as system started swapping &#8211; proper <em>extra-large</em> should have 128 GiB), higher number of workers was problematic for higher registration concurrency levels we tested, so we cannot recommend it.</p>
-</div>
-<table class="tableblock frame-all grid-all stretch">
-<colgroup>
-<col style="width: 13%;">
-<col style="width: 14%;">
-<col style="width: 14%;">
-<col style="width: 14%;">
-<col style="width: 15%;">
-<col style="width: 15%;">
-<col style="width: 15%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top"></th>
-<th class="tableblock halign-left valign-top">4 workers, 16 threads</th>
-<th class="tableblock halign-left valign-top">8 workers, 16 threads</th>
-<th class="tableblock halign-left valign-top">16 workers, 16 threads</th>
-<th class="tableblock halign-left valign-top">24 workers, 16 threads</th>
-<th class="tableblock halign-left valign-top">32 workers, 16 threads</th>
-<th class="tableblock halign-left valign-top">48 workers, 16 threads</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Improvement</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">0%</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">37%</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">44%</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">52%</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">too many failures</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">too many failures</p></td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="sect3">
-<h4 id="Configuring_Puma_Workers_performance-tuning"><a class="anchor" href="#Configuring_Puma_Workers_performance-tuning"></a>5.2.5. Configuring Puma workers</h4>
+<h4 id="Configuring_Puma_Workers_performance-tuning"><a class="anchor" href="#Configuring_Puma_Workers_performance-tuning"></a>5.2.3. Configuring Puma workers</h4>
 <div class="paragraph">
 <p>If you have enough CPUs, adding more workers adds more performance.
 For example, we have compared orcharhino setups with 8 and 16 CPUs:</p>
@@ -892,10 +619,6 @@ For example, we have compared orcharhino setups with 8 and 16 CPUs:</p>
 </tr>
 </thead>
 <tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-threads-min=16</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-threads-min=16</code></p></td>
-</tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-threads-max=16</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-threads-max=16</code></p></td>
@@ -916,7 +639,7 @@ In our measurements, setup with 2 workers were able to handle up to 480 concurre
 </div>
 </div>
 <div class="sect3">
-<h4 id="Configuring_Puma_Threads_performance-tuning"><a class="anchor" href="#Configuring_Puma_Threads_performance-tuning"></a>5.2.6. Configuring Puma threads</h4>
+<h4 id="Configuring_Puma_Threads_performance-tuning"><a class="anchor" href="#Configuring_Puma_Threads_performance-tuning"></a>5.2.4. Configuring Puma threads</h4>
 <div class="paragraph">
 <p>More threads allow for lower time to register hosts in parallel.
 For example, we have compared these two setups:</p>
@@ -934,10 +657,6 @@ For example, we have compared these two setups:</p>
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-threads-min=16</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-threads-min=8</code></p></td>
-</tr>
-<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-threads-max=16</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-threads-max=8</code></p></td>
 </tr>
@@ -952,38 +671,6 @@ For example, we have compared these two setups:</p>
 Moreover, adding more workers did not consume more CPU and RAM but gets more performance.</p>
 </div>
 </div>
-<div class="sect3">
-<h4 id="Configuring_Puma_DB_Pool_performance-tuning"><a class="anchor" href="#Configuring_Puma_DB_Pool_performance-tuning"></a>5.2.7. Configuring Puma DB pool</h4>
-<div class="paragraph">
-<p>The effective value of <code>$db_pool</code> is automatically set to equal <code>$foreman::foreman_service_puma_threads_max</code>.
-It is the maximum of <code>$foreman::db_pool</code> and <code>$foreman::foreman_service_puma_threads_max</code> but both have default value 5, so any increase to the max threads above 5 automatically increases the database connection pool by the same amount.</p>
-</div>
-<div class="paragraph">
-<p>If you encounter <code>ActiveRecord::ConnectionTimeoutError: could not obtain a connection from the pool within 5.000 seconds (waited 5.006 seconds); all pooled connections were in use</code> error in <code>/var/log/foreman/production.log</code>, you might want to increase this value.</p>
-</div>
-<div class="listingblock">
-<div class="title">View current db_pool setting</div>
-<div class="content">
-<pre># grep pool /etc/foreman/database.yml
-  pool: 5</pre>
-</div>
-</div>
-</div>
-<div class="sect3">
-<h4 id="Manually_tuning_db_pool_performance-tuning"><a class="anchor" href="#Manually_tuning_db_pool_performance-tuning"></a>5.2.8. Manually tuning db_pool</h4>
-<div class="paragraph">
-<p>If you decide not to rely on automatically configured value, you can apply custom number like this:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># foreman-installer --foreman-db-pool 10</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Apply your changes to orcharhino&#160;Server.
-For more information, see <a href="#Applying_configurations_performance-tuning">Applying configurations</a>.</p>
-</div>
-</div>
 </div>
 <div class="sect2">
 <h3 id="Apache_HTTPD_Performance_Tuning_performance-tuning"><a class="anchor" href="#Apache_HTTPD_Performance_Tuning_performance-tuning"></a>5.3. Apache HTTPD performance tuning</h3>
@@ -992,32 +679,7 @@ For more information, see <a href="#Applying_configurations_performance-tuning">
 To increase the concurrency of the operations, httpd forms the first point where tuning can help to boost the performance of your orcharhino.</p>
 </div>
 <div class="sect3">
-<h4 id="Configuring_the_Open_Files_Limit_for_Apache_HTTPD_performance-tuning"><a class="anchor" href="#Configuring_the_Open_Files_Limit_for_Apache_HTTPD_performance-tuning"></a>5.3.1. Configuring the open files limit for Apache HTTPD</h4>
-<div class="paragraph">
-<p>With the tuning in place, Apache httpd can easily open a lot of file descriptors on the server which may exceed the default limit of most of the Linux systems in place.
-To avoid any kind of issues that may arise as a result of exceeding max open files limit on the system, please create the following file and directory and set the contents of the file as specified in the below given example:</p>
-</div>
-<div class="olist arabic">
-<div class="title">Procedure</div>
-<ol class="arabic">
-<li>
-<p>Set the maximum open files limit in <code>/etc/systemd/system/httpd.service.d/limits.conf</code>:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">[Service]
-LimitNOFILE=640000</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Apply your changes to orcharhino&#160;Server.
-For more information, see <a href="#Applying_configurations_performance-tuning">Applying configurations</a>.</p>
-</li>
-</ol>
-</div>
-</div>
-<div class="sect3">
-<h4 id="tuning_apache_httpd_child_processes_performance-tuning"><a class="anchor" href="#tuning_apache_httpd_child_processes_performance-tuning"></a>5.3.2. Tuning Apache httpd child processes</h4>
+<h4 id="tuning_apache_httpd_child_processes_performance-tuning"><a class="anchor" href="#tuning_apache_httpd_child_processes_performance-tuning"></a>5.3.1. Tuning Apache httpd child processes</h4>
 <div class="paragraph">
 <p>By default, httpd uses event request handling mechanism.
 When the number of requests to httpd exceeds the maximum number of child processes that can be launched to handle the incoming connections, httpd raises an HTTP 503 Service Unavailable error.
@@ -1054,13 +716,17 @@ apache::mod::event::maxrequestworkers: 1024
 apache::mod::event::maxrequestsperchild: 4000</pre>
 </div>
 </div>
+</li>
+<li>
+<p>Run the installer:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer</pre>
+</div>
+</div>
 <div class="paragraph">
 <p>The example is identical to running <code>foreman-installer --tuning=medium</code> or higher on orcharhino&#160;Server.</p>
 </div>
-</li>
-<li>
-<p>Apply your changes to orcharhino&#160;Server.
-For more information, see <a href="#Applying_configurations_performance-tuning">Applying configurations</a>.</p>
 </li>
 </ol>
 </div>
@@ -1252,15 +918,19 @@ For more information, see <a href="#Disable_Transparent_Hugepage_performance-tun
   autovacuum_vacuum_cost_limit: 2000</code></pre>
 </div>
 </div>
-<div class="paragraph">
-<p>You can use this to effectively tune down your orcharhino instance irrespective of a tuning profile.</p>
-</div>
 </li>
 <li>
-<p>Apply your changes to orcharhino&#160;Server.
-For more information, see <a href="#Applying_configurations_performance-tuning">Applying configurations</a>.</p>
+<p>Run the installer:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer</pre>
+</div>
+</div>
 </li>
 </ol>
+</div>
+<div class="paragraph">
+<p>You can use this to effectively tune down your orcharhino instance irrespective of a tuning profile.</p>
 </div>
 <div class="paragraph">
 <p>In the above tuning configuration, there are a certain set of keys which we have altered:</p>
@@ -1438,7 +1108,7 @@ This will be different for syncing a higher number of content views in parallel.
 <div id="footer">
 <div id="footer-text">
 Version 6.11<br>
-Last updated Apr 2025
+Last updated May 2025
 </div>
 </div>
 <script>
