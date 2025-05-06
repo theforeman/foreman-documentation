@@ -32,3 +32,38 @@ endif::[]
 The command `adduser saltuser -p password` does not work.
 Using it prevents you from importing Salt States.
 ====
+. Create a directory for a `systemd` service for Salt:
++
+[options="nowrap" subs="attributes"]
+----
+# mkdir /etc/systemd/system/salt-master.service.d
+----
+// the "sleep 10" is necessary to ensure that the "salt-master" service does not overwrite the permissions
+// this is due to a bug in Salt: https://github.com/saltstack/salt/issues/65317
+. Create the `systemd` service `/etc/systemd/system/salt-master.service.d/foreman_override.conf`:
++
+[source, ini, options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+[Service]
+ExecStartPost=/bin/bash -c 'sleep 10'
+ExecStartPost=/bin/bash -c 'chmod o+rx /var/run/salt/master/'
+ExecStartPost=/bin/bash -c 'chmod o+rw /var/run/salt/master/publish_pull.ipc'
+ExecStartPost=/bin/bash -c 'chmod o+rw /var/run/salt/master/master_event_pub.ipc'
+ExecStartPost=/bin/bash -c 'chmod o+rw /var/run/salt/master/master_event_pull.ipc'
+ExecStartPost=/bin/bash -c 'chmod o+rw /var/run/salt/master/workers.ipc'
+----
+. Reload the service files and restart the `salt-master` service:
++
+[options="nowrap" subs="attributes"]
+----
+# systemctl daemon-reload
+# systemctl restart salt-master
+----
++
+The restart takes at least 10 seconds and applies the correct directory and file permissions.
+. Allow the `foreman-proxy` user to write Salt logs:
++
+[options="nowrap" subs="attributes"]
+----
+# chmod g+w /var/log/foreman-proxy/salt.log
+----
