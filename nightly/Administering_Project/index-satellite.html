@@ -236,10 +236,11 @@
 <li><a href="#migrating-to-external-databases_admin">4.3. Migrating to external databases</a></li>
 </ul>
 </li>
-<li><a href="#managing-satellite-with-ansible">5. Managing Satellite with Ansible</a>
+<li><a href="#automating-satellite-management-with-satellite-ansible-collection">5. Automating Satellite management with Satellite Ansible Collection</a>
 <ul class="sectlevel2">
 <li><a href="#Installing_the_Project_Ansible_Modules_admin">5.1. Installing the Satellite Ansible modules</a></li>
-<li><a href="#Viewing_the_Ansible_Modules_admin">5.2. Viewing the Satellite Ansible modules</a></li>
+<li><a href="#creating-a-playbook-with-modules-from-satellite-ansible-collection">5.2. Creating a playbook with modules from Satellite Ansible Collection</a></li>
+<li><a href="#example-playbooks-based-on-modules-from-satellite-ansible-collection">5.3. Example playbooks based on modules from Satellite Ansible Collection</a></li>
 </ul>
 </li>
 <li><a href="#preparing-for-disaster-recovery-and-recovering-from-data-loss">6. Preparing for disaster recovery and recovering from data loss</a>
@@ -1389,52 +1390,471 @@ PGPASSWORD='<em>Pulpcore_Password</em>' pg_restore -h <em>postgres.example.com</
 </div>
 </div>
 <div class="sect1">
-<h2 id="managing-satellite-with-ansible"><a class="anchor" href="#managing-satellite-with-ansible"></a>5. Managing Satellite with Ansible</h2>
+<h2 id="automating-satellite-management-with-satellite-ansible-collection"><a class="anchor" href="#automating-satellite-management-with-satellite-ansible-collection"></a>5. Automating Satellite management with Satellite Ansible Collection</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Satellite Ansible Collections is a set of Ansible modules that interact with the Satellite API.
-You can manage and automate many aspects of Satellite with Satellite Ansible collections.</p>
+<p>Satellite Ansible Collection is a set of Ansible modules that interact with the Satellite API.
+You can use these modules to automate many aspects of Satellite administration.</p>
 </div>
 <div class="sect2">
 <h3 id="Installing_the_Project_Ansible_Modules_admin"><a class="anchor" href="#Installing_the_Project_Ansible_Modules_admin"></a>5.1. Installing the Satellite Ansible modules</h3>
 <div class="paragraph">
-<p>Use this procedure to install the Satellite Ansible modules.</p>
+<p>Modules from the Satellite Ansible Collection are provided by the <code>ansible-collection-redhat-satellite</code> package.
+On your Satellite&#160;Server, the package is installed by default.
+If you want to execute your playbooks on a different system, you must first install the package that provides them.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>You can execute your playbooks on any system that can reach the Satellite API.
+This can also be your Satellite&#160;Server itself.</p>
+</div>
+</td>
+</tr>
+</table>
 </div>
 <div class="ulist">
 <div class="title">Procedure</div>
 <ul>
 <li>
-<p>Install the package using the following command:</p>
+<p>Install the <code>ansible-collection-redhat-satellite</code> package:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># satellite-maintain packages install ansible-collection-redhat-satellite</pre>
+<pre class="nowrap"># dnf install ansible-collection-redhat-satellite</pre>
 </div>
 </div>
 </li>
 </ul>
 </div>
+<div class="ulist">
+<div class="title">Verification</div>
+<ul>
+<li>
+<p>Display the list of Ansible modules that are now available on your system:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ansible-doc --list redhat.satellite</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Next steps</div>
+<ul>
+<li>
+<p>You can now use the installed Ansible modules to execute playbooks.</p>
+</li>
+</ul>
+</div>
 </div>
 <div class="sect2">
-<h3 id="Viewing_the_Ansible_Modules_admin"><a class="anchor" href="#Viewing_the_Ansible_Modules_admin"></a>5.2. Viewing the Satellite Ansible modules</h3>
+<h3 id="creating-a-playbook-with-modules-from-satellite-ansible-collection"><a class="anchor" href="#creating-a-playbook-with-modules-from-satellite-ansible-collection"></a>5.2. Creating a playbook with modules from Satellite Ansible Collection</h3>
 <div class="paragraph">
-<p>You can view the installed Satellite Ansible modules by running:</p>
+<p>Ansible modules from the Satellite Ansible Collection must be able to communicate with the Satellite API over HTTPS.
+In your playbooks, include parameters specifying how to authenticate to enable the connection to API.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Important</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Do not store sensitive credentials, such as username and password, directly in your playbooks or environment variables.
+The following examples use Ansible vault to manage sensitive data.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>A user account in Satellite exists with permissions to perform the action defined in your playbook.</p>
+</li>
+<li>
+<p>You have access to one of the following types of authentication credentials for that user:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Username and password</p>
+</li>
+<li>
+<p>Username and Personal Access Token</p>
+</li>
+<li>
+<p>Kerberos ticket, if your Satellite&#160;Server is configured to use Identity&#160;Management as an external authentication source</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>A system that can reach the Satellite API.
+This is the system that you will execute your playbook against.
+It can be Satellite&#160;Server itself.
+The following examples use <code>localhost</code>.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Store your sensitive variables in an encrypted file:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Create an Ansible vault.
+For example, to create a vault named <em>My_Vault.yml</em>:</p>
+<div class="listingblock">
+<div class="content">
+<pre>$ ansible-vault create <em>My_Vault.yml</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>After the <code>ansible-vault create</code> command opens an editor, provide the required parameters in the <em>key</em>: <em>value</em> format.</p>
+<div class="paragraph">
+<p>If you want to authenticate with Satellite username and password:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># ansible-doc -l redhat.satellite</pre>
+<pre class="highlight"><code class="language-ini" data-lang="ini"><em>My_Username</em>: <em>My_Admin_User_Account</em>
+<em>My_Password</em>: <em>My_Admin_Password</em>
+<em>My_Server_URL</em>: <em>https://satellite.example.com</em></code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Alternatively, you can also see the complete list of Satellite Ansible modules and other related information at <a href="https://console.redhat.com/ansible/automation-hub/repo/published/redhat/satellite/docs">Red&#160;Hat Ansible Automation Platform</a>.</p>
-</div>
-<div class="paragraph">
-<p>All modules are in the <code>redhat.satellite</code> namespace and can be referred to in the format <code>redhat.satellite.<em>module_name</em></code>.
-For example, to display information about the <code>activation_key</code> module, enter the following command:</p>
+<p>If you want to authenticate with Satellite username and Personal Access Token (PAT):</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap">$ ansible-doc redhat.satellite.activation_key</pre>
+<pre class="highlight"><code class="language-ini" data-lang="ini"><em>My_Username</em>: <em>My_Admin_User_Account</em>
+<em>My_Password</em>: <em>My_PAT</em>
+<em>My_Server_URL</em>: <em>https://satellite.example.com</em></code></pre>
 </div>
+</div>
+<div class="paragraph">
+<p>If you want to authenticate with a Kerberos ticket:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-ini" data-lang="ini"><em>My_Server_URL</em>: <em>https://satellite.example.com</em></code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Save your changes and close the editor.
+Ansible encrypts the data in the vault.</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>Create a playbook file that references the vault file:</p>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The following YAML snippets include the <code>module_defaults</code> keyword to pass vault variables as parameters to all modules from the redhat.satellite.satellite group that are used in the playbook.
+Module defaults groups simplify parameter management by enabling you define common parameters to groups of modules rather than having to pass the parameters to each module individually.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Provide details on how to authenticate to the Satellite API.</p>
+<div class="paragraph">
+<p>If you are authenticating with Satellite username and password or PAT, map the <code>username</code>, <code>password</code>, and <code>server_url</code> parameters to the contents of <em>My_Vault.yml</em>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">- name: <em>My Playbook</em>
+  hosts: <em>localhost</em>
+  vars_files:
+    - <em>My_Vault.yml</em>
+  module_defaults:
+    group/redhat.satellite.satellite:
+      username: "{{ <em>My_Username</em> }}"
+      password: "{{ <em>My_Password</em> }}"
+      server_url: "{{ <em>My_Server_URL</em> }}"
+  tasks:</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you are authenticating with a Kerberos ticket, map the <code>server_url</code> parameter to the contents of <em>My_Vault.yml</em> and add <code>use_gssapi: true</code> to enable Kerberos authentication:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">- name: <em>My Playbook</em>
+  hosts: <em>localhost</em>
+  vars_files:
+    - <em>My_Vault.yml</em>
+  module_defaults:
+    group/redhat.satellite.satellite:
+      server_url: "{{ <em>My_Server_URL</em> }}"
+      use_gssapi: true
+  tasks:</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>In the <code>tasks:</code> section, define the tasks that you want your playbook to perform.</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>Validate the playbook syntax:</p>
+<div class="listingblock">
+<div class="content">
+<pre>$ ansible-playbook --syntax-check --ask-vault-pass <em>My_Playbook.yml</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note that this command only validates the syntax.
+It does not protect against a valid but incorrect configuration.</p>
+</div>
+</li>
+<li>
+<p>Run the playbook:</p>
+<div class="listingblock">
+<div class="content">
+<pre>$ ansible-playbook --ask-vault-pass <em>My_Playbook.yml</em></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="exampleblock">
+<div class="title">Example 1. Example Ansible playbook: Ensure that domain <code>new.example.com</code> exists in Satellite</div>
+<div class="content">
+<div class="paragraph">
+<p>The <code>redhat.satellite.domain</code> module can create, update, and delete domains.
+This example playbook uses <code>redhat.satellite.domain</code> to ensure that a domain named <code>new.example.com</code> exists and is managed by Satellite.
+For additional examples, see <a href="#example-playbooks-based-on-modules-from-satellite-ansible-collection">Example playbooks based on modules from Satellite Ansible Collection</a>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">- name: Domain management
+  hosts: localhost
+  vars_files:
+    - <em>My_Vault.yml</em>
+  module_defaults:
+    group/redhat.satellite.satellite:
+      username: "{{ <em>My_Username</em> }}"
+      password: "{{ <em>My_Password</em> }}"
+      server_url: "{{ <em>My_Server_URL</em> }}"
+  tasks:
+    - name: Ensure domain new.example.com exists
+      redhat.satellite.domain:
+        name: new.example.com</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The settings specified in the example playbook include the following:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>vars_files</code></dt>
+<dd>
+<p>The name of the vault file that stores the variables <code><em>My_Username</em></code>, <code><em>My_Password</em></code>, and <code><em>My_Server_URL</em></code>.</p>
+</dd>
+<dt class="hdlist1"><code>module_defaults</code></dt>
+<dd>
+<p>The module defaults group that maps the variables from the vault file to the <code>username</code>, <code>password</code>, and <code>server_url</code> module parameters.</p>
+</dd>
+<dt class="hdlist1"><code>name</code></dt>
+<dd>
+<p>The name of the domain that you want to ensure exists in Satellite.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>For more information, see the Ansible module documentation with <code>ansible-doc redhat.satellite.domain</code>.</p>
+</div>
+</div>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p>For information about using Ansible vault, see <a href="https://docs.ansible.com/ansible/latest/vault_guide/index.html">Protecting sensitive data with Ansible vault</a> in <em>Ansible Community Documentation</em>.</p>
+</li>
+<li>
+<p>For information about using module defaults, see <a href="https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_module_defaults.html">Module defaults</a> in <em>Ansible Community Documentation</em>.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="example-playbooks-based-on-modules-from-satellite-ansible-collection"><a class="anchor" href="#example-playbooks-based-on-modules-from-satellite-ansible-collection"></a>5.3. Example playbooks based on modules from Satellite Ansible Collection</h3>
+<div class="paragraph">
+<p>All playbooks based on modules from Satellite Ansible Collection must include parameters detailing how to connect to the Satellite API.
+The following examples use Ansible vault and module defaults group to provide these parameters, and they authenticate using a username and password.
+For more information, see <a href="#creating-a-playbook-with-modules-from-satellite-ansible-collection">Creating a playbook with modules from Satellite Ansible Collection</a>.</p>
+</div>
+<div id="example-ansible-playbook-enable-repositories-and-create-a-content-view" class="exampleblock">
+<div class="title">Example 2. Example Ansible playbook: Enable repositories and create a content view</div>
+<div class="content">
+<div class="paragraph">
+<p>This example playbook uses the following modules:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>redhat.satellite.repository_set</code></p>
+</li>
+<li>
+<p><code>redhat.satellite.content_view</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The playbook ensures repositories are enabled and a content view that contains these repositories exists.</p>
+</div>
+<div class="paragraph">
+<p>Before you run this playbook, ensure that you have uploaded a manifest and can access the Red&#160;Hat CDN.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">- name: Ensure RHEL 9 repositories are enabled and a content view exists
+  hosts: localhost
+  vars_files:
+    - <em>My_Vault.yml</em>
+  module_defaults:
+    group/redhat.satellite.satellite:
+      username: "{{ <em>My_Username</em> }}"
+      password: "{{ <em>My_Password</em> }}"
+      server_url: "{{ <em>My_Server_URL</em> }}"
+  tasks:
+    - name: Ensure RHEL 9 BaseOS repositories are enabled
+      redhat.satellite.repository_set:
+        name: "Red Hat Enterprise Linux 9 for x86_64 - BaseOS (RPMs)"
+        organization: "Default Organization"
+        product: "Red Hat Enterprise Linux for x86_64"
+        repositories:
+        - releasever: "9"
+        state: enabled
+    - name: Ensure RHEL 9 AppStream repositories are enabled
+      redhat.satellite.repository_set:
+        name: "Red Hat Enterprise Linux 9 for x86_64 - AppStream (RPMs)"
+        organization: "Default Organization"
+        product: "Red Hat Enterprise Linux for x86_64"
+        repositories:
+        - releasever: "9"
+        state: enabled
+    - name: Ensure a content view for RHEL 9 repositories exists
+      redhat.satellite.content_view:
+        name: "RHEL 9 content view"
+        organization: "Default Organization"
+        repositories:
+          - name: "Red Hat Enterprise Linux 9 for x86_64 - BaseOS RPMs 9"
+            product: "Red Hat Enterprise Linux for x86_64"
+          - name: "Red Hat Enterprise Linux 9 for x86_64 - AppStream RPMs 9"
+            product: "Red Hat Enterprise Linux for x86_64"</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For more information, see the Ansible module documentation with the following commands:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>ansible-doc redhat.satellite.repository_sync</code></p>
+</li>
+<li>
+<p><code>ansible-doc redhat.satellite.content_view</code></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div id="example-ansible-playbook-synchronize-repositories-and-publish-a-content-view" class="exampleblock">
+<div class="title">Example 3. Example Ansible playbook: Synchronize repositories and publish a content view</div>
+<div class="content">
+<div class="paragraph">
+<p>This example playbook uses the following modules:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>redhat.satellite.repository_sync</code></p>
+</li>
+<li>
+<p><code>redhat.satellite.content_view_version</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The playbook synchronizes repositories and publishes the content view that includes them.</p>
+</div>
+<div class="paragraph">
+<p>Before you run this playbook, ensure that you have enabled the required repositories and created a content view.
+For an example playbook that ensures this, see <a href="#example-ansible-playbook-enable-repositories-and-create-a-content-view">Example Ansible playbook: Enable repositories and create a content view</a>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">- name: Ensure RHEL 9 repositories are synced and content view is published
+  hosts: localhost
+  vars_files:
+    - <em>My_Vault.yml</em>
+  module_defaults:
+    group/redhat.satellite.satellite:
+      username: "{{ <em>My_Username</em> }}"
+      password: "{{ <em>My_Password</em> }}"
+      server_url: "{{ <em>My_Server_URL</em> }}"
+  tasks:
+    - name: Sync RHEL repositories
+      redhat.satellite.repository_sync:
+        product: "Red Hat Enterprise Linux for x86_64"
+        organization: "Default Organization"
+    - name: Publish RHEL 9 content view
+      redhat.satellite.content_view_version:
+        content_view: "RHEL 9 content view"
+        organization: "Default Organization"</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For more information, see the Ansible module documentation with the following commands:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>ansible-doc redhat.satellite.repository_sync</code></p>
+</li>
+<li>
+<p><code>ansible-doc redhat.satellite.content_view_version</code></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p>Use the <code>ansible-doc --list redhat.satellite</code> command to display the Satellite Ansible modules installed on your system.</p>
+</li>
+<li>
+<p>See <a href="https://console.redhat.com/ansible/automation-hub/repo/published/redhat/satellite/docs">Red&#160;Hat Ansible Automation Platform</a> for a complete list of Satellite Ansible modules and other related information.</p>
+</li>
+</ul>
 </div>
 </div>
 </div>
@@ -1533,7 +1953,7 @@ For example, you can periodically run a health check and if the health check dis
 <div class="paragraph">
 <p>To minimize downtime, you can automate the recovery in various ways.
 For example, you can use the Satellite Ansible collection.
-For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.17/html-single/administering_red_hat_satellite/index#managing-satellite-with-ansible">Managing Satellite with Ansible</a> in <em>Administering Red&#160;Hat Satellite</em>.</p>
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.17/html-single/administering_red_hat_satellite/index#automating-satellite-management-with-satellite-ansible-collection">Automating Satellite management with Satellite Ansible Collection</a> in <em>Administering Red&#160;Hat Satellite</em>.</p>
 </div>
 </dd>
 <dt class="hdlist1">How will I recover in case of a disruptive event?</dt>
@@ -2301,7 +2721,7 @@ To verify that the server is inaccessible, you can turn the machine off, halt th
 <ul>
 <li>
 <p>Ansible playbooks can help you automate failover, re-registration, and synchronization.
-For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.17/html-single/administering_red_hat_satellite/index#managing-satellite-with-ansible">Managing Satellite with Ansible</a> in <em>Administering Red&#160;Hat Satellite</em>.</p>
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.17/html-single/administering_red_hat_satellite/index#automating-satellite-management-with-satellite-ansible-collection">Automating Satellite management with Satellite Ansible Collection</a> in <em>Administering Red&#160;Hat Satellite</em>.</p>
 </li>
 <li>
 <p>For more information on synchronizing repositories, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.17/html-single/managing_content/index#Synchronizing_Repositories_content-management">Synchronizing repositories</a> in <em>Managing content</em>.</p>
@@ -2350,7 +2770,7 @@ If the server is down, you must re-register hosts to the other server.</p>
 <ul>
 <li>
 <p>Ansible playbooks can help you automate failover, re-registration, and synchronization.
-For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.17/html-single/administering_red_hat_satellite/index#managing-satellite-with-ansible">Managing Satellite with Ansible</a> in <em>Administering Red&#160;Hat Satellite</em>.</p>
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.17/html-single/administering_red_hat_satellite/index#automating-satellite-management-with-satellite-ansible-collection">Automating Satellite management with Satellite Ansible Collection</a> in <em>Administering Red&#160;Hat Satellite</em>.</p>
 </li>
 </ul>
 </div>
