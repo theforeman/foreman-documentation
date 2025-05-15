@@ -1,7 +1,7 @@
 [id="upgrading_a_disconnected_{project-context}_server_{context}"]
 = Upgrading a disconnected {ProjectServer}
 
-Use this procedure if your {ProjectServer} is not connected to the Red{nbsp}Hat Content Delivery Network.
+You can upgrade your disconnected {Project} on {RHEL} 9 by synchronizing the required repositories on your connected {Project} and synchronizing the content to the disconnected {Project} using syncable exports.
 
 [WARNING]
 ====
@@ -18,11 +18,11 @@ If you have scripts that are using `hammer content-view version export`, `hammer
 * If you implemented custom certificates, you must retain the content of both the `/root/ssl-build` directory and the directory in which you created any source files associated with your custom certificates.
 +
 Failure to retain these files during an upgrade causes the upgrade to fail.
-If these files have been deleted, they must be restored from a backup in order for the upgrade to proceed.
+If these files have been deleted, they must be restored from a backup in order to continue the upgrade.
 endif::[]
 ====
 
-.Before you begin
+.Prerequisites
 * Review and update your firewall configuration before upgrading your {ProjectServer}.
 For more information, see {InstallingServerDisconnectedDocURL}Port_and_firewall_requirements_{project-context}[Port and firewall requirements] in _{InstallingServerDisconnectedDocTitle}_.
 * Ensure that you do not delete the manifest from the Customer Portal or in the {ProjectWebUI} because this removes all the entitlements of your content hosts.
@@ -30,6 +30,20 @@ ifdef::satellite[]
 * All {ProjectServer}s must be on the same version.
 endif::[]
 
+.Procedure on the connected {ProjectServer}
+. Ensure that the following repositories are synchronized on your connected {ProjectServer}:
++
+* {RepoRHEL9BaseOS}
+* {RepoRHEL9AppStream}
+* {RepoRHEL9ServerSatelliteServerProjectVersion}
+. Export the repositories in a syncable format:
++
+[options="nowrap" subs="+quotes,verbatim,attributes"]
+----
+$ hammer content-export complete repository \
+--id=_Repo_ID_ --format=syncable
+----
+. Copy the exported directories to the disconnected {ProjectServer}.
 
 .Upgrade disconnected {ProjectServer}
 . Stop all {Project} services:
@@ -49,7 +63,8 @@ endif::[]
 # {foreman-maintain} service start
 ----
 
-. Optional: If you made manual edits to DNS or DHCP configuration in the `/etc/zones.conf` or `/etc/dhcp/dhcpd.conf` files, back up the configuration files because the installer only supports one domain or subnet, and therefore restoring changes from these backups might be required.
+. Optional: If you manually edited the DNS or DHCP configuration in the `/etc/zones.conf` or `/etc/dhcp/dhcpd.conf` files, back up these configuration files.
+The installer only supports one domain or subnet, and therefore restoring changes from these backups might be required.
 
 . Optional: If you made manual edits to DNS or DHCP configuration files and do not want to overwrite the changes, enter the following command:
 +
@@ -60,8 +75,8 @@ endif::[]
 ----
 
 . In the {ProjectWebUI}, navigate to *Hosts* > *Discovered hosts*.
-If there are discovered hosts available, turn them off and then delete all entries under the `Discovered hosts` page.
-Select all other organizations in turn using the organization setting menu and repeat this action as required.
+If there are discovered hosts available, turn them off and then delete all entries under the *Discovered hosts* page.
+Use the organization setting menu to select each remaining organization and repeat the action as needed. 
 Reboot these hosts after the upgrade has completed.
 
 . Remove old repositories:
@@ -71,69 +86,59 @@ Reboot these hosts after the upgrade has completed.
 # rm /etc/yum.repos.d/*
 ----
 
-. Create a syncable format export for the {Project} tools and {Project} maintenance repositories. 
-For more information, see {ContentManagementDocURL}Exporting_a_Repository_in_a_Syncable_Format_[Exporting a repository in a syncable format] in _{ContentManagementDocTitle}_.
-
-. Configure the {Project} {ProjectVersion} repository from the syncable format export.
-
-. Configure the {ProjectName} Maintenance repository from the ISO file.
-
-.. Copy the ISO file's repository data file for {ProjectName} Maintenance packages:
-+
-[options="nowrap"]
-----
-# cp /media/sat6/Maintenance/media.repo /etc/yum.repos.d/satellite-maintenance.repo
-----
-
-.. Edit the `/etc/yum.repos.d/satellite-maintenance.repo` file:
-+
-[options="nowrap"]
-----
-# vi /etc/yum.repos.d/satellite-maintenance.repo
-----
-
-... Change the default `InstallMedia` repository name to `{Project}-Maintenance`:
+. Identify the location of the copied exported directories from the syncable export on the connected {ProjectServer}.
+. Create the `/etc/yum.repos.d/upgrade.repo` and update the `baseurl` directive accordingly:
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
-[{Project}-Maintenance]
+[{RepoRHEL9BaseOS}]
+name=Red Hat Enterprise Linux 9 for x86_64 - BaseOS (RPMs)
+metadata_expire=-1
+gpgcheck=0
+cost=500
+baseurl=file:///<export baseos location>/content/dist/rhel9/9/x86_64/baseos/os
+[{RepoRHEL9AppStream}]
+name=Red Hat Enterprise Linux 9 for x86_64 - AppStream (RPMs)
+mediaid=None
+metadata_expire=-1
+gpgcheck=0
+cost=500
+baseurl=file:///<export appstream location>/content/dist/rhel9/9/x86_64/appstream/os
+[{Project}]
+name={Project}
+mediaid=None
+metadata_expire=-1
+gpgcheck=0
+cost=500
+baseurl=file:///<export location>/content/dist/layered/rhel8/x86_64/{project-context}/{ProjectVersion}/os/
 ----
-
-.. Add the `baseurl` directive:
 +
-[options="nowrap"]
-----
-baseurl=file:///media/sat6/Maintenance/
-----
-
-. Optional: Because of the lengthy upgrade time, use a utility such as `tmux` to suspend and reattach a communication session.
-You can then check the upgrade progress without staying connected to the command shell continuously.
-+
-If you lose connection to the command shell where the upgrade command is running, you can see the logs in `{installer-log-file}` to check if the process completed successfully.
-
-. Upgrade {foreman-maintain} to its next version:
-+
-[options="nowrap" subs="attributes"]
-----
-# {foreman-maintain} self-upgrade --maintenance-repo-label {Project}-Maintenance
-----
-
-. If you are using an external database, upgrade your database to PostgreSQL 13.
-. Use the health check option to determine if the system is ready for upgrade.
-When prompted, enter the hammer admin user credentials to configure `{foreman-maintain}` with hammer credentials.
-These changes are applied to the `/etc/foreman-maintain/foreman-maintain-hammer.yml` file.
+. Upgrade {foreman-maintain} to the next version:
 +
 [options="nowrap" subs="attributes"]
 ----
-# {foreman-maintain} upgrade check --whitelist="repositories-validate,repositories-setup"
+# {foreman-maintain} self-upgrade  --maintenance-repo-label={Project}
 ----
+
+. Use the health check option to determine if the system is ready for update.
+The first time you run this command, `{foreman-maintain}` prompts you to enter the hammer admin user credentials and saves them in `/etc/foreman-maintain/foreman-maintain-hammer.yml`.
 +
-Review the results and address any highlighted error conditions before performing the upgrade.
-. Perform the upgrade:
-+
-[options="nowrap" subs="attributes"]
+[options="nowrap" subs="+quotes,verbatim,attributes"]
 ----
-# {foreman-maintain} upgrade run --whitelist="repositories-validate,repositories-setup"
+# {foreman-maintain} upgrade check --whitelist="repositories-validate,repositories-setup" \ 
+--target-version={ProjectVersion}
+----
+. Review the results and resolve any errors before proceeding with the update.
+. Due to the lengthy update time, use a utility such as `tmux` to suspend and resume the session as needed.
+This allows you to monitor progress without maintaining a continuous connection to the command shell.
++
+If you lose connection to the command shell running the update command, you can see the logged messages in `{installer-log-file}` to confirm whether the process completed successfully.
+. Perform the update:
++
+[options="nowrap" subs="+quotes,verbatim,attributes"]
+----
+# {foreman-maintain} upgrade run --whitelist="repositories-validate,repositories-setup" \
+--target-version={ProjectVersion}
 ----
 +
 If the script fails due to missing or outdated packages, you must download and install these separately.
@@ -150,12 +155,11 @@ include::snip_steps-needs-reboot.adoc[]
 # {foreman-maintain} service restart
 ----
 
-. If you have the OpenSCAP plugin installed, but do not have the default OpenSCAP content available, enter the following command.
+. If you have the OpenSCAP plugin installed but do not have the default OpenSCAP content available, enter the following command.
 +
 [options="nowrap" subs="attributes"]
 ----
 # foreman-rake foreman_openscap:bulk_upload:default
 ----
 
-. In the {ProjectWebUI}, navigate to *Configure* > *Discovery Rules*.
- Associate selected organizations and locations with discovery rules.
+. In the {ProjectWebUI}, navigate to *Configure* > *Discovery Rules* and associate the selected organizations and locations with the appropriate discovery rules.
