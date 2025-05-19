@@ -1,34 +1,33 @@
 [id="upgrading_a_connected_{project-context}_server_{context}"]
 = Upgrading a connected {ProjectServer}
 
-Use this procedure for a {ProjectServer} with access to the public internet
+Upgrading a {ProjectServer} with access to the public internet includes ...
 
 include::snip_warning-maintain-config-noop.adoc[]
 
-include::snip_prerequisites-upgrading-project-server.adoc[]
-
-.Upgrade {ProjectServer}
-
-. Stop all {Project} services:
+.Procedure
+. Create a backup of your {ProjectServer}:
+.. Stop all {Project} services:
 +
 [options="nowrap" subs="+quotes,verbatim,attributes"]
 ----
 # {foreman-maintain} service stop
 ----
-. Take a snapshot or create a backup:
+.. Take a snapshot or create a backup:
 * On a virtual machine, take a snapshot.
 * On a physical machine, create a backup.
 +
-. Start all {Project} services:
+.. Start all {Project} services:
 +
 [options="nowrap" subs="+quotes,verbatim,attributes"]
 ----
 # {foreman-maintain} service start
 ----
-
-. Optional: If you made manual edits to DNS or DHCP configuration in the `/etc/zones.conf` or `/etc/dhcp/dhcpd.conf` files, back up the configuration files because the installer only supports one domain or subnet, and therefore restoring changes from these backups might be required.
-
-. Optional: If you made manual edits to DNS or DHCP configuration files and do not want to overwrite the changes, enter the following command:
+. If you made manual edits to you DNS or DHCP configuration in the `/etc/zones.conf` or `/etc/dhcp/dhcpd.conf` files, ensure that {Project} does not overwrite your configuration during the upgrade.
+Choose one of the following options:
+** Create a backup of the configuration files manually.
+After you finish upgrading, you will restore the files from the backup.
+** Disable DNS and DHCP configuration management in {Project}:
 +
 [options="nowrap" subs="attributes"]
 ----
@@ -36,10 +35,13 @@ include::snip_prerequisites-upgrading-project-server.adoc[]
 --foreman-proxy-dhcp-managed=false \
 --foreman-proxy-dns-managed=false
 ----
-. In the {ProjectWebUI}, navigate to *Hosts* > *Discovered hosts*.
-On the Discovered Hosts page, power off and then delete the discovered hosts.
-From the *Select an Organization* menu, select each organization in turn and repeat the process to power off and delete the discovered hosts.
-Make a note to reboot these hosts when the upgrade is complete.
++
+After you finish upgrading, you will be able to revert this to enable {Project} to manage the configuration again.
+. Delete discovered but unregistered hosts from {Project}.
+For example, by using the {ProjectWebUI}:
+.. In the {ProjectWebUI}, navigate to *Hosts* > *Discovered hosts*.
+.. On the *Discovered Hosts* page, power off and delete the discovered hosts.
+.. From the *Select an Organization* menu, select each organization in turn and repeat the process to power off and delete the discovered hosts.
 ifdef::satellite[]
 . Ensure that the {Project} Maintenance repository is enabled:
 +
@@ -48,16 +50,53 @@ ifdef::satellite[]
 # subscription-manager repos --enable \
 {RepoRHEL9ServerSatelliteMaintenanceProjectVersion}
 ----
-. Upgrade {foreman-maintain} to its next version:
+endif::[]
+ifdef::foreman-deb[]
+. Update repositories in `/etc/apt/sources.list.d/foreman.list` to consume content for {Project} {ProjectVersion}:
++
+[options="nowrap" subs="+quotes,verbatim,attributes"]
+----
+deb http://deb.theforeman.org/ _My_Distribution_Code_Name_ {ProjectVersion}
+deb http://deb.theforeman.org/ plugins {ProjectVersion}
+----
++
+// List of supported operating systems for foreman-deb has to match "guides/common/modules/proc_configuring-repositories-foreman-deb.adoc"
+Replace _My_Distribution_Code_Name_ with the proper distribution code name based on the operating system of your {ProjectServer}:
++
+* `bookworm` for Debian 12
+* `jammy` for Ubuntu 22.04
+endif::[]
+ifdef::foreman-deb[]
+. Update to {Project} {ProjectVersion}:
++
+[options="nowrap" subs="attributes"]
+----
+# apt-get update
+# apt-get upgrade
+----
+endif::[]
+ifdef::foreman-el,katello[]
+. Update repositories:
++
+[options="nowrap" subs="attributes"]
+----
+ifdef::katello[]
+# {project-package-update} https://yum.theforeman.org/releases/{ProjectVersion}/el9/x86_64/foreman-release.rpm \
+https://yum.theforeman.org/katello/{KatelloVersion}/katello/el9/x86_64/katello-repos-latest.rpm
+endif::[]
+ifdef::foreman-el[]
+# {project-package-update} https://yum.theforeman.org/releases/{ProjectVersion}/el9/x86_64/foreman-release.rpm
+endif::[]
+----
+endif::[]
+ifdef::satellite[]
+. Upgrade the {foreman-maintain} utility to its latest version:
 +
 [options="nowrap" subs="attributes"]
 ----
 # {foreman-maintain} self-upgrade
 ----
-
-. Use the health check option to determine if the system is ready for upgrade.
-When prompted, enter the hammer admin user credentials to configure `{foreman-maintain}` with hammer credentials.
-These changes are applied to the `/etc/foreman-maintain/foreman-maintain-hammer.yml` file.
+. Determine whether your system is ready for {Project} upgrade:
 +
 [options="nowrap" subs="attributes"]
 ----
@@ -65,13 +104,15 @@ These changes are applied to the `/etc/foreman-maintain/foreman-maintain-hammer.
 ----
 +
 Review the results and address any highlighted error conditions before performing the upgrade.
-
-. Optional: Because of the lengthy upgrade time, use a utility such as `tmux` to suspend and reattach a communication session.
-You can then check the upgrade progress without staying connected to the command shell continuously.
 +
-If you lose connection to the command shell where the upgrade command is running, you can see the logged messages in the `{installer-log-file}` file to check if the process completed successfully.
-
-. Perform the upgrade:
+[NOTE]
+====
+The `{foreman-maintain} upgrade check` might prompt you for the Hammer admin user credentials.
+These changes are applied to the `/etc/foreman-maintain/foreman-maintain-hammer.yml` file.
+====
+. Run the {ProjectServer} upgrade command.
+Because of the lengthy upgrade time, consider using a utility such as `tmux`.
+For more information, see xref:following_the_progress_of_the_upgrade_upgrading-connected[].
 +
 [options="nowrap" subs="attributes"]
 ----
@@ -93,26 +134,8 @@ ifdef::foreman-deb[]
 ----
 # {foreman-maintain} service stop
 ----
-. Update repositories in `/etc/apt/sources.list.d/foreman.list` to consume content for {Project} {ProjectVersion}:
-+
-[options="nowrap" subs="+quotes,verbatim,attributes"]
-----
-deb http://deb.theforeman.org/ _My_Distribution_Code_Name_ {ProjectVersion}
-deb http://deb.theforeman.org/ plugins {ProjectVersion}
-----
-+
-// List of supported operating systems for foreman-deb has to match "guides/common/modules/proc_configuring-repositories-foreman-deb.adoc"
-Replace _My_Distribution_Code_Name_ with the proper distribution code name based on the operating system of your {ProjectServer}:
-+
-* `bookworm` for Debian 12
-* `jammy` for Ubuntu 22.04
-. Update to {Project} {ProjectVersion}:
-+
-[options="nowrap" subs="attributes"]
-----
-# apt-get update
-# apt-get upgrade
-----
+endif::[]
+ifdef::foreman-deb[]
 . Run `{foreman-installer}`:
 +
 [options="nowrap" subs="+quotes,verbatim,attributes"]
@@ -121,37 +144,18 @@ Replace _My_Distribution_Code_Name_ with the proper distribution code name based
 ----
 endif::[]
 ifdef::foreman-el,katello[]
-. Update operating system packages:
-+
-[options="nowrap" subs="attributes"]
-----
-# {project-package-update}
-----
-. Update repositories:
-+
-[options="nowrap" subs="attributes"]
-----
-ifdef::katello[]
-# {project-package-update} https://yum.theforeman.org/releases/{ProjectVersion}/el9/x86_64/foreman-release.rpm \
-https://yum.theforeman.org/katello/{KatelloVersion}/katello/el9/x86_64/katello-repos-latest.rpm
-endif::[]
-ifdef::foreman-el[]
-# {project-package-update} https://yum.theforeman.org/releases/{ProjectVersion}/el9/x86_64/foreman-release.rpm
-endif::[]
-----
 . Stop all services:
 +
 [options="nowrap" subs="attributes"]
 ----
 # {foreman-maintain} service stop
 ----
-. Update the required packages:
+. Update packages:
 +
 [options="nowrap" subs="attributes"]
 ----
 # {project-package-update}
 ----
-+
 . Run the installer:
 +
 [options="nowrap" subs="attributes"]
@@ -160,3 +164,4 @@ endif::[]
 ----
 endif::[]
 include::snip_steps-needs-reboot.adoc[]
+. Reboot the discovered hosts that you deleted before upgrading.
