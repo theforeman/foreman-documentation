@@ -1,0 +1,98 @@
+[id="configuring-foreman-server-or-smart-proxy-server-for-use-with-freeipa"]
+= Configuring {ProjectServer} or {SmartProxyServer} for use with {FreeIPA}
+
+After you have prepared the {FreeIPA} DNS server as described in xref:configuring-freeipa-to-use-with-foreman-server[], integrate the DNS server into the {ProjectServer} or {SmartProxyServer}.
+
+.Prerequisites
+* You set the DNS search domain of the host to the {FreeIPA} DNS domain.
+* You know the Kerberos principal the host should use to authenticate to the {FreeIPA} DNS server, for example `_{smart-proxy-principal}/{foreman-example-com}_`.
+
+.Procedure
+. If the {Project} or {SmartProxy} host is not yet a member of the {FreeIPA} domain:
+
+.. Install the `ipa-client` package:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {project-package-install} ipa-client
+----
+.. Install the {FreeIPA} client:
++
+[options="nowrap"]
+----
+# ipa-client-install
+----
++
+Follow the on-screen prompts.
+. Obtain a Kerberos ticket for the `admin` user:
++
+[options="nowrap"]
+----
+# kinit admin
+----
+. If the `/etc/foreman-proxy/dns.keytab` file exists, remove it:
++
+[options="nowrap"]
+----
+# rm --force /etc/foreman-proxy/dns.keytab
+----
+. Obtain a Kerberos keytab file for this system, and store it in the `/etc/foreman-proxy/dns.keytab` file:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# ipa-getkeytab -p _{smart-proxy-principal}/{foreman-example-com}@EXAMPLE.COM_ \
+-k /etc/foreman-proxy/dns.keytab
+----
++
+[IMPORTANT]
+====
+When adding a keytab to a standby system with the same host name as the original system in service, pass the `-r` option to the `ipa-getkeytab` command to prevent generating new credentials and rendering the credentials on the original system invalid.
+====
+. Set the owner and group of `/etc/foreman-proxy/dns.keytab` to `foreman-proxy`:
++
+[options="nowrap"]
+----
+# chown foreman-proxy:foreman-proxy /etc/foreman-proxy/dns.keytab
+----
+. Verify that the `/etc/foreman-proxy/dns.keytab` file is valid:
+
+.. Use the file to obtain a Kerberos ticket:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# kinit -kt /etc/foreman-proxy/dns.keytab \
+_{smart-proxy-principal}/{foreman-example-com}@EXAMPLE.COM_
+----
+
+.. Display the Kerberos ticket:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# klist
+----
++
+Example output:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+Ticket cache: KCM:0:50473
+Default principal: smartproxy/{foreman-example-com}@EXAMPLE.COM
+
+Valid starting       Expires              Service principal
+05/20/2025 12:12:35  05/21/2025 11:54:31  krbtgt/EXAMPLE.COM@EXAMPLE.COM
+----
+
+. Configure {ProjectServer} or {SmartProxyServer} to connect to the {FreeIPA} DNS service:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foreman-installer} \
+--foreman-proxy-dns true \
+--foreman-proxy-dns-provider nsupdate_gss \
+--foreman-proxy-dns-managed false \
+--foreman-proxy-dns-server "_{freeipaserver-example-com}_" \
+--foreman-proxy-dns-tsig-keytab /etc/foreman-proxy/dns.keytab \
+--foreman-proxy-dns-tsig-principal "_{smart-proxy-principal}/{foreman-example-com}@EXAMPLE.COM_"
+----
+. For each affected {SmartProxy}, update the configuration of that {SmartProxy} in the {ProjectWebUI}.
+For more information, see xref:associating-the-dns-service-with-a-domain-and-subnet[].
