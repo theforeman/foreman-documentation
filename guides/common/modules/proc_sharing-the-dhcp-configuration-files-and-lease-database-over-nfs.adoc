@@ -1,0 +1,85 @@
+[id="sharing-the-dhcp-configuration-files-and-lease-database-over-nfs"]
+= Sharing the DHCP configuration files and lease database over NFS
+
+The integration of an existing remote ISC DHCP service requires that you share the configuration file and lease database of the service over network.
+For example, you can use the NFS service.
+{Project} then uses NFS to access configuration settings, such as subnet definitions.
+Read access to the lease database ensures efficient access to all lease information, which is not available over the ISC DHCP Object Management Application Programming Interface (OMAPI).
+
+.Prerequisites
+* The ISC DHCP service is deployed and functional.
+
+.Procedure
+. On {ProjectServer}, determine both the UID and the primary GID of the `foreman-proxy` user:
++
+[options="nowrap" subs="+quotes"]
+----
+# id -u foreman-proxy
+_993_
+
+# id -g foreman-proxy
+_990_
+----
++
+You require these IDs in the next steps.
+. On the DHCP server, share the DHCP service's configuration and lease database over NFS:
+.. Create the `foreman-proxy` group with the same group ID as on the {ProjectServer}:
++
+[options="nowrap" subs="+quotes"]
+----
+# groupadd -g _990_ foreman-proxy
+----
+.. Create the `foreman-proxy` user with the same user ID and primary group ID as on the {ProjectServer}:
++
+[options="nowrap" subs="+quotes"]
+----
+# useradd -u _993_ -g _990_ -s /sbin/nologin foreman-proxy
+----
+.. Ensure that members of the `foreman-proxy` group can access the configuration file of the DHCP service:
++
+[options="nowrap"]
+----
+# chgrp -R foreman-proxy /etc/dhcp/
+# chmod g+rx /etc/dhcp/
+# chmod g+r /etc/dhcp/dhcpd.conf
+----
+.. Install the `nfs-server` package:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {client-package-install-el8} {nfs-server-package}
+----
+
+.. Edit the `/etc/exports` file, and append share entries for the `/etc/dhcp/` and `/var/lib/dhcpd/` directories:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+/etc/dhcp        _{foreman-example-com}_(ro)
+/var/lib/dhcpd   _{foreman-example-com}_(ro)
+----
+Share the directories in read-only mode and only with the {ProjectServer} or {SmartProxyServer}.
+.. Enable and start the NFS server service:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# systemctl enable --now nfs-server
+----
+.. Open the NFSv4 port in the `firewalld` service:
++
+[options="nowrap"]
+----
+# firewall-cmd --add-service=nfs
+----
+.. Make the changes persistent:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# firewall-cmd --runtime-to-permanent
+----
+
+ifndef::orcharhino[]
+.Next steps
+* By default, the NFS protocol is unencrypted.
+If you require an encrypted connection, configure NFS over TLS or Kerberos authentication after you completed this procedure.
+For more information see link:https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/configuring_and_using_network_file_services/deploying-an-nfs-server_configuring-and-using-network-file-services#configuring-an-nfs-server-with-tls-support_deploying-an-nfs-server[Configuring an NFS server with TLS support] and link:https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/configuring_and_using_network_file_services/deploying-an-nfs-server_configuring-and-using-network-file-services#setting-up-an-nfs-server-with-kerberos-in-a-red-hat-identity-management-domain_deploying-an-nfs-server[Setting up an NFS server with Kerberos in a Red Hat Enterprise Linux Identity Management domain] in _{RHEL}{nbsp}9 Configuring and using network file services_.
+endif::[]
