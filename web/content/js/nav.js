@@ -23,18 +23,6 @@ function buildNavigation() {
 </button>
 <ul class="nav-menu">
   <li class="nav-item"><a href="https://theforeman.org/">About Foreman</a></li>`
-    + navBuilds.map(function(build){
-      return(
-        `<li class="nav-item dropdown">
-          <a href="#" data-action="dropdown-toggle">${build.title}</a>
-            <div class="dropdown-menu">`
-            + build.guides.map(function(guide){
-              const url = `/${currentVer}/${guide.path}/${build.filename}`;
-              return `<div class="dropdown-div"><a class="dropdown-item" href="${url}">${guide.title}</a></div>`;
-            }).join("")
-            +`</div>
-        </li>`
-      )}).join("")
     + `<li class="nav-item dropdown">
         <a href="#" data-action="dropdown-toggle">Version ${currentVer}</a>
         <div class="dropdown-menu dropdown-menu-left">`
