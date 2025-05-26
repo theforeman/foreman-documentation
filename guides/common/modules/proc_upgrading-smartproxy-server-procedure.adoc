@@ -1,0 +1,101 @@
+. Create a backup of your {SmartProxyServer}.
+* If your {SmartProxyServer} runs on a virtual machine:
+.. Stop all {Project} services:
++
+[options="nowrap" subs="+quotes,verbatim,attributes"]
+----
+# {foreman-maintain} service stop
+----
+.. Take a snapshot.
+.. Start all {Project} services:
++
+[options="nowrap" subs="+quotes,verbatim,attributes"]
+----
+# {foreman-maintain} service start
+----
+* If your {SmartProxyServer} runs on a physical machine, create a backup as described in {AdministeringDocURL}[Backing up {ProjectServer} and {SmartProxyServer}] in _{AdministeringDocTitle}_.
+ifdef::foreman-el,katello[]
+. Update repositories:
++
+[options="nowrap" subs="attributes"]
+----
+ifdef::katello[]
+# {project-package-update} https://yum.theforeman.org/releases/{ProjectVersion}/el9/x86_64/foreman-release.rpm \
+https://yum.theforeman.org/katello/{KatelloVersion}/katello/el9/x86_64/katello-repos-latest.rpm
+endif::[]
+ifdef::foreman-el[]
+# {project-package-update} https://yum.theforeman.org/releases/{ProjectVersion}/el9/x86_64/foreman-release.rpm
+endif::[]
+----
+endif::[]
+ifdef::foreman-deb[]
+. Update repositories in `/etc/apt/sources.list.d/foreman.list` to consume content for {Project} {ProjectVersion}:
++
+[options="nowrap" subs="+quotes,verbatim,attributes"]
+----
+deb http://deb.theforeman.org/ {distribution-codename} {ProjectVersion}
+deb http://deb.theforeman.org/ plugins {ProjectVersion}
+----
+endif::[]
+ifdef::foreman-deb,foreman-el,katello[]
+. Stop {Project} services:
++
+[options="nowrap" subs="attributes"]
+----
+# {foreman-maintain} service stop
+----
+. Update the required packages:
++
+[options="nowrap" subs="attributes"]
+----
+# {project-package-update}
+----
+. Run the {Project} installer:
++
+[options="nowrap" subs="attributes"]
+----
+# {foreman-installer}
+----
+endif::[]
+ifdef::satellite[]
+. Delete cached repository metadata:
++
+[options="nowrap" subs="attributes"]
+----
+# yum clean metadata
+----
+. Upgrade the `{foreman-maintain}` utility on the {SmartProxyServer} to its latest version:
++
+[options="nowrap" subs="attributes"]
+----
+# {foreman-maintain} self-upgrade
+----
+. Verify that the `/etc/foreman-proxy/settings.yml` file on the {SmartProxyServer} points to the fully qualified domain name (FQDN) of your {ProjectServer}:
++
+[options="nowrap" subs="attributes"]
+----
+# grep foreman_url /etc/foreman-proxy/settings.yml
+----
+. Determine whether {SmartProxyServer} is ready for the upgrade:
++
+[options="nowrap" subs="attributes"]
+----
+# {foreman-maintain} upgrade check
+----
++
+Review the results and address any highlighted error conditions before performing the upgrade.
+. Run the {Project} upgrade command.
+Because of the lengthy upgrade time, consider using a utility such as `tmux`.
+ifdef::upgrading-connected[]
+For more information, see xref:following_the_progress_of_the_upgrade_upgrading-connected[].
+endif::[]
+ifdef::upgrading-disconnected[]
+For more information, see xref:following_the_progress_of_the_upgrade_upgrading-disconnected[].
+endif::[]
++
+[options="nowrap" subs="attributes"]
+----
+# {foreman-maintain} upgrade run
+----
+endif::[]
+include::snip_steps-needs-reboot.adoc[]
