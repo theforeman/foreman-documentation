@@ -357,7 +357,7 @@ You can then check the upgrade progress without staying connected to the command
 <div class="sect2">
 <h3 id="upgrading_a_connected_foreman_server_upgrading-connected"><a class="anchor" href="#upgrading_a_connected_foreman_server_upgrading-connected"></a>2.1. Upgrading a connected Foreman&#160;server</h3>
 <div class="paragraph">
-<p>Use this procedure for a Foreman&#160;server with access to the public internet</p>
+<p>Upgrading a Foreman&#160;server with access to the public internet includes backing up the server, ensuring that the system and Foreman configuration is up-to-date, and running the upgrade.</p>
 </div>
 <div class="admonitionblock warning">
 <table>
@@ -376,47 +376,31 @@ You can use the <code>--noop</code> option with the foreman-installer to test fo
 <div class="title">Prerequisites</div>
 <ul>
 <li>
-<p>If you have edited any of the default templates, back up the files either by cloning or exporting them.</p>
-<div class="ulist">
-<ul>
-<li>
-<p>To confirm if a template has been edited, view its <strong>History</strong> before you upgrade.
-Alternatively, view the changes in the audit log after you upgrade.
-In the Foreman web UI, navigate to <strong>Monitor</strong> &gt; <strong>Audits</strong> and search for the template to see a record of changes made.</p>
-</li>
-<li>
-<p>The recommended template backup method is cloning.
-Cloning prevents templates from being overwritten in future updates or upgrades.</p>
-</li>
-<li>
-<p>If you use the export backup method, restore your changes by comparing the exported template and the default template, and then manually apply your changes.</p>
-</li>
-</ul>
+<p>If you have made manual edits to you DNS or DHCP configuration in the <code>/etc/zones.conf</code> or <code>/etc/dhcp/dhcpd.conf</code> files, ensure DNS and DHCP configuration management is disabled:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer \
+--foreman-proxy-dhcp-managed=false \
+--foreman-proxy-dns-managed=false</pre>
 </div>
-</li>
-<li>
-<p>If you implemented custom certificates, you must retain the content of both the <code>/root/ssl-build</code> directory and the directory in which you created any source files associated with your custom certificates.</p>
-<div class="admonitionblock warning">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Warning</div>
-</td>
-<td class="content">
+</div>
 <div class="paragraph">
-<p>Failure to retain these files during an upgrade causes the upgrade to fail.
-If these files have been deleted, they must be restored from a backup in order for the upgrade to proceed.</p>
-</div>
-</td>
-</tr>
-</table>
+<p>This prevents the upgrade process from overwriting your DNS and DHCP configuration.</p>
 </div>
 </li>
 </ul>
 </div>
 <div class="olist arabic">
-<div class="title">Upgrade Foreman&#160;server</div>
+<div class="title">Procedure</div>
 <ol class="arabic">
+<li>
+<p>Create a backup of your Foreman&#160;server.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>If your Foreman&#160;server runs on a virtual machine:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
 <li>
 <p>Stop all Foreman services:</p>
 <div class="listingblock">
@@ -426,17 +410,7 @@ If these files have been deleted, they must be restored from a backup in order f
 </div>
 </li>
 <li>
-<p>Take a snapshot or create a backup:</p>
-<div class="ulist">
-<ul>
-<li>
-<p>On a virtual machine, take a snapshot.</p>
-</li>
-<li>
-<p>On a physical machine, create a backup.</p>
-</li>
-</ul>
-</div>
+<p>Take a snapshot.</p>
 </li>
 <li>
 <p>Start all Foreman services:</p>
@@ -446,39 +420,13 @@ If these files have been deleted, they must be restored from a backup in order f
 </div>
 </div>
 </li>
-<li>
-<p>Optional: If you made manual edits to DNS or DHCP configuration in the <code>/etc/zones.conf</code> or <code>/etc/dhcp/dhcpd.conf</code> files, back up the configuration files because the installer only supports one domain or subnet, and therefore restoring changes from these backups might be required.</p>
-</li>
-<li>
-<p>Optional: If you made manual edits to DNS or DHCP configuration files and do not want to overwrite the changes, enter the following command:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># foreman-installer \
---foreman-proxy-dhcp-managed=false \
---foreman-proxy-dns-managed=false</pre>
-</div>
+</ol>
 </div>
 </li>
 <li>
-<p>In the Foreman web UI, navigate to <strong>Hosts</strong> &gt; <strong>Discovered hosts</strong>.
-On the Discovered Hosts page, power off and then delete the discovered hosts.
-From the <strong>Select an Organization</strong> menu, select each organization in turn and repeat the process to power off and delete the discovered hosts.
-Make a note to reboot these hosts when the upgrade is complete.</p>
+<p>If your Foreman&#160;server runs on a physical machine, create a backup as described in <a href="https://docs.theforeman.org/nightly/Administering_Project/index-katello.html#">Backing up Foreman&#160;server and Smart&#160;Proxy&#160;server</a> in <em>Administering Foreman</em>.</p>
 </li>
-<li>
-<p>Check for running tasks:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># foreman-rake katello:upgrade_check</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Update operating system packages:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># dnf upgrade</pre>
-</div>
+</ul>
 </div>
 </li>
 <li>
@@ -491,7 +439,15 @@ https://yum.theforeman.org/katello/nightly/katello/el9/x86_64/katello-repos-late
 </div>
 </li>
 <li>
-<p>Stop all services:</p>
+<p>Check for running tasks:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-rake katello:upgrade_check</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Stop all Foreman services:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># foreman-maintain service stop</pre>
@@ -499,7 +455,7 @@ https://yum.theforeman.org/katello/nightly/katello/el9/x86_64/katello-repos-late
 </div>
 </li>
 <li>
-<p>Update the required packages:</p>
+<p>Update packages:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># dnf upgrade</pre>
@@ -507,7 +463,7 @@ https://yum.theforeman.org/katello/nightly/katello/el9/x86_64/katello-repos-late
 </div>
 </li>
 <li>
-<p>Run the installer:</p>
+<p>Run the Foreman installer:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># foreman-installer</pre>
@@ -538,9 +494,29 @@ https://yum.theforeman.org/katello/nightly/katello/el9/x86_64/katello-repos-late
 <div class="ulist">
 <ul>
 <li>
+<p>If you cloned the default templates in Foreman to create custom templates, verify whether the default templates changed during the upgrade.
+If the default templates have changed, consider updating your custom templates to reflect these changes.</p>
+</li>
+<li>
 <p>Optional: If the default provisioning templates have been changed during the upgrade, recreate any templates cloned from the default templates.
 If the custom code is executed before and/or after the provisioning process, use custom provisioning snippets to avoid recreating cloned templates.
 For more information about configuring custom provisioning snippets, see <a href="https://docs.theforeman.org/nightly/Provisioning_Hosts/index-katello.html#Creating_Custom_Provisioning_Snippets_provisioning">Creating Custom Provisioning Snippets</a> in <em>Provisioning hosts</em>.</p>
+</li>
+<li>
+<p>If your Foreman shows any discovered hosts, reboot them:</p>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Hosts</strong> &gt; <strong>Discovered hosts</strong>.</p>
+</li>
+<li>
+<p>Select <strong>Any Organization</strong> to display all discovered hosts.</p>
+</li>
+<li>
+<p>Reboot all discovered hosts.</p>
+</li>
+</ol>
+</div>
 </li>
 <li>
 <p>Pulp is introducing more data about container manifests to the API.
