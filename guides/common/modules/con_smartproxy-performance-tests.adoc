@@ -1,0 +1,41 @@
+[id="Smart_Proxy_Performance_Tests_{context}"]
+= {SmartProxy} performance tests
+
+We have measured multiple test cases on multiple {SmartProxy} configurations:
+
+[width="79%",cols="48%,19%,33%",options="header",]
+|===
+|{SmartProxy} HW configuration |CPUs |RAM
+|minimal |4 |12 GiB
+|large |8 |24 GiB
+|extra large |16 |46 GiB
+|===
+
+.Content delivery use case
+In a download test where we concurrently downloaded a 40MB repo of 2000 packages on 100, 200, .. 1000 hosts, we saw roughly 50% improvement in average download duration every time when we doubled {SmartProxyServer} resources.
+For more precise numbers, see the table below.
+
+[width="100%",cols="25%,25%,25%,25%",options="header",]
+|===
+|Concurrent downloading hosts |Minimal (4 CPU and 12 GiB RAM) -> Large (8 CPU and 24 GiB RAM) |Large (8 CPU and 24 GiB RAM) -> Extra Large (16 CPU and 46 GiB RAM) |Minimal (4 CPU and 12 GiB RAM) -> Extra Large (16 CPU and 46 GiB RAM)
+|Average Improvement |~ 50% (e.g. for 700 concurrent downloads in average 9 seconds vs. 4.4 seconds per package) |~ 40% (e.g. for 700 concurrent downloads in average 4.4 seconds vs. 2.5 seconds per package) |~ 70% (e.g. for 700 concurrent downloads in average 9 seconds vs. 2.5 seconds per package)
+|===
+
+When we compared download performance from {ProjectServer} vs. from {SmartProxyServer}, we have seen only about 5% speedup, but that is expected as {SmartProxyServer}'s main benefit is in getting content closer to geographically distributed clients (or clients in different networks) and in handling part of the load {ProjectServer} would have to handle itself.
+In some smaller hardware configurations (8 CPUs and 24 GiB), {ProjectServer} was not able to handle downloads from more than 500 concurrent clients, while a {SmartProxyServer} with the same hardware configuration was able to service more than 1000 and possibly even more.
+
+.Concurrent registrations use case
+For concurrent registrations, a bottleneck is usually CPU speed, but all configs were able to handle even high concurrency without swapping.
+Hardware resources used for {SmartProxy} have only minimal impact on registration performance.
+For example, {SmartProxyServer} with 16 CPUs and 46 GiB RAM have at most a 9% registration speed improvement when compared to a {SmartProxyServer} with 4 CPUs and 12 GiB RAM.
+During periods of very high concurrency, you might experience timeouts in the {SmartProxyServer} to {ProjectServer} communication.
+You can alleviate this by increasing the default timeout by using the following tunable in `/etc/foreman-installer/custom-hiera.yaml`:
+
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+apache::mod::proxy::proxy_timeout: 600
+----
+
+.Remote execution use case
+We have tested executing Remote Execution jobs via both SSH and Ansible backend on 500, 2000 and 4000 hosts.
+All configurations were able to handle all of the tests without errors, except for the smallest configuration (4 CPUs and 12 GiB memory) which failed to finish on all 4000 hosts.
