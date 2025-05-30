@@ -4,44 +4,51 @@
 After upgrading your {ProjectServer}, perform the following tasks to ensure your environment is adjusted to any changes made during the upgrade.
 Some tasks might be optional depending on your specific configuration.
 
-* If you cloned the default templates in {Project} to create custom templates, verify whether the default templates changed during the upgrade.
-If the default templates have changed, consider updating your custom templates to reflect these changes.
+ifdef::orcharhino,satellite[]
+[NOTE]
+====
+After the {ProjectServer} upgrade finishes, container manifest data is migrated to the {Project} API.
+This data enables Katello to display manifest labels, annotations, and information about the manifest type, such as if it is bootable or represents Flatpak content.
+This action helps reduce future upgrade downtime.
 
-* Optional: If the default provisioning templates have been changed during the upgrade, recreate any templates cloned from the default templates.
-If the custom code is executed before and/or after the provisioning process, use custom provisioning snippets to avoid recreating cloned templates.
+While the migration is running, the upgraded server is fully functional but uses more hardware resources.
+====
+endif::[]
+
+* If any of the templates you are using were created by cloning the default {Project} templates, verify whether the default templates changed during the upgrade.
+If the default templates have changed, consider updating your custom templates as well to reflect these changes.
++
+If the default provisioning templates changed during the upgrade and if your custom code is executed before or after the provisioning process, you can use custom provisioning snippets to avoid recreating cloned templates.
 For more information about configuring custom provisioning snippets, see {ProvisioningDocURL}Creating_Custom_Provisioning_Snippets_provisioning[Creating Custom Provisioning Snippets] in _{ProvisioningDocTitle}_.
-
 * If your {Project} shows any discovered hosts, reboot them:
 . In the {ProjectWebUI}, navigate to *Hosts* > *Discovered hosts*.
 . Select *Any Organization* to display all discovered hosts.
 . Reboot all discovered hosts.
-
-ifdef::katello,orcharhino,satellite[]
-* Pulp is introducing more data about container manifests to the API.
-This information allows Katello to display manifest labels, annotations, and information about the manifest type, such as if it is bootable or represents flatpak content.
-As a result, migrations must be performed to pull this content from manifests into the database.
-endif::[]
-
 ifdef::katello[]
-This migration takes time, so if you depend on container content and need minimal upgrade downtime, use this procedure to migrate data.
-
-.Procedure
-. Enter the following command in a `tmux` window on {ProjectServer} for a pre-migration.
-This command migrates data while {Project} is running without any need for downtime and reduces future upgrade downtime:
+* Optional: If you depend on container content, consider migrating container manifest data to the {Project} API.
++
+[NOTE]
+====
+This data enables Katello to display manifest labels, annotations, and information about the manifest type, such as if it is bootable or represents Flatpak content.
+Performing this action after upgrading your {ProjectServer} to {ProjectVersion} helps reduce future upgrade time.
+====
++
+. Start the data migration.
++
+[NOTE]
+====
+The migration takes time.
+Consider using a utility such as `tmux` for flexible session management.
+====
 +
 [options="nowrap" subs="attributes"]
 ----
 # {foreman-maintain} advanced procedure run pulpcore-container-handle-image-metadata
 ----
-. If the manifest represents bootable or flatpak content, allow the container image API to display manifest labels, annotations by entering the following command:
+. If the manifest represents bootable or flatpak content, allow the container image API to display manifest labels:
 +
 [options="nowrap" subs="attributes"]
 ----
 # foreman-rake katello:import_container_manifest_labels
 ----
-endif::[]
-
-ifdef::satellite,orcharhino[]
-This migration takes time, so a pre-migration runs automatically after the upgrade to {ProjectVersion} to reduce future upgrade downtime.
-While the pre-migration is running, {ProjectServer} is fully functional but uses more hardware resources.
 endif::[]
