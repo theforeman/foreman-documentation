@@ -1,0 +1,111 @@
+. Create a backup of your {ProjectServer}.
+* If your {ProjectServer} runs on a virtual machine:
+.. Stop all {Project} services:
++
+[options="nowrap" subs="+quotes,verbatim,attributes"]
+----
+# {foreman-maintain} service stop
+----
+.. Take a snapshot.
+.. Start all {Project} services:
++
+[options="nowrap" subs="+quotes,verbatim,attributes"]
+----
+# {foreman-maintain} service start
+----
+* If your {ProjectServer} runs on a physical machine, create a backup as described in {AdministeringDocURL}[Backing up {ProjectServer} and {SmartProxyServer}] in _{AdministeringDocTitle}_.
+ifdef::satellite[]
+. Ensure that the {Project} Maintenance repository is enabled:
++
+[options="nowrap" subs="attributes"]
+----
+# subscription-manager repos --enable \
+{RepoRHEL9ServerSatelliteMaintenanceProjectVersion}
+----
+endif::[]
+ifdef::foreman-deb[]
+. Update repositories in `/etc/apt/sources.list.d/foreman.list` to consume content for {Project} {ProjectVersion}:
++
+[options="nowrap" subs="+quotes,verbatim,attributes"]
+----
+deb http://deb.theforeman.org/ {distribution-codename} {ProjectVersion}
+deb http://deb.theforeman.org/ plugins {ProjectVersion}
+----
++
+endif::[]
+ifdef::foreman-el,katello[]
+. Update repositories:
++
+[options="nowrap" subs="attributes"]
+----
+ifdef::katello[]
+# {project-package-update} https://yum.theforeman.org/releases/{ProjectVersion}/el9/x86_64/foreman-release.rpm \
+https://yum.theforeman.org/katello/{KatelloVersion}/katello/el9/x86_64/katello-repos-latest.rpm
+endif::[]
+ifdef::foreman-el[]
+# {project-package-update} https://yum.theforeman.org/releases/{ProjectVersion}/el9/x86_64/foreman-release.rpm
+endif::[]
+----
+endif::[]
+ifdef::satellite[]
+. Upgrade the {foreman-maintain} utility to its latest version:
++
+[options="nowrap" subs="attributes"]
+----
+# {foreman-maintain} self-upgrade
+----
+. Determine whether your system is ready for {Project} upgrade:
++
+[options="nowrap" subs="attributes"]
+----
+# {foreman-maintain} upgrade check
+----
++
+Review the results and address any highlighted error conditions before performing the upgrade.
++
+[NOTE]
+====
+The `{foreman-maintain} upgrade check` might prompt you for the Hammer admin user credentials.
+These changes are applied to the `/etc/foreman-maintain/foreman-maintain-hammer.yml` file.
+====
+. Run the {ProjectServer} upgrade command.
+Because of the lengthy upgrade time, consider using a utility such as `tmux`.
+For more information, see xref:following_the_progress_of_the_upgrade_upgrading-connected[].
++
+[options="nowrap" subs="attributes"]
+----
+# {foreman-maintain} upgrade run
+----
+endif::[]
+ifdef::katello[]
+. Check for running tasks:
++
+[options="nowrap" subs="attributes"]
+----
+# foreman-rake katello:upgrade_check
+----
+endif::[]
+ifdef::foreman-deb,foreman-el,katello[]
+. Stop all {Project} services:
++
+[options="nowrap" subs="attributes"]
+----
+# {foreman-maintain} service stop
+----
+. Update packages:
++
+[options="nowrap" subs="attributes"]
+----
+ifdef::foreman-deb[]
+# apt update
+endif::[]
+# {project-package-update}
+----
+. Run the {Project} installer:
++
+[options="nowrap" subs="attributes"]
+----
+# {foreman-installer}
+----
+endif::[]
+include::snip_steps-needs-reboot.adoc[]
