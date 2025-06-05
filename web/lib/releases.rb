@@ -17,7 +17,7 @@ class ReleaseDataSource < ::Nanoc::DataSource
   end
 
   def items
-    versions.map do |version, filename|
+    versions.flat_map do |version, filename|
       release = JSON.parse(File.read(filename))
       release['foreman'] = version
       release['state'] ||= 'unsupported'
@@ -29,13 +29,28 @@ class ReleaseDataSource < ::Nanoc::DataSource
         state: release['state'],
         katello: release['katello'],
         release: release,
+        builds: release['builds'],
       }
 
-      new_item(
-        File.read(File.join(content_dir_name, "#{version}.adoc")),
-        context,
-        "/#{version}/index.adoc.erb",
-      )
+      [
+        new_item(
+          File.read(File.join(content_dir_name, 'release.adoc.erb')),
+          context,
+          "/#{version}/index.adoc.erb",
+        )
+      ] + release['builds'].map do |build|
+        context = build.merge(
+          'foreman' => version,
+          'katello' => release['katello'],
+          'other_builds' => [],
+        )
+
+        new_item(
+          File.read(File.join(content_dir_name, 'release-build.adoc.erb')),
+          context,
+          "/#{version}/#{File.basename(build['filename'], '.html')}.adoc.erb",
+        )
+      end
     end
   end
 
