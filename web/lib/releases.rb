@@ -74,16 +74,3 @@ end
 def releases_in_state(state)
   releases.filter { |release| release[:state] == state }
 end
-
-def guides_links(release, tag)
-  raise "no release passed" unless release
-  raise "release without builds" unless release[:builds]
-
-  release[:builds].filter_map do |build|
-    guide = build[:guides].find { |guide| guide[:tag] == tag }
-    next unless guide
-
-    link = "#{release[:path]}/#{guide[:path]}/#{build[:filename]}"
-    [link, build[:title], guide[:title]]
-  end
-end
