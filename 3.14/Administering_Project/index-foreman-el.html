@@ -212,7 +212,7 @@
 <h1>Administering Foreman</h1>
 <div class="details">
 <span id="revnumber">version 3.14,</span>
-<span id="revdate">published Jun 03 2025</span>
+<span id="revdate">published Jun 05 2025</span>
 </div>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
@@ -625,10 +625,23 @@ The following examples use Ansible vault to manage sensitive data.</p>
 </div>
 </li>
 <li>
-<p>A system that can reach the Foreman API.
-This is the system that you will execute your playbook against.
-You can use your Foreman&#160;server, your Smart&#160;Proxy&#160;servers, or any other system in your environment.
+<p>A system that you will execute your playbook against.
 The following examples use <code>localhost</code>.</p>
+<div class="paragraph">
+<p>This system must be able to reach the Foreman API.
+You can choose from these options:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>A system that can reach the Foreman API directly.
+You can use your Foreman&#160;server, your Smart&#160;Proxy&#160;servers, or any other system in your environment.</p>
+</li>
+<li>
+<p>A system without a direct connection to the Foreman API that uses an HTTP proxy to connect to Foreman.</p>
+</li>
+</ul>
+</div>
 </li>
 </ul>
 </div>
@@ -670,14 +683,47 @@ For example, to create a vault named <em>My_Vault.yml</em>:</p>
 <em>My_Server_URL</em>: <em>https://foreman.example.com</em></code></pre>
 </div>
 </div>
-</li>
-<li>
-<p>Save your changes and close the editor.
-Ansible encrypts the data in the vault.</p>
+<div class="paragraph">
+<p>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD</p>
+</div>
 </li>
 </ol>
 </div>
 </li>
+</ol>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="paragraph">
+<p>+
+If you want to authenticate with a Kerberos ticket:</p>
+</div>
+<div class="paragraph">
+<p>+</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-ini" data-lang="ini"><em>My_Server_URL</em>: <em>https://foreman.example.com</em></code></pre>
+</div>
+</div>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>If you use an HTTP proxy to reach the Foreman API, store it in the vault too:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-ini" data-lang="ini"><em>My_HTTP_Proxy</em>: "<em>http://proxy.example.com:8080</em>"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>&gt;&gt;&gt;&gt;&gt;&gt;&gt; 9b0f02c490 (Document how to use an http proxy with the ansible collection (#3881))</p>
+</div>
+</li>
+<li>
+<p>Save your changes and close the editor.
+Ansible encrypts the data in the vault.</p>
+<div class="olist arabic">
+<ol class="arabic">
 <li>
 <p>Create a playbook file that references the vault file:</p>
 <div class="admonitionblock note">
@@ -695,8 +741,10 @@ Module defaults groups simplify parameter management by enabling you to define c
 </tr>
 </table>
 </div>
-<div class="olist loweralpha">
-<ol class="loweralpha" type="a">
+</li>
+</ol>
+</div>
+</li>
 <li>
 <p>Provide details on how to authenticate to the Foreman API.</p>
 <div class="paragraph">
@@ -716,13 +764,62 @@ Module defaults groups simplify parameter management by enabling you to define c
   tasks:</code></pre>
 </div>
 </div>
-</li>
-<li>
-<p>In the <code>tasks:</code> section, define the tasks that you want your playbook to perform.</p>
+<div class="paragraph">
+<p>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD</p>
+</div>
 </li>
 </ol>
 </div>
+</div>
+</div>
+<div class="paragraph">
+<p>+
+If you are authenticating with a Kerberos ticket, map the <code>server_url</code> parameter to the contents of <em>My_Vault.yml</em> and add <code>use_gssapi: true</code> to enable Kerberos authentication:</p>
+</div>
+<div class="paragraph">
+<p>+</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">- name: <em>My Playbook</em>
+  hosts: <em>localhost</em>
+  vars_files:
+    - <em>My_Vault.yml</em>
+  module_defaults:
+    group/theforeman.foreman.foreman:
+      server_url: "{{ <em>My_Server_URL</em> }}"
+      use_gssapi: true
+  tasks:</code></pre>
+</div>
+</div>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>If you need to use an HTTP proxy to reach the Foreman API, set the <code>https_proxy</code> environment variable:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">- name: <em>My Playbook</em>
+  hosts: <em>localhost</em>
+  vars_files:
+    - <em>My_Vault.yml</em>
+  environment:
+    https_proxy: "{{ <em>My_HTTP_Proxy</em> }}"
+  module_defaults:
+    group/theforeman.foreman.foreman:
+      username: "{{ <em>My_Username</em> }}"
+      password: "{{ <em>My_Password</em> }}"
+      server_url: "{{ <em>My_Server_URL</em> }}"
+  tasks:</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>&gt;&gt;&gt;&gt;&gt;&gt;&gt; 9b0f02c490 (Document how to use an http proxy with the ansible collection (#3881))</p>
+</div>
 </li>
+<li>
+<p>In the <code>tasks:</code> section, define the tasks that you want your playbook to perform.</p>
+<div class="olist arabic">
+<ol class="arabic">
 <li>
 <p>Validate the playbook syntax:</p>
 <div class="listingblock">
@@ -741,6 +838,9 @@ It does not protect against a valid but incorrect configuration.</p>
 <div class="content">
 <pre>$ ansible-playbook --ask-vault-pass <em>My_Playbook.yml</em></pre>
 </div>
+</div>
+</li>
+</ol>
 </div>
 </li>
 </ol>
