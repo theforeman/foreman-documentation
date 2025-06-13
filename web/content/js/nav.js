@@ -4,11 +4,16 @@ function buildNavigation() {
   if (currentVer && currentVer.length > 1) {
     currentVer = currentVer[1];
   } else {
-    currentVer = "nightly";
+    currentVer = latestVersion;
   }
-  const navBuilds = navVersions.find(function(version) {
-    return version['foreman'] == currentVer;
-  }).builds;
+
+  const path_components = document.location.pathname.split('/');
+  const filename = path_components[path_components.length - 1];
+  if (filename.startsWith('index-')) {
+    var guides_link = `/release/${currentVer}/${filename}`;
+  } else {
+    var guides_link = `/release/${currentVer}`;
+  }
 
   return `<nav>
   <a href="/">
@@ -22,22 +27,11 @@ function buildNavigation() {
   <span></span>
 </button>
 <ul class="nav-menu">
-  <li class="nav-item"><a href="https://theforeman.org/">About Foreman</a></li>`
-    + navBuilds.map(function(build){
-      return(
-        `<li class="nav-item dropdown">
-          <a href="#" data-action="dropdown-toggle">${build.title}</a>
-            <div class="dropdown-menu">`
-            + build.guides.map(function(guide){
-              const url = `/${currentVer}/${guide.path}/${build.filename}`;
-              return `<div class="dropdown-div"><a class="dropdown-item" href="${url}">${guide.title}</a></div>`;
-            }).join("")
-            +`</div>
-        </li>`
-      )}).join("")
-    + `<li class="nav-item dropdown">
-        <a href="#" data-action="dropdown-toggle">Version ${currentVer}</a>
-        <div class="dropdown-menu dropdown-menu-left">`
+  <li class="nav-item"><a href="https://theforeman.org/">About Foreman</a></li>
+  <li class="nav-item"><a href="${guides_link}">${currentVer} guides</a></li>
+  <li class="nav-item dropdown">
+    <a href="#" data-action="dropdown-toggle">Versions</a>
+    <div class="dropdown-menu dropdown-menu-left">`
     + navVersions.map(function(version) {
       if (document.location.pathname == "/") {
         var dl = `/release/${version.foreman}`;
