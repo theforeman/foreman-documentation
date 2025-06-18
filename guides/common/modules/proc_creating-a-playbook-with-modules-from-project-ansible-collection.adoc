@@ -1,0 +1,181 @@
+[id="creating-a-playbook-with-modules-from-{project-context}-ansible-collection"]
+= Creating a playbook with modules from {Project} Ansible Collection
+
+Ansible modules from the {Project} Ansible Collection must be able to communicate with the {Project} API over HTTPS.
+In your playbooks, include parameters specifying how to authenticate to enable the connection to API.
+
+[IMPORTANT]
+====
+Do not store sensitive credentials, such as username and password, directly in your playbooks or environment variables.
+The following examples use Ansible vault to manage sensitive data.
+====
+
+.Prerequisites
+* A user account in {Project} exists with permissions to perform the action defined in your playbook.
+* You have access to one of the following types of authentication credentials for that user:
+** Username and password
+** Username and {PAT}
+** Kerberos ticket, if your {ProjectServer} is configured to use {FreeIPA} as an external authentication source
+* A system that you will execute your playbook against.
+The following examples use `localhost`.
++
+This system must be able to reach the {Project} API.
+You can choose from these options:
+
+** A system that can reach the {Project} API directly.
+You can use your {ProjectServer}, your {SmartProxyServer}s, or any other system in your environment.
+** A system without a direct connection to the {Project} API that uses an HTTP proxy to connect to {Project}.
+
+.Procedure
+. Store your sensitive variables in an encrypted file:
+.. Create an Ansible vault.
+For example, to create a vault named _My_Vault.yml_:
++
+[subs="+quotes,attributes"]
+----
+$ ansible-vault create _My_Vault.yml_
+----
+.. After the `ansible-vault create` command opens an editor, provide the required parameters in the _key_: _value_ format.
++
+If you want to authenticate with {Project} username and password:
++
+[source,ini,subs="+quotes,attributes"]
+----
+_My_Username_: _My_Admin_User_Account_
+_My_Password_: _My_Admin_Password_
+_My_Server_URL_: _https://{foreman-example-com}_
+----
++
+If you want to authenticate with {Project} username and {PAT} (PAT):
++
+[source,ini,subs="+quotes,attributes"]
+----
+_My_Username_: _My_Admin_User_Account_
+_My_Password_: _My_PAT_
+_My_Server_URL_: _https://{foreman-example-com}_
+----
++
+If you want to authenticate with a Kerberos ticket:
++
+[source,ini,subs="+quotes,attributes"]
+----
+_My_Server_URL_: _https://{foreman-example-com}_
+----
+.. If you use an HTTP proxy to reach the {Project} API, store it in the vault too:
++
+[source,ini,subs="+quotes,attributes"]
+----
+_My_HTTP_Proxy_: "_http://proxy.example.com:8080_"
+----
+.. Save your changes and close the editor.
+Ansible encrypts the data in the vault.
+. Create a playbook file that references the vault file:
++
+[NOTE]
+====
+The following YAML snippets include the `module_defaults` keyword to pass vault variables as parameters to all modules from the {ansible-module-defaults-group} group that are used in the playbook.
+Module defaults groups simplify parameter management by enabling you to define common parameters to groups of modules rather than having to pass the parameters to each module individually.
+====
+.. Provide details on how to authenticate to the {Project} API.
++
+If you are authenticating with {Project} username and password or PAT, map the `username`, `password`, and `server_url` parameters to the contents of _My_Vault.yml_:
++
+[source,yaml,subs="+quotes,attributes"]
+----
+- name: _My Playbook_
+  hosts: _localhost_
+  vars_files:
+    - _My_Vault.yml_
+  module_defaults:
+    group/{ansible-module-defaults-group}:
+      username: "{{ _My_Username_ }}"
+      password: "{{ _My_Password_ }}"
+      server_url: "{{ _My_Server_URL_ }}"
+  tasks:
+----
++
+If you are authenticating with a Kerberos ticket, map the `server_url` parameter to the contents of _My_Vault.yml_ and add `use_gssapi: true` to enable Kerberos authentication:
++
+[source,yaml,subs="+quotes,attributes"]
+----
+- name: _My Playbook_
+  hosts: _localhost_
+  vars_files:
+    - _My_Vault.yml_
+  module_defaults:
+    group/{ansible-module-defaults-group}:
+      server_url: "{{ _My_Server_URL_ }}"
+      use_gssapi: true
+  tasks:
+----
+.. If you need to use an HTTP proxy to reach the {Project} API, set the `https_proxy` environment variable:
++
+[source,yaml,subs="+quotes,attributes"]
+----
+- name: _My Playbook_
+  hosts: _localhost_
+  vars_files:
+    - _My_Vault.yml_
+  environment:
+    https_proxy: "{{ _My_HTTP_Proxy_ }}"
+  module_defaults:
+    group/{ansible-module-defaults-group}:
+      username: "{{ _My_Username_ }}"
+      password: "{{ _My_Password_ }}"
+      server_url: "{{ _My_Server_URL_ }}"
+  tasks:
+----
+.. In the `tasks:` section, define the tasks that you want your playbook to perform.
+. Validate the playbook syntax:
++
+[subs="+quotes"]
+----
+$ ansible-playbook --syntax-check --ask-vault-pass _My_Playbook.yml_
+----
++
+Note that this command only validates the syntax.
+It does not protect against a valid but incorrect configuration.
+. Run the playbook:
++
+[subs="+quotes"]
+----
+$ ansible-playbook --ask-vault-pass _My_Playbook.yml_
+----
+
+.Example Ansible playbook: Ensure that domain `new.example.com` exists in {Project}
+====
+The `{ansible-namespace}.domain` module can create, update, and delete domains.
+This example playbook uses `{ansible-namespace}.domain` to ensure that a domain named `new.example.com` exists and is managed by {Project}.
+ifdef::katello,orcharhino,satellite[]
+For additional examples, see xref:example-playbooks-based-on-modules-from-{project-context}-ansible-collection[].
+endif::[]
+
+[options="nowrap" subs="+quotes,attributes"]
+----
+- name: Domain management
+  hosts: localhost
+  vars_files:
+    - _My_Vault.yml_
+  module_defaults:
+    group/{ansible-module-defaults-group}:
+      username: "{{ _My_Username_ }}"
+      password: "{{ _My_Password_ }}"
+      server_url: "{{ _My_Server_URL_ }}"
+  tasks:
+    - name: Ensure domain new.example.com exists
+      {ansible-namespace}.domain:
+        name: new.example.com
+----
+
+The settings specified in the example playbook include the following:
+
+`vars_files`:: The name of the vault file that stores the variables `_My_Username_`, `_My_Password_`, and `_My_Server_URL_`.
+`module_defaults`:: The module defaults group that maps the variables from the vault file to the `username`, `password`, and `server_url` module parameters.
+`name`:: The name of the domain that you want to ensure exists in {Project}.
+
+For more information, see the Ansible module documentation with `ansible-doc {ansible-namespace}.domain`.
+====
+
+.Additional resources
+* For information about using Ansible vault, see https://docs.ansible.com/ansible/latest/vault_guide/index.html[Protecting sensitive data with Ansible vault] in _Ansible Community Documentation_.
+* For information about using module defaults, see https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_module_defaults.html[Module defaults] in _Ansible Community Documentation_.

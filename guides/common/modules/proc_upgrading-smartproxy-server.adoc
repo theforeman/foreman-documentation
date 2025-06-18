@@ -1,40 +1,30 @@
 [id="upgrading_{smart-proxy-context}_server_{context}"]
 = Upgrading {SmartProxyServers}
 
-This section describes how to upgrade {SmartProxyServers} from {ProjectVersionPrevious} to {ProjectVersion}.
-
-.Before you begin
-
-* Review xref:upgrading_prerequisites_{context}[].
-* You must upgrade {ProjectServer} before you can upgrade any {SmartProxyServers}.
-Note that you can upgrade {SmartProxies} separately from {Project}.
-For more information, see xref:Upgrading_Proxies_Separately_from_Server_{context}[].
-ifdef::satellite[]
-* Ensure the {ProjectName} {SmartProxy} {ProjectVersion} repository is enabled in {ProjectServer} and synchronized.
-* Ensure that you synchronize the required repositories on {ProjectServer}.
-For more information, see xref:synchronizing_the_new_repositories_{context}[].
-endif::[]
 ifdef::katello,orcharhino,satellite[]
-* If you use content views to control updates to the base operating system of {SmartProxyServer}, update those content views with new repositories, publish, and promote their updated versions.
+After you have upgraded your {ProjectServer} and synchronized the required repositories, you can start upgrading your {SmartProxyServers}.
+endif::[]
+ifndef::katello,orcharhino,satellite[]
+After you have upgraded your {ProjectServer}, you can start upgrading your {SmartProxyServers}.
+endif::[]
+
+.Prerequisites
+ifdef::katello,orcharhino,satellite[]
+* If you use content views to control updates to the {SmartProxyServer} base operating system or repository, update those content views with new repositories, then publish and promote their updated versions.
 For more information, see {ContentManagementDocURL}Managing_Content_Views_content-management[Managing content views] in _{ContentManagementDocTitle}_.
-* Ensure the {SmartProxy}'s base system is registered to the newly upgraded {ProjectServer}.
+* Ensure the base system of the {SmartProxy} is registered to the newly upgraded {ProjectServer}.
 endif::[]
-* Ensure the {SmartProxy} has the correct organization and location settings in the newly upgraded {ProjectServer}.
-* Review and update your firewall configuration prior to upgrading your {SmartProxyServer}.
-For more information, see {InstallingSmartProxyDocURL}preparing-environment-for-capsule-installation[Preparing Your Environment for {SmartProxy} Installation] in _{InstallingSmartProxyDocTitle}_.
-
+* If you implemented custom certificates, you must retain the content of both the `/root/ssl-build` directory and the directory in which you created any source files associated with your custom certificates.
 ifdef::katello,orcharhino,satellite[]
++
 [WARNING]
 ====
-If you implemented custom certificates, you must retain the content of both the `/root/ssl-build` directory and the directory in which you created any source files associated with your custom certificates.
-
 Failure to retain these files during an upgrade causes the upgrade to fail.
 If these files have been deleted, they must be restored from a backup in order for the upgrade to proceed.
 ====
 endif::[]
 
 .Upgrading {SmartProxyServers}
-
 . Create a backup.
 +
 * On a virtual machine, take a snapshot.
@@ -55,13 +45,18 @@ ifdef::foreman-el[]
 # {project-package-update} https://yum.theforeman.org/releases/{ProjectVersion}/el9/x86_64/foreman-release.rpm
 endif::[]
 ----
+. Stop {SmartProxy} services:
++
+[options="nowrap" subs="attributes"]
+----
+# {foreman-maintain} service stop
+----
 . Update the required packages:
 +
 [options="nowrap" subs="attributes"]
 ----
 # {project-package-update}
 ----
-+
 . Run the installer:
 +
 [options="nowrap" subs="attributes"]
@@ -75,16 +70,21 @@ ifdef::satellite[]
 ----
 # yum clean metadata
 ----
-+
 . Synchronize the `{RepoRHEL9ServerSatelliteCapsuleProjectVersion}` repository in the {ProjectServer}.
 . Publish and promote a new version of the content view with which the {SmartProxy} is registered.
-
 . Optional: Because of the lengthy upgrade time, use a utility such as `tmux` to suspend and reattach a communication session.
 You can then check the upgrade progress without staying connected to the command shell continuously.
 +
 If you lose connection to the command shell where the upgrade command is running, you can see the logged messages in the `{installer-smartproxy-log-file}` file to check if the process completed successfully.
-
 . The `rubygem-foreman_maintain` is installed from the {Project} Maintenance repository or upgraded from the {Project} Maintenance repository if currently installed.
++
+Ensure that the {Project} Maintenance repository is enabled:
++
+[options="nowrap" subs="attributes"]
+----
+# subscription-manager repos --enable \
+{RepoRHEL9ServerSatelliteMaintenanceProjectVersion}
+----
 +
 Ensure {SmartProxy} has access to `{RepoRHEL9ServerSatelliteMaintenanceProjectVersion}` and execute:
 +
@@ -98,7 +98,6 @@ Ensure {SmartProxy} has access to `{RepoRHEL9ServerSatelliteMaintenanceProjectVe
 ----
 # grep foreman_url /etc/foreman-proxy/settings.yml
 ----
-
 . Use the health check option to determine if the system is ready for upgrade:
 +
 [options="nowrap" subs="attributes"]
@@ -107,7 +106,6 @@ Ensure {SmartProxy} has access to `{RepoRHEL9ServerSatelliteMaintenanceProjectVe
 ----
 +
 Review the results and address any highlighted error conditions before performing the upgrade.
-
 . Perform the upgrade:
 +
 [options="nowrap" subs="attributes"]
@@ -117,11 +115,9 @@ Review the results and address any highlighted error conditions before performin
 +
 endif::[]
 include::snip_steps-needs-reboot.adoc[]
-
 . Optional: If you made manual edits to DNS or DHCP configuration files, check and restore any changes required to the DNS and DHCP configuration files using the backups made earlier.
 
 .Upgrading {SmartProxyServers} using remote execution
-
 . Create a backup or take a snapshot.
 +
 For more information on backups, see {AdministeringDocURL}backing-up-satellite-server-and-capsule-server[Backing Up {ProjectServer} and {SmartProxyServer}] in _{AdministeringDocTitle}_.

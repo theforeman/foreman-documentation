@@ -1,76 +1,47 @@
 [id="upgrading_a_disconnected_{project-context}_server_{context}"]
 = Upgrading a disconnected {ProjectServer}
 
-Use this procedure if your {ProjectServer} is not connected to the Red{nbsp}Hat Content Delivery Network.
+Upgrading a {ProjectServer} that is not connected to the Red{nbsp}Hat Content Delivery Network includes backing up the server, configuring the server with the latest ISO files, and running the upgrade.
 
-[WARNING]
-====
-// Keep this in sync with common/modules/snip_warning-maintain-config-noop.adoc
-* If you customized configuration files, either manually or using a tool such as Hiera, these changes are overwritten when you enter the `{foreman-maintain}` command during upgrading or updating.
-You can use the `--noop` option with the `{foreman-installer}` command to review the changes that are applied during upgrading or updating.
-ifdef::satellite[]
-For more information, see the Red Hat Knowledgebase solution https://access.redhat.com/solutions/3351311[How to use the noop option to check for changes in {Project} config files during an upgrade].
-endif::[]
-ifdef::katello,orcharhino,satellite[]
-* The hammer import and export commands have been replaced with `hammer content-import` and `hammer content-export` tooling.
+include::snip_warning-maintain-config-noop.adoc[]
+
+.Prerequisites
+* If you synchronize content between your {ProjectServer}s by using exports, ensure that all your {ProjectServer}s are on the same {Project} version.
+* If you have made manual edits to you DNS or DHCP configuration in the `/etc/zones.conf` or `/etc/dhcp/dhcpd.conf` files, ensure DNS and DHCP configuration management is disabled:
 +
-If you have scripts that are using `hammer content-view version export`, `hammer content-view version export-legacy`, `hammer repository export`, or their respective import commands, you have to adjust them to use the `hammer content-export` command instead, along with its respective import command.
-* If you implemented custom certificates, you must retain the content of both the `/root/ssl-build` directory and the directory in which you created any source files associated with your custom certificates.
+[options="nowrap" subs="attributes"]
+----
+# {foreman-installer} \
+--foreman-proxy-dhcp-managed false \
+--foreman-proxy-dns-managed false
+----
 +
-Failure to retain these files during an upgrade causes the upgrade to fail.
-If these files have been deleted, they must be restored from a backup in order for the upgrade to proceed.
-endif::[]
-====
+This prevents the upgrade process from overwriting your DNS and DHCP configuration.
 
-.Before you begin
-* Review and update your firewall configuration before upgrading your {ProjectServer}.
-For more information, see {InstallingServerDisconnectedDocURL}Port_and_firewall_requirements_{project-context}[Port and firewall requirements] in _{InstallingServerDisconnectedDocTitle}_.
-* Ensure that you do not delete the manifest from the Customer Portal or in the {ProjectWebUI} because this removes all the entitlements of your content hosts.
-ifdef::satellite[]
-* All {ProjectServer}s must be on the same version.
-endif::[]
-
-
-.Upgrade disconnected {ProjectServer}
-. Stop all {Project} services:
+.Procedure
+. Create a backup of your {ProjectServer}:
+.. Stop all {Project} services:
 +
 [options="nowrap" subs="+quotes,verbatim,attributes"]
 ----
 # {foreman-maintain} service stop
 ----
-+
-. Take a snapshot or create a backup:
+.. Take a snapshot or create a backup:
 * On a virtual machine, take a snapshot.
 * On a physical machine, create a backup.
-. Start all {Project} services:
++
+.. Start all {Project} services:
 +
 [options="nowrap" subs="+quotes,verbatim,attributes"]
 ----
 # {foreman-maintain} service start
 ----
-
-. Optional: If you made manual edits to DNS or DHCP configuration in the `/etc/zones.conf` or `/etc/dhcp/dhcpd.conf` files, back up the configuration files because the installer only supports one domain or subnet, and therefore restoring changes from these backups might be required.
-
-. Optional: If you made manual edits to DNS or DHCP configuration files and do not want to overwrite the changes, enter the following command:
-+
-[options="nowrap" subs="attributes"]
-----
-# {foreman-installer} --foreman-proxy-dns-managed=false \
---foreman-proxy-dhcp-managed=false
-----
-
-. In the {ProjectWebUI}, navigate to *Hosts* > *Discovered hosts*.
-If there are discovered hosts available, turn them off and then delete all entries under the `Discovered hosts` page.
-Select all other organizations in turn using the organization setting menu and repeat this action as required.
-Reboot these hosts after the upgrade has completed.
-
 . Remove old repositories:
 +
 [options="nowrap" subs="attributes"]
 ----
 # rm /etc/yum.repos.d/*
 ----
-
 . Obtain the latest ISO files by following the {InstallingServerDisconnectedDocURL}downloading-the-binary-dvd-images_satellite[Downloading the Binary DVD Images] procedure in _{InstallingServerDisconnectedDocTitle}_.
 
 . Create directories to serve as a mount point, mount the ISO images, and configure the `rhel8` repository by following the {InstallingServerDisconnectedDocURL}configuring-the-base-operating-system-with-offline-repositories_satellite[Configuring the base operating system with offline repositories] procedure in _{InstallingServerDisconnectedDocTitle}_.
@@ -136,22 +107,13 @@ baseurl=file:///media/sat6/Satellite
 baseurl=file:///media/sat6/Maintenance/
 ----
 
-. Optional: Because of the lengthy upgrade time, use a utility such as `tmux` to suspend and reattach a communication session.
-You can then check the upgrade progress without staying connected to the command shell continuously.
-+
-If you lose connection to the command shell where the upgrade command is running, you can see the logs in `{installer-log-file}` to check if the process completed successfully.
-
-. Upgrade {foreman-maintain} to its next version:
+. Upgrade the {foreman-maintain} utility to its latest version:
 +
 [options="nowrap" subs="attributes"]
 ----
 # {foreman-maintain} self-upgrade --maintenance-repo-label {Project}-Maintenance
 ----
-
-. If you are using an external database, upgrade your database to PostgreSQL 13.
-. Use the health check option to determine if the system is ready for upgrade.
-When prompted, enter the hammer admin user credentials to configure `{foreman-maintain}` with hammer credentials.
-These changes are applied to the `/etc/foreman-maintain/foreman-maintain-hammer.yml` file.
+. Determine whether your system is ready for {Project} upgrade:
 +
 [options="nowrap" subs="attributes"]
 ----
@@ -159,7 +121,15 @@ These changes are applied to the `/etc/foreman-maintain/foreman-maintain-hammer.
 ----
 +
 Review the results and address any highlighted error conditions before performing the upgrade.
-. Perform the upgrade:
++
+[NOTE]
+====
+The `{foreman-maintain} upgrade check` might prompt you for the Hammer admin user credentials.
+These changes are applied to the `/etc/foreman-maintain/foreman-maintain-hammer.yml` file.
+====
+. Run the {ProjectServer} upgrade command.
+Because of the lengthy upgrade time, consider using a utility such as `tmux`.
+For more information, see xref:following_the_progress_of_the_upgrade_upgrading-disconnected[].
 +
 [options="nowrap" subs="attributes"]
 ----
@@ -170,15 +140,6 @@ If the script fails due to missing or outdated packages, you must download and i
 For more information, see {InstallingServerDisconnectedDocURL}resolving-package-dependency-errors_satellite[Resolving Package Dependency Errors] in _{InstallingServerDisconnectedDocTitle}_.
 
 include::snip_steps-needs-reboot.adoc[]
-
-. Optional: If you made manual edits to DNS or DHCP configuration files, check and restore any changes required to the DNS and DHCP configuration files using the backups that you made.
-
-. If you make changes in the previous step, restart {Project} services:
-+
-[options="nowrap" subs="attributes"]
-----
-# {foreman-maintain} service restart
-----
 
 . If you have the OpenSCAP plugin installed, but do not have the default OpenSCAP content available, enter the following command.
 +
