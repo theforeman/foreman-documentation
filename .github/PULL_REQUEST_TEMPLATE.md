@@ -4,7 +4,7 @@
 
 #### Anything else to add? (Considerations, potential downsides, alternative solutions you have explored, etc.)
 
-#### Checklists
+#### Contributor checklists
 
 * [x] I am okay with my commits getting squashed when you merge this PR.
 * [ ] I am familiar with the [contributing](https://github.com/theforeman/foreman-documentation/blob/master/CONTRIBUTING.md) guidelines.
@@ -19,3 +19,16 @@ Please cherry-pick my commits into:
 * [ ] Foreman 3.10/Katello 4.12
 * [ ] Foreman 3.9/Katello 4.11 (Satellite 6.15; orcharhino 6.8/6.9/6.10)
 * We do not accept PRs for Foreman older than 3.9.
+
+#### Review checklists
+
+Tech review (performed by an Engineer who did not author the PR; can be skipped if tech review is unnecessary):
+
+* [ ] The PR documents a recommended, user-friendly path.
+* [ ] The PR removes steps that have been made unnecessary or obsolete.
+* [ ] Any steps introduced or updated in the PR have been tested to confirm that they lead to the documented end result.
+
+Style review (by a Technical Writer who did not author the PR):
+
+* [ ] The PR conforms with the team's style guidelines.
+* [ ] The PR introduces documentation that describes a user story rather than a product feature.
