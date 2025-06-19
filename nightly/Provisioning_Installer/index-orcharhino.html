@@ -254,7 +254,7 @@
 <li><a href="#Creating_Custom_Provisioning_Snippets_provisioning-installer">4.5. Creating custom provisioning snippets</a></li>
 <li><a href="#Custom_Provisioning_Snippet_Example_for_Debian_provisioning-installer">4.6. Custom provisioning snippet example for Debian</a></li>
 <li><a href="#Custom_Provisioning_Snippet_Example_for_Enterprise_Linux_provisioning-installer">4.7. Custom provisioning snippet example for Enterprise Linux</a></li>
-<li><a href="#Associating_Templates_with_Operating_Systems_provisioning-installer">4.8. Associating templates with operating systems</a></li>
+<li><a href="#associating-templates-with-operating-systems">4.8. Associating templates with operating systems</a></li>
 <li><a href="#creating-partition-tables_provisioning-installer">4.9. Creating partition tables</a></li>
 <li><a href="#associating-partition-tables-with-disk-encryption_provisioning-installer">4.10. Associating partition tables with disk encryption</a></li>
 <li><a href="#dynamic-partition-example_provisioning-installer">4.11. Dynamic partition example</a></li>
@@ -324,8 +324,13 @@
 </li>
 <li><a href="#using-boot-disks-to-provision-hosts">9. Using boot disks to provision hosts</a>
 <ul class="sectlevel2">
-<li><a href="#Creating_Hosts_with_PXE_less_Provisioning_using-bootdisks">9.1. Creating hosts with PXE-less provisioning</a></li>
-<li><a href="#Deploying_SSH_Keys_During_Provisioning_using-bootdisks">9.2. Deploying SSH keys during provisioning</a></li>
+<li><a href="#boot-disk-workflow">9.1. Boot disk workflow</a></li>
+<li><a href="#boot-disk-types">9.2. Boot disk types</a></li>
+<li><a href="#generating-a-full-host-boot-disk">9.3. Generating a full host boot disk</a></li>
+<li><a href="#generating-a-subnet-boot-disk">9.4. Generating a subnet boot disk</a></li>
+<li><a href="#generating-a-generic-boot-disk">9.5. Generating a generic boot disk</a></li>
+<li><a href="#generating-a-host-boot-disk">9.6. Generating a host boot disk</a></li>
+<li><a href="#Deploying_SSH_Keys_During_Provisioning_using-bootdisks">9.7. Deploying SSH keys during provisioning</a></li>
 </ul>
 </li>
 <li><a href="#discovering-hosts-on-a-network">10. Discovering hosts on a network</a>
@@ -1804,10 +1809,11 @@ curl -X POST \
 </div>
 </div>
 <div class="sect2">
-<h3 id="Associating_Templates_with_Operating_Systems_provisioning-installer"><a class="anchor" href="#Associating_Templates_with_Operating_Systems_provisioning-installer"></a>4.8. Associating templates with operating systems</h3>
+<h3 id="associating-templates-with-operating-systems"><a class="anchor" href="#associating-templates-with-operating-systems"></a>4.8. Associating templates with operating systems</h3>
 <div class="paragraph">
 <p>You can associate templates with operating systems in orcharhino.
-The following example adds a provisioning template to an operating system entry.</p>
+The following example adds a provisioning template to an operating system entry.
+To use the CLI instead of the orcharhino management UI, see the <a href="#cli-associating-templates-with-operating-systems">CLI procedure</a>.</p>
 </div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
@@ -1826,7 +1832,7 @@ The following example adds a provisioning template to an operating system entry.
 </li>
 </ol>
 </div>
-<div class="olist arabic">
+<div id="cli-associating-templates-with-operating-systems" class="olist arabic">
 <div class="title">CLI procedure</div>
 <ol class="arabic">
 <li>
@@ -4845,78 +4851,139 @@ For more information, see <a href="#cloning-provisioning-templates">Cloning prov
 <h2 id="using-boot-disks-to-provision-hosts"><a class="anchor" href="#using-boot-disks-to-provision-hosts"></a>9. Using boot disks to provision hosts</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>You can use boot disks to boot hosts without PXE firmware.</p>
-</div>
-<div class="sect2">
-<h3 id="Creating_Hosts_with_PXE_less_Provisioning_using-bootdisks"><a class="anchor" href="#Creating_Hosts_with_PXE_less_Provisioning_using-bootdisks"></a>9.1. Creating hosts with PXE-less provisioning</h3>
-<div class="paragraph">
-<p>Some hardware does not provide a PXE boot interface.
+<p>Some hardware does not provide a PXE boot interface or your environment may not support network boot.
 In orcharhino, you can provision a host without PXE boot.
 This is also known as PXE-less provisioning and involves generating a boot ISO that hosts can use.
-Using this ISO, the host can connect to orcharhino&#160;Server, boot the installation media, and install the operating system.</p>
+Using this ISO, the host can boot the installation media, connect to orcharhino&#160;Proxy, and install the operating system.</p>
 </div>
 <div class="paragraph">
 <p>orcharhino also provides a PXE-less discovery service that operates without PXE-based services, such as DHCP and TFTP.
 For more information, see <a href="#discovery-in-pxeless-mode">Discovery in PXE-less mode</a>.</p>
 </div>
+<div class="sect2">
+<h3 id="boot-disk-workflow"><a class="anchor" href="#boot-disk-workflow"></a>9.1. Boot disk workflow</h3>
 <div class="paragraph">
-<div class="title">Boot ISO types</div>
-<p>There are the following types of boot ISOs:</p>
+<p>Using a boot disk to provision a host involves the following steps:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Create a host entry in orcharhino.</p>
+</li>
+<li>
+<p>Generate a boot disk ISO image.</p>
+</li>
+<li>
+<p>Boot your host from the ISO image.</p>
+</li>
+<li>
+<p>The host connects to Templates orcharhino&#160;Proxy and starts installing the operating system.</p>
+</li>
+<li>
+<p>When the installation completes, the host registers to orcharhino&#160;Server by using an activation key, performs necessary configuration, and installs management tools from the <strong>orcharhino&#160;Client</strong> repository.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="boot-disk-types"><a class="anchor" href="#boot-disk-types"></a>9.2. Boot disk types</h3>
+<div class="paragraph">
+<p>You can generate the following types of boot disks:</p>
 </div>
 <div class="dlist">
 <dl>
-<dt class="hdlist1">Host image</dt>
-<dd>
-<p>A boot ISO for the specific host.
-This image contains only the boot files that are necessary to access the installation media on orcharhino&#160;Server.
-The user defines the subnet data in orcharhino and the image is created with static networking.
-The image is based on iPXE boot firmware, only a limited number of network cards is supported.</p>
-</dd>
 <dt class="hdlist1">Full host image</dt>
 <dd>
-<p>A boot ISO that contains the kernel and initial RAM disk image for the specific host.
-This image is useful if the host fails to chainload correctly.
+<p>A boot ISO that contains the installer kernel and initial RAM disk image for a specific host.
+The boot loader on this image chain loads the installer directly from the image.
+This image is useful if the host fails to chain load from orcharhino&#160;Server or orcharhino&#160;Proxy&#160;Server correctly.
 The provisioning template still downloads from orcharhino&#160;Server.</p>
-</dd>
-<dt class="hdlist1">Generic image</dt>
-<dd>
-<p>A boot ISO that is not associated with a specific host.
-The ISO sends the host&#8217;s MAC address to orcharhino&#160;Server, which matches it against the host entry.
-The image does not store IP address details and requires access to a DHCP server on the network to bootstrap.
-This image is also available from the <code>/disks/generic</code> URL on your orcharhino&#160;Server, for example, <code>https://orcharhino.example.com/disks/generic</code>.</p>
+<div class="paragraph">
+<p>This image is based on SYSLINUX and GRUB and works with most network cards.</p>
+</div>
+<div class="paragraph">
+<p>This image contains a provisioning security token, therefore the generated image has a limited lifespan.
+For more information about configuring the security token, see <a href="#configuring-the-security-token-validity-duration">Configuring the security token validity duration</a>.</p>
+</div>
 </dd>
 <dt class="hdlist1">Subnet image</dt>
 <dd>
 <p>A boot ISO that is not associated with a specific host.
-The ISO sends the host&#8217;s MAC address to orcharhino&#160;Proxy&#160;Server, which matches it against the host entry.
+You can use this image if you have an environment with multiple subnets, where hosts do not have access to orcharhino&#160;Server but can access orcharhino&#160;Proxy in the particular subnet.
+You can use this image to boot multiple hosts on the same subnet.
+The boot loader on this image chain loads the installer from the TFTP orcharhino&#160;Proxy of the host.</p>
+<div class="paragraph">
+<p>The ISO sends the MAC address of the host to orcharhino&#160;Proxy, which matches the MAC address against the host entry.
 The image does not store IP address details and requires access to a DHCP server on the network to bootstrap.
-This image is generic to all hosts with a provisioning NIC on the same subnet.
-The image is based on iPXE boot firmware, only a limited number of network cards is supported.</p>
+This image is generic to all hosts with a provisioning NIC on the same subnet.</p>
+</div>
+<div class="paragraph">
+<p>This image is based on iPXE boot firmware.
+Only a limited number of network cards is supported.
+For more information, see <a href="https://ipxe.org/appnote/hardware_drivers">supported hardware drivers at ipxe.org</a>.</p>
+</div>
+</dd>
+<dt class="hdlist1">Generic image</dt>
+<dd>
+<p>A boot ISO that is not associated with a specific host.
+The boot loader on this image chain loads the installer from orcharhino&#160;Server.</p>
+<div class="paragraph">
+<p>The ISO sends the MAC address of the host to orcharhino&#160;Proxy, which matches the MAC address against the host entry.
+The image does not store IP address details and requires access to a DHCP server on the network to bootstrap.</p>
+</div>
+<div class="paragraph">
+<p>This image is based on iPXE boot firmware.
+Only a limited number of network cards is supported.
+For more information, see <a href="https://ipxe.org/appnote/hardware_drivers">supported hardware drivers at ipxe.org</a>.</p>
+</div>
+<div class="paragraph">
+<p>This image does not support UEFI systems.</p>
+</div>
+</dd>
+<dt class="hdlist1">Host image</dt>
+<dd>
+<p>A boot ISO for a specific host.
+This image contains only the boot files that are necessary to access the installation media on orcharhino&#160;Server.
+You define the subnet data in orcharhino and the image is created with static networking.</p>
+<div class="paragraph">
+<p>This image is based on iPXE boot firmware.
+Only a limited number of network cards is supported.
+For more information, see <a href="https://ipxe.org/appnote/hardware_drivers">supported hardware drivers at ipxe.org</a>.</p>
+</div>
+<div class="paragraph">
+<p>This image contains a provisioning security token, therefore the generated image has a limited lifespan.
+For more information about configuring the security token, see <a href="#configuring-the-security-token-validity-duration">Configuring the security token validity duration</a>.</p>
+</div>
+<div class="paragraph">
+<p>This image does not support UEFI systems.</p>
+</div>
 </dd>
 </dl>
 </div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>The <strong>Full host image</strong> is based on SYSLINUX and Grub and works with most network cards.
-When using a <strong>Host image</strong>, <strong>Generic image</strong>, or <strong>Subnet image</strong>,
-see <a href="https://ipxe.org/appnote/hardware_drivers">supported hardware on ipxe.org</a> for a list of network card drivers expected to work with an iPXE-based boot disk.</p>
 </div>
-</td>
-</tr>
-</table>
+<div class="sect2">
+<h3 id="generating-a-full-host-boot-disk"><a class="anchor" href="#generating-a-full-host-boot-disk"></a>9.3. Generating a full host boot disk</h3>
+<div class="paragraph">
+<p>You can generate a full boot disk for a specific host.</p>
 </div>
 <div class="paragraph">
-<p><strong>Host image</strong> and <strong>Full host image</strong> contain provisioning tokens, therefore the generated image has limited lifespan.
-For more information about configuring security tokens, read <a href="#configuring-the-security-token-validity-duration">Configuring the security token validity duration</a>.</p>
+<p>To use the CLI instead of the orcharhino management UI, see the <a href="#cli-generating-a-full-host-boot-disk">CLI procedure</a>.</p>
 </div>
-<div class="paragraph">
-<p>To use the CLI instead of the orcharhino management UI, see the <a href="#cli-creating-hosts-with-pxe-less-provisioning_using-bootdisks">CLI procedure</a>.</p>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Ensure that the operating system has PXELinux and PXEGrub2 templates associated.
+For more information, see <a href="#associating-templates-with-operating-systems">Associating templates with operating systems</a>.</p>
+</li>
+<li>
+<p>An activation key must be available for your host.
+For more information, see <a href="https://docs.theforeman.org/nightly/Managing_Content/index-orcharhino.html#Managing_Activation_Keys_content-management">Managing Activation Keys</a> in <em>Managing content</em>.</p>
+</li>
+<li>
+<p>orcharhino&#160;Client repository for the operating system version of the host is synchronized on orcharhino&#160;Server and enabled in the activation key you use.</p>
+</li>
+</ul>
 </div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
@@ -4964,13 +5031,13 @@ To add another interface, click <strong>Add Interface</strong>.
 You can select only one interface for <strong>Provision</strong> and <strong>Primary</strong>.</p>
 </li>
 <li>
-<p>Click the <strong>Operating System</strong> tab, and verify that all fields contain values.
-Confirm each aspect of the operating system.</p>
+<p>Click the <strong>Operating System</strong> tab.
+Verify that all fields contain correct values.</p>
 </li>
 <li>
 <p>Click <strong>Resolve</strong> in <strong>Provisioning Templates</strong> to check the new host can identify the right provisioning templates to use.</p>
 <div class="paragraph">
-<p>For more information about associating provisioning templates, see <a href="#provisioning-templates">Provisioning templates</a>.</p>
+<p>For more information about associating provisioning templates, see <a href="#associating-templates-with-operating-systems">Associating templates with operating systems</a>.</p>
 </div>
 </li>
 <li>
@@ -4984,40 +5051,16 @@ You can also enter a comma-separated list of multiple activation keys.</p>
 This creates a host entry and the host details page appears.</p>
 </li>
 <li>
-<p>Download the boot disk from orcharhino&#160;Server.</p>
-<div class="ulist">
-<ul>
-<li>
-<p>For <strong>Host image</strong>, on the host details page, click the vertical ellipsis and select <strong>Host '<em>My_Host_Name</em>' image</strong>.</p>
-</li>
-<li>
-<p>For <strong>Full host image</strong>, on the host details page, click the vertical ellipsis and select <strong>Full host '<em>My_Host_Name</em>' image</strong>.</p>
-</li>
-<li>
-<p>For <strong>Generic image</strong>, navigate to <strong>Infrastructure</strong> &gt; <strong>Subnets</strong>, click <strong>Boot disk</strong> and select <strong>Generic image</strong>.</p>
-</li>
-<li>
-<p>For <strong>Subnet image</strong>, navigate to <strong>Infrastructure</strong> &gt; <strong>Subnets</strong>, click the dropdown menu in the <strong>Actions</strong> column of the required subnet and select <strong>Subnet generic image</strong>.</p>
-</li>
-</ul>
-</div>
-</li>
-<li>
-<p>Write the ISO to a USB storage device using the <code>dd</code> utility or <code>livecd-tools</code> if required.</p>
-</li>
-<li>
-<p>When you start the host and boot from the ISO or the USB storage device, the host connects to orcharhino&#160;Server and starts installing operating system from its Kickstart tree.</p>
-<div class="paragraph">
-<p>When the installation completes, the host also registers to orcharhino&#160;Server using the activation key and installs the necessary configuration and management tools from the <strong>orcharhino&#160;Client</strong> repository.</p>
-</div>
+<p>Download the boot disk from orcharhino&#160;Server.
+On the host details page, click the vertical ellipsis and select <strong>Full host '<em>My_Host_Name</em>' image</strong>.</p>
 </li>
 </ol>
 </div>
-<div id="cli-creating-hosts-with-pxe-less-provisioning_using-bootdisks" class="olist arabic">
+<div id="cli-generating-a-full-host-boot-disk" class="olist arabic">
 <div class="title">CLI procedure</div>
 <ol class="arabic">
 <li>
-<p>Create the host using the <code>hammer host create</code> command.</p>
+<p>Create a host:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap">$ hammer host create \
@@ -5033,7 +5076,7 @@ This creates a host entry and the host details page appears.</p>
 </div>
 </li>
 <li>
-<p>Ensure that your network interface options are set using the <code>hammer host interface update</code> command.</p>
+<p>Configure the network interface of your host:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap">$ hammer host interface update \
@@ -5045,19 +5088,7 @@ This creates a host entry and the host details page appears.</p>
 </div>
 </li>
 <li>
-<p>Download the boot disk from orcharhino&#160;Server using the <code>hammer bootdisk</code> command:</p>
-<div class="ulist">
-<ul>
-<li>
-<p>For <strong>Host image</strong>:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">$ hammer bootdisk host --host <em>My_Host_Name</em></pre>
-</div>
-</div>
-</li>
-<li>
-<p>For <strong>Full host image</strong>:</p>
+<p>Download the <strong>Full host image</strong> boot disk from orcharhino&#160;Server:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap">$ hammer bootdisk host \
@@ -5066,16 +5097,44 @@ This creates a host entry and the host details page appears.</p>
 </div>
 </div>
 </li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="generating-a-subnet-boot-disk"><a class="anchor" href="#generating-a-subnet-boot-disk"></a>9.4. Generating a subnet boot disk</h3>
+<div class="paragraph">
+<p>You can generate a subnet boot disk.</p>
+</div>
+<div class="paragraph">
+<p>To use the CLI instead of the orcharhino management UI, see the <a href="#cli-generating-a-subnet-boot-disk">CLI procedure</a>.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
 <li>
-<p>For <strong>Generic image</strong>:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">$ hammer bootdisk generic</pre>
+<p>Ensure that the <code>ipxe-bootimgs</code> package is installed on your orcharhino&#160;Proxy.</p>
+</li>
+</ul>
 </div>
-</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the orcharhino management UI, navigate to <strong>Infrastructure</strong> &gt; <strong>Subnets</strong>.</p>
 </li>
 <li>
-<p>For <strong>Subnet image</strong>:</p>
+<p>Click the dropdown menu in the <strong>Actions</strong> column of the required subnet.</p>
+</li>
+<li>
+<p>Select <strong>Subnet generic image</strong>.</p>
+</li>
+</ol>
+</div>
+<div id="cli-generating-a-subnet-boot-disk" class="ulist">
+<div class="title">CLI procedure</div>
+<ul>
+<li>
+<p>Generate the <strong>Subnet image</strong> boot disk:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap">$ hammer bootdisk subnet --subnet <em>My_Subnet_Name</em></pre>
@@ -5084,24 +5143,189 @@ This creates a host entry and the host details page appears.</p>
 </li>
 </ul>
 </div>
+</div>
+<div class="sect2">
+<h3 id="generating-a-generic-boot-disk"><a class="anchor" href="#generating-a-generic-boot-disk"></a>9.5. Generating a generic boot disk</h3>
 <div class="paragraph">
-<p>This creates a boot ISO for your host to use.</p>
+<p>You can generate a generic boot disk.</p>
+</div>
+<div class="paragraph">
+<p>To use the CLI instead of the orcharhino management UI, see the <a href="#cli-generating-a-generic-boot-disk">CLI procedure</a>.</p>
+</div>
+<div class="paragraph">
+<p>This image is also available from the <code>/disks/generic</code> URL path on your orcharhino&#160;Server, for example, <code>https://orcharhino.example.com/disks/generic</code>.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Ensure that the <code>ipxe-bootimgs</code> package is installed on your orcharhino&#160;Server.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the orcharhino management UI, navigate to <strong>Infrastructure</strong> &gt; <strong>Subnets</strong>.</p>
+</li>
+<li>
+<p>Click the dropdown menu in the <strong>Actions</strong> column of the required subnet.</p>
+</li>
+<li>
+<p>Select <strong>Generic image</strong>.</p>
+</li>
+</ol>
+</div>
+<div id="cli-generating-a-generic-boot-disk" class="ulist">
+<div class="title">CLI procedure</div>
+<ul>
+<li>
+<p>Generate the <strong>Generic image</strong> boot disk:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer bootdisk generic</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="generating-a-host-boot-disk"><a class="anchor" href="#generating-a-host-boot-disk"></a>9.6. Generating a host boot disk</h3>
+<div class="paragraph">
+<p>You can generate a boot disk for a specific host.</p>
+</div>
+<div class="paragraph">
+<p>To use the CLI instead of the orcharhino management UI, see the <a href="#cli-generating-a-host-boot-disk">CLI procedure</a>.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>An activation key must be available for your host.
+For more information, see <a href="https://docs.theforeman.org/nightly/Managing_Content/index-orcharhino.html#Managing_Activation_Keys_content-management">Managing Activation Keys</a> in <em>Managing content</em>.</p>
+</li>
+<li>
+<p>orcharhino&#160;Client repository for the operating system version of the host is synchronized on orcharhino&#160;Server and enabled in the activation key you use.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the orcharhino management UI, navigate to <strong>Hosts</strong> &gt; <strong>Create Host</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter a name for the host.</p>
+</li>
+<li>
+<p>Optional: Click the <strong>Organization</strong> tab and change the organization context to match your requirement.</p>
+</li>
+<li>
+<p>Optional: Click the <strong>Location</strong> tab and change the location context to match your requirement.</p>
+</li>
+<li>
+<p>From the <strong>Host Group</strong> list, select a host group that you want to assign your host to.
+That host group will populate the form.</p>
+</li>
+<li>
+<p>Click the <strong>Interfaces</strong> tab, and on the interface of the host, click <strong>Edit</strong>.</p>
+</li>
+<li>
+<p>Verify that the fields are populated with values.
+Note in particular:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>orcharhino automatically assigns an IP address for the new host.</p>
+</li>
+<li>
+<p>The <strong>Name</strong> from the <strong>Host</strong> tab becomes the <strong>DNS name</strong>.</p>
+</li>
+<li>
+<p>Ensure that orcharhino automatically selects the <strong>Managed</strong>, <strong>Primary</strong>, and <strong>Provision</strong> options for the first interface on the host.
+If not, select them.</p>
+</li>
+</ul>
 </div>
 </li>
 <li>
-<p>Write the ISO to a USB storage device using the <code>dd</code> utility or <code>livecd-tools</code> if required.</p>
+<p>Click <strong>OK</strong> to save.
+To add another interface, click <strong>Add Interface</strong>.
+You can select only one interface for <strong>Provision</strong> and <strong>Primary</strong>.</p>
 </li>
 <li>
-<p>When you start the physical host and boot from the ISO or the USB storage device, the host connects to orcharhino&#160;Server and starts installing operating system from its Kickstart tree.</p>
+<p>Click the <strong>Operating System</strong> tab.
+Verify that all fields contain correct values.</p>
+</li>
+<li>
+<p>Click <strong>Resolve</strong> in <strong>Provisioning Templates</strong> to check the new host can identify the right provisioning templates to use.</p>
 <div class="paragraph">
-<p>When the installation completes, the host also registers to orcharhino&#160;Server using the activation key and installs the necessary configuration and management tools from the <strong>orcharhino&#160;Client</strong> repository.</p>
+<p>For more information about associating provisioning templates, see <a href="#associating-templates-with-operating-systems">Associating templates with operating systems</a>.</p>
+</div>
+</li>
+<li>
+<p>On the <strong>Parameters</strong> tab, click <strong>Add parameter</strong>.
+Add a parameter named <code>kt_activation_keys</code>, select the <strong>string</strong> type, and enter the name of the activation key as the value.
+The activation key has to belong to the same organization as your host.
+You can also enter a comma-separated list of multiple activation keys.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong> to save the host details.
+This creates a host entry and the host details page appears.</p>
+</li>
+<li>
+<p>Download the boot disk from orcharhino&#160;Server.
+On the host details page, click the vertical ellipsis and select <strong>Host '<em>My_Host_Name</em>' image</strong>.</p>
+</li>
+</ol>
+</div>
+<div id="cli-generating-a-host-boot-disk" class="olist arabic">
+<div class="title">CLI procedure</div>
+<ol class="arabic">
+<li>
+<p>Create a host:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer host create \
+--build true \
+--enabled true \
+--hostgroup "<em>My_Host_Group</em>" \
+--location "<em>My_Location</em>" \
+--mac "<em>My_MAC_Address</em>" \
+--managed true \
+--name "<em>My_Host_Name</em>" \
+--organization "<em>My_Organization</em>"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Configure the network interface of your host:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer host interface update \
+--host "<em>My_Host_Name</em>" \
+--managed true \
+--primary true \
+--provision true</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Download the <strong>Host image</strong> boot disk from orcharhino&#160;Server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer bootdisk host --host <em>My_Host_Name</em></pre>
+</div>
 </div>
 </li>
 </ol>
 </div>
 </div>
 <div class="sect2">
-<h3 id="Deploying_SSH_Keys_During_Provisioning_using-bootdisks"><a class="anchor" href="#Deploying_SSH_Keys_During_Provisioning_using-bootdisks"></a>9.2. Deploying SSH keys during provisioning</h3>
+<h3 id="Deploying_SSH_Keys_During_Provisioning_using-bootdisks"><a class="anchor" href="#Deploying_SSH_Keys_During_Provisioning_using-bootdisks"></a>9.7. Deploying SSH keys during provisioning</h3>
 <div class="paragraph">
 <p>Use this procedure to deploy SSH keys added to a user during provisioning.
 For information on adding SSH keys to a user, see <a href="https://docs.theforeman.org/nightly/Administering_Project/index-orcharhino.html#Managing_SSH_Keys_for_a_User_admin">Managing SSH Keys for a User</a> in <em>Administering orcharhino</em>.</p>
@@ -5724,7 +5948,7 @@ For more information, see <a href="https://docs.theforeman.org/nightly/Managing_
 </li>
 <li>
 <p>You have associated a <code>Discovery kexec</code>-kind template and <code>provisioning</code>-kind template with the operating system.
-For more information, see <a href="#Associating_Templates_with_Operating_Systems_provisioning-installer">Associating templates with operating systems</a>.</p>
+For more information, see <a href="#associating-templates-with-operating-systems">Associating templates with operating systems</a>.</p>
 </li>
 </ul>
 </div>
