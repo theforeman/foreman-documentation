@@ -16,14 +16,7 @@ participant "Puppet\nserver" as Puppet
 
 note over Host : Powered off
 
-== Create host in Foreman ==
-
-User -> Foreman : Create host
-User -> Foreman : Assign an MAC address
-Foreman -> Proxy : Create DNS records
-Proxy -> DNS : Forward DNS records
-Proxy -> Foreman : Report status of DNS
-Foreman -> User : Host is created\n(build mode enabled)
+== Download the boot disk ==
 
 User -> Foreman : Request to generate the subnet boot-disk ISO
 group Templates [Boot disk iPXE - host, PXELinux, PXEGrub2]
@@ -37,6 +30,15 @@ User -> Foreman : Download the subnet boot-disk ISO
 User -> User : Write the boot disk\nto an external storage device
 User -> Host : Configure to boot\nfrom the external storage device
 
+== Create host in Foreman ==
+
+User -> Foreman : Create host
+User -> Foreman : Assign an MAC address
+Foreman -> Proxy : Create DNS records
+Proxy -> DNS : Forward DNS records
+Proxy -> Foreman : Report status of DNS
+Foreman -> User : Host is created\n(build mode enabled)
+
 == Boot into OS installer ==
 
 User -> Host : Power on
@@ -44,6 +46,10 @@ Host -> DHCP : Request the reserved IP address
 Host -> Host : Boot from the external storage device
 Host -> Host : Load the boot loader from the boot disk
 Host -> Host : Load boot-loader configuration from the boot disk
+Host -> Proxy: Chainload the iPXE configuration for the host
+group Templates [??? iPXE]
+    Proxy -> Foreman: Render the iPXE configuration for the host
+end
 Host -> Proxy : Download installer kernel\nand initial RAM disk
 Host -> Host : Load operating system installer
 Host -> Proxy : Request installer configuration
