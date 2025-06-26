@@ -16,8 +16,7 @@ Please, familiarize yourself with [CONTRIBUTING](CONTRIBUTING.md) and [Contribut
 
 ### Foreman guides
 
-This README provides information on using the repository.
-For information on working with the documentation content. see the [README in the `guides/` subdirectory](guides/README.md).
+For information on working with the Foreman guides, see the [README in the `guides/` subdirectory](guides/README.md).
 
 ### Static site
 
