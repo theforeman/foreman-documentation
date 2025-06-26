@@ -24,7 +24,7 @@ The landing page for [docs.theforeman.org](https://docs.theforeman.org) is avail
 The static content is always built from the `master` branch.
 See [README in the `web/` subdirectory](web/README.md) for more information.
 
-## Testing site locally
+## Testing the site locally
 
 To build both the static site and the guides for easy local testing, a global `Makefile` is provided in the root directory with the following targets:
 
@@ -44,7 +44,7 @@ For instructions on locally building only the guides, see [Building locally](htt
 
 ## Deployment
 
-Github actions perform HTML (with link validation) and WEB artifact creation and if succeeded and branch is master or stable, artifacts are downloaded, extracted and deployed (commited into gh-pages). Deployment does not delete files, in order to remove some unwanted content, manual deletion and push into gh-pages must be performed.
+GitHub actions perform HTML (with link validation) and WEB artifact creation and if succeeded and branch is master or stable, artifacts are downloaded, extracted and deployed (commited into gh-pages). Deployment does not delete files, in order to remove some unwanted content, manual deletion and push into gh-pages must be performed.
 
 When a commit is pushed into `master`:
 
@@ -58,14 +58,14 @@ When a commit is pushed into `X.Y`:
 * HTML artifact is downloaded and copied into `/X.Y`.
 * Changes are pushed into `gh-pages` branch.
 
-## Branching new release
+## Branching a new release
 
 * On `master`, pull the latest changes and create a new `X.Y` branch.
-* On `X.Y`:
+* On the `X.Y` branch:
   * Update `guides/common/attributes.adoc`.
     * Set `DocState` to `unsupported`.
     * Set `ProjectVersion` to `X.Y` and set the matching `KatelloVersion`.
-  * Push into `X.Y` branch.
+  * Push into the `X.Y` branch.
   * Notify the Doc team on the [TheForeman Doc chat](https://matrix.to/#/#theforeman-doc:matrix.org) Matrix channel.
 * On `master`:
   * Update `ProjectVersionPrevious` to `X.Y` in `guides/common/attributes.adoc`.
@@ -83,4 +83,4 @@ When a commit is pushed into `X.Y`:
 
 ## License
 
-See LICENSE files in individual subdirectories.
+See LICENSE files in the respective subdirectories.
