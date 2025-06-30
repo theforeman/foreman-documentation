@@ -113,11 +113,16 @@
 <li><a href="#Upgrading_satellite_upgrading-connected">2. Upgrading Red&#160;Hat Satellite</a>
 <ul class="sectlevel2">
 <li><a href="#Project_Upgrade_Considerations_upgrading-connected">2.1. Satellite&#160;Server upgrade considerations</a></li>
-<li><a href="#upgrading_a_connected_satellite_server_upgrading-connected">2.2. Upgrading a connected Satellite&#160;Server</a></li>
-<li><a href="#synchronizing_the_new_repositories_upgrading-connected">2.3. Synchronizing the new repositories</a></li>
-<li><a href="#performing-post-upgrade-tasks_upgrading-connected">2.4. Performing post-upgrade tasks</a></li>
-<li><a href="#upgrading_capsule_server_upgrading-connected">2.5. Upgrading Capsule&#160;Servers</a></li>
-<li><a href="#Upgrading_the_External_Database_upgrading-connected">2.6. Upgrading the external database</a></li>
+<li><a href="#Upgrading_the_External_Database_upgrading-connected">2.2. Upgrading the external database</a>
+<ul class="sectlevel3">
+<li><a href="#Upgrading_PostgreSQL_on_the_External_Database_System_upgrading-connected">2.2.1. Upgrading PostgreSQL on the external database system</a></li>
+<li><a href="#upgrading-the-external-database-operating-system">2.2.2. Upgrading the external database operating system</a></li>
+</ul>
+</li>
+<li><a href="#upgrading_a_connected_satellite_server_upgrading-connected">2.3. Upgrading a connected Satellite&#160;Server</a></li>
+<li><a href="#synchronizing_the_new_repositories_upgrading-connected">2.4. Synchronizing the new repositories</a></li>
+<li><a href="#performing-post-upgrade-tasks_upgrading-connected">2.5. Performing post-upgrade tasks</a></li>
+<li><a href="#upgrading_capsule_server_upgrading-connected">2.6. Upgrading Capsule&#160;Servers</a></li>
 </ul>
 </li>
 <li><a href="#upgrading_EL_on_satellite_or_proxy_upgrading-connected">3. Upgrading Red&#160;Hat Enterprise Linux on Satellite or Capsule</a>
@@ -196,6 +201,10 @@ For complete instructions on how to upgrade, see <a href="#Upgrading_satellite_u
 <li>
 <p>Ensure that your Satellite&#160;Servers and Capsule&#160;Servers have been upgraded to Satellite 6.15.
 For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.15/html-single/upgrading_connected_red_hat_satellite_to_6.15/index#"><em>Upgrading connected Red&#160;Hat Satellite to 6.15</em></a> or <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.15/html-single/upgrading_disconnected_red_hat_satellite_to_6.15/index#"><em>Upgrading disconnected Red&#160;Hat Satellite to 6.15</em></a>.</p>
+</li>
+<li>
+<p>If you use an external database, upgrade the external database to PostgreSQL 13.
+Optionally, upgrade the underlying operating system from Red&#160;Hat Enterprise Linux&#160;8 to Red&#160;Hat Enterprise Linux&#160;9.</p>
 </li>
 <li>
 <p>Upgrade your Satellite&#160;Server:</p>
@@ -462,7 +471,83 @@ For more information, see <a href="https://docs.redhat.com/en/documentation/red_
 </div>
 </div>
 <div class="sect2">
-<h3 id="upgrading_a_connected_satellite_server_upgrading-connected"><a class="anchor" href="#upgrading_a_connected_satellite_server_upgrading-connected"></a>2.2. Upgrading a connected Satellite&#160;Server</h3>
+<h3 id="Upgrading_the_External_Database_upgrading-connected"><a class="anchor" href="#Upgrading_the_External_Database_upgrading-connected"></a>2.2. Upgrading the external database</h3>
+<div class="paragraph">
+<p>If you use an external database, upgrade the external database to PostgreSQL 13.
+Optionally, you can upgrade the underlying operating system from Red&#160;Hat Enterprise Linux 8 to Red&#160;Hat Enterprise Linux 9.</p>
+</div>
+<div class="sect3">
+<h4 id="Upgrading_PostgreSQL_on_the_External_Database_System_upgrading-connected"><a class="anchor" href="#Upgrading_PostgreSQL_on_the_External_Database_System_upgrading-connected"></a>2.2.1. Upgrading PostgreSQL on the external database system</h4>
+<div class="paragraph">
+<p>Upgrade the external database to PostgreSQL 13 and rectify the permissions.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Follow the instructions in <a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/8/html/deploying_different_types_of_servers/using-databases#fast-upgrade-using-the-pg_upgrade-tool_migrating-to-a-rhel-8-version-of-postgresql">Fast upgrade using the pg_upgrade utility</a> in <em>Red&#160;Hat Enterprise Linux&#160;8 Deploying different types of servers</em> to upgrade the external database.</p>
+</li>
+<li>
+<p>Correct the permissions on the <code>evr</code> extension on the external database:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># runuser -l postgres -c \
+"psql -d foreman -c \"UPDATE pg_extension SET extowner = (SELECT oid FROM pg_authid WHERE rolname='foreman') WHERE extname='evr';\""</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="upgrading-the-external-database-operating-system"><a class="anchor" href="#upgrading-the-external-database-operating-system"></a>2.2.2. Upgrading the external database operating system</h4>
+<div class="paragraph">
+<p>Optionally, you can upgrade the external database from Red&#160;Hat Enterprise Linux 8 to Red&#160;Hat Enterprise Linux 9 using backup and restore.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>A host running Red&#160;Hat Enterprise Linux 9 for PostgreSQL server that follows the external database on Red&#160;Hat Enterprise Linux 9 documentation.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.16/html-single/installing_satellite_server_in_a_connected_network_environment/index#using-external-databases">Using external databases with Satellite</a>.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Create a backup of your existing external database.</p>
+</li>
+<li>
+<p>Restore the backup on the new Red&#160;Hat Enterprise Linux 9 server.</p>
+</li>
+<li>
+<p>Verify that Satellite can reach the new database:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># PGPASSWORD='<em>My_Foreman_Database_Password</em>' psql -h <em>postgres.example.com</em> -p 5432 -U foreman -d foreman -c "SELECT 1 as ping"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>If your Satellite&#160;Server can reach the new database server by using the old name, no further changes are required.
+Otherwise, reconfigure Satellite to use the new name:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-installer \
+--foreman-db-host <em>newpostgres.example.com</em> \
+--katello-candlepin-db-host <em>newpostgres.example.com</em> \
+--foreman-proxy-content-pulpcore-postgresql-host <em>newpostgres.example.com</em></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="upgrading_a_connected_satellite_server_upgrading-connected"><a class="anchor" href="#upgrading_a_connected_satellite_server_upgrading-connected"></a>2.3. Upgrading a connected Satellite&#160;Server</h3>
 <div class="paragraph">
 <p>Use this procedure for a Satellite&#160;Server with access to the public internet</p>
 </div>
@@ -549,9 +634,6 @@ satellite-maintenance-6.16-for-rhel-8-x86_64-rpms</pre>
 </div>
 </li>
 <li>
-<p>If you are using an external database, upgrade your database to PostgreSQL 13.</p>
-</li>
-<li>
 <p>Use the health check option to determine if the system is ready for upgrade.
 When prompted, enter the hammer admin user credentials to configure <code>satellite-maintain</code> with hammer credentials.
 These changes are applied to the <code>/etc/foreman-maintain/foreman-maintain-hammer.yml</code> file.</p>
@@ -600,7 +682,7 @@ For more information, see <a href="#upgrading_EL_on_satellite_or_proxy_upgrading
 </div>
 </div>
 <div class="sect2">
-<h3 id="synchronizing_the_new_repositories_upgrading-connected"><a class="anchor" href="#synchronizing_the_new_repositories_upgrading-connected"></a>2.3. Synchronizing the new repositories</h3>
+<h3 id="synchronizing_the_new_repositories_upgrading-connected"><a class="anchor" href="#synchronizing_the_new_repositories_upgrading-connected"></a>2.4. Synchronizing the new repositories</h3>
 <div class="paragraph">
 <p>You must enable and synchronize the new 6.16 repositories before you can upgrade Capsule&#160;Servers and Satellite clients.</p>
 </div>
@@ -691,7 +773,7 @@ For more information, see <a href="https://docs.redhat.com/en/documentation/red_
 </div>
 </div>
 <div class="sect2">
-<h3 id="performing-post-upgrade-tasks_upgrading-connected"><a class="anchor" href="#performing-post-upgrade-tasks_upgrading-connected"></a>2.4. Performing post-upgrade tasks</h3>
+<h3 id="performing-post-upgrade-tasks_upgrading-connected"><a class="anchor" href="#performing-post-upgrade-tasks_upgrading-connected"></a>2.5. Performing post-upgrade tasks</h3>
 <div class="ulist">
 <ul>
 <li>
@@ -724,7 +806,7 @@ While the pre-migration is running, Satellite&#160;Server is fully functional bu
 </div>
 </div>
 <div class="sect2">
-<h3 id="upgrading_capsule_server_upgrading-connected"><a class="anchor" href="#upgrading_capsule_server_upgrading-connected"></a>2.5. Upgrading Capsule&#160;Servers</h3>
+<h3 id="upgrading_capsule_server_upgrading-connected"><a class="anchor" href="#upgrading_capsule_server_upgrading-connected"></a>2.6. Upgrading Capsule&#160;Servers</h3>
 <div class="paragraph">
 <p>This section describes how to upgrade Capsule&#160;Servers from 6.15 to 6.16.</p>
 </div>
@@ -923,56 +1005,6 @@ You can then check the upgrade progress without staying connected to the command
 For more information, see <a href="#upgrading_EL_on_satellite_or_proxy_upgrading-connected">Upgrading Red&#160;Hat Enterprise Linux on Satellite or Capsule</a>.</p>
 </li>
 </ul>
-</div>
-</div>
-<div class="sect2">
-<h3 id="Upgrading_the_External_Database_upgrading-connected"><a class="anchor" href="#Upgrading_the_External_Database_upgrading-connected"></a>2.6. Upgrading the external database</h3>
-<div class="paragraph">
-<p>You can upgrade an external database from Red&#160;Hat Enterprise Linux 8 to Red&#160;Hat Enterprise Linux 9 while upgrading Satellite from 6.15 to 6.16.</p>
-</div>
-<div class="ulist">
-<div class="title">Prerequisites</div>
-<ul>
-<li>
-<p>Create a new Red&#160;Hat Enterprise Linux 9 based host for PostgreSQL server that follows the external database on Red&#160;Hat Enterprise Linux 9 documentation.
-For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.16/html-single/installing_satellite_server_in_a_connected_network_environment/index#using-external-databases_satellite">Using External Databases with Satellite</a>.</p>
-</li>
-<li>
-<p>Install PostgreSQL version 13 on the new Red&#160;Hat Enterprise Linux host.</p>
-</li>
-</ul>
-</div>
-<div class="olist arabic">
-<div class="title">Procedure</div>
-<ol class="arabic">
-<li>
-<p>Create a backup.</p>
-</li>
-<li>
-<p>Restore the backup on the new server.</p>
-</li>
-<li>
-<p>Correct the permissions on the <code>evr</code> extension:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># runuser -l postgres -c \
-"psql -d foreman -c \"UPDATE pg_extension SET extowner = (SELECT oid FROM pg_authid WHERE rolname='foreman') WHERE extname='evr';\""</pre>
-</div>
-</div>
-</li>
-<li>
-<p>If Satellite reaches the new database server via the old name, no further changes are required.
-Otherwise reconfigure Satellite to use the new name:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># satellite-installer \
---foreman-db-host <em>newpostgres.example.com</em> \
---katello-candlepin-db-host <em>newpostgres.example.com</em> \
---foreman-proxy-content-pulpcore-postgresql-host <em>newpostgres.example.com</em></pre>
-</div>
-</div>
-</li>
-</ol>
 </div>
 </div>
 </div>

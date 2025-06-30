@@ -100,7 +100,7 @@
 <h1>Upgrading Foreman to 3.12</h1>
 <div class="details">
 <span id="revnumber">version 3.12 (unsupported),</span>
-<span id="revdate">published Jun 24 2025</span>
+<span id="revdate">published Jun 30 2025</span>
 </div>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
@@ -116,10 +116,15 @@
 <li><a href="#Upgrading_foreman_upgrading-connected">2. Upgrading Foreman</a>
 <ul class="sectlevel2">
 <li><a href="#Project_Upgrade_Considerations_upgrading-connected">2.1. Foreman&#160;server upgrade considerations</a></li>
-<li><a href="#upgrading_a_connected_foreman_server_upgrading-connected">2.2. Upgrading a connected Foreman&#160;server</a></li>
-<li><a href="#performing-post-upgrade-tasks_upgrading-connected">2.3. Performing post-upgrade tasks</a></li>
-<li><a href="#upgrading_smart-proxy_server_upgrading-connected">2.4. Upgrading Smart&#160;Proxy&#160;servers</a></li>
-<li><a href="#Upgrading_the_External_Database_upgrading-connected">2.5. Upgrading the external database</a></li>
+<li><a href="#Upgrading_the_External_Database_upgrading-connected">2.2. Upgrading the external database</a>
+<ul class="sectlevel3">
+<li><a href="#Upgrading_PostgreSQL_on_the_External_Database_System_upgrading-connected">2.2.1. Upgrading PostgreSQL on the external database system</a></li>
+<li><a href="#upgrading-the-external-database-operating-system">2.2.2. Upgrading the external database operating system</a></li>
+</ul>
+</li>
+<li><a href="#upgrading_a_connected_foreman_server_upgrading-connected">2.3. Upgrading a connected Foreman&#160;server</a></li>
+<li><a href="#performing-post-upgrade-tasks_upgrading-connected">2.4. Performing post-upgrade tasks</a></li>
+<li><a href="#upgrading_smart-proxy_server_upgrading-connected">2.5. Upgrading Smart&#160;Proxy&#160;servers</a></li>
 </ul>
 </li>
 <li><a href="#upgrading_EL_on_foreman_or_proxy_upgrading-connected">3. Upgrading Enterprise Linux on Foreman or Smart&#160;Proxy</a>
@@ -150,6 +155,10 @@ For complete instructions on how to upgrade, see <a href="#Upgrading_foreman_upg
 </div>
 <div class="olist arabic">
 <ol class="arabic">
+<li>
+<p>If you use an external database, upgrade the external database to PostgreSQL 13.
+Optionally, upgrade the underlying operating system from Enterprise Linux&#160;8 to Enterprise Linux&#160;9.</p>
+</li>
 <li>
 <p>Upgrade your Foreman&#160;server:</p>
 <div class="olist loweralpha">
@@ -394,7 +403,83 @@ For more information, see <a href="https://docs.theforeman.org/3.12/Installing_S
 </div>
 </div>
 <div class="sect2">
-<h3 id="upgrading_a_connected_foreman_server_upgrading-connected"><a class="anchor" href="#upgrading_a_connected_foreman_server_upgrading-connected"></a>2.2. Upgrading a connected Foreman&#160;server</h3>
+<h3 id="Upgrading_the_External_Database_upgrading-connected"><a class="anchor" href="#Upgrading_the_External_Database_upgrading-connected"></a>2.2. Upgrading the external database</h3>
+<div class="paragraph">
+<p>If you use an external database, upgrade the external database to PostgreSQL 13.
+Optionally, you can upgrade the underlying operating system from Enterprise Linux 8 to Enterprise Linux 9.</p>
+</div>
+<div class="sect3">
+<h4 id="Upgrading_PostgreSQL_on_the_External_Database_System_upgrading-connected"><a class="anchor" href="#Upgrading_PostgreSQL_on_the_External_Database_System_upgrading-connected"></a>2.2.1. Upgrading PostgreSQL on the external database system</h4>
+<div class="paragraph">
+<p>Upgrade the external database to PostgreSQL 13 and rectify the permissions.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Follow the instructions in <a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/8/html/deploying_different_types_of_servers/using-databases#fast-upgrade-using-the-pg_upgrade-tool_migrating-to-a-rhel-8-version-of-postgresql">Fast upgrade using the pg_upgrade utility</a> in <em>Red&#160;Hat Enterprise Linux&#160;8 Deploying different types of servers</em> to upgrade the external database.</p>
+</li>
+<li>
+<p>Correct the permissions on the <code>evr</code> extension on the external database:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># runuser -l postgres -c \
+"psql -d foreman -c \"UPDATE pg_extension SET extowner = (SELECT oid FROM pg_authid WHERE rolname='foreman') WHERE extname='evr';\""</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="upgrading-the-external-database-operating-system"><a class="anchor" href="#upgrading-the-external-database-operating-system"></a>2.2.2. Upgrading the external database operating system</h4>
+<div class="paragraph">
+<p>Optionally, you can upgrade the external database from Enterprise Linux 8 to Enterprise Linux 9 using backup and restore.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>A host running Enterprise Linux 9 for PostgreSQL server that follows the external database on Enterprise Linux 9 documentation.
+For more information, see <a href="https://docs.theforeman.org/3.12/Installing_Server/index-katello.html#using-external-databases">Using external databases with Foreman</a>.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Create a backup of your existing external database.</p>
+</li>
+<li>
+<p>Restore the backup on the new Enterprise Linux 9 server.</p>
+</li>
+<li>
+<p>Verify that Foreman can reach the new database:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># PGPASSWORD='<em>My_Foreman_Database_Password</em>' psql -h <em>postgres.example.com</em> -p 5432 -U foreman -d foreman -c "SELECT 1 as ping"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>If your Foreman&#160;server can reach the new database server by using the old name, no further changes are required.
+Otherwise, reconfigure Foreman to use the new name:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer \
+--foreman-db-host <em>newpostgres.example.com</em> \
+--katello-candlepin-db-host <em>newpostgres.example.com</em> \
+--foreman-proxy-content-pulpcore-postgresql-host <em>newpostgres.example.com</em></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="upgrading_a_connected_foreman_server_upgrading-connected"><a class="anchor" href="#upgrading_a_connected_foreman_server_upgrading-connected"></a>2.3. Upgrading a connected Foreman&#160;server</h3>
 <div class="paragraph">
 <p>Use this procedure for a Foreman&#160;server with access to the public internet</p>
 </div>
@@ -504,9 +589,6 @@ https://yum.theforeman.org/katello/4.14/katello/el8/x86_64/katello-repos-latest.
 </div>
 </li>
 <li>
-<p>If you are using an external database, upgrade your database to PostgreSQL 13.</p>
-</li>
-<li>
 <p>Ensure the module streams are enabled:</p>
 <div class="listingblock">
 <div class="content">
@@ -567,7 +649,7 @@ For more information, see <a href="#upgrading_EL_on_foreman_or_proxy_upgrading-c
 </div>
 </div>
 <div class="sect2">
-<h3 id="performing-post-upgrade-tasks_upgrading-connected"><a class="anchor" href="#performing-post-upgrade-tasks_upgrading-connected"></a>2.3. Performing post-upgrade tasks</h3>
+<h3 id="performing-post-upgrade-tasks_upgrading-connected"><a class="anchor" href="#performing-post-upgrade-tasks_upgrading-connected"></a>2.4. Performing post-upgrade tasks</h3>
 <div class="ulist">
 <ul>
 <li>
@@ -621,7 +703,7 @@ This command migrates data while Foreman is running without any need for downtim
 </div>
 </div>
 <div class="sect2">
-<h3 id="upgrading_smart-proxy_server_upgrading-connected"><a class="anchor" href="#upgrading_smart-proxy_server_upgrading-connected"></a>2.4. Upgrading Smart&#160;Proxy&#160;servers</h3>
+<h3 id="upgrading_smart-proxy_server_upgrading-connected"><a class="anchor" href="#upgrading_smart-proxy_server_upgrading-connected"></a>2.5. Upgrading Smart&#160;Proxy&#160;servers</h3>
 <div class="paragraph">
 <p>This section describes how to upgrade Smart&#160;Proxy&#160;servers from 3.11 to 3.12.</p>
 </div>
@@ -808,56 +890,6 @@ https://yum.theforeman.org/katello/4.14/katello/el8/x86_64/katello-repos-latest.
 For more information, see <a href="#upgrading_EL_on_foreman_or_proxy_upgrading-connected">Upgrading Enterprise Linux on Foreman or Smart&#160;Proxy</a>.</p>
 </li>
 </ul>
-</div>
-</div>
-<div class="sect2">
-<h3 id="Upgrading_the_External_Database_upgrading-connected"><a class="anchor" href="#Upgrading_the_External_Database_upgrading-connected"></a>2.5. Upgrading the external database</h3>
-<div class="paragraph">
-<p>You can upgrade an external database from Enterprise Linux 8 to Enterprise Linux 9 while upgrading Foreman from 3.11 to 3.12.</p>
-</div>
-<div class="ulist">
-<div class="title">Prerequisites</div>
-<ul>
-<li>
-<p>Create a new Enterprise Linux 9 based host for PostgreSQL server that follows the external database on Enterprise Linux 9 documentation.
-For more information, see <a href="https://docs.theforeman.org/3.12/Installing_Server/index-katello.html#using-external-databases_foreman">Using External Databases with Foreman</a>.</p>
-</li>
-<li>
-<p>Install PostgreSQL version 13 on the new Enterprise Linux host.</p>
-</li>
-</ul>
-</div>
-<div class="olist arabic">
-<div class="title">Procedure</div>
-<ol class="arabic">
-<li>
-<p>Create a backup.</p>
-</li>
-<li>
-<p>Restore the backup on the new server.</p>
-</li>
-<li>
-<p>Correct the permissions on the <code>evr</code> extension:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># runuser -l postgres -c \
-"psql -d foreman -c \"UPDATE pg_extension SET extowner = (SELECT oid FROM pg_authid WHERE rolname='foreman') WHERE extname='evr';\""</pre>
-</div>
-</div>
-</li>
-<li>
-<p>If Foreman reaches the new database server via the old name, no further changes are required.
-Otherwise reconfigure Foreman to use the new name:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># foreman-installer \
---foreman-db-host <em>newpostgres.example.com</em> \
---katello-candlepin-db-host <em>newpostgres.example.com</em> \
---foreman-proxy-content-pulpcore-postgresql-host <em>newpostgres.example.com</em></pre>
-</div>
-</div>
-</li>
-</ol>
 </div>
 </div>
 </div>
