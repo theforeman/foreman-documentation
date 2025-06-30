@@ -3,6 +3,7 @@
 SRC=
 ASMB_DIR=common # assembly destination folder
 MOD_DIR=modules
+MOD_TYPE=":_mod-docs-content-type: REFERENCE"
 ASMB_FILENAME=assembly_hammer-reference.adoc
 NOOP= # dry run
 DEBUG=
@@ -121,7 +122,7 @@ cat "$SRC" | while read line ; do
             id='[id="hammer"]'
             heading='= hammer'
             [ -n "$NOOP" ] || [ -n "$ASSEMBLY_ONLY" ] || \
-                echo -e "$id\n$heading" >$mod_file
+                echo -e "$MOD_TYPE\n\n$id\n$heading" >$mod_file
             { [ -z "$NOOP" ] || [ -n "$ASSEMBLY_ONLY" ] ; } && \
                 echo -e "include::modules/ref_hammer.adoc[leveloffset=+1]\n" >>$asmb_file
             begin_section=yes
@@ -136,7 +137,7 @@ cat "$SRC" | while read line ; do
             id=[id=\"$id_core\"]
             heading=`echo -e $line | sed 's/^## hammer/=/'`
             [ -n "$NOOP" ] || [ -n "$ASSEMBLY_ONLY" ] || \
-                echo -e "$id\n$heading" >$mod_file
+                echo -e "$MOD_TYPE\n\n$id\n$heading" >$mod_file
             { [ -z "$NOOP" ] || [ -n "$ASSEMBLY_ONLY" ] ; } && \
                 echo -e "include::modules/$filename[leveloffset=+1]\n" >>$asmb_file
             begin_section=yes
@@ -154,7 +155,7 @@ cat "$SRC" | while read line ; do
             id=[id=\"$id_core\"]
             heading=`echo -e $line | sed 's/^### hammer/==/'`
             [ -n "$NOOP" ] || [ -n "$ASSEMBLY_ONLY" ] || \
-                echo -e "$id\n$heading" >>$mod_file
+                echo -e "$MOD_TYPE\n\n$id\n$heading" >>$mod_file
             begin_section=yes
             skip_section=
             options=
@@ -170,7 +171,7 @@ cat "$SRC" | while read line ; do
             id=[id=\"$id_core\"]
             heading=`echo -e $line | sed 's/^#### hammer/===/'`
             [ -n "$NOOP" ] || [ -n "$ASSEMBLY_ONLY" ] || \
-                echo -e "$id\n$heading" >>$mod_file
+                echo -e "$MOD_TYPE\n\n$id\n$heading" >>$mod_file
             begin_section=yes
             skip_section=
             options=
@@ -186,7 +187,7 @@ cat "$SRC" | while read line ; do
             id=[id=\"$id_core\"]
             heading=`echo -e $line | sed 's/^##### hammer/====/'`
             [ -n "$NOOP" ] || [ -n "$ASSEMBLY_ONLY" ] || \
-                echo -e "$id\n$heading" >>$mod_file
+                echo -e "$MOD_TYPE\n\n$id\n$heading" >>$mod_file
             begin_section=yes
             skip_section=
             options=
