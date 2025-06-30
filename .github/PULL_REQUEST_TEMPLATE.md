@@ -18,6 +18,4 @@ Please cherry-pick my commits into:
 * [ ] Foreman 3.11/Katello 4.13 (orcharhino 6.11 on EL8 only; orcharhino 7.0 on EL8+EL9; orcharhino 7.1 with Leapp)
 * [ ] Foreman 3.10/Katello 4.12
 * [ ] Foreman 3.9/Katello 4.11 (Satellite 6.15; orcharhino 6.8/6.9/6.10)
-* [ ] Foreman 3.8/Katello 4.10
-* [ ] Foreman 3.7/Katello 4.9 (Satellite 6.14)
-* We do not accept PRs for Foreman older than 3.7.
+* We do not accept PRs for Foreman older than 3.9.
