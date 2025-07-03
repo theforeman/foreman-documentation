@@ -84,7 +84,7 @@ echo -e >$details_tmp # reset
 details_file="$mod_path/ref_hammer-option-details.adoc"
 details_header='[id="hammer-option-details"]\n= Option details\n\nHammer options accept the following option types and values:'
 
-asmb_header='// DO NOT EDIT MANUALLY\n// Use the generate-hammer-reference.sh script to update\n\ninclude::modules/con_hammer-reference.adoc[]\n\n'
+asmb_header=':_mod-docs-content-type: ASSEMBLY\n\n// DO NOT EDIT MANUALLY\n// Use the generate-hammer-reference.sh script to update\n\ninclude::modules/con_hammer-reference.adoc[]\n\n'
 asmb_footer='include::modules/ref_hammer-option-details.adoc[leveloffset=+1]\n'
 
 # Create folders
