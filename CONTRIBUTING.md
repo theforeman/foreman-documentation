@@ -47,6 +47,7 @@ See [LICENSE](LICENSE).
 * [ ] When creating my PR, I select all branches I want my change to get cherry-picked to.
 * [ ] I am familiar to proper capitalization for project-specific terminology.
 See [Capitalization](#Capitalization).
+* [ ] The first line of the file contains the modular docs content type attribute, for example, `:_mod-docs-content-type: ASSEMBLY` for assemblies.
 
 ## Capitalization
 
