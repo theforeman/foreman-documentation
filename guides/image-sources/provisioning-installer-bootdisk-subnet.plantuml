@@ -1,0 +1,84 @@
+@startuml
+
+!include foreman.pstyle
+
+title Installer-based provisioning with subnet boot disk on bare metal
+
+actor       User
+participant "Provisioned\nHost" as Host
+participant "Foreman" as Foreman
+participant "Foreman\nProxy" as Proxy
+participant DHCP
+participant DNS
+!if ($puppet)
+participant "Puppet\nserver" as Puppet
+!endif
+
+note over Host : Powered off
+
+== Download the boot disk ==
+
+User -> Foreman : Request to generate the subnet boot-disk ISO
+group Templates [Boot disk iPXE - host, PXELinux, PXEGrub2]
+    Foreman -> Proxy : Render boot-loader configuration files
+end
+Foreman -> Foreman : Add the boot loader to ISO files
+Foreman -> Foreman : Add the boot-loader configuration files to ISO files
+Foreman -> Foreman : Build the subnet boot-disk ISO
+
+User -> Foreman : Download the subnet boot-disk ISO
+User -> User : Write the boot disk\nto an external storage device
+User -> Host : Configure to boot\nfrom the external storage device
+
+== Create host in Foreman ==
+
+User -> Foreman : Create host
+User -> Foreman : Assign an MAC address
+Foreman -> Proxy : Create DNS records
+Proxy -> DNS : Forward DNS records
+Proxy -> Foreman : Report status of DNS
+Foreman -> User : Host is created\n(build mode enabled)
+
+== Boot into OS installer ==
+
+User -> Host : Power on
+Host -> DHCP : Request the reserved IP address
+Host -> Host : Boot from the external storage device
+Host -> Host : Load the boot loader from the boot disk
+Host -> Host : Load boot-loader configuration from the boot disk
+Host -> Proxy: Chain load the iPXE configuration for the host
+group Template [iPXE]
+    Proxy -> Foreman: Render the iPXE configuration for the host
+end
+Host -> Proxy : Download installer kernel\nand initial RAM disk
+Host -> Host : Load operating system installer
+Host -> Proxy : Request installer configuration
+group Template [Provision]
+   Proxy -> Proxy : Render installer configuration
+end
+Proxy -> Host : Get installer configuration
+!include prov-installation-media.iuml
+note over Host : Operating system installed
+!include prov-initial-configuration.iuml
+Host -> Foreman : Call home\n(disables build mode)
+alt Setting //Update IP from built request// enabled
+Foreman -> Foreman : Update the IP address from the 'built' request
+else Setting //Update IP from built request// disabled
+Host -> Foreman : Update the IP address from Facts
+end
+User -> Host : Eliminate the external storage device
+Host -> Host : Reboot
+
+== First local boot ==
+
+!include prov-first-local-boot-hdd.iuml
+
+!if ($puppet)
+== First Puppet run ==
+
+!include puppet-run.iuml
+!endif
+
+note over Host : In operation
+
+@enduml
