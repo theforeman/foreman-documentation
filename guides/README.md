@@ -172,7 +172,7 @@ See also [Images](#Images).
 * User input is surrounded by underscores (`_`) to indicate variable input, for example, `hammer organization create --name "_My Organization_" --label "_my_organization_"`.
 * Links to different guides are followed by the title of the guide in italics, for example `in _{ManagingHostsDocTitle}_`.
 * The first line of a file contains the modular docs content type attribute, for example, `:_mod-docs-content-type: ASSEMBLY` for assemblies.
-The content type reflects the file prefix: `ASSEMBLY`, `PROCEDURE`, `CONCEPT`, `REFERENCE`, or `SNIPPET`.
+The content type reflects the file prefix: `ASSEMBLY`, `PROCEDURE`, `CONCEPT`, or `REFERENCE`.
 The only exceptions are `master.adoc` files, which do not require this attribute.
 
 ### Images
