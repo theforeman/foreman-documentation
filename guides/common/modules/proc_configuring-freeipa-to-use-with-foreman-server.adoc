@@ -1,0 +1,99 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="configuring-freeipa-to-use-with-{project-context}-server"]
+= Configuring {FreeIPA} to use with {ProjectServer}
+
+Before you can integrate an existing {FreeIPA} DNS server, you must prepare the {FreeIPA} environment.
+The preparation work enables {ProjectServer} to use generic security service transaction signature (GSS-TSIG) authentication to update DNS entries.
+
+.Prerequisites
+* The {FreeIPA} domain is deployed and functional.
+* {FreeIPA} is configured with its integrated DNS service.
+* The firewall on the {FreeIPA} servers allow access to the required ports.
+ifndef::orcharhino[]
+For more information, see {RHELDocsBaseURL}/9/html/installing_identity_management/preparing-the-system-for-ipa-server-installation_installing-identity-management#port-requirements-for-idm_preparing-the-system-for-ipa-server-installation[Port requirements for IdM] in _{RHEL}{nbsp}9 Installing Identity Management_.
+endif::[]
+
+.Procedure
+. On a host that is a member of the {FreeIPA} domain, obtain a Kerberos ticket for the `admin` user:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# kinit admin
+----
+. Create a new Kerberos principal {ProductName} to be used for authentication on the {FreeIPA} server:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# ipa service-add _{smart-proxy-principal}/{foreman-example-com}_
+----
+. Optional: Add a forward DNS zone:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# ipa dnszone-add _example.com_
+----
+. Display the BIND update policy of the forward zone:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# ipa dnszone-show _example.com_ --all | \
+grep "BIND update policy"
+----
++
+Example output:
++
+[source, none, options="nowrap" subs="+quotes,attributes"]
+----
+BIND update policy: grant _EXAMPLE.COM_ krb5-self * A; grant _EXAMPLE.COM_ krb5-self * AAAA; grant _EXAMPLE.COM_ krb5-self * SSHFP;
+----
++
+Note the value of the setting.
+. Update the forward zone settings:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# ipa dnszone-mod _example.com_ \
+--dynamic-update=TRUE \
+--allow-sync-ptr=TRUE \
+--update-policy="_<existing_policy>_ *grant _smartproxy\047foreman.example.com@EXAMPLE.COM_ wildcard * ANY;*"
+----
++
+This command modifies the zone settings as follows:
++
+* Dynamic zone updates are enabled.
+* {FreeIPA} updates the corresponding PTR record in the reverse DNS zone if an A or AAAA record is updated in the forward zone.
+* The Kerberos principal created in an earlier step is authorized to modify any type of any data record.
+Note that you must append this setting to the existing value.
+. Optional: Add a reverse DNS zone:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# ipa dnszone-add _0.168.192.in-addr.arpa_
+----
+. Display the BIND update policy of the reverse zone:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# ipa dnszone-show _0.168.192.in-addr.arpa_ --all | \
+grep "BIND update policy"
+----
++
+Example output:
++
+[source, none, options="nowrap" subs="+quotes,attributes"]
+----
+BIND update policy: grant _EXAMPLE.COM_ krb5-subdomain _0.168.192.in-addr.arpa._ PTR;
+----
++
+Note the value of the setting.
+. Update the reverse zone settings:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# ipa dnszone-mod _0.168.192.in-addr.arpa_ \
+--dynamic-update=TRUE \
+--update-policy="_<existing_policy>_ *grant _smartproxy\047foreman.example.com@EXAMPLE.COM_ wildcard * ANY;*"
+----
++
+Note that you must append the update policy to the existing value.

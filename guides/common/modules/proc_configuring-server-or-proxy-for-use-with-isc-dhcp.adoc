@@ -3,7 +3,13 @@
 [id="configuring-server-or-proxy-for-use-with-isc-dhcp"]
 = Configuring {ProjectServer} or {SmartProxyServer} for use with ISC DHCP
 
-After you have prepared the DHCP server as described in xref:configuring-isc-dhcp-to-use-with-server[], integrate the ISC DHCP server into your {ProjectServer} or {SmartProxyServer}.
+After you have prepared the DHCP server, integrate the ISC DHCP server into your {ProjectServer} or {SmartProxyServer}.
+
+.Prerequisites
+* You enabled Object Management Application Programming Interface (OMAPI) authentication in ISC DHCP.
+For more information, see xref:enabling-omapi-authentication-in-isc-dhcp[].
+* You shared the DHCP configuration and lease database over NFS.
+For more information, see xref:sharing-the-dhcp-configuration-files-and-lease-database-over-nfs[].
 
 .Procedure
 . Install the required package:
@@ -16,59 +22,43 @@ After you have prepared the DHCP server as described in xref:configuring-isc-dhc
 +
 [options="nowrap"]
 ----
-# mkdir -p /mnt/nfs/etc/dhcp /mnt/nfs/var/lib/dhcpd
-----
-. Set the owner of the `/mnt/nfs` and sub-directories to `foreman-proxy`:
-+
-[options="nowrap"]
-----
-# chown -R foreman-proxy /mnt/nfs
-----
-. Verify that the NFS server exports the required directories:
-+
-[options="nowrap" subs="+quotes"]
-----
-# showmount -e _DHCP_Server_FQDN_
+# mkdir -p \
+/srv/nfs/etc/dhcp \
+/srv/nfs/var/lib/dhcpd
 ----
 . Edit the `/etc/fstab` file, and add entries for the NFS shares to mount them automatically when the system boots:
 +
-[options="nowrap" subs="+quotes"]
+[source, none, options="nowrap" subs="+quotes"]
 ----
-_dhcp_server_fqdn_:/exports/etc/dhcp       /mnt/nfs/etc/dhcp       nfs  ro,vers=3,auto,nosharecache,context="system_u:object_r:dhcp_etc_t:s0"     0 0
-
-_dhcp_server_fqdn_:/exports/var/lib/dhcpd  /mnt/nfs/var/lib/dhcpd  nfs  ro,vers=3,auto,nosharecache,context="system_u:object_r:dhcpd_state_t:s0"  0 0
+_dhcp_server_fqdn_:/etc/dhcp       /srv/nfs/etc/dhcp       nfs  ro,auto,context="system_u:object_r:dhcp_etc_t:s0"     0 0
+_dhcp_server_fqdn_:/var/lib/dhcpd  /srv/nfs/var/lib/dhcpd  nfs  ro,auto,context="system_u:object_r:dhcpd_state_t:s0"  0 0
+----
+. Reload `systemd` so that this service uses the updated `/etc/fstab` file:
++
+[options="nowrap"]
+----
+# systemctl daemon-reload
 ----
 . Mount the NFS shares:
 +
 [options="nowrap"]
 ----
-# mount /mnt/nfs/etc/dhcp/
-# mount /mnt/nfs/var/lib/dhcpd/
+# mount /srv/nfs/etc/dhcp/
+# mount /srv/nfs/var/lib/dhcpd/
 ----
-. Optional: Verify that the `foreman-proxy` user can access the files on the NFS server:
-.. Switch to the `foreman-proxy` user:
+. Verify that the `foreman-proxy` user can access the files on the NFS server.
+For example:
+.. Display the first 5 lines of the `/srv/nfs/etc/dhcp/dhcpd.conf` file:
 +
 [options="nowrap"]
 ----
-# su foreman-proxy -s /bin/bash
+$ su - foreman-proxy -c 'head -5 /srv/nfs/etc/dhcp/dhcpd.conf'
 ----
-.. Display the `/mnt/nfs/etc/dhcp/dhcpd.conf` file:
+.. Display the first 5 lines of the `/srv/nfs/var/lib/dhcpd/dhcpd.leases` file:
 +
 [options="nowrap"]
 ----
-$ cat /mnt/nfs/etc/dhcp/dhcpd.conf
-----
-.. Display the `/mnt/nfs/var/lib/dhcpd/dhcpd.leases` file:
-+
-[options="nowrap"]
-----
-$ cat /mnt/nfs/var/lib/dhcpd/dhcpd.leases
-----
-.. Log out the `foreman-proxy` user to switch back to the `root` user:
-+
-[options="nowrap"]
-----
-$ exit
+$ su - foreman-proxy -c 'head -5 /srv/nfs/var/lib/dhcpd/dhcpd.leases'
 ----
 . Configure {ProjectServer} or {SmartProxyServer} to use the DHCP server:
 +
@@ -79,8 +69,8 @@ $ exit
 --foreman-proxy-dhcp-provider remote_isc \
 --enable-foreman-proxy-plugin-dhcp-remote-isc \
 --foreman-proxy-dhcp-server _dhcp_server_fqdn_ \
---foreman-proxy-plugin-dhcp-remote-isc-dhcp-config /mnt/nfs/etc/dhcp/dhcpd.conf \
---foreman-proxy-plugin-dhcp-remote-isc-dhcp-leases /mnt/nfs/var/lib/dhcpd/dhcpd.leases \
+--foreman-proxy-plugin-dhcp-remote-isc-dhcp-config /srv/nfs/etc/dhcp/dhcpd.conf \
+--foreman-proxy-plugin-dhcp-remote-isc-dhcp-leases /srv/nfs/var/lib/dhcpd/dhcpd.leases \
 --foreman-proxy-plugin-dhcp-remote-isc-key-name omapi_key \
 --foreman-proxy-plugin-dhcp-remote-isc-key-secret _key_secret_ \
 --foreman-proxy-plugin-dhcp-remote-isc-omapi-port 7911
