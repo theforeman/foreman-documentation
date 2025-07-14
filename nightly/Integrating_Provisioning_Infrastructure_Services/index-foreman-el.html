@@ -224,7 +224,12 @@
 <li><a href="#integrating-a-local-self-managed-dns-service">1.3. Integrating a local self-managed DNS service</a></li>
 <li><a href="#integrating-a-generic-rfc-2136-compatible-remote-dns-server">1.4. Integrating a generic RFC 2136-compatible remote DNS server</a></li>
 <li><a href="#integrating-idm-dns-with-tsig-authentication">1.5. Integrating FreeIPA DNS with TSIG authentication</a></li>
-<li><a href="#integrating-idm-dns-update-with-gss-tsig-authentication">1.6. Integrating FreeIPA DNS with GSS-TSIG authentication</a></li>
+<li><a href="#integrating-idm-dns-update-with-gss-tsig-authentication">1.6. Integrating FreeIPA DNS with GSS-TSIG authentication</a>
+<ul class="sectlevel3">
+<li><a href="#configuring-freeipa-to-use-with-foreman-server">1.6.1. Configuring FreeIPA to use with Foreman&#160;server</a></li>
+<li><a href="#configuring-smart-proxy-for-use-with-freeipa">1.6.2. Configuring Smart&#160;Proxies for use with FreeIPA</a></li>
+</ul>
+</li>
 <li><a href="#integrating-infoblox-dns">1.7. Integrating Infoblox DNS</a></li>
 <li><a href="#integrating-the-libvirt-api-to-manage-dns-records">1.8. Integrating the libvirt API to manage DNS records</a></li>
 <li><a href="#integrating-powerdns">1.9. Integrating PowerDNS</a></li>
@@ -239,8 +244,9 @@
 <li><a href="#enabling-the-installer-managed-dhcp-service">2.2. Enabling the installer-managed DHCP service</a></li>
 <li><a href="#integrating-a-remote-isc-dhcp-server">2.3. Integrating a remote ISC DHCP server</a>
 <ul class="sectlevel3">
-<li><a href="#configuring-isc-dhcp-to-use-with-server">2.3.1. Configuring ISC DHCP to use with Foreman&#160;server</a></li>
-<li><a href="#configuring-server-or-proxy-for-use-with-isc-dhcp">2.3.2. Configuring Foreman&#160;server or Smart&#160;Proxy&#160;server for use with ISC DHCP</a></li>
+<li><a href="#enabling-omapi-authentication-in-isc-dhcp">2.3.1. Enabling OMAPI authentication in ISC DHCP</a></li>
+<li><a href="#sharing-the-dhcp-configuration-files-and-lease-database-over-nfs">2.3.2. Sharing the DHCP configuration files and lease database over NFS</a></li>
+<li><a href="#configuring-server-or-proxy-for-use-with-isc-dhcp">2.3.3. Configuring Foreman&#160;server or Smart&#160;Proxy&#160;server for use with ISC DHCP</a></li>
 </ul>
 </li>
 <li><a href="#integrating-infoblox-dhcp">2.4. Integrating Infoblox DHCP</a></li>
@@ -622,21 +628,24 @@ The integration enables you to continue using your existing FreeIPA DNS service,
 <p>If Foreman&#160;server or Smart&#160;Proxy&#160;server is a member of a FreeIPA domain, use generic security service transaction signature (GSS-TSIG) authentication.
 This method provides an increased security and a low key management effort compared to TSIG authentication.</p>
 </div>
+<div class="sect3">
+<h4 id="configuring-freeipa-to-use-with-foreman-server"><a class="anchor" href="#configuring-freeipa-to-use-with-foreman-server"></a>1.6.1. Configuring FreeIPA to use with Foreman&#160;server</h4>
+<div class="paragraph">
+<p>Before you can integrate an existing FreeIPA DNS server, you must prepare the FreeIPA environment.
+The preparation work enables Foreman&#160;server to use generic security service transaction signature (GSS-TSIG) authentication to update DNS entries.</p>
+</div>
 <div class="ulist">
 <div class="title">Prerequisites</div>
 <ul>
 <li>
-<p>The FreeIPA server is deployed and functional.</p>
+<p>The FreeIPA domain is deployed and functional.</p>
 </li>
 <li>
-<p>Foreman&#160;server or Smart&#160;Proxy&#160;server is a member of a FreeIPA domain.</p>
+<p>FreeIPA is configured with its integrated DNS service.</p>
 </li>
 <li>
-<p>The firewall on the FreeIPA server allows access to the required ports.
+<p>The firewall on the FreeIPA servers allow access to the required ports.
 For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux//9/html/installing_identity_management/preparing-the-system-for-ipa-server-installation_installing-identity-management#port-requirements-for-idm_preparing-the-system-for-ipa-server-installation">Port requirements for IdM</a> in <em>Red&#160;Hat Enterprise Linux&#160;9 Installing Identity Management</em>.</p>
-</li>
-<li>
-<p>The FreeIPA account has permissions to create zones on the FreeIPA server.</p>
 </li>
 </ul>
 </div>
@@ -644,23 +653,15 @@ For more information, see <a href="https://docs.redhat.com/en/documentation/red_
 <div class="title">Procedure</div>
 <ol class="arabic">
 <li>
-<p>Create a Kerberos principal on the FreeIPA server:</p>
-<div class="olist loweralpha">
-<ol class="loweralpha" type="a">
-<li>
-<p>Obtain a Kerberos ticket:</p>
+<p>On a host that is a member of the FreeIPA domain, obtain a Kerberos ticket for the <code>admin</code> user:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># kinit <em>My_FreeIPA_User</em></pre>
+<pre class="nowrap"># kinit admin</pre>
 </div>
 </div>
 </li>
 <li>
-<p>Create a new Kerberos principal Foreman&#160;server to use to authenticate on the FreeIPA server:</p>
-<div class="ulist">
-<ul>
-<li>
-<p>For a Foreman&#160;server, enter:</p>
+<p>Create a new Kerberos principal Foreman&#160;server to be used for authentication on the FreeIPA server:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># ipa service-add <em>smartproxy/foreman.example.com</em></pre>
@@ -668,21 +669,126 @@ For more information, see <a href="https://docs.redhat.com/en/documentation/red_
 </div>
 </li>
 <li>
-<p>For a Smart&#160;Proxy&#160;server, enter:</p>
+<p>Optional: Add a forward DNS zone:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># ipa service-add <em>smartproxy.example.com</em></pre>
+<pre class="nowrap"># ipa dnszone-add <em>example.com</em></pre>
 </div>
 </div>
+</li>
+<li>
+<p>Display the BIND update policy of the forward zone:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ipa dnszone-show <em>example.com</em> --all | \
+grep "BIND update policy"</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-none" data-lang="none">BIND update policy: grant <em>EXAMPLE.COM</em> krb5-self * A; grant <em>EXAMPLE.COM</em> krb5-self * AAAA; grant <em>EXAMPLE.COM</em> krb5-self * SSHFP;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note the value of the setting.</p>
+</div>
+</li>
+<li>
+<p>Update the forward zone settings:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ipa dnszone-mod <em>example.com</em> \
+--dynamic-update=TRUE \
+--allow-sync-ptr=TRUE \
+--update-policy="<em>&lt;existing_policy&gt;</em> <strong>grant <em>smartproxy\047foreman.example.com@EXAMPLE.COM</em> wildcard * ANY;</strong>"</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This command modifies the zone settings as follows:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Dynamic zone updates are enabled.</p>
+</li>
+<li>
+<p>FreeIPA updates the corresponding PTR record in the reverse DNS zone if an A or AAAA record is updated in the forward zone.</p>
+</li>
+<li>
+<p>The Kerberos principal created in an earlier step is authorized to modify any type of any data record.
+Note that you must append this setting to the existing value.</p>
 </li>
 </ul>
 </div>
 </li>
-</ol>
+<li>
+<p>Optional: Add a reverse DNS zone:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ipa dnszone-add <em>0.168.192.in-addr.arpa</em></pre>
+</div>
 </div>
 </li>
 <li>
-<p>Install and configure the FreeIPA client on either the Foreman or Smart&#160;Proxy that is managing the DNS service for your deployment:</p>
+<p>Display the BIND update policy of the reverse zone:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ipa dnszone-show <em>0.168.192.in-addr.arpa</em> --all | \
+grep "BIND update policy"</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-none" data-lang="none">BIND update policy: grant <em>EXAMPLE.COM</em> krb5-subdomain <em>0.168.192.in-addr.arpa.</em> PTR;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note the value of the setting.</p>
+</div>
+</li>
+<li>
+<p>Update the reverse zone settings:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ipa dnszone-mod <em>0.168.192.in-addr.arpa</em> \
+--dynamic-update=TRUE \
+--update-policy="<em>&lt;existing_policy&gt;</em> <strong>grant <em>smartproxy\047foreman.example.com@EXAMPLE.COM</em> wildcard * ANY;</strong>"</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note that you must append the update policy to the existing value.</p>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="configuring-smart-proxy-for-use-with-freeipa"><a class="anchor" href="#configuring-smart-proxy-for-use-with-freeipa"></a>1.6.2. Configuring Smart&#160;Proxies for use with FreeIPA</h4>
+<div class="paragraph">
+<p>After you have prepared the FreeIPA DNS server as described in <a href="#configuring-freeipa-to-use-with-foreman-server">Configuring FreeIPA to use with Foreman&#160;server</a>, integrate the DNS server into your Foreman&#160;server or Smart&#160;Proxy&#160;server.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>You set the DNS search domain of the host to the FreeIPA DNS domain.</p>
+</li>
+<li>
+<p>You know the Kerberos principal the host should use to authenticate to the FreeIPA DNS server, for example, <code><em>smartproxy/foreman.example.com</em></code>.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>If your Foreman&#160;server or Smart&#160;Proxy&#160;server is not yet a member of the FreeIPA domain:</p>
 <div class="olist loweralpha">
 <ol class="loweralpha" type="a">
 <li>
@@ -704,8 +810,11 @@ For more information, see <a href="https://docs.redhat.com/en/documentation/red_
 <p>Follow the on-screen prompts.</p>
 </div>
 </li>
+</ol>
+</div>
+</li>
 <li>
-<p>Obtain a Kerberos ticket:</p>
+<p>Obtain a Kerberos ticket for the <code>admin</code> user:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># kinit admin</pre>
@@ -713,7 +822,7 @@ For more information, see <a href="https://docs.redhat.com/en/documentation/red_
 </div>
 </li>
 <li>
-<p>Remove any preexisting <code>keytab</code>:</p>
+<p>Remove the <code>/etc/foreman-proxy/dns.keytab</code> file:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># rm --force /etc/foreman-proxy/dns.keytab</pre>
@@ -721,22 +830,22 @@ For more information, see <a href="https://docs.redhat.com/en/documentation/red_
 </div>
 </li>
 <li>
-<p>Obtain a <code>keytab</code> file for this system:</p>
+<p>Obtain a Kerberos keytab file for your Smart&#160;Proxy and store it in the <code>/etc/foreman-proxy/dns.keytab</code> file:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># ipa-getkeytab -p smartproxy/<em>foreman.example.com@EXAMPLE.COM</em> \
--s <em>freeipa-server.example.com</em> -k /etc/foreman-proxy/dns.keytab</pre>
+<pre class="nowrap"># ipa-getkeytab -p <em>smartproxy/foreman.example.com@EXAMPLE.COM</em> \
+-k /etc/foreman-proxy/dns.keytab</pre>
 </div>
 </div>
-<div class="admonitionblock note">
+<div class="admonitionblock important">
 <table>
 <tr>
 <td class="icon">
-<div class="title">Note</div>
+<div class="title">Important</div>
 </td>
 <td class="content">
 <div class="paragraph">
-<p>When adding a keytab to a standby system with the same host name as the original system in service, add the <code>r</code> option to prevent generating new credentials and rendering the credentials on the original system invalid.</p>
+<p>When adding a keytab to a standby system with the same host name as the original system in service, pass the <code>-r</code> option to the <code>ipa-getkeytab</code> command to prevent generating new credentials and rendering the credentials on the original system invalid.</p>
 </div>
 </td>
 </tr>
@@ -744,7 +853,7 @@ For more information, see <a href="https://docs.redhat.com/en/documentation/red_
 </div>
 </li>
 <li>
-<p>Set the owner and group of the <code>/etc/foreman-proxy/dns.keytab</code> to <code>foreman-proxy</code>:</p>
+<p>Set the owner and group of <code>/etc/foreman-proxy/dns.keytab</code> to <code>foreman-proxy</code>:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># chown foreman-proxy:foreman-proxy /etc/foreman-proxy/dns.keytab</pre>
@@ -752,80 +861,37 @@ For more information, see <a href="https://docs.redhat.com/en/documentation/red_
 </div>
 </li>
 <li>
-<p>Optional: Verify that the <code>keytab</code> file is valid:</p>
+<p>Verify that the <code>/etc/foreman-proxy/dns.keytab</code> file is valid:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Use the file to obtain a Kerberos ticket:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># kinit -kt /etc/foreman-proxy/dns.keytab \
-smartproxy/<em>foreman.example.com@EXAMPLE.COM</em></pre>
+<em>smartproxy/foreman.example.com@EXAMPLE.COM</em></pre>
 </div>
 </div>
 </li>
-</ol>
-</div>
-</li>
 <li>
-<p>Add a forward DNS zone in the FreeIPA web UI:</p>
-<div class="olist loweralpha">
-<ol class="loweralpha" type="a">
-<li>
-<p>Navigate to <strong>Network Services</strong> &gt; <strong>DNS</strong> &gt; <strong>DNS Zones</strong>.</p>
-</li>
-<li>
-<p>Select <strong>Add</strong>, and enter the zone name.
-For example, <code>example.com</code>.</p>
-</li>
-<li>
-<p>Click <strong>Add and Edit</strong>.</p>
-</li>
-<li>
-<p>On the <strong>Settings</strong> tab, append the following to the semicolon-separated list in the <strong>BIND update policy</strong> field:</p>
+<p>Display the Kerberos ticket:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap">grant smartproxy\047<em>foreman.example.com@EXAMPLE.COM</em> wildcard * ANY;</pre>
+<pre class="nowrap"># klist</pre>
 </div>
 </div>
-</li>
-<li>
-<p>Set <strong>Dynamic update</strong> to <strong>True</strong>.</p>
-</li>
-<li>
-<p>Enable <strong>Allow PTR sync</strong>.</p>
-</li>
-<li>
-<p>Click <strong>Save</strong> to save the changes.</p>
-</li>
-</ol>
+<div class="paragraph">
+<p>Example output:</p>
 </div>
-</li>
-<li>
-<p>Add a reverse DNS zone in the FreeIPA web UI:</p>
-<div class="olist loweralpha">
-<ol class="loweralpha" type="a">
-<li>
-<p>Navigate to <strong>Network Services</strong> &gt; <strong>DNS</strong> &gt; <strong>DNS Zones</strong>.</p>
-</li>
-<li>
-<p>Click <strong>Add</strong>.</p>
-</li>
-<li>
-<p>Select <strong>Reverse zone IP network</strong>, and add the network address in CIDR format to enable reverse lookups.</p>
-</li>
-<li>
-<p>Click <strong>Add and Edit</strong>.</p>
-</li>
-<li>
-<p>On the <strong>Settings</strong> tab, append the following to the semicolon-separated list in the <strong>BIND update policy</strong> field:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap">grant smartproxy\047<em>foreman.example.com@EXAMPLE.COM</em> wildcard * ANY;</pre>
+<pre class="highlight nowrap"><code class="language-none" data-lang="none">Ticket cache: KCM:0:50473
+Default principal: smartproxy/foreman.example.com@EXAMPLE.COM
+
+Valid starting       Expires              Service principal
+05/20/2025 12:12:35  05/21/2025 11:54:31  krbtgt/EXAMPLE.COM@EXAMPLE.COM</code></pre>
 </div>
 </div>
-</li>
-<li>
-<p>Set <strong>Dynamic update</strong> to <strong>True</strong>.</p>
-</li>
-<li>
-<p>Click <strong>Save</strong> to save the changes.</p>
 </li>
 </ol>
 </div>
@@ -840,7 +906,7 @@ For example, <code>example.com</code>.</p>
 --foreman-proxy-dns-managed false \
 --foreman-proxy-dns-server "<em>freeipa-server.example.com</em>" \
 --foreman-proxy-dns-tsig-keytab /etc/foreman-proxy/dns.keytab \
---foreman-proxy-dns-tsig-principal "smartproxy/<em>foreman.example.com@EXAMPLE.COM</em>"</pre>
+--foreman-proxy-dns-tsig-principal "<em>smartproxy/foreman.example.com@EXAMPLE.COM</em>"</pre>
 </div>
 </div>
 </li>
@@ -849,6 +915,7 @@ For example, <code>example.com</code>.</p>
 For more information, see <a href="#associating-the-dns-service-with-a-domain-and-subnet">Associating the DNS service with a domain and subnet</a>.</p>
 </li>
 </ol>
+</div>
 </div>
 </div>
 <div class="sect2">
@@ -1329,74 +1396,94 @@ The integration enables you to continue using your existing DHCP server, and For
 <p>With this type of integration, Foreman uses an Object Management Application Programming Interface (OMAPI) key to update leases and the Network File System (NFS) protocol to access the ISC DHCP server&#8217;s configuration files and lease database.</p>
 </div>
 <div class="sect3">
-<h4 id="configuring-isc-dhcp-to-use-with-server"><a class="anchor" href="#configuring-isc-dhcp-to-use-with-server"></a>2.3.1. Configuring ISC DHCP to use with Foreman&#160;server</h4>
+<h4 id="enabling-omapi-authentication-in-isc-dhcp"><a class="anchor" href="#enabling-omapi-authentication-in-isc-dhcp"></a>2.3.1. Enabling OMAPI authentication in ISC DHCP</h4>
 <div class="paragraph">
-<p>Before you can integrate an existing remote ISC DHCP server, you must prepare this host.
-The preparation work enables Foreman&#160;server to update the leases and access the configuration files and lease database.</p>
+<p>The integration of an existing remote ISC DHCP service requires that you enable the Object Management Application Programming Interface (OMAPI) in the DHCP service.
+Foreman uses OMAPI to remotely manage DHCP server objects.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>The ISC DHCP service is deployed and functional.</p>
+</li>
+<li>
+<p>The firewall on the DHCP server allows access to the DHCP service (port 67/UDP).</p>
+</li>
+</ul>
 </div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
 <ol class="arabic">
 <li>
-<p>Perform the following steps on the DHCP server:</p>
-<div class="olist loweralpha">
-<ol class="loweralpha" type="a">
-<li>
-<p>Install the required packages:</p>
+<p>Create a security token:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># dnf install dhcp-server bind-utils</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Generate a security token:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># tsig-keygen -a hmac-md5 <em>omapi_key</em>
-key "omapi_key" {
-	algorithm hmac-md5;
-	secret "4z1jwYO0RGUTJbWDepFBdg==";
-};</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Edit the <code>/etc/dhcp/dhcpd.conf</code> file for all subnets, and add the key generated by <code>tsig-keygen</code>.
-The following is an example:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># cat /etc/dhcp/dhcpd.conf
-default-lease-time 604800;
-max-lease-time 2592000;
-log-facility local7;
-
-subnet <em>192.168.38.0</em> netmask <em>255.255.255.0</em> {
-	range <em>192.168.38.10 192.168.38.100</em>;
-	option routers <em>192.168.38.1</em>;
-	option subnet-mask <em>255.255.255.0</em>;
-	option domain-search "<em>virtual.lan</em>";
-	option domain-name "<em>virtual.lan</em>";
-	option domain-name-servers <em>8.8.8.8</em>;
-}
-
-omapi-port 7911;
-key <em>omapi_key</em> {
-	algorithm hmac-md5;
-	secret "<em>key_secret</em>";
-};
-omapi-key <em>omapi_key</em>;</pre>
+<pre class="nowrap"># tsig-keygen -a hmac-md5 <em>omapi_key</em></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Note that the <code>option routers</code> value is the IP address of your Foreman&#160;server or Smart&#160;Proxy&#160;server that you want to use with an external DHCP service.</p>
+<p>Note that Foreman supports only the <code>hmac-md5</code> algorithm for OMAPI authentication.</p>
+</div>
+<div class="paragraph">
+<p>Example output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-none" data-lang="none">key "omapi_key" {
+	algorithm hmac-md5;
+	secret "4z1jwYO0RGUTJbWDepFBdg==";
+};</code></pre>
+</div>
 </div>
 </li>
 <li>
-<p>Open the DHCP port in the <code>firewalld</code> service:</p>
+<p>Edit the <code>/etc/dhcp/dhcpd.conf</code> file, and append the following settings:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># firewall-cmd --add-service dhcp</pre>
+<pre class="highlight nowrap"><code class="language-none" data-lang="none">key <em>omapi_key</em> {
+	algorithm hmac-md5;
+	secret "<em>key_secret</em>";
+};
+omapi-port 7911;
+omapi-key <em>omapi_key</em>;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The settings specified in the example include the following:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>key <em>omapi_key</em></code></dt>
+<dd>
+<p>Defines the key, its algorithm and encrypted password.
+Use the output of the <code>tsig-keygen</code> command for this directive.</p>
+</dd>
+<dt class="hdlist1"><code>omapi-port 7911;</code></dt>
+<dd>
+<p>Enables the OMAPI protocol in ISC DHCP and defines the port of the protocol.</p>
+</dd>
+<dt class="hdlist1"><code>omapi-key <em>omapi_key</em></code></dt>
+<dd>
+<p>Defines the name of the key the OMAPI interface uses.
+The name must match the one you specified in the <code>tsig-keygen</code> command.</p>
+</dd>
+</dl>
+</div>
+</li>
+<li>
+<p>Restart the <code>dhcpd</code> service:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl restart dhcpd</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Open the OMAPI port in the <code>firewalld</code> service:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># firewall-cmd --add-port=7911/tcp</pre>
 </div>
 </div>
 </li>
@@ -1410,54 +1497,65 @@ omapi-key <em>omapi_key</em>;</pre>
 </li>
 </ol>
 </div>
+</div>
+<div class="sect3">
+<h4 id="sharing-the-dhcp-configuration-files-and-lease-database-over-nfs"><a class="anchor" href="#sharing-the-dhcp-configuration-files-and-lease-database-over-nfs"></a>2.3.2. Sharing the DHCP configuration files and lease database over NFS</h4>
+<div class="paragraph">
+<p>The integration of an existing remote ISC DHCP service requires that you share the configuration file and lease database of the service over network.
+For example, you can use the NFS service.
+Foreman then uses NFS to access configuration settings, such as subnet definitions.
+Read access to the lease database ensures efficient access to all lease information, which is not available over the ISC DHCP Object Management Application Programming Interface (OMAPI).</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>The ISC DHCP service is deployed and functional.</p>
 </li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
 <li>
 <p>On Foreman&#160;server, determine both the UID and the primary GID of the <code>foreman-proxy</code> user:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># id -u foreman-proxy
-<em>993</em>
-
-# id -g foreman-proxy
-<em>990</em></pre>
+# id -g foreman-proxy</pre>
 </div>
+</div>
+<div class="paragraph">
+<p>You require these IDs in the next steps.</p>
 </div>
 </li>
 <li>
-<p>Perform the following steps on the DHCP server:</p>
+<p>On the DHCP server, share the configuration of the DHCP service and lease database over NFS:</p>
 <div class="olist loweralpha">
 <ol class="loweralpha" type="a">
 <li>
-<p>Create the <code>foreman-proxy</code> group with the same group ID as determined in a previous step:</p>
+<p>Create the <code>foreman-proxy</code> group with the same group ID as on the Foreman&#160;server:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># groupadd -g <em>990</em> foreman-proxy</pre>
+<pre class="nowrap"># groupadd -g <em>My_User_ID</em> foreman-proxy</pre>
 </div>
 </div>
 </li>
 <li>
-<p>Create the <code>foreman-proxy</code> user with the same user ID and primary group ID as determined in a previous step:</p>
+<p>Create the <code>foreman-proxy</code> user with the same user ID and primary group ID as on the Foreman&#160;server:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># useradd -u <em>993</em> -g <em>990</em> -s /sbin/nologin foreman-proxy</pre>
+<pre class="nowrap"># useradd -u <em>My_User_ID</em> -g <em>My_Group_ID</em> -s /sbin/nologin foreman-proxy</pre>
 </div>
 </div>
 </li>
 <li>
-<p>Ensure that the configuration files are accessible:</p>
+<p>Ensure that members of the <code>foreman-proxy</code> group can access the configuration file of the DHCP service:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># chmod o+rx /etc/dhcp/
-# chmod o+r /etc/dhcp/dhcpd.conf
-# chattr +i /etc/dhcp/ /etc/dhcp/dhcpd.conf</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Enable and start the <code>dhcpd</code> service:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># systemctl enable --now dhcpd</pre>
+<pre class="nowrap"># chgrp -R foreman-proxy /etc/dhcp/
+# chmod g+rx /etc/dhcp/
+# chmod g+r /etc/dhcp/dhcpd.conf</pre>
 </div>
 </div>
 </li>
@@ -1470,6 +1568,18 @@ omapi-key <em>omapi_key</em>;</pre>
 </div>
 </li>
 <li>
+<p>Edit the <code>/etc/exports</code> file, and append share entries for the <code>/etc/dhcp/</code> and <code>/var/lib/dhcpd/</code> directories:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-none" data-lang="none">/etc/dhcp        <em>foreman.example.com</em>(ro)
+/var/lib/dhcpd   <em>foreman.example.com</em>(ro)</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Share the directories in read-only mode and only with the Foreman&#160;server or Smart&#160;Proxy&#160;server.</p>
+</div>
+</li>
+<li>
 <p>Enable and start the NFS server service:</p>
 <div class="listingblock">
 <div class="content">
@@ -1478,71 +1588,10 @@ omapi-key <em>omapi_key</em>;</pre>
 </div>
 </li>
 <li>
-<p>Create directories for the DHCP configuration and lease files that you want to export by using NFS:</p>
+<p>Open the NFSv4 port in the <code>firewalld</code> service:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># mkdir -p /exports/var/lib/dhcpd /exports/etc/dhcp</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Edit the <code>/etc/fstab</code> file and add bind mount entries for the exported directories:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">/var/lib/dhcpd  /exports/var/lib/dhcpd  none  bind,auto  0 0
-/etc/dhcp       /exports/etc/dhcp       none  bind,auto  0 0</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>These entries use bind mounts which mount the original directories to the ones you use for the export in NFS.</p>
-</div>
-</li>
-<li>
-<p>Activate the bind mounts from the <code>/etc/fstab</code> file:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># mount -a</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Edit the <code>/etc/exports</code> file, and export the required directories in NFS:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">/exports               <em>192.168.38.1</em>(rw,async,no_root_squash,fsid=0,no_subtree_check)
-/exports/etc/dhcp      <em>192.168.38.1</em>(ro,async,no_root_squash,no_subtree_check,nohide)
-/exports/var/lib/dhcpd <em>192.168.38.1</em>(ro,async,no_root_squash,no_subtree_check,nohide)</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Use the IP address of the Foreman or Smart&#160;Proxy in the export options to ensure that only these hosts have access.</p>
-</div>
-</li>
-<li>
-<p>Reload the NFS server:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># exportfs -rva</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Enable the <code>dhcpd</code> OMAPI port in <code>firewalld</code>:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># firewall-cmd --add-port=7911/tcp</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Enable the services required for NFSv3 in <code>firewalld</code>:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># firewall-cmd \
---add-service mountd \
---add-service nfs \
---add-service rpc-bind \
---zone public</pre>
+<pre class="nowrap"># firewall-cmd --add-service=nfs</pre>
 </div>
 </div>
 </li>
@@ -1559,11 +1608,34 @@ omapi-key <em>omapi_key</em>;</pre>
 </li>
 </ol>
 </div>
+<div class="ulist">
+<div class="title">Next steps</div>
+<ul>
+<li>
+<p>By default, the NFS protocol is unencrypted.
+If you require an encrypted connection, configure NFS over TLS or Kerberos authentication after you completed this procedure.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/configuring_and_using_network_file_services/deploying-an-nfs-server_configuring-and-using-network-file-services#configuring-an-nfs-server-with-tls-support_deploying-an-nfs-server">Configuring an NFS server with TLS support</a> and <a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/configuring_and_using_network_file_services/deploying-an-nfs-server_configuring-and-using-network-file-services#setting-up-an-nfs-server-with-kerberos-in-a-red-hat-identity-management-domain_deploying-an-nfs-server">Setting up an NFS server with Kerberos in a Red Hat Enterprise Linux Identity Management domain</a> in <em>Red&#160;Hat Enterprise Linux&#160;9 Configuring and using network file services</em>.</p>
+</li>
+</ul>
+</div>
 </div>
 <div class="sect3">
-<h4 id="configuring-server-or-proxy-for-use-with-isc-dhcp"><a class="anchor" href="#configuring-server-or-proxy-for-use-with-isc-dhcp"></a>2.3.2. Configuring Foreman&#160;server or Smart&#160;Proxy&#160;server for use with ISC DHCP</h4>
+<h4 id="configuring-server-or-proxy-for-use-with-isc-dhcp"><a class="anchor" href="#configuring-server-or-proxy-for-use-with-isc-dhcp"></a>2.3.3. Configuring Foreman&#160;server or Smart&#160;Proxy&#160;server for use with ISC DHCP</h4>
 <div class="paragraph">
-<p>After you have prepared the DHCP server as described in <a href="#configuring-isc-dhcp-to-use-with-server">Configuring ISC DHCP to use with Foreman&#160;server</a>, integrate the ISC DHCP server into your Foreman&#160;server or Smart&#160;Proxy&#160;server.</p>
+<p>After you have prepared the DHCP server, integrate the ISC DHCP server into your Foreman&#160;server or Smart&#160;Proxy&#160;server.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>You enabled Object Management Application Programming Interface (OMAPI) authentication in ISC DHCP.
+For more information, see <a href="#enabling-omapi-authentication-in-isc-dhcp">Enabling OMAPI authentication in ISC DHCP</a>.</p>
+</li>
+<li>
+<p>You shared the DHCP configuration and lease database over NFS.
+For more information, see <a href="#sharing-the-dhcp-configuration-files-and-lease-database-over-nfs">Sharing the DHCP configuration files and lease database over NFS</a>.</p>
+</li>
+</ul>
 </div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
@@ -1580,23 +1652,9 @@ omapi-key <em>omapi_key</em>;</pre>
 <p>Create the directories into which you later mount the NFS shares:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># mkdir -p /mnt/nfs/etc/dhcp /mnt/nfs/var/lib/dhcpd</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Set the owner of the <code>/mnt/nfs</code> and sub-directories to <code>foreman-proxy</code>:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># chown -R foreman-proxy /mnt/nfs</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Verify that the NFS server exports the required directories:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># showmount -e <em>DHCP_Server_FQDN</em></pre>
+<pre class="nowrap"># mkdir -p \
+/srv/nfs/etc/dhcp \
+/srv/nfs/var/lib/dhcpd</pre>
 </div>
 </div>
 </li>
@@ -1604,9 +1662,16 @@ omapi-key <em>omapi_key</em>;</pre>
 <p>Edit the <code>/etc/fstab</code> file, and add entries for the NFS shares to mount them automatically when the system boots:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"><em>dhcp_server_fqdn</em>:/exports/etc/dhcp       /mnt/nfs/etc/dhcp       nfs  ro,vers=3,auto,nosharecache,context="system_u:object_r:dhcp_etc_t:s0"     0 0
-
-<em>dhcp_server_fqdn</em>:/exports/var/lib/dhcpd  /mnt/nfs/var/lib/dhcpd  nfs  ro,vers=3,auto,nosharecache,context="system_u:object_r:dhcpd_state_t:s0"  0 0</pre>
+<pre class="highlight nowrap"><code class="language-none" data-lang="none"><em>dhcp_server_fqdn</em>:/etc/dhcp       /srv/nfs/etc/dhcp       nfs  ro,auto,context="system_u:object_r:dhcp_etc_t:s0"     0 0
+<em>dhcp_server_fqdn</em>:/var/lib/dhcpd  /srv/nfs/var/lib/dhcpd  nfs  ro,auto,context="system_u:object_r:dhcpd_state_t:s0"  0 0</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Reload <code>systemd</code> so that this service uses the updated <code>/etc/fstab</code> file:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl daemon-reload</pre>
 </div>
 </div>
 </li>
@@ -1614,44 +1679,29 @@ omapi-key <em>omapi_key</em>;</pre>
 <p>Mount the NFS shares:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># mount /mnt/nfs/etc/dhcp/
-# mount /mnt/nfs/var/lib/dhcpd/</pre>
+<pre class="nowrap"># mount /srv/nfs/etc/dhcp/
+# mount /srv/nfs/var/lib/dhcpd/</pre>
 </div>
 </div>
 </li>
 <li>
-<p>Optional: Verify that the <code>foreman-proxy</code> user can access the files on the NFS server:</p>
+<p>Verify that the <code>foreman-proxy</code> user can access the files on the NFS server.
+For example:</p>
 <div class="olist loweralpha">
 <ol class="loweralpha" type="a">
 <li>
-<p>Switch to the <code>foreman-proxy</code> user:</p>
+<p>Display the first 5 lines of the <code>/srv/nfs/etc/dhcp/dhcpd.conf</code> file:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># su foreman-proxy -s /bin/bash</pre>
+<pre class="nowrap">$ su - foreman-proxy -c 'head -5 /srv/nfs/etc/dhcp/dhcpd.conf'</pre>
 </div>
 </div>
 </li>
 <li>
-<p>Display the <code>/mnt/nfs/etc/dhcp/dhcpd.conf</code> file:</p>
+<p>Display the first 5 lines of the <code>/srv/nfs/var/lib/dhcpd/dhcpd.leases</code> file:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap">$ cat /mnt/nfs/etc/dhcp/dhcpd.conf</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Display the <code>/mnt/nfs/var/lib/dhcpd/dhcpd.leases</code> file:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">$ cat /mnt/nfs/var/lib/dhcpd/dhcpd.leases</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Log out the <code>foreman-proxy</code> user to switch back to the <code>root</code> user:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">$ exit</pre>
+<pre class="nowrap">$ su - foreman-proxy -c 'head -5 /srv/nfs/var/lib/dhcpd/dhcpd.leases'</pre>
 </div>
 </div>
 </li>
@@ -1667,8 +1717,8 @@ omapi-key <em>omapi_key</em>;</pre>
 --foreman-proxy-dhcp-provider remote_isc \
 --enable-foreman-proxy-plugin-dhcp-remote-isc \
 --foreman-proxy-dhcp-server <em>dhcp_server_fqdn</em> \
---foreman-proxy-plugin-dhcp-remote-isc-dhcp-config /mnt/nfs/etc/dhcp/dhcpd.conf \
---foreman-proxy-plugin-dhcp-remote-isc-dhcp-leases /mnt/nfs/var/lib/dhcpd/dhcpd.leases \
+--foreman-proxy-plugin-dhcp-remote-isc-dhcp-config /srv/nfs/etc/dhcp/dhcpd.conf \
+--foreman-proxy-plugin-dhcp-remote-isc-dhcp-leases /srv/nfs/var/lib/dhcpd/dhcpd.leases \
 --foreman-proxy-plugin-dhcp-remote-isc-key-name omapi_key \
 --foreman-proxy-plugin-dhcp-remote-isc-key-secret <em>key_secret</em> \
 --foreman-proxy-plugin-dhcp-remote-isc-omapi-port 7911</pre>
