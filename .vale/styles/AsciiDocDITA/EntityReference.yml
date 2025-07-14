@@ -1,0 +1,43 @@
+# Report unsupported character entity references.
+---
+extends: script
+message: "HTML character entity references are not supported in DITA."
+level: error
+scope: raw
+script: |
+  text               := import("text")
+  matches            := []
+
+  r_comment_line     := text.re_compile("^(//|//[^/].*)$")
+  r_comment_block    := text.re_compile("^/{4,}\\s*$")
+  r_entity_reference := text.re_compile("&[a-zA-Z][a-zA-Z0-9]*;")
+  r_supported_entity := text.re_compile("&(?:amp|lt|gt|apos|quot);")
+
+  document           := text.split(text.trim_suffix(scope, "\n"), "\n")
+
+  in_comment_block   := false
+  start              := 0
+  end                := 0
+
+  for line in document {
+    start += end
+    end    = len(line) + 1
+
+    if r_comment_block.match(line) {
+      delimiter := text.trim_space(line)
+      if ! in_comment_block {
+        in_comment_block = delimiter
+      } else if in_comment_block == delimiter {
+        in_comment_block = false
+      }
+      continue
+    }
+    if in_comment_block { continue }
+    if r_comment_line.match(line) { continue }
+
+    for i, entry in r_entity_reference.find(line, -1) {
+      if ! r_supported_entity.match(entry[0].text) {
+        matches = append(matches, {begin: start + entry[0].begin, end: start + entry[0].end - 1})
+      }
+    }
+  }
