@@ -1,0 +1,64 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="enabling-omapi-authentication-in-isc-dhcp"]
+= Enabling OMAPI authentication in ISC DHCP
+
+The integration of an existing remote ISC DHCP service requires that you enable the Object Management Application Programming Interface (OMAPI) in the DHCP service.
+{Project} uses OMAPI to remotely manage DHCP server objects.
+
+.Prerequisites
+* The ISC DHCP service is deployed and functional.
+* The firewall on the DHCP server allows access to the DHCP service (port 67/UDP).
+
+.Procedure
+. Create a security token:
++
+[options="nowrap" subs="+quotes"]
+----
+# tsig-keygen -a hmac-md5 _omapi_key_
+----
++
+Note that {Project} supports only the `hmac-md5` algorithm for OMAPI authentication.
+// See: https://projects.theforeman.org/issues/36325
++
+Example output:
++
+[source, none, options="nowrap" subs="+quotes"]
+----
+key "omapi_key" {
+	algorithm hmac-md5;
+	secret "4z1jwYO0RGUTJbWDepFBdg==";
+};
+----
+. Edit the `/etc/dhcp/dhcpd.conf` file, and append the following settings:
++
+[source, none, options="nowrap" subs="+quotes"]
+----
+key _omapi_key_ {
+	algorithm hmac-md5;
+	secret "_key_secret_";
+};
+omapi-port 7911;
+omapi-key _omapi_key_;
+----
++
+The settings specified in the example include the following:
++
+`key _omapi_key_`:: Defines the key, its algorithm and encrypted password.
+Use the output of the `tsig-keygen` command for this directive.
+`omapi-port 7911;`:: Enables the OMAPI protocol in ISC DHCP and defines the port of the protocol.
+`omapi-key _omapi_key_`:: Defines the name of the key the OMAPI interface uses.
+The name must match the one you specified in the `tsig-keygen` command.
+. Restart the `dhcpd` service:
++
+[options="nowrap"]
+----
+# systemctl restart dhcpd
+----
+. Open the OMAPI port in the `firewalld` service:
++
+[options="nowrap"]
+----
+# firewall-cmd --add-port=7911/tcp
+----
+include::snip_make-firewall-settings-persistent.adoc[]
