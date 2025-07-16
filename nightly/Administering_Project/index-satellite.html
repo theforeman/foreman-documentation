@@ -2820,44 +2820,52 @@ The collected usage metrics include information such as which Satellite features
 <p>Satellite includes the <code>satellite-maintain report generate</code> command, which can collect information from user environments to better understand how Satellite is used.</p>
 </div>
 <div class="paragraph">
-<p>A <code>systemd</code> timer named <code>satellite-usage-metrics-generate.timer</code> runs weekly to collect the data.
-The timer executes the <code>satellite-maintain report generate</code> command on your Satellite&#160;Server and then stores the collected data in the <code>/var/lib/foreman-maintain/satellite_metrics.yml</code> file.</p>
+<p>The following <code>systemd</code> timers collect the data:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>satellite-usage-metrics-generate.timer</code></dt>
+<dd>
+<p>This timer collects the full list of usage metrics.
+It executes the <code>satellite-maintain report generate</code> command on your Satellite&#160;Server and then stores the collected data in the <code>/var/lib/foreman-maintain/satellite_metrics.yml</code> file.
+The timer runs weekly.</p>
+</dd>
+<dt class="hdlist1"><code>satellite-usage-metrics-condense.timer</code></dt>
+<dd>
+<p>This timer collects the same set of metrics as <code>satellite-usage-metrics-generate.timer</code>, condenses them so that they can be uploaded as custom Red&#160;Hat Subscription Manager facts, and stores them in the <code>/etc/rhsm/facts/foreman.facts</code> file.
+The timer runs weekly.</p>
+</dd>
+</dl>
 </div>
 <div class="paragraph">
-<p>When you use the <code>sos report</code> command to generate a report for Red&#160;Hat Technical Support, the <code>satellite_metrics.yml</code> file is included in the report along with the other configuration, diagnostics, and troubleshooting data that <code>sos</code> collects.</p>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>The collected metrics are stored securely in <code>/var/lib/foreman-maintain/satellite_metrics.yml</code> and are only shared in sos reports.</p>
-</div>
-</td>
-</tr>
-</table>
+<p>When you use the <code>sos report</code> command to generate a report for Red&#160;Hat Technical Support, the report will include the <code>satellite_metrics.yml</code> and <code>/etc/rhsm/facts/foreman.facts</code> files, along with the other configuration, diagnostics, and troubleshooting data that <code>sos</code> collects.</p>
 </div>
 </div>
 <div class="sect2">
 <h3 id="reviewing-usage-metrics-collected-from-your-satellite"><a class="anchor" href="#reviewing-usage-metrics-collected-from-your-satellite"></a>7.2. Reviewing usage metrics collected from your Satellite</h3>
 <div class="paragraph">
-<p>You can review the usage metrics that Satellite collects from your deployment by running the <code>satellite-maintain report generate</code> command.</p>
+<p>You can review the usage metrics that Satellite collects from your deployment by using the <code>satellite-maintain report</code> command on your Satellite&#160;Server.</p>
 </div>
-<div class="ulist">
+<div class="olist arabic">
 <div class="title">Procedure</div>
-<ul>
+<ol class="arabic">
 <li>
-<p>On your Satellite&#160;Server, display the list of collected usage metrics:</p>
+<p>Display the list of full usage metrics:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># satellite-maintain report generate</pre>
 </div>
 </div>
 </li>
-</ul>
+<li>
+<p>Display the list of condensed usage metrics:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-maintain report condense</pre>
+</div>
+</div>
+</li>
+</ol>
 </div>
 <div class="exampleblock">
 <div class="title">Example 4. Example output of <code>satellite-maintain report generate</code></div>
@@ -2889,13 +2897,17 @@ compliance_scap_contents_count: 5
 <div class="sect2">
 <h3 id="disabling-the-collection-of-usage-metrics"><a class="anchor" href="#disabling-the-collection-of-usage-metrics"></a>7.3. Disabling the collection of usage metrics</h3>
 <div class="paragraph">
-<p>You can opt out of the default usage metrics collection by masking the <code>systemd</code> timer that collects the data.</p>
+<p>You can opt out of the default usage metrics collection by masking the <code>systemd</code> timers that collect the data on your Satellite&#160;Server.</p>
 </div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
 <ol class="arabic">
 <li>
-<p>On your Satellite&#160;Server, mask the <code>satellite-usage-metrics-generate.timer</code> unit:</p>
+<p>To disable the collection of the full usage metrics:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Mask the <code>satellite-usage-metrics-generate.timer</code> unit:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># systemctl mask satellite-usage-metrics-generate.timer</pre>
@@ -2912,11 +2924,38 @@ compliance_scap_contents_count: 5
 </li>
 </ol>
 </div>
+</li>
+<li>
+<p>To disable the collection of the condensed usage metrics:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Mask the <code>satellite-usage-metrics-condensed.timer</code> unit:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl mask satellite-usage-metrics-condensed.timer</pre>
+</div>
+</div>
+</li>
+<li>
+<p>If the timer has been executed already at least once, remove the generated usage metrics file:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># rm /etc/rhsm/facts/foreman.facts</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</li>
+</ol>
+</div>
 <div class="olist arabic">
 <div class="title">Verification</div>
 <ol class="arabic">
 <li>
-<p>On your Satellite&#160;Server, verify the status of the <code>satellite-usage-metrics-generate.timer</code> unit:</p>
+<p>On your Satellite&#160;Server, verify the status of the timer you want to disable.
+For example, to verify the status of the <code>satellite-usage-metrics-generate.timer</code> unit:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># systemctl status satellite-usage-metrics-generate.timer</pre>
