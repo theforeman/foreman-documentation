@@ -6,3 +6,6 @@ gem 'sass'
 
 # For TOC generation
 gem 'nokogiri'
+
+# For custom convertor templates
+gem 'tilt'
