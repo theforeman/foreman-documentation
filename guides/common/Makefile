@@ -18,6 +18,8 @@ UNAME = $(shell uname)
 DATE_MDY = $(shell LC_ALL=C date "+%b %d %Y")
 DATE_MY = $(shell LC_ALL=C date "+%b %Y")
 CSS_STYLE = compressed
+TEMPLATE_PATH=$(realpath ../..)/templates
+TEMPLATE_ENGINE=erb
 
 ifeq ($(UNAME), Linux)
 BROWSER_OPEN = xdg-open
@@ -75,7 +77,7 @@ $(IMAGES_TS): $(IMAGES)
 	@touch $(IMAGES_TS)
 
 $(DEST_HTML): $(SOURCES) $(DEPENDENCIES) $(DOCINFO_SOURCES) $(DEST_DIR)/$(BUILD).css $(IMAGES_TS)
-	bundle exec asciidoctor -r asciidoctor-tabs -a build=$(BUILD) $(BASEURL_ATTR) -a docinfo=shared -a docinfodir=common -a date_mdy="$(DATE_MDY)" -a date_my="$(DATE_MY)" -a docdatetime="$(DATE_MY)" -a stylesheet=$(DEST_DIR)/$(BUILD).css -a attribute-missing=warn -b html5 -d book --trace -o $@ $< 2>&1 | tee $@.log 1>&2
+	bundle exec asciidoctor -T $(TEMPLATE_PATH) -E $(TEMPLATE_ENGINE) -r asciidoctor-tabs -a build=$(BUILD) $(BASEURL_ATTR) -a docinfo=shared -a docinfodir=common -a date_mdy="$(DATE_MDY)" -a date_my="$(DATE_MY)" -a docdatetime="$(DATE_MY)" -a stylesheet=$(DEST_DIR)/$(BUILD).css -a attribute-missing=warn -b html5 -d book --trace -o $@ $< 2>&1 | tee $@.log 1>&2
 	@echo CHECKING FOR ASCIIDOCTOR ERRORS AND WARNINGS
 	@! grep -Eq "^asciidoctor: (ERROR|WARNING)" $@.log
 	@echo CHECKING FOR ORPHAN XREFS HTML LINKS
