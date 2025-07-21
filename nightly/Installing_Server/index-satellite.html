@@ -237,6 +237,7 @@
 <li><a href="#requirements-for-installation-in-an-ipv6-network_satellite">3.4.2. Requirements for Satellite installation in an IPv6 network</a></li>
 </ul>
 </li>
+<li><a href="#preparing-for-using-external-databases_satellite">3.5. Preparing Satellite for using external databases</a></li>
 </ul>
 </li>
 <li><a href="#tuning-with-predefined-profiles_satellite">4. Tuning Satellite&#160;Server with predefined profiles</a></li>
@@ -297,14 +298,6 @@
 </ul>
 </li>
 <li><a href="#resetting-custom-ssl-certificate-to-default-self-signed-certificate-on-satellite_satellite">6.13. Resetting custom SSL certificate to default self-signed certificate on Satellite&#160;Server</a></li>
-<li><a href="#using-external-databases">6.14. Using external databases with Satellite</a>
-<ul class="sectlevel3">
-<li><a href="#configuring-Satellite-Server-with-external-database_satellite">6.14.1. Configuring Satellite&#160;Server with external database</a></li>
-<li><a href="#postgresql-as-an-external-database-considerations_satellite">6.14.2. PostgreSQL as an external database considerations</a></li>
-<li><a href="#installing-postgresql_satellite">6.14.3. Installing PostgreSQL</a></li>
-<li><a href="#Configuring_Server_to_Use_External_Databases_satellite">6.14.4. Configuring Satellite&#160;Server to use external databases</a></li>
-</ul>
-</li>
 </ul>
 </li>
 <li><a href="#restoring-manual-changes-overwritten-by-a-puppet-run_satellite">Appendix A: Restoring manual changes overwritten by a Puppet run</a></li>
@@ -1424,6 +1417,47 @@ For more information, see <a href="https://docs.redhat.com/en/documentation/red_
 </div>
 </div>
 </div>
+<div class="sect2">
+<h3 id="preparing-for-using-external-databases_satellite"><a class="anchor" href="#preparing-for-using-external-databases_satellite"></a>3.5. Preparing Satellite for using external databases</h3>
+<div class="paragraph">
+<p>By default, the Satellite installation process includes installing a PostgreSQL database on the same host as Satellite&#160;Server.
+However, in certain Satellite deployments, using external databases instead of the default local databases can help with the server load or have other benefits.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>You have considered whether using an external database is beneficial for your use case.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.18/html-single/administering_red_hat_satellite/index#postgresql-as-an-external-database-considerations_admin">PostgreSQL as an external database considerations</a> in <em>Administering Red&#160;Hat Satellite</em>.</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>Install PostgreSQL on an external database host you prepared.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.18/html-single/administering_red_hat_satellite/index#installing-postgresql_admin">Installing PostgreSQL</a> in <em>Administering Red&#160;Hat Satellite</em>.</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Next steps</div>
+<ul>
+<li>
+<p>To set up an external database when installing Satellite, see <a href="#configuring-server_satellite">Configuring Satellite&#160;Server</a>.</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.18/html-single/administering_red_hat_satellite/index#Migrating_from_Internal_Databases_to_External_Databases_admin">Migrating an existing Satellite deployment to an external database</a> in <em>Administering Red&#160;Hat Satellite</em>.</p>
+</li>
+</ul>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -1830,11 +1864,26 @@ For more information on how to apply custom configuration on other services, see
 </li>
 </ul>
 </div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>If you want to use an external PostgreSQL database for your Satellite&#160;Server, you must have a corresponding PostgreSQL access available, for example on a dedicated host.
+For more information, see <a href="#preparing-for-using-external-databases_satellite">Preparing Satellite for using external databases</a>.</p>
+</li>
+</ul>
+</div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
 <ol class="arabic">
 <li>
-<p>Enter the following command with any additional options that you want to use:</p>
+<p>Depending on what type of database you want to use on your Satellite deployment, do one of the following:</p>
+<div class="openblock">
+<div class="content">
+<div class="ulist">
+<ul>
+<li>
+<p>To install Satellite&#160;Server with the default local database, enter the following command with any additional options that you want to use:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># satellite-installer --scenario satellite \
@@ -1842,6 +1891,72 @@ For more information on how to apply custom configuration on other services, see
 --foreman-initial-location "<em>My_Location</em>" \
 --foreman-initial-admin-username <em>admin_user_name</em> \
 --foreman-initial-admin-password <em>admin_password</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>To install Satellite&#160;Server with an external PostgreSQL server, enter the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-installer --scenario satellite \
+--foreman-initial-organization "<em>My_Organization</em>" \
+--foreman-initial-location "<em>My_Location</em>" \
+--foreman-initial-admin-username <em>admin_user_name</em> \
+--foreman-initial-admin-password <em>admin_password</em> \
+--katello-candlepin-manage-db false \
+--katello-candlepin-db-host <em>postgres.example.com</em> \
+--katello-candlepin-db-name <em>candlepin</em> \
+--katello-candlepin-db-user <em>candlepin</em> \
+--katello-candlepin-db-password <em>Candlepin_Password</em> \
+--foreman-proxy-content-pulpcore-manage-postgresql false \
+--foreman-proxy-content-pulpcore-postgresql-host <em>postgres.example.com</em> \
+--foreman-proxy-content-pulpcore-postgresql-db-name pulpcore \
+--foreman-proxy-content-pulpcore-postgresql-user pulp \
+--foreman-proxy-content-pulpcore-postgresql-password <em>Pulpcore_Password</em> \
+--foreman-db-manage false \
+--foreman-db-host <em>postgres.example.com</em> \
+--foreman-db-database <em>foreman</em> \
+--foreman-db-username <em>foreman</em> \
+--foreman-db-password <em>Foreman_Password&gt;*</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To also enable encrypted connections for these external databases, use the following command instead:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-installer --scenario satellite \
+--foreman-initial-organization "<em>My_Organization</em>" \
+--foreman-initial-location "<em>My_Location</em>" \
+--foreman-initial-admin-username <em>admin_user_name</em> \
+--foreman-initial-admin-password <em>admin_password</em> \
+--katello-candlepin-manage-db false \
+--katello-candlepin-db-host <em>postgres.example.com</em> \
+--katello-candlepin-db-name <em>candlepin</em> \
+--katello-candlepin-db-user <em>candlepin</em> \
+--katello-candlepin-db-password <em>Candlepin_Password</em> \
+--katello-candlepin-db-ssl true \
+--katello-candlepin-db-ssl-ca <em>My_CA_Certificate</em> \
+--katello-candlepin-db-ssl-verify true \
+--foreman-proxy-content-pulpcore-manage-postgresql false \
+--foreman-proxy-content-pulpcore-postgresql-host <em>postgres.example.com</em> \
+--foreman-proxy-content-pulpcore-postgresql-db-name pulpcore \
+--foreman-proxy-content-pulpcore-postgresql-user pulp \
+--foreman-proxy-content-pulpcore-postgresql-password <em>Pulpcore_Password</em> \
+--foreman-proxy-content-pulpcore-postgresql-ssl true \
+--foreman-proxy-content-pulpcore-postgresql-ssl-root-ca <em>My_CA_Certificate</em> \
+--foreman-db-manage false \
+--foreman-db-host <em>postgres.example.com</em> \
+--foreman-db-database <em>foreman</em> \
+--foreman-db-username <em>foreman</em> \
+--foreman-db-password <em>Foreman_Password</em>
+--foreman-db-root-cert <em>My_CA_Certificate</em> \
+--foreman-db-sslmode verify-full</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
 </div>
 </div>
 <div class="paragraph">
@@ -3404,320 +3519,6 @@ As a result, <code>satellite-installer</code> fails to execute while enabling fe
 <p><a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.18/html-single/managing_hosts/index#resetting-custom-ssl-certificate-to-default-self-signed-certificate-on-hosts_managing-hosts">Resetting custom SSL certificate to default self-signed certificate on hosts</a> in <em>Managing hosts</em>.</p>
 </li>
 </ul>
-</div>
-</div>
-<div class="sect2">
-<h3 id="using-external-databases"><a class="anchor" href="#using-external-databases"></a>6.14. Using external databases with Satellite</h3>
-<div class="paragraph">
-<p>The Satellite installation process includes installing a PostgreSQL database on the same host as Satellite&#160;Server.
-In certain Satellite deployments, using external databases instead of the default local databases can help with the server load.</p>
-</div>
-<div class="sect3">
-<h4 id="configuring-Satellite-Server-with-external-database_satellite"><a class="anchor" href="#configuring-Satellite-Server-with-external-database_satellite"></a>6.14.1. Configuring Satellite&#160;Server with external database</h4>
-<div class="paragraph">
-<p>Running the <code>satellite-installer</code> command, used to install a Satellite&#160;Server, also installs PostgreSQL databases on the server.
-However, you can configure your Satellite&#160;Server to use external databases instead.
-Moving to external databases distributes the workload and can reduce overall Satellite memory usage.</p>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>Red&#160;Hat does not provide support or tools for external database maintenance.
-If you deploy Satellite with external databases, you will need to support and maintain the external databases yourself.</p>
-</div>
-</td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-<p>Consider using external databases if you plan to use your Satellite deployment for the following scenarios:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Frequent remote execution tasks.
-This requires a high volume of records in PostgreSQL and generates heavy database workloads.</p>
-</li>
-<li>
-<p>High disk I/O workloads from frequent repository synchronization or content view publishing.
-This requires Satellite to create a record in PostgreSQL for each job.</p>
-</li>
-<li>
-<p>High volume of hosts.</p>
-</li>
-<li>
-<p>High volume of synchronized content.</p>
-</li>
-</ul>
-</div>
-</div>
-<div class="sect3">
-<h4 id="postgresql-as-an-external-database-considerations_satellite"><a class="anchor" href="#postgresql-as-an-external-database-considerations_satellite"></a>6.14.2. PostgreSQL as an external database considerations</h4>
-<div class="paragraph">
-<p>Foreman, Katello, and Candlepin use the PostgreSQL database.
-If you want to use PostgreSQL as an external database, the following information can help you decide if this option is right for your Satellite configuration.
-Satellite supports PostgreSQL version 13.</p>
-</div>
-<div class="ulist">
-<div class="title">Advantages of external PostgreSQL</div>
-<ul>
-<li>
-<p>Increase in free memory and free CPU on Satellite</p>
-</li>
-<li>
-<p>Flexibility to set <code>shared_buffers</code> on the PostgreSQL database to a high number without the risk of interfering with other services on Satellite</p>
-</li>
-<li>
-<p>Flexibility to tune the PostgreSQL server&#8217;s system without adversely affecting Satellite operations</p>
-</li>
-</ul>
-</div>
-<div class="ulist">
-<div class="title">Disadvantages of external PostgreSQL</div>
-<ul>
-<li>
-<p>Increase in deployment complexity that can make troubleshooting more difficult</p>
-</li>
-<li>
-<p>The external PostgreSQL server is an additional system to patch and maintain</p>
-</li>
-<li>
-<p>If either Satellite or the PostgreSQL database server suffers a hardware or storage failure, Satellite is not operational</p>
-</li>
-<li>
-<p>If there is latency between the Satellite server and database server, performance can suffer</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>If you suspect that the PostgreSQL database on your Satellite is causing performance problems, use the information in <a href="https://access.redhat.com/solutions/2780871">Satellite 6: How to enable postgres query logging to detect slow running queries</a> to determine if you have slow queries.
-Queries that take longer than one second are typically caused by performance issues with large installations, and moving to an external database might not help.
-If you have slow queries, contact Red Hat Support.</p>
-</div>
-</div>
-<div class="sect3">
-<h4 id="installing-postgresql_satellite"><a class="anchor" href="#installing-postgresql_satellite"></a>6.14.3. Installing PostgreSQL</h4>
-<div class="paragraph">
-<p>You can install only the same version of PostgreSQL that is installed with the <code>satellite-installer</code> tool during an internal database installation.
-Satellite supports PostgreSQL version 13.</p>
-</div>
-<div class="ulist">
-<div class="title">Prerequisites</div>
-<ul>
-<li>
-<p>The prepared host must meet Satellite <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.18/html-single/installing_satellite_server_in_a_connected_network_environment/index#storage-requirements_satellite">Storage requirements</a>.</p>
-</li>
-<li>
-<p>The prepared host has base operating system repositories enabled.</p>
-</li>
-</ul>
-</div>
-<div class="olist arabic">
-<div class="title">Procedure</div>
-<ol class="arabic">
-<li>
-<p>On your new database server, install PostgreSQL:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># dnf install postgresql-server postgresql-contrib</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Initialize the PostgreSQL database:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># postgresql-setup --initdb</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Edit the <code>/var/lib/pgsql/data/postgresql.conf</code> file:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># vi /var/lib/pgsql/data/postgresql.conf</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Note that the default configuration of external PostgreSQL needs to be adjusted to work with Satellite.
-The base recommended external database configuration adjustments are as follows:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>checkpoint_completion_target: 0.9</p>
-</li>
-<li>
-<p>max_connections: 500</p>
-</li>
-<li>
-<p>shared_buffers: 512MB</p>
-</li>
-<li>
-<p>work_mem: 4MB</p>
-</li>
-</ul>
-</div>
-</li>
-<li>
-<p>Remove the <code>#</code> and edit to listen to inbound connections:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">listen_addresses = '*'</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Add the following line to the end of the file to use SCRAM for authentication:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">password_encryption=scram-sha-256</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Edit the <code>/var/lib/pgsql/data/pg_hba.conf</code> file:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># vi /var/lib/pgsql/data/pg_hba.conf</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Add the following line to the file:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">  host  all   all   <em>Satellite_ip</em>/32   scram-sha-256</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Start and enable the PostgreSQL service:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># systemctl enable --now postgresql</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Open the <strong>postgresql</strong> port:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># firewall-cmd --add-service=postgresql</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Make the changes persistent:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># firewall-cmd --runtime-to-permanent</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Switch to the <code>postgres</code> user and start the PostgreSQL client:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">$ su - postgres -c psql</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Create three databases and dedicated roles: one for Foreman, one for Candlepin, and one for Pulp:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">CREATE USER "foreman" WITH PASSWORD '<em>Foreman_Password</em>';
-CREATE USER "candlepin" WITH PASSWORD '<em>Candlepin_Password</em>';
-CREATE USER "pulp" WITH PASSWORD '<em>Pulpcore_Password</em>';
-CREATE DATABASE foreman OWNER foreman;
-CREATE DATABASE candlepin OWNER candlepin;
-CREATE DATABASE pulpcore OWNER pulp;</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Exit the <code>postgres</code> user:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># \q</pre>
-</div>
-</div>
-</li>
-<li>
-<p>From Satellite&#160;Server, test that you can access the database.
-If the connection succeeds, the commands return <code>1</code>.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># PGPASSWORD='<em>Foreman_Password</em>' psql -h <em>postgres.example.com</em> -p 5432 -U foreman -d foreman -c "SELECT 1 as ping"
-# PGPASSWORD='<em>Candlepin_Password</em>' psql -h <em>postgres.example.com</em> -p 5432 -U candlepin -d candlepin -c "SELECT 1 as ping"
-# PGPASSWORD='<em>Pulpcore_Password</em>' psql -h <em>postgres.example.com</em> -p 5432 -U pulp -d pulpcore -c "SELECT 1 as ping"</pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
-</div>
-<div class="sect3">
-<h4 id="Configuring_Server_to_Use_External_Databases_satellite"><a class="anchor" href="#Configuring_Server_to_Use_External_Databases_satellite"></a>6.14.4. Configuring Satellite&#160;Server to use external databases</h4>
-<div class="paragraph">
-<p>Use the <code>satellite-installer</code> command to configure Satellite to connect to an external PostgreSQL database.</p>
-</div>
-<div class="ulist">
-<div class="title">Prerequisites</div>
-<ul>
-<li>
-<p>You have installed and configured a PostgreSQL database on a Red&#160;Hat Enterprise Linux server.</p>
-</li>
-</ul>
-</div>
-<div class="olist arabic">
-<div class="title">Procedure</div>
-<ol class="arabic">
-<li>
-<p>To configure the external databases for Satellite, enter the following command:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># satellite-installer \
---katello-candlepin-manage-db false \
---katello-candlepin-db-host <em>postgres.example.com</em> \
---katello-candlepin-db-name candlepin \
---katello-candlepin-db-user candlepin \
---katello-candlepin-db-password <em>Candlepin_Password</em> \
---foreman-proxy-content-pulpcore-manage-postgresql false \
---foreman-proxy-content-pulpcore-postgresql-host <em>postgres.example.com</em> \
---foreman-proxy-content-pulpcore-postgresql-db-name pulpcore \
---foreman-proxy-content-pulpcore-postgresql-user pulp \
---foreman-proxy-content-pulpcore-postgresql-password <em>Pulpcore_Password</em> \
---foreman-db-manage false \
---foreman-db-host <em>postgres.example.com</em> \
---foreman-db-database foreman \
---foreman-db-username foreman \
---foreman-db-password <em>Foreman_Password</em></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>To enable the Secure Sockets Layer (SSL) protocol for these external databases, add the following options:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">--foreman-db-root-cert &lt;path_to_CA&gt;
---foreman-db-sslmode verify-full
---foreman-proxy-content-pulpcore-postgresql-ssl true
---foreman-proxy-content-pulpcore-postgresql-ssl-root-ca &lt;path_to_CA&gt;
---katello-candlepin-db-ssl true
---katello-candlepin-db-ssl-ca &lt;path_to_CA&gt;
---katello-candlepin-db-ssl-verify true</pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
 </div>
 </div>
 </div>
