@@ -30,7 +30,7 @@ function buildNavigation() {
   <li class="nav-item"><a href="https://theforeman.org/">About Foreman</a></li>
   <li class="nav-item"><a href="${guides_link}">${currentVer} guides</a></li>
   <li class="nav-item dropdown">
-    <a href="#" data-action="dropdown-toggle">Versions</a>
+    <a href="#" data-action="dropdown-toggle">All versions</a>
     <div class="dropdown-menu dropdown-menu-left">`
     + navVersions.map(function(version) {
       if (document.location.pathname == "/") {
