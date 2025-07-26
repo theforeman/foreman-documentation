@@ -11,8 +11,9 @@ function buildNavigation() {
   }).builds;
 
   return `<nav>
-  <a href="/">
+  <a class="nav-logo-heading" href="/">
     <img class="logo" src="/img/helmet.svg" alt="Home">
+    <span class="nav-heading">Foreman docs</span>
   </a>
 <button type="button" class="btn-hamburger" data-action="nav-toggle">
   <span></span>
