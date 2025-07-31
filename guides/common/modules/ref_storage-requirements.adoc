@@ -3,7 +3,9 @@
 [id="storage-requirements_{context}"]
 = Storage requirements
 
-* Ensure that you meet the following storage requirements for specific directories:
+Follow these storage requirements when installing {ProjectServer}:
+
+* Ensure that the directories used by {ProjectServer} have sufficient disk space available:
 +
 .Storage requirements for a {ProjectServer} installation
 [cols="9,3,3",options="header"]
@@ -28,18 +30,55 @@ endif::[]
 |====
 +
 These values are based on expected use case scenarios and can vary according to individual environments.
-+
 ifdef::katello,satellite[]
 The runtime size was measured with {EL} 7, 8, and 9 repositories synchronized.
 endif::[]
-
-ifdef::foreman-el,katello,satellite[]
-For external database servers: `{postgresql-lib-dir}` with installation size of 100 MB and runtim size of 20 GB.
+ifdef::katello,orcharhino,satellite[]
+* If you mount the `/tmp` directory as a separate file system, use the `exec` mount option in the `/etc/fstab` file.
++
+If `/tmp` is already mounted with the `noexec` option, change the option to `exec` and remount the file system.
+This is a requirement for the `puppetserver` service to work.
+* If you mount the `/var/lib/pulp` directory as an NFS share, specify the SELinux context of the `/var/lib/pulp` directory in the file system table.
+Add the following lines to `/etc/fstab`:
++
+----
+nfs.example.com:/nfsshare  /var/lib/pulp  nfs  context="system_u:object_r:var_lib_t:s0"  1 2
+----
++
+If the NFS share is already mounted, remount it using the above configuration and restore the SELinux context:
++
+----
+# restorecon -R /var/lib/pulp
+----
++
+* Do not use symbolic links for `/var/lib/pulp/`.
+endif::[]
+ifeval::["{mode}" == "connected"]
+* If you intend to synchronize RHEL content ISOs to {Project}, note that all minor versions of {RHEL} also synchronize.
+Ensure adequate storage on your {Project} to manage this.
 endif::[]
 
-
 ifdef::foreman-el,katello,satellite[]
+For external database servers: `{postgresql-lib-dir}` with installation size of 100 MB and runtime size of 20 GB.
+endif::[]
+
+ifdef::katello,orcharhino,satellite[]
+Best practices for optimizing storage:
+
+* The exact amount of storage you require for log messages depends on your installation and setup.
+Log files are written to `/var/log/messages/,` `/var/log/httpd/`, and `/var/lib/foreman-proxy/openscap/content/`.
+You can manage the size of these files by using *logrotate*.
+* Consider mounting `/var` on LVM storage.
+This can help the system to scale because most {ProductName} data is stored in the `/var` directory.
+* Use high-bandwidth, low-latency storage for the `/var/lib/pulp/` and `{postgresql-lib-dir}` directories.
+Using high latency, low-bandwidth storage causes performance degradation because {ProjectName} has many operations that are I/O intensive.
+* Do not use the GFS2 file system because the input-output latency is too high.
+endif::[]
+
 .Additional resources
 
-For detailed information on partitioning and size, see {RHELDocsBaseURL}9/html/managing_storage_devices/disk-partitions_managing-storage-devices[Disk partitions] in _{RHEL}{nbsp}9 Managing storage devices_.
+* For detailed information on partitioning and size, see {RHELDocsBaseURL}9/html/managing_storage_devices/disk-partitions_managing-storage-devices[Disk partitions] in _{RHEL}{nbsp}9 Managing storage devices_.
+endif::[]
+ifdef::satellite[]
+* For more information, see https://access.redhat.com/solutions/1294[How to use logrotate utility to rotate log files].
 endif::[]
