@@ -240,17 +240,17 @@ SOFTWARE.
 <ul class="sectlevel1">
 <li><a href="#providing-feedback-on-red-hat-documentation_admin">Providing feedback on Red Hat documentation</a></li>
 <li><a href="#Starting_and_Stopping_Server_admin">1. Starting and stopping Red&#160;Hat Satellite</a></li>
-<li><a href="#cloning_satellite_server">2. Cloning Satellite&#160;Server</a>
+<li><a href="#cloning-satellite-server">2. Cloning Satellite&#160;Server</a>
 <ul class="sectlevel2">
-<li><a href="#sec-Cloning_Workflow_Overview">2.1. Cloning process overview</a></li>
-<li><a href="#sec-Cloning_Prerequisites">2.2. Prerequisites</a></li>
-<li><a href="#sec-Pulp_Data_Considerations">2.3. Pulp data considerations</a></li>
-<li><a href="#sec_Cloning_Satellite_Server">2.4. Cloning Satellite&#160;Server</a>
+<li><a href="#cloning-process-overview">2.1. Cloning process overview</a></li>
+<li><a href="#prerequisites-for-cloning">2.2. Prerequisites for cloning</a></li>
+<li><a href="#pulp-data-considerations">2.3. Pulp data considerations</a>
 <ul class="sectlevel3">
-<li><a href="#sec-Preparing_Source_Server">2.4.1. Preparing the source server for cloning</a></li>
-<li><a href="#sec-Cloning_to_Target">2.4.2. Cloning to the target server</a></li>
+<li><a href="#cloning-without-pulp-data">2.3.1. Cloning without Pulp data</a></li>
 </ul>
 </li>
+<li><a href="#preparing-the-source-server-for-cloning">2.4. Preparing the source server for cloning</a></li>
+<li><a href="#cloning-to-the-target-server">2.5. Cloning to the target server</a></li>
 </ul>
 </li>
 <li><a href="#tuning-with-predefined-profiles_admin">3. Tuning Satellite&#160;Server with predefined profiles</a></li>
@@ -625,7 +625,7 @@ View the list of these services by executing:</p>
 </div>
 </div>
 <div class="sect1">
-<h2 id="cloning_satellite_server"><a class="anchor" href="#cloning_satellite_server"></a>2. Cloning Satellite&#160;Server</h2>
+<h2 id="cloning-satellite-server"><a class="anchor" href="#cloning-satellite-server"></a>2. Cloning Satellite&#160;Server</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>You can clone your Satellite&#160;Server to create instances to test upgrades and migration of instances to a different machine or operating system.
@@ -634,6 +634,9 @@ This is an optional step to provide more flexibility during the upgrade or migra
 <div class="paragraph">
 <p>You cannot use the Satellite clone tool on a Capsule&#160;Server.
 Instead, you must backup the existing Capsule&#160;Server, restore it on the target server, and then reconfigure Capsule&#160;Server.</p>
+</div>
+<div class="paragraph">
+<p>Note that because of the high volume of data that you must copy and transfer as part of the cloning process, it can take a significant amount of time to complete.</p>
 </div>
 <div class="admonitionblock note">
 <table>
@@ -651,14 +654,13 @@ Cloned instances are not supposed to run in parallel in a production environment
 </table>
 </div>
 <div class="paragraph">
-<div class="title">Terminology</div>
-<p>Ensure that you understand the following terms:</p>
+<p>Review the following definitions before proceeding:</p>
 </div>
 <div class="dlist">
 <dl>
 <dt class="hdlist1"><strong>Source server</strong></dt>
 <dd>
-<p>The origin of the clone.</p>
+<p>The old server to be cloned.</p>
 </dd>
 <dt class="hdlist1"><strong>Target server</strong></dt>
 <dd>
@@ -667,7 +669,7 @@ Cloned instances are not supposed to run in parallel in a production environment
 </dl>
 </div>
 <div class="sect2">
-<h3 id="sec-Cloning_Workflow_Overview"><a class="anchor" href="#sec-Cloning_Workflow_Overview"></a>2.1. Cloning process overview</h3>
+<h3 id="cloning-process-overview"><a class="anchor" href="#cloning-process-overview"></a>2.1. Cloning process overview</h3>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
@@ -689,7 +691,7 @@ Cloned instances are not supposed to run in parallel in a production environment
 </div>
 </div>
 <div class="sect2">
-<h3 id="sec-Cloning_Prerequisites"><a class="anchor" href="#sec-Cloning_Prerequisites"></a>2.2. Prerequisites</h3>
+<h3 id="prerequisites-for-cloning"><a class="anchor" href="#prerequisites-for-cloning"></a>2.2. Prerequisites for cloning</h3>
 <div class="paragraph">
 <p>To clone Satellite&#160;Server, ensure that you have the following resources available:</p>
 </div>
@@ -722,15 +724,14 @@ This avoids unwanted communication with Capsule&#160;Servers and hosts.</p>
 <li>
 <p>The target server has at least the same storage capacity as the source server.</p>
 </li>
-</ul>
-</div>
-<div class="paragraph">
-<div class="title">Customized configuration files</div>
+<li>
 <p>If you have any customized configurations on your source server that are not managed by the <code>satellite-installer</code> tool or Satellite backup process, you must manually back up these files.</p>
+</li>
+</ul>
 </div>
 </div>
 <div class="sect2">
-<h3 id="sec-Pulp_Data_Considerations"><a class="anchor" href="#sec-Pulp_Data_Considerations"></a>2.3. Pulp data considerations</h3>
+<h3 id="pulp-data-considerations"><a class="anchor" href="#pulp-data-considerations"></a>2.3. Pulp data considerations</h3>
 <div class="paragraph">
 <p>You can clone Satellite server without including Pulp data.
 However, for your cloned environment to work, you do require Pulp data.
@@ -746,16 +747,21 @@ If the target server does not have Pulp data, it is not a fully working Satellit
 </li>
 <li>
 <p>Clone using backup without Pulp data and copy <code>/var/lib/pulp</code> manually from the source server.</p>
+<div class="paragraph">
+<p>If your <code>pulp_data.tar</code> file is greater than 500 GB, or if you use a slow storage system, such as NFS, and your <code>pulp_data.tar</code> file is greater than 100 GB, do not include <code>pulp_data.tar</code> in the backup because this can cause memory errors during extraction.
+Instead, copy the <code>pulp_data.tar</code> file from the source server to the target server.</p>
+</div>
 </li>
 </ul>
 </div>
+<div class="sect3">
+<h4 id="cloning-without-pulp-data"><a class="anchor" href="#cloning-without-pulp-data"></a>2.3.1. Cloning without Pulp data</h4>
 <div class="paragraph">
-<p>If your <code>pulp_data.tar</code> file is greater than 500 GB, or if you use a slow storage system, such as NFS, and your <code>pulp_data.tar</code> file is greater than 100 GB, do not include <code>pulp_data.tar</code> in the backup because this can cause memory errors during extraction.
-Copy the <code>pulp_data.tar</code> file from the source server to the target server.</p>
+<p>You can clone Satellite&#160;Server without including Pulp data.</p>
 </div>
 <div class="paragraph">
-<div class="title">To back up without Pulp data</div>
-<p>Follow the steps in the procedure in <a href="#sec_Cloning_Satellite_Server">Cloning Satellite&#160;Server</a> and replace the steps that involve cloning with Pulp data with the following steps:</p>
+<div class="title">Procedure</div>
+<p>Follow the steps in the procedure in <a href="#preparing-the-source-server-for-cloning">Preparing the source server for cloning</a> and <a href="#cloning-to-the-target-server">Cloning to the target server</a> replace the steps that involve cloning with Pulp data with the following steps:</p>
 </div>
 <div class="olist arabic">
 <ol class="arabic">
@@ -789,20 +795,18 @@ Copy the <code>pulp_data.tar</code> file from the source server to the target se
 </ol>
 </div>
 <div class="paragraph">
-<p>Proceed to <a href="#sec-Cloning_to_Target">Cloning to the target server</a>.</p>
+<div class="title">Next Steps</div>
+<p>Proceed to <a href="#cloning-to-the-target-server">Cloning to the target server</a>.</p>
+</div>
 </div>
 </div>
 <div class="sect2">
-<h3 id="sec_Cloning_Satellite_Server"><a class="anchor" href="#sec_Cloning_Satellite_Server"></a>2.4. Cloning Satellite&#160;Server</h3>
+<h3 id="preparing-the-source-server-for-cloning"><a class="anchor" href="#preparing-the-source-server-for-cloning"></a>2.4. Preparing the source server for cloning</h3>
 <div class="paragraph">
-<p>Use the following procedures to clone Satellite&#160;Server. Note that because of the high volume of data that you must copy and transfer as part of these procedures, it can take a significant amount of time to complete.</p>
-</div>
-<div class="sect3">
-<h4 id="sec-Preparing_Source_Server"><a class="anchor" href="#sec-Preparing_Source_Server"></a>2.4.1. Preparing the source server for cloning</h4>
-<div class="paragraph">
-<p>On the source server, complete the following steps:</p>
+<p>Prepare the source Satellite&#160;Server for cloning.</p>
 </div>
 <div class="olist arabic">
+<div class="title">Procedure</div>
 <ol class="arabic">
 <li>
 <p>Determine the size of the Pulp data:</p>
@@ -814,7 +818,7 @@ Copy the <code>pulp_data.tar</code> file from the source server to the target se
 </li>
 <li>
 <p>If you have less than 500 GB of Pulp data, perform a backup with PostgreSQL databases active including the Pulp data.
-If you have more than 500 GB of Pulp data, skip the following steps and complete the steps in <a href="#sec-Pulp_Data_Considerations">Pulp data considerations</a> before you continue.</p>
+If you have more than 500 GB of Pulp data, skip the following steps and complete the steps in <a href="#pulp-data-considerations">Pulp data considerations</a> before you continue.</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># satellite-maintain backup offline --assumeyes /var/backup</pre>
@@ -832,12 +836,17 @@ If you have more than 500 GB of Pulp data, skip the following steps and complete
 </li>
 </ol>
 </div>
-<div class="paragraph">
-<p>Proceed to <a href="#sec-Cloning_to_Target">Cloning to the target server</a>.</p>
+<div class="ulist">
+<div class="title">Next steps</div>
+<ul>
+<li>
+<p><a href="#cloning-to-the-target-server">Cloning to the target server</a>.</p>
+</li>
+</ul>
 </div>
 </div>
-<div class="sect3">
-<h4 id="sec-Cloning_to_Target"><a class="anchor" href="#sec-Cloning_to_Target"></a>2.4.2. Cloning to the target server</h4>
+<div class="sect2">
+<h3 id="cloning-to-the-target-server"><a class="anchor" href="#cloning-to-the-target-server"></a>2.5. Cloning to the target server</h3>
 <div class="paragraph">
 <p>To clone your server, complete the following steps on your target server:</p>
 </div>
@@ -891,7 +900,7 @@ The cloning process disables these services on the target Satellite&#160;Server 
 </li>
 <li>
 <p>Reconfigure and enable DHCP, DNS, and TFTP in the Satellite web UI.
-For more information, see <a href="https://docs.theforeman.org/nightly/Integrating_Provisioning_Infrastructure_Services/index-satellite.html#">Integrating provisioning infrastructure services</a>.</p>
+For more information, see <a href="https://docs.theforeman.org/nightly/Integrating_Provisioning_Infrastructure_Services/index-satellite.html#">Integrating provisioning infrastructure services</a>..</p>
 </li>
 <li>
 <p>Log in to the Satellite web UI, with the username <code>admin</code> and the password <code>changeme</code>.
@@ -928,7 +937,6 @@ For more information, see <a href="https://docs.redhat.com/en/documentation/red_
 After you perform an upgrade using the following chapters, you can safely decommission the source server.</p>
 </li>
 </ol>
-</div>
 </div>
 </div>
 </div>
@@ -1765,7 +1773,7 @@ Ensure that the <code>/var/lib/pulp</code> and <code>/var/lib/pgsql</code> direc
 </li>
 <li>
 <p>Clone your active Satellite&#160;Server.
-For more information, see <a href="#cloning_satellite_server">Cloning Satellite&#160;Server</a>.</p>
+For more information, see <a href="#cloning-satellite-server">Cloning Satellite&#160;Server</a>.</p>
 </li>
 <li>
 <p>Keep the source server powered on.
