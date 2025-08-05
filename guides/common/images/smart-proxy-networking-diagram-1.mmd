@@ -1,0 +1,38 @@
+---
+config:
+    theme: default
+---
+architecture-beta
+    group foreman-server[Foreman Server]
+        service foreman(mdi:server)[Foreman] in foreman-server
+        service foreman-server-services(mdi:database)[Foreman services] in foreman-server
+        group internal-proxy[Internal Smart Proxy] in foreman-server
+            service foreman-proxy(mdi:cog-box)[Foreman Proxy] in internal-proxy
+            service foreman-proxy-services(mdi:database)[Foreman Proxy services] in internal-proxy
+        foreman:R -- L:foreman-server-services
+        foreman:L --> R:foreman-proxy
+        foreman-proxy-services:R -- L:foreman-proxy
+    junction junction1
+    junction junction2
+    group proxy[Smart Proxy]
+        service foreman-proxy-2(mdi:cog-box)[Foreman Proxy] in proxy
+        service proxy-server-services(mdi:database)[Foreman Proxy services] in proxy
+        foreman-proxy-2:L -- R:proxy-server-services
+    group hosts[Hosts]
+        service host-1(mdi:desktop-classic)[Host 1] in hosts
+        service host-2(mdi:desktop-classic)[Host 2] in hosts
+        service host-3(mdi:desktop-classic)[Host 3] in hosts
+        service host-4(mdi:desktop-classic)[Host 4] in hosts
+        service host-5(mdi:desktop-classic)[Host 5] in hosts
+        service host-6(mdi:desktop-classic)[Host 6] in hosts
+        host-1:L -- R:host-2
+        host-2:L -- R:host-3
+        host-3:L -- R:host-4
+        host-4:L -- R:host-5
+        host-5:L -- R:host-6
+host-3{group}:T <--> B:foreman-proxy-2
+host-4{group}:T <--> B:proxy-server-services
+foreman-proxy-2:T <-- B:junction1
+foreman:B <-- T:junction1
+junction1:L -- R:junction2
+junction2:B --> T:proxy-server-services
