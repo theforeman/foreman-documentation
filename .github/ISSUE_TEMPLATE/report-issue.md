@@ -5,9 +5,11 @@ name: Template for 'Report issue'
  assignees: ''
  
  ---
- 
- #### What document are you reading? (guide name, flavor, and version)
- 
- #### What text are you reading? (paragraph, sentence; feel free to copy-paste)
- 
- #### What would you like us to fix? (describe the issue; feel free to suggest solutions)
+
+#### URL of the document
+
+#### Optional: Copy-paste the text you are reading
+
+#### Describe the issue
+
+#### Anything else to add? (context, suggestions for a fix, etc.)
