@@ -77,7 +77,7 @@ When a commit is pushed into `X.Y`:
   * Add the new Foreman version to [/.github/PULL_REQUEST_TEMPLATE.md](https://github.com/theforeman/foreman-documentation/blob/master/.github/PULL_REQUEST_TEMPLATE.md).
   * Update `VERSION_LINKS` in the root `Makefile`.
   * Push the changes into `master`.
-* Check the site if links and landing page appeared correctly. HTML guides should be deployed into `/X.Y`.
+* Check the [Foreman documentation site](https://docs.theforeman.org) if links and landing page appeared correctly. HTML guides should be deployed into `/X.Y`.
 
 ## License
 
