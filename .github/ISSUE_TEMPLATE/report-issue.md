@@ -1,6 +1,6 @@
 ---
-name: Template for 'report issue'
-about: For issues reported via 'Report issue' banner
+name: Report issue
+about: Report issues in upstream Foreman/Katello documentation
 title: ''
 labels: direct user feedback
 assignees: ''
