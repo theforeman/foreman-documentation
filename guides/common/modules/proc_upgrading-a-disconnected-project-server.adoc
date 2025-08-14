@@ -44,123 +44,58 @@ This prevents the upgrade process from overwriting your DNS and DHCP configurati
 ----
 # rm /etc/yum.repos.d/*
 ----
-. Obtain the latest ISO files by following the {InstallingServerDisconnectedDocURL}downloading-the-binary-dvd-images_satellite[Downloading the Binary DVD Images] procedure in _{InstallingServerDisconnectedDocTitle}_.
-
-. Create directories to serve as a mount point, mount the ISO images, and configure the `rhel8` repository by following the {InstallingServerDisconnectedDocURL}configuring-the-base-operating-system-with-offline-repositories_satellite[Configuring the base operating system with offline repositories] procedure in _{InstallingServerDisconnectedDocTitle}_.
-+
-Do not install or update any packages at this stage.
-
-. Configure the {Project} {ProjectVersion} repository from the ISO file.
-
-.. Copy the ISO file's repository data file for the {ProjectName} packages:
-+
-[options="nowrap"]
-----
-# cp /media/sat6/Satellite/media.repo /etc/yum.repos.d/satellite.repo
-----
-
-.. Edit the `/etc/yum.repos.d/satellite.repo` file:
-+
-----
-# vi /etc/yum.repos.d/satellite.repo
-----
-
-... Change the default `InstallMedia` repository name to `{Project}-{ProjectVersion}`:
-+
-[options="nowrap" subs="+quotes,attributes"]
-----
-[{Project}-{ProjectVersion}]
-----
-
-... Add the `baseurl` directive:
-+
-[options="nowrap"]
-----
-baseurl=file:///media/sat6/Satellite
-----
-
-. Configure the {ProjectName} Maintenance repository from the ISO file.
-
-.. Copy the ISO file's repository data file for {ProjectName} Maintenance packages:
-+
-[options="nowrap"]
-----
-# cp /media/sat6/Maintenance/media.repo /etc/yum.repos.d/satellite-maintenance.repo
-----
-
-.. Edit the `/etc/yum.repos.d/satellite-maintenance.repo` file:
-+
-[options="nowrap"]
-----
-# vi /etc/yum.repos.d/satellite-maintenance.repo
-----
-
-... Change the default `InstallMedia` repository name to `{Project}-Maintenance`:
-+
-[options="nowrap" subs="+quotes,attributes"]
-----
-[{Project}-Maintenance]
-----
-
-.. Add the `baseurl` directive:
-+
-[options="nowrap"]
-----
-baseurl=file:///media/sat6/Maintenance/
-----
-
-ifdef::katello,satellite,orcharhino[]
-. If you use {advisorengine} in your environment, update to the latest images:
-* To update using the {Project} installation ISO image, set up containers on your {ProjectServer}:
-+
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
-# /media/sat6/containers/setup_containers
-----
-* Alternatively, to update by transferring the latest image from a connected system to a disconnected {ProjectServer}, follow these steps:
-... On the connected system, export the container image:
-+
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
-# skopeo copy containers-storage:registry.redhat.io/satellite/iop-advisor-engine-rhel9:{ProjectVersion} \
-oci-archive:/tmp/iop-advisor-engine.tar
-----
-... Transfer the `iop-advisor-engine.tar` file to the disconnected {ProjectServer}.
-... On the disconnected {ProjectServer}, import the container image:
-+
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
-# skopeo copy oci-archive:/tmp/iop-advisor-engine.tar \
-containers-storage:registry.redhat.io/satellite/iop-advisor-engine-rhel9:{ProjectVersion}
-----
-endif::[]
-. Upgrade the {foreman-maintain} utility to its latest version:
+. Enable access to the exported content by configuring a repository:
+.. Identify the location of the copied exported directories from the syncable export on the connected server.
+.. Create the `/etc/yum.repos.d/upgrade.repo` file and update the `baseurl` directive to point to that location:
 +
 [options="nowrap" subs="attributes"]
 ----
-# {foreman-maintain} self-upgrade --maintenance-repo-label {Project}-Maintenance
+# [{RepoRHEL9BaseOS}]
+--name=Red Hat Enterprise Linux 9 for x86_64 - BaseOS (RPMs) \
+--metadata_expire=-1 \
+--gpgcheck=0 \
+--cost=500 \
+--baseurl=file:///<export baseos location>/content/dist/rhel9/9/x86_64/baseos/os \
+# [{RepoRHEL9AppStream}]
+--name=Red Hat Enterprise Linux 9 for x86_64 - AppStream (RPMs) \
+--mediaid=None \
+--metadata_expire=-1 \
+--gpgcheck=0 \
+--cost=500 \
+--baseurl=file:///<export appstream location>/content/dist/rhel9/9/x86_64/appstream/os \
+# [{Project}]
+--name={Project} \
+--mediaid=None \
+--metadata_expire=-1 \
+--gpgcheck=0 \
+--cost=500 \
+--baseurl=file:///<export location>/content/dist/layered/rhel8/x86_64/{project-context}/{ProjectVersion}/os/
 ----
-. Determine whether your system is ready for {Project} upgrade:
+. Upgrade {foreman-maintain} to the next version:
 +
 [options="nowrap" subs="attributes"]
 ----
-# {foreman-maintain} upgrade check --whitelist="repositories-validate,repositories-setup"
+# {foreman-maintain} self-upgrade  --maintenance-repo-label={Project}
 ----
+. Run the health check option to determine if the system is ready for the update.
+The first time you run this command, `{foreman-maintain}` prompts you for the hammer admin user credentials and saves them in `/etc/foreman-maintain/foreman-maintain-hammer.yml`.
 +
-Review the results and address any highlighted error conditions before performing the upgrade.
-+
-[NOTE]
-====
-The `{foreman-maintain} upgrade check` might prompt you for the Hammer admin user credentials.
-These changes are applied to the `/etc/foreman-maintain/foreman-maintain-hammer.yml` file.
-====
-. Run the {ProjectServer} upgrade command.
-Because of the lengthy upgrade time, consider using a utility such as `tmux`.
-For more information, see xref:following_the_progress_of_the_upgrade_upgrading-disconnected[].
-+
-[options="nowrap" subs="attributes"]
+[options="nowrap" subs="+quotes,verbatim,attributes"]
 ----
-# {foreman-maintain} upgrade run --whitelist="repositories-validate,repositories-setup"
+# {foreman-maintain} upgrade check --whitelist="repositories-validate,repositories-setup" \
+--target-version={ProjectVersion}
+----
+. Review the results and resolve any errors before proceeding with the update.
+. Due to the lengthy update time, use a utility such as `tmux` to suspend and resume the session as needed.
+This allows you to monitor progress without keeping a continuous connection to the command shell.
+If you lose connection to the command shell running the update command, check the logged messages in `{installer-log-file}` to confirm whether the process completed successfully.
+
+. Perform the update:
++
+[options="nowrap" subs="+quotes,verbatim,attributes"]
+----
+# {foreman-maintain} upgrade run --whitelist="repositories-validate,repositories-setup" \
+--target-version={ProjectVersion}
 ----
 +
 If the script fails due to missing or outdated packages, you must download and install these separately.
