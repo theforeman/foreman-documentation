@@ -1,0 +1,49 @@
+FROM quay.io/almalinuxorg/almalinux:9.5
+
+ENV EL_MAJOR_VERSION="9"
+ENV FOREMAN_VERSION="nightly"
+ENV KATELLO_VERSION="nightly"
+
+RUN echo -e "[foreman-release-${FOREMAN_VERSION}-el${EL_MAJOR_VERSION}]\nname=foreman-release-${FOREMAN_VERSION}-${EL_MAJOR_VERSION}\nenabled=1\ngpgcheck=0\nsslverify=1\nbaseurl=https://yum.theforeman.org/releases/${FOREMAN_VERSION}/el${EL_MAJOR_VERSION}/x86_64/" >> /etc/yum.repos.d/hammer-cli.repo
+RUN echo -e "[foreman-plugins-${FOREMAN_VERSION}-el${EL_MAJOR_VERSION}]\nname=foreman-plugins-${FOREMAN_VERSION}-${EL_MAJOR_VERSION}\nenabled=1\ngpgcheck=0\nsslverify=1\nbaseurl=https://yum.theforeman.org/plugins/${FOREMAN_VERSION}/el${EL_MAJOR_VERSION}/x86_64/" >> /etc/yum.repos.d/hammer-cli.repo
+RUN echo -e "[katello-${KATELLO_VERSION}-el${EL_MAJOR_VERSION}]\nname=katello-${KATELLO_VERSION}-${EL_MAJOR_VERSION}\nenabled=1\ngpgcheck=0\nsslverify=1\nbaseurl=https://yum.theforeman.org/katello/${KATELLO_VERSION}/katello/el${EL_MAJOR_VERSION}/x86_64/" >> /etc/yum.repos.d/hammer-cli.repo
+
+RUN cat /etc/yum.repos.d/hammer-cli.repo | grep "^baseurl"
+RUN dnf makecache
+
+# in foreman-packaging for "rpm/develop":
+# fd -t d "rubygem-hammer_cli_*"
+RUN dnf install -y \
+        rubygem-hammer_cli \
+        rubygem-hammer_cli_foreman \
+        rubygem-hammer_cli_foreman_admin \
+        rubygem-hammer_cli_foreman_ansible \
+        rubygem-hammer_cli_foreman_azure_rm \
+        rubygem-hammer_cli_foreman_bootdisk \
+        rubygem-hammer_cli_foreman_discovery \
+        rubygem-hammer_cli_foreman_google \
+        rubygem-hammer_cli_foreman_kubevirt \
+        rubygem-hammer_cli_foreman_leapp \
+        rubygem-hammer_cli_foreman_openscap \
+        rubygem-hammer_cli_foreman_puppet \
+        rubygem-hammer_cli_foreman_remote_execution \
+        rubygem-hammer_cli_foreman_resource_quota \
+        rubygem-hammer_cli_foreman_rh_cloud \
+        rubygem-hammer_cli_foreman_salt \
+        rubygem-hammer_cli_foreman_scc_manager \
+        rubygem-hammer_cli_foreman_ssh \
+        rubygem-hammer_cli_foreman_tasks \
+        rubygem-hammer_cli_foreman_templates \
+        rubygem-hammer_cli_foreman_virt_who_configure \
+        rubygem-hammer_cli_foreman_webhooks \
+        rubygem-hammer_cli_katello
+
+WORKDIR /result/
+RUN hammer --version
+# broken because Hammer CLI expects a Foreman/Katello instance on localhost; no config for remote instance provided
+# error: Could not load the API description from the server
+RUN hammer full-help --md > /result/hammer_full_help.md
+
+# untested; should probably be part of the Makefile
+WORKDIR /data/guides/
+RUN /bin/bash ./scripts/generate-hammer-reference.sh ./hammer_full_help.md
