@@ -63,7 +63,7 @@ When a commit is pushed into `X.Y`:
 * On `master`, pull the latest changes and create a new `X.Y` branch.
 * On the `X.Y` branch:
   * Update `guides/common/attributes.adoc`.
-    * Set `DocState` to `unsupported`.
+    * Set `DocState` to `RC`.
     * Set `ProjectVersion` to `X.Y` and set the matching `KatelloVersion`.
   * Push into the `X.Y` branch.
   * Notify the Doc team on the [TheForeman Doc chat](https://matrix.to/#/#theforeman-doc:matrix.org) Matrix channel.
