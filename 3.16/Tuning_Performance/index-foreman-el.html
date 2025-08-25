@@ -242,21 +242,812 @@ SOFTWARE.
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#_guide_not_ready_yet">1. Guide not ready yet</a></li>
+<li><a href="#Introduction_to_Performance_Tuning_performance-tuning">1. Introduction to performance tuning</a></li>
+<li><a href="#System_Requirements_for_Tuning_performance-tuning">2. System requirements for tuning</a></li>
+<li><a href="#Determining_Hardware_and_operating_system_Configuration_performance-tuning">3. Determining hardware and operating system configuration</a>
+<ul class="sectlevel2">
+<li><a href="#Enabling_Tuned_Profiles_performance-tuning">3.1. Enabling tuned profiles</a></li>
+<li><a href="#Disable_Transparent_Hugepage_performance-tuning">3.2. Disable Transparent Hugepage</a></li>
+</ul>
+</li>
+<li><a href="#Configuring_Project_for_Performance_performance-tuning">4. Configuring Foreman for performance</a>
+<ul class="sectlevel2">
+<li><a href="#Applying_configurations_performance-tuning">4.1. Applying configurations</a></li>
+<li><a href="#Puma_Tunings_performance-tuning">4.2. Puma tunings</a>
+<ul class="sectlevel3">
+<li><a href="#Puma_Workers_and_Threads_Auto_Tuning_performance-tuning">4.2.1. Puma workers and threads auto-tuning</a></li>
+<li><a href="#Manually_tuning_Puma_workers_and_threads_count_performance-tuning">4.2.2. Manually tuning Puma workers and threads count</a></li>
+<li><a href="#Puma_Workers_and_Threads_Recommendations_performance-tuning">4.2.3. Puma workers and threads recommendations</a></li>
+<li><a href="#Configuring_Puma_Workers_performance-tuning">4.2.4. Configuring Puma workers</a></li>
+<li><a href="#Configuring_Puma_Threads_performance-tuning">4.2.5. Configuring Puma threads</a></li>
+</ul>
+</li>
+<li><a href="#Apache_HTTPD_Performance_Tuning_performance-tuning">4.3. Apache HTTPD performance tuning</a></li>
+<li><a href="#Dynflow_Tuning_performance-tuning">4.4. Dynflow tuning</a></li>
+<li><a href="#Pull_based_REX_transport_tuning_performance-tuning">4.5. Pull-based REX transport tuning</a>
+<ul class="sectlevel3">
+<li><a href="#Increasing_host_limit_for_pull_based_REX_transport_performance-tuning">4.5.1. Increasing host limit for pull-based REX transport</a></li>
+<li><a href="#Decreasing_performance_impact_of_the_pull-based_REX_transport_performance-tuning">4.5.2. Decreasing performance impact of the pull-based REX transport</a></li>
+</ul>
+</li>
+<li><a href="#PostgreSQL_Tuning_performance-tuning">4.6. PostgreSQL tuning</a>
+<ul class="sectlevel3">
+<li><a href="#Benchmarking_raw_DB_Performance_performance-tuning">4.6.1. Benchmarking raw DB performance</a></li>
+</ul>
+</li>
+<li><a href="#Redis_Tuning_performance-tuning">4.7. Redis tuning</a></li>
+</ul>
+</li>
 </ul>
 </div>
 </div>
 <div id="content">
 <div class="sect1">
-<h2 id="_guide_not_ready_yet"><a class="anchor" href="#_guide_not_ready_yet"></a>1. Guide not ready yet</h2>
+<h2 id="Introduction_to_Performance_Tuning_performance-tuning"><a class="anchor" href="#Introduction_to_Performance_Tuning_performance-tuning"></a>1. Introduction to performance tuning</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>This guide is not ready yet.</p>
+<p>This document provides guidelines for tuning Foreman for performance and scalability.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="System_Requirements_for_Tuning_performance-tuning"><a class="anchor" href="#System_Requirements_for_Tuning_performance-tuning"></a>2. System requirements for tuning</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>You can find the hardware and software requirements in <a href="https://docs.theforeman.org/3.16/Installing_Server/index-foreman-el.html#preparing-environment-for-foreman-server-installation_foreman">Preparing environment for Foreman&#160;server installation</a> in <em>Installing Foreman&#160;Server 3.16 on Enterprise Linux</em>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="Determining_Hardware_and_operating_system_Configuration_performance-tuning"><a class="anchor" href="#Determining_Hardware_and_operating_system_Configuration_performance-tuning"></a>3. Determining hardware and operating system configuration</h2>
+<div class="sectionbody">
+<div class="dlist">
+<dl>
+<dt class="hdlist1">CPU</dt>
+<dd>
+<p>The more physical cores that are available to Foreman, the higher throughput can be achieved for the tasks.
+Some of the Foreman components such as Puppet and PostgreSQL are CPU intensive applications and can really benefit from the higher number of available CPU cores.</p>
+</dd>
+<dt class="hdlist1">Memory</dt>
+<dd>
+<p>The higher amount of memory available in the system running Foreman, the better will be the response times for the Foreman operations.
+Since Foreman uses PostgreSQL as the database solutions, any additional memory coupled with the tunings will provide a boost to the response times of the applications due to increased data retention in the memory.</p>
+</dd>
+<dt class="hdlist1">Disk</dt>
+<dd>
+<p>Foreman should be deployed using SSDs to avoid performance bottlenecks.
+Components such as PostgreSQL benefit from using SSDs due to their lower latency compared to HDDs.</p>
+</dd>
+<dt class="hdlist1">Network</dt>
+<dd>
+<p>The communication between the Foreman&#160;server and Smart&#160;Proxies is impacted by the network performance.
+A decent network with a minimum jitter and low latency is required to enable hassle free operations such as Foreman&#160;server and Smart&#160;Proxies synchronization (at least ensure it is not causing connection resets, etc).</p>
+</dd>
+<dt class="hdlist1">Server Power Management</dt>
+<dd>
+<p>Your server by default is likely to be configured to conserve power.
+While this is a good approach to keep the max power consumption in check, it also has a side effect of lowering the performance that Foreman may be able to achieve.
+For a server running Foreman, it is recommended to set the BIOS to enable the system to be run in performance mode to boost the maximum performance levels that Foreman can achieve.</p>
+</dd>
+</dl>
+</div>
+<div class="sect2">
+<h3 id="Enabling_Tuned_Profiles_performance-tuning"><a class="anchor" href="#Enabling_Tuned_Profiles_performance-tuning"></a>3.1. Enabling tuned profiles</h3>
+<div class="paragraph">
+<p>On bare-metal, Foreman community recommends to run the <code>throughput-performance</code> tuned profile on Foreman&#160;server and Smart&#160;Proxies.
+On virtual machines, Foreman community recommends to run the <code>virtual-guest</code> profile.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Install <code>tuned</code> on your Smart&#160;Proxy:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf install tuned</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Check if <code>tuned</code> is running:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl status tuned</pre>
+</div>
+</div>
+</li>
+<li>
+<p>If <code>tuned</code> is not running, enable it:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl enable --now tuned</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Optional: View a list of available <code>tuned</code> profiles:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># tuned-adm list</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Enable a <code>tuned</code> profile depending on your scenario:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># tuned-adm profile "<em>My_Tuned_Profile</em>"</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Disable_Transparent_Hugepage_performance-tuning"><a class="anchor" href="#Disable_Transparent_Hugepage_performance-tuning"></a>3.2. Disable Transparent Hugepage</h3>
+<div class="paragraph">
+<p>Transparent Hugepage is a memory management technique used by the Linux kernel to reduce the overhead of using the Translation Lookaside Buffer (TLB) by using larger sized memory pages.
+Due to databases having Sparse Memory Access patterns instead of Contiguous Memory access patterns, database workloads often perform poorly when Transparent Hugepage is enabled.
+To improve PostgreSQL and Redis performance, disable Transparent Hugepage.
+In deployments where the databases are running on separate servers, there may be a small benefit to using Transparent Hugepage on the Foreman&#160;server only.</p>
 </div>
 <div class="paragraph">
-<p>Foreman is a community project.
-The source is maintained in <a href="https://github.com/theforeman/foreman-documentation/">foreman-documentation on GitHub</a> where you can create <a href="https://github.com/theforeman/foreman-documentation/issues">issues</a> and <a href="https://github.com/theforeman/foreman-documentation/pulls">pull requests</a>.
-Thanks for your contribution.</p>
+<p>For more information on how to disable Transparent Hugepage, see <a href="https://access.redhat.com/solutions/1320153">How to disable transparent hugepages (THP) on Red Hat Enterprise Linux</a>.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="Configuring_Project_for_Performance_performance-tuning"><a class="anchor" href="#Configuring_Project_for_Performance_performance-tuning"></a>4. Configuring Foreman for performance</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Foreman includes several components that communicate with each other.
+You can tune these components independently of each other to achieve the maximum possible performance for your scenario.</p>
+</div>
+<div class="sect2">
+<h3 id="Applying_configurations_performance-tuning"><a class="anchor" href="#Applying_configurations_performance-tuning"></a>4.1. Applying configurations</h3>
+<div class="paragraph">
+<p>In following sections we suggest various tunables and how to apply them.
+Please always test changing these in non production environment first, with valid backup and with proper outage window as in most of the cases Foreman restart is required.</p>
+</div>
+<div class="paragraph">
+<p>It is also a good practice to setup a monitoring before applying any change as it will allow you to evaluate effect of the change.
+Our testing environment might be too far from what you will see although we are trying hard to mimic real world environment.</p>
+</div>
+<div class="paragraph">
+<div class="title">Checking basic sanity of the setup</div>
+<p>Optional: After any change, run this quick Foreman health check:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-maintain health check</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Puma_Tunings_performance-tuning"><a class="anchor" href="#Puma_Tunings_performance-tuning"></a>4.2. Puma tunings</h3>
+<div class="paragraph">
+<p>Puma is a ruby application server which is used for serving the Foreman related requests to hosts.
+For any Foreman configuration that is supposed to handle a large number of hosts or frequent operations, it is important for the Puma to be tuned appropriately.</p>
+</div>
+<div class="sect3">
+<h4 id="Puma_Workers_and_Threads_Auto_Tuning_performance-tuning"><a class="anchor" href="#Puma_Workers_and_Threads_Auto_Tuning_performance-tuning"></a>4.2.1. Puma workers and threads auto-tuning</h4>
+<div class="paragraph">
+<p>If you do not provide any Puma workers and thread values with <code>foreman-installer</code> or they are not present in your Foreman configuration, the <code>foreman-installer</code> configures a balanced number of workers.
+It follows this formula:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>min(CPU_COUNT * 1.5, RAM_IN_GB - 1.5)</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This should be fine for most cases, but with some usage patterns tuning is needed to either limit the amount of resources dedicated to Puma (so other Foreman components can use these) or for any other reason.
+Each Puma worker consumes around 1 GiB of RAM.</p>
+</div>
+<div class="listingblock">
+<div class="title">View your current Foreman&#160;server settings</div>
+<div class="content">
+<pre># cat /etc/systemd/system/foreman.service.d/installer.conf</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">View the currently active Puma workers</div>
+<div class="content">
+<pre># systemctl status foreman</pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="Manually_tuning_Puma_workers_and_threads_count_performance-tuning"><a class="anchor" href="#Manually_tuning_Puma_workers_and_threads_count_performance-tuning"></a>4.2.2. Manually tuning Puma workers and threads count</h4>
+<div class="paragraph">
+<p>If you decide not to rely on <a href="#Puma_Workers_and_Threads_Auto_Tuning_performance-tuning">Puma workers and threads auto-tuning</a>, you can apply custom numbers for these tunables.
+In the example below we are using 2 workers and 5 threads:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer \
+--foreman-foreman-service-puma-workers 2 \
+--foreman-foreman-service-puma-threads-max 5</pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="Puma_Workers_and_Threads_Recommendations_performance-tuning"><a class="anchor" href="#Puma_Workers_and_Threads_Recommendations_performance-tuning"></a>4.2.3. Puma workers and threads recommendations</h4>
+<div class="paragraph">
+<p>In order to recommend thread and worker configurations for the different tuning profiles, we conducted Puma tuning testing on Foreman with different tuning profiles.
+The main test used in this testing was concurrent registration with the following combinations along with different number of workers and threads.
+Our recommendation is based purely on concurrent registration performance, so it might not reflect your exact use-case.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 16%;">
+<col style="width: 19%;">
+<col style="width: 7%;">
+<col style="width: 7%;">
+<col style="width: 31%;">
+<col style="width: 20%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Number of hosts</th>
+<th class="tableblock halign-left valign-top">RAM</th>
+<th class="tableblock halign-left valign-top">Cores</th>
+<th class="tableblock halign-left valign-top">Recommended Puma threads</th>
+<th class="tableblock halign-left valign-top">Recommended Puma workers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">default</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0&#8202;&#8211;&#8202;5000</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">20 GiB</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">16</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4&#8202;&#8211;&#8202;6</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">medium</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">5000&#8202;&#8211;&#8202;10000</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32 GiB</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">16</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8&#8202;&#8211;&#8202;12</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">large</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">10000&#8202;&#8211;&#8202;20000</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">64 GiB</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">16</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">16</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">12&#8202;&#8211;&#8202;18</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">extra-large</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">20000&#8202;&#8211;&#8202;60000</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">128 GiB</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">16</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">16&#8202;&#8211;&#8202;24</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">extra-extra-large</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">60000+</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">256 GiB+</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">48+</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">16</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">20&#8202;&#8211;&#8202;26</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Tuning number of workers is the more important aspect here and in some case we have seen up to 52% performance increase.
+Although installer uses 5 threads by default, we recommend 16 threads with all the tuning profiles in the table above.
+That is because we have seen up to 23% performance increase with 16 threads (14% for 8 and 10% for 32) when compared to setup with 4 threads.</p>
+</div>
+<div class="paragraph">
+<p>To figure out these recommendations we used concurrent registrations test case which is a very specific use-case.
+It can be different on your Foreman which might have more balanced use-case (not only registrations).
+Keeping default 5 threads is a good choice as well.</p>
+</div>
+<div class="paragraph">
+<p>These are some of our measurements that lead us to these recommendations:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 17%;">
+<col style="width: 21%;">
+<col style="width: 20%;">
+<col style="width: 21%;">
+<col style="width: 21%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top">4 workers, 4 threads</th>
+<th class="tableblock halign-left valign-top">4 workers, 8 threads</th>
+<th class="tableblock halign-left valign-top">4 workers, 16 threads</th>
+<th class="tableblock halign-left valign-top">4 workers, 32 threads</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Improvement</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0%</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">14%</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">23%</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">10%</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Use 4&#8202;&#8211;&#8202;6 workers on a default setup (4 CPUs) &#8211; we have seen about 25% higher performance with 5 workers when compared to 2 workers, but 8% lower performance with 8 workers when compared to 2 workers &#8211; see table below:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 17%;">
+<col style="width: 21%;">
+<col style="width: 20%;">
+<col style="width: 21%;">
+<col style="width: 21%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top">2 workers, 16 threads</th>
+<th class="tableblock halign-left valign-top">4 workers, 16 threads</th>
+<th class="tableblock halign-left valign-top">6 workers, 16 threads</th>
+<th class="tableblock halign-left valign-top">8 workers, 16 threads</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Improvement</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0%</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">26%</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">22%</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-8%</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Use 8&#8202;&#8211;&#8202;12 workers on a medium setup (8 CPUs) &#8211; see table below:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 16%;">
+<col style="width: 17%;">
+<col style="width: 16%;">
+<col style="width: 17%;">
+<col style="width: 17%;">
+<col style="width: 17%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top">2 workers, 16 threads</th>
+<th class="tableblock halign-left valign-top">4 workers, 16 threads</th>
+<th class="tableblock halign-left valign-top">8 workers, 16 threads</th>
+<th class="tableblock halign-left valign-top">12 workers, 16 threads</th>
+<th class="tableblock halign-left valign-top">16 workers, 16 threads</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Improvement</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0%</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">51%</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">52%</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">52%</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">42%</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Use 16&#8202;&#8211;&#8202;24 workers on a 32 CPUs setup (this was tested on a 90 GiB RAM machine and memory turned out to be a factor here as system started swapping &#8211; proper <em>extra-large</em> should have 128 GiB), higher number of workers was problematic for higher registration concurrency levels we tested, so we cannot recommend it.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 13%;">
+<col style="width: 14%;">
+<col style="width: 14%;">
+<col style="width: 14%;">
+<col style="width: 15%;">
+<col style="width: 15%;">
+<col style="width: 15%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"></th>
+<th class="tableblock halign-left valign-top">4 workers, 16 threads</th>
+<th class="tableblock halign-left valign-top">8 workers, 16 threads</th>
+<th class="tableblock halign-left valign-top">16 workers, 16 threads</th>
+<th class="tableblock halign-left valign-top">24 workers, 16 threads</th>
+<th class="tableblock halign-left valign-top">32 workers, 16 threads</th>
+<th class="tableblock halign-left valign-top">48 workers, 16 threads</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Improvement</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0%</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">37%</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">44%</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">52%</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">too many failures</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">too many failures</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="Configuring_Puma_Workers_performance-tuning"><a class="anchor" href="#Configuring_Puma_Workers_performance-tuning"></a>4.2.4. Configuring Puma workers</h4>
+<div class="paragraph">
+<p>If you have enough CPUs, adding more workers adds more performance.
+For example, we have compared Foreman setups with 8 and 16 CPUs:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 1. foreman-installer options used to test effect of workers count</caption>
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Foreman VM with 8 CPUs, 40 GiB RAM</th>
+<th class="tableblock halign-left valign-top">Foreman VM with 16 CPUs, 40 GiB RAM</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-threads-max 16</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-threads-max 16</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-workers {2|4|8|16}</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-workers {2|4|8|16}</code></p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>In 8 CPUs setup, changing the number of workers from 2 to 16, improved concurrent registration time by 36%.
+In 16 CPUs setup, the same change caused 55% improvement.</p>
+</div>
+<div class="paragraph">
+<p>Adding more workers can also help with total registration concurrency Foreman can handle.
+In our measurements, setup with 2 workers were able to handle up to 480 concurrent registrations, but adding more workers improved the situation.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="Configuring_Puma_Threads_performance-tuning"><a class="anchor" href="#Configuring_Puma_Threads_performance-tuning"></a>4.2.5. Configuring Puma threads</h4>
+<div class="paragraph">
+<p>More threads allow for lower time to register hosts in parallel.
+For example, we have compared these two setups:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Foreman VM with 8 CPUs, 40 GiB RAM</th>
+<th class="tableblock halign-left valign-top">Foreman VM with 8 CPUs, 40 GiB RAM</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-threads-max 16</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-threads-max 8</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-workers 2</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--foreman-foreman-service-puma-workers 4</code></p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Using more workers and the same total number of threads results in about 11% of speedup in highly concurrent registrations scenario.
+Moreover, adding more workers did not consume more CPU and RAM but gets more performance.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Apache_HTTPD_Performance_Tuning_performance-tuning"><a class="anchor" href="#Apache_HTTPD_Performance_Tuning_performance-tuning"></a>4.3. Apache HTTPD performance tuning</h3>
+<div class="paragraph">
+<p>Apache httpd forms a core part of the Foreman and acts as a web server for handling the requests that are being made through the Foreman web UI or exposed APIs.
+To increase the concurrency of the operations, httpd forms the first point where tuning can help to boost the performance of your Foreman.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Dynflow_Tuning_performance-tuning"><a class="anchor" href="#Dynflow_Tuning_performance-tuning"></a>4.4. Dynflow tuning</h3>
+<div class="paragraph">
+<p>Dynflow is the workflow management system and task orchestrator which is a Foreman plugin and is used to execute the different tasks of Foreman in an out-of-order execution manner.
+Under the conditions when there are many clients checking in on Foreman and running several tasks, Dynflow can take some help from an added tuning specifying how many executors can it launch.</p>
+</div>
+<div class="paragraph">
+<p>For more information about the tunings involved related to Dynflow, see <code>https://foreman.example.com/foreman_tasks/sidekiq</code>.</p>
+</div>
+<div class="paragraph">
+<div class="title">Increase number of Sidekiq workers</div>
+<p>Foreman contains a Dynflow service called <code>dynflow-sidekiq</code> that performs tasks scheduled by Dynflow.
+Sidekiq workers can be grouped into various queues to ensure that many tasks of one type will not block execution of tasks of other type.</p>
+</div>
+<div class="paragraph">
+<p>Foreman community recommends increasing the number of sidekiq workers to scale the Foreman tasking system for bulk concurrent tasks.
+There are two options available:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>You can increase the number of threads used by a worker (worker&#8217;s concurrency).
+This has limited impact for values larger than five due to Ruby implementation of the concurrency of threads.</p>
+</li>
+<li>
+<p>You can increase the number of workers, which is recommended.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Increase the number of workers from one worker to three while remaining five threads/concurrency of each:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer --foreman-dynflow-worker-instances 3    # optionally, add --foreman-dynflow-worker-concurrency 5</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Optional: Check if there are three worker services:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl -a | grep dynflow-sidekiq@worker-[0-9]
+dynflow-sidekiq@worker-1.service        loaded    active   running   Foreman jobs daemon - worker-1 on sidekiq
+dynflow-sidekiq@worker-2.service        loaded    active   running   Foreman jobs daemon - worker-2 on sidekiq
+dynflow-sidekiq@worker-3.service        loaded    active   running   Foreman jobs daemon - worker-3 on sidekiq</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Pull_based_REX_transport_tuning_performance-tuning"><a class="anchor" href="#Pull_based_REX_transport_tuning_performance-tuning"></a>4.5. Pull-based REX transport tuning</h3>
+<div class="paragraph">
+<p>Foreman has a pull-based transport mode for remote execution.
+This transport mode uses MQTT as its messaging protocol and includes an MQTT client running on each host.
+For more information, see <a href="https://docs.theforeman.org/3.16/Managing_Hosts/index-foreman-el.html#transport-modes-for-remote-execution_managing-hosts">Transport modes for remote execution</a> in <em>Managing hosts</em>.</p>
+</div>
+<div class="sect3">
+<h4 id="Increasing_host_limit_for_pull_based_REX_transport_performance-tuning"><a class="anchor" href="#Increasing_host_limit_for_pull_based_REX_transport_performance-tuning"></a>4.5.1. Increasing host limit for pull-based REX transport</h4>
+<div class="paragraph">
+<p>You can tune the <code>mosquitto</code> MQTT server and increase the number of hosts connected to it.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Enable pull-based remote execution on your Foreman&#160;server or Smart&#160;Proxy&#160;server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer --foreman-proxy-plugin-remote-execution-script-mode pull-mqtt</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note that your Foreman&#160;server or Smart&#160;Proxy&#160;server can only use one transport mode, either SSH or MQTT.</p>
+</div>
+</li>
+<li>
+<p>Create a config file to increase the default number of hosts accepted by the MQTT service:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">cat &gt;/etc/systemd/system/mosquitto.service.d/limits.conf &lt;&lt;<em>EOF</em>
+[Service]
+LimitNOFILE=5000
+<em>EOF</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This example sets the limit to allow the <code>mosquitto</code> service to handle 5000 hosts.</p>
+</div>
+</li>
+<li>
+<p>Apply your changes:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl daemon-reload
+# systemctl restart mosquitto.service</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="Decreasing_performance_impact_of_the_pull-based_REX_transport_performance-tuning"><a class="anchor" href="#Decreasing_performance_impact_of_the_pull-based_REX_transport_performance-tuning"></a>4.5.2. Decreasing performance impact of the pull-based REX transport</h4>
+<div class="paragraph">
+<p>When Foreman&#160;server is configured with the pull-based transport mode for remote execution jobs using the Script provider, Smart&#160;Proxy&#160;server sends notifications about new jobs to hosts through MQTT.
+This notification does not include the actual workload that the host is supposed to execute.
+After a host receives a notification about a new remote execution job, it queries Smart&#160;Proxy&#160;server for its actual workload.
+During the job, the host periodically sends outputs of the job to Smart&#160;Proxy&#160;server, further increasing the number of requests to Smart&#160;Proxy&#160;server.</p>
+</div>
+<div class="paragraph">
+<p>These requests to Smart&#160;Proxy&#160;server together with high concurrency allowed by the MQTT protocol can cause exhaustion of available connections on Smart&#160;Proxy&#160;server.
+Some requests might fail, making some child tasks of remote execution jobs unresponsive.
+This also depends on actual job workload, as some jobs are causing additional load to Foreman&#160;server, making it compete for resources if hosts are registered to Foreman&#160;server.</p>
+</div>
+<div class="paragraph">
+<p>To avoid this, configure your Foreman&#160;server and Smart&#160;Proxy&#160;server with the following parameters:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>MQTT Time To Live &#8211; Time interval in seconds given to the host to pick up the job before considering the job undelivered</p>
+</li>
+<li>
+<p>MQTT Resend Interval &#8211; Time interval in seconds at which the notification should be re-sent to the host until the job is picked up or cancelled</p>
+</li>
+<li>
+<p>MQTT Rate Limit &#8211; Number of jobs that are allowed to run at the same time.
+You can limit the concurrency of remote execution by tuning the rate limit which means you are going to put more load on Foreman.</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>Tune the MQTT parameters on your Foreman&#160;server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer \
+--foreman-proxy-plugin-remote-execution-script-mqtt-rate-limit <em>My_MQTT_Rate_Limit</em> \
+--foreman-proxy-plugin-remote-execution-script-mqtt-resend-interval <em>My_MQTT_Resend_Interval</em> \
+--foreman-proxy-plugin-remote-execution-script-mqtt-ttl <em>My_MQTT_Time_To_Live</em></pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Smart&#160;Proxy&#160;server logs are in <code>/var/log/foreman-proxy/proxy.log</code>.
+Smart&#160;Proxy&#160;server uses Webrick HTTP server (no httpd or Puma involved), so there is no simple way to increase its capacity.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Depending on the workload, number of hosts, available resources, and applied tuning, you might hit the <a href="https://bugzilla.redhat.com/show_bug.cgi?id=2244811">Bug 2244811</a>, which causes Smart&#160;Proxy to consume too much memory and eventually be killed, making the rest of the job fail.
+At the moment there is no universally applicable workaround.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="PostgreSQL_Tuning_performance-tuning"><a class="anchor" href="#PostgreSQL_Tuning_performance-tuning"></a>4.6. PostgreSQL tuning</h3>
+<div class="paragraph">
+<p>Foreman uses the PostgreSQL database for the storage of persistent context across a wide variety of tasks.
+The database sees an extensive usage is usually working on to provide the Foreman with the data which it needs for its smooth functioning.
+This makes PostgreSQL a heavily used process which if tuned can have several benefits on the overall operational response of Foreman.</p>
+</div>
+<div class="paragraph">
+<p>The PostgreSQL authors recommend disabling Transparent Hugepage on servers running PostgreSQL.
+For more information, see <a href="#Disable_Transparent_Hugepage_performance-tuning">Disable Transparent Hugepage</a>.</p>
+</div>
+<div class="paragraph">
+<p>You can apply a set of tunings to PostgreSQL to improve its response times, which will modify the <code>postgresql.conf</code> file.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Append <code>/etc/foreman-installer/custom-hiera.yaml</code> to tune PostgreSQL:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">postgresql::server::config_entries:
+  max_connections: 1000
+  shared_buffers: 2GB
+  work_mem: 8MB
+  autovacuum_vacuum_cost_limit: 2000</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Reconfigure your Foreman:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>You can use this to effectively tune down your Foreman instance irrespective of a tuning profile.</p>
+</div>
+<div class="paragraph">
+<p>In the above tuning configuration, there are a certain set of keys which we have altered:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>max_connections</code>: The key defines the maximum number of connections that can be accepted by the PostgreSQL processes that are running.</p>
+</li>
+<li>
+<p><code>shared_buffers</code>: The shared buffers define the memory used by all the active connections inside PostgreSQL to store the data for the different database operations.
+An optimal value for this will vary between 2 GiB to a maximum of 25% of your total system memory depending upon the frequency of the operations being conducted on Foreman.</p>
+</li>
+<li>
+<p><code>work_mem</code>: The work_mem is the memory that is allocated on per process basis for PostgreSQL and is used to store the intermediate results of the operations that are being performed by the process.
+Setting this value to 8 MB should be more than enough for most of the intensive operations on Foreman.</p>
+</li>
+<li>
+<p><code>autovacuum_vacuum_cost_limit</code>: The key defines the cost limit value for the vacuuming operation inside the autovacuum process to clean up the dead tuples inside the database relations.
+The cost limit defines the number of tuples that can be processed in a single run by the process.
+Foreman community recommends setting the value to <code>2000</code> as it is for the <em>medium</em>, <em>large</em>, <em>extra-large</em>, and <em>extra-extra-large</em> profiles, based on the general load that Foreman pushes on the PostgreSQL server process.</p>
+</li>
+</ul>
+</div>
+<div class="sect3">
+<h4 id="Benchmarking_raw_DB_Performance_performance-tuning"><a class="anchor" href="#Benchmarking_raw_DB_Performance_performance-tuning"></a>4.6.1. Benchmarking raw DB performance</h4>
+<div class="paragraph">
+<p>To get a list of the top table sizes in disk space for
+Foreman,
+check <a href="https://github.com/RedHatSatellite/satellite-support/blob/master/postgres-size-report">postgres-size-report</a> script in <a href="https://github.com/RedHatSatellite/satellite-support">satellite-support</a> git repository.</p>
+</div>
+<div class="paragraph">
+<p>PGbench utility (note you may need to resize PostgreSQL data directory <code>/var/lib/pgsql</code> directory to 100 GiB or what does benchmark take to run) might be used to measure PostgreSQL performance on your system.
+Use <code>dnf install postgresql-contrib</code> to install it.
+For more information, see <a href="https://github.com/RedHatSatellite/satellite-support">github.com/RedHatSatellite/satellite-support</a>.</p>
+</div>
+<div class="paragraph">
+<p>Choice of filesystem for PostgreSQL data directory might matter as well.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Warning</div>
+</td>
+<td class="content">
+<div class="ulist">
+<ul>
+<li>
+<p>Never do any testing on production system and without valid backup.</p>
+</li>
+<li>
+<p>Before you start testing, see how big the database files are.
+Testing with a really small database would not produce any meaningful results.
+For example, if the DB is only 20 GiB and the buffer pool is 32 GiB, it won&#8217;t show problems with large number of connections because the data will be completely buffered.</p>
+</li>
+</ul>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Redis_Tuning_performance-tuning"><a class="anchor" href="#Redis_Tuning_performance-tuning"></a>4.7. Redis tuning</h3>
+<div class="paragraph">
+<p>Redis is an in-memory data store.
+Foreman uses Redis for caching and Dynflow uses Redis to track its tasks.
+Given the way Foreman uses Redis, its memory consumption should be stable.</p>
+</div>
+<div class="paragraph">
+<p>The Redis authors recommend disabling Transparent Hugepage on servers running Redis.
+For more information, see <a href="#Disable_Transparent_Hugepage_performance-tuning">Disable Transparent Hugepage</a>.</p>
 </div>
 <!-- "Fork me on GitHub" CSS ribbon v0.2.3 | MIT License -->
 <!-- https://github.com/simonwhitaker/github-fork-ribbon-css -->
@@ -266,6 +1057,7 @@ Pre-release version
 <a class="issue-ribbon right-bottom fixed" href="https://github.com/theforeman/foreman-documentation/issues/new" data-ribbon="Report issue" title="Report issue">
 Report issue
 </a>
+</div>
 </div>
 </div>
 </div>
