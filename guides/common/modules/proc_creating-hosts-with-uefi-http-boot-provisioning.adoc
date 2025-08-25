@@ -3,32 +3,35 @@
 [id="creating-hosts-with-uefi-http-boot-provisioning"]
 = Creating hosts with UEFI HTTP boot provisioning
 
-You can provision hosts from {Project} using the UEFI HTTP Boot.
+You can provision hosts from {Project} by using the UEFI HTTP Boot if the hosts have this capability.
+In HTTP boot, configuration files are transferred over HTTP instead of TFTP as in PXE boot.
+Using this method can help reduce the booting time during host provisioning.
+HTTP is also more reliable for transfer of large files, such as Live images, than TFTP.
+
+You enter the host details on {ProjectServer} and boot your host.
+{ProjectServer} automatically manages the HTTP boot configuration, organizes networking services, and provides the operating system and configuration for the host.
+
+Create a host entry to add the host details.
+When you save the host entry, {Project} creates the relevant provisioning settings.
+This also includes creating the necessary directories and files for PXE booting.
+When you boot the host, the host requests a DHCP lease.
+The DHCP service responds with a lease which includes the location of the installation content.
+The host uses the installation content to install the operating system.
+
+ifdef::katello,satellite,orcharhino[]
+During the installation, the host registers to {ProjectServer} by using the activation key, installs the necessary host management tools from the {project-client-name} repository, and performs initial configuration.
+endif::[]
+ifndef::katello,satellite,orcharhino[]
+During the installation, the host registers to {ProjectServer} and performs initial configuration.
+endif::[]
 
 To use the CLI instead of the {ProjectWebUI}, see the xref:cli-creating-hosts-with-uefi-http-boot-provisioning_{context}[].
 
 .Prerequisites
-* Ensure that you meet the requirements for HTTP booting.
-ifndef::orcharhino[]
-For more information, see {PlanningDocURL}http-booting[HTTP booting] in _{PlanningDocTitle}_.
-endif::[]
+* Your {SmartProxy} has been configured for UEFI HTTP booting.
+For more information, see xref:configuring-{smart-proxy-context}-for-uefi-http-booting[].
 
 .Procedure
-. Enable `foreman-proxy-http`, `foreman-proxy-httpboot`, and `foreman-proxy-tftp` features.
-+
-[options="nowrap" subs="+quotes,attributes"]
-----
-# {foreman-installer} \
---foreman-proxy-http true \
---foreman-proxy-httpboot true \
---foreman-proxy-tftp true
-----
-. Ensure that the {SmartProxy} has TFTP and HTTPBoot features recognized.
-In the {ProjectWebUI}, navigate to *Infrastructure* > *{SmartProxies}* and click on {SmartProxy} to see the list of recognized features.
-Click *Refresh Features* if any of the features are missing.
-. Ensure that {SmartProxy} is associated with the provisioning subnet.
-In the {ProjectWebUI}, navigate to *Infrastructure* > *Subnets* > *Edit Subnet* > *{SmartProxies}* and select the {SmartProxy} for both *TFTP* and *HTTPBoot* options.
-. Click *OK* to save.
 include::snip_steps-create-a-host-tab-host.adoc[]
 include::snip_steps-create-a-host-tab-interfaces.adoc[]
 . Click the *Operating System* tab, and verify that all fields contain values.
@@ -36,37 +39,15 @@ Confirm each aspect of the operating system.
 . From the *PXE Loader* list, select *Grub2 UEFI HTTP*.
 . Optional: Click *Resolve* in *Provisioning template* to check the new host can identify the right provisioning templates to use.
 +
-For more information about associating provisioning templates, see xref:creating-provisioning-templates[].
+For more information about provisioning templates, see xref:provisioning-templates[].
 ifdef::katello,satellite,orcharhino[]
 include::snip_step-parameter-ak.adoc[]
 endif::[]
 . Click *Submit* to save the host details.
-+
-For more information about network interfaces, see {ManagingHostsDocURL}configuring-network-interfaces[Configuring network interfaces] in _{ManagingHostsDocTitle}_.
-. Set the host to boot in UEFI mode from network.
-. Start the host.
-. From the boot menu, select *Kickstart default PXEGrub2*.
-
-This creates the host entry and the relevant provisioning settings.
-This also includes creating the necessary directories and files for UEFI booting the bare-metal host.
-When you start the physical host and set its boot mode to UEFI HTTP, the host detects the defined DHCP service, receives HTTP endpoint of {SmartProxy} with the Kickstart tree and installs the operating system.
-
-ifdef::katello,satellite,orcharhino[]
-When the installation completes, the host also registers to {ProjectServer} using the activation key and installs the necessary configuration and management tools from the {project-client-name} repository.
-endif::[]
 
 [id="cli-creating-hosts-with-uefi-http-boot-provisioning_{context}"]
 .CLI procedure
-. Enable `foreman-proxy-http`, `foreman-proxy-httpboot`, and `foreman-proxy-tftp true` features:
-+
-[options="nowrap" subs="+quotes,attributes"]
-----
-# {foreman-installer} \
---foreman-proxy-http true \
---foreman-proxy-httpboot true \
---foreman-proxy-tftp true
-----
-. Create the host with the `hammer host create` command.
+. Create the host by using Hammer:
 +
 [options="nowrap" subs="+quotes"]
 ----
@@ -81,7 +62,7 @@ $ hammer host create \
 --organization "_My_Organization_" \
 --pxe-loader "Grub2 UEFI HTTP"
 ----
-. Ensure the network interface options are set using the `hammer host interface update` command:
+. Configure the network interface:
 +
 [options="nowrap" subs="+quotes"]
 ----
@@ -91,14 +72,3 @@ $ hammer host interface update \
 --primary true \
 --provision true
 ----
-. Set the host to boot in UEFI mode from network.
-. Start the host.
-. From the boot menu, select *Kickstart default PXEGrub2*.
-
-This creates the host entry and the relevant provisioning settings.
-This also includes creating the necessary directories and files for UEFI booting the bare-metal host.
-When you start the physical host and set its boot mode to UEFI HTTP, the host detects the defined DHCP service, receives HTTP endpoint of {SmartProxy} with the Kickstart tree and installs the operating system.
-
-ifdef::katello,satellite,orcharhino[]
-When the installation completes, the host also registers to {ProjectServer} using the activation key and installs the necessary configuration and management tools from the {project-client-name} repository.
-endif::[]
