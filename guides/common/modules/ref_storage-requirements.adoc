@@ -3,13 +3,10 @@
 [id="storage-requirements_{context}"]
 = Storage requirements
 
-The following table details storage requirements for specific directories.
-These values are based on expected use case scenarios and can vary according to individual environments.
+Follow these storage requirements when installing {ProjectServer}:
 
-ifdef::katello,satellite[]
-The runtime size was measured with {EL} 7, 8, and 9 repositories synchronized.
-endif::[]
-
+* Ensure that the directories used by {ProjectServer} have sufficient disk space available:
++
 .Storage requirements for a {ProjectServer} installation
 [cols="9,3,3",options="header"]
 |====
@@ -31,9 +28,35 @@ ifdef::satellite[]
 |/var/lib/containers if using {insights-iop} |10 GB |15 GB
 endif::[]
 |====
++
+These values are based on expected use case scenarios and can vary according to individual environments.
+ifdef::katello,satellite[]
+The runtime size was measured with {EL} 7, 8, and 9 repositories synchronized.
+endif::[]
+ifdef::katello,orcharhino,satellite[]
+* If you mount the `/tmp` directory as a separate file system, use the `exec` mount option in the `/etc/fstab` file.
++
+If `/tmp` is already mounted with the `noexec` option, change the option to `exec` and remount the file system.
+This is a requirement for the `puppetserver` service to work.
+* If you mount the `/var/lib/pulp` directory as an NFS share, specify the SELinux context of the `/var/lib/pulp` directory in the file system table.
+Add the following lines to `/etc/fstab`:
++
+[source, none, options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+nfs.example.com:/nfsshare  /var/lib/pulp  nfs  context="system_u:object_r:pulpcore_var_lib_t:s0"  1 2
+----
++
+If the NFS share is already mounted, remount it using the above configuration and restore the SELinux context:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# restorecon -R /var/lib/pulp
+----
++
+* Do not use symbolic links for `/var/lib/pulp/`.
+endif::[]
 
-ifdef::foreman-el,katello,satellite[]
-For external database servers: `{postgresql-lib-dir}` with installation size of 100 MB and runtime size of 20 GB.
-
-For detailed information on partitioning and size, see {RHELDocsBaseURL}9/html/managing_storage_devices/disk-partitions_managing-storage-devices[Disk partitions] in _{RHEL}{nbsp}9 Managing storage devices_.
+ifdef::katello,orcharhino,satellite[]
+.Additional resources
+* {RHELDocsBaseURL}9/html/managing_storage_devices/disk-partitions_managing-storage-devices[Disk partitions in _{RHEL}{nbsp}9 Managing storage devices_]
 endif::[]
