@@ -245,7 +245,7 @@ SOFTWARE.
 <ul class="sectlevel2">
 <li><a href="#system-requirements_satellite">2.1. System requirements</a></li>
 <li><a href="#storage-requirements_satellite">2.2. Storage requirements</a></li>
-<li><a href="#storage-guidelines_satellite">2.3. Storage guidelines</a></li>
+<li><a href="#best-practices-for-optimizing-storage">2.3. Best practices for optimizing storage</a></li>
 <li><a href="#supported-operating-systems_satellite">2.4. Supported operating systems</a></li>
 <li><a href="#Port_and_firewall_requirements_satellite">2.5. Port and firewall requirements</a></li>
 <li><a href="#aws-requirements">2.6. AWS Requirements</a></li>
@@ -484,12 +484,12 @@ For more information, see <a href="https://docs.redhat.com/en/documentation/red_
 <div class="sect2">
 <h3 id="storage-requirements_satellite"><a class="anchor" href="#storage-requirements_satellite"></a>2.2. Storage requirements</h3>
 <div class="paragraph">
-<p>The following table details storage requirements for specific directories.
-These values are based on expected use case scenarios and can vary according to individual environments.</p>
+<p>Follow these storage requirements when installing Satellite&#160;Server:</p>
 </div>
-<div class="paragraph">
-<p>The runtime size was measured with Red&#160;Hat Enterprise Linux 7, 8, and 9 repositories synchronized.</p>
-</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Ensure that the directories used by Satellite&#160;Server have sufficient disk space available:</p>
 <table class="tableblock frame-all grid-all stretch">
 <caption class="title">Table 1. Storage requirements for a Satellite&#160;Server installation</caption>
 <colgroup>
@@ -538,83 +538,83 @@ These values are based on expected use case scenarios and can vary according to 
 </tbody>
 </table>
 <div class="paragraph">
-<p>For external database servers: <code>/var/lib/pgsql</code> with installation size of 100 MB and runtime size of 20 GB.</p>
+<p>These values are based on expected use case scenarios and can vary according to individual environments.
+The runtime size was measured with Red&#160;Hat Enterprise Linux 7, 8, and 9 repositories synchronized.</p>
+</div>
+</li>
+<li>
+<p>If you mount the <code>/tmp</code> directory as a separate file system, use the <code>exec</code> mount option in the <code>/etc/fstab</code> file.</p>
+<div class="paragraph">
+<p>If <code>/tmp</code> is already mounted with the <code>noexec</code> option, change the option to <code>exec</code> and remount the file system.
+This is a requirement for the <code>puppetserver</code> service to work.</p>
+</div>
+</li>
+<li>
+<p>If you mount the <code>/var/lib/pulp</code> directory as an NFS share, specify the SELinux context of the <code>/var/lib/pulp</code> directory in the file system table.
+Add the following lines to <code>/etc/fstab</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-none" data-lang="none">nfs.example.com:/nfsshare  /var/lib/pulp  nfs  context="system_u:object_r:pulpcore_var_lib_t:s0"  1 2</code></pre>
+</div>
 </div>
 <div class="paragraph">
-<p>For detailed information on partitioning and size, see <a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/managing_storage_devices/disk-partitions_managing-storage-devices">Disk partitions</a> in <em>Red&#160;Hat Enterprise Linux&#160;9 Managing storage devices</em>.</p>
+<p>If the NFS share is already mounted, remount it using the above configuration and restore the SELinux context:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># restorecon -R /var/lib/pulp</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Do not use symbolic links for <code>/var/lib/pulp/</code>.</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/managing_storage_devices/disk-partitions_managing-storage-devices">Disk partitions in <em>Red&#160;Hat Enterprise Linux&#160;9 Managing storage devices</em></a></p>
+</li>
+</ul>
 </div>
 </div>
 <div class="sect2">
-<h3 id="storage-guidelines_satellite"><a class="anchor" href="#storage-guidelines_satellite"></a>2.3. Storage guidelines</h3>
+<h3 id="best-practices-for-optimizing-storage"><a class="anchor" href="#best-practices-for-optimizing-storage"></a>2.3. Best practices for optimizing storage</h3>
 <div class="paragraph">
-<p>Consider the following guidelines when installing Satellite&#160;Server to increase efficiency.</p>
+<p>Consider the following storage guidelines for increased storage efficiency:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>If you mount the <code>/tmp</code> directory as a separate file system, you must use the <code>exec</code> mount option in the <code>/etc/fstab</code> file.
-If <code>/tmp</code> is already mounted with the <code>noexec</code> option, you must change the option to <code>exec</code> and re-mount the file system.
-This is a requirement for the <code>puppetserver</code> service to work.</p>
+<p>The exact amount of storage you require for log messages depends on your installation and setup.
+You can manage the size of the log files by using <strong>logrotate</strong>.</p>
 </li>
 <li>
-<p>Because most Satellite&#160;Server data is stored in the <code>/var</code> directory, mounting <code>/var</code> on LVM storage can help the system to scale.</p>
+<p>Consider mounting <code>/var</code> on LVM storage.
+This can help the system to scale because most Satellite&#160;Server data is stored in the <code>/var</code> directory.</p>
 </li>
 <li>
-<p>Use high-bandwidth, low-latency storage for the <code>/var/lib/pulp/</code> and PostgreSQL <code>/var/lib/pgsql</code> directories.
-As Red&#160;Hat Satellite has many operations that are I/O intensive, using high latency, low-bandwidth storage causes performance degradation.</p>
+<p>Use high-bandwidth, low-latency storage for the <code>/var/lib/pulp/</code> and <code>/var/lib/pgsql</code> directories.
+Using high latency, low-bandwidth storage causes performance degradation because Red&#160;Hat Satellite has many operations that are I/O intensive.</p>
+</li>
+<li>
+<p>Use a file system with low input-output latency.
+Do not use the GFS2 file system because the input-output latency is too high.</p>
 </li>
 </ul>
-</div>
-<div class="paragraph">
-<p>You can use the <code>storage-benchmark</code> script to get this data.
-For more information on using the <code>storage-benchmark</code> script, see <a href="https://access.redhat.com/solutions/3397771">Impact of Disk Speed on Satellite Operations</a>.</p>
 </div>
 <div class="ulist">
-<div class="title">File system guidelines</div>
+<div class="title">Additional resources</div>
 <ul>
 <li>
-<p>Do not use the GFS2 file system as the input-output latency is too high.</p>
+<p><a href="https://access.redhat.com/solutions/1294">How to use logrotate utility to rotate log files</a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.18/html-single/administering_red_hat_satellite/index#Logging_and_Reporting_Problems_admin">Logging and reporting problems in <em>Administering Red&#160;Hat Satellite</em></a></p>
 </li>
 </ul>
-</div>
-<div class="paragraph">
-<div class="title">Log file storage</div>
-<p>Log files are written to <code>/var/log/messages/,</code> <code>/var/log/httpd/</code>, and <code>/var/lib/foreman-proxy/openscap/content/</code>.
-You can manage the size of these files using <strong>logrotate</strong>.
-For more information, see <a href="https://access.redhat.com/solutions/1294">How to use logrotate utility to rotate log files</a>.</p>
-</div>
-<div class="paragraph">
-<p>The exact amount of storage you require for log messages depends on your installation and setup.</p>
-</div>
-<div class="paragraph">
-<div class="title">SELinux considerations for NFS mount</div>
-<p>When the <code>/var/lib/pulp</code> directory is mounted using an NFS share, SELinux blocks the synchronization process.
-To avoid this, specify the SELinux context of the <code>/var/lib/pulp</code> directory in the file system table by adding the following lines to <code>/etc/fstab</code>:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>nfs.example.com:/nfsshare  /var/lib/pulp  nfs  context="system_u:object_r:var_lib_t:s0"  1 2</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>If NFS share is already mounted, remount it using the above configuration and enter the following command:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre># restorecon -R /var/lib/pulp</pre>
-</div>
-</div>
-<div class="paragraph">
-<div class="title">Duplicated packages</div>
-<p>Packages that are duplicated in different repositories are only stored once on the disk.
-Additional repositories containing duplicate packages require less additional storage.
-The bulk of storage resides in the <code>/var/lib/pulp/</code> directory.
-These end points are not manually configurable.
-Ensure that storage is available on the <code>/var</code> file system to prevent storage problems.</p>
-</div>
-<div class="paragraph">
-<div class="title">Symbolic links</div>
-<p>You cannot use symbolic links for <code>/var/lib/pulp/</code>.</p>
 </div>
 </div>
 <div class="sect2">
