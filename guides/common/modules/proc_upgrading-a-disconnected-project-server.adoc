@@ -45,94 +45,26 @@ This prevents the upgrade process from overwriting your DNS and DHCP configurati
 # rm /etc/yum.repos.d/*
 ----
 
-.Procedure on the connected {ProjectServer}
-. Ensure that the following repositories are synchronized on your connected {ProjectServer}:
+. Export the required repositories from your connected {ProjectServer} to your disconnected {ProjectServer}:
+.. Ensure that the following repositories are synchronized on your connected server:
 +
 * {RepoRHEL9BaseOS}
 * {RepoRHEL9AppStream}
 * {RepoRHEL9ServerSatelliteServerProjectVersion}
-. Export the repositories in a syncable format:
+.. Export the repositories in a syncable format:
 +
 [options="nowrap" subs="+quotes,verbatim,attributes"]
 ----
 $ hammer content-export complete repository \
 --id=_Repo_ID_ --format=syncable
 ----
-. Copy the exported directories to the disconnected {ProjectServer}.
+.. Copy the exported directories to the disconnected {ProjectServer}.
 
-.Upgrade disconnected {ProjectServer}
 . Stop all {Project} services:
 +
 [options="nowrap" subs="+quotes,verbatim,attributes"]
 ----
 # {foreman-maintain} service stop
-----
-+
-. Take a snapshot or create a backup:
-* On a virtual machine, take a snapshot.
-* On a physical machine, create a backup.
-. Start all {Project} services:
-+
-[options="nowrap" subs="+quotes,verbatim,attributes"]
-----
-# {foreman-maintain} service start
-----
-
-. Optional: If you manually edited the DNS or DHCP configuration in the `/etc/zones.conf` or `/etc/dhcp/dhcpd.conf` files, back up these configuration files.
-The installer only supports one domain or subnet, and therefore restoring changes from these backups might be required.
-
-. Optional: If you made manual edits to DNS or DHCP configuration files and do not want to overwrite the changes, enter the following command:
-+
-[options="nowrap" subs="attributes"]
-----
-# {foreman-installer} --foreman-proxy-dns-managed=false \
---foreman-proxy-dhcp-managed=false
-----
-
-. In the {ProjectWebUI}, navigate to *Hosts* > *Discovered hosts*.
-If there are discovered hosts available, turn them off and then delete all entries under the *Discovered hosts* page.
-Use the organization setting menu to select each remaining organization and repeat the action as needed. 
-Reboot these hosts after the upgrade has completed.
-
-. Remove old repositories:
-+
-[options="nowrap" subs="attributes"]
-----
-# rm /etc/yum.repos.d/*
-----
-
-. Identify the location of the copied exported directories from the syncable export on the connected {ProjectServer}.
-. Create the `/etc/yum.repos.d/upgrade.repo` and update the `baseurl` directive accordingly:
-+
-[options="nowrap" subs="+quotes,attributes"]
-----
-[{RepoRHEL9BaseOS}]
-name=Red Hat Enterprise Linux 9 for x86_64 - BaseOS (RPMs)
-metadata_expire=-1
-gpgcheck=0
-cost=500
-baseurl=file:///<export baseos location>/content/dist/rhel9/9/x86_64/baseos/os
-[{RepoRHEL9AppStream}]
-name=Red Hat Enterprise Linux 9 for x86_64 - AppStream (RPMs)
-mediaid=None
-metadata_expire=-1
-gpgcheck=0
-cost=500
-baseurl=file:///<export appstream location>/content/dist/rhel9/9/x86_64/appstream/os
-[{Project}]
-name={Project}
-mediaid=None
-metadata_expire=-1
-gpgcheck=0
-cost=500
-baseurl=file:///<export location>/content/dist/layered/rhel9/x86_64/{project-context}/{ProjectVersion}/os/
-----
-+
-. Upgrade {foreman-maintain} to the next version:
-+
-[options="nowrap" subs="attributes"]
-----
-# {foreman-maintain} self-upgrade --maintenance-repo-label={Project}
 ----
 . Enable access to the exported content by configuring a repository:
 .. Identify the location of the copied exported directories from the syncable export on the connected server.
