@@ -1,0 +1,66 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="applying-errata-to-hosts-by-using-cli"]
+= Applying errata to hosts by using CLI
+
+You can use Hammer CLI to review and apply errata to hosts.
+
+.Procedure
+. List all errata:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+$ hammer erratum list --organization "_My_Organization_"
+----
++
+You can limit the output to applicable by adding `--errata-restrict-applicable` or to installable errata by adding `--errata-restrict-installable`.
+. Optional: View information of an erratum:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+$ hammer erratum info --id _My_Erratum_ID_
+----
+. Apply errata to your hosts.
++
+You can use `Remote Execution`:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+$ hammer job-invocation create \
+--feature katello_errata_install \
+--inputs errata=_My_Erratum_ID_1_,_My_Erratum_ID_2_ \
+--search-query "name = host.example.com"
+----
++
+If you want to apply errata to all hosts in a host collection, use `"host_collection = _My_Host_Collection_Name_"` as the search query.
+If you want to apply a specific erratum to all hosts, use `"applicable_errata = _My_Erratum_ID_"` as the search query.
++
+You can use a Bash script that applies an erratum to each host for which this erratum is available:
++
+[source, terminal, options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+for HOST in `hammer --csv --csv-separator "|" host list --search "applicable_errata = _My_Erratum_ID_" --organization "_My_Organization_" | tail -n+2 | awk -F "|" '{ print $2 }'` ;
+do
+  echo "== Applying to $HOST ==" ; hammer job-invocation create --feature katello_errata_install --search-query "name = $HOST" --inputs errata=_My_Erratum_ID_1_,_My_Erratum_ID_2_ ;
+done
+----
++
+This command identifies all hosts with _My_Erratum_ID_ as an applicable erratum and then applies the erratum to each host.
+
+.Verification
+. Locate the task ID of your errata application in task listing:
++
+[options="nowrap" subs="verbatim,quotes"]
+----
+$ hammer task list
+----
+. Inspect the state of the selected task:
++
+[options="nowrap" subs="+quotes"]
+----
+$ hammer task progress --id _My_Task_ID_
+----
+
+.Additional resources
+* {AdministeringDocURL}Building_Search_Queries_admin[Building search queries] in _{AdministeringDocTitle}_
+* `hammer erratum list --help`
