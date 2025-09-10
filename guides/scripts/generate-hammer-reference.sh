@@ -1,10 +1,10 @@
 #!/usr/bin/bash
 
 SRC=
-ASMB_DIR=common # assembly destination folder
-MOD_DIR=modules
+MOD_DIR=common/modules/
 MOD_TYPE=":_mod-docs-content-type: REFERENCE"
-ASMB_FILENAME=assembly_hammer-reference.adoc
+ROLE_ABSTRACT='[role="_abstract"]'
+ASMB_FILENAME=doc-Hammer_Reference/master.adoc
 NOOP= # dry run
 DEBUG=
 
@@ -19,9 +19,8 @@ print_help() {
     echo
     echo -e "Options:"
     echo -e "  --target-dir, -T DIR"
-    echo -e "               Path to a folder where the reference assembly"
-    echo -e "               will be placed. Default: $ASMB_DIR"
-    echo -e "               Modules will be placed in $ASMB_DIR/$MOD_DIR/"
+    echo -e "               Path to a folder where the reference modules"
+    echo -e "               will be placed. Default: $MOD_DIR"
     echo -e "  --help, -h   Print help and exit"
     echo -e "  --noop       Dry run (don't do anything, only preview output)"
     echo -e "  --debug, -d  Debug mode (verbose output and keep tmp file)"
@@ -40,7 +39,7 @@ if [ $# -eq 0 ]; then print_help; exit 1; fi
 while [ $# -gt 1 ]; do
     case "$1" in
         --target-dir|-T)
-            ASMB_DIR="$2"
+            MOD_DIR="$2"
             shift 2
             ;;
         --noop)
@@ -72,24 +71,23 @@ done
 SRC=$1
 
 # Define internal variables
-if [ -n "$ASMB_DIR" ]; then
-    mod_path=$ASMB_DIR/$MOD_DIR # module destination folder
-    asmb_file=$ASMB_DIR/$ASMB_FILENAME
-else
-    mod_path=$MOD_DIR
-    asmb_file=$ASMB_FILENAME
-fi
+mod_path=${MOD_DIR%/}
+asmb_file=$ASMB_FILENAME
 details_tmp="$mod_path/tmp_hammer-option-details"
 echo -e >$details_tmp # reset
 
-details_file="$mod_path/ref_hammer-option-details.adoc"
-details_header='[id="hammer-option-details"]\n= Option details\n\nHammer options accept the following option types and values:'
+details_file="$mod_path/ref_data-representation-in-hammer-options.adoc"
+details_header="$MOD_TYPE\n\n[id="data-representation-in-hammer-options"]\n= Data representation in Hammer options\n\n$ROLE_ABSTRACT\nHammer options accept the following option types and values."
 
-asmb_header=':_mod-docs-content-type: ASSEMBLY\n\n// DO NOT EDIT MANUALLY\n// Use the generate-hammer-reference.sh script to update\n\ninclude::modules/con_hammer-reference.adoc[]\n\n'
-asmb_footer='include::modules/ref_hammer-option-details.adoc[leveloffset=+1]\n'
+asmb_header='include::common/attributes.adoc[]\ninclude::common/header.adoc[]\n:context: hammer-reference\n:hammer-reference:\n\n= {HammerRefDocTitle}\n\nifdef::satellite[]\ninclude::common/modules/proc_providing-feedback-on-red-hat-documentation.adoc[leveloffset=+1]\nendif::[]\n\n// DO NOT EDIT MANUALLY!\n// Use the generate-hammer-reference.sh script to update\n\ninclude::common/modules/ref_data-representation-in-hammer-options.adoc[leveloffset=+1]\n'
+asmb_footer='ifndef::orcharhino,satellite[]\ninclude::common/ribbons.adoc[]\nendif::[]\n'
 
-# Create folders
-{ [ -n "$NOOP" ] || mkdir -p $mod_path ; } && echo -e "Created folders: " $mod_path
+# Create folders if they don't exist
+if [ -d "$mod_path" ]; then
+    echo "I: Module path exists: $mod_path"
+else
+    { [ -n "$NOOP" ] || mkdir -p $mod_path ; } && echo -e "I: Created path: $mod_path"
+fi
 
 # Output headers
 if [ -z "$NOOP" ]; then
@@ -122,9 +120,9 @@ cat "$SRC" | while read line ; do
             id='[id="hammer"]'
             heading='= hammer'
             [ -n "$NOOP" ] || [ -n "$ASSEMBLY_ONLY" ] || \
-                echo -e "$MOD_TYPE\n\n$id\n$heading" >$mod_file
+                echo -e -n "$MOD_TYPE\n\n$id\n$heading\n\n$ROLE_ABSTRACT" >$mod_file
             { [ -z "$NOOP" ] || [ -n "$ASSEMBLY_ONLY" ] ; } && \
-                echo -e "include::modules/ref_hammer.adoc[leveloffset=+1]\n" >>$asmb_file
+                echo -e "include::$mod_path/ref_hammer.adoc[leveloffset=+1]\n" >>$asmb_file
             begin_section=yes
             skip_section=
             continue
@@ -137,9 +135,9 @@ cat "$SRC" | while read line ; do
             id=[id=\"$id_core\"]
             heading=`echo -e $line | sed 's/^## hammer/=/'`
             [ -n "$NOOP" ] || [ -n "$ASSEMBLY_ONLY" ] || \
-                echo -e "$MOD_TYPE\n\n$id\n$heading" >$mod_file
+                echo -e -n "$MOD_TYPE\n\n$id\n$heading\n\n$ROLE_ABSTRACT" >$mod_file
             { [ -z "$NOOP" ] || [ -n "$ASSEMBLY_ONLY" ] ; } && \
-                echo -e "include::modules/$filename[leveloffset=+1]\n" >>$asmb_file
+                echo -e "include::$mod_path/$filename[leveloffset=+1]\n" >>$asmb_file
             begin_section=yes
             skip_section=
             options=
@@ -153,9 +151,13 @@ cat "$SRC" | while read line ; do
             [ -n "$DEBUG" ] && echo -e "I: [cmd-3]: $line"
             id_core=`echo -e $line | sed 's/^### //' | sed 's/ /-/g'`
             id=[id=\"$id_core\"]
-            heading=`echo -e $line | sed 's/^### hammer/==/'`
+            filename=ref_$id_core.adoc
+            mod_file="$mod_path/$filename"
+            heading=`echo -e $line | sed 's/^### hammer/=/'`
             [ -n "$NOOP" ] || [ -n "$ASSEMBLY_ONLY" ] || \
-                echo -e "$MOD_TYPE\n\n$id\n$heading" >>$mod_file
+                echo -e -n "$MOD_TYPE\n\n$id\n$heading\n\n$ROLE_ABSTRACT" >>$mod_file
+            { [ -z "$NOOP" ] || [ -n "$ASSEMBLY_ONLY" ] ; } && \
+                echo -e "include::$mod_path/$filename[leveloffset=+2]\n" >>$asmb_file
             begin_section=yes
             skip_section=
             options=
@@ -169,9 +171,13 @@ cat "$SRC" | while read line ; do
             [ -n "$DEBUG" ] && echo -e "I: [cmd-4]: $line"
             id_core=`echo -e $line | sed 's/^#### //' | sed 's/ /-/g'`
             id=[id=\"$id_core\"]
-            heading=`echo -e $line | sed 's/^#### hammer/===/'`
+            filename=ref_$id_core.adoc
+            mod_file="$mod_path/$filename"
+            heading=`echo -e $line | sed 's/^#### hammer/=/'`
             [ -n "$NOOP" ] || [ -n "$ASSEMBLY_ONLY" ] || \
-                echo -e "$MOD_TYPE\n\n$id\n$heading" >>$mod_file
+                echo -e -n "$MOD_TYPE\n\n$id\n$heading\n\n$ROLE_ABSTRACT" >>$mod_file
+            { [ -z "$NOOP" ] || [ -n "$ASSEMBLY_ONLY" ] ; } && \
+                echo -e "include::$mod_path/$filename[leveloffset=+3]\n" >>$asmb_file
             begin_section=yes
             skip_section=
             options=
@@ -185,9 +191,9 @@ cat "$SRC" | while read line ; do
             [ -n "$DEBUG" ] && echo -e "I: [cmd-5]: $line"
             id_core=`echo -e $line | sed 's/^##### //' | sed 's/ /-/g'`
             id=[id=\"$id_core\"]
-            heading=`echo -e $line | sed 's/^##### hammer/====/'`
+            heading=`echo -e $line | sed 's/^##### hammer/==/'`
             [ -n "$NOOP" ] || [ -n "$ASSEMBLY_ONLY" ] || \
-                echo -e "$MOD_TYPE\n\n$id\n$heading" >>$mod_file
+                echo -e "$id\n$heading" >>$mod_file
             begin_section=yes
             skip_section=
             options=
@@ -200,7 +206,7 @@ cat "$SRC" | while read line ; do
         "Usage:")
             [ -n "$DEBUG" ] && echo -e "I: [Usage]ID: $id_core"
             [ -n "$NOOP" ] || [ -n "$ASSEMBLY_ONLY" ] || \
-                echo -e ".Usage" >>$mod_file
+                echo -e "*Usage*\n" >>$mod_file
             skip_section=
             continue
         ;;
@@ -223,7 +229,7 @@ cat "$SRC" | while read line ; do
         "Options:")
             [ -n "$DEBUG" ] && echo -e "I: [Options]ID: $id_core"
             [ -n "$NOOP" ] || [ -n "$ASSEMBLY_ONLY" ] || \
-                echo -e ".Options" >>$mod_file
+                echo -e "*Options*\n" >>$mod_file
             options=yes
             skip_section=
             continue
@@ -231,7 +237,7 @@ cat "$SRC" | while read line ; do
         *"Predefined field sets"*)
             [ -n "$DEBUG" ] && echo -e "I: [Predefined field sets]ID: $id_core"
             [ -n "$NOOP" ] || [ -n "$ASSEMBLY_ONLY" ] || \
-                echo -e ".Predefined field sets" >>$mod_file
+                echo -e "*Predefined field sets*\n" >>$mod_file
             field_sets=yes
             table_delim=0
             skip_section=
@@ -249,7 +255,7 @@ cat "$SRC" | while read line ; do
         "Provider specific options:")
             [ -n "$DEBUG" ] && echo -e "I: [Provider specific options]ID: $id_core"
             [ -n "$NOOP" ] || [ -n "$ASSEMBLY_ONLY" ] || \
-                echo -e ".Provider specific options\n" >>$mod_file
+                echo -e "*Provider-specific options*\n" >>$mod_file
             provider_specific=yes
             skip_section=
             options=
@@ -260,7 +266,7 @@ cat "$SRC" | while read line ; do
         *Search*fields*)
             [ -n "$DEBUG" ] && echo -e "I: [Search / Order fields]ID: $id_core"
             [ -n "$NOOP" ] || [ -n "$ASSEMBLY_ONLY" ] || \
-                echo -e ".Search / Order fields" >>$mod_file
+                echo -e "*Search and order fields*\n" >>$mod_file
             search_fields=yes
             skip_section=
             options=
@@ -328,7 +334,7 @@ cat "$SRC" | while read line ; do
         fixed_line=`echo -e "$fixed_line" | sed -E 's/..1m|..0m/\*/g'` #bold
         if echo -e "${line}" | grep -Eq '^-{1,2}[a-z\[]' - ; then # option line
             fixed_line=`echo -e "$fixed_line" | sed -E 's/^(-[a-z])/\`\1\`/' | sed -E 's/( )(-[a-z])/\1\`\2\`/g'`
-            fixed_line=`echo -e "$fixed_line" | sed -E 's/(--\S+\s[A-Z\_]{3,})/\`\1\`/' | sed -E 's/([A-Z\_]{3,})(\`)/xref:hammer-option-details-\L\1\E\[\1\]\2/'`
+            fixed_line=`echo -e "$fixed_line" | sed -E 's/(--\S+\s[A-Z\_]{3,})/\`\1\`/' `
             fixed_line=`echo -e "$fixed_line" | sed -E 's/^(--\S+)/\`\1\`/' | sed -E 's/( )(--\S+)/\1\`\2\`/g'`
             fixed_line=`echo -e "$fixed_line" | sed -E 's/   +/ \{endash\} /'`
             fixed_line="* $fixed_line"
@@ -428,7 +434,7 @@ echo
 # Process option details
 echo -e "Processing option details..."
 sort $details_tmp | uniq | \
-    sed -E 's/^([A-Z\_]+)\s+/\n\[id="hammer-option-details-\L\1\E"\]\n\1:: /' >>$details_file
+    sed -E 's/^([A-Z\_]+)\s+/\n\1:: /' >>$details_file
 [ -n "$DEBUG" ] || rm $details_tmp # Delete tmp file
 
 echo
