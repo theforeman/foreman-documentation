@@ -539,148 +539,105 @@ For more information, see the Red Hat Knowledgebase solution <a href="https://ac
 </div>
 </li>
 <li>
-<p>Obtain the latest ISO files by following the <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.18/html-single/installing_satellite_server_in_a_disconnected_network_environment/index#downloading-the-binary-dvd-images_satellite">Downloading the Binary DVD Images</a> procedure in <em>Installing Satellite&#160;Server in a disconnected network environment</em>.</p>
-</li>
-<li>
-<p>Create directories to serve as a mount point, mount the ISO images, and configure the <code>rhel8</code> repository by following the <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.18/html-single/installing_satellite_server_in_a_disconnected_network_environment/index#configuring-the-base-operating-system-with-offline-repositories_satellite">Configuring the base operating system with offline repositories</a> procedure in <em>Installing Satellite&#160;Server in a disconnected network environment</em>.</p>
-<div class="paragraph">
-<p>Do not install or update any packages at this stage.</p>
-</div>
-</li>
-<li>
-<p>Configure the Satellite 6.18 repository from the ISO file.</p>
+<p>Export the required repositories from your connected Satellite&#160;Server to your disconnected Satellite&#160;Server:</p>
 <div class="olist loweralpha">
 <ol class="loweralpha" type="a">
 <li>
-<p>Copy the ISO file&#8217;s repository data file for the Red&#160;Hat Satellite packages:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># cp /media/sat6/Satellite/media.repo /etc/yum.repos.d/satellite.repo</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Edit the <code>/etc/yum.repos.d/satellite.repo</code> file:</p>
-<div class="listingblock">
-<div class="content">
-<pre># vi /etc/yum.repos.d/satellite.repo</pre>
-</div>
-</div>
-<div class="olist lowerroman">
-<ol class="lowerroman" type="i">
-<li>
-<p>Change the default <code>InstallMedia</code> repository name to <code>Satellite-6.18</code>:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">[Satellite-6.18]</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Add the <code>baseurl</code> directive:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">baseurl=file:///media/sat6/Satellite</pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
-</li>
-</ol>
-</div>
-</li>
-<li>
-<p>Configure the Red&#160;Hat Satellite Maintenance repository from the ISO file.</p>
-<div class="olist loweralpha">
-<ol class="loweralpha" type="a">
-<li>
-<p>Copy the ISO file&#8217;s repository data file for Red&#160;Hat Satellite Maintenance packages:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># cp /media/sat6/Maintenance/media.repo /etc/yum.repos.d/satellite-maintenance.repo</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Edit the <code>/etc/yum.repos.d/satellite-maintenance.repo</code> file:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># vi /etc/yum.repos.d/satellite-maintenance.repo</pre>
-</div>
-</div>
-<div class="olist lowerroman">
-<ol class="lowerroman" type="i">
-<li>
-<p>Change the default <code>InstallMedia</code> repository name to <code>Satellite-Maintenance</code>:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">[Satellite-Maintenance]</pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
-</li>
-<li>
-<p>Add the <code>baseurl</code> directive:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">baseurl=file:///media/sat6/Maintenance/</pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
-</li>
-<li>
-<p>If you use Red&#160;Hat Lightspeed advisor in Satellite in your environment, update to the latest images:</p>
+<p>Ensure that the following repositories are synchronized on your connected server:</p>
 <div class="ulist">
 <ul>
 <li>
-<p>To update using the Satellite installation ISO image, set up containers on your Satellite&#160;Server:</p>
+<p>rhel-9-for-x86_64-baseos-rpms</p>
+</li>
+<li>
+<p>rhel-9-for-x86_64-appstream-rpms</p>
+</li>
+<li>
+<p>satellite-6.18-for-rhel-9-x86_64-rpms</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>List the repositories to identify their IDs:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># /media/sat6/containers/setup_containers</pre>
+<pre class="nowrap">$ hammer repository list \
+--organization-label <em>My_Organization_Label</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Run this command once for each of the three repositories listed above.</p>
+</div>
+</li>
+<li>
+<p>Ensure that the repositories are synchronized on your connected server with the download policy set to <code>immediate</code>.</p>
+</li>
+<li>
+<p>Export each repository in a syncable format by using its repository ID:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer content-export complete repository \
+--id=<em>Repo_ID</em> --format=syncable</pre>
 </div>
 </div>
 </li>
 <li>
-<p>Alternatively, to update by transferring the latest image from a connected system to a disconnected Satellite&#160;Server, follow these steps:</p>
-<div class="olist lowerroman">
-<ol class="lowerroman" type="i">
-<li>
-<p>On the connected system, export the container image:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># skopeo copy containers-storage:registry.redhat.io/satellite/iop-advisor-engine-rhel9:6.18 \
-oci-archive:/tmp/iop-advisor-engine.tar</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Transfer the <code>iop-advisor-engine.tar</code> file to the disconnected Satellite&#160;Server.</p>
-</li>
-<li>
-<p>On the disconnected Satellite&#160;Server, import the container image:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># skopeo copy oci-archive:/tmp/iop-advisor-engine.tar \
-containers-storage:registry.redhat.io/satellite/iop-advisor-engine-rhel9:6.18</pre>
-</div>
-</div>
+<p>Copy the exported directories to the disconnected Satellite&#160;Server.</p>
 </li>
 </ol>
 </div>
 </li>
-</ul>
+<li>
+<p>On the disconnected server, stop all Satellite services:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-maintain service stop</pre>
+</div>
+</div>
+</li>
+<li>
+<p>On the disconnected server, enable access to the exported content by configuring a repository:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Identify the location of the copied exported directories from the syncable export on the connected server.</p>
+</li>
+<li>
+<p>Create the <code>/etc/yum.repos.d/upgrade.repo</code> file and update the <code>baseurl</code> directive to point to that location:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-none" data-lang="none">[rhel-9-for-x86_64-baseos-rpms]
+--name=Red Hat Enterprise Linux 9 for x86_64 - BaseOS (RPMs) \
+--metadata_expire=-1 \
+--gpgcheck=0 \
+--cost=500 \
+--baseurl=file:///_Export_Baseos_Location_/content/dist/rhel9/9/x86_64/baseos/os \
+[rhel-9-for-x86_64-appstream-rpms]
+--name=Red Hat Enterprise Linux 9 for x86_64 - AppStream (RPMs) \
+--mediaid=None \
+--metadata_expire=-1 \
+--gpgcheck=0 \
+--cost=500 \
+--baseurl=file:///_Export_Appstream_Location_/content/dist/rhel9/9/x86_64/appstream/os \
+[Satellite]
+--name=Satellite \
+--mediaid=None \
+--metadata_expire=-1 \
+--gpgcheck=0 \
+--cost=500 \
+--baseurl=file:///_Export_Location_/content/dist/layered/rhel9/x86_64/satellite/6.18/os/</code></pre>
+</div>
+</div>
+</li>
+</ol>
 </div>
 </li>
 <li>
 <p>Upgrade the satellite-maintain utility to its latest version:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># satellite-maintain self-upgrade --maintenance-repo-label Satellite-Maintenance</pre>
+<pre class="nowrap"># satellite-maintain self-upgrade --maintenance-repo-label=Satellite</pre>
 </div>
 </div>
 </li>
@@ -688,7 +645,8 @@ containers-storage:registry.redhat.io/satellite/iop-advisor-engine-rhel9:6.18</p
 <p>Determine whether your system is ready for Satellite upgrade:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># satellite-maintain upgrade check --whitelist="repositories-validate,repositories-setup"</pre>
+<pre class="nowrap"># satellite-maintain upgrade check --whitelist="repositories-validate,repositories-setup" \
+--target-version=6.18</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -716,7 +674,8 @@ Because of the lengthy upgrade time, consider using a utility such as <code>tmux
 For more information, see <a href="#following_the_progress_of_the_upgrade_upgrading-disconnected">Following the progress of the upgrade</a>.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># satellite-maintain upgrade run --whitelist="repositories-validate,repositories-setup"</pre>
+<pre class="nowrap"># satellite-maintain upgrade run --whitelist="repositories-validate,repositories-setup" \
+--target-version=6.18</pre>
 </div>
 </div>
 <div class="paragraph">
