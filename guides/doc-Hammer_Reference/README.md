@@ -1,11 +1,12 @@
 # Creating Hammer reference
 
-## Generating the basic reference
+## Generating the reference
 
-Use the `generate-hammer-reference.sh` script to update the generated reference.
+Use the `generate-hammer-reference.sh` script to generate the reference.
 
-### Prerequisite
+### Prerequisites
 
+- Ensure all Foreman plugins are enabled on your Foreman instance.
 - You have got the full help output from Hammer CLI in MarkDown format:
   ```
      hammer full-help --md >hammer.full-help.md
@@ -19,17 +20,17 @@ Use the `generate-hammer-reference.sh` script to update the generated reference.
 
 ## Manual editing
 
-Move `content-view component` and `content-view filter` sections,
-which are level 3 and have level 4 sections, to **level 2**
-to decrease section nesting to 3 levels.
+Move `content-view component` and `content-view filter` sections, which are level 3 and have level 4 sections, to **level 2** to decrease section nesting to 3 levels.
 
-Initial structure:
+Generated structure:
 ```
 2.1 content-view
+   2.1.x content-view component
+   2.1.y content-view filter
 2.2 content-view-environment
 ```
 
-Suggested structure:
+Manually updated structure:
 ```
 2.1 content-view
 2.2 content-view component
