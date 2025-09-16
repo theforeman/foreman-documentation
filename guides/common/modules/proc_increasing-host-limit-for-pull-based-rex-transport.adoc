@@ -3,32 +3,28 @@
 [id="Increasing_host_limit_for_pull_based_REX_transport_{context}"]
 = Increasing host limit for pull-based REX transport
 
-You can tune the `mosquitto` MQTT server and increase the number of hosts connected to it.
+You can tune the `mosquitto` MQTT server and increase the maximum number of hosts connected to it.
+By default, {SmartProxies} support a maximum of 1014 connected hosts.
+
+This example configures the `mosquitto` service on your {SmartProxy} to handle up to 5000 hosts.
+
+.Prerequisites
+* You have enabled pull-based remote execution on your {SmartProxy}.
+For more information, see {InstallingSmartProxyDocURL}configuring-pull-based-transport-for-remote-execution_{smart-proxy-context}[Configuring pull-based transport for remote execution] in _{InstallingSmartProxyDocTitle}_.
 
 .Procedure
-. Enable pull-based remote execution on your {ProjectServer} or {SmartProxyServer}:
+. On your {SmartProxy}, set the upper limit of connected hosts for pull-based remote execution in `/etc/foreman-installer/custom-hiera.yaml`:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-# {foreman-installer} --foreman-proxy-plugin-remote-execution-script-mode pull-mqtt
+systemd::dropin_files:
+  limits.conf:
+    unit: mosquitto.service
+    content: "[Service]\nLimitNOFILE=5000\n"
 ----
+. Re-run the installer for the changes to take effect:
 +
-Note that your {ProjectServer} or {SmartProxyServer} can only use one transport mode, either SSH or MQTT.
-. Create a config file to increase the default number of hosts accepted by the MQTT service:
-+
-[options="nowrap", subs="+quotes,verbatim,attributes"]
+[source, yaml, options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-cat >/etc/systemd/system/mosquitto.service.d/limits.conf <<__EOF__
-[Service]
-LimitNOFILE=5000
-__EOF__
-----
-+
-This example sets the limit to allow the `mosquitto` service to handle 5000 hosts.
-. Apply your changes:
-+
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
-# systemctl daemon-reload
-# systemctl restart mosquitto.service
+# {foreman-installer}
 ----
