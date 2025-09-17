@@ -10,7 +10,7 @@ DEBUG=
 
 print_help() {
     echo -e "Generate AsciiDoc reference from a Hammer full-help MarkDown file"
-    echo -e "Generates the master.adoc and one module per hammer subsubcommand (3 levels)."
+    echo -e "Generates $ASMB_FILENAME and one module per hammer subsubcommand (3 levels)."
     echo
     echo -e "Usage:"
     echo -e "    $0 [OPTIONS ...] SOURCE_FILE"
