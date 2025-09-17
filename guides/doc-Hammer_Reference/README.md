@@ -15,6 +15,7 @@ Use the `generate-hammer-reference.sh` script to generate the reference.
 ### Usage
 ```
    cd guides/
+   mkdir common/hammer-reference
    scripts/generate-hammer-reference.sh hammer.full-help.md
 ```
 

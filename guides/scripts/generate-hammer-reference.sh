@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 
 SRC=
-MOD_DIR=common/modules/
+MOD_DIR=common/hammer-reference/
 MOD_TYPE=":_mod-docs-content-type: REFERENCE"
 ROLE_ABSTRACT='[role="_abstract"]'
 ASMB_FILENAME=doc-Hammer_Reference/master.adoc
@@ -10,7 +10,7 @@ DEBUG=
 
 print_help() {
     echo -e "Generate AsciiDoc reference from a Hammer full-help MarkDown file"
-    echo -e "  Generates one assembly and one module per hammer command."
+    echo -e "Generates the master.adoc and one module per hammer subsubcommand (3 levels)."
     echo
     echo -e "Usage:"
     echo -e "    $0 [OPTIONS ...] SOURCE_FILE"
@@ -36,7 +36,7 @@ bye() {
 
 # Process user arguments
 if [ $# -eq 0 ]; then print_help; exit 1; fi
-while [ $# -gt 1 ]; do
+while [ $# -gt 0 ]; do
     case "$1" in
         --target-dir|-T)
             MOD_DIR="$2"
@@ -63,30 +63,36 @@ while [ $# -gt 1 ]; do
             print_help
             exit 0
             ;;
-        *)
+        -*)
             bye "E: Invalid option: $1"
             ;;
+        *)
+            break
     esac
 done
 SRC=$1
+
+# Exit if source file doesn't exist
+if [ ! -f "$SRC" ]; then
+    bye "E: Source file not found: $SRC"
+fi
 
 # Define internal variables
 mod_path=${MOD_DIR%/}
 asmb_file=$ASMB_FILENAME
 details_tmp="$mod_path/tmp_hammer-option-details"
-echo -e >$details_tmp # reset
 
 details_file="$mod_path/ref_data-representation-in-hammer-options.adoc"
-details_header="$MOD_TYPE\n\n[id="data-representation-in-hammer-options"]\n= Data representation in Hammer options\n\n$ROLE_ABSTRACT\nHammer options accept the following option types and values."
+details_header="$MOD_TYPE\n\n[id="data-representation-in-hammer-options"]\n= Data representation in Hammer options\n\n$ROLE_ABSTRACT\nHammer options accept the following types and values."
 
-asmb_header='include::common/attributes.adoc[]\ninclude::common/header.adoc[]\n:context: hammer-reference\n:hammer-reference:\n\n= {HammerRefDocTitle}\n\nifdef::satellite[]\ninclude::common/modules/proc_providing-feedback-on-red-hat-documentation.adoc[leveloffset=+1]\nendif::[]\n\n// DO NOT EDIT MANUALLY!\n// Use the generate-hammer-reference.sh script to update\n\ninclude::common/modules/ref_data-representation-in-hammer-options.adoc[leveloffset=+1]\n'
+asmb_header="include::common/attributes.adoc[]\ninclude::common/header.adoc[]\n:context: hammer-reference\n:hammer-reference:\n\n= {HammerRefDocTitle}\n\nifdef::satellite[]\ninclude::common/modules/proc_providing-feedback-on-red-hat-documentation.adoc[leveloffset=+1]\nendif::[]\n\n// DO NOT EDIT MANUALLY!\n// Use the generate-hammer-reference.sh script to update\n\ninclude::$mod_path/ref_data-representation-in-hammer-options.adoc[leveloffset=+1]\n"
 asmb_footer='ifndef::orcharhino,satellite[]\ninclude::common/ribbons.adoc[]\nendif::[]\n'
 
-# Create folders if they don't exist
+# Exit if module path doesn't exist
 if [ -d "$mod_path" ]; then
     echo "I: Module path exists: $mod_path"
 else
-    { [ -n "$NOOP" ] || mkdir -p $mod_path ; } && echo -e "I: Created path: $mod_path"
+    bye "E: Module path not found: $mod_path"
 fi
 
 # Output headers
@@ -96,8 +102,7 @@ if [ -z "$NOOP" ]; then
 fi
 if [ -z "$ASSEMBLY_ONLY" ]; then
     echo -e "$details_header" >$details_file && \
-        { [ -n "$DEBUG" ] && echo -e "I: Option details header written" ; } || \
-        echo -e "W: Something went wrong writing option details header"
+        [ -n "$DEBUG" ] && echo -e "I: Data representation header written"
 fi
 
 # Read lines from the source file
@@ -113,7 +118,7 @@ cat "$SRC" | while read line ; do
         '- ['*) # Skip MD TOC
             continue
         ;;
-        "# hammer") # top-command
+        "# hammer") # program
             echo -e "I: [cmd-1]: $line"
             id_core=hammer
             mod_file="$mod_path/ref_$id_core.adoc"
@@ -130,9 +135,9 @@ cat "$SRC" | while read line ; do
         "## hammer"*) # command
             echo -e "I: [cmd-2]: $line"
             id_core=`echo -e $line | sed 's/^## //' | sed 's/ /-/g'`
-            filename=ref_$id_core.adoc
+            filename=ref_${id_core}.adoc
             mod_file="$mod_path/$filename"
-            id=[id=\"$id_core\"]
+            id=[id=\"${id_core}\"]
             heading=`echo -e $line | sed 's/^## hammer/=/'`
             [ -n "$NOOP" ] || [ -n "$ASSEMBLY_ONLY" ] || \
                 echo -e -n "$MOD_TYPE\n\n$id\n$heading\n\n$ROLE_ABSTRACT" >$mod_file
@@ -150,8 +155,8 @@ cat "$SRC" | while read line ; do
         "### hammer"*) # subcommand
             [ -n "$DEBUG" ] && echo -e "I: [cmd-3]: $line"
             id_core=`echo -e $line | sed 's/^### //' | sed 's/ /-/g'`
-            id=[id=\"$id_core\"]
-            filename=ref_$id_core.adoc
+            id=[id=\"${id_core}\"]
+            filename=ref_${id_core}.adoc
             mod_file="$mod_path/$filename"
             heading=`echo -e $line | sed 's/^### hammer/=/'`
             [ -n "$NOOP" ] || [ -n "$ASSEMBLY_ONLY" ] || \
@@ -170,8 +175,8 @@ cat "$SRC" | while read line ; do
         "#### hammer"*) # subsubcommand
             [ -n "$DEBUG" ] && echo -e "I: [cmd-4]: $line"
             id_core=`echo -e $line | sed 's/^#### //' | sed 's/ /-/g'`
-            id=[id=\"$id_core\"]
-            filename=ref_$id_core.adoc
+            id=[id=\"${id_core}\"]
+            filename=ref_${id_core}.adoc
             mod_file="$mod_path/$filename"
             heading=`echo -e $line | sed 's/^#### hammer/=/'`
             [ -n "$NOOP" ] || [ -n "$ASSEMBLY_ONLY" ] || \
@@ -190,7 +195,7 @@ cat "$SRC" | while read line ; do
         "##### hammer"*) # subsubsubcommand
             [ -n "$DEBUG" ] && echo -e "I: [cmd-5]: $line"
             id_core=`echo -e $line | sed 's/^##### //' | sed 's/ /-/g'`
-            id=[id=\"$id_core\"]
+            id=[id=\"${id_core}\"]
             heading=`echo -e $line | sed 's/^##### hammer/==/'`
             [ -n "$NOOP" ] || [ -n "$ASSEMBLY_ONLY" ] || \
                 echo -e "$id\n$heading" >>$mod_file
