@@ -437,7 +437,7 @@ echo -e "I: [End of input file]"
 echo
 
 # Process option details
-echo -e "Processing option details..."
+echo -e "Processing data representation module..."
 sort $details_tmp | uniq | \
     sed -E 's/^([A-Z\_]+)\s+/\n\1:: /' >>$details_file
 [ -n "$DEBUG" ] || rm $details_tmp # Delete tmp file
