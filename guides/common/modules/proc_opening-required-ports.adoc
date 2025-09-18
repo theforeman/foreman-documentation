@@ -1,0 +1,83 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="opening-required-ports"]
+= Opening required ports
+
+By opening the required ports, you ensure that the components of {Project} architecture can communicate.
+You must also ensure that the required network ports are open on any network-based firewalls.
+
+[NOTE]
+====
+Some cloud solutions must be specifically configured to allow communications between machines because they isolate machines similarly to network-based firewalls.
+If you use an application-based firewall, ensure that the application-based firewall permits all applications that are listed in the tables and known to your firewall.
+If possible, disable the application checking and allow open port communication based on the protocol.
+====
+
+ifndef::satellite,orcharhino[]
+If you do not use `firewall-cmd` to configure the Linux firewall, implement using the tool of your choice.
+endif::[]
+
+.Procedure
+. If you need to prevent the DHCP {SmartProxy} from pinging hosts to check for available IP addresses, disable DHCP IP address pinging:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# {foreman-installer} --foreman-proxy-dhcp-ping-free-ip false
+----
++
+By default, a DHCP {SmartProxy} performs ICMP ping and TCP echo connection attempts to hosts in subnets with DHCP IPAM set to find out if an IP address considered for use is free.
+ifdef::katello,satellite,orcharhino[]
+ifeval::["{context}" == "{project-context}"]
+. Open the ports for clients on {ProjectServer}:
+endif::[]
+ifeval::["{context}" == "{smart-proxy-context}"]
+. Open the ports for clients on {SmartProxyServer}:
+endif::[]
++
+[options="nowrap"]
+----
+# firewall-cmd \
+--add-port="8000/tcp" \
+--add-port="9090/tcp"
+----
+endif::[]
+ifeval::["{context}" == "{project-context}"]
+. Allow access to services on {ProjectServer}:
+endif::[]
+ifeval::["{context}" == "{smart-proxy-context}"]
+. Allow access to services on {SmartProxyServer}:
+endif::[]
++
+[options="nowrap"]
+----
+# firewall-cmd \
+--add-service=dns \
+--add-service=dhcp \
+--add-service=tftp \
+--add-service=http \
+--add-service=https \
+ifndef::katello,satellite,orcharhino[]
+--add-service=foreman-proxy \
+endif::[]
+--add-service=puppetmaster
+----
+. Make the changes persistent:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# firewall-cmd --runtime-to-permanent
+----
+
+.Verification
+* View all firewall zones and allowed services:
++
+[options="nowrap"]
+----
+# firewall-cmd --list-all
+----
+
+.Additional resources
+* {PlanningDocURL}networking-considerations-in-{project-context}[Networking considerations in {Project}]
+ifndef::foreman-deb[]
+* https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/configuring_firewalls_and_packet_filters/using-and-configuring-firewalld_firewall-packet-filters[Using and configuring firewalld in _{RHEL}{nbsp}9 Configuring firewalls and packet filters_]
+endif::[]
