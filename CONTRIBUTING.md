@@ -1,12 +1,5 @@
 # Contributing to Foreman Documentation
 
-Foreman community welcomes all feedback, issues, pull requests (PRs), and reviews.
-Every contributor has different backgrounds, interests, and experiences with Foreman and its open source community.
-
-We give ourselves these guidelines to collaborate and contribute to Foreman documentation more efficiently.
-It helps everyone to set expectations, communicate conventions, and ensures happy collaborative work across organisations and backgrounds.
-We respect each others time and energy spent on Foreman documentation.
-
 ## Maintainers
 
 * help less experienced community members with git, Github, PRs, asciidoc, and asciidoctor.
