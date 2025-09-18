@@ -14,7 +14,7 @@ We give ourselves these guidelines to collaborate and contribute to Foreman docu
 It helps everyone to set expectations, communicate conventions, and ensures happy collaborative work across organisations and backgrounds.
 We respect each others time and energy spent on Foreman documentation.
 
-Familiarize yourself with [CONTRIBUTING](CONTRIBUTING.md) and [Contribution Guidelines for Foreman guides](guides/README.md#contribution-guidelines) before you start contributing.
+Familiarize yourself with [CONTRIBUTING](CONTRIBUTING.md) before you start contributing.
 
 ## Repository contents
 
