@@ -20,9 +20,10 @@ To perform a HTML validation check:
 
 	$ bundle exec nanoc check
 
-Navigate to `http://localhost:3000` to test the result. To test full site with
-guides, use the Makefile in the root directory.
+Navigate to `http://localhost:3000` to test the result.
 
 To edit the main menu, navigate to content/js/nav.js and edit the file, publish
 the changes and all guides and pages will dynamically load the menu from the
 data structure.
+
+To test full site with guides, use the Makefile in the root directory. See [README](../README.md) for more information.
