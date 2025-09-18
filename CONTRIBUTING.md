@@ -1,26 +1,24 @@
 # Contributing to Foreman Documentation
 
-## Maintainers
+## Contributor's pledge
 
-* help less experienced community members with git, Github, PRs, asciidoc, and asciidoctor.
-* expect a basic effort in contributions, including the [pull request template](PULL_REQUEST_TEMPLATE.md) being filled out.
-* only merge PRs if the Github Actions are green.
-For an overview of what to expect from editorial review, see [Red Hat peer review guide for technical documentation](https://redhat-documentation.github.io/peer-review/#checklist).
-* read the proposed change and make friendly and helpful comments.
-* ping community members with more experience if they are unsure about specific details.
-* try to review PRs in a timely manner.
-* keep non-trivial PRs open for at least 24 hours (72 hours if over the weekend) to allow for input from the community.
+As a contributor, I will:
+
+* Familiarize myself with the [Pull Request Checklist](#Pull-Request-Checklist).
+* Open additional issues if my contribution is incomplete.
+
+## Maintainer's pledge
+
+As a maintainer, I will:
+
+* Help less experienced community members with git, Github, PRs, asciidoc, and asciidoctor and make friendly and helpful comments.
+* Only merge PRs if the Github Actions are green.
+* Try to review PRs in a timely manner.
+* Keep non-trivial PRs open for at least 24 hours (72 hours if over the weekend) to allow for input from the community.
 Examples of trivial PRs: Fixing a typo, fixing markup, or fixing links.
 Non-trivial PRs might not only benefit from additional review but they also represent an opportunity for community members to ask questions and learn.
 
-## Contributors
-
-* are able to make meaningful contributions to the Foreman documentation, regardless of their experience with git, asciidoc, writing documentation, or Foreman.
-* familiarize themselves with the [Pull Request Checklist](#Pull-Request-Checklist).
-* open additional issues if a contribution is incomplete.
-* are invited to review other PRs.
-
-## Pull Request Checklist
+## Pull request checklist
 
 * [ ] I am familiar with the conventions as specified in the [guides/README.md](guides/README.md) file.
 * [ ] Before pushing, I view my diff against master or the target branch and check for spelling mistakes, failed conflict resolutions, etc.
