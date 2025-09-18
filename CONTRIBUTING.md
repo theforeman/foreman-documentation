@@ -86,6 +86,7 @@ We do not capitalize the following terms:
 * lifecycle environment
 * manifest
 * Red Hat subscription manifest
+* remote execution
 * subscription
 
 ## Further Information
