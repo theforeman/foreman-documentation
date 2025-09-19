@@ -45,9 +45,6 @@ If unsure, I let reviewers know so that they can assist.
 
 ### Contribution guidelines
 
-Please read these guidelines before opening a Pull Request.
-For more information, see [Guidelines for Red Hat Documentation](https://redhat-documentation.github.io/).
-
 If you need help to get started, open an issue, ask the docs team on [Matrix](https://matrix.to/#/#theforeman-doc:matrix.org), or ping [`@docs`](https://community.theforeman.org/g/docs) on the [Foreman Community Forum](https://community.theforeman.org/).
 
 If you are unsure into which guide you should place your content, have a look at the `docinfo.xml` files within each `doc-*` directory.
@@ -57,7 +54,7 @@ If you are unsure into which guide you should place your content, have a look at
 Use the following markup conventions:
 
 * Source files use UTF-8 character encoding.
-* Source files use [AsciiDoc](https://docs.asciidoctor.org/asciidoc/latest/) syntax and aim to follow [AsciiDoc Mark-up Conventions for Red Hat Documentation](https://redhat-documentation.github.io/asciidoc-markup-conventions/).
+* Source files use [AsciiDoc](https://docs.asciidoctor.org/asciidoc/latest/) syntax.
 * A single line only contains one sentence.
 Please do not wrap lines by hand.
 This makes `git diff` much easier to read and helps when reviewing changes.
