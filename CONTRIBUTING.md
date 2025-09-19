@@ -38,6 +38,8 @@ See [LICENSE](LICENSE).
 * [ ] I am familiar to proper capitalization for project-specific terminology.
 See [Capitalization](#Capitalization).
 * [ ] The first line of the file contains the modular docs content type attribute, for example, `:_mod-docs-content-type: ASSEMBLY` for assemblies.
+* [ ] I fill out the cherry-picking list in the PR template to the best of my abilities to signify which versions my update applies to.
+If unsure, I let reviewers know so that they can assist.
 
 ## Foreman documentation minimalist style guide
 
