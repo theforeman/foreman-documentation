@@ -56,8 +56,6 @@ Please do not wrap lines by hand.
 This makes `git diff` much easier to read and helps when reviewing changes.
 * No trailing whitespace on lines and in files.
 Whitespace after partial files has to be handled in the file using the `include::` directive.
-* Image file names use dashes (`-`) and suffix a build target, for example, `foreman`.
-See also [Images](#Images).
 * User input is surrounded by underscores (`_`) to indicate variable input, for example, `hammer organization create --name "_My Organization_" --label "_my_organization_"`.
 * Links to different guides are followed by the title of the guide in italics, for example `in _{ManagingHostsDocTitle}_`.
 * The first line of a file contains the modular docs content type attribute, for example, `:_mod-docs-content-type: ASSEMBLY` for assemblies.
