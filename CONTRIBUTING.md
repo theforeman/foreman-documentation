@@ -58,9 +58,6 @@ This makes `git diff` much easier to read and helps when reviewing changes.
 Whitespace after partial files has to be handled in the file using the `include::` directive.
 * User input is surrounded by underscores (`_`) to indicate variable input, for example, `hammer organization create --name "_My Organization_" --label "_my_organization_"`.
 * Links to different guides are followed by the title of the guide in italics, for example `in _{ManagingHostsDocTitle}_`.
-* The first line of a file contains the modular docs content type attribute, for example, `:_mod-docs-content-type: ASSEMBLY` for assemblies.
-The content type reflects the file prefix: `ASSEMBLY`, `PROCEDURE`, `CONCEPT`, or `REFERENCE`.
-The only exceptions are `master.adoc` files, which do not require this attribute.
 
 ### Images
 
@@ -157,10 +154,13 @@ See the [assembly template](https://raw.githubusercontent.com/redhat-documentati
 Modules are kept in the `common/modules/` subdirectory:
 
 * [`con`](https://redhat-documentation.github.io/modular-docs/#creating-concept-modules): Files starting with `con_` contain concepts and explain the _what_ and _why_.
+Their first line contains the `:_mod-docs-content-type: CONCEPT` attribute.
 See the [concept template](https://raw.githubusercontent.com/redhat-documentation/modular-docs/master/modular-docs-manual/files/TEMPLATE_CONCEPT_concept-explanation.adoc).
 * [`proc`](https://redhat-documentation.github.io/modular-docs/#creating-procedure-modules): Files starting with `proc_` contain procedures and explain _how_ to achieve a specific goal.
+Their first line contains the `:_mod-docs-content-type: PROCEDURE` attribute.
 See the [procedure template](https://raw.githubusercontent.com/redhat-documentation/modular-docs/master/modular-docs-manual/files/TEMPLATE_PROCEDURE_doing-one-procedure.adoc).
 * [`ref`](https://redhat-documentation.github.io/modular-docs/#creating-reference-modules): Files starting with `ref_` contain references and append other files, e.g. tables with options.
+Their first line contains the `:_mod-docs-content-type: REFERENCE` attribute.
 See the [reference template](https://raw.githubusercontent.com/redhat-documentation/modular-docs/master/modular-docs-manual/files/TEMPLATE_REFERENCE_reference-material.adoc).
 * [`snip`](https://redhat-documentation.github.io/modular-docs/#using_text_snippets_or_text_fragments_writing-mod-docs): Files starting with `snip_` contain snippets that are reused throughout multiple guides, e.g. admonitions.
 Snippets do not require an ID.
