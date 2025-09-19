@@ -1,5 +1,7 @@
 # Foreman documentation site
 
+This README explains how to work with the documentation website, including how to update the website and generate a local preview for testing.
+
 Uses [nanoc](https://nanoc.app) site generator.
 
 Synopsis:

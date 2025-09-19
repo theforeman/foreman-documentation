@@ -1,5 +1,7 @@
 # Foreman guides
 
+This README file explains how to work with the guides included in this repository, including setting up your system for local testing.
+
 This is upstream source code of [Red Hat Satellite 6](https://docs.redhat.com/en/documentation/red_hat_satellite/) documentation as well as parts of the [orcharhino documentation](https://docs.orcharhino.com/or/docs/index.html).
 
 This is **work in progress**, an attempt to take content written by Red Hat documentation team, modularize it, incorporate [Foreman Manuals](https://theforeman.org/manuals/), and eventually make this the only and official documentation for Foreman, Katello, and all plugins.
