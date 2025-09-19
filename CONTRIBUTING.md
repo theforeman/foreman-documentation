@@ -1,5 +1,7 @@
 # Contributing to Foreman Documentation
 
+If you need help to get started, open an issue, ask the docs team on [Matrix](https://matrix.to/#/#theforeman-doc:matrix.org), or ping [`@docs`](https://community.theforeman.org/g/docs) on the [Foreman Community Forum](https://community.theforeman.org/).
+
 ## Contributor's pledge
 
 As a contributor, I will:
@@ -42,10 +44,6 @@ See [Capitalization](#Capitalization).
 If unsure, I let reviewers know so that they can assist.
 
 ## Foreman documentation minimalist style guide
-
-### Contribution guidelines
-
-If you need help to get started, open an issue, ask the docs team on [Matrix](https://matrix.to/#/#theforeman-doc:matrix.org), or ping [`@docs`](https://community.theforeman.org/g/docs) on the [Foreman Community Forum](https://community.theforeman.org/).
 
 ### Code conventions
 
