@@ -43,6 +43,19 @@ See [Capitalization](#Capitalization).
 * [ ] I fill out the cherry-picking list in the PR template to the best of my abilities to signify which versions my update applies to.
 If unsure, I let reviewers know so that they can assist.
 
+Each PR should undergo tech review.
+(Tech review is performed by an Engineer who did not author the PR. It can be skipped if the PR does not significantly change description of product behavior.)
+
+* [ ] The PR documents a recommended, user-friendly path.
+* [ ] The PR removes steps that have been made unnecessary or obsolete.
+* [ ] Any steps introduced or updated in the PR have been tested to confirm that they lead to the documented end result.
+
+Each PR should undergo style review.
+(Style review is performed by a Technical Writer who did not author the PR.)
+
+* [ ] The PR conforms with the team's style guidelines.
+* [ ] The PR introduces documentation that describes a user story rather than a product feature.
+
 ## Foreman documentation minimalist style guide
 
 ### Code conventions
