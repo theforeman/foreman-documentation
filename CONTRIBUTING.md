@@ -47,8 +47,6 @@ If unsure, I let reviewers know so that they can assist.
 
 If you need help to get started, open an issue, ask the docs team on [Matrix](https://matrix.to/#/#theforeman-doc:matrix.org), or ping [`@docs`](https://community.theforeman.org/g/docs) on the [Foreman Community Forum](https://community.theforeman.org/).
 
-If you are unsure into which guide you should place your content, have a look at the `docinfo.xml` files within each `doc-*` directory.
-
 ### Code conventions
 
 Use the following markup conventions:
