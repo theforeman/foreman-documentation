@@ -25,7 +25,7 @@ Non-trivial PRs might not only benefit from additional review but they also repr
 * [ ] Before pushing, I view my diff against master or the target branch and check for spelling mistakes, failed conflict resolutions, etc.
 * [ ] Before pinging others about my PR, I await the Github Actions to see if my branch builds.
 * [ ] If I add text that applies only to a specific downstream product, I notify others and give them a chance to request extending the `ifdef::[]` or `ifndef::[]` directive.
-+ [ ] My change does not contain `Foreman`, `Satellite`, or `orcharhino`.
+* [ ] My change does not contain `Foreman`, `Satellite`, or `orcharhino`.
 Instead, I use attributes.
 * [ ] I don't add useless or trailing white space.
 * [ ] I put each sentence to its own line.
@@ -94,9 +94,9 @@ Therefore, never write "Foreman", "Satellite", or "orcharhino" words directly, b
 | -------- | -------------- | --------------------- | ------------------ |
 | {Project} | Foreman | Satellite | orcharhino |
 | {ProjectName} | Foreman | Red Hat Satellite | orcharhino |
-| {ProjectServer} | Foreman server | Satellite Server | orcharhino server |
+| {ProjectServer} | Foreman server | Satellite Server | orcharhino Server |
 | {SmartProxy} | Smart Proxy | Capsule | orcharhino Proxy |
-| {SmartProxyServer} | Smart Proxy server | Capsule Server | orcharhino Proxy |
+| {SmartProxyServer} | Smart Proxy server | Capsule Server | orcharhino Proxy Server |
 
 Every build uses common base attributes, more are defined in the build specific attribute files:
 
@@ -172,11 +172,11 @@ See the [concept template](https://raw.githubusercontent.com/redhat-documentatio
 * [`proc`](https://redhat-documentation.github.io/modular-docs/#creating-procedure-modules): Files starting with `proc_` contain procedures and explain _how_ to achieve a specific goal.
 Their first line contains the `:_mod-docs-content-type: PROCEDURE` attribute.
 See the [procedure template](https://raw.githubusercontent.com/redhat-documentation/modular-docs/master/modular-docs-manual/files/TEMPLATE_PROCEDURE_doing-one-procedure.adoc).
-* [`ref`](https://redhat-documentation.github.io/modular-docs/#creating-reference-modules): Files starting with `ref_` contain references and append other files, e.g. tables with options.
+* [`ref`](https://redhat-documentation.github.io/modular-docs/#creating-reference-modules): Files starting with `ref_` contain references and append other files, for example tables with options.
 Their first line contains the `:_mod-docs-content-type: REFERENCE` attribute.
 See the [reference template](https://raw.githubusercontent.com/redhat-documentation/modular-docs/master/modular-docs-manual/files/TEMPLATE_REFERENCE_reference-material.adoc).
-* [`snip`](https://redhat-documentation.github.io/modular-docs/#using_text_snippets_or_text_fragments_writing-mod-docs): Files starting with `snip_` contain snippets that are reused throughout multiple guides, e.g. admonitions.
-Snippets do not require an ID.
+* [`snip`](https://redhat-documentation.github.io/modular-docs/#using_text_snippets_or_text_fragments_writing-mod-docs): Files starting with `snip_` contain snippets that are reused throughout multiple guides, for example admonitions.
+Snippets must not contain an ID.
 
 ### Capitalization
 

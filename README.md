@@ -11,7 +11,7 @@ Foreman community welcomes all feedback, issues, pull requests (PRs), and review
 Every contributor has different backgrounds, interests, and experiences with Foreman and its open source community.
 
 We give ourselves these guidelines to collaborate and contribute to Foreman documentation more efficiently.
-It helps everyone to set expectations, communicate conventions, and ensures happy collaborative work across organisations and backgrounds.
+It helps everyone to set expectations, communicate conventions, and ensures happy collaborative work across organizations and backgrounds.
 We respect each others time and energy spent on Foreman documentation.
 
 Familiarize yourself with [CONTRIBUTING](CONTRIBUTING.md) before you start contributing.
@@ -64,7 +64,7 @@ When a commit is pushed into `X.Y`:
 
 ## Branching a new release
 
-When a new Foreman version is released, the Foreman release owner ensures that a new branch for documentation is created.
+When a new Foreman version is branched, the Foreman release owner ensures that a new branch for documentation is created.
 
 * On `master`, pull the latest changes and create a new `X.Y` branch.
 * On the `X.Y` branch:

@@ -28,4 +28,5 @@ To edit the main menu, navigate to content/js/nav.js and edit the file, publish
 the changes and all guides and pages will dynamically load the menu from the
 data structure.
 
-To test full site with guides, use the Makefile in the root directory. See [README](../README.md) for more information.
+To test full site with guides, use the Makefile in the root directory.
+See [README](../README.md) for more information.
