@@ -20,28 +20,33 @@ As a maintainer, I will:
 Examples of trivial PRs: Fixing a typo, fixing markup, or fixing links.
 Non-trivial PRs might not only benefit from additional review but they also represent an opportunity for community members to ask questions and learn.
 
-## Pull request checklist
+## Pull request checklists
 
-* [ ] Before pushing, I view my diff against master or the target branch and check for spelling mistakes, failed conflict resolutions, etc.
-* [ ] Before pinging others about my PR, I await the Github Actions to see if my branch builds.
+* [ ] My contribution is my own work and I agree to the license of the project.
+See [LICENSE](LICENSE).
+* [ ] My commits include meaningful commit messages.
+See [seven rules for git commit messages](https://cbea.ms/git-commit/#seven-rules).
+* [ ] I write one sentence per line.
+See [One sentence per line](https://jeffkreeftmeijer.com/one-sentence-per-line/).
+* [ ] My change does not add trailing whitespaces.
+Some editors can help with this.
+For example, VS Code has multiple settings related to handling whitespaces.
+* [ ] My change does not worsen the state of any build target.
+* [ ] I re-read my work carefully before raising a PR or before marking a draft PR as ready for review.
+This can include using `git show`, viewing the diff against master or the target branch, running a local Vale check, and other methods.
+* [ ] My PR description includes a meaningful description of the changes for the community.
+* [ ] I fill out the cherry-picking list in the PR description to the best of my abilities to signify which versions my update applies to.
+If unsure, I let reviewers know so that they can assist.
+* [ ] Before pinging others about my PR, I await the GitHub Actions checks to see if my branch builds.
+If a GitHub check fails and I'm unsure how to proceed, I let reviewers know so that they can assist.
+
 * [ ] If I add text that applies only to a specific downstream product, I notify others and give them a chance to request extending the `ifdef::[]` or `ifndef::[]` directive.
 * [ ] My change does not contain `Foreman`, `Satellite`, or `orcharhino`.
 Instead, I use attributes.
-* [ ] I don't add useless or trailing white space.
-* [ ] I put each sentence to its own line.
-* [ ] I write a meaningful commit message.
-See [seven rules for git commit messages](https://cbea.ms/git-commit/#seven-rules).
-* [ ] My change does not worsen the state of any build target.
-* [ ] My contribution is my own work and I agree to the license of the project.
-See [LICENSE](LICENSE).
 * [ ] If I make more than one change on my branch, I create more than one commit and rebase my branch to master.
-* [ ] My PR does not solely rely on internal resources to answer the _why_, but instead contains at least a basic description for the community.
-* [ ] When creating my PR, I select all branches I want my change to get cherry-picked to.
 * [ ] I am familiar to proper capitalization for project-specific terminology.
 See [Capitalization](#Capitalization).
 * [ ] The first line of the file contains the modular docs content type attribute, for example, `:_mod-docs-content-type: ASSEMBLY` for assemblies.
-* [ ] I fill out the cherry-picking list in the PR template to the best of my abilities to signify which versions my update applies to.
-If unsure, I let reviewers know so that they can assist.
 
 Each PR should undergo tech review.
 (Tech review is performed by an Engineer who did not author the PR. It can be skipped if the PR does not significantly change description of product behavior.)
