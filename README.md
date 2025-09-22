@@ -7,24 +7,30 @@ This Git repository contains the following documentation:
 
 For official Foreman documentation, see [Foreman Manual](https://theforeman.org/manuals/latest/index.html).
 
-## Contributing
+Foreman community welcomes all feedback, issues, pull requests (PRs), and reviews.
+Every contributor has different backgrounds, interests, and experiences with Foreman and its open source community.
 
-Contributions are welcome.
-Please, familiarize yourself with [CONTRIBUTING](CONTRIBUTING.md) and [Contribution Guidelines for Foreman guides](guides/README.md#contribution-guidelines).
+We give ourselves these guidelines to collaborate and contribute to Foreman documentation more efficiently.
+It helps everyone to set expectations, communicate conventions, and ensures happy collaborative work across organizations and backgrounds.
+We respect each others time and energy spent on Foreman documentation.
 
-## Repository content
+Familiarize yourself with [CONTRIBUTING](CONTRIBUTING.md) before you start contributing.
 
-### Foreman guides
+## Repository contents
 
-For information on working with the Foreman guides, see the [README in the `guides/` subdirectory](guides/README.md).
-
-### Static site
+### `web/` subdirectory
 
 The landing page for [docs.theforeman.org](https://docs.theforeman.org) is available as a generated static site.
 The static content is always built from the `master` branch.
-See [README in the `web/` subdirectory](web/README.md) for more information.
+See [README in the `web/` subdirectory](web/README.md) for more information, including information on locally testing the site.
 
-## Testing the site locally
+### `guides/` subdirectory
+
+The sources for documentation are available as AsciiDoc files.
+The guides are based on the [modular documentation framework](https://redhat-documentation.github.io/modular-docs/).
+See the [README in the `guides/` subdirectory](guides/README.md) for more information, including instructions on locally building individual guides.
+
+### Global `Makefile` to build both static side and guides
 
 To build both the static site and the guides for easy local testing, a global `Makefile` is provided in the root directory with the following targets:
 
@@ -39,8 +45,6 @@ Use `PORT=5008` to change the web server port (5000 by default).
 This builds all contexts, so the initial build might be slow. 
 For faster builds on modern multi-core machines, use the `-j` option.
 Stable versions are symlinks to the nightly (current) version, which can cause issues for deleted (or renamed) guides.
-
-For instructions on locally building only the guides, see [Building locally](https://github.com/theforeman/foreman-documentation/blob/master/guides/README.md#building-locally).
 
 ## Deployment
 
@@ -59,6 +63,8 @@ When a commit is pushed into `X.Y`:
 * Changes are pushed into `gh-pages` branch.
 
 ## Branching a new release
+
+When a new Foreman version is branched, the Foreman release owner ensures that a new branch for documentation is created.
 
 * On `master`, pull the latest changes and create a new `X.Y` branch.
 * On the `X.Y` branch:
