@@ -8,12 +8,12 @@ This README file explains how to work with the guides included in this repositor
 
 Install the required tools.
 
+1. Install the required packages:
+
 * In Fedora perform:
 
       dnf -y groupinstall development-tools
       dnf -y install ruby ruby-devel rubygem-bundler linkchecker
-
-  Then continue to [install Ruby gems](#installing-ruby-gems).
 
 * In RHEL perform:
 
@@ -23,7 +23,6 @@ Install the required tools.
       pip3 install linkchecker
 
   If you prefer to install Python packages into home folder rather than system-wide folder (requires root), then add `--user` option to the `pip3` command.
-  Then continue to [install Ruby gems](#installing-ruby-gems).
 
 * In MacOS, required tools can be installed via brew but instead of "make" call "gmake":
 
@@ -35,18 +34,28 @@ Install the required tools.
 
       xcode-select --install
 
-  Then continue to [install Ruby gems](#installing-ruby-gems).
-
-### Installing Ruby gems
-
+2. Install Ruby gems.
 In the `foreman-documentation` folder, run:
 
 	make prep
 
 ### Building HTML artifacts
 
-Run `make` or `make html`, either in the `guides/` directory or in `doc-*/` subdirectories.
-When you run "make" in `guides/`, it builds all guides.
+To build HTML artifacts, run the `make` command.
+If you run the command in the `guides/` directory, all guides are built.
+If you run the command in a`doc-*/` subdirectory, a single guide is built.
+
+- `make BUILD=foreman-el` - This builds guides for Foreman on Enterprise Linux (EL) without the Katello plugin.
+This is the default build for `make html`.
+- `make BUILD=foreman-deb` - This builds guides for Foreman on Debian/Ubuntu without the Katello plugin.
+- `make BUILD=katello` - This builds guides for Foreman on EL with the Katello plugin.
+- `make BUILD=satellite` - This builds a preview of guides for Satellite.
+- `make BUILD=orcharhino` - This builds a preview of guides for orcharhino.
+- `make browser` (run from a `doc-*/` subdirectory) - This builds the HTML version and opens a new tab in a browser.
+
+To view the built HTML artifact, go to the `./build` subdirectory and locate the `*.html` file you need.
+Note that GNU Makefile tracks changes and only builds relevant artifacts.
+To trigger a full rebuild, use `make clean` to delete the build directory and start over.
 
 To speed up the build process, make sure to use `-j` option. Ideally, set it to amount of cores plus one:
 
@@ -56,52 +65,18 @@ An alias is often useful:
 
 	alias make="make -j$(nproc)"
 
-The final artifacts can be found in the `./build` subdirectory.
-Note that GNU Makefile tracks changes and only builds relevant artifacts.
-To trigger a full rebuild, use `make clean` to delete the build directory and start over.
-
-### Builds
-
-There are the following builds:
-
-- `make BUILD=foreman-el` - This builds guides for Foreman on Enterprise Linux (EL) without the Katello plugin.
-This is the default build for `make html`.
-- `make BUILD=foreman-deb` - This builds guides for Foreman on Debian/Ubuntu without the Katello plugin.
-- `make BUILD=katello` - This builds guides for Foreman on EL with the Katello plugin.
-- `make BUILD=satellite` - This builds a preview of guides for Satellite.
-- `make BUILD=orcharhino` - This builds a preview of guides for orcharhino.
-
-### Building a single guide
-
-Few additional make targets are available on the guide level.
-To quickly build HTML version and open new tab in a browser do:
-
-	cd doc-Provisioning_Hosts
-	make browser
-
-### Checking links
-
-It's also possible to check links; the following command will check all links except example.com domain:
-
-	make linkchecker
-
-#### Disabling the linkchecker for a specific URL pattern
-
-You can disable the linkcheck job for specific URL pattern, for example for unreleased downstream documentation or to exclude URLs that cannot resolve by design.
-Append your pattern to `guides/common/linkchecker.ini`.
-Example: [64d825cc9](https://github.com/theforeman/foreman-documentation/commit/64d825cc9da3992879dfbfc088988197edc9f33b)
-
 ### Building locally by using a container
 
 You can build Foreman documentation locally using a container image.
 This requires the cloned git repository plus an application such as Podman or Docker to build and run container images.
 
+Run the following commands from your `foreman-documentation` directory:
+
 1. Build container image:
 
        podman build --tag foreman_documentation .
 
-2. Build Foreman documentation.
-   Run this command in your `foreman-documentation` repository:
+2. Build Foreman documentation:
 
        rm -rf guides/build && podman run --rm -v $(pwd):/foreman-documentation foreman_documentation make html
 
@@ -109,8 +84,24 @@ This requires the cloned git repository plus an application such as Podman or Do
 
        rm -rf guides/build && podman run --rm -v $(pwd):/foreman-documentation:Z foreman_documentation make html
 
+## Testing link integrity with linkchecker
 
-## Generating a TOC file
+The repository includes a linkchecker GitHub Action to check the validity of links used in the documentation.
+
+### Running a link check manually
+
+You can check links in your local repository.
+The following command checks all links except example.com domain:
+
+	make linkchecker
+
+### Disabling the linkchecker for a specific URL pattern
+
+You can disable the linkcheck job for specific URL pattern, for example for unreleased downstream documentation or to exclude URLs that cannot resolve by design.
+Append your pattern to `guides/common/linkchecker.ini`.
+Example: [64d825cc9](https://github.com/theforeman/foreman-documentation/commit/64d825cc9da3992879dfbfc088988197edc9f33b)
+
+### Generating a TOC file
 
 For properly testing link integrity in the code, you will need to generate a TOC file.
 This file can be generated using `make toc` command either from a container or locally.
