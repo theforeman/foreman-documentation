@@ -56,9 +56,9 @@ Each PR should undergo style review.
 * [ ] The PR conforms with the team's style guidelines.
 * [ ] The PR introduces documentation that describes a user story rather than a product feature.
 
-## Foreman documentation minimalist style guide
+## Foreman documentation conventions guide
 
-The `Foreman documentation minimalist style guide` describes guidelines specific to working on Foreman documentation.
+The `Foreman documentation conventions guide` describes guidelines specific to working on Foreman documentation.
 It complements, but should not duplicate, the following resources:
 
 * The AsciiDoc and RedHat style packages for the Vale linter.
