@@ -8,6 +8,8 @@ As a contributor, I will:
 
 * Familiarize myself with the [Pull Request Checklist](#Pull-Request-Checklist) and [Foreman documentation minimalist style guide](#Foreman-documentation-minimalist-style-guide).
 * Open additional issues if my contribution is incomplete.
+* Put in my best effort to ensure that my contribution does not worsen the state of any build target.
+For example, this might include reviewing how my changes affect upstream build targets even when working on behalf of a downstream product.
 
 ## Maintainer's pledge
 
@@ -33,7 +35,6 @@ See [One sentence per line](https://jeffkreeftmeijer.com/one-sentence-per-line/)
 * [ ] My change does not add trailing whitespaces.
 Some editors can help with this.
 For example, VS Code has multiple settings related to handling whitespaces.
-* [ ] My change does not worsen the state of any build target.
 
 Checklist for raising PRs:
 
