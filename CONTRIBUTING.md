@@ -40,14 +40,6 @@ If unsure, I let reviewers know so that they can assist.
 * [ ] Before pinging others about my PR, I await the GitHub Actions checks to see if my branch builds.
 If a GitHub check fails and I'm unsure how to proceed, I let reviewers know so that they can assist.
 
-* [ ] If I add text that applies only to a specific downstream product, I notify others and give them a chance to request extending the `ifdef::[]` or `ifndef::[]` directive.
-* [ ] My change does not contain `Foreman`, `Satellite`, or `orcharhino`.
-Instead, I use attributes.
-* [ ] If I make more than one change on my branch, I create more than one commit and rebase my branch to master.
-* [ ] I am familiar to proper capitalization for project-specific terminology.
-See [Capitalization](#Capitalization).
-* [ ] The first line of the file contains the modular docs content type attribute, for example, `:_mod-docs-content-type: ASSEMBLY` for assemblies.
-
 Each PR should undergo tech review.
 (Tech review is performed by an Engineer who did not author the PR. It can be skipped if the PR does not significantly change description of product behavior.)
 
