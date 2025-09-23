@@ -70,10 +70,6 @@ See [Vale for writers at Red Hat](https://redhat-documentation.github.io/vale-at
 Use the following markup conventions:
 
 * Source files use UTF-8 character encoding.
-* Source files use [AsciiDoc](https://docs.asciidoctor.org/asciidoc/latest/) syntax.
-* A single line only contains one sentence.
-Please do not wrap lines by hand.
-This makes `git diff` much easier to read and helps when reviewing changes.
 * No trailing whitespace on lines and in files.
 Whitespace after partial files has to be handled in the file using the `include::` directive.
 * User input is surrounded by underscores (`_`) to indicate variable input, for example, `hammer organization create --name "_My Organization_" --label "_my_organization_"`.
