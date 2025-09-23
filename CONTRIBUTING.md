@@ -69,13 +69,13 @@ See [Vale for writers at Red Hat](https://redhat-documentation.github.io/vale-at
 
 Use the following markup conventions:
 
-* Source files use UTF-8 character encoding.
+* Use UTF-8 character encoding in source files.
 * Do not add trailing whitespace on lines and in files.
 Some editors can help with this.
 For example, VS Code has multiple settings related to handling whitespaces.
 Whitespace after partial files has to be handled in the file using the `include::` directive.
-* User input is surrounded by underscores (`_`) to indicate variable input, for example, `hammer organization create --name "_My Organization_" --label "_my_organization_"`.
-* Links to different guides are followed by the title of the guide in italics, for example `in _{ManagingHostsDocTitle}_`.
+* Surround user input with underscores (`_`) to indicate variable input, for example, `hammer organization create --name "_My Organization_" --label "_my_organization_"`.
+* Include the title of the guide in italics after linking to a different guide, for example `in _{ManagingHostsDocTitle}_`.
 
 ### Images
 
