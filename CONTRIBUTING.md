@@ -22,6 +22,8 @@ Non-trivial PRs might not only benefit from additional review but they also repr
 
 ## Pull request checklists
 
+Checklist for documentation contributions:
+
 * [ ] My contribution is my own work and I agree to the license of the project.
 See [LICENSE](LICENSE).
 * [ ] My commits include meaningful commit messages.
@@ -32,6 +34,9 @@ See [One sentence per line](https://jeffkreeftmeijer.com/one-sentence-per-line/)
 Some editors can help with this.
 For example, VS Code has multiple settings related to handling whitespaces.
 * [ ] My change does not worsen the state of any build target.
+
+Checklist for raising PRs:
+
 * [ ] I re-read my work carefully before raising a PR or before marking a draft PR as ready for review.
 This can include using `git show`, viewing the diff against master or the target branch, running a local Vale check, and other methods.
 * [ ] My PR description includes a meaningful description of the changes for the community.
