@@ -119,9 +119,9 @@ To use them, use the "attributes" keyword:
 	# ls {AttributeName}
 	----
 
-#### Conditional content
+### Conditional content
 
-If a piece of your content, such as a block, paragraph, warning, or chapter, is specific for a certain [build](#builds), use special build attributes to show or hide it.
+If a piece of your content, such as a block, paragraph, warning, or chapter, is specific for a certain build target, use AsciiDoc conditionals to show or hide it.
 
 To show a piece of content only for the `katello` build:
 
@@ -129,7 +129,7 @@ To show a piece of content only for the `katello` build:
 	NOTE: This part is only relevant for Foreman with the Katello plugin.
 	endif::[]
 
-To hide a piece of content for `katello` that will be shown for all other builds:
+To hide a piece of content for `katello` but show it for all other builds:
 
 	ifndef::katello[]
 	NOTE: This part is relevant for Foreman without the Katello plugin, but also Satellite and orcharhino.
@@ -149,7 +149,6 @@ In these cases use both `ifdef` and `ifeval`:
 	* A minimum of 4 GB RAM is required for {ProjectServer} to function.
 	endif::[]
 	endif::[]
-
 
 ### File structure
 
