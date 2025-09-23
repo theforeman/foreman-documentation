@@ -88,10 +88,10 @@ You can create upstream diagrams using [diagrams.net](https://www.diagrams.net/)
 Place the editable diagram in `drawio` format in `guides/image-sources/`.
 For inclusion in the content, export diagrams to SVG and place them as described above.
 
-### Using AsciiDoc attributes
+### AsciiDoc attributes for different build targets
 
-The content in this repository is shared between the upstream Foreman community and branded downstream products such as Red Hat Satellite and orcharhino by ATIX.
-Therefore, never write "Foreman", "Satellite", or "orcharhino" words directly, but use the following attributes:
+Because the content in this repository is shared between the upstream Foreman community and branded downstream products, many terms need to be written using AsciiDoc attributes.
+For example, never write "Foreman", "Satellite", or "orcharhino" words directly, but use the following attributes:
 
 | Attribute | Upstream value | Downstream by Red Hat | Downstream by ATIX |
 | -------- | -------------- | --------------------- | ------------------ |
@@ -101,7 +101,7 @@ Therefore, never write "Foreman", "Satellite", or "orcharhino" words directly, b
 | {SmartProxy} | Smart Proxy | Capsule | orcharhino Proxy |
 | {SmartProxyServer} | Smart Proxy server | Capsule Server | orcharhino Proxy Server |
 
-Every build uses common base attributes, more are defined in the build specific attribute files:
+The attributes used in this repository are defined in the following files:
 
 * [attributes.adoc](common/attributes.adoc): version definitions and includes for other attribute files.
 * [attributes-base.adoc](common/attributes-base.adoc): base attributes common for all builds.
@@ -118,8 +118,6 @@ To use them, use the "attributes" keyword:
 	----
 	# ls {AttributeName}
 	----
-
-Avoid using phrases like "Starting from version 6.5 or 1.22" because it is not possible to easily translate these strings into all build variants.
 
 #### Conditional content
 
