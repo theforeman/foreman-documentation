@@ -79,14 +79,12 @@ Whitespace after partial files has to be handled in the file using the `include:
 
 ### Images
 
-Each guide must have an `images/` subdirectory with `images/common` symlink into the `common/images/` directory.
-Images local to the guide shall be kept in the `images/` directory.
-Images which are supposed to be reused across guides shall be kept in the `images/common/` directory.
-Subdirectories can be created and are actually recommended.
+Each guide directory contains an `images/` subdirectory with `images/common` symlink into the `common/images/` directory.
 
-To insert an image, use `image::common/global_image.png` or `image::local_image.png`.
+* Save images local to the guide to the `images/` directory.
+* Save images which are supposed to be reused across guides to the `images/common/` directory.
 
-You should create upstream diagrams using [diagrams.net](https://www.diagrams.net/).
+You can create upstream diagrams using [diagrams.net](https://www.diagrams.net/).
 Place the editable diagram in `drawio` format in `guides/image-sources/`.
 For inclusion in the content, export diagrams to SVG and place them as described above.
 
