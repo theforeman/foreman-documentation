@@ -37,7 +37,7 @@ Install the required tools.
 2. Install Ruby gems.
 In the `foreman-documentation` folder, run:
 
-	make prep
+      make prep
 
 ### Building HTML artifacts
 
