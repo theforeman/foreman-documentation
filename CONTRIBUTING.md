@@ -58,6 +58,13 @@ Each PR should undergo style review.
 
 ## Foreman documentation minimalist style guide
 
+The `Foreman documentation minimalist style guide` describes guidelines specific to working on Foreman documentation.
+It complements, but should not duplicate, the following resources:
+
+* The AsciiDoc and RedHat style packages for the Vale linter.
+See [Vale for writers at Red Hat](https://redhat-documentation.github.io/vale-at-red-hat/docs/main/user-guide/introduction/).
+* [Red Hat supplementary style guide for product documentation](https://redhat-documentation.github.io/supplementary-style-guide/)
+
 ### Code conventions
 
 Use the following markup conventions:
