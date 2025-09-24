@@ -74,7 +74,7 @@ Use the following markup conventions:
 Some editors can help with this.
 For example, VS Code has multiple settings related to handling whitespaces.
 Whitespace after partial files has to be handled in the file using the `include::` directive.
-* Surround user input with underscores (`_`) to indicate variable input, for example, `hammer organization create --name "_My Organization_" --label "_my_organization_"`.
+* Surround user input with underscores (`_`) to indicate variable input, for example, `hammer organization create --name "_My_Organization_"`.
 * Include the title of the guide in italics after linking to a different guide, for example `in _{ManagingHostsDocTitle}_`.
 
 ### Images
