@@ -1,24 +1,23 @@
-FROM fedora:40
+FROM quay.io/fedora/fedora:42
 
-RUN dnf install -y \
-        findutils \
-        gcc \
+RUN dnf group install -y development-tools && \
+    dnf install -y \
         gcc-c++ \
         linkchecker \
-        make \
         redhat-rpm-config \
         ruby-devel \
-        rubygem-asciidoctor \
         rubygem-bundler && \
-    dnf groupinstall -y development-tools && \
+    dnf clean all && \
+    rm -fr /var/cache/dnf && \
     gem install \
         asciidoctor-tabs:1.0.0.beta.6 \
-        ffi:1.16.3 \
-        nokogiri:1.16.5 \
-        racc:1.8.0 \
+        ffi:1.17.2 \
+        nokogiri:1.18.10 \
+        racc:1.8.1 \
         rb-fsevent:0.11.2 \
-        rb-inotify:0.10.1 \
+        rb-inotify:0.11.1 \
         sass-listen:4.0.0 \
-        sass:3.7.4
+        sass:3.7.4 && \
+    asciidoctor --version
 
 WORKDIR /foreman-documentation/guides
