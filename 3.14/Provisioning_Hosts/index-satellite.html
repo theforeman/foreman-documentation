@@ -342,7 +342,13 @@ SOFTWARE.
 <li><a href="#Troubleshooting_Discovery_provisioning">6.10. Troubleshooting Discovery</a></li>
 </ul>
 </li>
-<li><a href="#configuring-satellite-to-provision-from-a-builder-image">7. Configuring Satellite to provision from a Red&#160;Hat Image Builder image</a></li>
+<li><a href="#configuring-satellite-to-provision-from-a-builder-image">7. Configuring Satellite to provision from a Red&#160;Hat Image Builder image</a>
+<ul class="sectlevel2">
+<li><a href="#provisioning-from-a-builder-image-on-capsule">7.1. Provisioning from a Red&#160;Hat Image Builder image on Capsule</a></li>
+<li><a href="#provisioning-from-a-builder-image-on-an-http-server">7.2. Provisioning from a Red&#160;Hat Image Builder image on an HTTP server</a></li>
+<li><a href="#packages-required-in-a-builder-image">7.3. Packages required in a Red&#160;Hat Image Builder image</a></li>
+</ul>
+</li>
 <li><a href="#Provisioning_Virtual_Machines_on_KVM_kvm-provisioning">8. Provisioning virtual machines on KVM (libvirt)</a>
 <ul class="sectlevel2">
 <li><a href="#configuring-server-for-kvm-connections_kvm-provisioning">8.1. Configuring Satellite&#160;Server for KVM connections</a></li>
@@ -5493,21 +5499,35 @@ You can redirect this output to a file and copy it with the <code>scp</code> com
 <div class="sectionbody">
 <div class="paragraph">
 <p>In Satellite, you can enable integration with the RHEL web console to perform actions and monitor your hosts.
-Using the RHEL web console, you can access Red&#160;Hat Image Builder and build images that you can then upload to an HTTP server and use this image to provision hosts.
-When you configure Satellite for image provisioning, Anaconda installer partitions disks, downloads and mounts the image and copies files over to a host.
-The preferred image type is TAR.</p>
+Using the RHEL web console, you can access Red&#160;Hat Image Builder and build images.
+Afterwards, you can use these images to provision hosts.</p>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.17/html-single/managing_hosts/index#host-management-and-monitoring-by-using-cockpit">Host management and monitoring by using the RHEL web console</a> in <em>Managing hosts</em></p>
+</li>
+</ul>
+</div>
+<div class="sect2">
+<h3 id="provisioning-from-a-builder-image-on-capsule"><a class="anchor" href="#provisioning-from-a-builder-image-on-capsule"></a>7.1. Provisioning from a Red&#160;Hat Image Builder image on Capsule</h3>
+<div class="paragraph">
+<p>You can upload a Red&#160;Hat Image Builder image to Satellite and use this image to provision hosts by using network boot.</p>
 </div>
 <div class="paragraph">
-<p>Ensure that your blueprint to build the TAR image includes a kernel package.</p>
-</div>
-<div class="paragraph">
-<p>For more information about integrating the RHEL web console with Satellite, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.17/html-single/managing_hosts/index#Host_Management_and_Monitoring_Using_Cockpit_managing-hosts">Host management and monitoring using the RHEL web console</a> in <em>Managing hosts</em>.</p>
+<p>When you provision from a Red&#160;Hat Image Builder image, Anaconda installer partitions disks, downloads and mounts the image, and copies files over to a host.</p>
 </div>
 <div class="ulist">
 <div class="title">Prerequisites</div>
 <ul>
 <li>
-<p>An existing TAR image created using Red&#160;Hat Image Builder.</p>
+<p>An existing TAR image created by using Red&#160;Hat Image Builder in the RHEL web console.
+Ensure that your blueprint to build the image includes the <a href="#packages-required-in-a-builder-image">required packages</a>.</p>
+</li>
+<li>
+<p>If you want to use Capsule&#160;Server URL, then the referenced lifecycle environment, such as Library, must be synchronized to that Capsule&#160;Server.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.17/html-single/installing_capsule_server/index#Adding_Lifecycle_Environments_capsule">Adding lifecycle environments to Capsule&#160;Servers</a> in <em>Installing Capsule Server</em>.</p>
 </li>
 </ul>
 </div>
@@ -5515,33 +5535,149 @@ The preferred image type is TAR.</p>
 <div class="title">Procedure</div>
 <ol class="arabic">
 <li>
-<p>On Satellite, create a custom product, add a custom file repository to this product, and upload the image to the repository.
-For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.17/html-single/managing_content/index#Importing_Individual_ISO_Images_and_Files_content-management">Importing Individual ISO Images and Files</a> in <em>Managing content</em>.</p>
+<p>On Satellite, create a custom product, add a custom file type repository to this product, and upload the image to the repository.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.17/html-single/managing_content/index#Importing_Individual_ISO_Images_and_Files_content-management">Importing individual ISO images and files</a> in <em>Managing content</em>.</p>
 </li>
 <li>
-<p>In the Satellite web UI, navigate to <strong>Configure</strong> &gt; <strong>Host Groups</strong>, and select the host group that you want to use.</p>
+<p>In the Satellite web UI, navigate to <strong>Configure</strong> &gt; <strong>Host Groups</strong>.</p>
+</li>
+<li>
+<p>Select the host group that you want to use.</p>
 </li>
 <li>
 <p>Click the <strong>Parameters</strong> tab, and then click <strong>Add Parameter</strong>.</p>
 </li>
 <li>
-<p>In the <strong>Name</strong> field, enter <code>kickstart_liveimg</code>.</p>
+<p>Create a parameter named <code>kickstart_liveimg</code> with type <strong>string</strong> and set the value to the full URL of the image location or the file name of the image inside a published content view, for example:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Full URL: <code>https://<em>capsule.example.com</em>/pulp/content/<em>My_Organization_Label</em>/Library/custom/<em>My_Product_Label</em>/<em>My_Repository_Label</em>/<em>My_Image_Name</em>.tar</code></p>
 </li>
 <li>
-<p>From the <strong>Type</strong> list, select <strong>string</strong>.</p>
+<p>Image file name: <code><em>My_Image_Name</em>.tar</code></p>
+<div class="paragraph">
+<p>You can use the image file name only if the host is subscribed to a single content view and lifecycle environment, and the <code>kt_activation_keys</code> parameter is defined for the host.
+The content view must be published.</p>
+</div>
+<div class="paragraph">
+<p>If a content source is assigned to the host, Satellite will use the content source Capsule of the host.
+If a content source is not assigned, Satellite will use Satellite&#160;Server.</p>
+</div>
 </li>
-<li>
-<p>In the <strong>Value</strong> field, enter the absolute path or a relative path in the following format <code>custom/<em>product</em>/<em>repository</em>/<em>image_name</em></code> that points to the exact location where you store the image.</p>
+</ul>
+</div>
 </li>
 <li>
 <p>Click <strong>Submit</strong> to save your changes.</p>
 </li>
 </ol>
 </div>
+</div>
+<div class="sect2">
+<h3 id="provisioning-from-a-builder-image-on-an-http-server"><a class="anchor" href="#provisioning-from-a-builder-image-on-an-http-server"></a>7.2. Provisioning from a Red&#160;Hat Image Builder image on an HTTP server</h3>
 <div class="paragraph">
-<p>You can use this image for bare-metal provisioning and provisioning using a compute resource.
-For more information about bare-metal provisioning, see <a href="#Using_PXE_to_Provision_Hosts_provisioning">Using PXE to provision hosts</a>.
-For more information about provisioning with different compute resources, see the relevant chapter for the compute resource that you want to use.</p>
+<p>You can upload a Red&#160;Hat Image Builder image to an HTTP server and use this image to provision hosts by using network boot.</p>
+</div>
+<div class="paragraph">
+<p>When you provision from a Red&#160;Hat Image Builder image, Anaconda installer partitions disks, downloads and mounts the image, and copies files over to a host.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>An existing TAR image created by using Red&#160;Hat Image Builder in the RHEL web console.
+Ensure that your blueprint to build the image includes the <a href="#packages-required-in-a-builder-image">required packages</a>.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Copy the image to an existing HTTP server that your hosts can reach.</p>
+</li>
+<li>
+<p>In the Satellite web UI, navigate to <strong>Configure</strong> &gt; <strong>Host Groups</strong>.</p>
+</li>
+<li>
+<p>Select the host group that you want to use.</p>
+</li>
+<li>
+<p>Click the <strong>Parameters</strong> tab, and then click <strong>Add Parameter</strong>.</p>
+</li>
+<li>
+<p>Create a parameter named <code>kickstart_liveimg</code> with type <strong>string</strong> and set the value to the URL of the image location, such as <code>https://<em>webserver.example.com</em>/<em>path</em>/<em>My_Image_Name</em>.tar</code>.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong> to save your changes.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="packages-required-in-a-builder-image"><a class="anchor" href="#packages-required-in-a-builder-image"></a>7.3. Packages required in a Red&#160;Hat Image Builder image</h3>
+<div class="paragraph">
+<p>For the use in Satellite, the Red&#160;Hat Image Builder image must contain the following minimum of packages:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>NetworkManager</code></p>
+</li>
+<li>
+<p><code>authselect</code></p>
+</li>
+<li>
+<p><code>chrony</code></p>
+</li>
+<li>
+<p><code>dnf</code></p>
+</li>
+<li>
+<p><code>dracut</code></p>
+</li>
+<li>
+<p><code>efibootmgr</code></p>
+</li>
+<li>
+<p><code>firewalld</code></p>
+</li>
+<li>
+<p><code>grub2</code></p>
+</li>
+<li>
+<p><code>grub2-efi</code></p>
+</li>
+<li>
+<p><code>grub2-tools-extra</code></p>
+</li>
+<li>
+<p><code>insights-client</code> &#8211; required only if you plan to use Insights reporting</p>
+</li>
+<li>
+<p><code>iproute</code></p>
+</li>
+<li>
+<p><code>iputils</code></p>
+</li>
+<li>
+<p><code>kernel</code></p>
+</li>
+<li>
+<p><code>kernel-core</code></p>
+</li>
+<li>
+<p><code>lvm2</code></p>
+</li>
+<li>
+<p><code>subscription-manager</code></p>
+</li>
+<li>
+<p><code>wget</code></p>
+</li>
+</ul>
+</div>
 </div>
 </div>
 </div>
@@ -11008,7 +11144,7 @@ Hosts inherit their parameters from the following locations, in order of increas
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated Sep 2025
+Last updated Oct 2025
 </div>
 </div>
 <script>
