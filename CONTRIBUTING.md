@@ -6,7 +6,7 @@ If you need help to get started, open an issue, ask the docs team on [Matrix](ht
 
 As a contributor, I will:
 
-* Familiarize myself with the [Pull Request Checklist](#Pull-Request-Checklist) and [Foreman documentation minimalist style guide](#Foreman-documentation-minimalist-style-guide).
+* Familiarize myself with the [Pull Request Checklist](#Pull-Request-Checklist) and [Foreman documentation conventions guide](#Foreman-documentation-conventions-guide).
 * Open additional issues if my contribution is incomplete.
 * Put in my best effort to ensure that my contribution does not worsen the state of any build target.
 For example, this might include reviewing how my changes affect upstream build targets even when working on behalf of a downstream product.
@@ -59,39 +59,41 @@ Each PR should undergo style review.
 * [ ] The PR conforms with the team's style guidelines.
 * [ ] The PR introduces documentation that describes a user story rather than a product feature.
 
-## Foreman documentation minimalist style guide
+## Foreman documentation conventions guide
+
+The `Foreman documentation conventions guide` describes guidelines specific to working on Foreman documentation.
+It complements, but should not duplicate, the following resources:
+
+* The AsciiDoc and RedHat style packages for the Vale linter.
+See [Vale for writers at Red Hat](https://redhat-documentation.github.io/vale-at-red-hat/docs/main/user-guide/introduction/).
+* [Red Hat supplementary style guide for product documentation](https://redhat-documentation.github.io/supplementary-style-guide/)
 
 ### Code conventions
 
 Use the following markup conventions:
 
-* Source files use UTF-8 character encoding.
-* Source files use [AsciiDoc](https://docs.asciidoctor.org/asciidoc/latest/) syntax.
-* A single line only contains one sentence.
-Please do not wrap lines by hand.
-This makes `git diff` much easier to read and helps when reviewing changes.
-* No trailing whitespace on lines and in files.
+* Use UTF-8 character encoding in source files.
+* Do not add trailing whitespace on lines and in files.
+Some editors can help with this.
+For example, VS Code has multiple settings related to handling whitespaces.
 Whitespace after partial files has to be handled in the file using the `include::` directive.
-* User input is surrounded by underscores (`_`) to indicate variable input, for example, `hammer organization create --name "_My Organization_" --label "_my_organization_"`.
-* Links to different guides are followed by the title of the guide in italics, for example `in _{ManagingHostsDocTitle}_`.
+* Surround user input with underscores (`_`) to indicate variable input, for example, `hammer organization create --name "_My_Organization_"`.
 
 ### Images
 
-Each guide must have an `images/` subdirectory with `images/common` symlink into the `common/images/` directory.
-Images local to the guide shall be kept in the `images/` directory.
-Images which are supposed to be reused across guides shall be kept in the `images/common/` directory.
-Subdirectories can be created and are actually recommended.
+Each guide directory contains an `images/` subdirectory with `images/common` symlink into the `common/images/` directory.
 
-To insert an image, use `image::common/global_image.png` or `image::local_image.png`.
+* Save images local to the guide to the `images/` directory.
+* Save images which are supposed to be reused across guides to the `images/common/` directory.
 
-You should create upstream diagrams using [diagrams.net](https://www.diagrams.net/).
+You can create upstream diagrams using [diagrams.net](https://www.diagrams.net/).
 Place the editable diagram in `drawio` format in `guides/image-sources/`.
 For inclusion in the content, export diagrams to SVG and place them as described above.
 
-### Using AsciiDoc attributes
+### AsciiDoc attributes for different build targets
 
-The content in this repository is shared between the upstream Foreman community and branded downstream products such as Red Hat Satellite and orcharhino by ATIX.
-Therefore, never write "Foreman", "Satellite", or "orcharhino" words directly, but use the following attributes:
+Because the content in this repository is shared between the upstream Foreman community and branded downstream products, many terms need to be written using AsciiDoc attributes.
+For example, never write "Foreman", "Satellite", or "orcharhino" words directly, but use the following attributes:
 
 | Attribute | Upstream value | Downstream by Red Hat | Downstream by ATIX |
 | -------- | -------------- | --------------------- | ------------------ |
@@ -101,7 +103,7 @@ Therefore, never write "Foreman", "Satellite", or "orcharhino" words directly, b
 | {SmartProxy} | Smart Proxy | Capsule | orcharhino Proxy |
 | {SmartProxyServer} | Smart Proxy server | Capsule Server | orcharhino Proxy Server |
 
-Every build uses common base attributes, more are defined in the build specific attribute files:
+The attributes used in this repository are defined in the following files:
 
 * [attributes.adoc](common/attributes.adoc): version definitions and includes for other attribute files.
 * [attributes-base.adoc](common/attributes-base.adoc): base attributes common for all builds.
@@ -119,11 +121,9 @@ To use them, use the "attributes" keyword:
 	# ls {AttributeName}
 	----
 
-Avoid using phrases like "Starting from version 6.5 or 1.22" because it is not possible to easily translate these strings into all build variants.
+### Conditional content
 
-#### Conditional content
-
-If a piece of your content, such as a block, paragraph, warning, or chapter, is specific for a certain [build](#builds), use special build attributes to show or hide it.
+If a piece of your content, such as a block, paragraph, warning, or chapter, is specific for a certain build target, use AsciiDoc conditionals to show or hide it.
 
 To show a piece of content only for the `katello` build:
 
@@ -131,7 +131,7 @@ To show a piece of content only for the `katello` build:
 	NOTE: This part is only relevant for Foreman with the Katello plugin.
 	endif::[]
 
-To hide a piece of content for `katello` that will be shown for all other builds:
+To hide a piece of content for `katello` but show it for all other builds:
 
 	ifndef::katello[]
 	NOTE: This part is relevant for Foreman without the Katello plugin, but also Satellite and orcharhino.
@@ -151,7 +151,6 @@ In these cases use both `ifdef` and `ifeval`:
 	* A minimum of 4 GB RAM is required for {ProjectServer} to function.
 	endif::[]
 	endif::[]
-
 
 ### File structure
 
