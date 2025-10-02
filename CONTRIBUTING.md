@@ -6,7 +6,7 @@ If you need help to get started, open an issue, ask the docs team on [Matrix](ht
 
 As a contributor, I will:
 
-* Familiarize myself with the [Pull Request Checklist](#Pull-Request-Checklist) and [Foreman documentation minimalist style guide](#Foreman-documentation-minimalist-style-guide).
+* Familiarize myself with the [Pull Request Checklist](#Pull-Request-Checklist) and [Foreman documentation conventions guide](#Foreman-documentation-conventions-guide).
 * Open additional issues if my contribution is incomplete.
 
 ## Maintainer's pledge
