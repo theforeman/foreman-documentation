@@ -1,12 +1,12 @@
 :_mod-docs-content-type: PROCEDURE
 
-[id="Updating-Disconnected-{project-context}-on-EL9_{context}"]
-= Updating a disconnected {ProjectServer} on {RHEL} 9
+[id="Syncing-repos-on-the-connected-{project-context}_{context}"]
+= Syncing the repositories on the connected {ProjectServer}
 
 [role="_abstract"]
-You can update your disconnected {Project} on {RHEL} 9 by synchronizing the required repositories on the connected {Project} and syncing the content to the disconnected {Project} using `reposync`.
+Synchronize the required repositories on the connected {Project}. 
 
-.Procedure on the connected {ProjectServer}
+.Procedure
 . Ensure that you have synchronized the following repositories in your connected {ProjectServer}:
 +
 * {RepoRHEL9BaseOS}
@@ -89,63 +89,3 @@ This downloads the contents of the repositories from the connected {ProjectServe
 # tar czf {Project}-repos.tgz -C ~ {Project}-repos
 ----
 . Use the generated `{Project}-repos.tgz` file to update in the disconnected {ProjectServer}.
-
-.Procedure on the disconnected {ProjectServer}
-. Copy the generated `{Project}-repos.tgz` file to your disconnected {ProjectServer}.
-. Extract the archive to anywhere accessible by the `root` user.
-In the following example `/root` is the extraction location.
-+
-[options="nowrap" subs="+quotes,verbatim,attributes"]
-----
-# tar zxf {Project}-repos.tgz -C /root
-----
-. Create a Yum configuration file under `/etc/yum.repos.d` with the following repository information:
-+
-[options="nowrap" subs="+quotes,verbatim,attributes"]
-----
-[{RepoRHEL9BaseOS}]
-name=Red Hat Enterprise Linux 9 for x86_64 - BaseOS (RPMs)
-baseurl=file:///root/{Project}-repos/{RepoRHEL9BaseOS}
-enabled = 1
-
-[{RepoRHEL9AppStream}]
-name=Red Hat Enterprise Linux 9 for x86_64 - AppStream (RPMs)
-baseurl=file:///root/{Project}-repos/{RepoRHEL9AppStream}
-enabled = 1
-
-[{RepoRHEL9ServerSatelliteServerProjectVersion}]
-name={ProjectNameX} for RHEL 9 Server RPMs x86_64
-baseurl=file:///root/{Project}-repos/{RepoRHEL9ServerSatelliteServerProjectVersion}
-enabled = 1
-
-[{RepoRHEL9ServerSatelliteMaintenanceProjectVersion}]
-name={ProjectName} Maintenance 6 for RHEL 9 Server RPMs x86_64
-baseurl=file:///root/{Project}-repos/{RepoRHEL9ServerSatelliteMaintenanceProjectVersion}
-enabled = 1
-----
-. In the configuration file, replace the `/root/{Project}-repos` with the extracted location.
-. Use the health check option to determine if the system is ready for update.
-On first use of this command, `{foreman-maintain}` prompts you to enter the hammer admin user credentials and saves them in the `/etc/foreman-maintain/foreman-maintain-hammer.yml` file.
-+
-[options="nowrap" subs="+quotes,verbatim,attributes"]
-----
-# {foreman-maintain} update check \
---whitelist="check-upstream-repository,repositories-validate"
-----
-. Review the results and address any highlighted error conditions before performing the update.
-. Due to the lengthy update time, use a utility such as `tmux` to suspend and reattach a communication session.
-You can then check the update progress without staying connected to the command shell continuously.
-+
-If you lose connection to the command shell where the update command is running, you can see the logged messages in the `{installer-log-file}` file to check if the process completed successfully.
-. Perform the update:
-+
-[options="nowrap" subs="+quotes,verbatim,attributes"]
-----
-# {foreman-maintain} update run \
---whitelist="check-upstream-repository,repositories-setup,repositories-validate"
-----
-
-include::snip_steps-needs-reboot.adoc[]
-
-.Additional resources
-* {AdministeringDocURL}Restoring_from_a_Full_Backup_admin[Restoring {ProjectServer} or {SmartProxyServer} from a Backup]
