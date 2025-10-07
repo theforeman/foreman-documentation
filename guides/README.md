@@ -12,8 +12,8 @@ Install the required tools.
 
 * In Fedora perform:
 
-      dnf -y groupinstall development-tools
-      dnf -y install ruby ruby-devel rubygem-bundler linkchecker
+      dnf -y group install development-tools
+      dnf -y install ruby ruby-devel rubygem-bundler linkchecker c++
 
 * In RHEL perform:
 
