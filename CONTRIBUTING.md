@@ -233,7 +233,7 @@ Therefore, when contributing to Foreman documentation, it can be useful to be aw
 
 * Has limited permissions
 * Runs regular Foreman operations
-* Example responsibilities: managing hosts, managing content
+* Example responsibilities: managing content, provisioning hosts, and managing hosts
 
 #### *Admin* persona
 
