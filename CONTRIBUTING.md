@@ -237,7 +237,7 @@ Therefore, when contributing to Foreman documentation, it can be useful to be aw
 
 #### *Admin* persona
 
-* Has unlimited permissions, including root on the server
+* Has unlimited permissions, including root access to the Foreman Server
 * Example responsibilities: managing Foreman server
 
 ### Further Information
