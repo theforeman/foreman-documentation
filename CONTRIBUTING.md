@@ -226,7 +226,7 @@ In documentation, a user persona is the target user who will be reading the docu
 Understanding and identifying the target persona of a piece of content helps ensure that the documentation will properly address the user's needs and capabilities.
 
 Foreman users include people with varying responsibilities and permissions.
-Especially in larger organizations, different tasks can be performed by different people.
+Especially in larger organizations, different tasks are performed by different teams.
 Therefore, when contributing to Foreman documentation, it can be useful to be aware of and distinguish Foreman user personas.
 
 #### *User* persona
