@@ -220,6 +220,26 @@ We do not capitalize the following terms:
 * remote execution
 * subscription
 
+### Foreman user personas
+
+In documentation, a user persona is the target user who will be reading the documentation.
+Understanding and identifying the target persona of a piece of content helps ensure that the documentation will properly address the user's needs and capabilities.
+
+Foreman users include people with varying responsibilities and permissions.
+Especially in larger organizations, different tasks are performed by different teams.
+Therefore, when contributing to Foreman documentation, it can be useful to be aware of and distinguish Foreman user personas.
+
+#### *User* persona
+
+* Has limited permissions
+* Runs regular Foreman operations
+* Example responsibilities: managing content, provisioning hosts, and managing hosts
+
+#### *Admin* persona
+
+* Has unlimited permissions, including root access to the Foreman Server
+* Example responsibilities: managing Foreman server
+
 ### Further Information
 
 * [Contributing Guidelines for Github documentation](https://github.com/github/docs/blob/main/CONTRIBUTING.md)
