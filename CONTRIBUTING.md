@@ -240,6 +240,11 @@ Therefore, when contributing to Foreman documentation, it can be useful to be aw
 * Has unlimited permissions, including root access to the Foreman Server
 * Example responsibilities: managing Foreman server
 
+#### *Architect* persona
+
+* Has no permissions, does not perform practical administrative or management tasks
+* Example responsibilities: determining whether Foreman meets the needs of their organization, planning Foreman deployment
+
 ### Further Information
 
 * [Contributing Guidelines for Github documentation](https://github.com/github/docs/blob/main/CONTRIBUTING.md)
