@@ -243,7 +243,7 @@ Therefore, when contributing to Foreman documentation, it can be useful to be aw
 #### *Architect* persona
 
 * Has no permissions, does not perform practical administrative or management tasks
-* Example responsibilities: determining whether Foreman meets the needs of their organization, planning Foreman deployment
+* Example responsibilities: determining whether Foreman/Katello meets the needs of their organization and planning the deployment
 
 ### Further Information
 
