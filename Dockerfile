@@ -1,5 +1,6 @@
 FROM quay.io/fedora/fedora:42
 
+# hadolint ignore=DL3041
 RUN dnf group install -y development-tools && \
     dnf install -y \
         gcc-c++ \
