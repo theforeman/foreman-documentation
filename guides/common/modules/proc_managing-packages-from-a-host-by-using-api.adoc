@@ -1,0 +1,78 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="managing-packages-from-a-host-by-using-api"]
+= Managing packages from a host by using API
+
+[role="_abstract"]
+You can install, upgrade, or remove packages from a host by using {Project} API.
+
+This procedure uses the `katello_package_install` to install a package.
+You can also use package actions `katello_package_upgrade` to upgrade or `katello_package_remove` to remove packages.
+
+.Procedure
+. Specify the API request body in the JSON format.
+For example:
++
+[options="nowrap", json, subs="+quotes,verbatim,attributes"]
+----
+{
+  "job_invocation" : {
+    "concurrency_control" : {
+      "concurrency_level" : 100
+    },
+    "feature" : "katello_package_install",
+    "inputs" : {
+      "package" : "nano vim"
+    },
+    "scheduling" : {
+      "start_at" : "2023-09-21T19:00:00+00:00",
+      "start_before" : "2023-09-23T00:00:00+00:00"
+    },
+    "search_query" : "*",
+    "ssh" : {
+      "effective_user" : "My_Username",
+      "effective_user_password" : "My_Password"
+    },
+    "targeting_type" : "dynamic_query"
+  }
+}
+----
+The example uses the following notable values:
++
+"job_invocation":: Specifies the object which contains the API request.
+"concurrency_level":: Optional. Limits the number of hosts on which the job is run concurrently.
+"feature":: Specifies the action to be performed.
+Use `"katello_package_install"` to install a package, `"katello_package_upgrade"` to upgrade a package, or `"katello_package_remove"` to remove a package.
+"package":: Specifies the packages on which the action is performed.
+Separate multiple packages with a whitespace.
+"scheduling":: Optional. Specifies time boundaries for when to start to package action.
++
+--
+* You can specify one or both boundaries in the ISO 8601 format.
+* The action is canceled if it is not possible to perform the package action by this time.
+* If you omit time, it defaults to 00:00:00.
+* If you omit time zone, it defaults to UTC.
+--
+"search_query":: Specifies the search query that matches the hosts on which you want to perform the package action.
+"ssh":: Optional. Specifies the credentials of an SSH user, if you want to perform the package action as that user.
+"dynamic_query":: Optional. If you supplied the `"scheduling"` object, you can make the search query be evaluated when the job runs by specifying the `"targeting_type/dynamic_query"` field.
++
+--
+* This is useful if you expect the query to produce a different result at the time of running the job.
+* If you omit this field, it defaults to `"static_query"`.
+--
+. Send a `POST` request with the created body to the `/api/job_invocations` endpoint of your {ProjectServer} and see a formatted response.
+For example:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+$ curl https://_{foreman-example-com}_/api/job_invocations \
+-H "content-type: application/json" \
+-X POST \
+-d @_Path_To_My_API_Request_Body_ \
+-u _My_Username_:__My_Password__ \
+| python3 -m json.tool
+----
+
+.Verification
+* In the {ProjectWebUI}, navigate to *Monitor* > *Jobs* and see the report of the scheduled or completed remote execution job to perform the package action on the selected hosts.
