@@ -975,42 +975,40 @@ For more information, see <a href="https://docs.theforeman.org/nightly/Managing_
 <div class="sect3">
 <h4 id="Increasing_host_limit_for_pull_based_REX_transport_performance-tuning"><a class="anchor" href="#Increasing_host_limit_for_pull_based_REX_transport_performance-tuning"></a>5.5.1. Increasing host limit for pull-based REX transport</h4>
 <div class="paragraph">
-<p>You can tune the <code>mosquitto</code> MQTT server and increase the number of hosts connected to it.</p>
+<p>You can tune the <code>mosquitto</code> MQTT server and increase the maximum number of hosts connected to it.
+By default, Smart&#160;Proxies support a maximum of 1014 connected hosts.</p>
+</div>
+<div class="paragraph">
+<p>This example configures the <code>mosquitto</code> service on your Smart&#160;Proxy to handle up to 5000 hosts.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>You have enabled pull-based remote execution on your Smart&#160;Proxy.
+For more information, see <a href="https://docs.theforeman.org/nightly/Installing_Proxy/index-katello.html#configuring-pull-based-transport-for-remote-execution_smart-proxy">Configuring pull-based transport for remote execution</a> in <em>Installing a Smart&#160;Proxy&#160;Server nightly on Enterprise Linux</em>.</p>
+</li>
+</ul>
 </div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
 <ol class="arabic">
 <li>
-<p>Enable pull-based remote execution on your Foreman&#160;server or Smart&#160;Proxy&#160;server:</p>
+<p>On your Smart&#160;Proxy, set the upper limit of connected hosts for pull-based remote execution in <code>/etc/foreman-installer/custom-hiera.yaml</code>:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># foreman-installer --foreman-proxy-plugin-remote-execution-script-mode pull-mqtt</pre>
+<pre class="nowrap">systemd::dropin_files:
+  limits.conf:
+    unit: mosquitto.service
+    content: "[Service]\nLimitNOFILE=5000\n"</pre>
 </div>
-</div>
-<div class="paragraph">
-<p>Note that your Foreman&#160;server or Smart&#160;Proxy&#160;server can only use one transport mode, either SSH or MQTT.</p>
 </div>
 </li>
 <li>
-<p>Create a config file to increase the default number of hosts accepted by the MQTT service:</p>
+<p>Re-run the installer for the changes to take effect:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap">cat &gt;/etc/systemd/system/mosquitto.service.d/limits.conf &lt;&lt;<em>EOF</em>
-[Service]
-LimitNOFILE=5000
-<em>EOF</em></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>This example sets the limit to allow the <code>mosquitto</code> service to handle 5000 hosts.</p>
-</div>
-</li>
-<li>
-<p>Apply your changes:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># systemctl daemon-reload
-# systemctl restart mosquitto.service</pre>
+<pre class="highlight nowrap"><code class="language-yaml" data-lang="yaml"># foreman-installer</code></pre>
 </div>
 </div>
 </li>
