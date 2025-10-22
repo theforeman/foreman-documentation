@@ -1744,20 +1744,20 @@ For more information, see <a href="#installing-from-the-offline-repositories_sat
 <div class="sect3">
 <h4 id="installing-red-hat-lightspeed-in-satellite-by-using-export-and-import"><a class="anchor" href="#installing-red-hat-lightspeed-in-satellite-by-using-export-and-import"></a>6.1.2. Installing Red&#160;Hat Lightspeed in Satellite by using export and import</h4>
 <div class="paragraph">
-<p>You can transfer the container image from a connected system to a disconnected Satellite&#160;Server.</p>
+<p>You can transfer the container images from a connected system to a disconnected Satellite&#160;Server.</p>
 </div>
 <div class="ulist">
 <div class="title">Prerequisites</div>
 <ul>
 <li>
-<p>The container image is downloaded on a connected system.</p>
+<p>The container images are downloaded on a connected system.</p>
 </li>
 <li>
 <p>Ensure that <code>skopeo</code> is installed.
 For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/building_running_and_managing_containers/assembly_starting-with-containers_building-running-and-managing-containers#proc_getting-container-tools_assembly_starting-with-containers">Getting container tools</a> in <em>Red&#160;Hat Enterprise Linux&#160;9 Building, running, and managing containers</em>.</p>
 </li>
 <li>
-<p>The disconnected Satellite&#160;Server is prepared to receive the image.</p>
+<p>You have prepared a disconnected Satellite&#160;Server.</p>
 </li>
 </ul>
 </div>
@@ -1765,28 +1765,89 @@ For more information, see <a href="https://docs.redhat.com/en/documentation/red_
 <div class="title">Procedure</div>
 <ol class="arabic">
 <li>
-<p>On the connected system, export the container image:</p>
+<p>On the connected system, log in to the container registry:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># skopeo copy containers-storage:registry.redhat.io/satellite/iop-advisor-engine-rhel9:6.18 \
-oci-archive:/tmp/iop-advisor-engine.tar</pre>
+<pre class="nowrap">$ skopeo login --username <em>My_Username</em> --password <em>My_Password</em> registry.redhat.io</pre>
 </div>
 </div>
 </li>
 <li>
-<p>Transfer the <code>iop-advisor-engine.tar</code> file to the disconnected Satellite&#160;Server.</p>
-</li>
-<li>
-<p>On the disconnected Satellite&#160;Server, import the container image:</p>
+<p>Export the container images.
+Save the following script to a file and execute it on the connected system:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># skopeo copy oci-archive:/tmp/iop-advisor-engine.tar \
-containers-storage:registry.redhat.io/satellite/iop-advisor-engine-rhel9:6.18</pre>
+<pre class="nowrap">#!/bin/bash
+
+images=(
+  "satellite/iop-ingress-rhel9:6.18"
+  "satellite/iop-advisor-frontend-rhel9:6.18"
+  "satellite/iop-host-inventory-rhel9:6.18"
+  "satellite/iop-vmaas-rhel9:6.18"
+  "satellite/iop-remediations-rhel9:6.18"
+  "satellite/iop-vulnerability-frontend-rhel9:6.18"
+  "satellite/iop-host-inventory-frontend-rhel9:6.18"
+  "satellite/iop-advisor-backend-rhel9:6.18"
+  "satellite/iop-puptoo-rhel9:6.18"
+  "satellite/iop-yuptoo-rhel9:6.18"
+  "satellite/iop-insights-engine-rhel9:6.18"
+  "satellite/iop-vulnerability-engine-rhel9:6.18"
+  "satellite/iop-gateway-rhel9:6.18"
+  "amq-streams/kafka-39-rhel9:2.9.1-1"
+)
+
+for image in "${images[@]}"; do
+  name=$(basename "${image}" | cut -d: -f1)
+  image_url="registry.redhat.io/${image}"
+  echo "Processing ${image}..."
+  # Pull the image
+  skopeo copy docker://${image_url} containers-storage:${image_url}
+  # Copy image to archive
+  skopeo copy containers-storage:${image_url} oci-archive:/tmp/${name}.tar
+done</pre>
 </div>
 </div>
 </li>
 <li>
-<p>Enable the plugin:</p>
+<p>Transfer the archive files to the disconnected Satellite&#160;Server.
+Place the archive files in the <code>/tmp</code> directory.</p>
+</li>
+<li>
+<p>On the disconnected Satellite&#160;Server, import the container images.
+Save the following script to a file and execute it on the disconnected Satellite&#160;Server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">#!/bin/bash
+
+images=(
+  "satellite/iop-ingress-rhel9:6.18"
+  "satellite/iop-advisor-frontend-rhel9:6.18"
+  "satellite/iop-host-inventory-rhel9:6.18"
+  "satellite/iop-vmaas-rhel9:6.18"
+  "satellite/iop-remediations-rhel9:6.18"
+  "satellite/iop-vulnerability-frontend-rhel9:6.18"
+  "satellite/iop-host-inventory-frontend-rhel9:6.18"
+  "satellite/iop-advisor-backend-rhel9:6.18"
+  "satellite/iop-puptoo-rhel9:6.18"
+  "satellite/iop-yuptoo-rhel9:6.18"
+  "satellite/iop-insights-engine-rhel9:6.18"
+  "satellite/iop-vulnerability-engine-rhel9:6.18"
+  "satellite/iop-gateway-rhel9:6.18"
+  "amq-streams/kafka-39-rhel9:2.9.1-1"
+)
+
+for image in "${images[@]}"; do
+  name=$(basename "${image}" | cut -d: -f1)
+  image_url="registry.redhat.io/${image}"
+  echo "Processing ${image}..."
+  # Import the image
+  skopeo copy oci-archive:/tmp/${name}.tar containers-storage:${image_url}
+done</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Enable the Red&#160;Hat Lightspeed in Satellite plugin:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># satellite-installer --enable-iop</pre>
