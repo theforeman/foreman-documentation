@@ -3,10 +3,10 @@
 [id="installing-{insights-iop-id}-by-using-export-and-import"]
 = Installing {insights-iop} by using export and import
 
-You can transfer the container image from a connected system to a disconnected {ProjectServer}. 
+You can transfer the container images from a connected system to a disconnected {ProjectServer}. 
 
 .Prerequisites
-* The container image is downloaded on a connected system.
+* The container images are downloaded on a connected system.
 * Ensure that `skopeo` is installed.
 ifdef::satellite[]
 For more information, see {RHELDocsBaseURL}9/html/building_running_and_managing_containers/assembly_starting-with-containers_building-running-and-managing-containers#proc_getting-container-tools_assembly_starting-with-containers[Getting container tools] in _{RHEL}{nbsp}9 Building, running, and managing containers_.
@@ -18,25 +18,84 @@ ifndef::satellite[]
 # {project-package-install} skopeo
 ----
 endif::[]
-* The disconnected {ProjectServer} is prepared to receive the image.
+* You have prepared a disconnected {ProjectServer}.
 
 .Procedure
-. On the connected system, export the container image:
+. On the connected system, log in to the container registry:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-# skopeo copy containers-storage:registry.redhat.io/satellite/iop-advisor-engine-rhel9:{ProjectVersion} \
-oci-archive:/tmp/iop-advisor-engine.tar
+$ skopeo login --username _My_Username_ --password _My_Password_ registry.redhat.io
 ----
-. Transfer the `iop-advisor-engine.tar` file to the disconnected {ProjectServer}.
-. On the disconnected {ProjectServer}, import the container image:
+. Export the container images.
+Save the following script to a file and execute it on the connected system:
 +
-[options="nowrap", subs="+quotes,verbatim,attributes"]
+[bash, options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-# skopeo copy oci-archive:/tmp/iop-advisor-engine.tar \
-containers-storage:registry.redhat.io/satellite/iop-advisor-engine-rhel9:{ProjectVersion}
+#!/bin/bash
+
+images=(
+  "{project-context}/iop-ingress-rhel9:{ProjectVersion}"
+  "{project-context}/iop-advisor-frontend-rhel9:{ProjectVersion}"
+  "{project-context}/iop-host-inventory-rhel9:{ProjectVersion}"
+  "{project-context}/iop-vmaas-rhel9:{ProjectVersion}"
+  "{project-context}/iop-remediations-rhel9:{ProjectVersion}"
+  "{project-context}/iop-vulnerability-frontend-rhel9:{ProjectVersion}"
+  "{project-context}/iop-host-inventory-frontend-rhel9:{ProjectVersion}"
+  "{project-context}/iop-advisor-backend-rhel9:{ProjectVersion}"
+  "{project-context}/iop-puptoo-rhel9:{ProjectVersion}"
+  "{project-context}/iop-yuptoo-rhel9:{ProjectVersion}"
+  "{project-context}/iop-insights-engine-rhel9:{ProjectVersion}"
+  "{project-context}/iop-vulnerability-engine-rhel9:{ProjectVersion}"
+  "{project-context}/iop-gateway-rhel9:{ProjectVersion}"
+  "amq-streams/kafka-39-rhel9:2.9.1-1"
+)
+
+for image in "${images[@]}"; do
+  name=$(basename "$\{image}" | cut -d: -f1)
+  image_url="registry.redhat.io/$\{image}"
+  echo "Processing $\{image}..."
+  # Pull the image
+  skopeo copy docker://$\{image_url} containers-storage:$\{image_url}
+  # Copy image to archive
+  skopeo copy containers-storage:$\{image_url} oci-archive:/tmp/$\{name}.tar
+done
 ----
-. Enable the plugin:
+. Transfer the archive files to the disconnected {ProjectServer}.
+Place the archive files in the `/tmp` directory.
+. On the disconnected {ProjectServer}, import the container images.
+Save the following script to a file and execute it on the disconnected {ProjectServer}:
++
+[bash, options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+#!/bin/bash
+
+images=(
+  "{project-context}/iop-ingress-rhel9:{ProjectVersion}"
+  "{project-context}/iop-advisor-frontend-rhel9:{ProjectVersion}"
+  "{project-context}/iop-host-inventory-rhel9:{ProjectVersion}"
+  "{project-context}/iop-vmaas-rhel9:{ProjectVersion}"
+  "{project-context}/iop-remediations-rhel9:{ProjectVersion}"
+  "{project-context}/iop-vulnerability-frontend-rhel9:{ProjectVersion}"
+  "{project-context}/iop-host-inventory-frontend-rhel9:{ProjectVersion}"
+  "{project-context}/iop-advisor-backend-rhel9:{ProjectVersion}"
+  "{project-context}/iop-puptoo-rhel9:{ProjectVersion}"
+  "{project-context}/iop-yuptoo-rhel9:{ProjectVersion}"
+  "{project-context}/iop-insights-engine-rhel9:{ProjectVersion}"
+  "{project-context}/iop-vulnerability-engine-rhel9:{ProjectVersion}"
+  "{project-context}/iop-gateway-rhel9:{ProjectVersion}"
+  "amq-streams/kafka-39-rhel9:2.9.1-1"
+)
+
+for image in "${images[@]}"; do
+  name=$(basename "$\{image}" | cut -d: -f1)
+  image_url="registry.redhat.io/$\{image}"
+  echo "Processing $\{image}..."
+  # Import the image
+  skopeo copy oci-archive:/tmp/$\{name}.tar containers-storage:$\{image_url}
+done
+----
+. Enable the {insights-iop} plugin:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
