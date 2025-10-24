@@ -1,0 +1,85 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="registering-a-host-by-using-web-ui"]
+= Registering a host by using {ProjectWebUI}
+
+[role="_abstract"]
+You can register a host from the {ProjectWebUI} with registration templates.
+This also enables you to set up various integration features and host tools during the registration process.
+
+.Prerequisites
+include::snip_registering-a-host-prerequisites.adoc[]
+
+.Procedure
+. In the {ProjectWebUI}, navigate to *Hosts* > *Register Host*.
+. Enter the details for how you want the registered host to be configured.
+* If you select a host group from the *Host Group* list, the following fields inherit their values from the host group:
++
+** *Operating system*
+ifdef::katello,satellite,orcharhino[]
+** *Activation Keys*
+endif::[]
+** *Lifecycle environment*
+ifdef::katello,satellite,orcharhino[]
+* A {SmartProxy} behind a load balancer takes precedence over the {SmartProxy} selected in the {ProjectWebUI} as the content source of the host.
+. On the *General* tab, in the *Activation Keys* field, enter one or more activation keys to assign to your host.
+endif::[]
+. Specify any other registration details that you require.
+The available settings include the following:
++
+* On the *General* tab, in the *{SmartProxy}* field, you can select the {SmartProxy} to register your host through.
+A {SmartProxy} behind a load balancer takes precedence over a {SmartProxy} selected in the {ProjectWebUI} as the content source of the host.
+* On the *General* tab, in the *Download utility* field, you can select `wget` if you want to register your host by using a `wget` command.
+By default, {Project} generates a `curl` command.
+* On the *General* tab, you can select the *Insecure* option to make the first call insecure.
+During this first call, your host downloads the CA file from {Project}.
+Your host will use this CA file to connect to {Project} with all future calls making them secure.
++
+{Team} recommends that you avoid insecure calls.
++
+If an attacker, located in the network between {Project} and your host, fetches the CA file from the first insecure call, the attacker will be able to access the content of the API calls to and from your host and the JSON Web Tokens (JWT).
+Therefore, if you have chosen to deploy SSH keys during registration, the attacker will be able to access your host using the SSH key.
+* On the *Advanced* tab, in the *Repositories* field, you can list repositories to be added before the registration is performed.
+You do not have to specify repositories if you provide them in an activation key.
+ifdef::orcharhino[]
+ifdef::debian,ubuntu[]
++
+To verify synchronized {client-content-type} content, you can use the `pulp_deb_signing.key` file on your {SmartProxy} as GPG public key.
+For example, `\https://{foreman-example-com}/pub/pulp_deb_signing.key`.
+endif::[]
+ifndef::debian,ubuntu[]
++
+To verify synchronized {client-content-type} content, you can use {Project} API to get associated GPG public keys of repositories.
+For example, `\https://{foreman-example-com}/katello/api/v2/repositories/_My_Repository_ID_/gpg_key_content`.
+endif::[]
+endif::[]
+* On the *Advanced* tab, you can configure remote execution, {Insights}, and packages to be installed.
+* On the *Advanced* tab, in the *Token lifetime (hours)* field, you can change the validity duration of the JSON Web Token (JWT) that {Project} uses for authentication.
+The duration of this token defines how long the generated registration command works.
++
+Note that {Project} applies the permissions of the user who generates the registration command to authorization of your host.
+If the user loses or gains additional permissions, the permissions of the JWT change too.
+Therefore, do not delete, block, or change permissions of the user during the token duration.
++
+The scope of the JWTs is limited to the registration endpoints only and cannot be used anywhere else.
++
+[NOTE]
+====
+{Project} generates the registration command with parameters that search resources by ID.
+You can edit the registration command to search the following resources by title:
+
+Organization:: URL fragment example: `organization=My%20Organization` or `organization=My+Organization`
+Location:: URL fragment example: `location=My%20Location` or `location=My+Location`
+Host group:: If a host group is nested, include the parent group separated with the slash character (`/`).
++
+URL fragment example: `hostgroup=Parent%20Group%2FMy%20Host%20Group`
+Operating system:: URL fragment example: `operatingsystem=My%20Operating%20System` or `operatingsystem=My+Operating+System`
+
+The parameter values must be URL encoded.
+====
+. Click *Generate* to generate a `curl` command.
+. Run the `curl` command as `root` on the host that you want to register.
+After registration completes, any Ansible roles assigned to a host group you specified when configuring the registration template will run on the host.
+
+.Next steps
+* To set up monitoring of outdated services and applications using Tracer, see {ManagingHostsDocURL}configuring-tracer-on-a-host_managing-hosts[Configuring Tracer on a host] in _{ManagingHostsDocTitle}_.
