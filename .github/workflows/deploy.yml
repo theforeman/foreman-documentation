@@ -22,7 +22,7 @@ jobs:
       image: quay.io/ivanhorvath/ccutil:amazing
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Compile html-single
         run: make -C guides ccutil -j ${{ env.MAKE_J }}
@@ -45,7 +45,7 @@ jobs:
         working-directory: .
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -102,7 +102,7 @@ jobs:
         working-directory: guides
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ github.base_ref }}
 
@@ -130,10 +130,15 @@ jobs:
   build-web:
     runs-on: ubuntu-24.04
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout master
+        if: github.event_name != 'pull_request' || github.base_ref != 'master'
+        uses: actions/checkout@v5
         with:
           ref: master
+
+      - name: Checkout PR
+        if: github.event_name == 'pull_request' && github.base_ref == 'master'
+        uses: actions/checkout@v5
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -180,13 +185,13 @@ jobs:
 
       - name: Download web (only for master)
         if: github.ref == 'refs/heads/master'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: foreman-docs-web-${{ env.BRANCH_NAME }}
           path: public
 
       - name: Download HTML
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: foreman-docs-html-${{ env.BRANCH_NAME }}
           path: public/${{ env.BRANCH_NAME }}
