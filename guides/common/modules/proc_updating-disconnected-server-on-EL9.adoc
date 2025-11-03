@@ -6,10 +6,13 @@ You can update your disconnected {Project} on {EL} 9 by synchronizing the requir
 .Procedure on the connected {ProjectServer}
 . Synchronize the following repositories on your connected {ProjectServer}:
 +
-* {RepoRHEL9BaseOS}
-* {RepoRHEL9AppStream}
-* {RepoRHEL9ServerSatelliteServerProjectVersion}
+* `{RepoRHEL9BaseOS}`
+* `{RepoRHEL9AppStream}`
+* `{RepoRHEL9ServerSatelliteServerProjectVersion}`
+* `{RepoRHEL9ServerSatelliteMaintenanceProjectVersion}`
 
++
+Ensure to set the download policy to *Immediate* for each repository.
 . Export the repositories in the syncable format:
 +
 [options="nowrap" subs="+quotes,verbatim,attributes"]
@@ -22,39 +25,46 @@ $ hammer content-export complete repository \
 
 .Procedure on the disconnected {ProjectServer}
 . Locate the copied exported directories.
-. Create the `/etc/yum.repos.d/upgrade.repo` file and update the `baseurl` values to point to the local file system:
+. Create the `/etc/yum.repos.d/update.repo` file and update the `baseurl` values to point to the local file system:
 +
-[options="nowrap" subs="+quotes,verbatim,attributes"]
+[source, ini, options="nowrap" subs="+quotes,verbatim,attributes"]
 ----
 [{RepoRHEL9BaseOS}]
 name=Red Hat Enterprise Linux 9 for x86_64 - BaseOS (RPMs)
+enabled=1
 metadata_expire=-1
 gpgcheck=0
-cost=500
 baseurl=file:///_BaseOS_Export_Location_/content/dist/rhel9/9/x86_64/baseos/os
+
 [{RepoRHEL9AppStream}]
 name=Red Hat Enterprise Linux 9 for x86_64 - AppStream (RPMs)
-mediaid=None
+enabled=1
 metadata_expire=-1
 gpgcheck=0
-cost=500
 baseurl=file:///_AppStream_Export_Location_/content/dist/rhel9/9/x86_64/appstream/os
-[{Project}]
-name={Project}
-mediaid=None
+
+[{RepoRHEL9ServerSatelliteServerProjectVersion}]
+name={ProjectName} {ProjectVersion} for RHEL 9 Server RPMs x86_64
+enabled=1
 metadata_expire=-1
 gpgcheck=0
-cost=500
 baseurl=file:///_{Project}_Export_Location_/content/dist/layered/rhel9/x86_64/{project-context}/{ProjectVersion}/os/
+
+[{RepoRHEL9ServerSatelliteMaintenanceProjectVersion}]
+name={ProjectName} Maintenance {ProjectVersion} for RHEL 9 Server RPMs x86_64
+enabled=1
+metadata_expire=-1
+gpgcheck=0
+baseurl=file:///_{Project}_Maintenance_Export_Location_/content/dist/layered/rhel9/x86_64/sat-maintenance/{ProjectVersion}/os/
 ----
-. Upgrade {foreman-maintain} to the next version:
+. Upgrade `{foreman-maintain}` to the next version:
 +
 [options="nowrap" subs="attributes"]
 ----
-# {foreman-maintain} self-upgrade --maintenance-repo-label={Project}
+# {foreman-maintain} self-upgrade --maintenance-repo-label={RepoRHEL9ServerSatelliteMaintenanceProjectVersion}
 ----
 . Evaluate that the system is ready for update.
-The first time you run this command, `{foreman-maintain}` prompts you to enter the hammer admin user credentials and saves them to `/etc/foreman-maintain/foreman-maintain-hammer.yml`.
+The first time you run this command, `{foreman-maintain}` prompts you to enter the Hammer admin user credentials and saves them to `/etc/foreman-maintain/foreman-maintain-hammer.yml`.
 +
 [options="nowrap" subs="+quotes,verbatim,attributes"]
 ----
@@ -64,7 +74,7 @@ The first time you run this command, `{foreman-maintain}` prompts you to enter t
 . Due to the lengthy update time, use a utility such as `tmux` to suspend and resume the session as needed.
 By using such utility, you can monitor progress without maintaining a continuous connection to the command shell.
 +
-If the update process is interrupted, check the `{installer-log-file}` file to confirm whether the process completed successfully.
+If you lose connection to the command shell where the update command is running, check the `{installer-log-file}` file to confirm whether the process completed successfully.
 . Perform the update:
 +
 [options="nowrap" subs="+quotes,verbatim,attributes"]
