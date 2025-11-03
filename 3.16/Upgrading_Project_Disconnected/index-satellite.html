@@ -546,7 +546,7 @@ For more information, see the Red Hat Knowledgebase solution <a href="https://ac
 <div class="olist loweralpha">
 <ol class="loweralpha" type="a">
 <li>
-<p>Ensure that the following repositories are synchronized on your connected server:</p>
+<p>Ensure that the following repositories are synchronized on your connected server with the download policy set to <strong>Immediate</strong>:</p>
 <div class="ulist">
 <ul>
 <li>
@@ -557,6 +557,9 @@ For more information, see the Red Hat Knowledgebase solution <a href="https://ac
 </li>
 <li>
 <p>satellite-6.18-for-rhel-9-x86_64-rpms</p>
+</li>
+<li>
+<p>satellite-maintenance-6.18-for-rhel-9-x86_64-rpms</p>
 </li>
 </ul>
 </div>
@@ -569,19 +572,14 @@ For more information, see the Red Hat Knowledgebase solution <a href="https://ac
 --organization-label <em>My_Organization_Label</em></pre>
 </div>
 </div>
-<div class="paragraph">
-<p>Run this command once for each of the three repositories listed above.</p>
-</div>
 </li>
 <li>
-<p>Ensure that the repositories are synchronized on your connected server with the download policy set to <code>immediate</code>.</p>
-</li>
-<li>
-<p>Export each repository in a syncable format by using its repository ID:</p>
+<p>Export each repository in the syncable format by using its repository ID:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap">$ hammer content-export complete repository \
---id=<em>Repo_ID</em> --format=syncable</pre>
+--format syncable \
+--id <em>My_Repository_ID</em></pre>
 </div>
 </div>
 </li>
@@ -610,26 +608,33 @@ For more information, see the Red Hat Knowledgebase solution <a href="https://ac
 <p>Create the <code>/etc/yum.repos.d/upgrade.repo</code> file and update the <code>baseurl</code> directive to point to that location:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight nowrap"><code class="language-none" data-lang="none">[rhel-9-for-x86_64-baseos-rpms]
+<pre class="highlight nowrap"><code class="language-ini" data-lang="ini">[rhel-9-for-x86_64-baseos-rpms]
 name=Red Hat Enterprise Linux 9 for x86_64 - BaseOS (RPMs)
+enabled=1
 metadata_expire=-1
 gpgcheck=0
-cost=500
-baseurl=file:///_Export_Baseos_Location_/content/dist/rhel9/9/x86_64/baseos/os
+baseurl=file:///<em>BaseOS_Export_Location</em>/content/dist/rhel9/9/x86_64/baseos/os
+
 [rhel-9-for-x86_64-appstream-rpms]
 name=Red Hat Enterprise Linux 9 for x86_64 - AppStream (RPMs)
-mediaid=None
+enabled=1
 metadata_expire=-1
 gpgcheck=0
-cost=500
-baseurl=file:///_Export_Appstream_Location_/content/dist/rhel9/9/x86_64/appstream/os
-[Satellite]
-name=Satellite
-mediaid=None
+baseurl=file:///<em>AppStream_Export_Location</em>/content/dist/rhel9/9/x86_64/appstream/os
+
+[satellite-6.18-for-rhel-9-x86_64-rpms]
+name=Red&#160;Hat Satellite 6.18 for RHEL 9 Server RPMs x86_64
+enabled=0
 metadata_expire=-1
 gpgcheck=0
-cost=500
-baseurl=file:///_Export_Location_/content/dist/layered/rhel9/x86_64/satellite/6.18/os/</code></pre>
+baseurl=file:///<em>Satellite_Export_Location</em>/content/dist/layered/rhel9/x86_64/satellite/6.18/os/
+
+[satellite-maintenance-6.18-for-rhel-9-x86_64-rpms]
+name=Red&#160;Hat Satellite Maintenance 6.18 for RHEL 9 Server RPMs x86_64
+enabled=1
+metadata_expire=-1
+gpgcheck=0
+baseurl=file:///<em>Satellite_Maintenance_Export_Location</em>/content/dist/layered/rhel9/x86_64/sat-maintenance/6.18/os/</code></pre>
 </div>
 </div>
 </li>
@@ -637,10 +642,10 @@ baseurl=file:///_Export_Location_/content/dist/layered/rhel9/x86_64/satellite/6.
 </div>
 </li>
 <li>
-<p>Upgrade the satellite-maintain utility to its latest version:</p>
+<p>Upgrade the <code>satellite-maintain</code> utility to its latest version:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># satellite-maintain self-upgrade --maintenance-repo-label=Satellite</pre>
+<pre class="nowrap"># satellite-maintain self-upgrade --maintenance-repo-label=satellite-maintenance-6.18-for-rhel-9-x86_64-rpms</pre>
 </div>
 </div>
 </li>
@@ -648,8 +653,7 @@ baseurl=file:///_Export_Location_/content/dist/layered/rhel9/x86_64/satellite/6.
 <p>Determine whether your system is ready for Satellite upgrade:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># satellite-maintain upgrade check --whitelist="repositories-validate,repositories-setup" \
---target-version=6.18</pre>
+<pre class="nowrap"># satellite-maintain upgrade check --whitelist="repositories-validate,repositories-setup"</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -672,13 +676,25 @@ These changes are applied to the <code>/etc/foreman-maintain/foreman-maintain-ha
 </div>
 </li>
 <li>
+<p>Edit the <code>/etc/yum.repos.d/upgrade.repo</code> file and enable the satellite-6.18-for-rhel-9-x86_64-rpms repository:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-ini" data-lang="ini">[satellite-6.18-for-rhel-9-x86_64-rpms]
+name=Red&#160;Hat Satellite 6.18 for RHEL 9 Server RPMs x86_64
+enabled=1
+metadata_expire=-1
+gpgcheck=0
+baseurl=file:///<em>Satellite_Export_Location</em>/content/dist/layered/rhel9/x86_64/satellite/6.18/os/</code></pre>
+</div>
+</div>
+</li>
+<li>
 <p>Run the Satellite&#160;Server upgrade command.
 Because of the lengthy upgrade time, consider using a utility such as <code>tmux</code>.
 For more information, see <a href="#following_the_progress_of_the_upgrade_upgrading-disconnected">Following the progress of the upgrade</a>.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># satellite-maintain upgrade run --whitelist="repositories-validate,repositories-setup" \
---target-version=6.18</pre>
+<pre class="nowrap"># satellite-maintain upgrade run --whitelist="repositories-validate,repositories-setup"</pre>
 </div>
 </div>
 <div class="paragraph">
