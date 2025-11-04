@@ -31,20 +31,45 @@ ifdef::satellite[]
 * All {ProjectServer}s must be on the same version.
 endif::[]
 
+.Export the required repositories from your connected {ProjectServer}
+
+. Synchronize the following repositories on your connected {ProjectServer} with the download policy set to *Immediate*:
++
+* `{RepoRHEL9BaseOS}`
+* `{RepoRHEL9AppStream}`
+* `{RepoRHEL9ServerSatelliteServerProjectVersion}`
+* `{RepoRHEL9ServerSatelliteMaintenanceProjectVersion}`
+. List the repositories to identify their IDs:
++
+[options="nowrap" subs="+quotes"]
+----
+$ hammer repository list \
+--organization-label _My_Organization_Label_
+----
+. Export each repository in the syncable format by using its repository ID:
++
+[options="nowrap" subs="+quotes,verbatim,attributes"]
+----
+$ hammer content-export complete repository \
+--format syncable \
+--id _My_Repository_ID_
+----
+. Copy the exported directories to the disconnected {ProjectServer}.
 
 .Upgrade disconnected {ProjectServer}
 
-. Stop all {Project} services:
+. Create a backup of your {ProjectServer}:
+.. Stop all {Project} services:
 +
 [options="nowrap" subs="+quotes,verbatim,attributes"]
 ----
 # {foreman-maintain} service stop
 ----
 +
-. Take a snapshot or create a backup:
+.. Take a snapshot or create a backup:
 * On a virtual machine, take a snapshot.
 * On a physical machine, create a backup.
-. Start all {Project} services:
+.. Start all {Project} services:
 +
 [options="nowrap" subs="+quotes,verbatim,attributes"]
 ----
@@ -73,85 +98,57 @@ Reboot these hosts after the upgrade has completed.
 # rm /etc/yum.repos.d/*
 ----
 
-. Obtain the latest ISO files by following the {InstallingServerDisconnectedDocURL}downloading-the-binary-dvd-images_satellite[Downloading the Binary DVD Images] procedure in _{InstallingServerDisconnectedDocTitle}_.
-
-. Create directories to serve as a mount point, mount the ISO images, and configure the `rhel8` repository by following the {InstallingServerDisconnectedDocURL}configuring-the-base-operating-system-with-offline-repositories_satellite[Configuring the base operating system with offline repositories] procedure in _{InstallingServerDisconnectedDocTitle}_.
+. Enable access to the exported content by configuring a repository:
+.. Locate the copied directories from the syncable export.
+.. Create the `/etc/yum.repos.d/upgrade.repo` file and update the `baseurl` directive to point to that location:
 +
-Do not install or update any packages at this stage.
+[source, ini, options="nowrap" subs="+quotes,verbatim,attributes"]
+----
+[{RepoRHEL9BaseOS}]
+name=Red Hat Enterprise Linux 9 for x86_64 - BaseOS (RPMs)
+enabled=1
+metadata_expire=-1
+gpgcheck=0
+baseurl=file:///_BaseOS_Export_Location_/content/dist/rhel9/9/x86_64/baseos/os
 
-. Configure the {Project} {ProjectVersion} repository from the ISO file.
+[{RepoRHEL9AppStream}]
+name=Red Hat Enterprise Linux 9 for x86_64 - AppStream (RPMs)
+enabled=1
+metadata_expire=-1
+gpgcheck=0
+baseurl=file:///_AppStream_Export_Location_/content/dist/rhel9/9/x86_64/appstream/os
 
-.. Copy the ISO file's repository data file for the {ProjectName} packages:
+[{RepoRHEL9ServerSatelliteServerProjectVersion}]
+name={ProjectName} {ProjectVersion} for RHEL 9 Server RPMs x86_64
+enabled=0
+metadata_expire=-1
+gpgcheck=0
+baseurl=file:///_{Project}_Export_Location_/content/dist/layered/rhel9/x86_64/{project-context}/{ProjectVersion}/os/
+
+[{RepoRHEL9ServerSatelliteMaintenanceProjectVersion}]
+name={ProjectName} Maintenance {ProjectVersion} for RHEL 9 Server RPMs x86_64
+enabled=1
+metadata_expire=-1
+gpgcheck=0
+baseurl=file:///_{Project}_Maintenance_Export_Location_/content/dist/layered/rhel9/x86_64/sat-maintenance/{ProjectVersion}/os/
+----
 +
-[options="nowrap"]
-----
-# cp /media/sat6/Satellite/media.repo /etc/yum.repos.d/satellite.repo
-----
-
-.. Edit the `/etc/yum.repos.d/satellite.repo` file:
-+
-----
-# vi /etc/yum.repos.d/satellite.repo
-----
-
-... Change the default `InstallMedia` repository name to `{Project}-{ProjectVersion}`:
-+
-[options="nowrap" subs="+quotes,attributes"]
-----
-[{Project}-{ProjectVersion}]
-----
-
-... Add the `baseurl` directive:
-+
-[options="nowrap"]
-----
-baseurl=file:///media/sat6/Satellite
-----
-
-. Configure the {ProjectName} Maintenance repository from the ISO file.
-
-.. Copy the ISO file's repository data file for {ProjectName} Maintenance packages:
-+
-[options="nowrap"]
-----
-# cp /media/sat6/Maintenance/media.repo /etc/yum.repos.d/satellite-maintenance.repo
-----
-
-.. Edit the `/etc/yum.repos.d/satellite-maintenance.repo` file:
-+
-[options="nowrap"]
-----
-# vi /etc/yum.repos.d/satellite-maintenance.repo
-----
-
-... Change the default `InstallMedia` repository name to `{Project}-Maintenance`:
-+
-[options="nowrap" subs="+quotes,attributes"]
-----
-[{Project}-Maintenance]
-----
-
-.. Add the `baseurl` directive:
-+
-[options="nowrap"]
-----
-baseurl=file:///media/sat6/Maintenance/
-----
+Keep the `{RepoRHEL9ServerSatelliteServerProjectVersion}` repository disabled.
 
 . Optional: Because of the lengthy upgrade time, use a utility such as `tmux` to suspend and reattach a communication session.
 You can then check the upgrade progress without staying connected to the command shell continuously.
 +
 If you lose connection to the command shell where the upgrade command is running, you can see the logs in `{installer-log-file}` to check if the process completed successfully.
 
-. Upgrade {foreman-maintain} to its next version:
+. Upgrade the `{foreman-maintain}` utility to its latest version:
 +
 [options="nowrap" subs="attributes"]
 ----
-# {foreman-maintain} self-upgrade --maintenance-repo-label {Project}-Maintenance
+# {foreman-maintain} self-upgrade --maintenance-repo-label={RepoRHEL9ServerSatelliteMaintenanceProjectVersion}
 ----
 
-. Use the health check option to determine if the system is ready for upgrade.
-When prompted, enter the hammer admin user credentials to configure `{foreman-maintain}` with hammer credentials.
+. Determine whether the system is ready for upgrade.
+When prompted, enter the Hammer admin user credentials to configure `{foreman-maintain}` with Hammer credentials.
 These changes are applied to the `/etc/foreman-maintain/foreman-maintain-hammer.yml` file.
 +
 [options="nowrap" subs="attributes"]
@@ -160,9 +157,22 @@ These changes are applied to the `/etc/foreman-maintain/foreman-maintain-hammer.
 ----
 +
 Review the results and address any highlighted error conditions before performing the upgrade.
+
+. Edit the `/etc/yum.repos.d/upgrade.repo` file and enable the `{RepoRHEL9ServerSatelliteServerProjectVersion}` repository:
++
+[source, ini, options="nowrap" subs="+quotes,verbatim,attributes"]
+----
+[{RepoRHEL9ServerSatelliteServerProjectVersion}]
+name={ProjectName} {ProjectVersion} for RHEL 9 Server RPMs x86_64
+enabled=1
+metadata_expire=-1
+gpgcheck=0
+baseurl=file:///_{Project}_Export_Location_/content/dist/layered/rhel9/x86_64/{project-context}/{ProjectVersion}/os/
+----
+
 . Perform the upgrade:
 +
-[options="nowrap" subs="attributes"]
+[options="nowrap" subs="+quotes,verbatim,attributes"]
 ----
 # {foreman-maintain} upgrade run --whitelist="repositories-validate,repositories-setup"
 ----
