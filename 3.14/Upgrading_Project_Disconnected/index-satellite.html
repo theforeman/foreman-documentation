@@ -618,8 +618,58 @@ For more information, see <a href="https://docs.redhat.com/en/documentation/red_
 </ul>
 </div>
 <div class="olist arabic">
+<div class="title">Export the required repositories from your connected Satellite&#160;Server</div>
+<ol class="arabic">
+<li>
+<p>Synchronize the following repositories on your connected Satellite&#160;Server with the download policy set to <strong>Immediate</strong>:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><code>rhel-9-for-x86_64-baseos-rpms</code></p>
+</li>
+<li>
+<p><code>rhel-9-for-x86_64-appstream-rpms</code></p>
+</li>
+<li>
+<p><code>satellite-6.17-for-rhel-9-x86_64-rpms</code></p>
+</li>
+<li>
+<p><code>satellite-maintenance-6.17-for-rhel-9-x86_64-rpms</code></p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>List the repositories to identify their IDs:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer repository list \
+--organization-label <em>My_Organization_Label</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Export each repository in the syncable format by using its repository ID:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer content-export complete repository \
+--format syncable \
+--id <em>My_Repository_ID</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Copy the exported directories to the disconnected Satellite&#160;Server.</p>
+</li>
+</ol>
+</div>
+<div class="olist arabic">
 <div class="title">Upgrade disconnected Satellite&#160;Server</div>
 <ol class="arabic">
+<li>
+<p>Create a backup of your Satellite&#160;Server:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
 <li>
 <p>Stop all Satellite services:</p>
 <div class="listingblock">
@@ -649,6 +699,9 @@ For more information, see <a href="https://docs.redhat.com/en/documentation/red_
 </div>
 </div>
 </li>
+</ol>
+</div>
+</li>
 <li>
 <p>Optional: If you made manual edits to DNS or DHCP configuration in the <code>/etc/zones.conf</code> or <code>/etc/dhcp/dhcpd.conf</code> files, back up the configuration files because the installer only supports one domain or subnet, and therefore restoring changes from these backups might be required.</p>
 </li>
@@ -676,95 +729,47 @@ Reboot these hosts after the upgrade has completed.</p>
 </div>
 </li>
 <li>
-<p>Obtain the latest ISO files by following the <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.17/html-single/installing_satellite_server_in_a_disconnected_network_environment/index#downloading-the-binary-dvd-images_satellite">Downloading the Binary DVD Images</a> procedure in <em>Installing Satellite&#160;Server in a disconnected network environment</em>.</p>
+<p>Enable access to the exported content by configuring a repository:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Locate the copied directories from the syncable export.</p>
 </li>
 <li>
-<p>Create directories to serve as a mount point, mount the ISO images, and configure the <code>rhel8</code> repository by following the <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.17/html-single/installing_satellite_server_in_a_disconnected_network_environment/index#configuring-the-base-operating-system-with-offline-repositories_satellite">Configuring the base operating system with offline repositories</a> procedure in <em>Installing Satellite&#160;Server in a disconnected network environment</em>.</p>
+<p>Create the <code>/etc/yum.repos.d/upgrade.repo</code> file and update the <code>baseurl</code> directive to point to that location:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-ini" data-lang="ini">[rhel-9-for-x86_64-baseos-rpms]
+name=Red Hat Enterprise Linux 9 for x86_64 - BaseOS (RPMs)
+enabled=1
+metadata_expire=-1
+gpgcheck=0
+baseurl=file:///<em>BaseOS_Export_Location</em>/content/dist/rhel9/9/x86_64/baseos/os
+
+[rhel-9-for-x86_64-appstream-rpms]
+name=Red Hat Enterprise Linux 9 for x86_64 - AppStream (RPMs)
+enabled=1
+metadata_expire=-1
+gpgcheck=0
+baseurl=file:///<em>AppStream_Export_Location</em>/content/dist/rhel9/9/x86_64/appstream/os
+
+[satellite-6.17-for-rhel-9-x86_64-rpms]
+name=Red&#160;Hat Satellite 6.17 for RHEL 9 Server RPMs x86_64
+enabled=0
+metadata_expire=-1
+gpgcheck=0
+baseurl=file:///<em>Satellite_Export_Location</em>/content/dist/layered/rhel9/x86_64/satellite/6.17/os/
+
+[satellite-maintenance-6.17-for-rhel-9-x86_64-rpms]
+name=Red&#160;Hat Satellite Maintenance 6.17 for RHEL 9 Server RPMs x86_64
+enabled=1
+metadata_expire=-1
+gpgcheck=0
+baseurl=file:///<em>Satellite_Maintenance_Export_Location</em>/content/dist/layered/rhel9/x86_64/sat-maintenance/6.17/os/</code></pre>
+</div>
+</div>
 <div class="paragraph">
-<p>Do not install or update any packages at this stage.</p>
-</div>
-</li>
-<li>
-<p>Configure the Satellite 6.17 repository from the ISO file.</p>
-<div class="olist loweralpha">
-<ol class="loweralpha" type="a">
-<li>
-<p>Copy the ISO file&#8217;s repository data file for the Red&#160;Hat Satellite packages:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># cp /media/sat6/Satellite/media.repo /etc/yum.repos.d/satellite.repo</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Edit the <code>/etc/yum.repos.d/satellite.repo</code> file:</p>
-<div class="listingblock">
-<div class="content">
-<pre># vi /etc/yum.repos.d/satellite.repo</pre>
-</div>
-</div>
-<div class="olist lowerroman">
-<ol class="lowerroman" type="i">
-<li>
-<p>Change the default <code>InstallMedia</code> repository name to <code>Satellite-6.17</code>:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">[Satellite-6.17]</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Add the <code>baseurl</code> directive:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">baseurl=file:///media/sat6/Satellite</pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
-</li>
-</ol>
-</div>
-</li>
-<li>
-<p>Configure the Red&#160;Hat Satellite Maintenance repository from the ISO file.</p>
-<div class="olist loweralpha">
-<ol class="loweralpha" type="a">
-<li>
-<p>Copy the ISO file&#8217;s repository data file for Red&#160;Hat Satellite Maintenance packages:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># cp /media/sat6/Maintenance/media.repo /etc/yum.repos.d/satellite-maintenance.repo</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Edit the <code>/etc/yum.repos.d/satellite-maintenance.repo</code> file:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># vi /etc/yum.repos.d/satellite-maintenance.repo</pre>
-</div>
-</div>
-<div class="olist lowerroman">
-<ol class="lowerroman" type="i">
-<li>
-<p>Change the default <code>InstallMedia</code> repository name to <code>Satellite-Maintenance</code>:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">[Satellite-Maintenance]</pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
-</li>
-<li>
-<p>Add the <code>baseurl</code> directive:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">baseurl=file:///media/sat6/Maintenance/</pre>
-</div>
+<p>Keep the <code>satellite-6.17-for-rhel-9-x86_64-rpms</code> repository disabled.</p>
 </div>
 </li>
 </ol>
@@ -778,16 +783,16 @@ You can then check the upgrade progress without staying connected to the command
 </div>
 </li>
 <li>
-<p>Upgrade satellite-maintain to its next version:</p>
+<p>Upgrade the <code>satellite-maintain</code> utility to its latest version:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># satellite-maintain self-upgrade --maintenance-repo-label Satellite-Maintenance</pre>
+<pre class="nowrap"># satellite-maintain self-upgrade --maintenance-repo-label=satellite-maintenance-6.17-for-rhel-9-x86_64-rpms</pre>
 </div>
 </div>
 </li>
 <li>
-<p>Use the health check option to determine if the system is ready for upgrade.
-When prompted, enter the hammer admin user credentials to configure <code>satellite-maintain</code> with hammer credentials.
+<p>Determine whether the system is ready for upgrade.
+When prompted, enter the Hammer admin user credentials to configure <code>satellite-maintain</code> with Hammer credentials.
 These changes are applied to the <code>/etc/foreman-maintain/foreman-maintain-hammer.yml</code> file.</p>
 <div class="listingblock">
 <div class="content">
@@ -796,6 +801,19 @@ These changes are applied to the <code>/etc/foreman-maintain/foreman-maintain-ha
 </div>
 <div class="paragraph">
 <p>Review the results and address any highlighted error conditions before performing the upgrade.</p>
+</div>
+</li>
+<li>
+<p>Edit the <code>/etc/yum.repos.d/upgrade.repo</code> file and enable the <code>satellite-6.17-for-rhel-9-x86_64-rpms</code> repository:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-ini" data-lang="ini">[satellite-6.17-for-rhel-9-x86_64-rpms]
+name=Red&#160;Hat Satellite 6.17 for RHEL 9 Server RPMs x86_64
+enabled=1
+metadata_expire=-1
+gpgcheck=0
+baseurl=file:///<em>Satellite_Export_Location</em>/content/dist/layered/rhel9/x86_64/satellite/6.17/os/</code></pre>
+</div>
 </div>
 </li>
 <li>
