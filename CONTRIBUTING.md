@@ -30,8 +30,6 @@ Checklist for documentation contributions:
 See [LICENSE](LICENSE).
 * [ ] My commits include meaningful commit messages.
 See [seven rules for git commit messages](https://cbea.ms/git-commit/#seven-rules).
-* [ ] I write one sentence per line.
-See [One sentence per line](https://jeffkreeftmeijer.com/one-sentence-per-line/).
 * [ ] My change does not add trailing whitespaces.
 Some editors can help with this.
 For example, VS Code has multiple settings related to handling whitespaces.
