@@ -178,15 +178,6 @@ See the [reference template](https://raw.githubusercontent.com/redhat-documentat
 * [`snip`](https://redhat-documentation.github.io/modular-docs/#using_text_snippets_or_text_fragments_writing-mod-docs): Files starting with `snip_` contain snippets that are reused throughout multiple guides, for example admonitions.
 Snippets must not contain an ID.
 
-### Capitalization
-
-All headings are sentence case.
-We capitalize the following terms:
-
-* Deb (content type)
-* Red Hat Network
-* Yum (content type)
-
 ### Foreman user personas
 
 In documentation, a user persona is the target user who will be reading the documentation.
