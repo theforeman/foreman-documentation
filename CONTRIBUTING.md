@@ -183,19 +183,10 @@ Snippets must not contain an ID.
 All headings are sentence case.
 We capitalize the following terms:
 
-* Ansible Playbook
 * Deb (content type)
 * Insights (Red Hat product)
-* Kickstart
-* Puppet
 * Red Hat Network
-* Redis
 * Yum (content type)
-
-We do not capitalize the following terms:
-
-* content view
-* Red Hat subscription manifest
 
 ### Foreman user personas
 
