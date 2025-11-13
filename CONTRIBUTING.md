@@ -184,7 +184,6 @@ All headings are sentence case.
 We capitalize the following terms:
 
 * Deb (content type)
-* Insights (Red Hat product)
 * Red Hat Network
 * Yum (content type)
 
