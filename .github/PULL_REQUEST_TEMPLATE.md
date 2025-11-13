@@ -11,6 +11,7 @@
 
 Please cherry-pick my commits into:
 
+* [ ] Foreman 3.17/Katello 4.19
 * [ ] Foreman 3.16/Katello 4.18 (Satellite 6.18)
 * [ ] Foreman 3.15/Katello 4.17
 * [ ] Foreman 3.14/Katello 4.16 (Satellite 6.17; orcharhino 7.4)
