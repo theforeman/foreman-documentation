@@ -30,8 +30,6 @@ Checklist for documentation contributions:
 See [LICENSE](LICENSE).
 * [ ] My commits include meaningful commit messages.
 See [seven rules for git commit messages](https://cbea.ms/git-commit/#seven-rules).
-* [ ] I write one sentence per line.
-See [One sentence per line](https://jeffkreeftmeijer.com/one-sentence-per-line/).
 * [ ] My change does not add trailing whitespaces.
 Some editors can help with this.
 For example, VS Code has multiple settings related to handling whitespaces.
@@ -64,7 +62,7 @@ Each PR should undergo style review.
 The `Foreman documentation conventions guide` describes guidelines specific to working on Foreman documentation.
 It complements, but should not duplicate, the following resources:
 
-* The AsciiDoc and RedHat style packages for the Vale linter.
+* The AsciiDoc, RedHat, and project-specific foreman-documentation style packages for the Vale linter.
 See [Vale for writers at Red Hat](https://redhat-documentation.github.io/vale-at-red-hat/docs/main/user-guide/introduction/).
 * [Red Hat supplementary style guide for product documentation](https://redhat-documentation.github.io/supplementary-style-guide/)
 
