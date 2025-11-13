@@ -183,40 +183,19 @@ Snippets must not contain an ID.
 All headings are sentence case.
 We capitalize the following terms:
 
-* Ansible
 * Ansible Playbook
-* Candlepin
-* Chef
 * Deb (content type)
-* Discovery (service)
-* Enterprise Linux (umbrella term for RHEL-derivatives)
-* Hammer
 * Insights (Red Hat product)
-* Katello
 * Kickstart
-* Library (environment)
-* OpenSCAP
-* PostgreSQL
-* Pulp
 * Puppet
-* Python
 * Red Hat Network
 * Redis
-* Salt
-* Salt Minions
-* Secure Boot
-* Subscription Manager (Red Hat product)
-* Tracer (utility)
 * Yum (content type)
 
 We do not capitalize the following terms:
 
 * content view
-* lifecycle environment
-* manifest
 * Red Hat subscription manifest
-* remote execution
-* subscription
 
 ### Foreman user personas
 
