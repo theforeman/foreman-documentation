@@ -1,0 +1,82 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="creating-an-installation-medium-for-oracle-linux"]
+= Creating an installation medium for Oracle Linux
+
+[role="_abstract"]
+Create an installation medium for Oracle Linux based on an extracted ISO image.
+You can use this installation medium to provision hosts in disconnected environments.
+This example uses Oracle Linux {client-os-major}.{client-os-minor}.
+
+.Prerequisites
+* You have a host with internet access.
+
+.Procedure
+. On a host with internet access, download the checksum file, ISO image, and GPG public key:
++
+[options="nowrap", subs="+quotes,attributes,verbatim"]
+----
+$ wget https://linux.oracle.com/security/gpg/checksum/OracleLinux-R{client-os-major}-U{client-os-minor}-Server-x86_64.checksum
+$ wget https://yum.oracle.com/ISOS/OracleLinux/OL{client-os-major}/u{client-os-minor}/x86_64/OracleLinux-R{client-os-major}-U{client-os-minor}-x86_64-dvd.iso
+$ wget https://yum.oracle.com/RPM-GPG-KEY-oracle-ol9
+----
+. Verify the checksum of the ISO image:
++
+[options="nowrap", subs="+quotes,attributes,verbatim"]
+----
+$ sha256sum --check --ignore-missing OracleLinux-R{client-os-major}-U{client-os-minor}-Server-x86_64.checksum
+----
+. Import the GPG public key by Oracle:
++
+[options="nowrap", subs="+quotes,attributes,verbatim"]
+----
+$ gpg --import RPM-GPG-KEY-oracle-ol9
+----
+. Verify the authenticity of the checksum file:
++
+[options="nowrap", subs="+quotes,attributes,verbatim"]
+----
+$ gpg --verify OracleLinux-R{client-os-major}-U{client-os-minor}-Server-x86_64.checksum
+----
+// signatures for Oracle Linux 10 and 9 rely on the same GPG key pair
+. Remove the checksum file and GPG public key:
++
+[options="nowrap", subs="+quotes,attributes,verbatim"]
+----
+$ rm -f OracleLinux-R{client-os-major}-U{client-os-minor}-Server-x86_64.checksum
+$ rm -f RPM-GPG-KEY-oracle-ol9
+----
+. Transfer the ISO image from your host to your {ProjectServer}:
++
+[options="nowrap", subs="+quotes,attributes,verbatim"]
+----
+$ scp OracleLinux-R{client-os-major}-U{client-os-minor}-x86_64-dvd.iso root@{foreman-example-com}:/root/
+----
+. On your {ProjectServer}, create the target directory:
++
+[options="nowrap", subs="+quotes,attributes,verbatim"]
+----
+# mkdir --parents /var/www/html/pub/installation_media/oracle_linux/{client-os-major}.{client-os-minor}/
+----
+. Extract the ISO image:
++
+[options="nowrap", subs="+quotes,attributes,verbatim"]
+----
+# cd /var/www/html/pub/installation_media/oracle_linux/{client-os-major}.{client-os-minor}/ && \
+7z x /root/OracleLinux-R{client-os-major}-U{client-os-minor}-x86_64-dvd.iso
+----
+. Delete the ISO image:
++
+[options="nowrap", subs="+quotes,attributes,verbatim"]
+----
+# rm -f /root/OracleLinux-R{client-os-major}-U{client-os-minor}-x86_64-dvd.iso
+----
+. Create your installation media for Oracle Linux {client-os-major}.{client-os-minor}:
++
+[options="nowrap", subs="+quotes,attributes,verbatim"]
+----
+$ hammer medium create \
+--name "Oracle Linux {client-os-major}.{client-os-minor}" \
+--os-family Redhat \
+--path "http://{foreman-example-com}/pub/installation_media/oracle_linux/{client-os-major}.{client-os-minor}/BaseOS/"
+----
