@@ -178,46 +178,6 @@ See the [reference template](https://raw.githubusercontent.com/redhat-documentat
 * [`snip`](https://redhat-documentation.github.io/modular-docs/#using_text_snippets_or_text_fragments_writing-mod-docs): Files starting with `snip_` contain snippets that are reused throughout multiple guides, for example admonitions.
 Snippets must not contain an ID.
 
-### Capitalization
-
-All headings are sentence case.
-We capitalize the following terms:
-
-* Ansible
-* Ansible Playbook
-* Candlepin
-* Chef
-* Deb (content type)
-* Discovery (service)
-* Enterprise Linux (umbrella term for RHEL-derivatives)
-* Hammer
-* Insights (Red Hat product)
-* Katello
-* Kickstart
-* Library (environment)
-* OpenSCAP
-* PostgreSQL
-* Pulp
-* Puppet
-* Python
-* Red Hat Network
-* Redis
-* Salt
-* Salt Minions
-* Secure Boot
-* Subscription Manager (Red Hat product)
-* Tracer (utility)
-* Yum (content type)
-
-We do not capitalize the following terms:
-
-* content view
-* lifecycle environment
-* manifest
-* Red Hat subscription manifest
-* remote execution
-* subscription
-
 ### Foreman user personas
 
 In documentation, a user persona is the target user who will be reading the documentation.
