@@ -91,15 +91,7 @@ For inclusion in the content, export diagrams to SVG and place them as described
 ### AsciiDoc attributes for different build targets
 
 Because the content in this repository is shared between the upstream Foreman community and branded downstream products, many terms need to be written using AsciiDoc attributes.
-For example, never write "Foreman", "Satellite", or "orcharhino" words directly, but use the following attributes:
-
-| Attribute | Upstream value | Downstream by Red Hat | Downstream by ATIX |
-| -------- | -------------- | --------------------- | ------------------ |
-| {Project} | Foreman | Satellite | orcharhino |
-| {ProjectName} | Foreman | Red Hat Satellite | orcharhino |
-| {ProjectServer} | Foreman server | Satellite Server | orcharhino Server |
-| {SmartProxy} | Smart Proxy | Capsule | orcharhino Proxy |
-| {SmartProxyServer} | Smart Proxy server | Capsule Server | orcharhino Proxy Server |
+For example, never write "Foreman", "Satellite", or "orcharhino" words directly, but use the `{Project}` attribute.
 
 The attributes used in this repository are defined in the following files:
 
