@@ -22,7 +22,7 @@ jobs:
       image: quay.io/ivanhorvath/ccutil:amazing
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Compile html-single
         run: |
@@ -58,7 +58,7 @@ jobs:
         working-directory: .
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -115,7 +115,7 @@ jobs:
         working-directory: guides
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.base_ref }}
 
@@ -143,10 +143,15 @@ jobs:
   build-web:
     runs-on: ubuntu-22.04
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout master
+        if: github.event_name != 'pull_request' || github.base_ref != 'master'
+        uses: actions/checkout@v6
         with:
           ref: master
+
+      - name: Checkout PR
+        if: github.event_name == 'pull_request' && github.base_ref == 'master'
+        uses: actions/checkout@v6
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -193,13 +198,13 @@ jobs:
 
       - name: Download web (only for master)
         if: github.ref == 'refs/heads/master'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: foreman-docs-web-${{ env.BRANCH_NAME }}
           path: public
 
       - name: Download HTML
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: foreman-docs-html-${{ env.BRANCH_NAME }}
           path: public/${{ env.BRANCH_NAME }}
@@ -210,7 +215,7 @@ jobs:
         working-directory: ./public
 
       - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./public
