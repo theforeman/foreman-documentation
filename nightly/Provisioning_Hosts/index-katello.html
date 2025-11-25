@@ -500,6 +500,37 @@ SOFTWARE.
 <li><a href="#using-novnc-to-access-virtual-machines_provisioning">Appendix A: Using noVNC to access virtual machines</a></li>
 <li><a href="#Host_Parameter_Hierarchy_provisioning">Appendix B: Host parameter hierarchy</a></li>
 <li><a href="#permissions-required-to-provision-hosts">Appendix C: Permissions required to provision hosts</a></li>
+<li><a href="#con_bootloader-binary-location-overview_provisioning">Appendix D: Boot loader management and file structure</a>
+<ul class="sectlevel2">
+<li><a href="#ref_bootloader-types_provisioning">D.1. Boot loader types in Foreman</a>
+<ul class="sectlevel3">
+<li><a href="#_pxe_loader_types_and_boot_protocols_in_foreman">D.1.1. PXE Loader Types and Boot Protocols in Foreman</a></li>
+<li><a href="#_boot_loader_file_mapping_and_architecture_naming">D.1.2. Boot Loader File Mapping and Architecture Naming</a></li>
+<li><a href="#_architecture_based_file_naming">D.1.3. Architecture-Based File Naming</a></li>
+</ul>
+</li>
+<li><a href="#ref_pxelinux-bootloaders_provisioning">D.2. PXELinux boot loaders</a>
+<ul class="sectlevel3">
+<li><a href="#_file_locations_and_roles">D.2.1. File Locations and Roles</a></li>
+<li><a href="#_example_directory_layout">D.2.2. Example Directory Layout</a></li>
+</ul>
+</li>
+<li><a href="#ref_grub2-uefi-bootloaders_provisioning">D.3. Grub2 UEFI boot loader and the <code>bootloader-universe</code> structure</a>
+<ul class="sectlevel3">
+<li><a href="#_directory_structure_bootloader_universe">D.3.1. Directory Structure: <code>bootloader-universe</code></a></li>
+<li><a href="#_legacy_layout_non_bootloader_universe">D.3.2. Legacy Layout (Non-<code>bootloader-universe</code>)</a></li>
+</ul>
+</li>
+<li><a href="#ref_ipxe-bootloaders_provisioning">D.4. iPXE / Grub2 UEFI HTTP(S) boot loaders</a>
+<ul class="sectlevel3">
+<li><a href="#_boot_methods">D.4.1. Boot Methods</a></li>
+<li><a href="#_file_locations_and_roles_4">D.4.2. File Locations and Roles</a></li>
+<li><a href="#_shared_tftp_and_http_root">D.4.3. Shared TFTP and HTTP Root</a></li>
+<li><a href="#_example_directory_layout_2">D.4.4. Example Directory Layout</a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 </div>
 </div>
@@ -12241,6 +12272,935 @@ You can only assign organizations that you belong to.</p></td>
 </li>
 </ul>
 </div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="con_bootloader-binary-location-overview_provisioning"><a class="anchor" href="#con_bootloader-binary-location-overview_provisioning"></a>Appendix D: Boot loader management and file structure</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Foreman manages and serves boot loader binaries through the <strong>Smart&#160;Proxy</strong>, which provides the network boot services used during automated host provisioning.
+Foreman supports PXE boot for BIOS and UEFI firmware on various architectures utilizing TFTP or HTTP(S).</p>
+</div>
+<div class="paragraph">
+<p>During a network-based installation, Smart&#160;Proxy coordinates the following services:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>DHCP: DHCP: Assigns IP addresses and provides the boot loader filename and server information.</p>
+</li>
+<li>
+<p>TFTP: Delivers boot loaders such as PXELinux, Grub2, or iPXE binaries to clients.</p>
+</li>
+<li>
+<p>HTTP(S): Serves boot loaders and installation files via the Smart&#160;Proxy’s HTTPBoot module.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>When a host begins a network boot, it retrieves the appropriate boot loader (for example, <code>pxelinux.0</code>, <code>grubx64.efi</code>, or <code>ipxe.efi</code>) according to <strong>PXE Loader</strong> setting in Foreman.
+The boot loader then loads Foreman-generated configuration files that define which kernel and initrd to boot, initiating the OS installation process.</p>
+</div>
+<div class="paragraph">
+<p>The <strong>Smart&#160;Proxy</strong> manages the distribution of these boot loader binaries and their configuration files.
+All boot loaders are stored under the Smart&#160;Proxy’s TFTP root directory (/var/lib/tftpboot/), which is also shared by the HTTPBoot service.</p>
+</div>
+<div class="paragraph">
+<p>By default, boot loader binaries are placed directly under service-specific directories such as <code>grub2/</code>
+(for example, <code>/var/lib/tftpboot/grub2/grubx64.efi</code>).</p>
+</div>
+<div class="paragraph">
+<p>If the <strong>bootloader-universe</strong> structure is enabled, boot loaders are instead organized into a hierarchy based on type, architecture, and operating system version.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The TFTP root directory is configured in <code>/etc/foreman-proxy/settings.d/tftp.yml</code> under the <code>:tftproot</code> parameter.
+The default path is <code>/var/lib/tftpboot</code>.</p>
+</div>
+<div class="paragraph">
+<p>The directory used by <strong>Grub2 UEFI HTTP</strong> and <strong>iPXE HTTP</strong> for file delivery is defined in <code>/etc/foreman-proxy/settings.d/httpboot.yml</code> under the <code>:root_dir</code> parameter.
+The default path is also <code>/var/lib/tftpboot</code>.</p>
+</div>
+<div class="paragraph">
+<p>This document uses the default paths.
+If your environment uses a different path, replace the default paths with your custom paths.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="ref_bootloader-types_provisioning"><a class="anchor" href="#ref_bootloader-types_provisioning"></a>D.1. Boot loader types in Foreman</h3>
+<div class="paragraph">
+<p>Foreman uses multiple types of PXE boot loaders during network provisioning, depending on firmware type, protocol, and boot environment.</p>
+</div>
+<div class="paragraph">
+<p>In Foreman, you can configure a <strong>PXE Loader</strong> for each host.
+The PXE Loader determines which boot loader binary the host retrieves during network boot and how it communicates with the Smart&#160;Proxy (via TFTP or HTTP).
+Select a PXE Loader based on whether the host uses <strong>BIOS</strong>, <strong>UEFI</strong>, <strong>Secure Boot</strong>, or <strong>HTTP Boot</strong>.</p>
+</div>
+<div class="sect3">
+<h4 id="_pxe_loader_types_and_boot_protocols_in_foreman"><a class="anchor" href="#_pxe_loader_types_and_boot_protocols_in_foreman"></a>D.1.1. PXE Loader Types and Boot Protocols in Foreman</h4>
+<div class="paragraph">
+<p>The following table lists the PXE Loader options available in the Foreman.
+Each loader is associated with a specific boot protocol and firmware type.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 2. PXE Loader Types and Boot Protocols</caption>
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">PXE Loader (UI Label)</th>
+<th class="tableblock halign-left valign-top">Category</th>
+<th class="tableblock halign-left valign-top">Firmware</th>
+<th class="tableblock halign-left valign-top">Protocol</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">None</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">None</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PXELinux BIOS</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PXELinux</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BIOS</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DHCP → TFTP</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PXELinux UEFI</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PXELinux</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">UEFI</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DHCP → TFTP</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Grub2 BIOS</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PXEGrub2 (TFTP)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BIOS</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DHCP → TFTP</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Grub2 ELF</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PXEGrub2 (TFTP)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BIOS</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DHCP → TFTP</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Grub2 UEFI</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PXEGrub2 (TFTP)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">UEFI</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DHCP → TFTP</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Grub2 UEFI SecureBoot</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PXEGrub2 (TFTP)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">UEFI</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DHCP → TFTP</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Grub2 UEFI HTTP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Grub2 (HTTP)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">UEFI</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DHCP → HTTP</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Grub2 UEFI HTTPS</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Grub2 (HTTPS)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">UEFI</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DHCP → HTTPS</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Grub2 UEFI HTTPS SecureBoot</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Grub2 (HTTPS)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">UEFI</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DHCP → HTTPS</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">iPXE Embedded</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">iPXE Direct (HTTP)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BIOS / UEFI</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DHCP → HTTP</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">iPXE UEFI HTTP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">iPXE Direct (HTTP)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">UEFI</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DHCP → HTTP</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">iPXE Chain BIOS</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">iPXE Chainload</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BIOS</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DHCP → TFTP → HTTP</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">iPXE Chain UEFI</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">iPXE Chainload</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">UEFI</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DHCP → TFTP → HTTP</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Each type of PXE Loader categories delivers boot loaders and installation files during network provisioning. In Foreman, you can select from the following PXE Loader categories:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">PXELinux</dt>
+<dd>
+<p>Syslinux-based loaders for BIOS and UEFI environments.</p>
+</dd>
+<dt class="hdlist1">PXEGrub2 (TFTP)</dt>
+<dd>
+<p>Grub2-based loader supporting both BIOS and UEFI environments (including Secure Boot via <code>shim</code>).</p>
+</dd>
+<dt class="hdlist1">Grub2 (HTTP/HTTPS)</dt>
+<dd>
+<p>Grub2-based UEFI boot loader fetched over HTTP or HTTPS using the Smart&#160;Proxy’s HTTPBoot service.</p>
+</dd>
+<dt class="hdlist1">iPXE Chainload </dt>
+<dd>
+<p>A two-stage boot process in which the client first downloads an iPXE binary (<code>undionly-ipxe.0</code> or <code>ipxe.efi</code>) via TFTP.
+When loaded, iPXE retrieves Foreman’s iPXE script and installation files over HTTP, enabling flexible configuration and network boot via HTTP.</p>
+</dd>
+<dt class="hdlist1">iPXE Direct (HTTP)</dt>
+<dd>
+<p>Boots directly via embedded or firmware-level iPXE using only HTTP.</p>
+</dd>
+<dt class="hdlist1">None</dt>
+<dd>
+<p>Foreman does not specify a boot loader.</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_boot_loader_file_mapping_and_architecture_naming"><a class="anchor" href="#_boot_loader_file_mapping_and_architecture_naming"></a>D.1.2. Boot Loader File Mapping and Architecture Naming</h4>
+<div class="paragraph">
+<p>Foreman automatically determines the correct boot loader filename for each host based on its <strong>architecture</strong> and the <strong>PXE Loader</strong> selected in the host settings.
+This mechanism ensures that the correct boot loader binary (such as <code>grubx64.efi</code> or <code>grubaa64.efi</code>) is selected automatically,
+without requiring administrators to manage architecture-specific filenames.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 3. PXE Loader to Boot Loader Mapping</caption>
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">PXE Loader (UI Label)</th>
+<th class="tableblock halign-left valign-top">Boot Loader File (Template Path)</th>
+<th class="tableblock halign-left valign-top">Example (x86_64)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">None</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PXELinux BIOS</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">pxelinux.0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">pxelinux.0</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">PXELinux UEFI</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">pxelinux.efi</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">pxelinux.efi</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Grub2 BIOS</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">grub&lt;<em>arch</em>&gt;.0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">grubx64.0</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Grub2 ELF</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">grub&lt;<em>arch</em>&gt;.elf</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">grubx64.elf</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Grub2 UEFI</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">grub&lt;<em>arch</em>&gt;.efi</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">grubx64.efi</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Grub2 UEFI SecureBoot</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">shim&lt;<em>arch</em>&gt;.efi</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">shimx64.efi</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Grub2 UEFI HTTP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">grub&lt;<em>arch</em>&gt;.efi (via HTTP)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">grubx64.efi</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Grub2 UEFI HTTPS</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">grub&lt;<em>arch</em>&gt;.efi (via HTTPS)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">grubx64.efi</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Grub2 UEFI HTTPS SecureBoot</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">shim&lt;<em>arch</em>&gt;.efi (via HTTPS)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">shimx64.efi</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">iPXE Embedded</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Rendered dynamically as Foreman_url('iPXE')</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">-</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">iPXE UEFI HTTP</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ipxe-&lt;<em>arch</em>&gt;.efi</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ipxe-x64.efi</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">iPXE Chain BIOS</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">undionly-ipxe.0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">undionly-ipxe.0</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">iPXE Chain UEFI</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ipxe.efi</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ipxe.efi</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_architecture_based_file_naming"><a class="anchor" href="#_architecture_based_file_naming"></a>D.1.3. Architecture-Based File Naming</h4>
+<div class="paragraph">
+<p>Foreman automatically determines the correct boot loader filename for each host based on its architecture.
+For example, <code>x86_64</code> hosts use <code>grubx64.efi</code>, while <code>aarch64</code> hosts use <code>grubaa64.efi</code>.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 4. Boot Loader Filenames by Architecture</caption>
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Architecture (Web UI)</th>
+<th class="tableblock halign-left valign-top">Example Filename</th>
+<th class="tableblock halign-left valign-top">Internal Suffix (for reference)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">i386, i686, x86</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">grubia32.efi</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ia32</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">x86_64, amd64</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">grubx64.efi, shimx64.efi</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">x64</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">aarch64, aa64</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">grubaa64.efi, shimaa64.efi</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">aa64</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ppc64, ppc64le</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">grubppc64.efi</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ppc64, ppc64le</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Other architectures (for example, riscv64, loongarch64)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">grubriscv64.efi</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">normalized name</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>For example, a host with architecture <code>aarch64</code> and PXE Loader set to <code>Grub2 UEFI</code> uses:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>/var/lib/tftpboot/grub2/grubaa64.efi</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This mechanism allows Foreman to select the correct boot loader automatically,
+without requiring users to manage architecture-specific filenames manually.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="ref_pxelinux-bootloaders_provisioning"><a class="anchor" href="#ref_pxelinux-bootloaders_provisioning"></a>D.2. PXELinux boot loaders</h3>
+<div class="paragraph">
+<p><strong>PXELinux</strong> is a Syslinux-based PXE boot loader used by Foreman for BIOS and UEFI systems.
+In Foreman, PXELinux enables hosts to boot into the OS installer automatically during provisioning.
+When a host is set to <strong>Build mode</strong>, Foreman generates a host-specific configuration file and places it in the TFTP directory managed by the Smart&#160;Proxy.</p>
+</div>
+<div class="sect3">
+<h4 id="_file_locations_and_roles"><a class="anchor" href="#_file_locations_and_roles"></a>D.2.1. File Locations and Roles</h4>
+<div class="paragraph">
+<p>This section describes where PXELinux-related files are stored, the role of each file,
+and whether the user needs to create or provide them manually.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>File Locations and Roles</p>
+</li>
+</ol>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 50%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Path</th>
+<th class="tableblock halign-left valign-top">Purpose / Usage</th>
+<th class="tableblock halign-left valign-top">User Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">/var/lib/tftpboot/pxelinux.0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The main PXELinux boot loader binary. Installed automatically by the foreman-installer.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Auto-installed by foreman-installer</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">/var/lib/tftpboot/pxelinux.cfg/</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Directory containing configuration files generated by Foreman for each host (for example, 01-52-54-00-ab-cd-ef).</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Auto-created during Build mode</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">/var/lib/tftpboot/ldlinux.c32</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Support module required by PXELinux for menu and filesystem operations.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Provide manually</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">/var/lib/tftpboot/menu.c32, /var/lib/tftpboot/chain.c32</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Optional Syslinux modules for displaying boot menus or chainloading.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Provide manually</strong></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_example_directory_layout"><a class="anchor" href="#_example_directory_layout"></a>D.2.2. Example Directory Layout</h4>
+<div class="paragraph">
+<p>This subsection shows an example of how PXELinux files are organized under the TFTP root directory.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># tree /var/lib/tftpboot/
+/var/lib/tftpboot/
+ ├── pxelinux.0
+ ├── ldlinux.c32
+ ├── menu.c32
+ ├── chain.c32
+ └── pxelinux.cfg/
+      ├── default
+      └── 01-52-54-00-ab-cd-ef</pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>When a host is set to <strong>Build mode</strong>, Foreman automatically generates the configuration file under <code>pxelinux.cfg/</code> based on the host’s OS, architecture, and installation template.
+The Smart&#160;Proxy’s TFTP service then serves both the PXELinux binary and its configuration file to the client during network boot.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="ref_grub2-uefi-bootloaders_provisioning"><a class="anchor" href="#ref_grub2-uefi-bootloaders_provisioning"></a>D.3. Grub2 UEFI boot loader and the <code>bootloader-universe</code> structure</h3>
+<div class="paragraph">
+<p><strong>PXEGrub2</strong> GRUB-based PXE boot loader supports BIOS and UEFI environments, as well as Secure Boot environments.
+The <code>bootloader-universe</code> directory structure organizes Grub2 binaries by OS and architecture.</p>
+</div>
+<div class="paragraph">
+<p>PXEGrub2 is managed by the Smart&#160;Proxy’s TFTP service, which provides PXE clients with the appropriate boot loader binaries and configuration files.</p>
+</div>
+<div class="paragraph">
+<p>By using the <code>bootloader-universe</code> directory structure, Grub2-based UEFI boot loaders can be organized and managed by distribution, version, and architecture.
+This feature does not require explicit configuration; it is automatically enabled when the Smart&#160;Proxy uses the
+<code>/var/lib/tftpboot/bootloader-universe/pxegrub2/</code> directory structure.</p>
+</div>
+<div class="sect3">
+<h4 id="_directory_structure_bootloader_universe"><a class="anchor" href="#_directory_structure_bootloader_universe"></a>D.3.1. Directory Structure: <code>bootloader-universe</code></h4>
+<div class="paragraph">
+<p>This section explains the purpose and layout of the <code>bootloader-universe</code> directory, which enables multiple OS versions and architectures to coexist cleanly.</p>
+</div>
+<div class="sect4">
+<h5 id="_organized_hierarchy_by_os_and_architecture"><a class="anchor" href="#_organized_hierarchy_by_os_and_architecture"></a>Organized Hierarchy by OS and Architecture</h5>
+<div class="paragraph">
+<p>When the Smart&#160;Proxy recognizes the <code>/var/lib/tftpboot/bootloader-universe/pxegrub2/</code> structure,
+boot loaders are stored in an organized hierarchy by OS, version, and architecture.
+This allows multiple distributions and versions to coexist without conflicts.</p>
+</div>
+<div class="paragraph">
+<p>Before placing boot loader binaries (<code>shim&lt;<em>arch</em>&gt;.efi</code>, <code>grub&lt;<em>arch</em>&gt;.efi</code>), you must manually create the corresponding directory hierarchy using the <code>mkdir</code> command.</p>
+</div>
+<div class="paragraph">
+<p>Example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>mkdir -p /var/lib/tftpboot/bootloader-universe/pxegrub2/rocky/9.5/x86_64</pre>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_file_locations_and_roles_2"><a class="anchor" href="#_file_locations_and_roles_2"></a>File Locations and Roles</h5>
+<div class="paragraph">
+<p>The following table summarizes the purpose of each directory in the <code>bootloader-universe</code> hierarchy.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>File Locations and Roles</p>
+</li>
+</ol>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 50%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Path</th>
+<th class="tableblock halign-left valign-top">Purpose / Usage</th>
+<th class="tableblock halign-left valign-top">User Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>/var/lib/tftpboot/bootloader-universe/pxegrub2/&lt;<em>distro</em>&gt;/&lt;<em>version</em>&gt;/&lt;<em>arch</em>&gt;/</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Stores OS- and architecture-specific Grub2 binaries (shim&lt;<em>arch</em>&gt;.efi, grub&lt;<em>arch</em>&gt;.efi) and symbolic links (boot.efi, boot-sb.efi).
+Used for version-specific boot loader management within the <code>bootloader-universe</code> hierarchy.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Create manually</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>/var/lib/tftpboot/bootloader-universe/pxegrub2/&lt;<em>distro</em>&gt;/default/&lt;<em>arch</em>&gt;/</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Stores OS- and architecture-specific Grub2 binaries (shim&lt;<em>arch</em>&gt;.efi, grub&lt;<em>arch</em>&gt;.efi) and symbolic links (boot.efi, boot-sb.efi).
+Used as a fallback directory when a specific version is not available.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Create manually</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">/var/lib/tftpboot/host-config/&lt;<em>My_MAC_Address</em>&gt;/grub2/</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Host-specific directory automatically created when a host enters <strong>Build mode</strong>.
+Contains symbolic links (boot.efi, boot-sb.efi) and a generated grub.cfg.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Auto-created by Smart&#160;Proxy</strong></p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Example structure:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># tree /var/lib/tftpboot/bootloader-universe/
+/var/lib/tftpboot/bootloader-universe/
+ ├── pxegrub2/
+ │    ├── rocky/9.5/x86_64/
+ │    │    ├── shimx64.efi
+ │    │    ├── grubx64.efi
+ │    │    ├── boot.efi -&gt; grubx64.efi
+ │    │    └── boot-sb.efi -&gt; shimx64.efi
+ │    └── ubuntu/22.04/x86_64/
+ │         ├── shimx64.efi
+ │         ├── grubx64.efi
+ │         ├── boot.efi -&gt; grubx64.efi
+ │         └── boot-sb.efi -&gt; shimx64.efi
+ └── host-config/
+      └── 52-54-00-ab-cd-ef/
+           └── grub2/
+                ├── boot.efi -&gt; ../../../bootloader-universe/pxegrub2/rocky/9.5/x86_64/boot.efi
+                ├── boot-sb.efi -&gt; ../../../bootloader-universe/pxegrub2/rocky/9.5/x86_64/boot-sb.efi
+                ├── grub.cfg
+                ├── shimx64.efi -&gt; ../../../bootloader-universe/pxegrub2/rocky/9.5/x86_64/shimx64.efi
+                └── grubx64.efi -&gt; ../../../bootloader-universe/pxegrub2/rocky/9.5/x86_64/grubx64.efi</pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="ulist">
+<ul>
+<li>
+<p>In <code>bootloader-universe/pxegrub2/&lt;<em>distro</em>&gt;/&lt;<em>version</em>&gt;/&lt;<em>arch</em>&gt;/</code>,
+<code>boot.efi</code> and <code>boot-sb.efi</code> are symbolic links to <code>grub&lt;<em>arch</em>&gt;.efi</code> and <code>shim&lt;<em>arch</em>&gt;.efi</code>, respectively.
+The Smart&#160;Proxy automatically creates host-specific links to these files under <code>host-config/&lt;<em>My_MAC_Address</em>&gt;/grub2/</code>.</p>
+</li>
+<li>
+<p>In the Foreman web UI, OS and distribution identifiers (<code>&lt;<em>distro</em>&gt;</code>) must not contain spaces.</p>
+</li>
+</ul>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Important</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>You must manually create <code>boot.efi</code> and <code>boot-sb.efi</code> symbolic links within each <code>&lt;<em>arch</em>&gt;</code> directory.</p>
+</div>
+<div class="paragraph">
+<p>Example (x86_64):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>$ ln -s grubx64.efi boot.efi
+$ ln -s shimx64.efi boot-sb.efi
+$ chmod 644 grubx64.efi shimx64.efi</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>chmod</code> command ensures that TFTP and HTTPBoot clients can read these files.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_legacy_layout_non_bootloader_universe"><a class="anchor" href="#_legacy_layout_non_bootloader_universe"></a>D.3.2. Legacy Layout (Non-<code>bootloader-universe</code>)</h4>
+<div class="paragraph">
+<p>This section explains how boot loaders are handled when the <code>bootloader-universe</code> directory is not used.
+This layout remains supported for backward compatibility.</p>
+</div>
+<div class="paragraph">
+<p>If the <code>/var/lib/tftpboot/bootloader-universe/pxegrub2/</code> structure is not used,
+Foreman falls back to the legacy <code>/var/lib/tftpboot/grub2/</code> directory.
+Boot loaders are stored in a flat layout, but when a host enters <strong>Build mode</strong>, the Smart&#160;Proxy creates a host-specific directory with the required configuration files and links.</p>
+</div>
+<div class="sect4">
+<h5 id="_file_locations_and_roles_3"><a class="anchor" href="#_file_locations_and_roles_3"></a>File Locations and Roles</h5>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>File Locations and Roles</p>
+</li>
+</ol>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Path</th>
+<th class="tableblock halign-left valign-top">Purpose / Usage</th>
+<th class="tableblock halign-left valign-top">User Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">/var/lib/tftpboot/grub2/</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Default directory used when <code>bootloader-universe</code> is not enabled.
+Contains Grub2 UEFI boot loader binaries such as grubx64.efi, shimx64.efi, grubaa64.efi, and shimaa64.efi.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Place the appropriate boot loader binaries (grub&lt;<em>arch</em>&gt;.efi, shim&lt;<em>arch</em>&gt;.efi) in this directory.
+No subdirectory creation is required.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">/var/lib/tftpboot/host-config/&lt;<em>My_MAC_Address</em>&gt;/grub2/</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Host-specific directory automatically created when a host enters <strong>Build mode</strong>.
+Contains symbolic links (boot.efi, boot-sb.efi) and a generated grub.cfg.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Auto-created by Smart&#160;Proxy</strong></p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Example (x86_64):</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>/var/lib/tftpboot/grub2/
+ ├── grubx64.efi
+ └── shimx64.efi</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When a host enters <strong>Build mode</strong>, the Smart&#160;Proxy creates the following directory structure:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># tree /var/lib/tftpboot/
+/var/lib/tftpboot/
+ └── host-config/
+      └── 52-54-00-ab-cd-ef/
+           └── grub2/
+                ├── boot.efi -&gt; ../../../grub2/grubx64.efi
+                ├── boot-sb.efi -&gt; ../../../grub2/shimx64.efi
+                ├── grub.cfg
+                ├── grub.cfg-01-52-54-00-ab-cd-ef
+                └── grub.cfg-52:54:00:ab:cd:ef</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="ref_ipxe-bootloaders_provisioning"><a class="anchor" href="#ref_ipxe-bootloaders_provisioning"></a>D.4. iPXE / Grub2 UEFI HTTP(S) boot loaders</h3>
+<div class="paragraph">
+<p>This section describes HTTP-based boot methods such as <strong>iPXE</strong>, <strong>iPXE chainloading</strong> and <strong>Grub2 UEFI HTTP(S) Boot</strong>, which use the Smart&#160;Proxy’s HTTPBoot module to deliver bootloaders and installation files.</p>
+</div>
+<div class="paragraph">
+<p>In addition to the <strong>TFTP-based PXE</strong> mechanism, Foreman supports boot methods that use <strong>HTTP</strong>.</p>
+</div>
+<div class="paragraph">
+<p>HTTP-based boot methods include:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>iPXE</strong></p>
+</li>
+<li>
+<p><strong>iPXE chainloading</strong></p>
+</li>
+<li>
+<p><strong>Grub2 UEFI HTTP Boot</strong></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>All of these methods leverage the Smart&#160;Proxy’s HTTPBoot module to deliver bootloaders and installation files.</p>
+</div>
+<div class="paragraph">
+<p>The <strong>HTTPBoot</strong> feature exposes the same files that are available via TFTP, but over the HTTP(S) protocol.
+This can improve boot reliability in environments where TFTP is blocked, unreliable, or slow.</p>
+</div>
+<div class="sect3">
+<h4 id="_boot_methods"><a class="anchor" href="#_boot_methods"></a>D.4.1. Boot Methods</h4>
+<div class="paragraph">
+<p>This section explains the two main boot workflows: <strong>iPXE chainloading</strong> and <strong>iPXE</strong>, <strong>Grub2 UEFI HTTP(S) Boot</strong>.
+Each method offers advantages depending on the firmware type and network environment.</p>
+</div>
+<div class="sect4">
+<h5 id="_ipxe_chainloading_pxe_http"><a class="anchor" href="#_ipxe_chainloading_pxe_http"></a>iPXE Chainloading (PXE → HTTP)</h5>
+<div class="paragraph">
+<p>In this method, the boot process starts with a traditional PXE (TFTP) stage and then switches to HTTP for improved performance and flexibility.</p>
+</div>
+<div class="paragraph">
+<p><strong>Workflow:</strong></p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>The firmware downloads the appropriate iPXE loader via TFTP.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>BIOS downloads <code>undionly-ipxe.0</code>.</p>
+</li>
+<li>
+<p>UEFI downloads <code>ipxe.efi</code>.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>iPXE then initializes the network and switches to HTTP, requesting an iPXE script such as <code>menu.ipxe</code>.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>This hybrid approach enables existing PXE infrastructure to use HTTP for the later boot stages without requiring firmware-level HTTP support.</p>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_ipxe_grub2_uefi_https_boot"><a class="anchor" href="#_ipxe_grub2_uefi_https_boot"></a>iPXE, Grub2 UEFI HTTP(S) Boot</h5>
+<div class="paragraph">
+<p>In this method, UEFI firmware directly loads boot loaders using HTTP or HTTPS without any TFTP step.</p>
+</div>
+<div class="paragraph">
+<p><strong>Workflow:</strong></p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>UEFI firmware requests boot loader files from the Smart&#160;Proxy via HTTP or HTTPS.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>For example, it requests <code>ipxe-&lt;<em>arch</em>&gt;.efi</code>.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Grub2 then loads <code>grub.cfg</code> and starts the OS installer.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_file_locations_and_roles_4"><a class="anchor" href="#_file_locations_and_roles_4"></a>D.4.2. File Locations and Roles</h4>
+<div class="paragraph">
+<p>This section describes where iPXE and Grub2 HTTPBoot files are stored, what each file is used for,
+and whether it must be provided manually or is created automatically.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>File Locations and Roles</p>
+</li>
+</ol>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Path</th>
+<th class="tableblock halign-left valign-top">Purpose / Usage</th>
+<th class="tableblock halign-left valign-top">User Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">/var/lib/tftpboot/undionly-ipxe.0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">iPXE boot loader for <strong>iPXE Chain BIOS</strong>.
+Used in BIOS environments as the first-stage loader that transitions from TFTP-based PXE to HTTP-based iPXE boot.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Place the undionly-ipxe.0 binary in this directory.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">/var/lib/tftpboot/ipxe.efi</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">iPXE boot loader for <strong>iPXE Chain UEFI</strong>.
+Used in UEFI environments to chainload into iPXE for HTTP-based provisioning.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Place the ipxe.efi binary in this directory.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">/var/lib/tftpboot/ipxe-&lt;arch&gt;.efi</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Architecture-specific iPXE binary for <strong>iPXE UEFI HTTP</strong> boot.
+Used for direct iPXE boot via HTTP (without TFTP chainloading).</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Place the architecture-matched file (for example, ipxe-x64.efi) here.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">/var/lib/tftpboot/grub2/grub&lt;arch&gt;.efi</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Grub2 UEFI boot loader for <strong>Grub2 UEFI HTTP</strong> or <strong>HTTPS Boot</strong>.
+Used to start UEFI installations via the Smart&#160;Proxy’s HTTPBoot module.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Place the corresponding architecture-specific file (for example, grubx64.efi) in this directory.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">/var/lib/tftpboot/grub2/shim&lt;arch&gt;.efi</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Secure Boot shim loader for Grub2.
+Used when “Grub2 UEFI SecureBoot” or “Grub2 UEFI HTTPS SecureBoot” is selected.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Place the matching shim binary (for example, shimx64.efi) in this directory.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_shared_tftp_and_http_root"><a class="anchor" href="#_shared_tftp_and_http_root"></a>D.4.3. Shared TFTP and HTTP Root</h4>
+<div class="paragraph">
+<p>The Smart&#160;Proxy’s <strong>HTTPBoot</strong> module and <strong>TFTP</strong> service share the same root directory.
+By default, this directory is <code>/var/lib/tftpboot/</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>URL path:   http://&lt;<em>smartproxy-example-com</em>&gt;/httpboot/
+Filesystem: /var/lib/tftpboot/</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This mapping means that the HTTP URL path <code>/httpboot/</code> directly corresponds to the local filesystem under <code>/var/lib/tftpboot/</code>.
+For example, a file located at:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>/var/lib/tftpboot/pxegrub2/grubx64.efi</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>is available over HTTP at:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>http://&lt;<em>smartproxy-example-com</em>&gt;/httpboot/pxegrub2/grubx64.efi</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This shared structure simplifies management by ensuring that both PXE (TFTP) and HTTP clients use the same set of boot loader binaries and configuration files.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_example_directory_layout_2"><a class="anchor" href="#_example_directory_layout_2"></a>D.4.4. Example Directory Layout</h4>
+<div class="paragraph">
+<p>This subsection provides an example layout of typical iPXE and HTTPBoot-related files under <code>/var/lib/tftpboot/</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># tree /var/lib/tftpboot/
+/var/lib/tftpboot/
+ ├── undionly-ipxe.0
+ ├── ipxe.efi
+ ├── ipxe-x64.efi
+ └── grub2/
+      ├── grubx64.efi
+      └── shimx64.efi</pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Grub2 UEFI HTTPS Boot relies on the Smart&#160;Proxy’s HTTPS service to securely deliver boot loader binaries (<code>boot.efi</code>, <code>shim*.efi</code>, and similar) to UEFI clients.
+The configuration for this HTTPS service is defined in the Smart&#160;Proxy’s main settings file:
+<code>/etc/foreman-proxy/settings.yml</code>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
 <!-- "Fork me on GitHub" CSS ribbon v0.2.3 | MIT License -->
 <!-- https://github.com/simonwhitaker/github-fork-ribbon-css -->
 <a class="release-ribbon right-top fixed" data-ribbon="Pre-release version" title="Pre-release version">
@@ -12249,6 +13209,8 @@ Pre-release version
 <a class="issue-ribbon right-bottom fixed" href="https://github.com/theforeman/foreman-documentation/issues/new?template=report-issue.md" data-ribbon="Report issue" title="Report issue">
 Report issue
 </a>
+</div>
+</div>
 </div>
 </div>
 </div>
