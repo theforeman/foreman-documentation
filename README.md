@@ -34,7 +34,7 @@ See the [README in the `guides/` subdirectory](guides/README.md) for more inform
 
 To build both the static site and the guides for easy local testing, a global `Makefile` is provided in the root directory with the following targets:
 
-* `html`: builds HTML guides with all contexts (`foreman-el`, `foreman-deb`, `foremanctl`, `katello`, `satellite`, and `orcharhino`)
+* `html`: builds HTML guides with all contexts (`foreman-el`, `foreman-deb`, `katello`, `satellite`, `orcharhino`, including `foremanctl` build for each context)
 * `web`: builds static site using the `nanoc` tool
 * `compile`: compiles all content into a single directory `./result`
 * `serve`: serves the result directory via a python web server (the default target)
