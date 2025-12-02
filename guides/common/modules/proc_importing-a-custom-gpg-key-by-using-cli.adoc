@@ -1,0 +1,67 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="importing-a-custom-gpg-key-by-using-cli"]
+= Importing a {customgpg} key by using Hammer CLI
+
+[role="_abstract"]
+When clients consume signed {customcontent}, ensure that the clients are configured to validate the installation of packages with the appropriate GPG Key.
+This helps to ensure that only packages from authorized sources can be installed.
+
+ifdef::satellite[]
+Red Hat content is already configured with the appropriate GPG key and thus GPG Key management of Red Hat repositories is not supported.
+endif::[]
+
+.Prerequisites
+ifdef::client-content-dnf[]
+* Ensure that you have a copy of the GPG key used to sign the RPM content that you want to use and manage in {Project}.
+Most RPM distribution vendors provide their GPG Key on their website.
++
+You can also extract this manually from an RPM:
+
+. Download a copy of the version specific repository package to your local machine:
++
+[options="nowrap" subs="+quotes"]
+----
+$ wget _http://www.example.com/9.5/example-9.5-2.noarch.rpm_
+----
+. Extract the RPM file without installing it:
++
+[options="nowrap" subs="+quotes"]
+----
+$ rpm2cpio _example-9.5-2.noarch.rpm_ | cpio -idmv
+----
+
+The GPG key is located relative to the extraction at `etc/pki/rpm-gpg/RPM-GPG-KEY-_EXAMPLE-95_`.
+endif::[]
+ifndef::client-content-dnf[]
+* Extract the GPG public key fingerprints from a signed `Release` file for Deb content.
+For more information, see xref:Extracting_GPG_Public_Key_Fingerprints_from_Release_Files_{context}[].
+endif::[]
+
+.Procedure
+. Copy the GPG key to your {ProjectServer}:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+ifdef::client-content-dnf[]
+$ scp ~/etc/pki/rpm-gpg/RPM-GPG-KEY-_EXAMPLE-95_ root@{foreman-example-com}:~/.
+endif::[]
+ifndef::client-content-dnf[]
+$ scp ~/_My_GPG_Public_Key_ root@{foreman-example-com}:~/.
+endif::[]
+----
+. Upload the GPG key to {Project}:
++
+[options="nowrap" subs="+quotes"]
+----
+$ hammer content-credentials create \
+--content-type gpg_key \
+--name "_My_GPG_Key_" \
+--organization "_My_Organization_" \
+ifdef::client-content-dnf[]
+--path ~/RPM-GPG-KEY-_EXAMPLE-95_
+endif::[]
+ifndef::client-content-dnf[]
+--path ~/_My_GPG_Public_Key_
+endif::[]
+----
