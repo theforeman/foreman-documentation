@@ -66,7 +66,7 @@ ccutil:
 		ccutil compile --lang=en-US --format html-single ; \
 	fi
 
-$(DEST_DIR)/$(BUILD).css: $(CSS_SOURCES)
+$(DEST_DIR)/style.css: $(CSS_SOURCES)
 	bundle exec sass --sourcemap=none --no-cache --style $(CSS_STYLE) -I $(COMMON_DIR)/css $(COMMON_DIR)/css/default.scss $@
 
 $(IMAGES_TS): $(IMAGES)
@@ -74,8 +74,8 @@ $(IMAGES_TS): $(IMAGES)
 	cp -rf $(CP_ARGS) ./images/* $(IMAGES_DIR)
 	@touch $(IMAGES_TS)
 
-$(DEST_HTML): $(SOURCES) $(DEPENDENCIES) $(DOCINFO_SOURCES) $(DEST_DIR)/$(BUILD).css $(IMAGES_TS)
-	bundle exec asciidoctor -r asciidoctor-tabs -a build=$(BUILD) $(BASEURL_ATTR) -a docinfo=shared -a docinfodir=common -a date_mdy="$(DATE_MDY)" -a date_my="$(DATE_MY)" -a docdatetime="$(DATE_MY)" -a stylesheet=$(DEST_DIR)/$(BUILD).css -a attribute-missing=warn -b html5 -d book --trace -o $@ $< 2>&1 | tee $@.log 1>&2
+$(DEST_HTML): $(SOURCES) $(DEPENDENCIES) $(DOCINFO_SOURCES) $(DEST_DIR)/style.css $(IMAGES_TS)
+	bundle exec asciidoctor -r asciidoctor-tabs -a build=$(BUILD) $(BASEURL_ATTR) -a docinfo=shared -a docinfodir=common -a date_mdy="$(DATE_MDY)" -a date_my="$(DATE_MY)" -a docdatetime="$(DATE_MY)" -a stylesheet=$(DEST_DIR)/style.css -a attribute-missing=warn -b html5 -d book --trace -o $@ $< 2>&1 | tee $@.log 1>&2
 	@echo CHECKING FOR ASCIIDOCTOR ERRORS AND WARNINGS
 	@! grep -Eq "^asciidoctor: (ERROR|WARNING)" $@.log
 	@echo CHECKING FOR ORPHAN XREFS HTML LINKS
