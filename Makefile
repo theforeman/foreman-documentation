@@ -24,7 +24,7 @@ clean:
 	$(MAKE) -C guides/ clean
 	rm -rf $(DEST) web/output/
 
-html: build-foreman-el build-foreman-deb build-foremanctl-katello build-katello
+html: build-foreman-el build-foreman-deb build-foremanctl-katello build-foremanctl-orcharhino build-foremanctl-satellite build-katello build-orcharhino build-satellite
 
 build-%: FORCE prep
 	$(MAKE) -C guides/ html BUILD=$*
