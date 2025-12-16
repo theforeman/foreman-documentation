@@ -1,0 +1,65 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="resetting-external-authentication-configuration-for-kerberos-sso"]
+= Resetting external authentication configuration for Kerberos SSO
+
+[role="_abstract"]
+You can disable external authentication with {FreeIPA} or Active Directory (AD) by resetting the configuration for the `IPA` authentication type.
+This prevents user accounts defined in the external authentication source from accessing {Project}.
+
+[IMPORTANT]
+====
+Resetting external authentication prevents users from accessing {Project} with Kerberos single sign-on (SSO).
+However, some configuration files, such as configuration files for the System Security Services Daemon (SSSD), will remain modified because {Project} does not have access to the previous state of these files.
+====
+
+.Procedure
+* Reset the external authentication configuration to the default state:
+ifdef::foremanctl[]
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# foremanctl deploy --reset-external-authentication
+----
+endif::[]
+ifndef::foremanctl[]
+** To disable access to {ProjectWebUI}:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {foreman-installer} --reset-foreman-ipa-authentication
+----
+** To disable access to {ProjectWebUI}, {Project} API, and Hammer CLI:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {foreman-installer} --reset-foreman-ipa-authentication-api
+----
+endif::[]
+
+.Verification
+ifdef::foremanctl[]
+* Verify your external authentication configuration:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+$ curl -k -u : --negotiate https://_{foreman-example-com}_/users/extlogin
+----
++
+If external authentication is disabled, the `curl` command redirects you to `\https://{foreman-example-com}/users/login`.
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+<html><body>You are being <a href="https://_{foreman-example-com}_/users/login">redirected</a>.</body></html>
+----
+endif::[]
+ifndef::foremanctl[]
+* Display the value for the `foreman-ipa-authentication` and `foreman-ipa-authentication-api` configuration options:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {foreman-installer} --help | grep foreman-ipa-authentication
+----
++
+The expected value for disabled external authentication is `false`.
+endif::[]
