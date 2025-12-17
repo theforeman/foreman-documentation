@@ -3,32 +3,16 @@
 [id="Using_VMware_Cloud_Init_and_Userdata_Templates_for_Provisioning_{context}"]
 = Using VMware cloud-init and userdata templates for provisioning
 
+[role="_abstract"]
 You can use VMware with the `Cloud-init` and `Userdata` templates to insert user data into the new virtual machine, to make further VMware customization, and to enable the VMware-hosted virtual machine to call back to {Project}.
 
 You can use the same procedures to set up a VMware compute resource within {Project}, with a few modifications to the workflow.
 
-.VMware cloud-init provisioning overview
-ifdef::satellite[]
-image::common/user-data-sequence-satellite.png[VMware cloud-init provisioning overview]
-endif::[]
-ifdef::orcharhino[]
-image::common/user-data-sequence-orcharhino.svg[VMware cloud-init provisioning overview]
-endif::[]
-ifndef::satellite,orcharhino[]
-image::common/user-data-sequence-foreman.svg[VMware template provisioning]
-endif::[]
-
-When you set up the compute resource and images for VMware provisioning in {Project}, the following sequence of provisioning events occurs:
-
-* The user provisions one or more virtual machines using the {ProjectWebUI}, API, or hammer
-* {Project} calls the VMware vCenter to clone the virtual machine template
-* {Project} `userdata` provisioning template adds customized identity information
-* When provisioning completes, the `Cloud-init` provisioning template instructs the virtual machine to call back to {SmartProxy} when `cloud-init` runs
-* VMware vCenter clones the template to the virtual machine
-* VMware vCenter applies customization for the virtual machine's identity, including the host name, IP, and DNS
-* The virtual machine builds, `cloud-init` is invoked and calls back {Project} on port `80`, which then redirects to `443`
-
 .Prerequisites
+* Associate the templates with your operating system.
+For more information, see xref:associating-the-userdata-and-cloud-init-templates-with-the-operating-system[].
+* Prepare an image.
+For more information, see xref:preparing-an-image-to-use-the-cloud-init-template_{context}[].
 * Configure port and firewall settings to open any necessary connections.
 Because of the `cloud-init` service, the virtual machine always calls back to {Project} even if you register the virtual machine to {SmartProxy}.
 ifndef::orcharhino[]
@@ -39,34 +23,6 @@ include::snip_prerequisite-configured-smart-proxy-registration-provisioning.adoc
 ** `/etc/cloud/cloud.cfg.d/01_network.cfg`
 ** `/etc/cloud/cloud.cfg.d/10_datasource.cfg`
 ** `/etc/cloud/cloud.cfg`
-
-.Associating the `Userdata` and `Cloud-init` templates with the operating system
-. In the {ProjectWebUI}, navigate to *Hosts* > *Templates* > *Provisioning Templates*.
-. Search for the *CloudInit default* template and click its name.
-. Click the *Association* tab.
-. Select all operating systems to which the template applies and click *Submit*.
-. Repeat the steps above for the *UserData open-vm-tools* template.
-. Navigate to *Hosts* > *Provisioning Setup* > *Operating Systems*.
-. Select the operating system that you want to use for provisioning.
-. Click the *Templates* tab.
-. From the *Cloud-init template* list, select *CloudInit default*.
-. From the *User data template* list, select *UserData open-vm-tools*.
-. Click *Submit* to save the changes.
-
-.Preparing an image to use the cloud-init template
-
-To prepare an image, you must first configure the settings that you require on a virtual machine that you can then save as an image to use in {Project}.
-
-To use the `cloud-init` template for provisioning, you must configure a virtual machine so that `cloud-init` is installed, enabled, and configured to call back to {ProjectServer}.
-
-For security purposes, you must install a CA certificate to use HTTPS for all communication.
-This procedure includes steps to clean the virtual machine so that no unwanted information transfers to the image you use for provisioning.
-
-If you have an image with `cloud-init`, you must still follow this procedure to enable `cloud-init` to communicate with {Project} because `cloud-init` is disabled by default.
-
-ifndef::satellite[]
-These instructions are for {EL} or Fedora, follow similar steps for other Linux distributions.
-endif::[]
 
 .Procedure
 . On the virtual machine that you use to create the image, install the required packages:
@@ -210,4 +166,4 @@ endif::[]
 # unset HISTFILE
 ----
 . Create an image from this virtual machine.
-. xref:Adding_VMware_Images_to_Server_{context}[Add your image to {Project}].
+. xref:adding-vmware-images-to-server-by-using-cli_{context}[Add your image to {Project}].
