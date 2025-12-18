@@ -1,4 +1,12 @@
-This file includes a web UI procedure (`.Procedure`) and a CLI procedure (`.CLI procedure`). Split it into two files: `proc_*-by-using-web-ui.adoc` and `proc_*-by-using-cli.adoc`. Follow these principles:
+# Split a module into web UI and CLI modules
+
+## Overview
+
+This file includes a web UI procedure (`.Procedure`) and a CLI procedure (`.CLI procedure`). Split it into two files: `proc_*-by-using-web-ui.adoc` and `proc_*-by-using-cli.adoc`.
+
+## Instructions
+
+Follow these principles:
 
 * Include the introduction (before `.Procedure`) in both new files.
 * Adjust the ID of the new files: `[id="original-id-by-using-web-ui"]` and `[id="original-id-by-using-cli"]`. Use lower case and separate words with hyphens `-`. Drop `_{context}` from the IDs.
