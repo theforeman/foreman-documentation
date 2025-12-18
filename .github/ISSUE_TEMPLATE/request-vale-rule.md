@@ -10,4 +10,4 @@ assignees: ''
 
 #### Optional: Proposal for how to implement the rule (regular expression, Tengo script, etc.)
 
-[ ] I have checked the RedHat[https://github.com/redhat-documentation/vale-at-red-hat/tree/main/.vale/styles/RedHat] style package to make sure a rule like this does not exist there.
+[ ] I have checked the [RedHat](https://github.com/redhat-documentation/vale-at-red-hat/tree/main/.vale/styles/RedHat) style package to make sure a rule like this does not exist there.
