@@ -52,6 +52,12 @@ This repository uses the [Vale](https://vale.sh/) linter.
 The `.vale/styles/` subdirectory includes a project-specific `foreman-documentation` style package with rules to check for Foreman documentation project conventions.
 When adding a new rule to the `foreman-documentation` style, make sure it does not duplicate the other styles included in `.vale/styles/`.
 
+### `.cursor` subdirectory
+
+This repository contains commands for the Cursor editor that you can use.
+You can also add your own commands that you use when contributing to the documentation.
+For more information about Cursor commands, see https://cursor.com/docs/agent/chat/commands[Commands] in Cursor documentation.
+
 ## Deployment
 
 GitHub actions perform HTML (with link validation) and WEB artifact creation and if succeeded and branch is master or stable, artifacts are downloaded, extracted and deployed (commited into gh-pages). Deployment does not delete files, in order to remove some unwanted content, manual deletion and push into gh-pages must be performed.
