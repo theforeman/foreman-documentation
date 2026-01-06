@@ -13,63 +13,50 @@ This feature does not require explicit configuration.
 It is automatically enabled when the {SmartProxy} uses the
 `/var/lib/tftpboot/bootloader-universe/pxegrub2/` directory structure.
 
-== Directory Structure: `bootloader-universe`
+== Directory structure: `bootloader-universe`
 
-This section explains the purpose and layout of the `bootloader-universe` directory, which enables multiple OS versions and architectures to coexist cleanly.
-
-=== Organized Hierarchy by OS and Architecture
+The `bootloader-universe` directory enables multiple OS versions and architectures to coexist without conflicts.
 
 When the {SmartProxy} recognizes the `/var/lib/tftpboot/bootloader-universe/pxegrub2/` structure,
 boot loaders are stored in an organized hierarchy by OS, version, and architecture.
-This allows multiple distributions and versions to coexist without conflicts.
 
-Before placing boot loader binaries (`shim<__arch__>.efi`, `grub<__arch__>.efi`), you must manually create the corresponding directory hierarchy using the `mkdir` command.
+Before placing boot loader binaries (`shim__<My_Arch>__.efi`, `grub__<My_Arch>__.efi`), you must manually create the corresponding directory hierarchy by using the `mkdir` command, for example, `# mkdir -p /var/lib/tftpboot/bootloader-universe/pxegrub2/__<My_Distribution>__/__<My_Version>__/__<My_Arch>__`
 
-Example:
-----
-mkdir -p /var/lib/tftpboot/bootloader-universe/pxegrub2/rocky/9.5/x86_64
-----
-
-=== File Locations and Roles
-
-The following table summarizes the purpose of each directory in the `bootloader-universe` hierarchy.
-
-. File Locations and Roles
-
+.Default `bootloader universe` files
 [cols="1,2,1", options="header"]
 |===
 | Path
 | Purpose / Usage
 | User Action
 
-| `/var/lib/tftpboot/bootloader-universe/pxegrub2/<__distro__>/<__version__>/<__arch__>/`
-| Stores OS- and architecture-specific Grub2 binaries (shim<__arch__>.efi, grub<__arch__>.efi) and symbolic links (boot.efi, boot-sb.efi).
+| `/var/lib/tftpboot/bootloader-universe/pxegrub2/__<My_Distribution>__/__<My_Version>__/__<My_Arch>__/`
+| Stores OS- and architecture-specific Grub2 binaries (shim__<My_Arch>__.efi, grub__<My_Arch>__.efi) and symbolic links (boot.efi, boot-sb.efi).
 Used for version-specific boot loader management within the `bootloader-universe` hierarchy.
 | **Create manually**
 
-| `/var/lib/tftpboot/bootloader-universe/pxegrub2/<__distro__>/default/<__arch__>/`
-| Stores OS- and architecture-specific Grub2 binaries (shim<__arch__>.efi, grub<__arch__>.efi) and symbolic links (boot.efi, boot-sb.efi).
+| `/var/lib/tftpboot/bootloader-universe/pxegrub2/__<My_Distribution>__/default/__<My_Arch>__/`
+| Stores OS- and architecture-specific Grub2 binaries (`shim__<My_Arch>__.efi`, `grub__<My_Arch>__.efi`) and symbolic links (`boot.efi`, `boot-sb.efi`).
 Used as a fallback directory when a specific version is not available.
 | **Create manually**
 
-| /var/lib/tftpboot/host-config/<__My_MAC_Address__>/grub2/
+| `/var/lib/tftpboot/host-config/__<My_MAC_Address>__/grub2/`
 | Host-specific directory automatically created when a host enters *Build mode*.
-Contains symbolic links (boot.efi, boot-sb.efi) and a generated grub.cfg.
+Contains symbolic links (`boot.efi`, `boot-sb.efi`) and a generated `grub.cfg`.
 | *Auto-created by {SmartProxy}*
 |===
 
-Example structure:
-
+.Model `bootloader-universe` directory layout
+====
 ----
 # tree /var/lib/tftpboot/bootloader-universe/
 /var/lib/tftpboot/bootloader-universe/
  ├── pxegrub2/
- │    ├── rocky/9.5/x86_64/
+ │    ├── __<My_Distribution>__/__<My_Version>__/__<My_Arch>__/
  │    │    ├── shimx64.efi
  │    │    ├── grubx64.efi
  │    │    ├── boot.efi -> grubx64.efi
  │    │    └── boot-sb.efi -> shimx64.efi
- │    └── ubuntu/22.04/x86_64/
+ │    └── ubuntu/22.04/__<My_Arch>__/
  │         ├── shimx64.efi
  │         ├── grubx64.efi
  │         ├── boot.efi -> grubx64.efi
@@ -77,27 +64,22 @@ Example structure:
  └── host-config/
       └── 52-54-00-ab-cd-ef/
            └── grub2/
-                ├── boot.efi -> ../../../bootloader-universe/pxegrub2/rocky/9.5/x86_64/boot.efi
-                ├── boot-sb.efi -> ../../../bootloader-universe/pxegrub2/rocky/9.5/x86_64/boot-sb.efi
+                ├── boot.efi -> ../../../bootloader-universe/pxegrub2/__<My_Distribution>__/__<My_Version>__/__<My_Arch>__/boot.efi
+                ├── boot-sb.efi -> ../../../bootloader-universe/pxegrub2/__<My_Distribution>__/__<My_Version>__/__<My_Arch>__/boot-sb.efi
                 ├── grub.cfg
-                ├── shimx64.efi -> ../../../bootloader-universe/pxegrub2/rocky/9.5/x86_64/shimx64.efi
-                └── grubx64.efi -> ../../../bootloader-universe/pxegrub2/rocky/9.5/x86_64/grubx64.efi
+                ├── shimx64.efi -> ../../../bootloader-universe/pxegrub2/__<My_Distribution>__/__<My_Version>__/__<My_Arch>__/shimx64.efi
+                └── grubx64.efi -> ../../../bootloader-universe/pxegrub2/__<My_Distribution>__/__<My_Version>__/__<My_Arch>__/grubx64.efi
 ----
 
-[NOTE]
-====
-* In `bootloader-universe/pxegrub2/<__distro__>/<__version__>/<__arch__>/`,
-`boot.efi` and `boot-sb.efi` are symbolic links to `grub<__arch__>.efi` and `shim<__arch__>.efi`, respectively.
-The {SmartProxy} automatically creates host-specific links to these files under `host-config/<__My_MAC_Address__>/grub2/`.
+In this structure, the following principles apply:
 
-* In the {ProjectWebUI}, OS and distribution identifiers (`<__distro__>`) must not contain spaces.
-====
+* `boot.efi` and `boot-sb.efi` are symbolic links to `grub__<My_Arch>__.efi` and `shim__<My_Arch>__.efi`, respectively.
+The {SmartProxy} automatically creates host-specific links to these files under `host-config/__<My_MAC_Address>__/grub2/`.
 
-[IMPORTANT]
-====
-You must manually create `boot.efi` and `boot-sb.efi` symbolic links within each `<__arch__>` directory.
+* In the {ProjectWebUI}, the `__<My_Distribution>__` OS and distribution identifiers  must not contain spaces.
 
-Example (x86_64):
+* You must manually create `boot.efi` and `boot-sb.efi` symbolic links within each `__<My_Arch>__` directory, for example:
++
 [subs="+quotes"]
 ----
 $ ln -s grubx64.efi boot.efi
@@ -108,47 +90,44 @@ $ chmod 644 grubx64.efi shimx64.efi
 The `chmod` command ensures that TFTP and HTTPBoot clients can read these files.
 ====
 
-== Legacy Layout (Non-`bootloader-universe`)
+== Legacy layout
 
-This section explains how boot loaders are handled when the `bootloader-universe` directory is not used.
 This layout remains supported for backward compatibility.
 
 If the `/var/lib/tftpboot/bootloader-universe/pxegrub2/` structure is not used,
 {Project} falls back to the legacy `/var/lib/tftpboot/grub2/` directory.
 Boot loaders are stored in a flat layout, but when a host enters *Build mode*, the {SmartProxy} creates a host-specific directory with the required configuration files and links.
 
-=== File Locations and Roles
-
-. File Locations and Roles
-
+.Default legacy layout files
 [cols="1,1,1", options="header"]
 |===
 | Path
-| Purpose / Usage
-| User Action
+| Purpose
+| User action
 
-| /var/lib/tftpboot/grub2/
+| `/var/lib/tftpboot/grub2/`
 | Default directory used when `bootloader-universe` is not enabled.
-Contains Grub2 UEFI boot loader binaries such as grubx64.efi, shimx64.efi, grubaa64.efi, and shimaa64.efi.
-| Place the appropriate boot loader binaries (grub<__arch__>.efi, shim<__arch__>.efi) in this directory.
+Contains Grub2 UEFI boot loader binaries such as `grubx64.efi`, `shimx64.efi`, `grubaa64.efi`, and `shimaa64.efi`.
+| Place the appropriate boot loader binaries (`grub__<My_Arch>__.efi`, `shim__<My_Arch>__.efi`) in this directory.
 No subdirectory creation is required.
 
-| /var/lib/tftpboot/host-config/<__My_MAC_Address__>/grub2/
+| `/var/lib/tftpboot/host-config/__<My_MAC_Address>__/grub2/`
 | Host-specific directory automatically created when a host enters *Build mode*.
-Contains symbolic links (boot.efi, boot-sb.efi) and a generated grub.cfg.
+Contains symbolic links (`boot.efi`, `boot-sb.efi`) and a generated `grub.cfg`.
 | *Auto-created by {SmartProxy}*
 |===
 
-Example (x86_64):
-
+.Example `tftpboot/grub2/` structure:
+====
 ----
 /var/lib/tftpboot/grub2/
  ├── grubx64.efi
  └── shimx64.efi
 ----
+====
+
 
 When a host enters *Build mode*, the {SmartProxy} creates the following directory structure:
-
 ----
 # tree /var/lib/tftpboot/
 /var/lib/tftpboot/
