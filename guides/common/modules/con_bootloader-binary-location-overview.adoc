@@ -11,15 +11,39 @@ During a network-based installation, {SmartProxy} coordinates the following serv
 
 DHCP:: Assigns IP addresses and provides the boot loader filename and server information.
 
-TFTP:: Delivers boot loaders such as PXELinux, Grub2, or iPXE binaries to clients.
+TFTP:: Delivers boot loaders such as PXELinux, Grub2, or iPXE binaries to clients. TFTP also servers the following resources:
+. Configuration files for boot loaders
+. Kernels and `initramdisk`
 
-HTTP(S):: Serves boot loaders and installation files via the {SmartProxy}’s HTTPBoot module.
+HTTP(S):: Serves boot loaders and installation files via the {SmartProxy}’s HTTPBoot module. HTTP(S) also serves the following resources:
+. Configuration files for bootloaders
+. Kernels & initramdisk
+. Installation config files (Kickstart)
+. Repository content
+. Communication between Host <> Proxy <> Foreman
 
 When a host begins a network boot, it retrieves the appropriate boot loader (for example, `pxelinux.0`, `grubx64.efi`, or `ipxe.efi`) according to the *PXE Loader* option in {Project}.
 The boot loader then loads {Project}-generated configuration files that define which kernel and initrd to boot, initiating the OS installation process.
 
 The *{SmartProxy}* manages the distribution of these boot loader binaries and their configuration files.
 All boot loaders are stored on {SmartProxy} under the TFTP root directory (`/var/lib/tftpboot/`), which is also shared by the HTTPBoot service.
+
+The {SmartProxy} also generates a directory for each provisioned host and names the directory with the host MAC address. In these directories, the {SmartProxy} creates symlinks to the boot files and configuration files, for example:
++
+----
+├── host-config
+│   └── 00-aa-aa-99-99-04
+│       └── grub2
+│           ├── boot.efi -> ../../../grub2/grubx64.efi
+│           ├── boot-sb.efi -> ../../../grub2/shimx64.efi
+│           ├── grub.cfg-00:aa:aa:99:99:04 -> ../../../grub2/grub.cfg-00:aa:aa:99:99:04
+│           ├── grub.cfg-01-00-aa-aa-99-99-04 -> ../../../grub2/grub.cfg-01-00-aa-aa-99-99-04
+│           ├── grubx64.efi -> ../../../grub2/grubx64.efi
+│           └── shimx64.efi -> ../../../grub2/shimx64.efi
+----
++
+This is useful for placing your own boot loader binaries in the `bootloader_universe` directory and use them instead of the default ones provided in `/var/lib/tftpboot/boot`.
+This is useful, for example, when you provision ARM hosts, for which {ProjectName} does not provide boot loaders.
 
 By default, boot loader binaries are placed directly under service-specific directories such as `grub2/`  
 (for example, `/var/lib/tftpboot/grub2/grubx64.efi`).
