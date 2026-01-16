@@ -1,0 +1,53 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="authenticating-{smart-proxy-context}-with-ssh-certificates"]
+= Authenticating {SmartProxy} with SSH certificates
+
+[role="_abstract"]
+You can configure {SmartProxy} to authenticate with an SSH certificate signed by a Certificate Authority (CA).
+When enabled, {SmartProxy} presents a signed certificate to hosts instead of a plain SSH public key.
+
+[WARNING]
+====
+After enabling this feature, SSH certificate authentication works on all newly registered or provisioned hosts.
+Existing hosts will continue to trust plain SSH keys of the {SmartProxy} until you configure those hosts to trust the CA.
+To configure existing hosts to accept the SSH certificate from the {SmartProxy}, complete xref:configuring-registered-hosts-to-accept-ssh-certificate-from-{smart-proxy-context}[].
+====
+
+.Prerequisites
+* You have a CA for signing SSH certificates.
+
+.Procedure
+. On the {SmartProxyServer}, locate the SSH key pair that {SmartProxy} uses for remote execution.
+You can find the private key location in `/etc/foreman-proxy/settings.d/remote_execution_ssh.yml` under the `:ssh_identity_key_file:` setting.
+By default, the location is `/var/lib/foreman-proxy/ssh/id_rsa_foreman_proxy`.
+. If the CA is on a different server than your {SmartProxyServer}, import the public key of the {SmartProxy} to the CA server.
+. Sign the {SmartProxy} SSH public key with your CA.
++
+The certificate name must be `__My_{smart-proxy-context-titlecase}_Private_Key__-cert.pub`.
+By default, the created SSH certificate will have the name `id_rsa_foreman_proxy-cert.pub`.
+. If the CA is on a different server than your {SmartProxyServer}, ensure the {SmartProxyServer} has the SSH certificate and the CA public key file:
+.. Import the created SSH certificate back to the {SmartProxyServer} into the same directory as the original SSH key pair.
+.. Import the CA public key file to the {SmartProxyServer}.
+. Ensure that the `foreman-proxy` user has read access to the CA public key file.
+. Enable SSH certificate authentication on the {SmartProxy}:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {foreman-installer} \
+--foreman-proxy-plugin-remote-execution-script-ssh-user-ca-public-key-file _My_CA_Public_Key_File_Path_
+----
+
+.Verification
+. Run a remote execution job on a host through the {SmartProxy} with SSH certificate authentication enabled.
+. On the host, view the `sshd` logs:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# journalctl -u sshd
+----
+. Find the log message that confirms that the SSH certificate was used for authentication:
++
+----
+Accepted publickey for <SSH USER> from <IP> port 22 ssh2: RSA-CERT ID foreman-proxy CA RSA
+----

@@ -1,0 +1,57 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="configuring-registered-hosts-to-accept-ssh-certificate-from-{smart-proxy-context}"]
+= Configuring registered hosts to accept an SSH certificate from {SmartProxy}
+
+[role="_abstract"]
+You can configure hosts that were previously configured to use plain SSH keys to accept SSH certificates from the {SmartProxy} after you enable SSH certificate authentication on the {SmartProxy}.
+
+You can use remote execution to apply these changes.
+
+Perform these steps on each host that uses the {SmartProxy} for remote execution and was registered before you enabled SSH certificate authentication on the {SmartProxy}.
+
+.Prerequisites
+* You have a Certificate Authority (CA) for signing SSH certificates.
+
+.Procedure
+
+. Import the CA public key to the host.
+. Ensure that the `/etc/ssh/sshd_config.d/` directory exists:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# mkdir -p /etc/ssh/sshd_config.d
+----
+. Configure the `sshd` service to trust the CA:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# echo 'TrustedUserCAKeys _My_CA_Public_Key_File_Path_' > /etc/ssh/sshd_config.d/60-foreman-user-ca.conf
+----
+ifndef::foreman-deb[]
+. Set the correct SELinux context for the created file:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# restorecon /etc/ssh/sshd_config.d/60-foreman-user-ca.conf
+----
+endif::[]
+. Restart the `sshd` service:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# systemctl restart sshd
+----
+. Remove existing SSH keys of the {SmartProxy} from the `authorized_keys` file of your SSH user.
+By default, the SSH user is root and the SSH keys are associated with the `foreman-proxy` user:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# sed -i '/foreman-proxy/d' ~/.ssh/authorized_keys
+----
++
+[NOTE]
+====
+This command might not work if you configured custom SSH keys on your {SmartProxy}.
+In that case, manually edit the `authorized_keys` file.
+====
