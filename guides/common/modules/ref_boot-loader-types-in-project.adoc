@@ -1,0 +1,224 @@
+:_mod-docs-content-type: REFERENCE
+
+[id="boot-loader-types-in-project"]
+= Boot loader types in {Project}
+
+[role="_abstract"]
+{Project} uses multiple types of PXE boot loaders during network provisioning, depending on firmware type, protocol, and boot environment.
+
+In {Project}, you can configure a **PXE Loader** for each host.  
+The PXE Loader determines which boot loader binary the host retrieves during network boot and how it communicates with the {SmartProxy} (via TFTP or HTTP).
+Select a PXE Loader based on whether the host uses **BIOS**, **UEFI**, **Secure Boot**, or **HTTP Boot**.
+
+== PXE loader types and boot protocols in {Project}
+
+The following table lists the PXE Loader options available in the {Project}.
+Each loader is associated with a specific boot protocol and firmware type.
+
+.PXE loader types and boot protocols
+
+[cols="1,1,1,1", options="header"]
+|===
+| PXE loader (UI label)
+| Category
+| Firmware
+| Protocol
+
+| None
+| None
+| -
+| -
+
+| PXELinux BIOS
+| PXELinux
+| BIOS
+| DHCP → TFTP
+
+| PXELinux UEFI
+| PXELinux
+| UEFI
+| DHCP → TFTP
+
+| Grub2 BIOS
+| PXEGrub2 (TFTP)
+| BIOS
+| DHCP → TFTP
+
+| Grub2 ELF
+| PXEGrub2 (TFTP)
+| BIOS
+| DHCP → TFTP
+
+| Grub2 UEFI
+| PXEGrub2 (TFTP)
+| UEFI
+| DHCP → TFTP
+
+| Grub2 UEFI SecureBoot
+| PXEGrub2 (TFTP)
+| UEFI
+| DHCP → TFTP
+
+| Grub2 UEFI HTTP
+| Grub2 (HTTP)
+| UEFI
+| DHCP → HTTP
+
+| Grub2 UEFI HTTPS
+| Grub2 (HTTPS)
+| UEFI
+| DHCP → HTTPS
+
+| Grub2 UEFI HTTPS SecureBoot
+| Grub2 (HTTPS)
+| UEFI
+| DHCP → HTTPS
+
+| iPXE Embedded
+| iPXE Direct (HTTP)
+| BIOS / UEFI
+| DHCP → HTTP
+
+| iPXE UEFI HTTP
+| iPXE Direct (HTTP)
+| UEFI
+| DHCP → HTTP
+
+| iPXE Chain BIOS
+| iPXE Chainload
+| BIOS
+| DHCP → TFTP → HTTP
+
+| iPXE Chain UEFI
+| iPXE Chainload
+| UEFI
+| DHCP → TFTP → HTTP
+|===
+
+Each type of PXE Loader categories delivers boot loaders and installation files during network provisioning. In {Project}, you can select from the following PXE Loader categories:
+
+PXELinux:: Syslinux-based loaders for BIOS and UEFI environments.
+
+PXEGrub2 (TFTP):: Grub2-based loader supporting both BIOS and UEFI environments (including Secure Boot via `shim`).
+
+Grub2 (HTTP/HTTPS):: Grub2-based UEFI boot loader fetched over HTTP or HTTPS using the {SmartProxy}’s HTTPBoot service. 
+
+iPXE Chainload :: A two-stage boot process in which the client first downloads an iPXE binary (`undionly-ipxe.0` or `ipxe.efi`) via TFTP.
+When loaded, iPXE retrieves {Project}’s iPXE script and installation files over HTTP, enabling flexible configuration and network boot via HTTP.
+
+iPXE Direct (HTTP):: Boots directly via embedded or firmware-level iPXE using only HTTP.
+
+None:: {Project} does not specify a boot loader.
+
+== Boot loader file mapping and architecture naming
+
+{Project} automatically determines the correct boot loader filename for each host based on its *architecture* and the *PXE Loader* selected in the host settings.
+This mechanism ensures that the correct boot loader binary (such as `grubx64.efi` or `grubaa64.efi`) is selected automatically,
+without requiring administrators to manage architecture-specific filenames.
+
+.PXE loader to boot loader mapping
+
+[cols="1,1,1", options="header"]
+|===
+| PXE loader (UI label)
+| Boot loader file (template path)
+| Example (x86_64)
+
+| None
+| -
+| -
+
+| PXELinux BIOS
+| `pxelinux.0`
+| `pxelinux.0`
+
+| PXELinux UEFI
+| `pxelinux.efi`
+| `pxelinux.efi`
+
+| Grub2 BIOS
+| `grub<__arch__>.0`
+| `grubx64.0`
+
+| Grub2 ELF
+| `grub<__arch__>.elf`
+| `grubx64.elf`
+
+| Grub2 UEFI
+| `grub<__arch__>.efi`
+| `grubx64.efi`
+
+| Grub2 UEFI SecureBoot
+| `shim<__arch__>.efi`
+| `shimx64.efi`
+
+| Grub2 UEFI HTTP
+| `grub<__arch__>.efi` (via HTTP)
+| `grubx64.efi`
+
+| Grub2 UEFI HTTPS
+| `grub<__arch__>.efi` (via HTTPS)
+| `grubx64.efi`
+
+| Grub2 UEFI HTTPS SecureBoot
+| `shim<__arch__>.efi` (via HTTPS)
+| `shimx64.efi`
+
+| iPXE Embedded
+| Rendered dynamically as `{Project}_url('iPXE')`
+| -
+
+| iPXE UEFI HTTP
+| `ipxe-<__arch__>.efi`
+| `ipxe-x64.efi`
+
+| iPXE Chain BIOS
+| `undionly-ipxe.0`
+| `undionly-ipxe.0`
+
+| iPXE Chain UEFI
+| `ipxe.efi`
+| `ipxe.efi`
+|===
+
+== Architecture-based file naming
+
+{Project} automatically determines the correct boot loader filename for each host based on its architecture.
+For example, `x86_64` hosts use `grubx64.efi`, while `aarch64` hosts use `grubaa64.efi`.
+
+.Boot loader filenames by architecture
+
+[cols="1,1,1", options="header"]
+|===
+| Architecture (Web UI)
+| Example Filename
+| Internal Suffix (for reference)
+
+| i386, i686, x86
+| `grubia32.efi`
+| `ia32`
+
+| x86_64, amd64
+| `grubx64.efi`, `shimx64.efi`
+| `x64`
+
+| aarch64, aa64
+| `grubaa64.efi`, `shimaa64.efi`
+| `aa64`
+
+| ppc64, ppc64le
+| `grubppc64.efi`
+| `ppc64`, `ppc64le`
+
+| Other architectures (for example, riscv64, loongarch64)
+| `grubriscv64.efi`
+| normalized name
+|===
+
+For example, a host with architecture `aarch64` and PXE Loader set to `Grub2 UEFI` uses:
+
+----
+/var/lib/tftpboot/grub2/grubaa64.efi
+----
+
+This mechanism allows {Project} to select the correct boot loader automatically, without requiring users to manage architecture-specific filenames manually.
