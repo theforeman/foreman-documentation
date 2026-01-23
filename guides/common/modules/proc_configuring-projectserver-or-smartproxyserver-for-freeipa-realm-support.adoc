@@ -1,0 +1,55 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="configuring-{project-context}-server-or-{smart-proxy-context}-server-for-{FreeIPA-context}-realm-support"]
+= Configuring {ProjectServer} or {SmartProxyServer} for {FreeIPA} realm support
+
+[role="_abstract"]
+Complete the following procedure on {Project} and every {SmartProxy} that you want to use:
+
+.Procedure
+. Copy the `/root/freeipa.keytab` file to any {SmartProxyServer} that you want to include in the same principal and realm:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# scp /root/freeipa.keytab root@_{smartproxy-example-com}_:/etc/foreman-proxy/freeipa.keytab
+----
+. On your {ProjectServer}, move the `/root/freeipa.keytab` file to the `/etc/foreman-proxy` directory:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# mv /root/freeipa.keytab /etc/foreman-proxy
+----
+. On your {ProjectServer} and {SmartProxyServer}s, set ownership to the `foreman-proxy` user and group:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# chown foreman-proxy:foreman-proxy /etc/foreman-proxy/freeipa.keytab
+----
+. Enter the following command on all {SmartProxies} that you want to include in the realm.
+If you use the integrated {SmartProxy} on {Project}, enter this command on {ProjectServer}:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {foreman-installer} --foreman-proxy-realm true \
+--foreman-proxy-realm-keytab /etc/foreman-proxy/freeipa.keytab \
+--foreman-proxy-realm-principal _realm-{smart-proxy-context}@EXAMPLE.COM_ \
+--foreman-proxy-realm-provider freeipa
+----
++
+You can also use these options when you first configure the {ProjectServer}.
+. Ensure that the most updated versions of the ca-certificates package is installed and trust the {FreeIPA} Certificate Authority:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# cp /etc/ipa/ca.crt /etc/pki/ca-trust/source/anchors/ipa.crt
+# update-ca-trust extract
+----
+. Optional: If you configure {FreeIPA} on an existing {ProjectServer} or {SmartProxyServer}, complete the following steps to ensure that the configuration changes take effect:
+.. Restart the *foreman-proxy* service:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# systemctl restart foreman-proxy
+----
+.. In the {ProjectWebUI}, navigate to *Infrastructure* > *{SmartProxies}*.
+.. Locate the {SmartProxy} you have configured for {FreeIPA} and from the list in the *Actions* column, select *Refresh*.

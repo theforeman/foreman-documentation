@@ -1,0 +1,61 @@
+:_mod-docs-content-type: CONCEPT
+
+[id="adding-hosts-to-a-{freeipa-context}-host-group"]
+= Adding hosts to a {FreeIPA} host group
+
+[role="_abstract"]
+{FreeIPA} supports the ability to set up automatic membership rules based on a system's attributes.
+{ProjectName}'s realm feature provides administrators with the ability to map the {ProjectName} host groups to the {FreeIPA} parameter `userclass` which allow administrators to configure automembership.
+
+When nested host groups are used, they are sent to the {FreeIPA} server as they are displayed in the {ProjectName} User Interface.
+For example, "Parent/Child/Child".
+
+{ProjectServer} or {SmartProxyServer} sends updates to the {FreeIPA} server, however automembership rules are only applied at initial registration.
+
+.Procedure
+. On the {FreeIPA} server, create a host group:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# ipa hostgroup-add _hostgroup_name_ --desc=_hostgroup_description_
+----
+. Create an `automembership` rule:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# ipa automember-add --type=hostgroup _hostgroup_name_ _automember_rule_
+----
++
+Where you can use the following options:
++
+* `automember-add` flags the group as an automember group.
+* `--type=hostgroup` identifies that the target group is a host group, not a user group.
+* `_automember_rule_` adds the name you want to identify the automember rule by.
+. Define an automembership condition based on the `userclass` attribute:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# ipa automember-add-condition --key=userclass --type=hostgroup --inclusive-regex=_^webserver_ _hostgroup_name_
+----------------------------------
+Added condition(s) to "_hostgroup_name_"
+----------------------------------
+Automember Rule: _automember_rule_
+Inclusive Regex: userclass=_^webserver_
+----------------------------
+Number of conditions added 1
+----------------------------
+----
++
+Where you can use the following options:
++
+* `automember-add-condition` adds regular expression conditions to identify group members.
+* `--key=userclass` specifies the key attribute as `userclass`.
+* `--type=hostgroup` identifies that the target group is a host group, not a user group.
+* `--inclusive-regex=` _^webserver_ identifies matching values with a regular expression pattern.
+* _hostgroup_name_ {endash} identifies the target host group's name.
++
+[NOTE]
+====
+When a system is added to {ProjectServer}'s _hostgroup_name_ host group, it is added automatically to the {FreeIPA} server's "_hostgroup_name_" host group.
+{FreeIPA} host groups allow for Host-Based Access Controls (HBAC), sudo policies and other {FreeIPA} functions.
+====
