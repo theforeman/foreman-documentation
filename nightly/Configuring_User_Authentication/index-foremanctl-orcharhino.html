@@ -266,12 +266,16 @@ SOFTWARE.
 </li>
 <li><a href="#configuring-kerberos-sso-for-active-directory-users-in-project_authentication">4. Configuring Kerberos SSO for Active Directory users in orcharhino</a>
 <ul class="sectlevel2">
-<li><a href="#configuring-the-active-directory-authentication-source-on-projectserver_authentication">4.1. Configuring the Active Directory authentication source on orcharhino&#160;Server</a></li>
+<li><a href="#joining-the-orcharhino-system-to-an-ad-domain">4.1. Joining the orcharhino&#160;Server system to an AD domain</a></li>
+<li><a href="#configuring-the-active-directory-authentication-source-on-projectserver_authentication">4.2. Configuring the Active Directory authentication source on orcharhino&#160;Server</a></li>
 </ul>
 </li>
-<li><a href="#Configuring_External_User_Groups_authentication">5. Configuring external user groups</a></li>
-<li><a href="#Refreshing_External_User_Groups_for_FreeIPA_or_AD_authentication">6. Refreshing external user groups for FreeIPA or AD</a></li>
-<li><a href="#resetting-external-authentication-configuration-for-kerberos-sso">7. Resetting external authentication configuration for Kerberos SSO</a></li>
+<li><a href="#managing-external-user-groups">5. Managing external user groups</a>
+<ul class="sectlevel2">
+<li><a href="#associating-external-users-with-user-groups">5.1. Associating external users with user groups</a></li>
+</ul>
+</li>
+<li><a href="#resetting-external-authentication-configuration-for-kerberos-sso">6. Resetting external authentication configuration for Kerberos SSO</a></li>
 </ul>
 </div>
 </div>
@@ -583,7 +587,7 @@ For example, your custom message might be a warning required by your company.</p
 <div class="sectionbody">
 <div class="paragraph _abstract">
 <p>FreeIPA is an open-source identity management solution that provides centralized authentication, authorization, and account management services.
-With orcharhino, you can integrate orcharhino&#160;Server with your existing FreeIPA server to enable FreeIPA users to authenticate to orcharhino.</p>
+You can integrate orcharhino with your existing FreeIPA server to enable FreeIPA users to authenticate to orcharhino.</p>
 </div>
 <div class="paragraph">
 <p>With your FreeIPA server configured as an external identity provider, users defined in FreeIPA can log in to orcharhino with their FreeIPA credentials.
@@ -1458,34 +1462,37 @@ Direct AD integration means that a Linux system is joined directly to the AD dom
 </ul>
 </div>
 <div class="sect2">
-<h3 id="configuring-the-active-directory-authentication-source-on-projectserver_authentication"><a class="anchor" href="#configuring-the-active-directory-authentication-source-on-projectserver_authentication"></a>4.1. Configuring the Active Directory authentication source on orcharhino&#160;Server</h3>
+<h3 id="joining-the-orcharhino-system-to-an-ad-domain"><a class="anchor" href="#joining-the-orcharhino-system-to-an-ad-domain"></a>4.1. Joining the orcharhino&#160;Server system to an AD domain</h3>
 <div class="paragraph _abstract">
-<p>Enable Active Directory (AD) users to access orcharhino by configuring the corresponding authentication provider on your orcharhino&#160;Server.</p>
+<p>The base system of your orcharhino&#160;Server must be joined to an Active Directory (AD) domain before you can configure the AD authentication source on your orcharhino&#160;Server.
+Use the System Security Services Daemon (SSSD) and Samba services to join the base system to the AD domain.</p>
 </div>
-<div class="ulist">
-<div class="title">Prerequisites</div>
-<ul>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
 <li>
-<p>The base system of your orcharhino&#160;Server must be joined to an Active Directory (AD) domain.
-To enable AD users to sign in with Kerberos single sign-on, use the System Security Services Daemon (SSSD) and Samba services to join the base system to the AD domain:</p>
-<div class="paragraph">
 <p>Install the following packages on orcharhino&#160;Server:</p>
-</div>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># dnf install adcli krb5-workstation oddjob-mkhomedir oddjob realmd samba-winbind-clients samba-winbind samba-common-tools samba-winbind-krb5-locator sssd</pre>
 </div>
 </div>
-<div class="paragraph">
-<p>Specify the required software when joining the AD domain:</p>
-</div>
+</li>
+<li>
+<p>Join the system to the AD domain, specifying the required software:</p>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># realm join <em>AD.EXAMPLE.COM</em> --membership-software=samba --client-software=sssd</pre>
 </div>
 </div>
 </li>
-</ul>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="configuring-the-active-directory-authentication-source-on-projectserver_authentication"><a class="anchor" href="#configuring-the-active-directory-authentication-source-on-projectserver_authentication"></a>4.2. Configuring the Active Directory authentication source on orcharhino&#160;Server</h3>
+<div class="paragraph _abstract">
+<p>Enable Active Directory (AD) users to access orcharhino by configuring the corresponding authentication provider on your orcharhino&#160;Server.</p>
 </div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
@@ -1678,8 +1685,29 @@ The <code>TLS_DHE_RSA_WITH_AES_256_GCM_SHA384</code> cipher is known to cause in
 </div>
 </div>
 <div class="sect1">
-<h2 id="Configuring_External_User_Groups_authentication"><a class="anchor" href="#Configuring_External_User_Groups_authentication"></a>5. Configuring external user groups</h2>
+<h2 id="managing-external-user-groups"><a class="anchor" href="#managing-external-user-groups"></a>5. Managing external user groups</h2>
 <div class="sectionbody">
+<div class="paragraph _abstract">
+<p>When using external authentication sources, such as FreeIPA or Active&#160;Directory, you can configure group membership to control user access and permissions in orcharhino.
+You might need to take extra configuration steps to manage group membership for user accounts defined in external authentication sources.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>External user groups based on FreeIPA or AD are refreshed only when a group member logs in to orcharhino.
+It is not possible to alter user membership of external user groups in the orcharhino management UI, such changes are overwritten on the next group refresh.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="associating-external-users-with-user-groups"><a class="anchor" href="#associating-external-users-with-user-groups"></a>5.1. Associating external users with user groups</h3>
 <div class="paragraph _abstract">
 <p>orcharhino does not associate external users with their user group automatically.
 To associate these external users with their user group, you must create the user group on your orcharhino&#160;Server.</p>
@@ -1740,20 +1768,9 @@ Alternatively, select the <strong>Administrator</strong> checkbox to assign all 
 </div>
 </div>
 </div>
-<div class="sect1">
-<h2 id="Refreshing_External_User_Groups_for_FreeIPA_or_AD_authentication"><a class="anchor" href="#Refreshing_External_User_Groups_for_FreeIPA_or_AD_authentication"></a>6. Refreshing external user groups for FreeIPA or AD</h2>
-<div class="sectionbody">
-<div class="paragraph _abstract">
-<p>If your environment includes external user groups based on FreeIPA or Active Directory (AD), review these guidelines for refreshing external user groups.</p>
-</div>
-<div class="paragraph">
-<p>External user groups based on FreeIPA or AD are refreshed only when a group member logs in to orcharhino.
-It is not possible to alter user membership of external user groups in the orcharhino management UI, such changes are overwritten on the next group refresh.</p>
-</div>
-</div>
 </div>
 <div class="sect1">
-<h2 id="resetting-external-authentication-configuration-for-kerberos-sso"><a class="anchor" href="#resetting-external-authentication-configuration-for-kerberos-sso"></a>7. Resetting external authentication configuration for Kerberos SSO</h2>
+<h2 id="resetting-external-authentication-configuration-for-kerberos-sso"><a class="anchor" href="#resetting-external-authentication-configuration-for-kerberos-sso"></a>6. Resetting external authentication configuration for Kerberos SSO</h2>
 <div class="sectionbody">
 <div class="paragraph _abstract">
 <p>You can disable external authentication with FreeIPA or Active Directory (AD) by resetting the configuration for the <code>IPA</code> authentication type.
