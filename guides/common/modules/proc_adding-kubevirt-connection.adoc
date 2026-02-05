@@ -6,6 +6,10 @@
 [role="_abstract"]
 To provision and manage virtual machines on {Kubernetes}, add {KubeVirt} as a compute resource to {Project}.
 
+.Prerequisites
+
+* You have the `{kubevirt-command}` command-line utility.
+
 .Procedure
 
 . Enter the following `{foreman-installer}` command to enable the {KubeVirt} plugin for {Project}:
@@ -16,23 +20,32 @@ To provision and manage virtual machines on {Kubernetes}, add {KubeVirt} as a co
 ----
 
 . Obtain a token to use for HTTP and HTTPs authentication:
-
-.. Log in to the {Kubernetes} cluster and list the secrets that contain tokens:
+.. Create a service account:
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
-$ {kubevirt-command} get secrets
+ $ {kubevirt-command} create serviceaccount __My_Service_Account__ --namespace __My_Namespace__
 ----
-
-.. Obtain the token for your secret:
+.. Add roles to the service account:
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
-$ {kubevirt-command} get secrets _MY_SECRET_ -o jsonpath='{.data.token}' | base64 -d | xargs
+$ {kubevirt-command} policy add-role-to-user admin system:serviceaccount:__My_Namespace__:__My_Service_Account__
 ----
-
-.. Record the token to use later in this procedure.
-
+.. Create a long-lived token for the account:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+$ {kubevirt-command} create --filename= - <<EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: __My_SA_Token__
+  annotations:
+    kubernetes.io/service-account.name: __My_Service_Account__
+type: kubernetes.io/service-account-token
+EOF
+----
 . In the {ProjectWebUI}, navigate to *Infrastructure* > *Compute Resources*, and click *Create Compute Resource*.
 . In the *Name* field, enter a name for the new compute resource.
 . From the *Provider* list, select *{KubeVirt}*.
@@ -42,3 +55,8 @@ $ {kubevirt-command} get secrets _MY_SECRET_ -o jsonpath='{.data.token}' | base6
 . In the *Namespace* field, enter the namespace of the {Kubernetes} cluster.
 . In the *Token* field, enter the bearer token for HTTP and HTTPs authentication.
 . Optional: In the *X509 Certification Authorities* field, enter a certificate to enable client certificate authentication for API server calls.
+
+ifdef::satellite[]
+.Additional resources
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/cli_tools/openshift-cli-oc[OpenShift CLI (oc)]
+endif::[]
