@@ -1,11 +1,10 @@
 :_mod-docs-content-type: PROCEDURE
 
-[id="creating-a-virt-who-configuration_{context}"]
-= Creating a virt-who configuration
+[id="creating-a-virt-who-configuration-by-using-web-ui_{context}"]
+= Creating a virt-who configuration by using the {ProjectWebUI}
 
+[role="_abstract"]
 You can create a virt-who configuration for {provider} by using the {ProjectWebUI}.
-
-To create a virt-who configuration by using the CLI, see xref:cli-creating-a-virt-who-configuration_{context}[].
 
 The virt-who configuration creates a `virt_who_reporter_1` user with the `Virt-who Reporter` role, which provides minimal permissions for virt-who reporting to {ProjectServer}.
 This user cannot be manually configured or used to log in to {ProjectServer}.
@@ -50,28 +49,33 @@ endif::[]
 * *Hypervisor ID*: Select *Hostname* or *UUID*.
 
 . Optional: *Filtering*. Select one of the following options for querying hypervisors:
-* *Unlimited* (default): All hypervisors are queried.
-* *Whitelist*: Specific hypervisors are included.
-* *Blacklist*: Specific hypervisors are excluded.
-** *Filter hosts*: Comma-separated list of included hypervisors.
-** *Exclude hosts*: Comma-separated list of excluded hypervisors.
 +
 --
-Specify the host name or UUID according to the hypervisor ID you selected.
-
-.Host names
+* *Unlimited* (default): All hypervisors are queried.
+* *Whitelist*: Specific hypervisors are included.
+** *Filter hosts*: Comma-separated list of included hypervisors.
+ifdef::vmware-virt-who[]
+** *Filter host parents*: Comma-separated list of included cluster IDs.
+endif::[]
+* *Blacklist*: Specific hypervisors are excluded.
+** *Exclude hosts*: Comma-separated list of excluded hypervisors.
+ifdef::vmware-virt-who[]
+** *Exclude host parents*: Comma-separated list of excluded cluster IDs.
+endif::[]
+--
++
+--
+In the Filtering fields, specify the host name or UUID according to the hypervisor ID you selected.
+Follow these guidelines for host names:
 
 * You can use wildcards, regular expressions, and special characters in the host name.
 * If you use regular expressions, you must escape the backslashes.
 * If you use special characters, you must enclose the host name in quotation marks.
---
-ifdef::vmware-virt-who[]
-* *Filter host parents*: Comma-separated list of included cluster IDs.
-* *Exclude host parents*: Comma-separated list of excluded cluster IDs.
+
 ifdef::satellite[]
 For more information, see link:https://access.redhat.com/solutions/5696481[Using the "Filter Host Parents" and "Exclude Host Parents" Attributes with VMware Clusters] in the _Red{nbsp}Hat Knowledgebase_.
 endif::[]
-endif::[]
+--
 
 . You can configure the following logging and proxy options:
 * *Enable debugging output*: Enables debug logging for virt-who.
@@ -90,71 +94,3 @@ This option provides additional AHV information when you enable both debugging o
 endif::[]
 
 . Click *Submit*.
-
-[id="cli-creating-a-virt-who-configuration_{context}"]
-.CLI procedure
-
-* On {ProjectServer}, enter the `hammer virt-who-config create` command:
-+
-[options="nowrap" subs="+quotes,attributes"]
-----
-$ hammer virt-who-config create \
---name _My_virt-who_Configuration_ \
---organizations "_My_Organization_" \
---interval 720 \ <1>
---filtering-mode none \ <2>
---hypervisor-id _hostname_ \ <3>
---hypervisor-type {hypervisor-cli} \
---hypervisor-server _{target-name}_ \ <4>
---hypervisor-username virt_who_user \ <5>
-ifdef::vmware-virt-who,hyperv-virt-who[]
---hypervisor-password _<password>_
-endif::[]
---proxy '_http://proxy.example.com_:3128' \ <6>
---satellite-url _{foreman-example-com}_
-----
---
-<1> Optional: Specify the virtual machine information reporting interval, in minutes.
-<2> Specify `none` for no filtering of hypervisors for virt-who queries.
-Specify `whitelist` or `blacklist` to include or exclude hypervisors for virt-who queries.
-<3> Specify `hostname`, `uuid`, or `hwuuid` for the hypervisor ID format.
-* You can use `uuid` to avoid duplication if you rename a hypervisor.
-+
-* You can use `hwuuid` for configurations that apply to a virtualization manager instead of an individual hypervisor.
-+
-[NOTE]
-====
-You cannot change `hwuuid` to another option after virt-who starts running because this might cause duplicate entries in Subscription Manager.
-====
-
-ifdef::vmware-virt-who[]
-<4> Specify the FQDN or IP address of the vCenter Server.
-endif::[]
-ifdef::kubevirt-virt-who,openstack-virt-who,nutanix-virt-who,kvm-virt-who,hyperv-virt-who[]
-<4> Specify the FQDN or IP address of the hypervisor.
-endif::[]
-<5> Specify the name of the virt-who user you created on the hypervisor.
-<6> Optional.
---
-
-[id="virt-who-configuration-example_{context}"]
-.Virt-who configuration example
-
-.{provider} virt-who configuration example
-[options="nowrap" subs="+quotes,verbatim,attributes"]
-----
-type={hypervisor-cli}
-hypervisor_id=_hostname_
-ifdef::nutanix-virt-who[]
-prism_central=true
-endif::[]
-owner=Default_Organization
-env=Library
-server=_{target-name}_
-username=_{username}_
-encrypted_password=$cr_password
-rhsm_hostname=_{foreman-example-com}_
-rhsm_username=virt_who_reporter_1
-rhsm_encrypted_password=$user_password
-rhsm_prefix=/rhsm
-----
