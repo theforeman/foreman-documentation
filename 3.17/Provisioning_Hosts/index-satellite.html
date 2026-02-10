@@ -8161,6 +8161,14 @@ For more information, see <a href="#permissions-required-to-provision-hosts">Per
 <div class="paragraph _abstract">
 <p>To provision and manage virtual machines on OpenShift Container Platform, add OpenShift Virtualization as a compute resource to Satellite.</p>
 </div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>You have the <code>oc</code> command-line tool installed.</p>
+</li>
+</ul>
+</div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
 <ol class="arabic">
@@ -8177,23 +8185,52 @@ For more information, see <a href="#permissions-required-to-provision-hosts">Per
 <div class="olist loweralpha">
 <ol class="loweralpha" type="a">
 <li>
-<p>Log in to the OpenShift Container Platform cluster and list the secrets that contain tokens:</p>
+<p>Create a service account:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap">$ oc get secrets</pre>
+<pre class="nowrap">$ oc create serviceaccount <em>My_Service_Account</em> --namespace <em>My_Namespace</em></pre>
 </div>
 </div>
 </li>
 <li>
-<p>Obtain the token for your secret:</p>
+<p>Add the <code>kubevirt.io:edit</code> role to the service account:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap">$ oc get secrets <em>MY_SECRET</em> -o jsonpath='{.data.token}' | base64 -d | xargs</pre>
+<pre class="nowrap">$ oc create rolebinding <em>My_Service_Account</em>-kubevirt-edit --clusterrole=kubevirt.io:edit --serviceaccount=<em>My_Namespace</em>:<em>My_Service_Account</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Add the <code>view</code> role to the service account:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ oc create rolebinding <em>My_Service_Account</em>-view --clusterrole=view --serviceaccount=<em>My_Namespace</em>:<em>My_Service_Account</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create a persistent token for the account:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ oc create --filename=- &lt;&lt;EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: <em>My_SA_Token</em>
+  annotations:
+    kubernetes.io/service-account.name: <em>My_Service_Account</em>
+type: kubernetes.io/service-account-token
+EOF</pre>
 </div>
 </div>
 </li>
 <li>
 <p>Record the token to use later in this procedure.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ oc get secrets <em>My_SA_Token</em> --template='{{.data.token | base64decode}}'</pre>
+</div>
+</div>
 </li>
 </ol>
 </div>
@@ -8220,12 +8257,20 @@ For more information, see <a href="#permissions-required-to-provision-hosts">Per
 <p>In the <strong>Namespace</strong> field, enter the namespace of the OpenShift Container Platform cluster.</p>
 </li>
 <li>
-<p>In the <strong>Token</strong> field, enter the bearer token for HTTP and HTTPs authentication.</p>
+<p>In the <strong>Token</strong> field, enter the token you recorded.</p>
 </li>
 <li>
 <p>Optional: In the <strong>X509 Certification Authorities</strong> field, enter a certificate to enable client certificate authentication for API server calls.</p>
 </li>
 </ol>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/cli_tools/openshift-cli-oc">OpenShift CLI (oc)</a></p>
+</li>
+</ul>
 </div>
 </div>
 </div>
