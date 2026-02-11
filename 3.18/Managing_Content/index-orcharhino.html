@@ -567,6 +567,7 @@ SOFTWARE.
 <li><a href="#Managing_Ansible_Content_content-management">17. Managing Ansible content</a>
 <ul class="sectlevel2">
 <li><a href="#synchronizing-ansible-collections_content-management">17.1. Synchronizing Ansible Collections</a></li>
+<li><a href="#consuming-content-from-an-ansible-collection-repository">17.2. Consuming content from an Ansible Collection repository</a></li>
 </ul>
 </li>
 <li><a href="#managing-custom-file-type-content">18. Managing custom file type content</a>
@@ -9092,6 +9093,10 @@ For more information, see <a href="#Download_Policies_Overview_content-managemen
 <p>The syncable exports must be located in one of your <code>ALLOWED_IMPORT_PATHS</code> as specified in <code>/etc/pulp/settings.py</code>.
 By default, this includes <code>/var/lib/pulp/imports/</code>.</p>
 </li>
+<li>
+<p>The importing organization must be configured to synchronize content through exports.
+For more information, see <a href="#configuring-projectserver-to-synchronize-content-through-exports-by-using-web-ui">Configuring orcharhino&#160;Server to synchronize content through exports by using orcharhino management UI</a>.</p>
+</li>
 </ul>
 </div>
 <div class="ulist">
@@ -9839,6 +9844,10 @@ For more information about exporting contents from the Library environment, see 
 <p>The exported files must be in a directory under <code>/var/lib/pulp/imports</code>.</p>
 </li>
 <li>
+<p>The importing organization must be configured to synchronize content through exports.
+For more information, see <a href="#configuring-projectserver-to-synchronize-content-through-exports-by-using-web-ui">Configuring orcharhino&#160;Server to synchronize content through exports by using orcharhino management UI</a>.</p>
+</li>
+<li>
 <p>If there are any Red Hat repositories in the exported content, the importing organization&#8217;s manifest must contain subscriptions for the products contained within the export.</p>
 </li>
 <li>
@@ -9981,6 +9990,10 @@ Custom repositories, products and content views are automatically created if the
 <p>The exported files must be in a directory under <code>/var/lib/pulp/imports</code>.</p>
 </li>
 <li>
+<p>The importing organization must be configured to synchronize content through exports.
+For more information, see <a href="#configuring-projectserver-to-synchronize-content-through-exports-by-using-web-ui">Configuring orcharhino&#160;Server to synchronize content through exports by using orcharhino management UI</a>.</p>
+</li>
+<li>
 <p>If there are any Red Hat repositories in the exported content, the importing organization&#8217;s manifest must contain subscriptions for the products contained within the export.</p>
 </li>
 <li>
@@ -10101,6 +10114,10 @@ For more information about exporting content of a repository, see <a href="#Expo
 <ul>
 <li>
 <p>The export files must be in a directory under <code>/var/lib/pulp/imports</code>.</p>
+</li>
+<li>
+<p>The importing organization must be configured to synchronize content through exports.
+For more information, see <a href="#configuring-projectserver-to-synchronize-content-through-exports-by-using-web-ui">Configuring orcharhino&#160;Server to synchronize content through exports by using orcharhino management UI</a>.</p>
 </li>
 <li>
 <p>If the export contains any Red Hat repositories, the manifest of the importing organization must contain subscriptions for the products contained within the export.</p>
@@ -14608,7 +14625,7 @@ Ansible Collections will appear on orcharhino as a new repository type in the or
 <p>In the <strong>Upstream URL</strong> field, enter the URL for the upstream collections repository.</p>
 <div class="paragraph">
 <p>The URL can be any Ansible Galaxy endpoint.
-For example, <code>https://galaxy.ansible.com</code>.</p>
+For example, <code>https://galaxy.ansible.com/</code>.</p>
 </div>
 </li>
 <li>
@@ -14658,6 +14675,70 @@ By default, orcharhino synchronizes all required dependencies.</p>
 <p>From the <strong>Select Action</strong> menu, select <strong>Sync Now</strong>.</p>
 </li>
 </ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="consuming-content-from-an-ansible-collection-repository"><a class="anchor" href="#consuming-content-from-an-ansible-collection-repository"></a>17.2. Consuming content from an Ansible Collection repository</h3>
+<div class="paragraph _abstract">
+<p>Your hosts can consume content from an Ansible Collection repository on orcharhino&#160;Server or orcharhino&#160;Proxy&#160;Server.
+Configure the Ansible Galaxy client to use your orcharhino&#160;Server or orcharhino&#160;Proxy&#160;Server as a Galaxy server.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>You have synchronized an Ansible Collection to a orcharhino repository.</p>
+</li>
+<li>
+<p>The <code>ansible-core</code> package is installed on the host.
+This package is available in AppStream repositories.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On the host, configure the <code>ansible-galaxy</code> client to use orcharhino&#160;Server or orcharhino&#160;Proxy&#160;Server as the Galaxy server.
+Add the required sections to an <code>ansible.cfg</code> file, for example:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">[galaxy]
+server_list = <em>My_Library_Server</em>, <em>My_Promoted_CV_Server</em>
+
+[galaxy_server.<em>My_Library_Server</em>]
+url = https://<em>server.example.com</em>/pulp_ansible/galaxy/<em>My_Organization_Label</em>/Library/custom/<em>My_Product_Label</em>/<em>My_Repository_Label</em>/api/
+
+[galaxy_server.<em>My_Promoted_CV_Server</em>]
+url = https://<em>server.example.com</em>/pulp_ansible/galaxy/<em>My_Organization_Label</em>/<em>My_Lifecycle_Environment_Label</em>/<em>My_Content_View_Label</em>/custom/<em>My_Product_Label</em>/<em>My_Repository_Label</em>/api/</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Replace <code>server.example.com</code> with the fully qualified domain name of your orcharhino&#160;Server or orcharhino&#160;Proxy&#160;Server.</p>
+</div>
+</li>
+<li>
+<p>Install an Ansible Collection from your Galaxy server.
+For example:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ansible-galaxy collection install <em>My_Namespace.My_Collection</em> \
+--server <em>My_Library_Server</em></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="https://docs.ansible.com/projects/ansible/latest/collections_guide/collections_installing.html#configuring-the-ansible-galaxy-client">Configuring the ansible-galaxy client in the <em>Ansible Collections Guide</em></a></p>
+</li>
+<li>
+<p><a href="https://docs.ansible.com/projects/ansible/latest/reference_appendices/config.html#the-configuration-file">The configuration file in the <em>Ansible Reference Appendix</em></a></p>
+</li>
+</ul>
 </div>
 </div>
 </div>
