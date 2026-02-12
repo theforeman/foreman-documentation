@@ -1,0 +1,95 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="creating-a-virt-who-configuration-by-using-cli_{context}"]
+= Creating a virt-who configuration by using Hammer CLI
+
+[role="_abstract"]
+You can create a virt-who configuration for {provider} by using Hammer CLI.
+
+The virt-who configuration creates a `virt_who_reporter_1` user with the `Virt-who Reporter` role, which provides minimal permissions for virt-who reporting to {ProjectServer}.
+This user cannot be manually configured or used to log in to {ProjectServer}.
+
+Local configuration values are stored in the `/etc/virt-who.d/_conf_name_.conf` file.
+These values apply only to the hypervisor.
+
+Global configuration values are stored in the `/etc/sysconfig/virt-who` file
+These values, which include `Interval`, `Enable debugging output`, `HTTP Proxy`, and `Ignore Proxy`, apply to all virt-who configurations on the same server.
+Redeploying a virt-who configuration on the same server overwrites these values.
+
+.Prerequisites
+* You have imported a subscription manifest that includes a host-based subscription into {ProjectServer}.
+For more information, see xref:checking-for-subscriptions-that-require-virt-who_virt-who-vm-subs[].
+ifdef::vmware-virt-who[]
+* You have created a virt-who user with read-only access to all objects in the vCenter Data Center and a non-expiring password on the vCenter Server.
+endif::[]
+ifdef::kvm-virt-who,hyperv-virt-who,openstack-virt-who[]
+* You have created a virt-who user with read-only access and a non-expiring password on the hypervisor.
+endif::[]
+ifdef::kubevirt-virt-who[]
+* You have created a `kubeconfig` file.
+endif::[]
+
+.Procedure
+* On {ProjectServer}, enter the `hammer virt-who-config create` command:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+$ hammer virt-who-config create \
+--name _My_virt-who_Configuration_ \
+--organizations "_My_Organization_" \
+--interval 720 \
+--filtering-mode none \
+--hypervisor-id _hostname_ \
+--hypervisor-type {hypervisor-cli} \
+--hypervisor-server _{target-name}_ \
+--hypervisor-username virt_who_user \
+ifdef::vmware-virt-who,hyperv-virt-who[]
+--hypervisor-password _<password>_
+endif::[]
+--satellite-url _{foreman-example-com}_
+----
+--
+In this command, use the following options:
+
+* In `--filtering-mode`, specify `none` for no filtering of hypervisors for virt-who queries.
+Specify `whitelist` or `blacklist` to include or exclude hypervisors for virt-who queries.
+* In `--hypervisor-id`, specify `hostname`, `uuid`, or `hwuuid` for the hypervisor ID format.
+** You can use `uuid` to avoid duplication if you rename a hypervisor.
+** You can use `hwuuid` for configurations that apply to a virtualization manager instead of an individual hypervisor.
++
+[NOTE]
+====
+You cannot change `hwuuid` to another option after virt-who starts running because this might cause duplicate entries in Subscription Manager.
+====
++
+ifdef::vmware-virt-who[]
+* In `--hypervisor-server`, specify the FQDN or IP address of the vCenter Server.
+endif::[]
+ifdef::kubevirt-virt-who,openstack-virt-who,nutanix-virt-who,kvm-virt-who,hyperv-virt-who[]
+* In `--hypervisor-server`, specify the FQDN or IP address of the hypervisor.
+endif::[]
+* In `--hypervisor-username`, specify the name of the virt-who user you created on the hypervisor.
+* Optionally, in the `--proxy` option, specify the proxy address and port, for example, `--proxy '\http://proxy.example.com:3128'`.
+* Optionally, in the `--interval` option, specify the virtual machine information reporting interval in minutes.
+--
+
+.{provider} virt-who configuration
+====
+[options="nowrap" subs="+quotes,verbatim,attributes"]
+----
+type={hypervisor-cli}
+hypervisor_id=_hostname_
+ifdef::nutanix-virt-who[]
+prism_central=true
+endif::[]
+owner=Default_Organization
+env=Library
+server=_{target-name}_
+username=_{username}_
+encrypted_password=$cr_password
+rhsm_hostname=_{foreman-example-com}_
+rhsm_username=virt_who_reporter_1
+rhsm_encrypted_password=$user_password
+rhsm_prefix=/rhsm
+----
+====

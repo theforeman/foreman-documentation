@@ -1,0 +1,72 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="enabling-ssh-host-certificate-verification-on-{smart-proxy-context}"]
+= Enabling SSH host certificate verification on {SmartProxy}
+
+[role="_abstract"]
+Your {SmartProxy} can use SSH host certificates to verify the identity of hosts.
+In this configuration, {SmartProxy} verifies that hosts present valid certificates signed by a trusted Certificate Authority (CA) during SSH connections.
+Your {SmartProxy} can trust host certificates signed by multiple CAs.
+
+[IMPORTANT]
+====
+After you enable host certificate verification on {SmartProxy}, all hosts that use this {SmartProxy} for remote execution can authenticate only if they are configured to use host certificates.
+====
+
+.Prerequisites
+* You have a CA for signing SSH host certificates.
+
+.Procedure
+. On each host that uses this {SmartProxy} for remote execution, prepare the SSH certificate for the host:
+.. Copy one of the public key files of the host to the CA server.
+The public keys are located in `/etc/ssh/`.
+.. Sign the public key with your CA to create an SSH host certificate.
+Use the `-h` option when generating the SSH host certificate with `ssh-keygen`.
++
+[IMPORTANT]
+====
+The `ssh-keygen` command creates the certificate file with the name `_My_Host_Private_SSH_Key_-cert.pub`.
+Do not change the name of the file.
+====
+.. Copy the SSH certificate file back to the host.
+The location must be the same as the location of the private key.
+.. Configure the host to use the certificate:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# mkdir --parents /etc/ssh/sshd_config.d/
+# echo 'HostCertificate _My_Host_SSH_Certificate_Path_' > /etc/ssh/sshd_config.d/60-host-cert.conf
+ifndef::foreman-deb[]
+# restorecon -R /etc/ssh/
+endif::[]
+----
++
+[NOTE]
+====
+If the host SSH public key you used for the certificate is not one of the default keys (`/etc/ssh/ssh_host_ecdsa_key.pub`, `/etc/ssh/ssh_host_ed25519_key.pub`, or `/etc/ssh/ssh_host_rsa_key.pub`), also add the host key configuration:
+
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# echo 'HostKey _My_Host_Private_SSH_Key_Path_' >> /etc/ssh/sshd_config.d/60-host-cert.conf
+----
+====
+.. Restart the `sshd` service:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# systemctl restart sshd
+----
+. On the {SmartProxy}, configure host certificate verification:
+.. If the host CA is not located on the {SmartProxyServer}, copy the host CA public key file to your {SmartProxyServer}.
+If you have multiple host CAs, place all of their public keys in a single file, with each key on a separate line.
+.. Enable host certificate verification:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {foreman-installer} \
+--foreman-proxy-plugin-remote-execution-script-ssh-host-ca-public-keys-file _My_Host_CA_Public_Keys_File_Path_
+----
+
+.Verification
+* Run a remote execution job on a host that is not configured with a host certificate signed by a trusted CA.
+The attempt results in an authentication failure.
