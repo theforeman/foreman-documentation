@@ -1,4 +1,4 @@
-FROM quay.io/fedora/fedora:42
+FROM quay.io/fedora/fedora:43
 
 # hadolint ignore=DL3041
 RUN dnf group install -y development-tools && \
@@ -12,8 +12,8 @@ RUN dnf group install -y development-tools && \
     rm -fr /var/cache/dnf && \
     gem install \
         asciidoctor-tabs:1.0.0.beta.6 \
-        ffi:1.17.2 \
-        nokogiri:1.18.10 \
+        ffi:1.17.3 \
+        nokogiri:1.19.0 \
         racc:1.8.1 \
         rb-fsevent:0.11.2 \
         rb-inotify:0.11.1 \
