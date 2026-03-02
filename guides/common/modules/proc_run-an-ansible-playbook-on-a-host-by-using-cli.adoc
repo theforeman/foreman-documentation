@@ -1,0 +1,52 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="run-an-ansible-playbook-on-a-host-by-using-cli"]
+= Run an Ansible Playbook on a host by using Hammer CLI
+
+[role="_abstract"]
+You can run a custom Ansible Playbook to configure your host through {Project} by using Hammer CLI.
+
+.Prerequisites
+* Your {Project} account has a role that grants the `create_job_invocations`, `create_template_invocations`, `view_hosts`, `view_job_invocations`, `view_job_templates`, `view_remote_execution_features`, and `view_smart_proxies` permissions.
+* You have installed Hammer CLI.
+
+// TODO: Copy Hammer CLI example with input file to https://docs.theforeman.org/nightly/Managing_Configurations_Ansible/index-katello.html#running-an-ansible-playbook-from-foreman_ansible
+.Procedure
+. Create a YAML file, for example, `playbook.yaml` to define your Ansible Playbook:
++
+[source, yaml, options="nowrap", subs="verbatim,quotes,attributes"]
+----
+---
+- name: "_My_Custom_Ansible_Playbook_"
+  hosts: all
+  tasks:
+    - name: "_My_Custom_Task_"
+      ansible.builtin.debug:
+        msg: "_My_Custom_Message_"
+...
+----
+. Run an Ansible Playbook on your host:
++
+----
+$ hammer --output json job-invocation create \
+--async \
+--input-files playbook=./playbook.yaml \
+--job-template "Apply Ansible configuration" \
+--search-query "name = _host.example.com_" \
+| jq ".id"
+----
++
+Note the ID of the job.
+
+.Verification
+* Verify that {Project} finished the remote execution job successfully:
++
+----
+$ hammer --output=json job-invocation info --id _My_Job_ID_ \
+| jq ".Status"
+----
++
+Verify that the status is `succeeded`.
+
+.Additional resources
+* xref:configuring-and-setting-up-remote-jobs[]
