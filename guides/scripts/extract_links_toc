@@ -17,16 +17,28 @@ files = ARGV
 
 toc = {}
 
+# An element can be identified by its primary id or optionally by its auxiliary ids
+def element_ids(el)
+  [el['id']] | element_auxiliary_ids(el)
+end
+
+# In the resulting HTML, an auxiliary ID is provided as an <a> element with 'id'
+# attribute that is a direct child of the element the auxiliary ID is meant for
+def element_auxiliary_ids(el)
+  el.css('> a[id]').map { |e| e['id'] }
+end
+
 files.each do |file|
   next unless (link_name = filename_to_link[file])
 
   document = Nokogiri::HTML.parse(File.open(file))
 
   file_toc = document.css('h2').to_h do |chapter|
-    [
-      chapter['id'].downcase,
-      (chapter.parent.css('h3') + chapter.parent.css('div[id]')).map {|subchapter| subchapter['id']}
-    ]
+    chapter_id = chapter['id']
+    ids = ([chapter] + chapter.parent.css('h3') + chapter.parent.css('div[id]'))
+            .flat_map { |subchapter| element_ids(subchapter) }
+
+    [chapter_id.downcase, ids - [chapter_id]]
   end
 
   toc[link_name] = file_toc
