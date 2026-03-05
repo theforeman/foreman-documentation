@@ -16,6 +16,13 @@ filename_to_link = JSON.parse(File.read(f2l_file))
 files = ARGV
 
 toc = {}
+aliases = {}
+
+# In the resulting HTML, an auxiliary ID is provided as an <a> element with 'id'
+# attribute that is a direct child of the element the auxiliary ID is meant for
+def element_auxiliary_ids(el)
+  el.css('> a[id]').map { |e| e['id'] }
+end
 
 files.each do |file|
   next unless (link_name = filename_to_link[file])
@@ -23,13 +30,21 @@ files.each do |file|
   document = Nokogiri::HTML.parse(File.open(file))
 
   file_toc = document.css('h2').to_h do |chapter|
+    subchapters = (chapter.parent.css('h3') + chapter.parent.css('div[id]'))
+    ([chapter] + subchapters).each do |element|
+      element_auxiliary_ids(element).each do |aux_id|
+        STDERR.puts("Duplicate alias #{aux_id}, current #{aliases[aux_id]}, new #{element['id']}") if aliases[aux_id]
+        aliases[aux_id] = element['id']
+      end
+    end
     [
       chapter['id'].downcase,
-      (chapter.parent.css('h3') + chapter.parent.css('div[id]')).map {|subchapter| subchapter['id']}
+      subchapters.map { |subchapter| subchapter['id']}
     ]
   end
 
   toc[link_name] = file_toc
 end
 
+toc['aliases'] = aliases
 $stdout << JSON.pretty_generate(toc)
