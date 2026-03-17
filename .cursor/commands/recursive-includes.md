@@ -27,5 +27,5 @@ If the current file contains `include::` directives (e.g., `master.adoc` or `ass
 ## Notes
 
 * This command is designed to work with the modular documentation structure.
-* This command follows the same path resolution rules used by AsciiDoc includes
+* This command follows the same path resolution rules used by AsciiDoc includes.
 * This command only processes `.adoc` files, skipping other file types.
