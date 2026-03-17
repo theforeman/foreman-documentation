@@ -1,31 +1,77 @@
-# Process AsciiDoc includes recursively
+# Process command recursively for all included files
 
 ## Overview
 
-Recursively process all files included via `include::` directives in an AsciiDoc file.
-This command applies a specified command to each included file.
+This command extends other Cursor commands (like `/prerequisites`, `/abstract`, etc.) to apply them recursively to all included .adoc files. While most commands are designed to process a single file, this command allows you to point at a master.adoc or assembly_*.adoc file and process all the includes within it, and all the includes within those includes, etc.
 
 ## Usage
 
-Use this command in combination with another command. For example:
-* Apply `heading.md` to all included files.
-* Apply any other command recursively through the include tree.
-For example, to call this command together with the command to review headings, type the following into the Cursor agent chat: `/heading and /recursive-includes`.
+```
+/recursive-includes @master.adoc /prerequisites
+/recursive-includes @assembly_example.adoc /abstract
+```
 
-## Recursive processing logic
+## Instructions
 
-If the current file contains `include::` directives (e.g., `master.adoc` or `assembly_*.adoc`):
+Process the specified command recursively for all included .adoc files using a **two-phase approach** to ensure no files are missed:
 
-1. Extract all included file paths from `include::` directives.
-2. Resolve each path:
-   - If path starts with `common/`, resolve from `guides/common/`.
-   - If path starts with `modules/`, resolve from `guides/common/modules/`.
-   - Otherwise, resolve relative to the current file's directory.
-3. For each included `.adoc` file, apply the specified command recursively.
-4. Skip non-`.adoc` files.
+### Phase 1: Extract Complete List of Included Files
 
-## Notes
+1. Start with the specified .adoc file (master.adoc, assembly_*.adoc, or any .adoc file).
+2. Create a complete list of all .adoc files that are included, recursively:
+   - Parse all `include::` directives in the starting file
+   - For each included .adoc file, recursively parse its `include::` directives
+   - Continue recursively until all nested includes are discovered
+   - Handle both relative paths (e.g., `common/modules/proc_example.adoc`) and paths with `../` navigation
+   - Resolve all paths relative to the file containing the include directive
+   - Track all unique .adoc files in a list, avoiding duplicates
+3. Output the complete list of files to be processed so the user can review it.
+4. The list should include:
+   - The total count of files found
+   - The full path of each file
 
-* This command is designed to work with the modular documentation structure.
-* This command follows the same path resolution rules used by AsciiDoc includes.
-* This command only processes `.adoc` files, skipping other file types.
+### Phase 2: Apply Command to Each File
+
+1. For each file in the extracted list from Phase 1, apply the specified command (e.g., `/prerequisites`, `/abstract`).
+2. Process files in a logical order:
+   - Start with the deepest nested files first (leaf modules)
+   - Then process their parents (assemblies)
+   - Finally process the top-level file
+   - This ordering ensures that changes to included files are visible when processing parent files
+3. For each file:
+   - Clearly indicate which file is being processed (e.g., "Processing file 3/15: proc_example.adoc")
+   - Apply the command according to its specific instructions
+   - Report any issues or changes made
+4. Provide a summary at the end showing:
+   - Total files processed
+   - Number of files modified
+   - Number of issues found requiring human review
+   - List of files that were skipped (if any) with reasons
+
+### Important Notes
+
+- **Do not guess or skip files**: The two-phase approach ensures all included files are explicitly identified before processing begins
+- **Handle errors gracefully**: If a file cannot be read or processed, note it and continue with other files
+- **Avoid processing the same file twice**: Track which files have been processed to avoid duplicate work
+- **Respect command-specific rules**: Each command (prerequisites, abstract, etc.) has its own rules about which file types it applies to. Respect those rules when processing the list.
+
+### Example Include Parsing
+
+Given a file with these includes:
+```asciidoc
+include::common/modules/con_example.adoc[]
+include::common/assembly_example.adoc[leveloffset=+1]
+```
+
+The parser should:
+1. Resolve `common/modules/con_example.adoc` relative to the current file's directory
+2. Resolve `common/assembly_example.adoc` relative to the current file's directory
+3. Read each of those files and recursively parse their includes
+4. Add all unique .adoc files to the processing list
+
+### Error Handling
+
+- If an included file doesn't exist, note it but continue processing other files
+- If an include path cannot be resolved, report it for human review
+- If a command fails for a specific file, note it and continue with remaining files
+- Provide a clear summary of any errors encountered
