@@ -1,7 +1,6 @@
 ---
 name: abstract
 description: Review or write abstract
-disable-model-invocation: true
 ---
 # Review or write abstract
 
