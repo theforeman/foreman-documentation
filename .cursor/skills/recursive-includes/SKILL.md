@@ -1,3 +1,8 @@
+---
+name: recursive-includes
+description: Process command recursively for all included files
+disable-model-invocation: true
+---
 # Process command recursively for all included files
 
 ## Overview
