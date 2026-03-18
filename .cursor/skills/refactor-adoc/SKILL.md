@@ -1,3 +1,8 @@
+---
+name: refactor-adoc
+description: Refactor adoc file by a given title
+disable-model-invocation: true
+---
 # Refactor adoc file by a given title
 
 ## Overview
