@@ -1,3 +1,7 @@
+---
+name: prerequisites
+description: Review or add prerequisites
+---
 # Review or add prerequisites
 
 ## Overview
@@ -19,7 +23,7 @@ Review prerequisites in this file to make sure they are labeled correctly and us
     - Do not exceed 10 prerequisites. If `.Prerequisites` includes more than 10 items, flag this as an issue for human review.
 3. If a procedure module does not include `.Prerequisites` section, scan the module to identify steps that meet criteria for prerequisites. If a step or steps like this exist, create a `.Prerequisites` section and rephrase the step or steps as prerequisites in this section.
 
-## Examples of good prerequisites:
+## Examples of good prerequisites
 
 * The `kernelcare` package is installed on your hosts.
 * The base system of the {SmartProxy} is registered to the newly upgraded {ProjectServer}.
