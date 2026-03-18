@@ -70,9 +70,6 @@ Provide a summary that includes:
 - **One user story per assembly** - Each assembly should answer "What does the user want to accomplish?"
 - **User-centric organization** - Think from the user's perspective, not the product's features
 - **Cohesive modules** - All modules in an assembly should support the same goal
-- **Inverse operations stay together** - Creating/deleting or enabling/disabling are part of the same user story
-- **Clear boundaries** - If a user might want to do X without doing Y (excluding inverse operations), they should be separate assemblies
-- **Meaningful names** - Assembly names should clearly indicate the user story
 
 ## Examples
 
