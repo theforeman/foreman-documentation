@@ -1,3 +1,8 @@
+---
+name: split-web-ui-cli
+description: Split a module into web UI and CLI modules
+disable-model-invocation: true
+---
 # Split a module into web UI and CLI modules
 
 ## Overview
