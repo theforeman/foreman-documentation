@@ -4,10 +4,28 @@
 # this json file will be used later to verify links to the documentation in the Foreman UI.
 
 require 'nokogiri'
+require 'optparse'
 require 'json'
 
-unless (f2l_file = ENV['F2L'])
-  STDERR.puts "Must specify folder to link file: F2L="
+options = {}
+OptionParser.new do |opts|
+  opts.banner = "Usage: extract_links_toc [options] FILES..."
+
+  opts.on("--f2l F2L_FILE", "File containing filename to satellite guide name mappings") do |f2l|
+    options[:f2l] = f2l
+  end
+
+  opts.on("--output-toc-file FILE", "Write TOC output to FILE instead of stdout") do |f|
+    options[:toc_file] = f
+  end
+
+  opts.on("--output-aliases-file FILE", "Write aliases output (auxiliary id to canonical id mapping) to FILE (disabled by default)") do |f|
+    options[:aliases_file] = f
+  end
+end.parse!
+
+unless (f2l_file = options[:f2l] || ENV['F2L'])
+  STDERR.puts "Must specify folder to link file: F2L= or --f2l="
   exit 1
 end
 
@@ -55,5 +73,13 @@ files.each do |file|
   toc[link_name] = file_toc
 end
 
-toc['aliases'] = aliases
-$stdout << JSON.pretty_generate(toc)
+if options[:aliases_file]
+  File.write(options[:aliases_file], JSON.pretty_generate(aliases))
+end
+
+toc_json = JSON.pretty_generate(toc)
+if options[:toc_file]
+  File.write(options[:toc_file], toc_json)
+else
+  $stdout << toc_json
+end
