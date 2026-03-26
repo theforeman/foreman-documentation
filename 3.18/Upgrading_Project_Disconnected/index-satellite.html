@@ -250,11 +250,12 @@ SOFTWARE.
 </li>
 <li><a href="#Upgrading_satellite_upgrading-disconnected">4. Upgrading Red&#160;Hat Satellite</a>
 <ul class="sectlevel2">
-<li><a href="#upgrading_a_disconnected_satellite_server_upgrading-disconnected">4.1. Upgrading a disconnected Satellite&#160;Server</a></li>
-<li><a href="#synchronizing_the_new_repositories_upgrading-disconnected">4.2. Synchronizing the new repositories</a></li>
-<li><a href="#upgrading_capsule_server_upgrading-disconnected">4.3. Upgrading Capsule&#160;Servers</a></li>
-<li><a href="#upgrading-the-external-database-operating-system">4.4. Upgrading the external database operating system</a></li>
-<li><a href="#refreshing-clients-of-red-hat-lightspeed-in-satellite">4.5. Refreshing clients of Red&#160;Hat Lightspeed in Satellite</a></li>
+<li><a href="#upgrading-container-images-of-red-hat-lightspeed-in-satellite">4.1. Upgrading container images of Red&#160;Hat Lightspeed in Satellite</a></li>
+<li><a href="#upgrading_a_disconnected_satellite_server_upgrading-disconnected">4.2. Upgrading a disconnected Satellite&#160;Server</a></li>
+<li><a href="#synchronizing_the_new_repositories_upgrading-disconnected">4.3. Synchronizing the new repositories</a></li>
+<li><a href="#upgrading_capsule_server_upgrading-disconnected">4.4. Upgrading Capsule&#160;Servers</a></li>
+<li><a href="#upgrading-the-external-database-operating-system">4.5. Upgrading the external database operating system</a></li>
+<li><a href="#refreshing-clients-of-red-hat-lightspeed-in-satellite">4.6. Refreshing clients of Red&#160;Hat Lightspeed in Satellite</a></li>
 </ul>
 </li>
 <li><a href="#troubleshooting-permission-issues">Appendix A: Troubleshooting permission issues</a></li>
@@ -468,7 +469,140 @@ You can then check the upgrade progress without staying connected to the command
 <p>Upgrading Satellite includes upgrading your Satellite&#160;Server, synchronizing the required repositories, and upgrading Capsule&#160;Servers.</p>
 </div>
 <div class="sect2">
-<h3 id="upgrading_a_disconnected_satellite_server_upgrading-disconnected"><a class="anchor" href="#upgrading_a_disconnected_satellite_server_upgrading-disconnected"></a>4.1. Upgrading a disconnected Satellite&#160;Server</h3>
+<h3 id="upgrading-container-images-of-red-hat-lightspeed-in-satellite"><a class="anchor" href="#upgrading-container-images-of-red-hat-lightspeed-in-satellite"></a>4.1. Upgrading container images of Red&#160;Hat Lightspeed in Satellite</h3>
+<div class="paragraph _abstract">
+<p>If you have Red&#160;Hat Lightspeed in Satellite enabled on your Satellite&#160;Server, prepare the container images of Red&#160;Hat Lightspeed in Satellite for Satellite 6.19 and load them on the disconnected server before running the upgrade.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Red&#160;Hat Lightspeed in Satellite is enabled on your disconnected Satellite&#160;Server.</p>
+</li>
+<li>
+<p>You know which method you used for the initial installation of Red&#160;Hat Lightspeed in Satellite: the ISO image method or the export and import method.</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>If you used the ISO image method for the initial installation of Red&#160;Hat Lightspeed in Satellite, update the Red&#160;Hat Lightspeed in Satellite container images from the ISO image for 6.19:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Download and mount the Satellite installation ISO.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.19/html-single/installing_satellite_server_in_a_disconnected_network_environment/index#installing-from-the-offline-repositories_upgrading-disconnected">Installing the Satellite packages from the offline repositories</a> in <em>Installing Satellite&#160;Server in a disconnected network environment</em>.</p>
+</li>
+<li>
+<p>Set up the local repositories for disconnected environments.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.19/html-single/installing_satellite_server_in_a_disconnected_network_environment/index#installing-from-the-offline-repositories_upgrading-disconnected">Installing the Satellite packages from the offline repositories</a> in <em>Installing Satellite&#160;Server in a disconnected network environment</em>.</p>
+</li>
+<li>
+<p>Run the container setup script from the mounted ISO so that the Red&#160;Hat Lightspeed in Satellite images for 6.19 are loaded:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># /media/sat6/setup_containers</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>If you used the export and import method for the initial installation of Red&#160;Hat Lightspeed in Satellite, update the Red&#160;Hat Lightspeed in Satellite container images from the exported archive files:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>On a connected system, log in to the container registry:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ skopeo login --username <em>My_Username</em> --password <em>My_Password</em> registry.redhat.io</pre>
+</div>
+</div>
+</li>
+<li>
+<p>On the connected system, export the container images.
+Save the following script to a file and execute it on the connected system so that the Red&#160;Hat Lightspeed in Satellite container images for 6.19 are exported:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">#!/bin/bash
+
+images=(
+  "satellite/iop-ingress-rhel9:6.19"
+  "satellite/iop-advisor-frontend-rhel9:6.19"
+  "satellite/iop-host-inventory-rhel9:6.19"
+  "satellite/iop-vmaas-rhel9:6.19"
+  "satellite/iop-remediations-rhel9:6.19"
+  "satellite/iop-vulnerability-frontend-rhel9:6.19"
+  "satellite/iop-host-inventory-frontend-rhel9:6.19"
+  "satellite/iop-advisor-backend-rhel9:6.19"
+  "satellite/iop-puptoo-rhel9:6.19"
+  "satellite/iop-yuptoo-rhel9:6.19"
+  "satellite/iop-insights-engine-rhel9:6.19"
+  "satellite/iop-vulnerability-engine-rhel9:6.19"
+  "satellite/iop-gateway-rhel9:6.19"
+  "amq-streams/kafka-39-rhel9:2.9.1-1"
+)
+
+for image in "${images[@]}"; do
+  name=$(basename "${image}" | cut -d: -f1)
+  image_url="registry.redhat.io/${image}"
+  echo "Processing ${image}..."
+  # Pull the image
+  skopeo copy docker://${image_url} containers-storage:${image_url}
+  # Copy image to archive
+  skopeo copy containers-storage:${image_url} oci-archive:/tmp/${name}.tar
+done</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Transfer the archive files from <code>/tmp/</code> on the connected server to the <code>/tmp/</code> directory on the disconnected Satellite&#160;Server.</p>
+</li>
+<li>
+<p>On the disconnected Satellite&#160;Server, import the container images.
+Save the following script to a file and execute it on the disconnected Satellite&#160;Server so that the Red&#160;Hat Lightspeed in Satellite container images for 6.19 are imported:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">#!/bin/bash
+
+images=(
+  "satellite/iop-ingress-rhel9:6.19"
+  "satellite/iop-advisor-frontend-rhel9:6.19"
+  "satellite/iop-host-inventory-rhel9:6.19"
+  "satellite/iop-vmaas-rhel9:6.19"
+  "satellite/iop-remediations-rhel9:6.19"
+  "satellite/iop-vulnerability-frontend-rhel9:6.19"
+  "satellite/iop-host-inventory-frontend-rhel9:6.19"
+  "satellite/iop-advisor-backend-rhel9:6.19"
+  "satellite/iop-puptoo-rhel9:6.19"
+  "satellite/iop-yuptoo-rhel9:6.19"
+  "satellite/iop-insights-engine-rhel9:6.19"
+  "satellite/iop-vulnerability-engine-rhel9:6.19"
+  "satellite/iop-gateway-rhel9:6.19"
+  "amq-streams/kafka-39-rhel9:2.9.1-1"
+)
+
+for image in "${images[@]}"; do
+  name=$(basename "${image}" | cut -d: -f1)
+  image_url="registry.redhat.io/${image}"
+  echo "Processing ${image}..."
+  # Import the image
+  skopeo copy oci-archive:/tmp/${name}.tar containers-storage:${image_url}
+done</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="upgrading_a_disconnected_satellite_server_upgrading-disconnected"><a class="anchor" href="#upgrading_a_disconnected_satellite_server_upgrading-disconnected"></a>4.2. Upgrading a disconnected Satellite&#160;Server</h3>
 <div class="paragraph _abstract">
 <p>Upgrading a Satellite&#160;Server that is not connected to the Red&#160;Hat Content Delivery Network includes backing up the server, configuring the server with the latest ISO files, and running the upgrade.</p>
 </div>
@@ -737,6 +871,29 @@ Associate selected organizations and locations with Discovery rules.</p>
 <div class="olist loweralpha">
 <ol class="loweralpha" type="a">
 <li>
+<p>If you use Red&#160;Hat Lightspeed in Satellite, update the Common Vulnerabilities and Exposures (CVE) vulnerability mapping file:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>On a connected system, download the latest <code>cvemap.xml</code> file from the Red&#160;Hat Customer Portal:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ curl \
+--output /var/www/html/pub/cvemap.xml \
+https://security.access.redhat.com/data/meta/v1/cvemap.xml</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Transfer <code>cvemap.xml</code> to the disconnected Satellite&#160;Server you are upgrading, and place it in <code>/var/lib/foreman/</code>.</p>
+<div class="paragraph">
+<p>Satellite detects the new file and publishes it to the internal Red&#160;Hat Lightspeed in Satellite services.</p>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
 <p>Verify whether the default templates changed during the upgrade.
 Update any custom templates that you created by cloning a default template to reflect these changes.</p>
 <div class="admonitionblock note">
@@ -779,7 +936,7 @@ For more information about configuring custom provisioning snippets, see <a href
 </div>
 </div>
 <div class="sect2">
-<h3 id="synchronizing_the_new_repositories_upgrading-disconnected"><a class="anchor" href="#synchronizing_the_new_repositories_upgrading-disconnected"></a>4.2. Synchronizing the new repositories</h3>
+<h3 id="synchronizing_the_new_repositories_upgrading-disconnected"><a class="anchor" href="#synchronizing_the_new_repositories_upgrading-disconnected"></a>4.3. Synchronizing the new repositories</h3>
 <div class="paragraph _abstract">
 <p>You must enable and synchronize the new 6.19 repositories before you can upgrade Capsule&#160;Servers and Satellite clients.</p>
 </div>
@@ -877,7 +1034,7 @@ Deleting your manifest removes all the entitlements of your hosts.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="upgrading_capsule_server_upgrading-disconnected"><a class="anchor" href="#upgrading_capsule_server_upgrading-disconnected"></a>4.3. Upgrading Capsule&#160;Servers</h3>
+<h3 id="upgrading_capsule_server_upgrading-disconnected"><a class="anchor" href="#upgrading_capsule_server_upgrading-disconnected"></a>4.4. Upgrading Capsule&#160;Servers</h3>
 <div class="paragraph _abstract">
 <p>After upgrading your Satellite&#160;Server and synchronizing the required repositories, you can upgrade your Capsule&#160;Servers.</p>
 </div>
@@ -971,7 +1128,7 @@ For more information, see <a href="#following_the_progress_of_the_upgrade_upgrad
 </div>
 </div>
 <div class="sect2">
-<h3 id="upgrading-the-external-database-operating-system"><a class="anchor" href="#upgrading-the-external-database-operating-system"></a>4.4. Upgrading the external database operating system</h3>
+<h3 id="upgrading-the-external-database-operating-system"><a class="anchor" href="#upgrading-the-external-database-operating-system"></a>4.5. Upgrading the external database operating system</h3>
 <div class="paragraph _abstract">
 <p>If your Satellite uses an external database, you can upgrade the database from RHEL 8 to RHEL 9.
 You can upgrade the operating system while upgrading Satellite from 6.18 to 6.19.</p>
@@ -1018,7 +1175,7 @@ Otherwise, reconfigure Satellite to use the new name:</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="refreshing-clients-of-red-hat-lightspeed-in-satellite"><a class="anchor" href="#refreshing-clients-of-red-hat-lightspeed-in-satellite"></a>4.5. Refreshing clients of Red&#160;Hat Lightspeed in Satellite</h3>
+<h3 id="refreshing-clients-of-red-hat-lightspeed-in-satellite"><a class="anchor" href="#refreshing-clients-of-red-hat-lightspeed-in-satellite"></a>4.6. Refreshing clients of Red&#160;Hat Lightspeed in Satellite</h3>
 <div class="paragraph _abstract">
 <p>If you use Red&#160;Hat Lightspeed in Satellite, you must refresh Red&#160;Hat Lightspeed in Satellite registration of your hosts to keep using services of Red&#160;Hat Lightspeed in Satellite after upgrading Satellite&#160;Server.</p>
 </div>
