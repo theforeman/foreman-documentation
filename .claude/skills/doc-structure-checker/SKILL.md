@@ -10,7 +10,7 @@ I validate and fix structural issues in modular AsciiDoc documentation.
 ## References
 
 Before starting, read these files in `references/`:
-- `Modular documentation templates checklist.md` - **Primary reference** for validation rules
+- `modular_documentation_templates_checklist.md` - **Primary reference** for validation rules
 - `TEMPLATE_ASSEMBLY.adoc` - Canonical assembly structure
 - `TEMPLATE_CONCEPT.adoc` - Canonical concept module structure
 - `TEMPLATE_PROCEDURE.adoc` - Canonical procedure module structure

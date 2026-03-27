@@ -14,15 +14,6 @@
 * For any images, has alternative text descriptions enclosed in quotation marks ("")  
 * Admonitions do not include titles.
 
-**Nested assembly files:**
-
-* Contains the following conditional statement at the top of the document:  
-  ifdef::context\[:parent-context: {context}\]  
-* Contains the following conditional statement at the bottom of the document:  
-  ifdef::parent-context\[:context: {parent-context}\]  
-  ifndef::parent-context\[:\!context:\]  
-* Has the context variable declared and defined (:context: some-assembly).
-
 **All assembly files:**
 
 * Has a blank line between each include statement.  
