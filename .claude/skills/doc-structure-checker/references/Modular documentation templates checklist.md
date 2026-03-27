@@ -4,8 +4,9 @@
 
 * Has :\_mod-docs-content-type: \<TYPE\>, where  \<TYPE\> is ASSEMBLY, CONCEPT, REFERENCE, or PROCEDURE.  
 * Has a topic ID in the following format:  
-  \[id="\<file-name\>\_{context}"\]  
-  	For OCP: \[\_{context}"\] does not belong in Assemblies.  
+  \[id="\<file-name-with-underscores\>\_{context}"\]  
+  \[id="\<file-name-with-underscores\>\"\]  
+  Add "_{context}" only if it was part of the ID before. Do not add "_{context}" to IDs that did not already include it.
     
 * Has one and only one level 0 (=) title (H1) title  
 * Has a short introduction  
@@ -32,7 +33,7 @@
 
 * Does not contain an instruction (imperative statement).  
 * Does not contain a level 2 (===) section title (H3) or lower..  
-* Does not contain block titles, except .Additional references or .Next steps. Note that .Next steps will not be mapped to \<related-links\>, .Additional resources will.
+* Does not contain block titles, except .Additional references or .Next steps.
 
 **Procedure module:**
 
@@ -40,11 +41,9 @@
 * Includes only one .Procedure block title and list.  
 * Does not contain embellishments of .Procedure, for example .Procedure for installing X.  
 * Does not contain content following the last step of the procedure except the optional sections in the order listed:  
-  \* Prerequisites or Prerequisite  
-  \* Procedure  
-  \* Verification, Results, or Result  
-  \* Troubleshooting, Troubleshooting steps, or Troubleshooting step  
-  \* Next steps or Next step  
+  \* Verification
+  \* Troubleshooting
+  \* Next steps
   \* Additional resources  
     
 * Does not contain any other block titles. 

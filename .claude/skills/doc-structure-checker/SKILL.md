@@ -3,7 +3,7 @@ name: doc-structure-checker
 description: Validates and fixes AsciiDoc structural issues including assembly format, module templates, prerequisites, and nesting depth.
 ---
 
-# Document Structure Checker
+# Document structure checker
 
 I validate and fix structural issues in modular AsciiDoc documentation.
 
@@ -16,7 +16,7 @@ Before starting, read these files in `references/`:
 - `TEMPLATE_PROCEDURE.adoc` - Canonical procedure module structure
 - `TEMPLATE_REFERENCE.adoc` - Canonical reference module structure
 
-## 1. File Preparation
+## 1. File preparation
 
 The user provides a path to `master.adoc`.
 
@@ -26,11 +26,11 @@ The user provides a path to `master.adoc`.
 1. Open `master.adoc` and identify all `include::` files recursively
 2. Create `adoc-file-list.txt` with discovered file paths, one per line
 
-## 2. Files to Exclude
+## 2. Files to exclude
 
-Skip: `_attributes*.adoc`, `_title-attributes.adoc`, `snippet_*.adoc`, files in `common/` directory.
+Skip: `_attributes*.adoc`, `_title-attributes.adoc`, `snip_*.adoc`, files in `common/` directory.
 
-## 3. Execution Workflow
+## 3. Execution workflow
 
 1. **Read** the reference files in `references/` to understand the rules
 2. **Read** `adoc-file-list.txt` to get the file manifest
@@ -40,7 +40,7 @@ Skip: `_attributes*.adoc`, `_title-attributes.adoc`, `snippet_*.adoc`, files in 
 6. **Flag** issues needing human decision (see below)
 7. **Summarize** changes made and issues flagged
 
-## 4. What to Fix vs Flag
+## 4. What to fix vs flag
 
 **Fix automatically:**
 - Prerequisites using ordered lists → convert to unordered
@@ -57,13 +57,7 @@ Skip: `_attributes*.adoc`, `_title-attributes.adoc`, `snippet_*.adoc`, files in 
 - Procedure modules with multiple `.Procedure` blocks
 - Block titles not in the allowed list
 
-## 5. RHEL 10 Conventions
-
-- NO module type prefixes in filenames (no `con_`, `proc_`, `ref_`)
-- NO context prefixes in IDs
-- Determine module type by `:_mod-docs-content-type:`, not filename
-
-## 6. Output Format
+## 6. Output format
 
 ```
 === Structure Check Summary ===

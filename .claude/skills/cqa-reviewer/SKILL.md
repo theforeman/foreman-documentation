@@ -3,29 +3,29 @@ name: cqa-reviewer
 description: Reviews changes made by other CQA skills, compares before/after Vale results, and flags over-corrections or missed issues.
 ---
 
-# CQA Reviewer
+# CQA reviewer
 
-I am the final quality gate in the CQA workflow. I can operate in two modes:
+I am the final quality gate in the Content Quality Assessment (CQA) workflow. I can operate in two modes:
 
 - **Audit Mode** (standalone): Reads `master.adoc`, maps all included files, and reviews every existing abstract across all modules for quality — without requiring any prior skill run or git changes.
 - **Review Mode** (post-skill): Reviews changes made by other skills (short-description-expert, doc-structure-checker), compares before/after Vale results, and flags over-corrections or missed issues.
 
 ---
 
-## Audit Mode
+## Audit mode
 
 Use this mode to proactively review abstract quality across an entire guide, including files where `[role="_abstract"]` is already present and Vale passes without errors.
 
 ### AM-1. Setup
 
-The user provides a path to `master.adoc`. Recursively map all `include::` files exactly as `short-description-expert` does:
+The user provides a path to `master.adoc`. Recursively map all `include::` files:
 
 1. Open `master.adoc` and follow every `include::` directive.
 2. Recursively open referenced files to find nested includes.
 3. Resolve relative paths from each file's directory.
 4. Build the complete file list.
 
-**Exclude from review** (same rules as `short-description-expert`):
+**Exclude from review**:
 - Assembly files: `assembly_*.adoc` — abstracts live in their first included concept module, not in the assembly itself
 - Attribute files: `attributes*.adoc`, `_title-attributes.adoc`
 - Snippet files: `snip_*.adoc`
@@ -33,7 +33,7 @@ The user provides a path to `master.adoc`. Recursively map all `include::` files
 
 Only review module files: `con_*.adoc`, `proc_*.adoc`, `ref_*.adoc`.
 
-### AM-2. Per-File Review
+### AM-2. Per-file review
 
 For each module file:
 
@@ -53,7 +53,7 @@ For each module file:
 - Does not simply restate the title word-for-word
 - Active voice, present tense
 
-### AM-3. Output Format
+### AM-3. Output format
 
 ```
 === CQA Abstract Audit Report ===
@@ -102,9 +102,9 @@ Run Vale again to create post-fix results:
 xargs vale --output line < adoc-file-list.txt > vale-output-post.txt
 ```
 
-### RM-2. Review Process
+### RM-2. Review process
 
-#### RM-2.1 Compare Vale Results
+#### RM-2.1 Compare Vale results
 1. Parse `vale-output.txt` (before) and `vale-output-post.txt` (after).
 2. Identify:
    - **Resolved issues**: Errors in "before" that are gone in "after"
@@ -113,7 +113,7 @@ xargs vale --output line < adoc-file-list.txt > vale-output-post.txt
 
 **Flag if:** New issues were introduced by the fixes.
 
-#### RM-2.2 Review Changed Files
+#### RM-2.2 Review changed files
 For each file with changes (via `git diff --name-only`):
 
 1. Read the diff to understand what changed.
@@ -133,20 +133,20 @@ For each file with changes (via `git diff --name-only`):
    - Style changes beyond the scope of the fix
    - Added content that wasn't requested
 
-#### RM-2.3 Consistency Check
+#### RM-2.3 Consistency check
 Across all changed files:
 - Terminology is consistent (same product names, feature names)
 - Short description style is consistent
 - No conflicting information introduced
 
-### RM-3. What NOT to Do
+### RM-3. What NOT to do
 
 - Do NOT make changes directly. Flag issues only.
 - Do NOT request endless revision cycles. One review pass is sufficient.
 - Do NOT flag minor stylistic preferences. Focus on errors and quality issues.
 - Do NOT re-review unchanged files.
 
-### RM-4. Output Format
+### RM-4. Output format
 
 ```
 === CQA Review Report ===
@@ -182,13 +182,13 @@ SUMMARY:
 Recommendation: [PASS / PASS WITH NOTES / NEEDS FIXES]
 ```
 
-### RM-5. Recommendation Criteria
+### RM-5. Recommendation criteria
 
 - **PASS**: No issues, all changes look good
 - **PASS WITH NOTES**: Minor concerns only, acceptable to proceed
 - **NEEDS FIXES**: Issues found that should be addressed before committing
 
-### RM-6. After Review
+### RM-6. After review
 
 If issues are found:
 1. Report them clearly with file paths and line numbers
