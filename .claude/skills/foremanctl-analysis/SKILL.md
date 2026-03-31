@@ -90,6 +90,7 @@ For each affected file, provide:
 **File**: path/to/file.adoc
 **Guide**: [Guide name]
 **Component**: [The component this relates to]
+**Assembly**: path/to/assembly/file.adoc
 **User story**: [the user story from the parent assembly that includes this module]
 **Tool reference**: foreman-installer | foreman-maintain | both | indirect (workflow dependency, no direct tool mention)
 **Scope**: Minor (command change) | Moderate (procedure rewrite) | Major (workflow redesign)
