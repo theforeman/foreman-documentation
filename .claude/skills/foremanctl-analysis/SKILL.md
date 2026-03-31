@@ -16,7 +16,7 @@ This skill guides research to identify which documentation pieces are affected b
 
 **Components to evaluate for *foremanctl* impact:**
 - Alternate content sources
-- Capsule - Content
+- Capsule - Content: Capsule content synchronization (includes syncing content to Capsules and serving it to remote hosts)
 - Container image management
 - Content credentials
 - Content views
