@@ -28,7 +28,7 @@ Additional principles for specific heading types:
 
 ## Post-command cleanup
 
-* If you rename a heading, use the `.cursor/commands/refactor-adoc.md` command to update the module's ID, filename, and all references and links to the module in the repository.
+* If you rename a heading, use the `.cursor/skills/refactor-adoc.md` command to update the module's ID, filename, and all references and links to the module in the repository.
 
 ## Examples of good headings
 
