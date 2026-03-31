@@ -10,7 +10,7 @@ Review prerequisites in this file to make sure they are labeled correctly and us
 
 ## Instructions
 
-1. Only review procedure modules (proc_*.adoc), which can include a `.Prerequisites` section.
+1. Only process procedure modules (proc_*.adoc). These are the only modules that can include a `.Prerequisites` section.
 2. If a section titled `.Prerequisites` exists in the file, ensure it uses consistent formatting:
     - Each prerequisite must start with a bullet point.
     - Prerequisites must use parallel language. For example, if one bullet is a complete sentence, write the other bullets as complete sentences.
