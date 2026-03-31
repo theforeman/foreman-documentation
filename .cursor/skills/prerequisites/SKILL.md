@@ -1,0 +1,43 @@
+---
+name: prerequisites
+description: Review or add prerequisites
+---
+# Review or add prerequisites
+
+## Overview
+
+Review prerequisites in this file to make sure they are labeled correctly and use consistent formatting. Prerequisites are a bulleted list of conditions that must be satisfied before the user starts the procedure.
+
+## Instructions
+
+1. Only process procedure modules (proc_*.adoc). These are the only modules that can include a `.Prerequisites` section.
+2. If a section titled `.Prerequisites` exists in the file, ensure it uses consistent formatting:
+    - The first word of each prerequisite must be capitalized.
+    - Each prerequisite must start with a bullet point.
+    - Prerequisites must not use imperative voice.
+    - If the prerequisites are full sentences, end all prerequisites with a period.
+    - If the prerequisites are sentence fragments, do not use any end punctuation.
+    - Use passive voice for prerequisites that represent an action that is not completed by the current user. For example, having a configuration enabled by a system admin.
+    - Prerequisites must use parallel language. For example, if one bullet is a complete sentence, write the other bullets as complete sentences.
+2. If a section titled `.Prerequisites` exists in the file, ensure it contains information suitable for prerequisites:
+    - Prerequisites are checks that are true, checks that the user must have completed before they begin a procedure, or items that the user must have ready before beginning a procedure. Prerequisites can also be actions that the user, another person, or piece of technology has completed before the user can begin the procedure.
+    - Focus on relevant prerequisites that users might not otherwise be aware of. Do not list obvious prerequisites.
+    - Do not include procedure steps in prerequisites. If `.Prerequisites` includes a prerequisite that would be more suitable as a procedure step, move it to the `.Procedure` section.
+    - Do not exceed 10 prerequisites. If `.Prerequisites` includes more than 10 list items, flag this as an issue for human review.
+3. If a procedure module does not include `.Prerequisites` section, scan the module to identify steps that meet criteria for prerequisites. If a step or steps like this exist, create a `.Prerequisites` section and rephrase the step or steps as prerequisites in this section.
+
+## Examples of good prerequisites
+
+* The `kernelcare` package is installed on your hosts.
+* The base system of the {SmartProxy} is registered to the newly upgraded {ProjectServer}.
+* Your user account has a role that grants the `view_policies` permission.
+* You are logged in to the registry.redhat.io container registry.
+* If you use `dzdo` for Ansible jobs, the `community.general` Ansible collection must be installed.
+
+## Examples of bad prerequisites
+
+* You are logged in. (This is an obvious prerequisite.)
+* The host is registered to {Project}. (This is an obvious prerequisite.)
+* At least one host exists in {Project}. (This is an obvious prerequisite.)
+* Ensure the `kernelcare` package is installed on your hosts. (This prerequisite uses imperative voice.)
+* Install the `kernelcare` package on your hosts. (This prerequisite is phrase like a procedure step.)
