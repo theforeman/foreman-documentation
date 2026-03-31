@@ -4,10 +4,28 @@
 # this json file will be used later to verify links to the documentation in the Foreman UI.
 
 require 'nokogiri'
+require 'optparse'
 require 'json'
 
-unless (f2l_file = ENV['F2L'])
-  STDERR.puts "Must specify folder to link file: F2L="
+options = {}
+OptionParser.new do |opts|
+  opts.banner = "Usage: extract_links_toc [options] FILES..."
+
+  opts.on("--f2l F2L_FILE", "File containing filename to satellite guide name mappings") do |f2l|
+    options[:f2l] = f2l
+  end
+
+  opts.on("--output-toc-file FILE", "Write TOC output to FILE instead of stdout") do |f|
+    options[:toc_file] = f
+  end
+
+  opts.on("--output-aliases-file FILE", "Write aliases output (auxiliary id to canonical id mapping) to FILE (disabled by default)") do |f|
+    options[:aliases_file] = f
+  end
+end.parse!
+
+unless (f2l_file = options[:f2l] || ENV['F2L'])
+  STDERR.puts "Must specify folder to link file: F2L= or --f2l="
   exit 1
 end
 
@@ -16,6 +34,13 @@ filename_to_link = JSON.parse(File.read(f2l_file))
 files = ARGV
 
 toc = {}
+aliases = {}
+
+# In the resulting HTML, an auxiliary ID is provided as an <a> element with 'id'
+# attribute that is a direct child of the element the auxiliary ID is meant for
+def element_auxiliary_ids(el)
+  el.css('> a[id]').map { |e| e['id'] }
+end
 
 files.each do |file|
   next unless (link_name = filename_to_link[file])
@@ -23,13 +48,38 @@ files.each do |file|
   document = Nokogiri::HTML.parse(File.open(file))
 
   file_toc = document.css('h2').to_h do |chapter|
+    subchapters = (chapter.parent.css('h3') + chapter.parent.css('div[id]'))
+    ([chapter] + subchapters).each do |element|
+      element_auxiliary_ids(element).each do |aux_id|
+        id = element['id']
+        case element.name
+        when 'h2'
+          key = "#{link_name}/#{id}"
+          aliases[key] ||= []
+          aliases[key] << "#{link_name}/#{aux_id}"
+        else
+          key = "#{link_name}/#{chapter['id']}##{id}"
+          aliases[key] ||= []
+          aliases[key] << "#{link_name}/#{chapter['id']}##{aux_id}"
+        end
+      end
+    end
     [
       chapter['id'].downcase,
-      (chapter.parent.css('h3') + chapter.parent.css('div[id]')).map {|subchapter| subchapter['id']}
+      subchapters.map { |subchapter| subchapter['id'] }
     ]
   end
 
   toc[link_name] = file_toc
 end
 
-$stdout << JSON.pretty_generate(toc)
+if options[:aliases_file]
+  File.write(options[:aliases_file], JSON.pretty_generate(aliases))
+end
+
+toc_json = JSON.pretty_generate(toc)
+if options[:toc_file]
+  File.write(options[:toc_file], toc_json)
+else
+  $stdout << toc_json
+end
