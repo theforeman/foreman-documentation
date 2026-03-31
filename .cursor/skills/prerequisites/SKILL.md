@@ -29,10 +29,12 @@ Review prerequisites in this file to make sure they are labeled correctly and us
 * The base system of the {SmartProxy} is registered to the newly upgraded {ProjectServer}.
 * Your user account has a role that grants the `view_policies` permission.
 * You are logged in to the registry.redhat.io container registry.
+* If you use `dzdo` for Ansible jobs, the `community.general` Ansible collection must be installed.
 
 ## Examples of bad prerequisites
 
-* You are logged in.
-* The host is registered.
-* At least one host exists in {Project}.
-* If you use `dzdo` for Ansible jobs, the `community.general` Ansible collection must be installed.
+* You are logged in. (This is an obvious prerequisite.)
+* The host is registered to {Project}. (This is an obvious prerequisite.)
+* At least one host exists in {Project}. (This is an obvious prerequisite.)
+* Ensure the `kernelcare` package is installed on your hosts. (This prerequisite uses imperative voice.)
+* Install the `kernelcare` package on your hosts. (This prerequisite is phrase like a procedure step.)
