@@ -16,6 +16,9 @@ Review prerequisites in this file to make sure they are labeled correctly and us
     - Prerequisites must use parallel language. For example, if one bullet is a complete sentence, write the other bullets as complete sentences.
     - Prerequisites must not use imperative voice.
     - Use passive voice for prerequisites that represent an action that is not completed by the current user. For example, having a configuration enabled by a system admin.
+* The first word of each prerequisite must be capitalized.
+* If the prerequisites are full sentences, end all prerequisites with a period.
+* If the prerequsites are sentence fragments, do not use any end punctuation.
 2. If a section titled `.Prerequisites` exists in the file, ensure it contains information suitable for prerequisites:
     - Prerequisites are checks that are true, checks that the user must have completed before they begin a procedure, or items that the user must have ready before beginning a procedure. Prerequisites can also be actions that the user, another person, or piece of technology has completed before the user can begin the procedure.
     - Focus on relevant prerequisites that users might not otherwise be aware of. Do not list obvious prerequisites.
