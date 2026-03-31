@@ -77,7 +77,7 @@ For each affected file identified in Step 3a:
 
 ## Output format
 
-Present findings as:
+Save findings to a file named `foremanctl-analysis-YYYY-MM-DD.txt` in the root of the foreman-documentation repository.
 
 ### Summary
 - Total number of affected files
