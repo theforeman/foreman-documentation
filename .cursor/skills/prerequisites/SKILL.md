@@ -29,4 +29,10 @@ Review prerequisites in this file to make sure they are labeled correctly and us
 * The base system of the {SmartProxy} is registered to the newly upgraded {ProjectServer}.
 * Your user account has a role that grants the `view_policies` permission.
 * You are logged in to the registry.redhat.io container registry.
+
+## Examples of bad prerequisites
+
+* You are logged in.
+* The host is registered.
+* At least one host exists in {Project}.
 * If you use `dzdo` for Ansible jobs, the `community.general` Ansible collection must be installed.
