@@ -21,9 +21,9 @@ Follow these general principles for all headings:
 Additional principles for specific heading types:
 
 * For concepts (con_*.adoc): Do not start the heading with a gerund or verb. Use a noun phrase and include nouns or noun phrases that appear in the body text.
-* For procedures (proc_*.adoc): When writing a new heading, start with a verb in imperative voice. When reviewing an existing heading that uses a gerund, keep the gerund; do not rewrite it in imperative voice.
+* For procedures (proc_*.adoc): Start the heading with a gerund.
 * For references (ref_*.adoc): Do not start the heading with a gerund or verb. Include nouns that appear in the body text.
-* For assemblies (the first con_*.adoc in an assembly_*.adoc) that contain at least one procedure: When writing a new heading, start with a verb in imperative voice. When reviewing an existing heading, keep the gerund; do not rewrite it in imperative voice.
+* For assemblies (the first con_*.adoc in an assembly_*.adoc) that contain at least one procedure: Start the heading with a gerund.
 * For assemblies (the first con_*.adoc in an assembly_*.adoc) that contain only concepts or references: Do not start the heading with a gerund or verb. Use a noun phrase.
 
 ## Post-command cleanup
@@ -40,9 +40,9 @@ Concept headings:
 
 Procedure headings:
 
-* Deploy SSH keys during provisioning
-* Open required ports
-* Configure pull-based transport for remote execution
+* Deploying SSH keys during provisioning
+* Opening required ports
+* Configuring pull-based transport for remote execution
 
 Reference headings:
 
@@ -52,6 +52,6 @@ Reference headings:
 
 Assembly headings:
 
-* Connect AI applications to the MCP server for {Project}
-* Configure {SmartProxy} and hosts to authenticate with SSH certificates during remote execution
+* Connecting AI applications to the MCP server for {Project}
+* Configuring {SmartProxy} and hosts to authenticate with SSH certificates during remote execution
 * Content and patch management with {Project}
