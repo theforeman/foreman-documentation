@@ -22,7 +22,7 @@ Review prerequisites in this file to make sure they are labeled correctly and us
 2. If a section titled `.Prerequisites` exists in the file, ensure it contains information suitable for prerequisites:
     - Prerequisites are checks that are true, checks that the user must have completed before they begin a procedure, or items that the user must have ready before beginning a procedure. Prerequisites can also be actions that the user, another person, or piece of technology has completed before the user can begin the procedure.
     - Focus on relevant prerequisites that users might not otherwise be aware of. Do not list obvious prerequisites.
-    - Do not include steps in prerequisites. If `.Prerequisites` includes a step, move the step to the `.Procedure` section.
+    - Do not include procedure steps in prerequisites. If `.Prerequisites` includes a prerequisite that would be more suitable as a procedure step, move it to the `.Procedure` section.
     - Do not exceed 10 prerequisites. If `.Prerequisites` includes more than 10 list items, flag this as an issue for human review.
 3. If a procedure module does not include `.Prerequisites` section, scan the module to identify steps that meet criteria for prerequisites. If a step or steps like this exist, create a `.Prerequisites` section and rephrase the step or steps as prerequisites in this section.
 
