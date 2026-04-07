@@ -10,7 +10,7 @@
     
 * Has one and only one level 0 (=) title (H1) title  
 * Has a short introduction  
-* Has a blank line between the level 0 (=)  title and the short introduction  
+* Has a blank line between the level 0 (=) title and the short introduction  
 * For any images, has alternative text descriptions enclosed in quotation marks ("")  
 * Admonitions do not include titles.
 
@@ -38,4 +38,3 @@
   \* Additional resources  
     
 * Does not contain any other block titles. 
-

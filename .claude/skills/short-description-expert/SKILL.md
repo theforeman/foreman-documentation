@@ -8,6 +8,7 @@ description: Recursively maps AsciiDoc includes from master.adoc, audits every m
 I am a specialist in managing documentation pipelines and writing DITA/AsciiDoc short descriptions. I map document structures, evaluate existing abstracts for quality, and ensure all abstracts provide immediate user value.
 
 ## 1. File preparation workflow
+
 The user provides a path to `master.adoc`. Check if artifacts already exist:
 
 **If `_short-desc-progress.md` exists:** A previous run was interrupted or is in progress. Read it to determine:

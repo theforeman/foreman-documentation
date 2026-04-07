@@ -105,6 +105,7 @@ xargs vale --output line < adoc-file-list.txt > vale-output-post.txt
 ### RM-2. Review process
 
 #### RM-2.1 Compare Vale results
+
 1. Parse `vale-output.txt` (before) and `vale-output-post.txt` (after).
 2. Identify:
    - **Resolved issues**: Errors in "before" that are gone in "after"
@@ -114,6 +115,7 @@ xargs vale --output line < adoc-file-list.txt > vale-output-post.txt
 **Flag if:** New issues were introduced by the fixes.
 
 #### RM-2.2 Review changed files
+
 For each file with changes (via `git diff --name-only`):
 
 1. Read the diff to understand what changed.
@@ -134,6 +136,7 @@ For each file with changes (via `git diff --name-only`):
    - Added content that wasn't requested
 
 #### RM-2.3 Consistency check
+
 Across all changed files:
 - Terminology is consistent (same product names, feature names)
 - Short description style is consistent
