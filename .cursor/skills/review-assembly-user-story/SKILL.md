@@ -6,7 +6,7 @@ description: Review assembly to ensure it follows the one-user-story principle
 
 ## Overview
 
-Review an assembly file to ensure it describes one and only one user story.
+Review an assembly file to ensure it describes a single user story.
 If the assembly contains multiple user stories, split it into separate assembly files.
 
 Usage:
@@ -15,10 +15,15 @@ Usage:
 /review-assembly-user-story @assembly_example.adoc
 ```
 
+## Reasoning
+
+An assembly must cover a single user story (what the user wants to accomplish).
+When an assembly attempts to describe multiple user stories, it often loses its focus, becomes too long, and can be confusing to follow.
+
 ## Instructions
 
 Review the assembly file to determine if it follows the one-user-story principle.
-Each assembly should describe a single user story (what the user wants to accomplish).
+Each assembly must describe a single user story.
 
 ### Step 1: Analyze the assembly
 
