@@ -1,0 +1,56 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="creating-an-rhui-alternate-content-source-by-using-cli"]
+= Creating an RHUI alternate content source by using Hammer CLI
+
+[role="_abstract"]
+You can create an RHUI alternate content source (ACS) to synchronize content from your Red{nbsp}Hat Update Infrastructure (RHUI) server.
+Leverage your existing RHUI investment and accelerate content synchronization.
+
+{Project} searches content paths that combine a base URL with subpaths.
+For example, if your base URL is `\https://{server-example-com}` and your subpaths are `rhel10/` and `rhel9/`, then {Project} searches `\https://{server-example-com}/rhel10/` and `\https://{server-example-com}/rhel9/`.
+
+.Prerequisites
+* The client entitlement certificates for the required repositories are generated on the RHUA node.
+For more information, see {RHDocsBaseURL}red_hat_update_infrastructure/4/html/configuring_and_managing_red_hat_update_infrastructure/assembly_cmg-creating-client-ent-cert-config-rpm_configuring-and-managing-red-hat-update-infrastructure#proc_cmg-creating-client-entitlement-certificate_assembly_cmg-creating-client-ent-cert-config-rpm[Creating a client entitlement certificate with the Red Hat Update Infrastructure Management Tool] in _Configuring and Managing Red Hat Update Infrastructure 4_.
+* The client entitlement certificates are imported into {Project}.
+For more information, see {ContentManagementDocURL}importing-custom-ssl-certificates-by-using-web-ui[Importing {customssl} certificates by using {ProjectWebUI}] in _{ContentManagementDocTitle}_.
+* You have the base URL of the Red{nbsp}Hat Update Infrastructure CDS node.
+
+.Procedure
+. On your RHUA server, display details for the required repositories:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# rhui-manager repo info --repo_id _My_Repo_ID_
+----
++
+Record the relative paths from the command output to use as subpaths.
+. Create a RHUI alternate content source:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+$ hammer alternate-content-source create \
+--alternate-content-source-type rhui \
+--base-url "_https://rhui-cds-node.example.com/pulp/content_" \
+--name "_My_ACS_Name_" \
+--smart-proxy-ids __My_{smart-proxy-context-titlecase}_ID_1__,__My_{smart-proxy-context-titlecase}_ID_2__ \
+--ssl-client-cert-id _My_SSL_Client_Certificate_ID_ \
+--ssl-client-key-id _My_SSL_Client_Key_ID_ \
+--subpaths _path/to/repo/1/,path/to/repo/2/_ \
+--verify-ssl _true_
+----
+. Refresh the alternate content source:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+$ hammer alternate-content-source refresh --name "_My_ACS_Name_"
+----
+
+.Verification
+* Verify that the task ran successfully:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+$ hammer task list --search "Refresh Alternate Content Source"
+----
