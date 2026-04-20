@@ -1,0 +1,95 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="attaching-{smart-proxy-context}-to-external-openvox-server"]
+= Attaching {SmartProxy} to external OpenVox server
+
+[role="_abstract"]
+You can attach an external OpenVox server to {SmartProxies}.
+
+.Prerequisites
+* You have enabled the Puppet plugin on your {ProjectServer}.
+For more information, see xref:enabling-puppet-integration-with-{project-context}[].
+* You have enabled the Request Forwarder plugin on your {ProjectServer}.
+For more information, see xref:installing-the-request-forwarder-plugin[].
+
+.Procedure
+. In the {ProjectWebUI}, navigate to *Administer* > *Settings*.
+. On the *Authentication* tab, locate the *Trusted hosts* setting and add the FQDN of your OpenVox server to the list.
+. On your {SmartProxyServer}, extend the list of trusted hosts with your OpenVox server in `/etc/foreman-installer/scenarios.d/foreman-proxy-content-answers.yaml`:
++
+[source, yaml, options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+foreman_proxy:
+  trusted_hosts:
+  - _My_{Project}_Server_FQDN_
+  - _My_{SmartProxy}_Server_FQDN_
+  - _My_OpenVox_Server_FQDN_
+----
+. Install OpenVox or Puppet server.
++
+For more information, see https://voxpupuli.org/openvox/install/[Installing OpenVox].
+. On your {ProjectServer}, create certificates for your OpenVox server:
+** If you use self-signed certificates:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {certs-generate} \
+--certs-tar _My_Certificates_Archive_ \
+--foreman-proxy-fqdn _My_OpenVox_Server_FQDN_ \
+--node-fqdn _My_OpenVox_Server_FQDN_
+----
+** If you use custom certificates:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {certs-generate} \
+--certs-tar _My_Certificates_Archive_ \
+--foreman-proxy-fqdn _My_OpenVox_Server_FQDN_ \
+--node-fqdn _My_OpenVox_Server_FQDN_ \
+--server-ca-cert _My_CA_Cert_ \
+--server-cert _My_Cert_ \
+--server-key _My_Key_
+----
+. From your {ProjectServer}, transfer the certificates to your OpenVox server:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# scp /root/_My_Certificates_Archive_ root@openvox.example.com:/root/
+----
+. On your OpenVox server, extract the certificates:
++
+----
+# tar xf /root/_My_Certificates_Archive_
+----
+. On your OpenVox server, configure the connection to your {Project} in `/etc/puppetlabs/puppet/foreman.yaml`:
++
+[source, yaml, options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+:url: "https://{smartproxy-example-com}:{smartproxy_port}"
+:ssl_ca: "/path/to/katello-server-ca.crt"
+:ssl_cert: "/path/to/puppet-client.crt"
+:ssl_key: "/path/puto/puppet-client.key"
+
+:puppetdir: "/opt/puppetlabs/server/data/puppetserver"
+:puppetuser: "puppet"
+:facts: true
+:timeout: 10
+:threads: null
+----
+. From your {ProjectServer}, copy the `report.rb` script to your OpenVox server:
++
+----
+# scp /usr/share/foreman-installer/modules/puppetserver_foreman/files/report.rb root@openvox.example.com:/opt/puppetlabs/puppet/lib/ruby/vendor_ruby/puppet/reports/foreman.rb
+----
+. Configure your OpenVox server to upload reports:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# puppet config set --section main reports "foreman"
+----
+. Restart your OpenVox server:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# systemctl restart puppetserver.service
+----
