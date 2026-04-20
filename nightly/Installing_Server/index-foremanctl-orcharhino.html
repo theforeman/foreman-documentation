@@ -260,7 +260,17 @@ SOFTWARE.
 </ul>
 </li>
 <li><a href="#installing-orcharhino-server">3. Installing orcharhino&#160;Server</a></li>
-<li><a href="#customize-the-installation">4. Customize the installation</a></li>
+<li><a href="#customize-the-installation">4. Customize the installation</a>
+<ul class="sectlevel2">
+<li><a href="#configuring-an-alternate-cname_orcharhino">4.1. Configuring an alternate CNAME for orcharhino</a>
+<ul class="sectlevel3">
+<li><a href="#configuring-orcharhino-with-an-alternate-cname_orcharhino">4.1.1. Configuring orcharhino with an alternate CNAME</a></li>
+<li><a href="#configuring-hosts-to-use-an-alternate-cname-for-content-management_orcharhino">4.1.2. Configuring hosts to use an alternate orcharhino CNAME for content management</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#restoring-manual-changes-overwritten-by-a-puppet-run_orcharhino">Appendix A: Restoring manual changes overwritten by a Puppet run</a></li>
 </ul>
 </div>
 </div>
@@ -818,7 +828,138 @@ For more information, see <a href="https://docs.theforeman.org/nightly/Administe
 <div class="sect1">
 <h2 id="customize-the-installation"><a class="anchor" href="#customize-the-installation"></a>4. Customize the installation</h2>
 <div class="sectionbody">
+<div class="sect2">
+<h3 id="configuring-an-alternate-cname_orcharhino"><a class="anchor" href="#configuring-an-alternate-cname_orcharhino"></a>4.1. Configuring an alternate CNAME for orcharhino</h3>
+<div class="paragraph _abstract">
+<p>You can configure an alternate CNAME for orcharhino.
+This might be useful if you want to deploy the orcharhino web interface on a different domain name than the one that is used by client systems to connect to orcharhino.
+You must plan the alternate CNAME configuration in advance prior to installing orcharhino&#160;Proxies and registering hosts to orcharhino to avoid redeploying new certificates to hosts.</p>
+</div>
+<div class="sect3">
+<h4 id="configuring-orcharhino-with-an-alternate-cname_orcharhino"><a class="anchor" href="#configuring-orcharhino-with-an-alternate-cname_orcharhino"></a>4.1.1. Configuring orcharhino with an alternate CNAME</h4>
+<div class="paragraph _abstract">
+<p>You can configure an alternate CNAME for orcharhino with the default orcharhino certificate.
+Note that the procedures for users of a default orcharhino certificate and custom certificate differ.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Add an alternate CNAME to a new installation or an existing deployment of orcharhino with a default orcharhino certificate:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foremanctl --certificate-cname <em>My-Alternate-FQDN.example.com</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>If you use orcharhino with a custom certificate, when creating a custom certificate, include the alternate CNAME records to the custom certificate.
+For more information, see <a href="https://docs.theforeman.org/nightly/Installing_Server/index-foremanctl-orcharhino.html#creating-a-custom-ssl-certificate_orcharhino">Creating a Custom SSL Certificate for orcharhino&#160;Server</a>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="configuring-hosts-to-use-an-alternate-cname-for-content-management_orcharhino"><a class="anchor" href="#configuring-hosts-to-use-an-alternate-cname-for-content-management_orcharhino"></a>4.1.2. Configuring hosts to use an alternate orcharhino CNAME for content management</h4>
+<div class="paragraph _abstract">
+<p>If orcharhino is configured with an alternate CNAME, you can configure hosts to use the alternate orcharhino CNAME for content management.
+To do this, you must point hosts to the alternate orcharhino CNAME prior to registering the hosts to orcharhino.
+You can do this using the bootstrap script or manually.</p>
+</div>
+<div class="paragraph">
+<p>Perform these steps on the hosts you want to configure.</p>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>If you want to configure the host with the bootstrap script, run the bootstrap script with the <code>--server <em>My-Alternate-FQDN.example.com</em></code> option to register the host to the alternate orcharhino CNAME:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ./bootstrap.py --server <em>My-Alternate-FQDN.example.com</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>If you want to configure the host manually, edit the <code>/etc/rhsm/rhsm.conf</code> file to update <code>hostname</code> and <code>baseurl</code> settings to point to the alternate host name, for example:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-none" data-lang="none">[server]
+# Server hostname:
+hostname = <em>My-Alternate-FQDN.example.com</em>
 
+<em>content omitted</em>
+
+[rhsm]
+# Content base URL:
+baseurl=https://<em>My-Alternate-FQDN.example.com</em>/pulp/content/</code></pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Next steps</div>
+<ul>
+<li>
+<p>Now you can register the host with the <code>subscription-manager</code>.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="restoring-manual-changes-overwritten-by-a-puppet-run_orcharhino"><a class="anchor" href="#restoring-manual-changes-overwritten-by-a-puppet-run_orcharhino"></a>Appendix A: Restoring manual changes overwritten by a Puppet run</h2>
+<div class="sectionbody">
+<div class="paragraph _abstract">
+<p>If your manual configuration has been overwritten by a Puppet run, you can restore the files to the previous state.</p>
+</div>
+<div class="paragraph">
+<p>For example, when you install and configure orcharhino for the first time by using <code>orcharhino-installer</code>, you can use the <code>--foreman-proxy-dns-managed false</code> and <code>--foreman-proxy-dhcp-managed false</code> options to specify that the DNS and DHCP configuration files are not to be managed by Puppet.
+If you do not use these options during the initial <code>orcharhino-installer</code> run, rerunning <code>orcharhino-installer</code> overwrites all manual changes.
+The following example shows you how to restore a DHCP configuration file overwritten by a Puppet run.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Copy the file you intend to restore.
+This allows you to compare the files to check for any mandatory changes required by the upgrade.
+This is not common for DNS or DHCP services.</p>
+<div class="listingblock">
+<div class="content">
+<pre># cp /etc/dhcp/dhcpd.conf /etc/dhcp/dhcpd.backup</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Check the log files to note down the md5sum of the overwritten file.
+For example:</p>
+<div class="listingblock">
+<div class="content">
+<pre># journalctl -xe
+...
+/Stage[main]/Dhcp/File[/etc/dhcp/dhcpd.conf]: Filebucketed /etc/dhcp/dhcpd.conf to puppet with sum 622d9820b8e764ab124367c68f5fa3a1
+...</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Restore the overwritten file:</p>
+<div class="listingblock">
+<div class="content">
+<pre># puppet filebucket restore --local --bucket \
+/var/lib/puppet/clientbucket /etc/dhcp/dhcpd.conf \ 622d9820b8e764ab124367c68f5fa3a1</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Compare the backup file and the restored file, and edit the restored file to include any mandatory changes required by the upgrade.</p>
+</li>
+</ol>
+</div>
 </div>
 </div>
 </div>
