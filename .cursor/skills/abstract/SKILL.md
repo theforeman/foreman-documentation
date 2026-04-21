@@ -41,5 +41,5 @@ When reviewing or writing the abstract, follow these principles:
 | Title | Preferred Short Description |
 | :--- | :--- |
 | Browsing hosts in {ProjectWebUI} | Find and categorize your hosts within {Project} to get a quick overview of your managed infrastructure. Browsing hosts helps you understand your environment and identify specific host types for targeted actions. |
-| Cloning hosts | Clone existing hosts in {Project} to quickly create new hosts with similar configurations. This streamlines deployment processes and improves consistency across your environment. |
+| Cloning hosts in {Project} | Clone existing hosts in {Project} to quickly create new hosts with similar configurations. This streamlines deployment processes and improves consistency across your environment. |
 | Editing system purpose | Edit the system purpose attributes for your Red Hat Enterprise Linux hosts to help ensure they receive correct subscriptions and accurate reporting. This optimizes license compliance and management. |
