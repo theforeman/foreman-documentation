@@ -256,10 +256,23 @@ SOFTWARE.
 <ul class="sectlevel2">
 <li><a href="#opening-required-ports">2.1. Opening required ports</a></li>
 <li><a href="#verifying-dns-resolution_foreman">2.2. Verifying DNS resolution</a></li>
-<li><a href="#preparing-for-using-external-databases_foreman">2.3. Preparing Foreman for using external databases</a></li>
+<li><a href="#configuring-http-proxy-to-connect-to-cdn_foreman">2.3. Configuring the HTTP proxy to connect to Red Hat CDN</a></li>
+<li><a href="#configuring-repositories_foreman">2.4. Configuring repositories</a></li>
 </ul>
 </li>
-<li><a href="#installing-foreman-server">3. Installing Foreman&#160;server</a></li>
+<li><a href="#installing-foreman-server">3. Installing Foreman&#160;server</a>
+<ul class="sectlevel2">
+<li><a href="#deploy-foreman-server-configuration-with-the-default-database">3.1. Deploy Foreman&#160;server configuration with the default database</a></li>
+<li><a href="#deploy-foreman-server-configuration-with-an-external-database">3.2. Deploy Foreman&#160;server configuration with an external database</a></li>
+<li><a href="#importing-red-hat-subscription-manifests-into-foreman">3.3. Importing Red&#160;Hat subscription manifests into Foreman</a>
+<ul class="sectlevel3">
+<li><a href="#obtaining-a-red-hat-subscription-manifest">3.3.1. Obtaining a Red&#160;Hat subscription manifest</a></li>
+<li><a href="#importing-a-red-hat-subscription-manifest-by-using-web-ui">3.3.2. Importing a Red Hat subscription manifest by using Foreman web UI</a></li>
+<li><a href="#importing-a-red-hat-subscription-manifest-by-using-cli">3.3.3. Importing a Red Hat subscription manifest by using Hammer CLI</a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li><a href="#customize-the-installation">4. Customize the installation</a>
 <ul class="sectlevel2">
 <li><a href="#configuring-an-alternate-cname_foreman">4.1. Configuring an alternate CNAME for Foreman</a>
@@ -818,34 +831,131 @@ If Foreman cannot properly resolve its fully qualified domain name, tasks such a
 </div>
 </div>
 <div class="sect2">
-<h3 id="preparing-for-using-external-databases_foreman"><a class="anchor" href="#preparing-for-using-external-databases_foreman"></a>2.3. Preparing Foreman for using external databases</h3>
+<h3 id="configuring-http-proxy-to-connect-to-cdn_foreman"><a class="anchor" href="#configuring-http-proxy-to-connect-to-cdn_foreman"></a>2.3. Configuring the HTTP proxy to connect to Red Hat CDN</h3>
 <div class="paragraph _abstract">
-<p>By default, the Foreman installation process includes installing a PostgreSQL database on the same host as Foreman&#160;server.
-However, in certain Foreman deployments, using external databases instead of the default local databases can help with the server load or have other benefits.</p>
+<p>You can configure an HTTP proxy to connect to Red Hat CDN when your network requires proxy access for subscription management and content delivery.</p>
 </div>
 <div class="ulist">
 <div class="title">Prerequisites</div>
 <ul>
 <li>
-<p>You have considered whether using an external database is beneficial for your use case.
-For more information, see <a href="https://docs.theforeman.org/nightly/Administering_Project/index-foremanctl-katello.html#postgresql-as-an-external-database-considerations_admin">PostgreSQL as an external database considerations</a> in <em>Administering Foreman</em>.</p>
+<p>Your network gateway and the HTTP proxy must allow access to the following hosts:</p>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Host name</th>
+<th class="tableblock halign-left valign-top">Port</th>
+<th class="tableblock halign-left valign-top">Protocol</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">subscription.rhsm.redhat.com</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">443</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">HTTPS</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">cdn.redhat.com</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">443</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">HTTPS</p></td>
+</tr>
+</tbody>
+</table>
 </li>
 </ul>
+</div>
+<div class="paragraph">
+<p>Foreman&#160;server uses SSL to communicate with the Red&#160;Hat CDN securely.
+An SSL interception proxy interferes with this communication.
+These hosts must be allowlisted on your HTTP proxy.</p>
+</div>
+<div class="paragraph">
+<p>For a list of IP addresses used by the Red&#160;Hat CDN (cdn.redhat.com), see the Knowledgebase article <a href="https://access.redhat.com/articles/1525183">Public CIDR Lists for Red&#160;Hat</a> on the Red&#160;Hat Customer Portal.</p>
+</div>
+<div class="paragraph">
+<p>To configure the Subscription Manager with the HTTP proxy, follow the procedure below.</p>
 </div>
 <div class="ulist">
 <div class="title">Procedure</div>
 <ul>
 <li>
-<p>Install PostgreSQL on an external database host you prepared.
-For more information, see <a href="https://docs.theforeman.org/nightly/Administering_Project/index-foremanctl-katello.html#installing-postgresql_admin">Installing PostgreSQL</a> in <em>Administering Foreman</em>.</p>
+<p>On Foreman&#160;server, complete the following details in the <code>/etc/rhsm/rhsm.conf</code> file:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-none" data-lang="none"># an http proxy server to use (enter server FQDN)
+proxy_hostname = <em>http-proxy.example.com</em>
+
+# port for http proxy server
+proxy_port = 8080
+
+# user name for authenticating to an http proxy, if needed
+proxy_user =
+
+# password for basic http proxy auth, if needed
+proxy_password =</code></pre>
+</div>
+</div>
 </li>
 </ul>
 </div>
+</div>
+<div class="sect2">
+<h3 id="configuring-repositories_foreman"><a class="anchor" href="#configuring-repositories_foreman"></a>2.4. Configuring repositories</h3>
+<div class="paragraph _abstract">
+<p>Configure the required repositories.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Clear any metadata:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf clean all</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Install the <code>foreman-release.rpm</code> package:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf install https://yum.theforeman.org/releases/nightly/el9/x86_64/foreman-release.rpm</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Install the <code>katello-repos-latest.rpm</code> package:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf install https://yum.theforeman.org/katello/nightly/katello/el9/x86_64/katello-repos-latest.rpm</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Enable the required additional repositories:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf copr enable @theforeman/foremanctl rhel-9-x86_64</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
 <div class="ulist">
-<div class="title">Additional resources</div>
+<div class="title">Verification</div>
 <ul>
 <li>
-<p><a href="https://docs.theforeman.org/nightly/Administering_Project/index-foremanctl-katello.html#Migrating_from_Internal_Databases_to_External_Databases_admin">Migrating an existing Foreman deployment to an external database in <em>Administering Foreman</em></a></p>
+<p>Verify that the required repositories are enabled:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf repolist enabled</pre>
+</div>
+</div>
 </li>
 </ul>
 </div>
@@ -855,7 +965,316 @@ For more information, see <a href="https://docs.theforeman.org/nightly/Administe
 <div class="sect1">
 <h2 id="installing-foreman-server"><a class="anchor" href="#installing-foreman-server"></a>3. Installing Foreman&#160;server</h2>
 <div class="sectionbody">
-
+<div class="paragraph _abstract">
+<p>Use the following procedures to install Foreman&#160;server and perform the initial configuration.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>You cannot register Foreman&#160;server to itself.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="deploy-foreman-server-configuration-with-the-default-database"><a class="anchor" href="#deploy-foreman-server-configuration-with-the-default-database"></a>3.1. Deploy Foreman&#160;server configuration with the default database</h3>
+<div class="paragraph _abstract">
+<p>You can deploy a Foreman&#160;server in a default configuration by using the <code>foremanctl deploy</code> command.
+To extend the default deployment, you can select one or more features or add one or more configuration options.</p>
+</div>
+<div class="paragraph">
+<p>The initial deployment also installs PostgreSQL databases on the same server.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Any additional run of the <code>foremanctl deploy</code> command overwrites the corresponding configuration options and records them in the <code>parameters.yaml</code> file.
+This way, you can restore a broken system or add additional settings to your deployment.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Your system conforms with the requirements.
+For more information, see <a href="https://docs.theforeman.org/nightly/Installing_Server/index-foremanctl-katello.html#planning-foreman-server-installation_foreman">Planning Foreman&#160;server installation</a>.</p>
+</li>
+<li>
+<p>Your system is prepared for the installation.
+For more information, see <a href="https://docs.theforeman.org/nightly/Installing_Server/index-foremanctl-katello.html#preparing-environment-for-foreman-server-installation_foreman">Preparing environment for Foreman&#160;server installation</a>.</p>
+</li>
+<li>
+<p>Your system has the <code>foremanctl</code> package installed.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Update the system to the latest available version:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf upgrade</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Optional: Inspect the features available for deployment:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foremanctl features</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can enable one or more features by adding the <code>--add-feature <em>Feature-1</em> <em>Feature-2</em></code> option to the <code>foremanctl deploy</code> command.</p>
+</div>
+</li>
+<li>
+<p>Deploy the configuration on the server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foremanctl deploy \
+--foreman-initial-admin-username <em>My_admin_user_name</em> \
+--foreman-initial-admin-password <em>My_admin_password</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The script displays its progress and writes logs to <code>/var/log/foreman-installer/katello.log</code>.</p>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="deploy-foreman-server-configuration-with-an-external-database"><a class="anchor" href="#deploy-foreman-server-configuration-with-an-external-database"></a>3.2. Deploy Foreman&#160;server configuration with an external database</h3>
+<div class="paragraph _abstract">
+<p>By default, the Foreman deployment includes installing a PostgreSQL database on the same host as Foreman&#160;server.
+However, in certain Foreman deployments, using external databases instead of the default local databases can help with the server load or have other benefits.
+To extend the default deployment, you can select one or more features or add one or more configuration options.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Any additional run of the <code>foremanctl deploy</code> command overwrites the corresponding configuration options and records them in the Foreman answer file.
+This way, you can restore a broken system or add additional settings to your deployment.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>You have considered whether using an external database is beneficial for your use case.
+For more information, see <a href="https://docs.theforeman.org/nightly/Administering_Project/index-foremanctl-katello.html#postgresql-as-an-external-database-considerations_admin">PostgreSQL as an external database considerations</a> in <em>Administering Foreman</em>.</p>
+</li>
+<li>
+<p>PostgreSQL is installed on an external database host you prepared.
+For more information, see <a href="https://docs.theforeman.org/nightly/Administering_Project/index-foremanctl-katello.html#installing-postgresql_admin">Installing PostgreSQL</a> in <em>Administering Foreman</em>.</p>
+</li>
+<li>
+<p>Your system conforms with the requirements. For more information, see <a href="https://docs.theforeman.org/nightly/Installing_Server/index-foremanctl-katello.html#planning-foreman-server-installation_foreman">Planning Foreman&#160;server installation</a>.</p>
+</li>
+<li>
+<p>Your system is prepared for the installation. For more information, see <a href="https://docs.theforeman.org/nightly/Installing_Server/index-foremanctl-katello.html#preparing-environment-for-foreman-server-installation_foreman">Preparing environment for Foreman&#160;server installation</a>.</p>
+</li>
+<li>
+<p>Your system has the <code>foremanctl</code> package installed.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Update the system to the latest available version:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf upgrade</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Optional: Inspect the features available for deployment:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foremanctl features</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can enable one or more features by adding the <code>--add-feature <em>Feature-1</em> <em>Feature-2</em></code> option to the <code>foremanctl deploy</code> command.</p>
+</div>
+</li>
+<li>
+<p>Deploy the configuration on the server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foremanctl deploy \
+--foreman-initial-admin-username <em>My_admin_user_name</em> \
+--foreman-initial-admin-password <em>My_admin_password</em> \
+--database-mode external \
+--database-host <em>My_database_host</em> \
+--database-port <em>My_database_port</em> \
+--database-ssl-mode {disable,allow,prefer,require,verify-ca,verify-full} \
+--database-ssl-ca <em>My_database_ssl_ca</em> \
+--candlepin-database-name <em>My_candlepin_database_name</em> \
+--candlepin-database-password <em>My_candlepin_database_password</em> \
+--candlepin-database-user <em>My_candlepin_database_user</em> \
+--pulp-database-name <em>My_pulp_database_name</em> \
+--pulp-database-password <em>My_pulp_database_password</em> \
+--pulp-database-user <em>My_pulp_database_user</em> \
+--pulp-worker-count <em>My_pulp_worker_count</em> \
+--foreman-database-name <em>My_foreman_database_name</em> \
+--foreman-database-user <em>My_foreman_database_user</em> \
+--foreman-database-password <em>My_foreman_database_password</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The script displays its progress and writes logs to <code>/var/log/foreman-installer/katello.log</code>.</p>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="importing-red-hat-subscription-manifests-into-foreman"><a class="anchor" href="#importing-red-hat-subscription-manifests-into-foreman"></a>3.3. Importing Red&#160;Hat subscription manifests into Foreman</h3>
+<div class="paragraph _abstract">
+<p>You can import a Red&#160;Hat subscription manifest into Foreman to provide subscription allocation to your organization in Foreman.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Simple Content Access (SCA) is set on the organization, not the manifest.
+Importing a manifest does not change your organization&#8217;s Simple Content Access status.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Simple Content Access simplifies the subscription experience for administrators.
+For more information, see the <a href="https://access.redhat.com/subscription_mgmt_guide_for_RHEL">Subscription Management Administration Guide for Red Hat Enterprise Linux</a> on the Red Hat Customer Portal.</p>
+</div>
+<div class="sect3">
+<h4 id="obtaining-a-red-hat-subscription-manifest"><a class="anchor" href="#obtaining-a-red-hat-subscription-manifest"></a>3.3.1. Obtaining a Red&#160;Hat subscription manifest</h4>
+<div class="paragraph _abstract">
+<p>You can create and export a Red&#160;Hat subscription manifest to prepare subscriptions for import into Foreman.</p>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>Export your Red&#160;Hat subscription manifest from the Red&#160;Hat Hybrid Cloud Console.
+For more information, see <a href="https://docs.redhat.com/en/documentation/subscription_central/1-latest/html-single/creating_and_managing_manifests_for_a_connected_satellite_server/index">Creating and managing manifests for a connected Satellite Server</a> in <em>Subscription Central</em>.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="importing-a-red-hat-subscription-manifest-by-using-web-ui"><a class="anchor" href="#importing-a-red-hat-subscription-manifest-by-using-web-ui"></a>3.3.2. Importing a Red Hat subscription manifest by using Foreman web UI</h4>
+<div class="paragraph _abstract">
+<p>You can import a Red&#160;Hat subscription manifest into Foreman&#160;server by using Foreman web UI.
+Import the manifest so that you can enable and synchronize Red&#160;Hat repositories in your organization.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>You have a Red&#160;Hat subscription manifest file.
+For more information, see <a href="#obtaining-a-red-hat-subscription-manifest">Obtaining a Red&#160;Hat subscription manifest</a>.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, ensure the context is set to the organization you want to use.</p>
+</li>
+<li>
+<p>Navigate to <strong>Content</strong> &gt; <strong>Subscriptions</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Manage Manifest</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Manage Manifest</strong> window, click <strong>Choose File</strong>.</p>
+</li>
+<li>
+<p>Navigate to the location that contains the Red&#160;Hat subscription manifest file, then click <strong>Open</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="importing-a-red-hat-subscription-manifest-by-using-cli"><a class="anchor" href="#importing-a-red-hat-subscription-manifest-by-using-cli"></a>3.3.3. Importing a Red Hat subscription manifest by using Hammer CLI</h4>
+<div class="paragraph _abstract">
+<p>You can import a Red&#160;Hat subscription manifest into Foreman&#160;server by using Hammer CLI.
+Import the manifest so that you can enable and synchronize Red&#160;Hat repositories in your organization.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>You have a Red&#160;Hat subscription manifest file.
+For more information, see <a href="#obtaining-a-red-hat-subscription-manifest">Obtaining a Red&#160;Hat subscription manifest</a>.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Copy the Red&#160;Hat subscription manifest file from your local machine to Foreman&#160;server:</p>
+<div class="listingblock">
+<div class="content">
+<pre>$ scp ~/<em>manifest_file</em>.zip root@<em>foreman.example.com</em>:~/.</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Log in to Foreman&#160;server over SSH as the <code>root</code> user.</p>
+</li>
+<li>
+<p>Import the Red&#160;Hat subscription manifest file:</p>
+<div class="listingblock">
+<div class="content">
+<pre>$ hammer subscription upload \
+--file ~/<em>manifest_file</em>.zip \
+--organization "<em>My_Organization</em>"</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">

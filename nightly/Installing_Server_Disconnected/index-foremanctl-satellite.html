@@ -253,7 +253,9 @@ SOFTWARE.
 <ul class="sectlevel2">
 <li><a href="#opening-required-ports">3.1. Opening required ports</a></li>
 <li><a href="#verifying-dns-resolution_satellite">3.2. Verifying DNS resolution</a></li>
-<li><a href="#preparing-for-using-external-databases_satellite">3.3. Preparing Satellite for using external databases</a></li>
+<li><a href="#configuring-http-proxy-to-connect-to-cdn_satellite">3.3. Configuring the HTTP proxy to connect to Red Hat CDN</a></li>
+<li><a href="#registering-to-red-hat-subscription-management_satellite">3.4. Registering to Red Hat Subscription Management</a></li>
+<li><a href="#configuring-repositories_satellite">3.5. Configuring repositories</a></li>
 </ul>
 </li>
 <li><a href="#installing-satellite-server">4. Installing Satellite&#160;Server</a></li>
@@ -819,34 +821,196 @@ If Satellite cannot properly resolve its fully qualified domain name, tasks such
 </div>
 </div>
 <div class="sect2">
-<h3 id="preparing-for-using-external-databases_satellite"><a class="anchor" href="#preparing-for-using-external-databases_satellite"></a>3.3. Preparing Satellite for using external databases</h3>
+<h3 id="configuring-http-proxy-to-connect-to-cdn_satellite"><a class="anchor" href="#configuring-http-proxy-to-connect-to-cdn_satellite"></a>3.3. Configuring the HTTP proxy to connect to Red Hat CDN</h3>
 <div class="paragraph _abstract">
-<p>By default, the Satellite installation process includes installing a PostgreSQL database on the same host as Satellite&#160;Server.
-However, in certain Satellite deployments, using external databases instead of the default local databases can help with the server load or have other benefits.</p>
+<p>You can configure an HTTP proxy to connect to Red Hat CDN when your network requires proxy access for subscription management and content delivery.</p>
 </div>
 <div class="ulist">
 <div class="title">Prerequisites</div>
 <ul>
 <li>
-<p>You have considered whether using an external database is beneficial for your use case.
-For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.19/html-single/administering_red_hat_satellite/index#postgresql-as-an-external-database-considerations_admin">PostgreSQL as an external database considerations</a> in <em>Administering Red&#160;Hat Satellite</em>.</p>
+<p>Your network gateway and the HTTP proxy must allow access to the following hosts:</p>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Host name</th>
+<th class="tableblock halign-left valign-top">Port</th>
+<th class="tableblock halign-left valign-top">Protocol</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">subscription.rhsm.redhat.com</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">443</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">HTTPS</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">cdn.redhat.com</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">443</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">HTTPS</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">cert.console.redhat.com (if using Red&#160;Hat Lightspeed)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">443</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">HTTPS</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">api.access.redhat.com (if using Red&#160;Hat Lightspeed)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">443</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">HTTPS</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">cert-api.access.redhat.com (if using Red&#160;Hat Lightspeed)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">443</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">HTTPS</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">console.redhat.com (if using Red&#160;Hat Lightspeed)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">443</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">HTTPS</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">connect.cloud.redhat.com (if using Red&#160;Hat Lightspeed)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">443</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">HTTPS</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">*.akamaiedge.net (if using Red&#160;Hat Lightspeed in Satellite)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">443</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">HTTPS</p></td>
+</tr>
+</tbody>
+</table>
 </li>
 </ul>
+</div>
+<div class="paragraph">
+<p>Satellite&#160;Server uses SSL to communicate with the Red&#160;Hat CDN securely.
+An SSL interception proxy interferes with this communication.
+These hosts must be allowlisted on your HTTP proxy.</p>
+</div>
+<div class="paragraph">
+<p>For a list of IP addresses used by the Red&#160;Hat CDN (cdn.redhat.com), see the Knowledgebase article <a href="https://access.redhat.com/articles/1525183">Public CIDR Lists for Red&#160;Hat</a> on the Red&#160;Hat Customer Portal.</p>
+</div>
+<div class="paragraph">
+<p>To configure the Subscription Manager with the HTTP proxy, follow the procedure below.</p>
 </div>
 <div class="ulist">
 <div class="title">Procedure</div>
 <ul>
 <li>
-<p>Install PostgreSQL on an external database host you prepared.
-For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.19/html-single/administering_red_hat_satellite/index#installing-postgresql_admin">Installing PostgreSQL</a> in <em>Administering Red&#160;Hat Satellite</em>.</p>
+<p>On Satellite&#160;Server, complete the following details in the <code>/etc/rhsm/rhsm.conf</code> file:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-none" data-lang="none"># an http proxy server to use (enter server FQDN)
+proxy_hostname = <em>http-proxy.example.com</em>
+
+# port for http proxy server
+proxy_port = 8080
+
+# user name for authenticating to an http proxy, if needed
+proxy_user =
+
+# password for basic http proxy auth, if needed
+proxy_password =</code></pre>
+</div>
+</div>
 </li>
 </ul>
 </div>
+</div>
+<div class="sect2">
+<h3 id="registering-to-red-hat-subscription-management_satellite"><a class="anchor" href="#registering-to-red-hat-subscription-management_satellite"></a>3.4. Registering to Red Hat Subscription Management</h3>
+<div class="paragraph _abstract">
+<p>Registering the host to Red Hat Subscription Management enables the host to subscribe to and consume content for any subscriptions available to the user.
+This includes content such as Red&#160;Hat Enterprise Linux and Red&#160;Hat Satellite.</p>
+</div>
 <div class="ulist">
-<div class="title">Additional resources</div>
+<div class="title">Procedure</div>
 <ul>
 <li>
-<p><a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.19/html-single/administering_red_hat_satellite/index#Migrating_from_Internal_Databases_to_External_Databases_admin">Migrating an existing Satellite deployment to an external database in <em>Administering Red&#160;Hat Satellite</em></a></p>
+<p>Register your system with the Red Hat Content Delivery Network, entering your Customer Portal user name and password when prompted:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># subscription-manager register</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The command displays output similar to the following:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-none" data-lang="none"># subscription-manager register
+Username: user_name
+Password:
+The system has been registered with ID: 541084ff2-44cab-4eb1-9fa1-7683431bcf9a</code></pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="configuring-repositories_satellite"><a class="anchor" href="#configuring-repositories_satellite"></a>3.5. Configuring repositories</h3>
+<div class="paragraph _abstract">
+<p>Configure the required repositories.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Disable all repositories:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># subscription-manager repos --disable "*"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Enable the following repositories:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># subscription-manager repos \
+--enable=rhel-9-for-x86_64-baseos-rpms \
+--enable=rhel-9-for-x86_64-appstream-rpms \
+--enable=satellite-6.19-for-rhel-9-x86_64-rpms \
+--enable=satellite-maintenance-6.19-for-rhel-9-x86_64-rpms</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Install the <code>foreman-release.rpm</code> package:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf install https://yum.theforeman.org/releases/6.19/el9/x86_64/foreman-release.rpm</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Enable the required additional repositories:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf copr enable @theforeman/foremanctl rhel-9-x86_64</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">Verification</div>
+<ul>
+<li>
+<p>Verify that the required repositories are enabled:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf repolist enabled</pre>
+</div>
+</div>
 </li>
 </ul>
 </div>
@@ -856,7 +1020,31 @@ For more information, see <a href="https://docs.redhat.com/en/documentation/red_
 <div class="sect1">
 <h2 id="installing-satellite-server"><a class="anchor" href="#installing-satellite-server"></a>4. Installing Satellite&#160;Server</h2>
 <div class="sectionbody">
-
+<div class="paragraph _abstract">
+<p>Use the following procedures to install Satellite&#160;Server in a disconnected environment, perform the initial configuration, and import subscription manifests.</p>
+</div>
+<div class="paragraph">
+<p>When the intended host for Satellite&#160;Server is in a disconnected environment, you can install Satellite&#160;Server by using an external computer to download an ISO image of the packages, and copying the packages to the system you want to install Satellite&#160;Server on.
+This method is not recommended for any other situation as ISO images might not contain the latest updates, bug fixes, and functionality.</p>
+</div>
+<div class="paragraph">
+<p>Before you continue, consider which manifests are relevant for your environment.
+For more information on manifests, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.19/html-single/managing_content/index#Managing_Red_Hat_Subscriptions_content-management">Managing Red Hat Subscriptions</a> in <em>Managing content</em>.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>You cannot register Satellite&#160;Server to itself.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
 </div>
 </div>
 <div class="sect1">

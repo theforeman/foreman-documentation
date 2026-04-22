@@ -253,10 +253,24 @@ SOFTWARE.
 <ul class="sectlevel2">
 <li><a href="#opening-required-ports">2.1. Opening required ports</a></li>
 <li><a href="#verifying-dns-resolution_satellite">2.2. Verifying DNS resolution</a></li>
-<li><a href="#preparing-for-using-external-databases_satellite">2.3. Preparing Satellite for using external databases</a></li>
+<li><a href="#configuring-http-proxy-to-connect-to-cdn_satellite">2.3. Configuring the HTTP proxy to connect to Red Hat CDN</a></li>
+<li><a href="#registering-to-red-hat-subscription-management_satellite">2.4. Registering to Red Hat Subscription Management</a></li>
+<li><a href="#configuring-repositories_satellite">2.5. Configuring repositories</a></li>
 </ul>
 </li>
-<li><a href="#installing-satellite-server">3. Installing Satellite&#160;Server</a></li>
+<li><a href="#installing-satellite-server">3. Installing Satellite&#160;Server</a>
+<ul class="sectlevel2">
+<li><a href="#deploy-satellite-server-configuration-with-the-default-database">3.1. Deploy Satellite&#160;Server configuration with the default database</a></li>
+<li><a href="#deploy-satellite-server-configuration-with-an-external-database">3.2. Deploy Satellite&#160;Server configuration with an external database</a></li>
+<li><a href="#importing-red-hat-subscription-manifests-into-satellite">3.3. Importing Red&#160;Hat subscription manifests into Satellite</a>
+<ul class="sectlevel3">
+<li><a href="#obtaining-a-red-hat-subscription-manifest">3.3.1. Obtaining a Red&#160;Hat subscription manifest</a></li>
+<li><a href="#importing-a-red-hat-subscription-manifest-by-using-web-ui">3.3.2. Importing a Red Hat subscription manifest by using Satellite web UI</a></li>
+<li><a href="#importing-a-red-hat-subscription-manifest-by-using-cli">3.3.3. Importing a Red Hat subscription manifest by using Hammer CLI</a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li><a href="#customize-the-installation">4. Customize the installation</a>
 <ul class="sectlevel2">
 <li><a href="#configuring-an-alternate-cname_satellite">4.1. Configuring an alternate CNAME for Satellite</a>
@@ -889,34 +903,196 @@ If Satellite cannot properly resolve its fully qualified domain name, tasks such
 </div>
 </div>
 <div class="sect2">
-<h3 id="preparing-for-using-external-databases_satellite"><a class="anchor" href="#preparing-for-using-external-databases_satellite"></a>2.3. Preparing Satellite for using external databases</h3>
+<h3 id="configuring-http-proxy-to-connect-to-cdn_satellite"><a class="anchor" href="#configuring-http-proxy-to-connect-to-cdn_satellite"></a>2.3. Configuring the HTTP proxy to connect to Red Hat CDN</h3>
 <div class="paragraph _abstract">
-<p>By default, the Satellite installation process includes installing a PostgreSQL database on the same host as Satellite&#160;Server.
-However, in certain Satellite deployments, using external databases instead of the default local databases can help with the server load or have other benefits.</p>
+<p>You can configure an HTTP proxy to connect to Red Hat CDN when your network requires proxy access for subscription management and content delivery.</p>
 </div>
 <div class="ulist">
 <div class="title">Prerequisites</div>
 <ul>
 <li>
-<p>You have considered whether using an external database is beneficial for your use case.
-For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.19/html-single/administering_red_hat_satellite/index#postgresql-as-an-external-database-considerations_admin">PostgreSQL as an external database considerations</a> in <em>Administering Red&#160;Hat Satellite</em>.</p>
+<p>Your network gateway and the HTTP proxy must allow access to the following hosts:</p>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Host name</th>
+<th class="tableblock halign-left valign-top">Port</th>
+<th class="tableblock halign-left valign-top">Protocol</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">subscription.rhsm.redhat.com</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">443</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">HTTPS</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">cdn.redhat.com</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">443</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">HTTPS</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">cert.console.redhat.com (if using Red&#160;Hat Lightspeed)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">443</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">HTTPS</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">api.access.redhat.com (if using Red&#160;Hat Lightspeed)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">443</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">HTTPS</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">cert-api.access.redhat.com (if using Red&#160;Hat Lightspeed)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">443</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">HTTPS</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">console.redhat.com (if using Red&#160;Hat Lightspeed)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">443</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">HTTPS</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">connect.cloud.redhat.com (if using Red&#160;Hat Lightspeed)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">443</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">HTTPS</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">*.akamaiedge.net (if using Red&#160;Hat Lightspeed in Satellite)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">443</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">HTTPS</p></td>
+</tr>
+</tbody>
+</table>
 </li>
 </ul>
+</div>
+<div class="paragraph">
+<p>Satellite&#160;Server uses SSL to communicate with the Red&#160;Hat CDN securely.
+An SSL interception proxy interferes with this communication.
+These hosts must be allowlisted on your HTTP proxy.</p>
+</div>
+<div class="paragraph">
+<p>For a list of IP addresses used by the Red&#160;Hat CDN (cdn.redhat.com), see the Knowledgebase article <a href="https://access.redhat.com/articles/1525183">Public CIDR Lists for Red&#160;Hat</a> on the Red&#160;Hat Customer Portal.</p>
+</div>
+<div class="paragraph">
+<p>To configure the Subscription Manager with the HTTP proxy, follow the procedure below.</p>
 </div>
 <div class="ulist">
 <div class="title">Procedure</div>
 <ul>
 <li>
-<p>Install PostgreSQL on an external database host you prepared.
-For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.19/html-single/administering_red_hat_satellite/index#installing-postgresql_admin">Installing PostgreSQL</a> in <em>Administering Red&#160;Hat Satellite</em>.</p>
+<p>On Satellite&#160;Server, complete the following details in the <code>/etc/rhsm/rhsm.conf</code> file:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-none" data-lang="none"># an http proxy server to use (enter server FQDN)
+proxy_hostname = <em>http-proxy.example.com</em>
+
+# port for http proxy server
+proxy_port = 8080
+
+# user name for authenticating to an http proxy, if needed
+proxy_user =
+
+# password for basic http proxy auth, if needed
+proxy_password =</code></pre>
+</div>
+</div>
 </li>
 </ul>
 </div>
+</div>
+<div class="sect2">
+<h3 id="registering-to-red-hat-subscription-management_satellite"><a class="anchor" href="#registering-to-red-hat-subscription-management_satellite"></a>2.4. Registering to Red Hat Subscription Management</h3>
+<div class="paragraph _abstract">
+<p>Registering the host to Red Hat Subscription Management enables the host to subscribe to and consume content for any subscriptions available to the user.
+This includes content such as Red&#160;Hat Enterprise Linux and Red&#160;Hat Satellite.</p>
+</div>
 <div class="ulist">
-<div class="title">Additional resources</div>
+<div class="title">Procedure</div>
 <ul>
 <li>
-<p><a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.19/html-single/administering_red_hat_satellite/index#Migrating_from_Internal_Databases_to_External_Databases_admin">Migrating an existing Satellite deployment to an external database in <em>Administering Red&#160;Hat Satellite</em></a></p>
+<p>Register your system with the Red Hat Content Delivery Network, entering your Customer Portal user name and password when prompted:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># subscription-manager register</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The command displays output similar to the following:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-none" data-lang="none"># subscription-manager register
+Username: user_name
+Password:
+The system has been registered with ID: 541084ff2-44cab-4eb1-9fa1-7683431bcf9a</code></pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="configuring-repositories_satellite"><a class="anchor" href="#configuring-repositories_satellite"></a>2.5. Configuring repositories</h3>
+<div class="paragraph _abstract">
+<p>Configure the required repositories.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Disable all repositories:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># subscription-manager repos --disable "*"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Enable the following repositories:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># subscription-manager repos \
+--enable=rhel-9-for-x86_64-baseos-rpms \
+--enable=rhel-9-for-x86_64-appstream-rpms \
+--enable=satellite-6.19-for-rhel-9-x86_64-rpms \
+--enable=satellite-maintenance-6.19-for-rhel-9-x86_64-rpms</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Install the <code>foreman-release.rpm</code> package:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf install https://yum.theforeman.org/releases/6.19/el9/x86_64/foreman-release.rpm</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Enable the required additional repositories:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf copr enable @theforeman/foremanctl rhel-9-x86_64</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">Verification</div>
+<ul>
+<li>
+<p>Verify that the required repositories are enabled:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf repolist enabled</pre>
+</div>
+</div>
 </li>
 </ul>
 </div>
@@ -926,7 +1102,320 @@ For more information, see <a href="https://docs.redhat.com/en/documentation/red_
 <div class="sect1">
 <h2 id="installing-satellite-server"><a class="anchor" href="#installing-satellite-server"></a>3. Installing Satellite&#160;Server</h2>
 <div class="sectionbody">
-
+<div class="paragraph _abstract">
+<p>Use the following procedures to install Satellite&#160;Server in a connected environment, perform the initial configuration, and import subscription manifests.
+For more information on subscription manifests, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.19/html-single/managing_content/index#Managing_Red_Hat_Subscriptions_content-management">Managing Red Hat Subscriptions</a> in <em>Managing content</em>.</p>
+</div>
+<div class="paragraph">
+<p>When you install Satellite&#160;Server from a connected network, you can obtain packages and receive updates directly from the Red&#160;Hat Content Delivery Network.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>You cannot register Satellite&#160;Server to itself.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="sect2">
+<h3 id="deploy-satellite-server-configuration-with-the-default-database"><a class="anchor" href="#deploy-satellite-server-configuration-with-the-default-database"></a>3.1. Deploy Satellite&#160;Server configuration with the default database</h3>
+<div class="paragraph _abstract">
+<p>You can deploy a Satellite&#160;Server in a default configuration by using the <code>foremanctl deploy</code> command.
+To extend the default deployment, you can select one or more features or add one or more configuration options.</p>
+</div>
+<div class="paragraph">
+<p>The initial deployment also installs PostgreSQL databases on the same server.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Any additional run of the <code>foremanctl deploy</code> command overwrites the corresponding configuration options and records them in the <code>parameters.yaml</code> file.
+This way, you can restore a broken system or add additional settings to your deployment.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Your system conforms with the requirements.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.19/html-single/installing_satellite_server_in_a_connected_network_environment/index.html#planning-satellite-server-installation_satellite">Planning Satellite&#160;Server installation</a>.</p>
+</li>
+<li>
+<p>Your system is prepared for the installation.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.19/html-single/installing_satellite_server_in_a_connected_network_environment/index.html#preparing-environment-for-satellite-server-installation_satellite">Preparing environment for Satellite&#160;Server installation</a>.</p>
+</li>
+<li>
+<p>Your system has the <code>foremanctl</code> package installed.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Update the system to the latest available version:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf upgrade</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Optional: Inspect the features available for deployment:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foremanctl features</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can enable one or more features by adding the <code>--add-feature <em>Feature-1</em> <em>Feature-2</em></code> option to the <code>foremanctl deploy</code> command.</p>
+</div>
+</li>
+<li>
+<p>Deploy the configuration on the server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foremanctl deploy \
+--foreman-initial-admin-username <em>My_admin_user_name</em> \
+--foreman-initial-admin-password <em>My_admin_password</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The script displays its progress and writes logs to <code>/var/log/foreman-installer/satellite.log</code>.</p>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="deploy-satellite-server-configuration-with-an-external-database"><a class="anchor" href="#deploy-satellite-server-configuration-with-an-external-database"></a>3.2. Deploy Satellite&#160;Server configuration with an external database</h3>
+<div class="paragraph _abstract">
+<p>By default, the Satellite deployment includes installing a PostgreSQL database on the same host as Satellite&#160;Server.
+However, in certain Satellite deployments, using external databases instead of the default local databases can help with the server load or have other benefits.
+To extend the default deployment, you can select one or more features or add one or more configuration options.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Any additional run of the <code>foremanctl deploy</code> command overwrites the corresponding configuration options and records them in the Satellite answer file.
+This way, you can restore a broken system or add additional settings to your deployment.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>You have considered whether using an external database is beneficial for your use case.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.19/html-single/administering_red_hat_satellite/index#postgresql-as-an-external-database-considerations_admin">PostgreSQL as an external database considerations</a> in <em>Administering Red&#160;Hat Satellite</em>.</p>
+</li>
+<li>
+<p>PostgreSQL is installed on an external database host you prepared.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.19/html-single/administering_red_hat_satellite/index#installing-postgresql_admin">Installing PostgreSQL</a> in <em>Administering Red&#160;Hat Satellite</em>.</p>
+</li>
+<li>
+<p>Your system conforms with the requirements. For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.19/html-single/installing_satellite_server_in_a_connected_network_environment/index.html#planning-satellite-server-installation_satellite">Planning Satellite&#160;Server installation</a>.</p>
+</li>
+<li>
+<p>Your system is prepared for the installation. For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.19/html-single/installing_satellite_server_in_a_connected_network_environment/index.html#preparing-environment-for-satellite-server-installation_satellite">Preparing environment for Satellite&#160;Server installation</a>.</p>
+</li>
+<li>
+<p>Your system has the <code>foremanctl</code> package installed.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Update the system to the latest available version:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf upgrade</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Optional: Inspect the features available for deployment:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foremanctl features</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can enable one or more features by adding the <code>--add-feature <em>Feature-1</em> <em>Feature-2</em></code> option to the <code>foremanctl deploy</code> command.</p>
+</div>
+</li>
+<li>
+<p>Deploy the configuration on the server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foremanctl deploy \
+--foreman-initial-admin-username <em>My_admin_user_name</em> \
+--foreman-initial-admin-password <em>My_admin_password</em> \
+--database-mode external \
+--database-host <em>My_database_host</em> \
+--database-port <em>My_database_port</em> \
+--database-ssl-mode {disable,allow,prefer,require,verify-ca,verify-full} \
+--database-ssl-ca <em>My_database_ssl_ca</em> \
+--candlepin-database-name <em>My_candlepin_database_name</em> \
+--candlepin-database-password <em>My_candlepin_database_password</em> \
+--candlepin-database-user <em>My_candlepin_database_user</em> \
+--pulp-database-name <em>My_pulp_database_name</em> \
+--pulp-database-password <em>My_pulp_database_password</em> \
+--pulp-database-user <em>My_pulp_database_user</em> \
+--pulp-worker-count <em>My_pulp_worker_count</em> \
+--foreman-database-name <em>My_foreman_database_name</em> \
+--foreman-database-user <em>My_foreman_database_user</em> \
+--foreman-database-password <em>My_foreman_database_password</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The script displays its progress and writes logs to <code>/var/log/foreman-installer/satellite.log</code>.</p>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="importing-red-hat-subscription-manifests-into-satellite"><a class="anchor" href="#importing-red-hat-subscription-manifests-into-satellite"></a>3.3. Importing Red&#160;Hat subscription manifests into Satellite</h3>
+<div class="paragraph _abstract">
+<p>You can import a Red&#160;Hat subscription manifest into Satellite to provide subscription allocation to your organization in Satellite.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Simple Content Access (SCA) is set on the organization, not the manifest.
+Importing a manifest does not change your organization&#8217;s Simple Content Access status.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Simple Content Access simplifies the subscription experience for administrators.
+For more information, see the <a href="https://access.redhat.com/subscription_mgmt_guide_for_RHEL">Subscription Management Administration Guide for Red Hat Enterprise Linux</a> on the Red Hat Customer Portal.</p>
+</div>
+<div class="sect3">
+<h4 id="obtaining-a-red-hat-subscription-manifest"><a class="anchor" href="#obtaining-a-red-hat-subscription-manifest"></a>3.3.1. Obtaining a Red&#160;Hat subscription manifest</h4>
+<div class="paragraph _abstract">
+<p>You can create and export a Red&#160;Hat subscription manifest to prepare subscriptions for import into Satellite.</p>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>Export your Red&#160;Hat subscription manifest from the Red&#160;Hat Hybrid Cloud Console.
+For more information, see <a href="https://docs.redhat.com/en/documentation/subscription_central/1-latest/html-single/creating_and_managing_manifests_for_a_connected_satellite_server/index">Creating and managing manifests for a connected Satellite Server</a> in <em>Subscription Central</em>.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="importing-a-red-hat-subscription-manifest-by-using-web-ui"><a class="anchor" href="#importing-a-red-hat-subscription-manifest-by-using-web-ui"></a>3.3.2. Importing a Red Hat subscription manifest by using Satellite web UI</h4>
+<div class="paragraph _abstract">
+<p>You can import a Red&#160;Hat subscription manifest into Satellite&#160;Server by using Satellite web UI.
+Import the manifest so that you can enable and synchronize Red&#160;Hat repositories in your organization.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>You have a Red&#160;Hat subscription manifest file.
+For more information, see <a href="#obtaining-a-red-hat-subscription-manifest">Obtaining a Red&#160;Hat subscription manifest</a>.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Satellite web UI, ensure the context is set to the organization you want to use.</p>
+</li>
+<li>
+<p>Navigate to <strong>Content</strong> &gt; <strong>Subscriptions</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Manage Manifest</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Manage Manifest</strong> window, click <strong>Choose File</strong>.</p>
+</li>
+<li>
+<p>Navigate to the location that contains the Red&#160;Hat subscription manifest file, then click <strong>Open</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="importing-a-red-hat-subscription-manifest-by-using-cli"><a class="anchor" href="#importing-a-red-hat-subscription-manifest-by-using-cli"></a>3.3.3. Importing a Red Hat subscription manifest by using Hammer CLI</h4>
+<div class="paragraph _abstract">
+<p>You can import a Red&#160;Hat subscription manifest into Satellite&#160;Server by using Hammer CLI.
+Import the manifest so that you can enable and synchronize Red&#160;Hat repositories in your organization.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>You have a Red&#160;Hat subscription manifest file.
+For more information, see <a href="#obtaining-a-red-hat-subscription-manifest">Obtaining a Red&#160;Hat subscription manifest</a>.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Copy the Red&#160;Hat subscription manifest file from your local machine to Satellite&#160;Server:</p>
+<div class="listingblock">
+<div class="content">
+<pre>$ scp ~/<em>manifest_file</em>.zip root@<em>satellite.example.com</em>:~/.</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Log in to Satellite&#160;Server over SSH as the <code>root</code> user.</p>
+</li>
+<li>
+<p>Import the Red&#160;Hat subscription manifest file:</p>
+<div class="listingblock">
+<div class="content">
+<pre>$ hammer subscription upload \
+--file ~/<em>manifest_file</em>.zip \
+--organization "<em>My_Organization</em>"</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
