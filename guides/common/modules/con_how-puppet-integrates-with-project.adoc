@@ -1,38 +1,63 @@
 :_mod-docs-content-type: CONCEPT
 
-[id="How_Puppet_Integrates_With_Project_{context}"]
+[id="how-puppet-integrates-with-{project-context}"]
 = How Puppet integrates with {Project}
 
 [role="_abstract"]
-As a configuration management tool, Puppet uses a server-agent architecture.
-{Project} components integrate with Puppet architecture to provide configuration management capabilities in {Project}.
+Puppet uses a server-agent architecture.
+OpenVox server communicates with OpenVox agents on hosts registered to {Project} to manage the Puppet configuration of these hosts.
+{Project} components integrate with that architecture to provide configuration management capabilities in {Project}.
 
-Puppet server and Puppet agent::
-The Puppet server is the central component that stores configuration definitions.
-{ProjectServer} or {SmartProxyServers} are typically deployed with the Puppet server.
-{Project} acts as an https://puppet.com/docs/puppet/8/nodes_external.html[External Node Classifier (ENC)] for such Puppet server.
-Hosts run the Puppet agent that communicates with the Puppet server.
+Puppet architecture in {Project} comprises the following components:
+
+OpenVox server::
+OpenVox server is the central component that stores Puppet configuration definitions in {Project}.
+It runs on {ProjectServer} or {SmartProxyServers}.
 +
-The Puppet agent collects _facts_ about a host and reports them to the Puppet server on each run.
-You can display the Puppet _facts_ in JSON format by running `puppet facts` on a host.
+[NOTE]
+====
+Puppet server is no longer supported for Puppet integration with {Project}.
+To integrate your Puppet infrastructure with {Project}, you need to use an OpenVox server instead.
+An OpenVox server is functionally equivalent to a Puppet server.
+====
+
+OpenVox agent::
+OpenVox agent is a service that communicates with an OpenVox server to manage the configuration of hosts.
+It runs on hosts registered to {Project}.
 +
-The Puppet server forwards _facts_ to {Project} and {Project} stores them for later use.
-Based on the _facts_ and other definitions, {Project} constructs the ENC answer to the Puppet server.
-The Puppet server compiles a _catalog_ based on the ENC answer and sends the _catalog_ to the Puppet agent.
-+
-The Puppet agent evaluates the system state on the host.
-If the Puppet agent finds differences, known as _drifts_, between the _desired state_ defined in the _catalog_ and the actual state, it enforces correction of the state of the host.
-The Puppet agent then reports correction results back to the Puppet server, which reports them to {Project}.
+[NOTE]
+====
+As a legacy alternative, Puppet agent also remains compatible with {Project} for Puppet integration.
+However, an OpenVox agent is the recommended agent for Puppet integration, and it is functionally equivalent to a Puppet agent.
+You cannot run both OpenVox agent and Puppet agent on the same host.
+====
 
 Puppet modules::
-The _desired state_ of a host is defined in a _catalog_.
-The _catalog_ is compiled from Puppet manifests of one or more Puppet modules assigned to the host.
 A Puppet module is a collection of classes, manifests, resources, files, and templates.
 The Puppet modules work as components of host configuration definitions.
 
-Smart Class parameters::
-You can override parameters of a Puppet module by using Smart Class parameters if the module supports the use of parameters.
-You can define the parameters in your {Project} as _key-value_ pairs, which behave similar to host parameters or Ansible variables.
-
 Puppet environments::
-You can also create multiple Puppet environments to control versions of configuration definitions or to manage variants of the definitions, and to test the definitions before you deploy them on production.
+Puppet environments are used to control versions of configuration definitions or to manage variants of the definitions, and to test the definitions before you deploy them on production.
+You can create multiple Puppet environments.
+
+On each run, the OpenVox agent collects Puppet facts about the host and sends them to the OpenVox server.
+The OpenVox server forwards those facts to {Project}.
+
+[NOTE]
+====
+To list Puppet facts on a host, run the `puppet facts` command.
+====
+
+{Project} acts as an external node classifier (ENC) for the OpenVox server.
+Based on the facts and other definitions {Project} receives from the OpenVox server, {Project} constructs the ENC answer to the OpenVox server.
+
+Based on the ENC answer, the OpenVox server compiles a catalog for the host and sends it to the agent.
+
+The agent evaluates the system state on the host.
+If the agent finds differences between the desired state defined in the catalog and the actual state, known as drifts, it enforces correction of the state of the host.
+
+The agent reports correction results back to the OpenVox server.
+The OpenVox server receives correction results from the agent and reports them to {Project}.
+
+If the Puppet modules you are using support the use of parameters, you can override parameters of the module by using Smart Class parameters in {Project}.
+In {Project}, you define the parameters as key-value pairs, which behave similar to host parameters or Ansible variables.
