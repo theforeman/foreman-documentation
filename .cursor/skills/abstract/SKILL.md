@@ -12,13 +12,14 @@ Review and improve the abstract for this file. Write it if it doesn't exist yet.
 
 An abstract is the first paragraph of the module.
 It follows after the module heading.
-It is pre-fixed by the `[role="_abstract"]` AsciiDoc tag.
-Short descriptions help readers and AI-powered search tools find the information that they need and confirm that they are in the right place.
+It is prefixed by the `[role="_abstract"]` AsciiDoc tag.
+
+Abstracts, also called short descriptions, help readers and AI-powered search tools find the information that they need and confirm that they are in the right place.
 
 Abstracts typically contain the following information:
 
-- What the user must do
-- Why the user must complete the action
+- The "What"
+- The "Why"
 - Where appropriate, an example use case
 
 ## Instructions
@@ -26,8 +27,8 @@ Abstracts typically contain the following information:
 When reviewing or writing the abstract, follow these principles:
 
 - Ensure the abstract explains the What and the Why as defined in the section "Definition of an abstract".
-  - For the `What` part, state the action or feature clearly.
-  - For the `Why` part, state the business value, benefit, or goal.
+  - For the `What` part, state the action or feature clearly. For example, what the user must do or can do (in procedure modules), what the user needs to understand (in concept modules), or what is being listed (in reference modules).
+  - For the `Why` part, state the business value, benefit, or goal. For example, why the user should complete the action (in procedure modules), why the concept is important to users (in concept modules), or why the user would look up the information (in reference modules).
   - For the `Example use case part`, consider including in what situations a user might find the contents of the module useful.
   - Do not simply repeat the heading of the module; build upon it.
 - Follow these user-centric language guidelines:
@@ -38,8 +39,17 @@ When reviewing or writing the abstract, follow these principles:
 
 ## Examples of good abstracts
 
-| Title | Preferred Short Description |
+| Heading | Example abstract (procedure) |
 | :--- | :--- |
 | Browsing hosts in {ProjectWebUI} | Find and categorize your hosts within {Project} to get a quick overview of your managed infrastructure. Browsing hosts helps you understand your environment and identify specific host types for targeted actions. |
 | Cloning hosts in {Project} | Clone existing hosts in {Project} to quickly create new hosts with similar configurations. This streamlines deployment processes and improves consistency across your environment. |
 | Editing system purpose | Edit the system purpose attributes for your Red Hat Enterprise Linux hosts to help ensure they receive correct subscriptions and accurate reporting. This optimizes license compliance and management. |
+
+| Heading | Example abstract (concept) |
+| :--- | :--- |
+| Security considerations in Foreman | {Project} supports multiple security mechanisms to provide additional layers of protection. Implementing these security features enhances the overall security of your {Project} deployment. |
+
+| Heading | Example abstract (reference) |
+| :--- | :--- |
+| Subscriptions usage data | For the purposes of expense management and to optimize your spending, track your subscriptions usage data that you can get from your {Project} environment and Red Hat. You can track usage, capacity, and utilization of your Red Hat subscriptions. |
+| Host global status overview | You can use the host global status in {Project} to see at a glance whether a host is OK, needs attention (Warning), or has errors. The status appears on the Hosts Overview page and helps you prioritize which hosts to investigate. |
