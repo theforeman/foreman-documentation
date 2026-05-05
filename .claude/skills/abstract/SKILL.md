@@ -23,27 +23,28 @@ When reviewing or writing the abstract, follow these principles:
 - Do not simply repeat the heading of the module; build upon it.
 - Avoid self-referential language (for example: avoid "This procedure..." or "This module...").
 - Avoid feature-centric language (for example: avoid "This feature...").
+- Use user-centric language; address the user directly as "you".
 - Follow these length constraints: 50-300 characters, 1-2 sentences, a single paragraph.
 - Do not use sentence fragments. Always use full sentences.
 - Write one sentence per line.
-- Follow instructions below for particular module types. The module type is defined by the `:_mod-docs-content-type:` AsciiDoc attribute in the file. Use the subsection whose name matches the attribute value.
+- Follow instructions below for particular module types. The module type is defined by the `:_mod-docs-content-type:` AsciiDoc attribute in the file. Use the subsection whose name matches the attribute value (CONCEPT -> concept, PROCEDURE -> procedure, REFERENCE -> reference).
 
-### Instructions for CONCEPT modules
+### Instructions for concept modules
 
 - Introduce the concept and provide a concise answer to the question "What is this?" and in some cases "Why do I care about this?" 
 - If the concept is unfamiliar, start with a brief definition.
 - Avoid using the short description to lead in or build up to a topic.
 - Include the main point of the concept topic.
 
-### Instructions for PROCEDURE modules
+### Instructions for procedure modules
 
-- Use user-centric language. Use phrases such as "You can [action] to [benefit]", "To [goal], configure [feature]", "[Action] [what] to [why]".
+- Use phrases such as "You can [action] to [benefit]", "To [goal], configure [feature]", or "[Action] [what] to [why]".
 - Explain the task that users can accomplish, the benefits of the task, and the purpose of the task. 
 - Do not simply repeat the title.
 - Include information that will help users understand when the task is appropriate or necessary.
 - When the abstract is too short, thin, or generic, add more information about why the task is beneficial.
 
-### Instructions for REFERENCE modules
+### Instructions for reference modules
 
 - Briefly describe what the reference item does, what it is, or what it is used for.
 
