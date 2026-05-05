@@ -1,6 +1,6 @@
 ---
 name: abstract
-description: Review or write abstract
+description: Review or write an abstract (DITA short description) for a documentation module
 ---
 # Review or write abstract
 
@@ -16,39 +16,32 @@ It is prefixed by the `[role="_abstract"]` AsciiDoc tag.
 
 Abstracts, also called short descriptions, help readers and AI-powered search tools find the information that they need and confirm that they are in the right place.
 
-Abstracts typically contain the following information:
-
-- The "What"
-- The "Why"
-- Where appropriate, an example use case
-
 ## Instructions
 
 When reviewing or writing the abstract, follow these principles:
 
-- Ensure the abstract explains the What and the Why as defined in the section "Definition of an abstract".
-  - For the `What` part, state the action or concept clearly.
-  - For the `Why` part, state the business value, benefit, or goal.
-  - For the `Example use case part`, consider including in what situations a user might find the contents of the module useful.
-  - Do not simply repeat the heading of the module; build upon it.
-- Follow these user-centric language guidelines:
-  - Avoid self-referential language (for example: avoid "This procedure..." or "This module...").
-  - Avoid feature-centric language (for example: avoid "This feature...").
-  - Use user-centric language (for example: use phrases such as "You can [action] to [benefit]", "To [goal], configure [feature]", "[Action] [what] to [why]").
+- Do not simply repeat the heading of the module; build upon it.
+- Avoid self-referential language (for example: avoid "This procedure..." or "This module...").
+- Avoid feature-centric language (for example: avoid "This feature...").
 - Follow these length constraints: 50-300 characters, 1-2 sentences, a single paragraph.
-- Do not remove useful information. If needed, just move it to the next paragraph instead of replacing it.
-- Follow instructions below for particular module types. The module type is defined by the `:_mod-docs-content-type:` tag in the file.
+- Do not use sentence fragments. Always use full sentences.
+- Write one sentence per line.
+- Follow instructions below for particular module types. The module type is defined by the `:_mod-docs-content-type:` AsciiDoc attribute in the file. Use the subsection whose name matches the attribute value (CONCEPT → concept, PROCEDURE → procedure, REFERENCE → reference).
 
 ### Instructions for concept modules
 
 - Introduce the concept and provide a concise answer to the question "What is this?" and in some cases "Why do I care about this?" 
-- If the concept is unfamiliar, you can start with a brief definition.
+- If the concept is unfamiliar, start with a brief definition.
 - Avoid using the short description to lead in or build up to a topic.
-- The short description paragraph should contain the main point of the concept topic.
+- Include the main point of the concept topic.
 
 ### Instructions for procedure modules
 
-- The short description should explain the task that users can accomplish, the benefits of the task, and the purpose of the task. Do not simply repeat the title. Try to include information that will help users understand when the task is appropriate or why the task is necessary. Avoid stating the obvious, such as "You can use XYZ to do A" as the only statement in the short description for the task. In some cases, add more information about why the task is beneficial.
+- Explain the task that users can accomplish, the benefits of the task, and the purpose of the task. 
+- Do not simply repeat the title.
+- Include information that will help users understand when the task is appropriate or necessary.
+- When the abstract is too short, thin, or generic, add more information about why the task is beneficial.
+- Use user-centric language. For example: use phrases such as "You can [action] to [benefit]", "To [goal], configure [feature]", "[Action] [what] to [why]".
 
 ### Instructions for reference modules
 
