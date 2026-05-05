@@ -27,7 +27,7 @@ Abstracts typically contain the following information:
 When reviewing or writing the abstract, follow these principles:
 
 - Ensure the abstract explains the What and the Why as defined in the section "Definition of an abstract".
-  - For the `What` part, state the action or definition clearly.
+  - For the `What` part, state the action or concept clearly.
   - For the `Why` part, state the business value, benefit, or goal.
   - For the `Example use case part`, consider including in what situations a user might find the contents of the module useful.
   - Do not simply repeat the heading of the module; build upon it.
