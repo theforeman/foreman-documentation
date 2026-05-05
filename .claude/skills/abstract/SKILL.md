@@ -37,7 +37,7 @@ When reviewing or writing the abstract, follow these principles:
 
 ### Instructions for PROCEDURE modules
 
-- Use user-centric language. For example: use phrases such as "You can [action] to [benefit]", "To [goal], configure [feature]", "[Action] [what] to [why]".
+- Use user-centric language. Use phrases such as "You can [action] to [benefit]", "To [goal], configure [feature]", "[Action] [what] to [why]".
 - Explain the task that users can accomplish, the benefits of the task, and the purpose of the task. 
 - Do not simply repeat the title.
 - Include information that will help users understand when the task is appropriate or necessary.
