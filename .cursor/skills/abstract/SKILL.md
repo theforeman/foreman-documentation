@@ -37,6 +37,7 @@ When reviewing or writing the abstract, follow these principles:
   - Use user-centric language (for example: use phrases such as "You can [action] to [benefit]", "To [goal], configure [feature]", "[Action] [what] to [why]").
 - Follow these length constraints: 50-300 characters, 1-2 sentences, a single paragraph.
 - Do not remove useful information. If needed, just move it to the next paragraph instead of replacing it.
+- Follow instructions below for particular module types. The module type is defined by the `:_mod-docs-content-type:` tag in the file.
 
 ### Instructions for concept modules
 
@@ -52,7 +53,6 @@ When reviewing or writing the abstract, follow these principles:
 ### Instructions for reference modules
 
 - Briefly describe what the reference item does, what it is, or what it is used for.
-
 
 ## Examples of good abstracts
 
