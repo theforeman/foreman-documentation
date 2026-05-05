@@ -27,26 +27,10 @@ When reviewing or writing the abstract, follow these principles:
 - Follow these length constraints: 50-300 characters, 1-2 sentences, a single paragraph.
 - Do not use sentence fragments. Always use full sentences.
 - Write one sentence per line.
-- Follow instructions below for particular module types. The module type is defined by the `:_mod-docs-content-type:` AsciiDoc attribute in the file. Use the subsection whose name matches the attribute value (CONCEPT -> concept, PROCEDURE -> procedure, REFERENCE -> reference).
-
-### Instructions for concept modules
-
-- Introduce the concept and provide a concise answer to the question "What is this?" and in some cases "Why do I care about this?" 
-- If the concept is unfamiliar, start with a brief definition.
-- Avoid using the short description to lead in or build up to a topic.
-- Include the main point of the concept topic.
-
-### Instructions for procedure modules
-
-- Use phrases such as "You can [action] to [benefit]", "To [goal], configure [feature]", or "[Action] [what] to [why]".
-- Explain the task that users can accomplish, the benefits of the task, and the purpose of the task. 
-- Do not simply repeat the title.
-- Include information that will help users understand when the task is appropriate or necessary.
-- When the abstract is too short, thin, or generic, add more information about why the task is beneficial.
-
-### Instructions for reference modules
-
-- Briefly describe what the reference item does, what it is, or what it is used for.
+- For module-type-specific abstract rules, look up the reference file that matches the `:_mod-docs-content-type:` AsciiDoc attribute in the module (open and apply that file in full):
+  - `CONCEPT` → [references/concept.md](references/concept.md)
+  - `PROCEDURE` → [references/procedure.md](references/procedure.md)
+  - `REFERENCE` → [references/reference.md](references/reference.md)
 
 ## Examples of good abstracts
 
