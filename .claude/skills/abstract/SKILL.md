@@ -27,15 +27,32 @@ Abstracts typically contain the following information:
 When reviewing or writing the abstract, follow these principles:
 
 - Ensure the abstract explains the What and the Why as defined in the section "Definition of an abstract".
-  - For the `What` part, state the action or feature clearly. For example, what the user must do or can do (in procedure modules), what the user needs to understand (in concept modules), or what is being listed (in reference modules).
-  - For the `Why` part, state the business value, benefit, or goal. For example, why the user should complete the action (in procedure modules), why the concept is important to users (in concept modules), or why the user would look up the information (in reference modules).
+  - For the `What` part, state the action or definition clearly.
+  - For the `Why` part, state the business value, benefit, or goal.
   - For the `Example use case part`, consider including in what situations a user might find the contents of the module useful.
   - Do not simply repeat the heading of the module; build upon it.
 - Follow these user-centric language guidelines:
-  - Avoid documentation self-referential language (for example: avoid "This procedure..." or "This module").
+  - Avoid self-referential language (for example: avoid "This procedure..." or "This module...").
   - Avoid feature-centric language (for example: avoid "This feature...").
   - Use user-centric language (for example: use phrases such as "You can [action] to [benefit]", "To [goal], configure [feature]", "[Action] [what] to [why]").
 - Follow these length constraints: 50-300 characters, 1-2 sentences, a single paragraph.
+- Do not remove useful information. If needed, just move it to the next paragraph instead of replacing it.
+
+### Instructions for concept modules
+
+- Introduce the concept and provide a concise answer to the question "What is this?" and in some cases "Why do I care about this?" 
+- If the concept is unfamiliar, you can start with a brief definition.
+- Avoid using the short description to lead in or build up to a topic.
+- The short description paragraph should contain the main point of the concept topic.
+
+### Instructions for procedure modules
+
+- The short description should explain the task that users can accomplish, the benefits of the task, and the purpose of the task. Do not simply repeat the title. Try to include information that will help users understand when the task is appropriate or why the task is necessary. Avoid stating the obvious, such as "You can use XYZ to do A" as the only statement in the short description for the task. In some cases, add more information about why the task is beneficial.
+
+### Instructions for reference modules
+
+- Briefly describe what the reference item does, what it is, or what it is used for.
+
 
 ## Examples of good abstracts
 
