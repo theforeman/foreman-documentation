@@ -21,11 +21,11 @@ Abstracts, also called short descriptions, help readers and AI-powered search to
 When reviewing or writing the abstract, follow these principles:
 
 - Do not simply repeat the heading of the module; build upon it.
-- Avoid self-referential language (for example: avoid "This procedure..." or "This module...").
+- Avoid self-referential language (for example: avoid "This procedure...", "This module...", "This table...").
 - Avoid feature-centric language (for example: avoid "This feature...").
-- Use user-centric language; address the user directly as "you".
+- Do not use sentence fragments.
+- When needed, address the user as "you".
 - Follow these length constraints: 50-300 characters, 1-2 sentences, a single paragraph.
-- Do not use sentence fragments. Always use full sentences.
 - Write one sentence per line.
 - For module-type-specific abstract rules, look up the reference file that matches the `:_mod-docs-content-type:` AsciiDoc attribute in the module (open and apply that file in full):
   - `CONCEPT` → [references/concept.md](references/concept.md)
