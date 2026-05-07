@@ -52,11 +52,11 @@ This repository uses the [Vale](https://vale.sh/) linter.
 The `.vale/styles/` subdirectory includes a project-specific `foreman-documentation` style package with rules to check for Foreman documentation project conventions.
 When adding a new rule to the `foreman-documentation` style, make sure it does not duplicate the other styles included in `.vale/styles/`.
 
-### `.cursor` subdirectory
+### `.claude` subdirectory
 
-This repository contains commands for the Cursor editor that you can use.
-You can also add your own commands that you use when contributing to the documentation.
-For more information about Cursor commands, see https://cursor.com/docs/agent/chat/commands[Commands] in Cursor documentation.
+This repository contains skills for AI agents that you can use with Claude or Cursor.
+You can also add your own skills that you use when contributing to the documentation.
+For more information, see [AgentSkills.io](https://agentskills.io).
 
 ## Deployment
 
