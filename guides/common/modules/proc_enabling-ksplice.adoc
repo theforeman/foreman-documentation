@@ -1,0 +1,77 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="enabling-ksplice"]
+= Enabling Ksplice
+
+[role="_abstract"]
+Enable Ksplice on your hosts running Oracle Linux to update the kernel without rebooting your host.
+
+.Procedure
+. Create a provisioning template snippet called `install_ksplice` containing the following commands.
+* On Oracle Linux 10, 9, or 8:
++
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+# dnf install --assumeyes uptrack-offline
+# dnf install --assumeyes uptrack-updates-$(uname -r)
+# dnf install --assumeyes ksplice
+----
+* On Oracle Linux 7:
++
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+# yum install --assumeyes uptrack-offline
+# yum install --assumeyes uptrack-updates-$(uname -r)
+# yum install --assumeyes ksplice
+----
+. Add the snippet to the provisioning template:
++
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+<% if host_param_true?('install_ksplice') -%>
+<%= snippet 'install_ksplice' -%>
+<% end -%>
+----
++
+Add this before the following line:
++
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+# touch /tmp/foreman_built
+----
++
+[TIP]
+====
+{Team} recommends to not edit a locked template, but rather clone it and edit the cloned template.
+Remember to add the cloned template to your operating systems.
+====
+. Enable the snippet by setting the default value to `true`:
++
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+- install_ksplice: boolean (default=true)
+----
++
+Add this line before enabling the Puppet repository:
++
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+- enable-puppetlabs-puppet7-repo: boolean (default=false)
+----
+. Create the parameter `install_ksplice` as a boolean in your host group and set it to `true`.
+. In case an older version of the kernel has been active during deployment, run the following command after rebooting the host.
+* On Oracle Linux 10, 9, or 8:
++
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+# dnf install --assumeyes uptrack-updates-$(uname -r)
+----
+* On Oracle Linux 7:
++
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+# yum install --assumeyes uptrack-updates-$(uname -r)
+----
+
+.Additional resources
+* https://ksplice.oracle.com/[ksplice.oracle.com]
