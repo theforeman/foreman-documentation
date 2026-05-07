@@ -1,0 +1,126 @@
+:_mod-docs-content-type: CONCEPT
+
+[id="provisioning-methods"]
+= Provisioning methods
+
+[role="_abstract"]
+{Project} supports multiple ways to provision a host: image-based, network-based, boot disk-based, and Discovery-based host provisioning.
+The optimal host provisioning method depends on the type of host, the availability of DHCP, and if it is to be cloned from an existing VM template.
+
+image::common/provisioning-decision-tree-orcharhino.svg[Decision tree for provisioning methods in {Project}]
+
+Pick a provisioning method based on the type of host that you want to provision:
+
+Cloud instances::
+* Choose image-based provisioning.
+
+Virtual machines::
+* If you want to clone the VM from a template/_golden image_, choose image-based provisioning.
+* If your host has a static IP address, choose boot disk-based provisioning.
+* If the network of your host provides DHCP, choose network-based provisioning.
+
+Bare-metal hosts::
+* Choose Discovery-based provisioning.
+* If your host has a static IP address, choose boot disk-based provisioning.
+* If the network of your host provides DHCP, choose network-based provisioning.
+
+Each provisioning method has a distinct set of steps to provision a host:
+
+image::common/provisioning-workflow-overview-orcharhino.svg[Overview of provisioning workflow in {Project}]
+
+Network-based provisioning::
+. Start the system based on your deployment model:
+* For a virtual machine, {Project} instructs the compute resource provider to create a virtual machine.
+* For a bare-metal host, you must start it manually.
+You can do this by hand or through a lights out management tool.
+For bare-metal hosts, you must submit the MAC address of the new host to {Project}.
+. The host boots over the network and automatically searches for a DHCP server, which in turn assigns an IP address and configures the network.
+The DHCP server provides a PXE/iPXE file, which is a type of provisioning template.
++
+[NOTE]
+====
+{Team} recommends having {Project} configure and manage the DHCP server or even take over its duties through {ProjectServer} or {SmartProxyServer}.
+====
+. The new host fetches the {client-provisioning-template-type} template from {ProjectServer} or {SmartProxyServer} through TFTP and starts the unattended installation and initial configuration of the operating system.
+. The new host reports back to {Project} after finishing the installation.
+This switches the status in {Project} to `installed`.
+
+Boot Disk-based provisioning::
+. The `boot_disk.iso` image contains the network configuration of the new host, that is it replaces the network configuration through DHCP in contrast to network-based provisioning.
+There are four different kinds of boot disk images:
+Per-host image::: This is the default image and does not require DHCP.
+It only contains the network configuration and then points to {Project} for the iPXE template followed by the {client-provisioning-template-type} template.
+Full-host image::: This contains the network configuration, the kernel, the iPXE file, and the provisioning template.
+The image is operating system specific.
+Generic image::: This is a reusable image which works for any host registered on {Project} and requires DHCP.
+Subnet-generic image::: This requires DHCP and chainloads the installation media from your {SmartProxy} assigned to the subnet of the host.
+. Both a bare-metal host or a virtual machine require the `boot_disk.iso` to be attached.
+** Virtual machines running on VMware vSphere automatically receive the image and attach it to the new host.
+For other compute resource providers, you must attach the image by hand.
+** Bare-metal host always need to receive the image manually.
+The same applies if you want to boot from a different `boot_disk.iso` image, other than the one provided by {Project}.
+For bare-metal hosts, the MAC address of the new host must be submitted to {Project}.
+. The new host reports back to {Project} after finishing the installation.
+This switches the status in {Project} to `installed`.
+
+Image-based provisioning (PXE-less provisioning)::
+
+Depending on how you want to configure your image, this can be done either
+
+* with a `finish` provisioning template through SSH only, in which case you require the network configuration to be provided through DHCP;
+* or by using cloud-init with a `userdata` provisioning template, in which case the image needs to point to your {ProjectServer} or {SmartProxyServer} and have built-in support for `cloud-init`.
+The exact configuration depends on your compute resource provider.
+
+[NOTE]
+====
+{Team} recommends using image-based provisioning only for hosts that have access to a DHCP server.
+====
+
+. {Project} instructs the compute resource provider to create a virtual machine based on an existing VM template.
+. Depending on whether a DHCP server is available,
+** the new virtual machine either receives its IP address and network configuration from the DHCP server,
+** or a cloud-init provisioning template is used to set up the network configuration.
+This can be used with and without DHCP.
++
+Alternatively, {Project} finishes the provisioning process based on provisioning templates through SSH.
+. If the compute resource is a cloud provider and the image is capable of `user_data`, the new host does not need to be reachable by {ProjectServer} or {SmartProxyServer} over SSH but can itself notify {ProjectServer} or {SmartProxyServer} when it is ready.
+
+.Operating system - template mapping
+[options="header",cols="2,1"]
+|===
+|Operating system |Provisioning template
+
+|AlmaLinux, Amazon Linux, CentOS, Oracle Linux, Red{nbsp}Hat Enterprise Linux, and Rocky Linux
+|Kickstart templates
+
+|Debian
+|Preseed templates
+
+|SUSE Linux Enterprise Server 16
+|Agama templates
+
+|SUSE Linux Enterprise Server 15 and 12
+|AutoYaST templates
+
+|Ubuntu
+|Preseed Autoinstall templates
+|===
+
+Discovery-based provisioning::
+Discovery-based provisioning is similar to boot disk-based provisioning.
+It uses a `discovery.iso` image to boot the host into a minimal Linux system, reports it to {Project}, and sends various facts including its MAC address to identify the host.
+Afterwards, the host is listed on the discovered hosts page.
+Discovery is an optional plugin.
+
+. Depending on whether a DHCP server is available, the host receives its network configuration and Discovery image:
+** The host manually receives its network configuration and Discovery image and boots the `discovery.iso` image in an interactive way.
+** The host automatically fetches its network configuration and Discovery image from the DHCP server and boots the `discovery.iso` image in a non-interactive way.
+. The `discovery.iso` image contains the information to which {ProjectServer} or {SmartProxyServer} the host must report and collects facts about the host and sends it to {ProjectServer} or {SmartProxyServer}.
+** If there are existing Discovery rules, the host automatically start a network-based provisioning process based on Discovery rules and host groups.
+** Else, the host appears on the list of discovered hosts.
+The following process is very similar to creating a hew host.
++
+There are two ways to start the installation of the operating system:
++
+*** The host is rebooted and then gets the network-based provisioning template by the DHCP server.
+*** The installation is started by using `kexec` with the current network configuration.

@@ -1,0 +1,239 @@
+:_mod-docs-content-type: REFERENCE
+
+[id="writing-report-templates"]
+= Writing report templates
+
+[role="_abstract"]
+Report templates are Ruby scripts executed on {ProjectServer} and are able to extract, process, and present information from internal databases in a tabular form.
+They represent an easy way within {Project} to generate customizable reports.
+
+{Project} contains a selection of generic report templates.
+In the {ProjectWebUI}, navigate to *Monitor* > *Reports* > *Report Templates* for a list of all templates.
+
+As an example, this guide shows you how to write a template, which returns the number and kind of installable errata on hosts.
+Errata contain information to update and/or patch software.
+They cover security updates, bugfixes, or new software features.
+For this purpose, every erratum contains a list of packages affected by the update.
+Keeping a watchful eye on errata is therefore always a good idea to keep your hosts up to date.
+In this context, {Project} distinguishes between two types of errata, _installable_ and _available_ errata:
+
+* _Available_ errata for a host are always determined with respect to the latest packages maintained by {Project}.
+* _Available_ errata may differ from _installable_ errata, because hosts are normally registered to a frozen state of packages, so called content views.
+
+The final template shows both the number of _applicable_ and _installable_ errata for each host.
+
+Report templates allow access to all functionalities of the {Project} API and {Project} variables.
+
+.Report template to view applicable errata
+====
+You can create a custom report template to get a summary of all hosts that have applicable errata:
+
+[source, ruby]
+----
+<%#
+name: View applicable errata
+description: A basic report template to view all applicable errata.
+model: ReportTemplate
+-%>
+
+<%# Loop over all hosts-%>
+<%-  load_hosts(includes: [:operatingsystem, :applicable_errata, :lifecycle_environment]).each_record do |host| -%>
+<%-    @errata = 0 -%>
+<%-    if host.operatingsystem.family != "Windows" -%>
+<%-      # Loop over all errata for the single host -%>
+<%-      host_applicable_errata_filtered(host).each do |erratum| -%>
+<%-        @errata = @errata+1 -%>
+<%-      end -%>
+<%-      report_row(
+          'Host': host.name,
+          'Operating system': host.operatingsystem,
+          'Lifecycle environment': host.lifecycle_environment,
+          'Total': @errata,
+         ) -%>
+<%-    end -%>
+<%-  end -%>
+
+<%= report_render -%>
+----
+
+The first code block is a comment that contains meta data, as indicated by the brackets `<%# ... -%>`.
+
+The second code block contains executable Ruby code, as indicated by the brackets `<%- -%>`.
+The macro `load_hosts` loads the host data contained in {Project}.
+The processed information is determined by the `includes` keyword.
+This example requires the operating system, the lifecycle environment, and the applicable errata.
+The following `each_record do |host|` iterates over all returned hosts entries saved in `host`.
+Hosts running Windows are explicitly excluded from the list of hosts.
+The applicable errata for each host are then processed through the `host_applicable_errata_filtered()` macro.
+The exact number of applicable errata is then summed up in the counter `@errata` and passed to the `report_row()` macro, which adds a corresponding host line to the report table.
+
+The third block renders the report.
+
+.Example report template output
+[cols="30%,20%,30%,20%",options="header",]
+|===
+| Host | Operating system | Lifecycle environment | Total
+| host1.example.com | {client-os} | Testing | 32
+| host2.example.com | {client-os} | Production | 163
+| host3.example.com | {client-os} | Development |23
+|===
+====
+
+.Report template to view errata types
+====
+You can extend the report template to allow users to restrict the report to a list of hosts instead of all hosts and to display the kind of errata in the report.
+The modified template looks as follows:
+
+[source, ruby]
+----
+<%#
+name: Applicable Errata
+description: A basic report template for gathering all applicable errata.
+template_inputs:
+- name: Hosts filter
+  required: false
+  input_type: user
+  advanced: false
+  value_type: plain
+  hidden_value: false
+model: ReportTemplate
+-%>
+<%# Loop over all or input list of hosts -%>
+<%-  load_hosts(search: input('Hosts filter'), includes: [:operatingsystem, :applicable_errata, :lifecycle_environment]).each_record do |host| -%>
+<%-    if host.operatingsystem.family != "Windows" -%>
+<%-      @errata = 0 -%>
+<%-      @bugfix = 0 -%>
+<%-      @misc_err = 0 -%>
+<%-      @enhancement = 0 -%>
+<%-      @security = 0 -%>
+<%-      # Loop over all errata for the single host -%>
+<%-      host_applicable_errata_filtered(host).each do |erratum| -%>
+<%-        @errata = @errata+1 -%>
+<%-        if erratum[:errata_type]=="security" -%>
+<%-          @security=@security+1 -%>
+<%-        elsif erratum[:errata_type]=="bugfix" -%>
+<%-          @bugfix=@bugfix+1 -%>
+<%-        elsif erratum[:errata_type]=="recommended" -%>
+<%-          @bugfix=@bugfix+1 -%>
+<%-        elsif erratum[:errata_type]=="enhancement" -%>
+<%-          @enhancement=@enhancement+1 -%>
+<%-        elsif erratum[:errata_type]=="optional" -%>
+<%-          @enhancement=@enhancement+1 -%>
+<%-        else -%>
+<%-          @misc_err=@misc_err+1 -%>
+<%-        end -%>
+<%-      end -%>
+<%-      report_row(
+          'Host': host.name,
+          'Operating system': host.operatingsystem,
+          'Lifecycle environment': host.lifecycle_environment,
+          # Library specific errata
+          'Security': @security,
+          'Bugfix': @bugfix,
+          'Enhance': @enhancement,
+          'Misc': @misc_err,
+          'Total': @errata,
+         ) -%>
+<%-    end -%>
+<%-  end -%>
+<%= report_render -%>
+----
+
+`load_hosts` is extended by `search: input('Hosts filter')`.
+The `input` macro allows users to add input during execution of the template.
+In this case, it limits the search to a list of hosts.
+The template now distinguishes between security, bugfix, and enhancement errata.
+
+Add the input name `Hosts filter` to the *Inputs* tab of the template.
+
+.Example report template output
+[cols="23%,12%,15%,12%,10%,12%,8%,8%",options="header",]
+|===
+| Host | Operating system | Lifecycle environment | Security | Bugfix | Enhance | Misc | Total
+| host.example.com | {client-os} | Testing | 9 | 20| 2 | 1 | 32
+|===
+====
+
+.Report template to view installable and available errata
+====
+You can extend the report template to view errata that are installable on the host and how many packages are affected by available errata.
+
+[source, ruby]
+----
+<%#
+name: Applicable Errata
+description: A basic report template for gathering all applicable errata.
+template_inputs:
+- name: Hosts filter
+  required: false
+  input_type: user
+  advanced: false
+  value_type: plain
+  hidden_value: false
+model: ReportTemplate
+-%>
+<%# Loop over all or input list of hosts -%>
+<%-  load_hosts(search: input('Hosts filter'), includes: [:operatingsystem, :applicable_errata, :lifecycle_environment]).each_record do |host| -%>
+<%-    if host.operatingsystem.family != "Windows" -%>
+<%-      @errata = 0 -%>
+<%-      @bugfix = 0 -%>
+<%-      @misc_err = 0 -%>
+<%-      @enhancement = 0 -%>
+<%-      @security = 0 -%>
+<%-      #Content View Errata%>
+<%-      @cv_misc_err = host.content_facet_attributes.errata_counts[:total] -%>
+<%-      @cv_misc_err = @cv_misc_err - host.content_facet_attributes.errata_counts[:enhancement] -%>
+<%-      @cv_misc_err = @cv_misc_err - host.content_facet_attributes.errata_counts[:bugfix] -%>
+<%-      @cv_misc_err = @cv_misc_err - host.content_facet_attributes.errata_counts[:security] -%>
+<%-      # Loop over all errata for the single host -%>
+<%-      host_applicable_errata_filtered(host).each do |erratum| -%>
+<%-          @errata = @errata+1 -%>
+<%-          if erratum[:errata_type]=="security" -%>
+<%-             @security=@security+1 -%>
+<%-          elsif erratum[:errata_type]=="bugfix" -%>
+<%-             @bugfix=@bugfix+1 -%>
+<%-          elsif erratum[:errata_type]=="recommended" -%>
+<%-             @bugfix=@bugfix+1 -%>
+<%-          elsif erratum[:errata_type]=="enhancement" -%>
+<%-             @enhancement=@enhancement+1 -%>
+<%-          elsif erratum[:errata_type]=="optional" -%>
+<%-             @enhancement=@enhancement+1 -%>
+<%-          else -%>
+<%-             @misc_err=@misc_err+1 -%>
+<%-         end -%>
+<%-      end -%>
+<%-      report_row(
+          'Host': host.name,
+          'Operating system': host.operatingsystem,
+          'Lifecycle environment': host.lifecycle_environment,
+          # Library specific errata
+          'Security': @security,
+          'Bugfix': @bugfix,
+          'Enhance': @enhancement,
+          'Misc': @misc_err,
+          'Total': @errata,
+          # Content View specific errata
+          'CV Security': host.content_facet_attributes.errata_counts[:security],
+          'CV Bugfix': host.content_facet_attributes.errata_counts[:bugfix],
+          'CV Enhance': host.content_facet_attributes.errata_counts[:enhancement],
+          'CV Misc': @cv_misc_err,
+          'CV Total': host.content_facet_attributes.errata_counts[:total],
+          'Packages': host.content_facet_attributes.applicable_deb_count+host.content_facet_attributes.applicable_rpm_count,
+         ) -%>
+<%-    end -%>
+<%-  end -%>
+<%= report_render -%>
+----
+
+{Project} provides the number of installable errata through the host attribute `host.content_facet_attributes.errata_counts`.
+
+.Example report template output
+[cols="23%,15%,12%,15%,12%,11%,12%",options="header",]
+|===
+| Host | CV Security | CV Bugfix | CV Enhance | CV Misc | CV Total | Packages
+| host.example.com | 6 | 13 | 1 | 0 | 20 | 242
+|===
+
+If the number of installable errata is smaller than the number of available errata, update the corresponding content view as soon as possible.
+Afterwards, update your host.
+====
