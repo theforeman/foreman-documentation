@@ -1,57 +1,51 @@
 ---
-name: heading
+name: Headings
 description: Review or write heading
 ---
+#### Overview
 
-# Review or write heading
+Headings should be clear, concise, and use familiar keywords that help users understand what the content covers.
 
-## Overview
+**General principles for all headings:**
+- Make the heading 3-11 words long
+- Use clear headings with familiar keywords for users
+- Ensure the heading summarizes the contents of the part of the documentation it introduces
 
-Review and improve the heading for this file.
-Write it if it doesn't exist yet.
+**Module-type-specific principles:**
+- **Concepts** (con_*.adoc): Do not start with a gerund or verb. Use a noun phrase and include nouns that appear in the body text.
+- **Procedures** (proc_*.adoc): Start the heading with a gerund (e.g., "Configuring...", "Creating...").
+- **References** (ref_*.adoc): Do not start with a gerund or verb. Include nouns that appear in the body text.
+- **Assemblies** containing procedures: Start the heading with a gerund.
+- **Assemblies** containing only concepts or references: Do not start with a gerund or verb. Use a noun phrase.
 
-## Instructions
+#### Examples
 
-Follow these general principles for all headings:
+**Concept headings:**
+- Provisioning methods in {Project}
+- Security considerations in {Project}
+- Host groups overview
 
-* Make the heading 3-11 words long.
-* Use clear headings with familiar keywords for users.
-* Ensure the heading summarizes the contents of the part of the documentation it introduces.
+**Procedure headings:**
+- Deploying SSH keys during provisioning
+- Opening required ports
+- Configuring pull-based transport for remote execution
 
-Additional principles for specific heading types:
+**Reference headings:**
+- Job template examples and extensions
+- Host parameter hierarchy
+- Operating system requirements
 
-* For concepts (con_*.adoc): Do not start the heading with a gerund or verb. Use a noun phrase and include nouns or noun phrases that appear in the body text.
-* For procedures (proc_*.adoc): Start the heading with a gerund.
-* For references (ref_*.adoc): Do not start the heading with a gerund or verb. Include nouns that appear in the body text.
-* For assemblies (the first con_*.adoc in an assembly_*.adoc) that contain at least one procedure: Start the heading with a gerund.
-* For assemblies (the first con_*.adoc in an assembly_*.adoc) that contain only concepts or references: Do not start the heading with a gerund or verb. Use a noun phrase.
+**Assembly headings:**
+- Connecting AI applications to the MCP server for {Project}
+- Configuring {SmartProxy} and hosts to authenticate with SSH certificates during remote execution
+- Content and patch management with {Project}
 
-## Post-command cleanup
+#### Instructions
 
-* If you rename a heading, use the `.cursor/skills/refactor-adoc.md` command to update the module's ID, filename, and all references and links to the module in the repository.
+Review and improve the heading for this file. Write it if it doesn't exist yet.
 
-## Examples of good headings
+Follow the principles outlined in the Overview section above.
 
-Concept headings:
+#### Post-command cleanup
 
-* Provisioning methods in {Project}
-* Security considerations in {Project}
-* Host groups overview
-
-Procedure headings:
-
-* Deploying SSH keys during provisioning
-* Opening required ports
-* Configuring pull-based transport for remote execution
-
-Reference headings:
-
-* Job template examples and extensions
-* Host parameter hierarchy
-* Operating system requirements
-
-Assembly headings:
-
-* Connecting AI applications to the MCP server for {Project}
-* Configuring {SmartProxy} and hosts to authenticate with SSH certificates during remote execution
-* Content and patch management with {Project}
+If you rename a heading, use the `/refactor-adoc` command to update the module's ID, filename, and all references and links to the module in the repository.
