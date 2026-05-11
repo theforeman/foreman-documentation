@@ -156,6 +156,7 @@ Assemblies are kept at the top of the `common/` subdirectory:
 * [`assembly`](https://redhat-documentation.github.io/modular-docs/#forming-assemblies): Files starting with `assembly_` contain user stories and the modules required to accomplish those user stories.
 See the [assembly template](https://raw.githubusercontent.com/redhat-documentation/modular-docs/master/modular-docs-manual/files/TEMPLATE_ASSEMBLY_a-collection-of-modules.adoc).
 * In this repository, do not nest assemblies. This means that assemblies cannot contain includes of other assemblies. This guidance overrides the Modular documentation recommendations.
+* Do not include assemblies without leveloffset or with leveloffset of two or more in `master.adoc` files.
 
 Modules are kept in the `common/modules/` subdirectory:
 
