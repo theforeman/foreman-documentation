@@ -296,6 +296,7 @@ SOFTWARE.
 </li>
 </ul>
 </li>
+<li><a href="#restoring-manual-changes-overwritten-by-a-puppet-run_foreman">Appendix A: Restoring manual changes overwritten by a Puppet run</a></li>
 </ul>
 </div>
 </div>
@@ -1063,8 +1064,10 @@ You can change the organization name later.</p>
 <h2 id="performing-additional-configuration-on-server_foreman"><a class="anchor" href="#performing-additional-configuration-on-server_foreman"></a>4. Performing additional configuration on Foreman&#160;server</h2>
 <div class="sectionbody">
 <div class="paragraph _abstract">
-<p>You can enable additional features on Foreman&#160;server, such as Insights integration, pull-based transport for remote execution, and HTTP proxy.
-While you can configure these features after the initial setup, you can also configure many of them during the installation by using the corresponding <code>foreman-installer</code> options.</p>
+<p>You can enable additional features on Foreman&#160;server, such as Insights integration, pull-based transport for remote execution, or the usage of HTTP proxies.
+While you can configure these features after the initial setup, you can also configure many of them during the installation by using the corresponding
+<code>foreman-installer</code>
+options.</p>
 </div>
 <div class="sect2">
 <h3 id="enabling-remote-execution"><a class="anchor" href="#enabling-remote-execution"></a>4.1. Enabling remote execution</h3>
@@ -1976,6 +1979,60 @@ FreeIPA host groups allow for Host-Based Access Controls (HBAC), sudo policies a
 </li>
 </ol>
 </div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="restoring-manual-changes-overwritten-by-a-puppet-run_foreman"><a class="anchor" href="#restoring-manual-changes-overwritten-by-a-puppet-run_foreman"></a>Appendix A: Restoring manual changes overwritten by a Puppet run</h2>
+<div class="sectionbody">
+<div class="paragraph _abstract">
+<p>If your manual configuration has been overwritten by a Puppet run, you can restore the files to the previous state.</p>
+</div>
+<div class="paragraph">
+<p>For example, when you install and configure Foreman for the first time by using <code>foreman-installer</code>, you can use the <code>--foreman-proxy-dns-managed false</code> and <code>--foreman-proxy-dhcp-managed false</code> options to specify that the DNS and DHCP configuration files are not to be managed by Puppet.
+If you do not use these options during the initial <code>foreman-installer</code> run, rerunning <code>foreman-installer</code> overwrites all manual changes.
+The following example shows you how to restore a DHCP configuration file overwritten by a Puppet run.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Copy the file you intend to restore.
+This allows you to compare the files to check for any mandatory changes required by the upgrade.
+This is not common for DNS or DHCP services.</p>
+<div class="listingblock">
+<div class="content">
+<pre># cp /etc/dhcp/dhcpd.conf /etc/dhcp/dhcpd.backup</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Check the log files to note down the md5sum of the overwritten file.
+For example:</p>
+<div class="listingblock">
+<div class="content">
+<pre># journalctl -xe
+...
+/Stage[main]/Dhcp/File[/etc/dhcp/dhcpd.conf]: Filebucketed /etc/dhcp/dhcpd.conf to puppet with sum 622d9820b8e764ab124367c68f5fa3a1
+...</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Restore the overwritten file:</p>
+<div class="listingblock">
+<div class="content">
+<pre># puppet filebucket restore --local --bucket \
+/var/lib/puppet/clientbucket /etc/dhcp/dhcpd.conf \ 622d9820b8e764ab124367c68f5fa3a1</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Compare the backup file and the restored file, and edit the restored file to include any mandatory changes required by the upgrade.</p>
+</li>
+</ol>
+</div>
 <!-- "Fork me on GitHub" CSS ribbon v0.2.3 | MIT License -->
 <!-- https://github.com/simonwhitaker/github-fork-ribbon-css -->
 <a class="release-ribbon right-top fixed" data-ribbon="Pre-release version" title="Pre-release version">
@@ -1984,8 +2041,6 @@ Pre-release version
 <a class="issue-ribbon right-bottom fixed" href="https://github.com/theforeman/foreman-documentation/issues/new?template=report-issue.md" data-ribbon="Report issue" title="Report issue">
 Report issue
 </a>
-</div>
-</div>
 </div>
 </div>
 </div>
