@@ -288,6 +288,15 @@ SOFTWARE.
 <li><a href="#disabling-tftp-for-integration">3.4. Disabling TFTP for integration</a></li>
 </ul>
 </li>
+<li><a href="#configuring-project-to-manage-the-lifecycle-of-a-host-registered-to-a-freeipa-realm_admin-network">4. Configuring Satellite to manage the lifecycle of a host registered to a Identity&#160;Management realm</a>
+<ul class="sectlevel2">
+<li><a href="#installing-and-configuring-Identity_Management-packages-on-satellite-server-or-capsule-server">4.1. Installing and configuring Identity&#160;Management packages on Satellite&#160;Server or Capsule&#160;Server</a></li>
+<li><a href="#configuring-satellite-server-or-capsule-server-for-Identity_Management-realm-support">4.2. Configuring Satellite&#160;Server or Capsule&#160;Server for Identity&#160;Management realm support</a></li>
+<li><a href="#creating-a-realm-for-the-Identity_Management-enabled-capsule">4.3. Creating a realm for the Identity&#160;Management-enabled Capsule</a></li>
+<li><a href="#updating-host-groups-with-realm-information">4.4. Updating host groups with realm information</a></li>
+<li><a href="#adding-hosts-to-a-Identity_Management-host-group">4.5. Adding hosts to a Identity&#160;Management host group</a></li>
+</ul>
+</li>
 </ul>
 </div>
 </div>
@@ -2332,6 +2341,298 @@ When you disable Capsule associations, orchestration commands for existing hosts
 </td>
 </tr>
 </table>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="configuring-project-to-manage-the-lifecycle-of-a-host-registered-to-a-freeipa-realm_admin-network"><a class="anchor" href="#configuring-project-to-manage-the-lifecycle-of-a-host-registered-to-a-freeipa-realm_admin-network"></a>4. Configuring Satellite to manage the lifecycle of a host registered to a Identity&#160;Management realm</h2>
+<div class="sectionbody">
+<div class="paragraph _abstract">
+<p>As well as providing access to Satellite&#160;Server, hosts provisioned with Satellite can also be integrated with Identity&#160;Management realms.
+Red&#160;Hat Satellite has a realm feature that automatically manages the lifecycle of any system registered to a realm or domain provider.</p>
+</div>
+<div class="paragraph">
+<p>Use this section to configure Satellite&#160;Server or Capsule&#160;Server for Identity&#160;Management realm support, then add hosts to the Identity&#160;Management realm group.</p>
+</div>
+<div class="sect2">
+<h3 id="installing-and-configuring-Identity_Management-packages-on-satellite-server-or-capsule-server"><a class="anchor" href="#installing-and-configuring-Identity_Management-packages-on-satellite-server-or-capsule-server"></a>4.1. Installing and configuring Identity&#160;Management packages on Satellite&#160;Server or Capsule&#160;Server</h3>
+<div class="paragraph _abstract">
+<p>To use Identity&#160;Management for provisioned hosts, complete the following steps to install and configure Identity&#160;Management packages on Satellite&#160;Server or Capsule&#160;Server:</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Install the <code>ipa-client</code> package on Satellite&#160;Server or Capsule&#160;Server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-maintain packages install ipa-client</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Configure the server as a Identity&#160;Management client:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ipa-client-install</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create a realm proxy user, <code>realm-capsule</code>, and the relevant roles in Identity&#160;Management:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-prepare-realm admin realm-capsule</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note the principal name that returns and your Identity&#160;Management server configuration details because you require them for the following procedure.</p>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="configuring-satellite-server-or-capsule-server-for-Identity_Management-realm-support"><a class="anchor" href="#configuring-satellite-server-or-capsule-server-for-Identity_Management-realm-support"></a>4.2. Configuring Satellite&#160;Server or Capsule&#160;Server for Identity&#160;Management realm support</h3>
+<div class="paragraph _abstract">
+<p>Complete the following procedure on your Satellite&#160;Server and every Capsule&#160;Server that you want to use.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Copy the <code>/root/freeipa.keytab</code> file to any Capsule&#160;Server that you want to include in the same principal and realm:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># scp /root/freeipa.keytab root@<em>capsule.example.com</em>:/etc/foreman-proxy/freeipa.keytab</pre>
+</div>
+</div>
+</li>
+<li>
+<p>On your Satellite&#160;Server, move the <code>/root/freeipa.keytab</code> file to the <code>/etc/foreman-proxy</code> directory:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># mv /root/freeipa.keytab /etc/foreman-proxy</pre>
+</div>
+</div>
+</li>
+<li>
+<p>On your Satellite&#160;Server and Capsule&#160;Servers, set ownership to the <code>foreman-proxy</code> user and group:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># chown foreman-proxy:foreman-proxy /etc/foreman-proxy/freeipa.keytab</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Enter the following command on all Capsules that you want to include in the realm.
+If you use the integrated Capsule on Satellite, enter this command on Satellite&#160;Server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellite-installer --foreman-proxy-realm true \
+--foreman-proxy-realm-keytab /etc/foreman-proxy/freeipa.keytab \
+--foreman-proxy-realm-principal <em>realm-capsule@EXAMPLE.COM</em> \
+--foreman-proxy-realm-provider freeipa</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can also use these options when you first configure the Satellite&#160;Server.</p>
+</div>
+</li>
+<li>
+<p>Ensure that the most updated versions of the ca-certificates package is installed and trust the Identity&#160;Management Certificate Authority:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># cp /etc/ipa/ca.crt /etc/pki/ca-trust/source/anchors/ipa.crt
+# update-ca-trust extract</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Optional: If you configure Identity&#160;Management on an existing Satellite&#160;Server or Capsule&#160;Server, complete the following steps to ensure that the configuration changes take effect:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Restart the <strong>foreman-proxy</strong> service:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl restart foreman-proxy</pre>
+</div>
+</div>
+</li>
+<li>
+<p>In the Satellite web UI, navigate to <strong>Infrastructure</strong> &gt; <strong>Capsules</strong>.</p>
+</li>
+<li>
+<p>Locate the Capsule you have configured for Identity&#160;Management and from the list in the <strong>Actions</strong> column, select <strong>Refresh</strong>.</p>
+</li>
+</ol>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="creating-a-realm-for-the-Identity_Management-enabled-capsule"><a class="anchor" href="#creating-a-realm-for-the-Identity_Management-enabled-capsule"></a>4.3. Creating a realm for the Identity&#160;Management-enabled Capsule</h3>
+<div class="paragraph _abstract">
+<p>After you configure your Capsule with Identity&#160;Management, you must create a realm and add the Identity&#160;Management-configured Capsule to the realm.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Infrastructure</strong> &gt; <strong>Realms</strong> and click <strong>Create Realm</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter a name for the realm.</p>
+</li>
+<li>
+<p>From the <strong>Realm Type</strong> list, select the type of realm.</p>
+</li>
+<li>
+<p>From the <strong>Realm Capsule</strong> list, select Capsule&#160;Server where you have configured Identity&#160;Management.</p>
+</li>
+<li>
+<p>Click the <strong>Locations</strong> tab and from the <strong>Locations</strong> list, select the location where you want to add the new realm.</p>
+</li>
+<li>
+<p>Click the <strong>Organizations</strong> tab and from the <strong>Organizations</strong> list, select the organization where you want to add the new realm.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="updating-host-groups-with-realm-information"><a class="anchor" href="#updating-host-groups-with-realm-information"></a>4.4. Updating host groups with realm information</h3>
+<div class="paragraph _abstract">
+<p>You must update any host groups that you want to use with the new realm information.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Configure</strong> &gt; <strong>Host Groups</strong>.</p>
+</li>
+<li>
+<p>Select the host group that you want to update.</p>
+</li>
+<li>
+<p>Select the <strong>Network</strong> tab.</p>
+</li>
+<li>
+<p>From the <strong>Realm</strong> list, select the realm you create as part of this procedure.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="adding-hosts-to-a-Identity_Management-host-group"><a class="anchor" href="#adding-hosts-to-a-Identity_Management-host-group"></a>4.5. Adding hosts to a Identity&#160;Management host group</h3>
+<div class="paragraph _abstract">
+<p>Identity&#160;Management supports the ability to set up automatic membership rules based on a system&#8217;s attributes.
+Red&#160;Hat Satellite&#8217;s realm feature provides administrators with the ability to map the Red&#160;Hat Satellite host groups to the Identity&#160;Management parameter <code>userclass</code> which allow administrators to configure automembership.</p>
+</div>
+<div class="paragraph">
+<p>When nested host groups are used, they are sent to the Identity&#160;Management server as they are displayed in the Red&#160;Hat Satellite User Interface.
+For example, <code>Parent/Child/Child</code>.</p>
+</div>
+<div class="paragraph">
+<p>Satellite&#160;Server or Capsule&#160;Server sends updates to the Identity&#160;Management server, however automembership rules are only applied at initial registration.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On the Identity&#160;Management server, create a host group:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ipa hostgroup-add <em>hostgroup_name</em> --desc=<em>hostgroup_description</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create an <code>automembership</code> rule:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ipa automember-add --type=hostgroup <em>hostgroup_name</em> <em>automember_rule</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Where you can use the following options:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>automember-add</code> flags the group as an automember group.</p>
+</li>
+<li>
+<p><code>--type=hostgroup</code> identifies that the target group is a host group, not a user group.</p>
+</li>
+<li>
+<p><code><em>automember_rule</em></code> adds the name you want to identify the automember rule by.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Define an automembership condition based on the <code>userclass</code> attribute:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ipa automember-add-condition --key=userclass --type=hostgroup --inclusive-regex=<em>^webserver</em> <em>hostgroup_name</em>
+----------------------------------
+Added condition(s) to "<em>hostgroup_name</em>"
+----------------------------------
+Automember Rule: <em>automember_rule</em>
+Inclusive Regex: userclass=<em>^webserver</em>
+----------------------------
+Number of conditions added 1
+----------------------------</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Where you can use the following options:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>automember-add-condition</code> adds regular expression conditions to identify group members.</p>
+</li>
+<li>
+<p><code>--key=userclass</code> specifies the key attribute as <code>userclass</code>.</p>
+</li>
+<li>
+<p><code>--type=hostgroup</code> identifies that the target group is a host group, not a user group.</p>
+</li>
+<li>
+<p><code>--inclusive-regex=</code> <em>^webserver</em> identifies matching values with a regular expression pattern.</p>
+</li>
+<li>
+<p><em>hostgroup_name</em> &#8211; identifies the target host group&#8217;s name.</p>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>When a system is added to Satellite&#160;Server&#8217;s <em>hostgroup_name</em> host group, it is added automatically to the Identity&#160;Management server&#8217;s "<em>hostgroup_name</em>" host group.
+Identity&#160;Management host groups allow for Host-Based Access Controls (HBAC), sudo policies and other Identity&#160;Management functions.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</li>
+</ul>
 </div>
 </li>
 </ol>

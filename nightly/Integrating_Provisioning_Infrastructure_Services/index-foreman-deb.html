@@ -295,6 +295,15 @@ SOFTWARE.
 <li><a href="#disabling-tftp-for-integration">3.4. Disabling TFTP for integration</a></li>
 </ul>
 </li>
+<li><a href="#configuring-project-to-manage-the-lifecycle-of-a-host-registered-to-a-freeipa-realm_admin-network">4. Configuring Foreman to manage the lifecycle of a host registered to a FreeIPA realm</a>
+<ul class="sectlevel2">
+<li><a href="#installing-and-configuring-FreeIPA-packages-on-foreman-server-or-smart-proxy-server">4.1. Installing and configuring FreeIPA packages on Foreman&#160;server or Smart&#160;Proxy&#160;server</a></li>
+<li><a href="#configuring-foreman-server-or-smart-proxy-server-for-FreeIPA-realm-support">4.2. Configuring Foreman&#160;server or Smart&#160;Proxy&#160;server for FreeIPA realm support</a></li>
+<li><a href="#creating-a-realm-for-the-FreeIPA-enabled-smart-proxy">4.3. Creating a realm for the FreeIPA-enabled Smart&#160;Proxy</a></li>
+<li><a href="#updating-host-groups-with-realm-information">4.4. Updating host groups with realm information</a></li>
+<li><a href="#adding-hosts-to-a-FreeIPA-host-group">4.5. Adding hosts to a FreeIPA host group</a></li>
+</ul>
+</li>
 </ul>
 </div>
 </div>
@@ -2460,6 +2469,298 @@ When you disable Smart&#160;Proxy associations, orchestration commands for exist
 </td>
 </tr>
 </table>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="configuring-project-to-manage-the-lifecycle-of-a-host-registered-to-a-freeipa-realm_admin-network"><a class="anchor" href="#configuring-project-to-manage-the-lifecycle-of-a-host-registered-to-a-freeipa-realm_admin-network"></a>4. Configuring Foreman to manage the lifecycle of a host registered to a FreeIPA realm</h2>
+<div class="sectionbody">
+<div class="paragraph _abstract">
+<p>As well as providing access to Foreman&#160;server, hosts provisioned with Foreman can also be integrated with FreeIPA realms.
+Foreman has a realm feature that automatically manages the lifecycle of any system registered to a realm or domain provider.</p>
+</div>
+<div class="paragraph">
+<p>Use this section to configure Foreman&#160;server or Smart&#160;Proxy&#160;server for FreeIPA realm support, then add hosts to the FreeIPA realm group.</p>
+</div>
+<div class="sect2">
+<h3 id="installing-and-configuring-FreeIPA-packages-on-foreman-server-or-smart-proxy-server"><a class="anchor" href="#installing-and-configuring-FreeIPA-packages-on-foreman-server-or-smart-proxy-server"></a>4.1. Installing and configuring FreeIPA packages on Foreman&#160;server or Smart&#160;Proxy&#160;server</h3>
+<div class="paragraph _abstract">
+<p>To use FreeIPA for provisioned hosts, complete the following steps to install and configure FreeIPA packages on Foreman&#160;server or Smart&#160;Proxy&#160;server:</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Install the <code>ipa-client</code> package on Foreman&#160;server or Smart&#160;Proxy&#160;server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># apt install ipa-client</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Configure the server as a FreeIPA client:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ipa-client-install</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create a realm proxy user, <code>realm-smart-proxy</code>, and the relevant roles in FreeIPA:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-prepare-realm admin realm-smart-proxy</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note the principal name that returns and your FreeIPA server configuration details because you require them for the following procedure.</p>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="configuring-foreman-server-or-smart-proxy-server-for-FreeIPA-realm-support"><a class="anchor" href="#configuring-foreman-server-or-smart-proxy-server-for-FreeIPA-realm-support"></a>4.2. Configuring Foreman&#160;server or Smart&#160;Proxy&#160;server for FreeIPA realm support</h3>
+<div class="paragraph _abstract">
+<p>Complete the following procedure on your Foreman&#160;server and every Smart&#160;Proxy&#160;server that you want to use.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Copy the <code>/root/freeipa.keytab</code> file to any Smart&#160;Proxy&#160;server that you want to include in the same principal and realm:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># scp /root/freeipa.keytab root@<em>smartproxy.example.com</em>:/etc/foreman-proxy/freeipa.keytab</pre>
+</div>
+</div>
+</li>
+<li>
+<p>On your Foreman&#160;server, move the <code>/root/freeipa.keytab</code> file to the <code>/etc/foreman-proxy</code> directory:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># mv /root/freeipa.keytab /etc/foreman-proxy</pre>
+</div>
+</div>
+</li>
+<li>
+<p>On your Foreman&#160;server and Smart&#160;Proxy&#160;servers, set ownership to the <code>foreman-proxy</code> user and group:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># chown foreman-proxy:foreman-proxy /etc/foreman-proxy/freeipa.keytab</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Enter the following command on all Smart&#160;Proxies that you want to include in the realm.
+If you use the integrated Smart&#160;Proxy on Foreman, enter this command on Foreman&#160;server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer --foreman-proxy-realm true \
+--foreman-proxy-realm-keytab /etc/foreman-proxy/freeipa.keytab \
+--foreman-proxy-realm-principal <em>realm-smart-proxy@EXAMPLE.COM</em> \
+--foreman-proxy-realm-provider freeipa</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can also use these options when you first configure the Foreman&#160;server.</p>
+</div>
+</li>
+<li>
+<p>Ensure that the most updated versions of the ca-certificates package is installed and trust the FreeIPA Certificate Authority:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># cp /etc/ipa/ca.crt /etc/pki/ca-trust/source/anchors/ipa.crt
+# update-ca-trust extract</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Optional: If you configure FreeIPA on an existing Foreman&#160;server or Smart&#160;Proxy&#160;server, complete the following steps to ensure that the configuration changes take effect:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Restart the <strong>foreman-proxy</strong> service:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl restart foreman-proxy</pre>
+</div>
+</div>
+</li>
+<li>
+<p>In the Foreman web UI, navigate to <strong>Infrastructure</strong> &gt; <strong>Smart&#160;Proxies</strong>.</p>
+</li>
+<li>
+<p>Locate the Smart&#160;Proxy you have configured for FreeIPA and from the list in the <strong>Actions</strong> column, select <strong>Refresh</strong>.</p>
+</li>
+</ol>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="creating-a-realm-for-the-FreeIPA-enabled-smart-proxy"><a class="anchor" href="#creating-a-realm-for-the-FreeIPA-enabled-smart-proxy"></a>4.3. Creating a realm for the FreeIPA-enabled Smart&#160;Proxy</h3>
+<div class="paragraph _abstract">
+<p>After you configure your Smart&#160;Proxy with FreeIPA, you must create a realm and add the FreeIPA-configured Smart&#160;Proxy to the realm.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Infrastructure</strong> &gt; <strong>Realms</strong> and click <strong>Create Realm</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter a name for the realm.</p>
+</li>
+<li>
+<p>From the <strong>Realm Type</strong> list, select the type of realm.</p>
+</li>
+<li>
+<p>From the <strong>Realm Smart&#160;Proxy</strong> list, select Smart&#160;Proxy&#160;server where you have configured FreeIPA.</p>
+</li>
+<li>
+<p>Click the <strong>Locations</strong> tab and from the <strong>Locations</strong> list, select the location where you want to add the new realm.</p>
+</li>
+<li>
+<p>Click the <strong>Organizations</strong> tab and from the <strong>Organizations</strong> list, select the organization where you want to add the new realm.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="updating-host-groups-with-realm-information"><a class="anchor" href="#updating-host-groups-with-realm-information"></a>4.4. Updating host groups with realm information</h3>
+<div class="paragraph _abstract">
+<p>You must update any host groups that you want to use with the new realm information.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Configure</strong> &gt; <strong>Host Groups</strong>.</p>
+</li>
+<li>
+<p>Select the host group that you want to update.</p>
+</li>
+<li>
+<p>Select the <strong>Network</strong> tab.</p>
+</li>
+<li>
+<p>From the <strong>Realm</strong> list, select the realm you create as part of this procedure.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="adding-hosts-to-a-FreeIPA-host-group"><a class="anchor" href="#adding-hosts-to-a-FreeIPA-host-group"></a>4.5. Adding hosts to a FreeIPA host group</h3>
+<div class="paragraph _abstract">
+<p>FreeIPA supports the ability to set up automatic membership rules based on a system&#8217;s attributes.
+Foreman&#8217;s realm feature provides administrators with the ability to map the Foreman host groups to the FreeIPA parameter <code>userclass</code> which allow administrators to configure automembership.</p>
+</div>
+<div class="paragraph">
+<p>When nested host groups are used, they are sent to the FreeIPA server as they are displayed in the Foreman User Interface.
+For example, <code>Parent/Child/Child</code>.</p>
+</div>
+<div class="paragraph">
+<p>Foreman&#160;server or Smart&#160;Proxy&#160;server sends updates to the FreeIPA server, however automembership rules are only applied at initial registration.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On the FreeIPA server, create a host group:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ipa hostgroup-add <em>hostgroup_name</em> --desc=<em>hostgroup_description</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create an <code>automembership</code> rule:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ipa automember-add --type=hostgroup <em>hostgroup_name</em> <em>automember_rule</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Where you can use the following options:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>automember-add</code> flags the group as an automember group.</p>
+</li>
+<li>
+<p><code>--type=hostgroup</code> identifies that the target group is a host group, not a user group.</p>
+</li>
+<li>
+<p><code><em>automember_rule</em></code> adds the name you want to identify the automember rule by.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Define an automembership condition based on the <code>userclass</code> attribute:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ipa automember-add-condition --key=userclass --type=hostgroup --inclusive-regex=<em>^webserver</em> <em>hostgroup_name</em>
+----------------------------------
+Added condition(s) to "<em>hostgroup_name</em>"
+----------------------------------
+Automember Rule: <em>automember_rule</em>
+Inclusive Regex: userclass=<em>^webserver</em>
+----------------------------
+Number of conditions added 1
+----------------------------</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Where you can use the following options:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>automember-add-condition</code> adds regular expression conditions to identify group members.</p>
+</li>
+<li>
+<p><code>--key=userclass</code> specifies the key attribute as <code>userclass</code>.</p>
+</li>
+<li>
+<p><code>--type=hostgroup</code> identifies that the target group is a host group, not a user group.</p>
+</li>
+<li>
+<p><code>--inclusive-regex=</code> <em>^webserver</em> identifies matching values with a regular expression pattern.</p>
+</li>
+<li>
+<p><em>hostgroup_name</em> &#8211; identifies the target host group&#8217;s name.</p>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>When a system is added to Foreman&#160;server&#8217;s <em>hostgroup_name</em> host group, it is added automatically to the FreeIPA server&#8217;s "<em>hostgroup_name</em>" host group.
+FreeIPA host groups allow for Host-Based Access Controls (HBAC), sudo policies and other FreeIPA functions.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</li>
+</ul>
 </div>
 </li>
 </ol>
