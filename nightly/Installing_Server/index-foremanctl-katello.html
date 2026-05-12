@@ -293,6 +293,13 @@ SOFTWARE.
 <li><a href="#configuring-hosts-to-use-an-alternate-cname-for-content-management_foreman">4.2.2. Configuring hosts to use an alternate Foreman CNAME for content management</a></li>
 </ul>
 </li>
+<li><a href="#configuring-foreman-server-with-a-custom-ssl-certificate">4.3. Configuring Foreman&#160;server with a custom SSL certificate</a>
+<ul class="sectlevel3">
+<li><a href="#creating-a-custom-ssl-certificate_foreman">4.3.1. Creating a custom SSL certificate for Foreman&#160;server</a></li>
+<li><a href="#Deploying_a_Custom_SSL_Certificate_to_Server_foreman">4.3.2. Deploying a custom SSL certificate to Foreman&#160;server</a></li>
+</ul>
+</li>
+<li><a href="#resetting-custom-ssl-certificate-to-default-self-signed-certificate-on-foreman_foreman">4.4. Resetting SSL certificate to default self-signed certificate on Foreman&#160;server</a></li>
 </ul>
 </li>
 </ul>
@@ -1630,6 +1637,320 @@ baseurl=https://<em>My-Alternate-FQDN.example.com</em>/pulp/content/</code></pre
 </li>
 </ul>
 </div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="configuring-foreman-server-with-a-custom-ssl-certificate"><a class="anchor" href="#configuring-foreman-server-with-a-custom-ssl-certificate"></a>4.3. Configuring Foreman&#160;server with a custom SSL certificate</h3>
+<div class="paragraph _abstract">
+<p>By default, Foreman uses a self-signed SSL certificate to enable encrypted communications between Foreman&#160;server, Smart&#160;Proxy&#160;servers, and all hosts.
+If you cannot use a Foreman self-signed certificate, you can configure Foreman&#160;server to use an SSL certificate signed by an external certificate authority (CA).</p>
+</div>
+<div class="paragraph">
+<p>When you configure Foreman with custom SSL certificates, you must fulfill the following requirements:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>You must use the privacy-enhanced mail (PEM) encoding for the SSL certificates.</p>
+</li>
+<li>
+<p>You must not use the same SSL certificate for both Foreman&#160;server and Smart&#160;Proxy&#160;server.</p>
+</li>
+<li>
+<p>The same CA must sign certificates for Foreman&#160;server and Smart&#160;Proxy&#160;server.</p>
+</li>
+<li>
+<p>An SSL certificate must not also be a CA certificate.</p>
+</li>
+<li>
+<p>An SSL certificate must include a subject alt name (SAN) entry that matches the common name (CN).</p>
+</li>
+<li>
+<p>An SSL certificate must be allowed for Key Encipherment using a Key Usage extension.</p>
+</li>
+<li>
+<p>An SSL certificate must not have a shortname as the CN.</p>
+</li>
+<li>
+<p>You must not set a passphrase for the private key.</p>
+</li>
+<li>
+<p>If you use a certificate signed by an intermediate CA, you must provide the full chain of certificates.
+Your certificate must start with the Root CA, contain one or more intermediate CAs, and end with your server certificate.</p>
+</li>
+</ul>
+</div>
+<div class="sect3">
+<h4 id="creating-a-custom-ssl-certificate_foreman"><a class="anchor" href="#creating-a-custom-ssl-certificate_foreman"></a>4.3.1. Creating a custom SSL certificate for Foreman&#160;server</h4>
+<div class="paragraph _abstract">
+<p>Use this procedure to create a custom SSL certificate for Foreman&#160;server.
+If you already have a custom SSL certificate for Foreman&#160;server, skip this procedure.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>To store all the source certificate files, create a directory that is accessible only to the <code>root</code> user:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># mkdir /root/foreman_cert</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create a private key with which to sign the certificate signing request (CSR).
+The private key must be unencrypted:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># openssl genrsa -out /root/foreman_cert/foreman_cert_key.pem 4096</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you already have a private key, skip this step.</p>
+</div>
+</li>
+<li>
+<p>Optional: Verify that the key is unencrypted:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># openssl pkey -noout -in /root/foreman_cert/foreman_cert_key.pem</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the command does not ask for a password, the key is unencrypted.
+If your private key is password-protected, remove the password.</p>
+</div>
+</li>
+<li>
+<p>Create the <code>/root/foreman_cert/openssl.cnf</code> configuration file for the CSR and include the following content:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">[ req ]
+req_extensions = v3_req
+distinguished_name = req_distinguished_name
+prompt = no
+
+[ req_distinguished_name ]
+commonName = <em>foreman.example.com</em>
+
+[ v3_req ]
+basicConstraints = CA:FALSE
+keyUsage = digitalSignature, keyEncipherment
+extendedKeyUsage = serverAuth, clientAuth
+subjectAltName = @alt_names
+
+[ alt_names ]
+DNS.1 = <em>foreman.example.com</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For more information about the <code>[ v3_req ]</code> parameters and their purpose, see <a href="https://www.rfc-editor.org/rfc/rfc5280">RFC 5280: Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List (CRL) Profile</a>.</p>
+</div>
+</li>
+<li>
+<p>Optional: If you want to add Distinguished Name (DN) details to the CSR, add the following information to the <code>[ req_distinguished_name ]</code> section:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">[req_distinguished_name]
+CN = <em>foreman.example.com</em>
+countryName = <em>My_Country_Name</em>
+stateOrProvinceName = <em>My_State_Or_Province_Name</em>
+localityName = <em>My_Locality_Name</em>
+organizationName = <em>My_Organization_Or_Company_Name</em>
+organizationalUnitName = <em>My_Organizational_Unit_Name</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The options used in the configuration file include the following:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>countryName</code></dt>
+<dd>
+<p>The country represented by a two-letter code</p>
+</dd>
+<dt class="hdlist1"><code>stateOrProvinceName</code></dt>
+<dd>
+<p>Full name of the state or province</p>
+</dd>
+<dt class="hdlist1"><code>localityName</code></dt>
+<dd>
+<p>Full name of the locality (example: New York)</p>
+</dd>
+<dt class="hdlist1"><code>organizationalUnitName</code></dt>
+<dd>
+<p>Division responsible for the certificate (example: IT department)</p>
+</dd>
+</dl>
+</div>
+</li>
+<li>
+<p>Generate CSR:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># openssl req -new \
+-key <em>/root/foreman_cert/foreman_cert_key.pem</em> \
+-config <em>/root/foreman_cert/openssl.cnf</em> \
+-out <em>/root/foreman_cert/foreman_cert_csr.pem</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The options used in the configuration file include the following:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>-key</code></dt>
+<dd>
+<p>Path to the private key</p>
+</dd>
+<dt class="hdlist1"><code>-config</code></dt>
+<dd>
+<p>Path to the configuration file</p>
+</dd>
+<dt class="hdlist1"><code>-out</code></dt>
+<dd>
+<p>Path to the CSR to generate</p>
+</dd>
+</dl>
+</div>
+</li>
+<li>
+<p>Send the certificate signing request to the certificate authority (CA).
+The same CA must sign certificates for Foreman&#160;server and Smart&#160;Proxy&#160;server.</p>
+<div class="paragraph">
+<p>When you submit the request, specify the lifespan of the certificate.
+The method for sending the certificate request varies, so consult the CA for the preferred method.
+In response to the request, you can expect to receive a CA bundle and a signed certificate, in separate files.</p>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="Deploying_a_Custom_SSL_Certificate_to_Server_foreman"><a class="anchor" href="#Deploying_a_Custom_SSL_Certificate_to_Server_foreman"></a>4.3.2. Deploying a custom SSL certificate to Foreman&#160;server</h4>
+<div class="paragraph _abstract">
+<p>Use this procedure to configure your Foreman&#160;server to use a custom SSL certificate signed by a Certificate Authority.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Important</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Do not store the SSL certificates or <code>.tar</code> bundles in <code>/tmp</code> or <code>/var/tmp</code> directory.
+The operating system removes files from these directories periodically.
+As a result,
+<code>foremanctl</code>
+fails to execute while enabling features or upgrading Foreman&#160;server.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>Update certificates on your Foreman&#160;server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foremanctl deploy \
+--certificate-source custom_server \
+--certificate-server-certificate "<em>/root/foreman_cert/foreman_cert.pem</em>" \
+--certificate-server-key "<em>/root/foreman_cert/foreman_cert_key.pem</em>" \
+--certificate-server-ca-certificate "<em>/root/foreman_cert/ca_cert_bundle.pem</em>"</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The options used in the command include the following:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>--certificate-source=custom_server</code></dt>
+<dd>
+<p>Sets the certificate source to custom server certificates provided by the user.</p>
+</dd>
+<dt class="hdlist1"><code>--certificate-server-certificate</code></dt>
+<dd>
+<p>Path to Foreman&#160;server certificate file that is signed by a Certificate Authority.</p>
+</dd>
+<dt class="hdlist1"><code>--certificate-server-key</code></dt>
+<dd>
+<p>Path to the private key for the Foreman&#160;server certificate.</p>
+</dd>
+<dt class="hdlist1"><code>--certificate-server-ca-certificate</code></dt>
+<dd>
+<p>Path to the Certificate Authority bundle.</p>
+</dd>
+</dl>
+</div>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Verification</div>
+<ol class="arabic">
+<li>
+<p>On a computer with network access to Foreman&#160;server, navigate to the following URL: <code>https://foreman.example.com</code>.</p>
+</li>
+<li>
+<p>In your browser, view the certificate details to verify the deployed certificate.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="resetting-custom-ssl-certificate-to-default-self-signed-certificate-on-foreman_foreman"><a class="anchor" href="#resetting-custom-ssl-certificate-to-default-self-signed-certificate-on-foreman_foreman"></a>4.4. Resetting SSL certificate to default self-signed certificate on Foreman&#160;server</h3>
+<div class="paragraph _abstract">
+<p>If you want to revert to the default configuration, you can reset a custom SSL certificate to the default self-signed certificate on your Foreman&#160;server.</p>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>Reset the SSL certificate to default self-signed certificate:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foremanctl deploy --certificate-source=default</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<div class="title">Verification</div>
+<p>Verify that the following parameters in <code>/etc/foreman-installer/scenarios.d/foreman-answers.yaml</code> have no values:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>server_cert:</p>
+</li>
+<li>
+<p>server_key:</p>
+</li>
+<li>
+<p>server_cert_req:</p>
+</li>
+<li>
+<p>server_ca_cert:</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="https://docs.theforeman.org/nightly/Installing_Proxy/index-foremanctl-katello.html#resetting-custom-ssl-certificate-to-default-self-signed-certificate-on-smart-proxy_smart-proxy">Resetting SSL certificate to default self-signed certificate on Smart&#160;Proxy&#160;server in <em>Installing a Smart&#160;Proxy&#160;Server nightly on Enterprise Linux</em></a></p>
+</li>
+<li>
+<p><a href="https://docs.theforeman.org/nightly/Managing_Hosts/index-foremanctl-katello.html#resetting-custom-ssl-certificate-to-default-self-signed-certificate-on-hosts_managing-hosts">Resetting SSL certificate to default self-signed certificate on hosts in <em>Managing hosts</em></a></p>
+</li>
+</ul>
+</div>
 <!-- "Fork me on GitHub" CSS ribbon v0.2.3 | MIT License -->
 <!-- https://github.com/simonwhitaker/github-fork-ribbon-css -->
 <a class="release-ribbon right-top fixed" data-ribbon="Pre-release version" title="Pre-release version">
@@ -1638,7 +1959,6 @@ Pre-release version
 <a class="issue-ribbon right-bottom fixed" href="https://github.com/theforeman/foreman-documentation/issues/new?template=report-issue.md" data-ribbon="Report issue" title="Report issue">
 Report issue
 </a>
-</div>
 </div>
 </div>
 </div>
