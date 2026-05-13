@@ -19,8 +19,10 @@ As a maintainer, I will:
 * Only merge PRs if the Github Actions are green.
 * Try to review PRs in a timely manner.
 * Keep non-trivial PRs open for at least 24 hours (72 hours if over the weekend) to allow for input from the community.
-Examples of trivial PRs: Fixing a typo, fixing markup, or fixing links.
+Examples of trivial PRs: Fixing a typo, fixing markup, fixing links, updating release version configuration files (e.g., `web/releases/*.json`).
+Time-critical release changes, such as release notes, can be merged without waiting 24 hours, but still require peer review and an ACK.
 Non-trivial PRs might not only benefit from additional review but they also represent an opportunity for community members to ask questions and learn.
+All PRs, including trivial ones, require peer review and an ACK before merging.
 
 ## Pull request checklists
 
