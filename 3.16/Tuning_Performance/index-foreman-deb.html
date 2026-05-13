@@ -237,7 +237,7 @@ SOFTWARE.
 <h1>Tuning performance of Foreman</h1>
 <div class="details">
 <span id="revnumber">version 3.16 (unsupported),</span>
-<span id="revdate">published May 05 2026</span>
+<span id="revdate">published May 13 2026</span>
 </div>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
@@ -271,7 +271,7 @@ SOFTWARE.
 </li>
 <li><a href="#tuning-postgresql">4.6. Tuning PostgreSQL</a>
 <ul class="sectlevel3">
-<li><a href="#Benchmarking_raw_DB_Performance_performance-tuning">4.6.1. Benchmarking raw DB performance</a></li>
+<li><a href="#benchmarking-raw-database-performance">4.6.1. Benchmarking raw database performance</a></li>
 </ul>
 </li>
 <li><a href="#Redis_Tuning_performance-tuning">4.7. Redis tuning</a></li>
@@ -393,8 +393,13 @@ Due to databases having Sparse Memory Access patterns instead of Contiguous Memo
 To improve PostgreSQL and Redis performance, disable Transparent Hugepage.
 In deployments where the databases are running on separate servers, there may be a small benefit to using Transparent Hugepage on the Foreman&#160;server only.</p>
 </div>
-<div class="paragraph">
-<p>For more information on how to disable Transparent Hugepage, see <a href="https://access.redhat.com/solutions/1320153">How to disable transparent hugepages (THP) on Red Hat Enterprise Linux</a>.</p>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="https://access.redhat.com/solutions/1320153">How to disable transparent hugepages (THP) on Red Hat Enterprise Linux</a></p>
+</li>
+</ul>
 </div>
 </div>
 </div>
@@ -462,7 +467,7 @@ Each Puma worker consumes around 1 GiB of RAM.</p>
 <div class="sect3">
 <h4 id="Manually_tuning_Puma_workers_and_threads_count_performance-tuning"><a class="anchor" href="#Manually_tuning_Puma_workers_and_threads_count_performance-tuning"></a>4.2.2. Manually tuning Puma workers and threads count</h4>
 <div class="paragraph _abstract">
-<p>If you decide not to rely on <a href="#Puma_Workers_and_Threads_Auto_Tuning_performance-tuning">Puma workers and threads auto-tuning</a>, you can apply custom numbers for these tunables.
+<p>If you decide not to rely on Puma workers and threads auto-tuning, you can apply custom numbers for these tunables.
 In the example below we are using 2 workers and 5 threads:</p>
 </div>
 <div class="listingblock">
@@ -933,19 +938,18 @@ Foreman community recommends setting the value to <code>2000</code> as it is for
 </ol>
 </div>
 <div class="sect3">
-<h4 id="Benchmarking_raw_DB_Performance_performance-tuning"><a class="anchor" href="#Benchmarking_raw_DB_Performance_performance-tuning"></a>4.6.1. Benchmarking raw DB performance</h4>
+<h4 id="benchmarking-raw-database-performance"><a class="anchor" href="#benchmarking-raw-database-performance"></a>4.6.1. Benchmarking raw database performance</h4>
 <div class="paragraph _abstract">
-<p>To get a list of the top table sizes in disk space for
-Foreman,
-check <a href="https://github.com/RedHatSatellite/satellite-support/blob/master/postgres-size-report">postgres-size-report</a> script in <a href="https://github.com/RedHatSatellite/satellite-support">satellite-support</a> git repository.</p>
+<p>You can use <code>pgbench</code> to measure raw PostgreSQL performance on your system and validate storage behavior before or after tuning.
+Interpreting benchmark results requires a database large enough relative to memory to avoid measuring only cached workloads.</p>
 </div>
-<div class="paragraph">
-<p>PGbench utility (note you may need to resize PostgreSQL data directory <code>/var/lib/postgresql</code> directory to 100 GiB or what does benchmark take to run) might be used to measure PostgreSQL performance on your system.
-Use <code>apt install postgresql-contrib</code> to install it.
-For more information, see <a href="https://github.com/RedHatSatellite/satellite-support">github.com/RedHatSatellite/satellite-support</a>.</p>
-</div>
-<div class="paragraph">
-<p>Choice of filesystem for PostgreSQL data directory might matter as well.</p>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>A non-production system with a valid backup.</p>
+</li>
+</ul>
 </div>
 <div class="admonitionblock warning">
 <table>
@@ -957,18 +961,55 @@ For more information, see <a href="https://github.com/RedHatSatellite/satellite-
 <div class="ulist">
 <ul>
 <li>
-<p>Never do any testing on production system and without valid backup.</p>
+<p>Never run benchmarks on a production system or without a valid backup.</p>
 </li>
 <li>
-<p>Before you start testing, see how big the database files are.
-Testing with a really small database would not produce any meaningful results.
-For example, if the DB is only 20 GiB and the buffer pool is 32 GiB, it won&#8217;t show problems with large number of connections because the data will be completely buffered.</p>
+<p>Before you start testing, determine how large the database files are.
+Testing with a very small database does not produce meaningful results.
+For example, if the database is only 20 GiB and the buffer pool is 32 GiB, the benchmark does not show problems with a large number of connections because the data fits entirely in the buffer pool.</p>
 </li>
 </ul>
 </div>
 </td>
 </tr>
 </table>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>To identify the largest tables by disk space for
+Foreman,
+use the <a href="https://github.com/RedHatSatellite/satellite-support/blob/master/postgres-size-report">postgres-size-report</a> script in the <a href="https://github.com/RedHatSatellite/satellite-support">satellite-support</a> Git repository.
+For more information, see <a href="https://github.com/RedHatSatellite/satellite-support">github.com/RedHatSatellite/satellite-support</a>.</p>
+</li>
+<li>
+<p>Ensure the PostgreSQL data directory <code>/var/lib/postgresql</code> has enough space for the benchmark workload.
+You might need to resize the volume to 100 GiB or more, depending on how long the benchmark runs and how much data it generates.</p>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Choice of filesystem for PostgreSQL data directory might matter as well.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Install the PGBench utility:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># apt install postgresql-contrib</pre>
+</div>
+</div>
+</li>
+</ol>
 </div>
 </div>
 </div>
@@ -980,8 +1021,15 @@ Foreman uses Redis for caching and Dynflow uses Redis to track its tasks.
 Given the way Foreman uses Redis, its memory consumption should be stable.</p>
 </div>
 <div class="paragraph">
-<p>The Redis authors recommend disabling Transparent Hugepage on servers running Redis.
-For more information, see <a href="#Disable_Transparent_Hugepage_performance-tuning">Disable Transparent Hugepage</a>.</p>
+<p>The Redis authors recommend disabling Transparent Hugepage on servers running Redis.</p>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="#Disable_Transparent_Hugepage_performance-tuning">Disable Transparent Hugepage</a></p>
+</li>
+</ul>
 </div>
 <!-- "Fork me on GitHub" CSS ribbon v0.2.3 | MIT License -->
 <!-- https://github.com/simonwhitaker/github-fork-ribbon-css -->
