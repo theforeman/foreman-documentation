@@ -59,7 +59,7 @@ For each identified user story:
 2. **Add the assembly header** - Include `:_mod-docs-content-type: ASSEMBLY`
 3. **Include relevant modules** - Copy the appropriate module includes for this user story
 4. **Create or update the introductory concept module** - Write a focused concept module with an abstract for this specific user story if needed
-5. **Update parent files** - Replace the original assembly include with includes for all new assemblies
+5. **Update parent files** - Replace the original assembly include with includes for all new assemblies in the `master.adoc` file
 6. **Delete the original assembly** - Once all content is split and includes are updated
 
 ### Step 4: Report findings
