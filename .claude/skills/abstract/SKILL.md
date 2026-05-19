@@ -16,6 +16,12 @@ It is prefixed by the `[role="_abstract"]` AsciiDoc tag.
 
 Abstracts, also called short descriptions, help readers and AI-powered search tools find the information that they need and confirm that they are in the right place.
 
+Abstracts typically contain the following information:
+
+- The "What"
+- The "Why"
+- Where appropriate, an example use case
+
 ## Instructions
 
 When reviewing or writing the abstract, follow these principles:
@@ -26,7 +32,6 @@ When reviewing or writing the abstract, follow these principles:
 - Do not use sentence fragments.
 - When needed, address the user as "you".
 - Follow these length constraints: 50-300 characters, 1-2 sentences, a single paragraph.
-- Write one sentence per line.
 - For module-type-specific abstract rules, look up the reference file that matches the `:_mod-docs-content-type:` AsciiDoc attribute in the module (open and apply that file in full):
   - `CONCEPT` → [references/concept.md](references/concept.md)
   - `PROCEDURE` → [references/procedure.md](references/procedure.md)
