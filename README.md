@@ -54,7 +54,7 @@ When adding a new rule to the `foreman-documentation` style, make sure it does n
 
 ### `.claude` subdirectory
 
-This repository contains skills for AI agents that you can use with Claude or Cursor.
+This repository contains skills for AI agents that you can use with Claude or Cursor editor.
 You can also add your own skills that you use when contributing to the documentation.
 For more information, see [AgentSkills.io](https://agentskills.io).
 
