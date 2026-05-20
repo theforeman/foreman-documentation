@@ -1,6 +1,6 @@
 ---
 name: abstract
-description: Review or write an abstract (DITA short description) for a documentation module
+description: Review or write an abstract (also called a short description) for a documentation module
 ---
 # Review or write abstract
 
@@ -30,7 +30,7 @@ When reviewing or writing the abstract, follow these principles:
 - Avoid self-referential language (for example: avoid "This procedure...", "This module...", "This table...").
 - Avoid feature-centric language (for example: avoid "This feature...").
 - Do not use sentence fragments.
-- When needed, address the user as "you".
+- When addressing the user, address them as "you".
 - Follow these length constraints: 50-300 characters, 1-2 sentences, a single paragraph.
 - For module-type-specific abstract rules, look up the reference file that matches the `:_mod-docs-content-type:` AsciiDoc attribute in the module (open and apply that file in full):
   - `CONCEPT` → [references/concept.md](references/concept.md)
