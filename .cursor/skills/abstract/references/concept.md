@@ -1,6 +1,6 @@
 # Abstract instructions: concept modules
 
-When the module has `:_mod-docs-content-type: CONCEPT`, follow these rules for the abstract (short description):
+When the module is a concept module (is named `con_*.adoc` or includes `:_mod-docs-content-type: CONCEPT` as its first line), follow these rules for the abstract (short description):
 
 - Introduce the concept and provide a concise answer to the question "What is this?" and in some cases "How is this knowledge useful to the user?"
 - Avoid using the short description to lead in or build up to a topic.

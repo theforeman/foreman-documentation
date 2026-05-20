@@ -1,6 +1,6 @@
 # Abstract instructions: reference modules
 
-When the module has `:_mod-docs-content-type: REFERENCE`, follow these rules for the abstract (short description):
+When the module is a reference module (is named `ref_*.adoc` or includes `:_mod-docs-content-type: REFERENCE` as its first line), follow these rules for the abstract (short description):
 
 - Briefly describe what the reference item does, what it is, or what it is used for.
 

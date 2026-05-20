@@ -1,11 +1,11 @@
 # Abstract instructions: procedure modules
 
-When the module has `:_mod-docs-content-type: PROCEDURE`, follow these rules for the abstract (short description):
+When the module is a procedure module (is named `proc_*.adoc` or includes `:_mod-docs-content-type: PROCEDURE` as its first line), follow these rules for the abstract (short description):
 - Explain the task that users can accomplish, the benefits of the task, and the purpose of the task.
 - Do not simply repeat the title.
 - Include information that will help users understand when the task is appropriate or necessary.
 - Use phrases such as "You can [action] to [benefit]", "To [goal], configure [feature]", or "[Action] [what] to [why]".
-- When the abstract is too short, thin, or generic, add more information about why the task is beneficial.
+- When the abstract is too short or generic, add more information about why the task is beneficial.
 
 ## Examples of good abstracts
 
