@@ -510,10 +510,11 @@ SOFTWARE.
 <li><a href="#creating-a-job-template-by-using-cli">20.6.2. Creating a job template by using Hammer CLI</a></li>
 <li><a href="#importing-an-ansible-playbook-by-name_managing-hosts">20.6.3. Importing an Ansible Playbook by name</a></li>
 <li><a href="#importing-all-available-ansible-playbooks_managing-hosts">20.6.4. Importing all available Ansible Playbooks</a></li>
-<li><a href="#customizing-job-templates">20.6.5. Customizing job templates</a></li>
-<li><a href="#scheduling-a-recurring-ansible-job-for-a-host">20.6.6. Scheduling a recurring Ansible job for a host</a></li>
-<li><a href="#scheduling-a-recurring-ansible-job-for-a-host-group">20.6.7. Scheduling a recurring Ansible job for a host group</a></li>
-<li><a href="#Using_Ansible_Provider_for_Package_and_Errata_Actions_managing-hosts">20.6.8. Using Ansible provider for package and errata actions</a></li>
+<li><a href="#running-an-ansible-playbook-from-foreman_managing-hosts">20.6.5. Running an Ansible Playbook from Foreman</a></li>
+<li><a href="#customizing-job-templates">20.6.6. Customizing job templates</a></li>
+<li><a href="#scheduling-a-recurring-ansible-job-for-a-host">20.6.7. Scheduling a recurring Ansible job for a host</a></li>
+<li><a href="#scheduling-a-recurring-ansible-job-for-a-host-group">20.6.8. Scheduling a recurring Ansible job for a host group</a></li>
+<li><a href="#Using_Ansible_Provider_for_Package_and_Errata_Actions_managing-hosts">20.6.9. Using Ansible provider for package and errata actions</a></li>
 </ul>
 </li>
 <li><a href="#remote-execution-reference_managing-hosts">20.7. Remote execution reference</a>
@@ -3211,7 +3212,7 @@ For more information, see <a href="#Template_Writing_Reference_managing-hosts">T
 <ul>
 <li>
 <p>Ansible integration is enabled on Foreman.
-For more information, see <a href="https://docs.theforeman.org/3.19/Managing_Configurations_Ansible/index-containerized-katello.html#Enabling_Ansible_Integration_with_foreman_ansible">Enabling Ansible integration with Foreman</a> in <em>Configuring hosts by using Ansible</em>.</p>
+For more information, see <a href="https://docs.theforeman.org/3.19/Managing_Configurations_Ansible/index-containerized-katello.html#Enabling_the_Ansible_plugin_foreman_ansible">Enabling the Ansible plugin</a> in <em>Configuring hosts by using Ansible</em>.</p>
 </li>
 <li>
 <p>The required Ansible roles have been imported from your Smart&#160;Proxy to Foreman.
@@ -10278,7 +10279,117 @@ For more information, see <a href="#configuring-and-setting-up-remote-jobs">Conf
 </div>
 </div>
 <div class="sect3">
-<h4 id="customizing-job-templates"><a class="anchor" href="#customizing-job-templates"></a>20.6.5. Customizing job templates</h4>
+<h4 id="running-an-ansible-playbook-from-foreman_managing-hosts"><a class="anchor" href="#running-an-ansible-playbook-from-foreman_managing-hosts"></a>20.6.5. Running an Ansible Playbook from Foreman</h4>
+<div class="paragraph _abstract">
+<p>You can run an Ansible Playbook on a host or host group by executing a remote job in Foreman.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Important</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>When you execute an Ansible Playbook on multiple hosts, Foreman renders the playbook for all hosts in the batch, but only uses the rendered playbook of the first host to execute it on all hosts in the batch.
+Therefore, you cannot modify the behavior of the playbook per host by using a host parameter in the template control flow constructs.
+Host parameters are translated into Ansible variables, so you can use them to control the behavior in native Ansible constructs.
+For more information, see <a href="https://bugzilla.redhat.com/show_bug.cgi?id=2282275">BZ#2282275</a>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Ansible plugin in Foreman is enabled.</p>
+</li>
+<li>
+<p>Remote job execution is configured.
+For more information, see <a href="#configuring-and-setting-up-remote-jobs">Configuring and setting up remote jobs</a>.</p>
+</li>
+<li>
+<p>You have an Ansible Playbook ready to use.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Monitor</strong> &gt; <strong>Jobs</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Run Job</strong>.</p>
+</li>
+<li>
+<p>In <strong>Job category</strong>, select <code>Ansible Playbook</code>.</p>
+</li>
+<li>
+<p>In <strong>Job template</strong>, select <code>Ansible - Run playbook</code>.</p>
+</li>
+<li>
+<p>Click <strong>Next</strong>.</p>
+</li>
+<li>
+<p>Select the hosts on which you want to run the playbook.</p>
+</li>
+<li>
+<p>In the <strong>playbook</strong> field, paste the content of your Ansible Playbook.</p>
+</li>
+<li>
+<p>Follow the wizard to complete setting the remote job.
+For more information, see <a href="#configuring-and-setting-up-remote-jobs">Configuring and setting up remote jobs</a>.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong> to run the Ansible Playbook on your hosts.</p>
+</li>
+</ol>
+</div>
+<div class="exampleblock">
+<div class="title">Example 6. Example Ansible Playbook to access host parameters</div>
+<div class="content">
+<div class="paragraph">
+<p>You can use host parameters from Foreman in Ansible Playbooks.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-yaml" data-lang="yaml">---
+- name: "Ansible Playbook to access host parameters"
+  hosts: all
+  tasks:
+    - name: "View a host parameter"
+      ansible.builtin.debug:
+        msg: "{{ hostvars[inventory_hostname]['<em>My_Host_Parameter</em>'] }}"
+...</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Ansible will access the host parameter and show its value.
+If you set the host parameter to an ERB template, for example, <code>&lt;%= @host.capabilities.include?(:snapshots) %&gt;</code>, Foreman will render it and provide the result to Ansible.
+Ansible receives only the rendered value, not the ERB template itself.</p>
+</div>
+<div class="paragraph">
+<p>For more information, see <a href="#Host_Parameter_Hierarchy_managing-hosts">Host parameter hierarchy</a>.</p>
+</div>
+</div>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="#importing-an-ansible-playbook-by-name_managing-hosts">Importing an Ansible Playbook by name</a></p>
+</li>
+<li>
+<p><a href="#importing-all-available-ansible-playbooks_managing-hosts">Importing all available Ansible Playbooks</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="customizing-job-templates"><a class="anchor" href="#customizing-job-templates"></a>20.6.6. Customizing job templates</h4>
 <div class="paragraph _abstract">
 <p>Foreman provides default job templates that you can use for executing jobs.
 Default job templates are locked for editing but you can clone them and edit the clone.</p>
@@ -10337,7 +10448,7 @@ You can also add ERB syntax to customize your YAML Ansible template.</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="scheduling-a-recurring-ansible-job-for-a-host"><a class="anchor" href="#scheduling-a-recurring-ansible-job-for-a-host"></a>20.6.6. Scheduling a recurring Ansible job for a host</h4>
+<h4 id="scheduling-a-recurring-ansible-job-for-a-host"><a class="anchor" href="#scheduling-a-recurring-ansible-job-for-a-host"></a>20.6.7. Scheduling a recurring Ansible job for a host</h4>
 <div class="paragraph _abstract">
 <p>You can schedule a recurring Ansible job to run on a host at a set interval.
 This is useful for regular tasks such as compliance checks, patching, or configuration drift remediation.</p>
@@ -10384,7 +10495,7 @@ This is useful for regular tasks such as compliance checks, patching, or configu
 </div>
 </div>
 <div class="sect3">
-<h4 id="scheduling-a-recurring-ansible-job-for-a-host-group"><a class="anchor" href="#scheduling-a-recurring-ansible-job-for-a-host-group"></a>20.6.7. Scheduling a recurring Ansible job for a host group</h4>
+<h4 id="scheduling-a-recurring-ansible-job-for-a-host-group"><a class="anchor" href="#scheduling-a-recurring-ansible-job-for-a-host-group"></a>20.6.8. Scheduling a recurring Ansible job for a host group</h4>
 <div class="paragraph _abstract">
 <p>You can schedule a recurring Ansible job to run on a host group at a set interval.
 This is useful for regular tasks such as compliance checks, patching, or configuration drift remediation across all hosts that are assigned to this host group.</p>
@@ -10428,7 +10539,7 @@ This is useful for regular tasks such as compliance checks, patching, or configu
 </div>
 </div>
 <div class="sect3">
-<h4 id="Using_Ansible_Provider_for_Package_and_Errata_Actions_managing-hosts"><a class="anchor" href="#Using_Ansible_Provider_for_Package_and_Errata_Actions_managing-hosts"></a>20.6.8. Using Ansible provider for package and errata actions</h4>
+<h4 id="Using_Ansible_Provider_for_Package_and_Errata_Actions_managing-hosts"><a class="anchor" href="#Using_Ansible_Provider_for_Package_and_Errata_Actions_managing-hosts"></a>20.6.9. Using Ansible provider for package and errata actions</h4>
 <div class="paragraph _abstract">
 <p>By default, Foreman is configured to use the Script provider templates for remote execution jobs.
 If you prefer using Ansible job templates for your remote jobs, you can configure Foreman to use them by default for remote execution features associated with them.</p>
@@ -12324,7 +12435,7 @@ In this example, a report template is used, but the steps are applicable to othe
 You can use these snippets as a starting point when writing your own templates.</p>
 </div>
 <div class="exampleblock">
-<div class="title">Example 6. Checking if a host has Puppet and Puppetlabs enabled</div>
+<div class="title">Example 7. Checking if a host has Puppet and Puppetlabs enabled</div>
 <div class="content">
 <div class="paragraph">
 <p>The following example checks if the host has the Puppet and Puppetlabs repositories enabled:</p>
@@ -12341,7 +12452,7 @@ puppetlabs_enabled = host_param_true?('enable-puppetlabs-repo')
 </div>
 </div>
 <div class="exampleblock">
-<div class="title">Example 7. Capturing major and minor versions of a host&#8217;s operating system</div>
+<div class="title">Example 8. Capturing major and minor versions of a host&#8217;s operating system</div>
 <div class="content">
 <div class="paragraph">
 <p>The following example shows how to capture the minor and major version of the host&#8217;s operating system, which can be used for package related decisions:</p>
@@ -12361,7 +12472,7 @@ os_minor = @host.operatingsystem.minor.to_i
 </div>
 </div>
 <div class="exampleblock">
-<div class="title">Example 8. Importing snippets to a template</div>
+<div class="title">Example 9. Importing snippets to a template</div>
 <div class="content">
 <div class="paragraph">
 <p>The following example imports the <strong>subscription_manager_registration</strong> snippet to the template and indents it by four spaces:</p>
@@ -12376,7 +12487,7 @@ end %&gt;</pre>
 </div>
 </div>
 <div class="exampleblock">
-<div class="title">Example 9. Conditionally importing a Kickstart snippet</div>
+<div class="title">Example 10. Conditionally importing a Kickstart snippet</div>
 <div class="content">
 <div class="paragraph">
 <p>The following example imports the <code>kickstart_networking_setup</code> snippet if the host&#8217;s subnet has the DHCP boot mode enabled:</p>
@@ -12392,7 +12503,7 @@ end %&gt;</pre>
 </div>
 </div>
 <div class="exampleblock">
-<div class="title">Example 10. Parsing values from host custom facts</div>
+<div class="title">Example 11. Parsing values from host custom facts</div>
 <div class="content">
 <div class="paragraph">
 <p>You can use the <code>host.facts</code> variable to parse values from a host&#8217;s facts and custom facts.
