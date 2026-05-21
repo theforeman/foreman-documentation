@@ -4,7 +4,14 @@
 = Preparing the source server for cloning
 
 [role="_abstract"]
-Prepare the source {ProjectServer} for cloning.
+To prepare the source {ProjectServer} for cloning, perform a backup of the {Project} data.
+Depending on the size of your Pulp data, you might need to transfer Pulp data to the target server manually.
+
+[NOTE]
+====
+While you can clone {ProjectServer} without Pulp data, you must transfer the Pulp data afterwards to achieve a fully working environment.
+If the target server does not include Pulp data, it is not a fully working {Project}.
+====
 
 .Procedure
 . Determine the size of the Pulp data:
@@ -13,8 +20,30 @@ Prepare the source {ProjectServer} for cloning.
 ----
 # du -sh /var/lib/pulp/
 ----
+. If you have a large amount of Pulp data, perform a backup without Pulp data and transfer it to the target server manually.
+This is recommended if you have more than 500 GB of Pulp data, or if you use a slow storage system, such as NFS, and have more than 100 GB of Pulp data.
+.. Perform a backup with PostgreSQL databases active excluding the Pulp data:
++
+[options="nowrap" subs="attributes"]
+----
+# {foreman-maintain} backup offline --skip-pulp-content \
+--assumeyes /var/backup
+----
+.. Stop and disable {Project} services:
++
+[options="nowrap" subs="attributes"]
+----
+# {foreman-maintain} service stop
+# {foreman-maintain} service disable
+----
+.. Copy the Pulp data to the target server:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# rsync --archive --partial --progress --compress \
+/var/lib/pulp/ _target_server.example.com:/var/lib/pulp/_
+----
 . If you have less than 500 GB of Pulp data, perform a backup with PostgreSQL databases active including the Pulp data.
-If you have more than 500 GB of Pulp data, skip the following steps and complete the steps in xref:pulp-data-considerations[] before you continue.
 +
 [options="nowrap" subs="attributes"]
 ----
@@ -27,6 +56,3 @@ If you have more than 500 GB of Pulp data, skip the following steps and complete
 # {foreman-maintain} service stop
 # {foreman-maintain} service disable
 ----
-
-.Next steps
-* xref:cloning-to-the-target-server[].
