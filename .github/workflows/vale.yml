@@ -82,11 +82,30 @@ jobs:
         if: steps.changed-files.outputs.any_changed == 'true'
         run: sudo apt-get install -y asciidoctor
 
+      - name: Preprocess assembly files for DITA linting
+        if: steps.changed-files.outputs.any_changed == 'true'
+        id: preprocess
+        run: |
+          # Make script executable
+          chmod +x .github/scripts/preprocess-vale-dita.sh
+
+          # Convert JSON array to space-separated list
+          FILES=$(echo '${{ steps.changed-files.outputs.all_changed_files }}' | jq -r '.[]' | tr '\n' ' ')
+
+          # Run preprocessing script with changed files
+          PREPROCESSED_OUTPUT=$(.github/scripts/preprocess-vale-dita.sh $FILES)
+
+          # Convert newline-separated output back to JSON array for vale-action
+          PREPROCESSED_FILES=$(echo "$PREPROCESSED_OUTPUT" | jq -R -s -c 'split("\n") | map(select(length > 0))')
+
+          # Save preprocessed file list for Vale step
+          echo "PREPROCESSED_FILES=$PREPROCESSED_FILES" >> $GITHUB_ENV
+
       - name: Vale DITA lint
         if: steps.changed-files.outputs.any_changed == 'true'
         uses: errata-ai/vale-action@v2
         with:
-          files: ${{ steps.changed-files.outputs.all_changed_files }}
+          files: ${{ env.PREPROCESSED_FILES }}
           filter_mode: diff_context
           vale_flags: "--no-exit --minAlertLevel=warning --config=.vale-dita.ini"
           reporter: github-pr-review
