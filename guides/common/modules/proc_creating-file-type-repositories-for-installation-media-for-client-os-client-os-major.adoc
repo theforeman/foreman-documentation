@@ -1,0 +1,86 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="creating-file-type-repositories-for-installation-media-for-{client-os-context}-{client-os-major-context}"]
+= Creating file type repositories for installation media for {client-os} {client-os-major}
+
+[role="_abstract"]
+You can use file type repositories to provide local installation media for {client-os}.
+This allows you to provision hosts running {client-os} {client-os-major} in disconnected environments.
+
+ifdef::ubuntu[]
+To provision {client-os} {client-os-major}, you need to provide both the ISO image and the extracted ISO image on your {ProjectServer} or the relevant {SmartProxyServer}.
+This example uses {ProjectServer}.
+endif::[]
+
+ifdef::orcharhino[]
+include::snip_file-type-repositories-for-installation-media-for-debian-and-ubuntu.adoc[]
+endif::[]
+
+.Procedure
+. In the {ProjectWebUI}, navigate to *Content* > *Products*.
+. Click *Create Product*.
+. Enter a *Name* for your product.
+. Optional: Select a sync plan from the *Sync Plan* drop down menu.
+. Click *Save* to create the product.
+. On the *Repositories* tab of the previously created product, click *New Repository*.
+. Enter a *Name* for the repository.
++
+If you use the file type repository as installation medium for offline installations, {Team} recommends adding `offline installation media` to indicate the offline installation capability, for example, `{client-os} {client-os-major} offline installation media`.
+. Select `file` as *Type*.
+ifdef::katello[]
+. In the *Upstream URL* field, enter the URL of the file type repository that contains your {client-os} {client-os-major} installation medium.
+endif::[]
+ifdef::orcharhino[]
+. Enter the *Upstream URL* from {atix-kb-debian-ubuntu-installation-media} in the _ATIX Service Portal_.
+endif::[]
+. Click *Save* to create the repository.
+. On the *Repositories* tab, select your previously created repository and click *Sync Now*.
+. After you have synchronized the repository, navigate to *Content* > *Products*.
+. Select the previously created product.
+. On the *Repositories* tab, select the previously created repository.
+. Copy the *Published At* URL.
+ifdef::debian[]
+. Navigate to *Hosts* > *Installation Media*.
+. Click *Create Medium*.
+. Enter a *Name* for the installation media.
++
+{Team} recommends adding `local` to indicate that the installation medium is stored on your {Project} locally.
+You can use this installation medium to provision hosts in disconnected environments.
+. Enter the copied URL as *Path*.
+. Select the *Operating System Family*.
+. Click *Submit* to create the installation media.
+endif::[]
+ifdef::ubuntu[]
+. On your {ProjectServer}, use the *Published At* URL from your synchronized file repository to download the ISO image:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+$ wget --directory-prefix /tmp/ https://{foreman-example-com}/pulp/content/_My_Organization_Label_/Library/custom/_My_Product_/_My_Repository_/{client-iso-image}
+----
+. Mount the ISO image:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# mount {client-iso-image} /mnt
+----
+. Provide the ISO image and the extracted directory under _{foreman-example-com}/pub_:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# mkdir --parents /var/www/html/pub/installation_media/{client-os-context}/{client-os-major}-x86_64/
+# cp {client-iso-image} /var/www/html/pub/installation_media/{client-os-context}/{client-os-major}-x86_64.iso
+# cp --archive /mnt/* /var/www/html/pub/installation_media/{client-os-context}/{client-os-major}-x86_64/
+----
++
+Ensure that the path in `/pub/` matches the path in your _Preseed default PXELinux Autoinstall_ template.
+. Unmount and delete the ISO image:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# umount /mnt/
+# rm --force {client-iso-image}
+----
+
+.Next steps
+* Use `\http://{foreman-example-com}/pub/installation_media/{client-os-context}/{client-os-major}-x86_64/` to set up your installation media entry in {Project}.
+endif::[]
