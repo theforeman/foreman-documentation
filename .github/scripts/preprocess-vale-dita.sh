@@ -24,7 +24,7 @@ for file in "$@"; do
   if [[ $(basename "$file") == assembly_*.adoc ]]; then
     # Inject content type definition at the beginning
     {
-      echo ":_mod-docs-content-type: ASSEMBLY"
+      echo ":_mod-docs-content-type: IGNORE"
       echo ""
       cat "$file"
     } > "$TEMP_DIR/$file"
