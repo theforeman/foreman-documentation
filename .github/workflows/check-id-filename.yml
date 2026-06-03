@@ -11,6 +11,9 @@ jobs:
   check-ids:
     name: Check module IDs match filenames
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v6
@@ -30,15 +33,38 @@ jobs:
           echo "Changed modules: ${{ steps.changed-files.outputs.all_changed_files }}"
           echo "Count: ${{ steps.changed-files.outputs.all_changed_files_count }}"
 
-      - name: Check ID-filename match
+      - name: Check ID-filename match with reviewdog
         if: steps.changed-files.outputs.any_changed == 'true'
+        env:
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          exit_code=0
-          echo "Checking module IDs match their filenames..."
-          echo ""
+          # Install reviewdog
+          curl -sfL https://raw.githubusercontent.com/reviewdog/reviewdog/master/install.sh | sh -s -- -b /tmp
+
+          # Run our check script and convert output to reviewdog rdjsonl format
           for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
-            if ! ./scripts/check-id-filename-match.sh "$file"; then
-              exit_code=1
-            fi
-          done
-          exit $exit_code
+            ./scripts/check-id-filename-match.sh "$file" 2>&1 || true
+          done | \
+          awk '
+            /Warning:/ {
+              # Remove color codes first, then extract filename
+              line = $0
+              gsub(/\x1b\[[0-9;]*m/, "", line)
+              sub(/^Warning: /, "", line)
+              file = line
+            }
+            /ID .* does not match expected/ {
+              # Extract ID and expected values
+              match($0, /ID '\''([^'\'']*)'\'' does not match expected '\''([^'\'']*)'\''/, arr)
+              id_value = arr[1]
+              expected = arr[2]
+              # Output in rdjsonl format for reviewdog
+              printf "{\"message\":\"ID '\''%s'\'' does not match expected '\''%s'\'' (based on filename without prefix)\",\"location\":{\"path\":\"%s\",\"range\":{\"start\":{\"line\":3}}},\"severity\":\"WARNING\"}\n", id_value, expected, file
+            }
+          ' | \
+          /tmp/reviewdog -f=rdjsonl \
+            -name="ID-filename-match" \
+            -reporter=github-pr-check \
+            -filter-mode=diff_context \
+            -fail-level=warning \
+            -level=warning
