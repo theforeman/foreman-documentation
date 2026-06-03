@@ -28,11 +28,6 @@ check_file() {
         return 0
     fi
 
-    # Skip assemblies - they may have different naming patterns
-    if [[ "$basename" =~ ^assembly_ ]]; then
-        return 0
-    fi
-
     ((checked_count++))
 
     # Remove module type prefix (con_, proc_, ref_)
