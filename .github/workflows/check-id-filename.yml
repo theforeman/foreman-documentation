@@ -1,0 +1,44 @@
+---
+name: Check ID-Filename Match
+on:
+  pull_request:
+    paths:
+      - 'guides/common/modules/**.adoc'
+      - 'scripts/check-id-filename-match.sh'
+      - '.github/workflows/check-id-filename.yml'
+
+jobs:
+  check-ids:
+    name: Check module IDs match filenames
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v6
+
+      - name: Get changed module files
+        id: changed-files
+        uses: tj-actions/changed-files@v47
+        with:
+          files: |
+            guides/common/modules/*.adoc
+          files_ignore: |
+            guides/common/modules/snip_*.adoc
+
+      - name: List changed files
+        run: |
+          echo "Any modules changed? ${{ steps.changed-files.outputs.any_changed }}"
+          echo "Changed modules: ${{ steps.changed-files.outputs.all_changed_files }}"
+          echo "Count: ${{ steps.changed-files.outputs.all_changed_files_count }}"
+
+      - name: Check ID-filename match
+        if: steps.changed-files.outputs.any_changed == 'true'
+        run: |
+          exit_code=0
+          echo "Checking module IDs match their filenames..."
+          echo ""
+          for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
+            if ! ./scripts/check-id-filename-match.sh "$file"; then
+              exit_code=1
+            fi
+          done
+          exit $exit_code
