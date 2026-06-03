@@ -23,11 +23,6 @@ check_file() {
     local file="$1"
     local basename=$(basename "$file" .adoc)
 
-    # Skip snippets - they don't have IDs
-    if [[ "$basename" =~ ^snip_ ]]; then
-        return 0
-    fi
-
     ((checked_count++))
 
     # Remove module type prefix (con_, proc_, ref_)
