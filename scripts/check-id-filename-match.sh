@@ -7,7 +7,6 @@
 #
 # Exceptions handled:
 # - {project-context} in ID matches "project" in filename
-# - Snippets (snip_*) are skipped as they don't have IDs
 
 # Colors for output
 RED='\033[0;31m'
@@ -50,9 +49,27 @@ check_file() {
     # Extract the ID value
     local id_value=$(echo "$id_line" | sed -n 's/^\[id="\([^"]*\)"\]/\1/p')
 
-    # Normalize for comparison - handle {project-context}
+    # Normalize for comparison - handle attribute substitutions
     local normalized_id="$id_value"
+
+    # Replace attributes with their filename equivalents
     normalized_id="${normalized_id//\{project-context\}/project}"
+    normalized_id="${normalized_id//\{smart-proxy-context\}/smartproxy}"
+    normalized_id="${normalized_id//\{smart-proxies-context\}/smartproxies}"
+    normalized_id="${normalized_id//\{smart-proxy-context-titlecase\}/smartproxy}"
+    normalized_id="${normalized_id//\{ProjectNameID\}/project}"
+    normalized_id="${normalized_id//\{ProjectServerID\}/project-server}"
+    normalized_id="${normalized_id//\{customreposid\}/repositories}"
+    normalized_id="${normalized_id//\{customrepoid\}/repository}"
+    normalized_id="${normalized_id//\{customproductid\}/product}"
+    normalized_id="${normalized_id//\{FreeIPA-context\}/freeipa}"
+    normalized_id="${normalized_id//\{freeipa-context\}/freeipa}"
+    normalized_id="${normalized_id//\{insights-id\}/insights}"
+    normalized_id="${normalized_id//\{insights-iop-id\}/insights}"
+    normalized_id="${normalized_id//\{foreman-installer\}/foreman-installer}"
+    normalized_id="${normalized_id//\{awx-context\}/awx}"
+    normalized_id="${normalized_id//\{compute-resource-context\}/computeresource}"
+    normalized_id="${normalized_id//\{CRname\}/cr}"
 
     # Check if ID matches expected
     if [[ "$normalized_id" != "$expected" ]]; then
