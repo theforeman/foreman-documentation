@@ -109,6 +109,7 @@ check_file() {
         normalized_heading="${normalized_heading//\{the-cockpit\}/cockpit}"
         normalized_heading="${normalized_heading//\{rhcloud\}/rhcloud}"
         normalized_heading="${normalized_heading//\{loraxcompose\}/lorax-compose}"
+        normalized_heading="${normalized_heading//\{foreman-installer\}/foreman-installer}"
     fi
 
     # Check if ID matches filename
