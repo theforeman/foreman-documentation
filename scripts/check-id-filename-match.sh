@@ -1,12 +1,14 @@
 #!/bin/bash
-# Check that module IDs match their filenames
+# Check that module IDs, headings, and filenames follow the naming convention
 # Usage: ./scripts/check-id-filename-match.sh [file_or_directory]
 #
-# This script validates that AsciiDoc module IDs follow the naming convention
-# where the ID matches the filename (minus the module type prefix).
+# This script validates that AsciiDoc modules follow the naming convention:
+# - ID must match the filename (minus the module type prefix: con_, proc_, ref_)
+# - Heading must match the ID (when both are normalized)
 #
-# Exceptions handled:
-# - {project-context} in ID matches "project" in filename
+# Attribute substitutions:
+# - Both IDs and headings may contain AsciiDoc attributes like {project-context}
+# - These are normalized to their filename equivalents (e.g., "project", "smartproxy")
 
 # Colors for output
 RED='\033[0;31m'
@@ -49,6 +51,14 @@ check_file() {
     # Extract the ID value
     local id_value=$(echo "$id_line" | sed -n 's/^\[id="\([^"]*\)"\]/\1/p')
 
+    # Extract heading (first level-one heading after the ID)
+    local heading_line=$(grep -m1 '^= ' "$file" 2>/dev/null || true)
+    local heading_value=""
+    if [[ -n "$heading_line" ]]; then
+        # Remove the = prefix and leading/trailing whitespace
+        heading_value=$(echo "$heading_line" | sed 's/^= *//' | sed 's/ *$//')
+    fi
+
     # Normalize for comparison - handle attribute substitutions
     local normalized_id="$id_value"
 
@@ -71,11 +81,62 @@ check_file() {
     normalized_id="${normalized_id//\{compute-resource-context\}/computeresource}"
     normalized_id="${normalized_id//\{CRname\}/cr}"
 
-    # Check if ID matches expected
+    # Normalize heading for comparison
+    local normalized_heading=""
+    if [[ -n "$heading_value" ]]; then
+        # Convert heading to lowercase and replace spaces/underscores with hyphens
+        normalized_heading=$(echo "$heading_value" | tr '[:upper:]' '[:lower:]' | sed 's/[_ ]/-/g')
+
+        # Apply attribute substitutions for heading-specific attributes
+        # These are the capitalized attribute names used in headings
+        normalized_heading="${normalized_heading//\{projectname\}/project}"
+        normalized_heading="${normalized_heading//\{project\}/project}"
+        normalized_heading="${normalized_heading//\{projectwebui\}/web-ui}"
+        normalized_heading="${normalized_heading//\{projectserver\}/project-server}"
+        normalized_heading="${normalized_heading//\{smartproxy\}/smartproxy}"
+        normalized_heading="${normalized_heading//\{smartproxyserver\}/smartproxy-server}"
+        normalized_heading="${normalized_heading//\{smartproxyservers\}/smartproxy-servers}"
+        normalized_heading="${normalized_heading//\{freeipa\}/freeipa}"
+        normalized_heading="${normalized_heading//\{insights\}/insights}"
+        normalized_heading="${normalized_heading//\{insights-iop\}/insights}"
+        normalized_heading="${normalized_heading//\{nbsp\}/}"  # Remove non-breaking spaces
+        normalized_heading="${normalized_heading//\{customssl\}/custom-ssl}"
+        normalized_heading="${normalized_heading//\{customfiletype\}/custom-file-type}"
+        normalized_heading="${normalized_heading//\{crname\}/cr}"
+        normalized_heading="${normalized_heading//\{openstack\}/openstack}"
+        normalized_heading="${normalized_heading//\{keycloak\}/keycloak}"
+        normalized_heading="${normalized_heading//\{rhel\}/rhel}"
+        normalized_heading="${normalized_heading//\{the-cockpit\}/cockpit}"
+        normalized_heading="${normalized_heading//\{rhcloud\}/rhcloud}"
+        normalized_heading="${normalized_heading//\{loraxcompose\}/lorax-compose}"
+    fi
+
+    # Check if ID matches filename
+    local id_mismatch=false
     if [[ "$normalized_id" != "$expected" ]]; then
+        id_mismatch=true
+    fi
+
+    # Check if heading matches ID (if heading exists)
+    local heading_mismatch=false
+    if [[ -n "$normalized_heading" && "$normalized_heading" != "$normalized_id" ]]; then
+        heading_mismatch=true
+    fi
+
+    # Report any mismatches
+    if [[ "$id_mismatch" = true || "$heading_mismatch" = true ]]; then
         echo -e "${YELLOW}Warning:${NC} $file"
-        echo "  ID '$id_value' does not match expected '$expected'"
-        echo "  (based on filename without prefix)"
+
+        if [[ "$id_mismatch" = true ]]; then
+            echo "  ID '$id_value' does not match expected '$expected'"
+            echo "  (based on filename without prefix)"
+        fi
+
+        if [[ "$heading_mismatch" = true ]]; then
+            echo "  Heading '$heading_value' does not match ID"
+            echo "  (normalized heading: '$normalized_heading', normalized ID: '$normalized_id')"
+        fi
+
         echo ""
         ((warning_count++))
         exit_code=1
