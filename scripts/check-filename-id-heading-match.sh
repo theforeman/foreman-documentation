@@ -1,14 +1,10 @@
 #!/bin/bash
-# Check that module IDs, headings, and filenames follow the naming convention
-# Usage: ./scripts/check-id-filename-match.sh [file_or_directory]
+# Check that module IDs, headings, and filenames match
+# Usage: ./scripts/check-filename-id-heading-match.sh [file_or_directory]
 #
 # This script validates that AsciiDoc modules follow the naming convention:
 # - ID must match the filename (minus the module type prefix: con_, proc_, ref_)
-# - Heading must match the ID (when both are normalized)
-#
-# Attribute substitutions:
-# - Both IDs and headings may contain AsciiDoc attributes like {project-context}
-# - These are normalized to their filename equivalents (e.g., "project", "smartproxy")
+# - Heading must match the ID (when both are normalized by accounting for attribute substitutions)
 
 # Colors for output
 RED='\033[0;31m'
