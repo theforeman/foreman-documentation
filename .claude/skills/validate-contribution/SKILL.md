@@ -3,9 +3,6 @@ name: Documentation conventions
 description: Validate and apply Foreman documentation conventions
 disable-model-invocation: false
 ---
-
-### Foreman documentation conventions
-
 #### Overview
 
 Foreman documentation follows specific conventions for code, images, attributes, conditionals, and file structure. These conventions ensure consistency across all guides and enable multi-product builds from a single source.

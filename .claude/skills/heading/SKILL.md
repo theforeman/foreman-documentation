@@ -2,9 +2,6 @@
 name: Headings
 description: Review or write heading
 ---
-
-### Review or write heading
-
 #### Overview
 
 Headings should be clear, concise, and use familiar keywords that help users understand what the content covers.

@@ -2,8 +2,6 @@
 name: Prerequisites
 description: Review or add prerequisites
 ---
-### Review or add prerequisites
-
 #### Overview
 
 Prerequisites are a bulleted list of conditions that must be satisfied before the user starts a procedure. Only procedure modules (proc_*.adoc) can include a `.Prerequisites` section.

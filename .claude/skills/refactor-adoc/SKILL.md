@@ -3,8 +3,6 @@ name: Rename a module
 description: Refactor adoc file by a given title
 disable-model-invocation: true
 ---
-### Refactor adoc file by a given title
-
 #### Overview
 
 This command changes the title, ID, and filename of an assembly, module, or snippet according to a new title, and updates all includes and ID references across the documentation.

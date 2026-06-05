@@ -2,8 +2,6 @@
 name: Abstracts
 description: Review or write an abstract (also called a short description) for a documentation module
 ---
-### Review or write abstract
-
 #### Overview
 
 An abstract is the first paragraph of a documentation module that helps readers and AI-powered search tools find the information they need and confirm they are in the right place.

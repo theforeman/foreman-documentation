@@ -22,8 +22,8 @@ def strip_frontmatter(content)
   content.sub(/\A---\s*\n.*?\n---\s*\n/m, '')
 end
 
-def extract_guide_sections(content)
-  # Extract only sections meant for the guide (#### Overview and #### Examples)
+def extract_visible_sections(content)
+  # Extract sections meant to be visible (#### Overview and #### Examples)
   lines = content.lines
   result = []
   capturing = false
@@ -60,6 +60,67 @@ def extract_guide_sections(content)
         section_content << line
       else
         capturing = false
+      end
+    # Check if this is a heading of level 1-3 (stops any section)
+    elsif line =~ /^#\{1,3\}\s+/
+      # Save previous section if we were capturing
+      if capturing && !section_content.empty?
+        result.concat(section_content)
+        section_content = []
+      end
+      capturing = false
+    # Regular content line
+    elsif capturing
+      section_content << line
+    end
+  end
+
+  # Don't forget the last section
+  if capturing && !section_content.empty?
+    result.concat(section_content)
+  end
+
+  result.join
+end
+
+def extract_ai_sections(content)
+  # Extract sections meant for AI tools (everything EXCEPT Overview and Examples)
+  lines = content.lines
+  result = []
+  capturing = true  # Start capturing by default
+  section_content = []
+  in_code_block = false
+
+  lines.each do |line|
+    # Track code blocks (````)
+    if line.strip.start_with?('```')
+      in_code_block = !in_code_block
+      section_content << line if capturing
+      next
+    end
+
+    # Skip heading detection inside code blocks
+    if in_code_block
+      section_content << line if capturing
+      next
+    end
+
+    # Check if this is a level-4 heading
+    if line =~ /^####\s+(.+)$/
+      heading = $1.strip
+
+      # Save previous section if we were capturing
+      if capturing && !section_content.empty?
+        result.concat(section_content)
+        section_content = []
+      end
+
+      # Stop capturing if this is Overview or Examples (opposite of visible sections)
+      if heading =~ /^Overview$/i || heading =~ /^Examples/i
+        capturing = false
+      else
+        capturing = true
+        section_content << line
       end
     # Check if this is a heading of level 1-3 (stops any section)
     elsif line =~ /^#\{1,3\}\s+/
@@ -125,11 +186,14 @@ def read_skill_files
     skill_name = extract_frontmatter_field(content, 'name') || skill_dir_name
     content = strip_frontmatter(content)
 
-    # Extract only guide-relevant sections (Overview and Examples)
-    guide_content = extract_guide_sections(content)
+    # Extract sections for human readers (Overview and Examples)
+    visible_content = extract_visible_sections(content)
 
-    # Skip skills that have no guide content
-    if guide_content.strip.empty?
+    # Extract sections for AI tools (everything else)
+    ai_content = extract_ai_sections(content)
+
+    # Skip skills that have no content at all
+    if visible_content.strip.empty? && ai_content.strip.empty?
       skipped << skill_name
       next
     end
@@ -138,13 +202,14 @@ def read_skill_files
       name: skill_name,
       dir_name: skill_dir_name,
       category: categorize_skill(skill_dir_name),
-      content: guide_content
+      visible_content: visible_content,
+      ai_content: ai_content
     }
   end
 
   # Report skipped skills
   unless skipped.empty?
-    puts "  - Skipped #{skipped.length} skill(s) without Overview or Examples sections:"
+    puts "  - Skipped #{skipped.length} skill(s) without any content:"
     skipped.each { |name| puts "    - #{name}" }
   end
 
@@ -235,8 +300,23 @@ def build_markdown
       skills_by_category[category].each do |skill|
         markdown << "## #{skill[:name]}"
         markdown << ""
-        markdown << skill[:content]
-        markdown << ""
+
+        # Add visible content (Overview and Examples) first
+        unless skill[:visible_content].strip.empty?
+          markdown << skill[:visible_content]
+          markdown << ""
+        end
+
+        # Add AI-specific content (Instructions, etc.) in a collapsible section
+        unless skill[:ai_content].strip.empty?
+          markdown << "<details markdown=\"1\">"
+          markdown << "<summary><strong>View AI tool instructions</strong></summary>"
+          markdown << ""
+          markdown << skill[:ai_content]
+          markdown << ""
+          markdown << "</details>"
+          markdown << ""
+        end
       end
 
       markdown << "---"
@@ -263,8 +343,13 @@ def build_markdown
         markdown << ""
       end
 
-      # Link to the YAML file instead of embedding it
-      markdown << "**Rule file:** [`.vale/styles/foreman-documentation/#{rule[:name]}.yml`](../../.vale/styles/foreman-documentation/#{rule[:name]}.yml)"
+      # Embed the YAML content in a collapsible section
+      markdown << "<details>"
+      markdown << "<summary><strong>View rule definition</strong></summary>"
+      markdown << ""
+      markdown << "<pre><code class=\"language-yaml\">#{rule[:yaml]}</code></pre>"
+      markdown << ""
+      markdown << "</details>"
       markdown << ""
     end
 

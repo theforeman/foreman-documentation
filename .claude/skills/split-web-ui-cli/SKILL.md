@@ -3,8 +3,6 @@ name: Split a module into web UI and CLI modules
 description: Split a module into web UI and CLI modules
 disable-model-invocation: true
 ---
-### Split a module into web UI and CLI modules
-
 #### Overview
 
 When a procedure module contains both web UI steps (`.Procedure`) and CLI steps (`.CLI procedure`) in the same file, it should be split into two separate files for better modularity and clarity.

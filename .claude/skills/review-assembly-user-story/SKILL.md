@@ -2,8 +2,6 @@
 name: An assembly covers a single user story
 description: Review assembly to ensure it follows the one-user-story principle
 ---
-### Review assembly for single user story
-
 #### Overview
 
 An assembly must cover a single user story - what the user wants to accomplish. When an assembly attempts to describe multiple user stories, it often loses focus, becomes too long, and can be confusing to follow.

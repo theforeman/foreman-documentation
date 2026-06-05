@@ -2,8 +2,6 @@
 name: User personas
 description: Understand and apply Foreman user personas when writing documentation
 ---
-### User personas
-
 #### Overview
 
 Foreman documentation targets different user personas with varying responsibilities and permissions. Understanding the target persona helps ensure documentation addresses the user's needs and capabilities appropriately.
