@@ -144,9 +144,29 @@ def read_vale_rules
     rule_name = File.basename(rule_file, '.yml')
     content = File.read(rule_file)
 
+    # Extract description from YAML comments at the top
+    description = []
+    yaml_content = []
+    in_yaml = false
+
+    content.lines.each do |line|
+      if line.strip.start_with?('#') && !in_yaml
+        # Comment line before YAML starts
+        description << line.sub(/^#\s*/, '').strip
+      elsif line.strip == '---'
+        # YAML document start
+        in_yaml = true
+        yaml_content << line
+      elsif in_yaml
+        # YAML content
+        yaml_content << line
+      end
+    end
+
     rules << {
       name: rule_name,
-      content: content
+      description: description.join(' '),
+      yaml: yaml_content.join
     }
   end
 
@@ -212,22 +232,35 @@ def build_markdown
   # Add Vale rules section
   rules = read_vale_rules
   unless rules.empty?
-    markdown << "# Project-Specific Vale Rules"
+    markdown << "# Foreman-documentation custom Vale rules"
     markdown << ""
     markdown << "The following custom Vale rules enforce documentation standards specific to Foreman."
-    markdown << "These rules are located in `.vale/styles/foreman-documentation/`."
+    markdown << "These can be invoked in AI-assisted editors like Claude Code or Cursor."
     markdown << ""
 
     rules.each do |rule|
-      markdown << "## Rule: #{rule[:name]}"
+      markdown << "## #{rule[:name]}"
       markdown << ""
+
+      # Add Overview section if description exists
+      unless rule[:description].empty?
+        markdown << "#### Overview"
+        markdown << ""
+        markdown << rule[:description]
+        markdown << ""
+      end
+
+      # Add the YAML rule
       markdown << "**File:** `.vale/styles/foreman-documentation/#{rule[:name]}.yml`"
       markdown << ""
       markdown << "```yaml"
-      markdown << rule[:content]
+      markdown << rule[:yaml]
       markdown << "```"
       markdown << ""
     end
+
+    markdown << "---"
+    markdown << ""
   end
 
   markdown.join("\n")
