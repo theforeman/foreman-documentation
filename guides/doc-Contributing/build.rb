@@ -39,13 +39,13 @@ end
 def categorize_skill(skill_dir_name)
   # Map skill directory names to categories
   categories = {
-    'abstract' => 'Style Guidelines',
-    'heading' => 'Style Guidelines',
-    'prerequisites' => 'Style Guidelines',
-    'review-assembly-user-story' => 'Content Structure',
-    'split-web-ui-cli' => 'Content Structure',
-    'refactor-adoc' => 'File Management',
-    'validate-contribution' => 'Validation and Review'
+    'abstract' => 'AI skills: Style Guidelines',
+    'heading' => 'AI skills: Style Guidelines',
+    'prerequisites' => 'AI skills: Style Guidelines',
+    'review-assembly-user-story' => 'AI skills: Content Structure',
+    'split-web-ui-cli' => 'AI skills: Content Structure',
+    'refactor-adoc' => 'AI skills: File Management',
+    'validate-contribution' => 'AI skills: Validation and Review'
   }
 
   categories[skill_dir_name] || 'Other'
@@ -119,34 +119,31 @@ def build_markdown
   # Add skills section
   skills = read_skill_files
   unless skills.empty?
-    markdown << "# Documentation Skills"
-    markdown << ""
-    markdown << "The repository includes specialized skills (slash commands) for common documentation tasks."
-    markdown << "These can be invoked in AI-assisted editors like Claude Code or Cursor."
-    markdown << ""
-
     # Group skills by category
     skills_by_category = skills.group_by { |skill| skill[:category] }
 
     # Define category order for consistent presentation
-    category_order = ['Style Guidelines', 'Content Structure', 'File Management', 'Validation and Review', 'Other']
+    category_order = ['AI skills: Style Guidelines', 'AI skills: Content Structure', 'AI skills: File Management', 'AI skills: Validation and Review', 'Other']
 
     category_order.each do |category|
       next unless skills_by_category[category]
 
-      markdown << "## #{category}"
+      markdown << "# #{category}"
+      markdown << ""
+      markdown << "The repository includes specialized skills (slash commands) for common documentation tasks."
+      markdown << "These can be invoked in AI-assisted editors like Claude Code or Cursor."
       markdown << ""
 
       skills_by_category[category].each do |skill|
-        markdown << "### #{skill[:name]}"
+        markdown << "## #{skill[:name]}"
         markdown << ""
         markdown << skill[:content]
         markdown << ""
       end
-    end
 
-    markdown << "---"
-    markdown << ""
+      markdown << "---"
+      markdown << ""
+    end
   end
 
   # Add Vale rules section
