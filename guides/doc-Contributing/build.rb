@@ -250,7 +250,7 @@ def build_markdown
     markdown << "# Foreman-documentation custom Vale rules"
     markdown << ""
     markdown << "The following custom Vale rules enforce documentation standards specific to Foreman."
-    markdown << "These can be invoked in AI-assisted editors like Claude Code or Cursor."
+    markdown << "Run the Vale linter locally or in CI to check AsciiDoc files against these rules."
     markdown << ""
 
     rules.each do |rule|
