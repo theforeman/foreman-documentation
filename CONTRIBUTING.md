@@ -57,11 +57,8 @@ Each PR should undergo style review.
 * [ ] The PR conforms with the team's style guidelines.
 * [ ] The PR introduces documentation that describes a user story rather than a product feature.
 
-## Foreman documentation conventions guide
+## Additional resources
 
-The `Foreman documentation conventions guide` describes guidelines specific to working on Foreman documentation.
-It complements, but should not duplicate, the following resources:
-
-* The AsciiDoc, RedHat, and project-specific foreman-documentation style packages for the Vale linter.
+* The AsciiDoc and RedHat style packages for the Vale linter.
 See [Vale for writers at Red Hat](https://redhat-documentation.github.io/vale-at-red-hat/docs/main/user-guide/introduction/).
 * [Red Hat supplementary style guide for product documentation](https://redhat-documentation.github.io/supplementary-style-guide/)

@@ -6,13 +6,6 @@ disable-model-invocation: false
 
 ## Foreman documentation conventions guide
 
-The `Foreman documentation conventions guide` describes guidelines specific to working on Foreman documentation.
-It complements, but should not duplicate, the following resources:
-
-* The AsciiDoc, RedHat, and project-specific foreman-documentation style packages for the Vale linter.
-See [Vale for writers at Red Hat](https://redhat-documentation.github.io/vale-at-red-hat/docs/main/user-guide/introduction/).
-* [Red Hat supplementary style guide for product documentation](https://redhat-documentation.github.io/supplementary-style-guide/)
-
 ### Code conventions
 
 Use the following markup conventions:
