@@ -1,16 +1,16 @@
 ---
-name: heading
+name: Headings
 description: Review or write heading
 ---
 
-# Review or write heading
+### Review or write heading
 
-## Overview
+#### Overview
 
 Review and improve the heading for this file.
 Write it if it doesn't exist yet.
 
-## Instructions
+#### Instructions
 
 Follow these general principles for all headings:
 
@@ -26,11 +26,11 @@ Additional principles for specific heading types:
 * For assemblies (the first con_*.adoc in an assembly_*.adoc) that contain at least one procedure: Start the heading with a gerund.
 * For assemblies (the first con_*.adoc in an assembly_*.adoc) that contain only concepts or references: Do not start the heading with a gerund or verb. Use a noun phrase.
 
-## Post-command cleanup
+#### Post-command cleanup
 
 * If you rename a heading, use the `.claude/skills/refactor-adoc.md` command to update the module's ID, filename, and all references and links to the module in the repository.
 
-## Examples of good headings
+#### Examples of good headings
 
 Concept headings:
 

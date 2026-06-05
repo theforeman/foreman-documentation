@@ -22,13 +22,28 @@ def strip_frontmatter(content)
   content.sub(/\A---\s*\n.*?\n---\s*\n/m, '')
 end
 
+def extract_frontmatter_field(content, field)
+  match = content.match(/\A---\s*\n(.*?)\n---\s*\n/m)
+  return nil unless match
+
+  match[1].each_line do |line|
+    stripped = line.strip
+    prefix = "#{field}:"
+    next unless stripped.start_with?(prefix)
+
+    return stripped[prefix.length..].strip
+  end
+  nil
+end
+
 def read_skill_files
   skills = []
   return skills unless Dir.exist?(SKILLS_DIR)
 
   Dir.glob(File.join(SKILLS_DIR, '*', 'SKILL.md')).sort.each do |skill_file|
-    skill_name = File.basename(File.dirname(skill_file))
     content = File.read(skill_file)
+    skill_name = extract_frontmatter_field(content, 'name') ||
+                 File.basename(File.dirname(skill_file))
     content = strip_frontmatter(content)
 
     skills << {

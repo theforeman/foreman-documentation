@@ -1,14 +1,14 @@
 ---
-name: prerequisites
+name: Prerequisites
 description: Review or add prerequisites
 ---
-# Review or add prerequisites
+### Review or add prerequisites
 
-## Overview
+#### Overview
 
 Review prerequisites in this file to make sure they are labeled correctly and use consistent formatting. Prerequisites are a bulleted list of conditions that must be satisfied before the user starts the procedure.
 
-## Instructions
+#### Instructions
 
 1. Only process procedure modules (proc_*.adoc). These are the only modules that can include a `.Prerequisites` section.
 2. If a section titled `.Prerequisites` exists in the file, ensure it uses consistent formatting:
@@ -26,7 +26,7 @@ Review prerequisites in this file to make sure they are labeled correctly and us
     - Do not exceed 10 prerequisites. If `.Prerequisites` includes more than 10 list items, flag this as an issue for human review.
 3. If a procedure module does not include `.Prerequisites` section, scan the module to identify steps that meet criteria for prerequisites. If a step or steps like this exist, create a `.Prerequisites` section and rephrase the step or steps as prerequisites in this section.
 
-## Examples of good prerequisites
+#### Examples of good prerequisites
 
 * The `kernelcare` package is installed on your hosts.
 * The base system of the {SmartProxy} is registered to the newly upgraded {ProjectServer}.
@@ -34,7 +34,7 @@ Review prerequisites in this file to make sure they are labeled correctly and us
 * You are logged in to the registry.redhat.io container registry.
 * If you use `dzdo` for Ansible jobs, the `community.general` Ansible collection must be installed.
 
-## Examples of bad prerequisites
+#### Examples of bad prerequisites
 
 * You are logged in. (This is an obvious prerequisite.)
 * The host is registered to {Project}. (This is an obvious prerequisite.)

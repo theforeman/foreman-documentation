@@ -1,14 +1,14 @@
 ---
-name: abstract
+name: Abstracts
 description: Review or write an abstract (also called a short description) for a documentation module
 ---
-# Review or write abstract
+### Review or write abstract
 
-## Overview
+#### Overview
 
 Review and improve the abstract for this file. Write it if it doesn't exist yet.
 
-## Definition of an abstract
+#### Definition of an abstract
 
 An abstract is the first paragraph of the module.
 It follows after the module heading.
@@ -22,7 +22,7 @@ Abstracts typically contain the following information:
 - The "Why"
 - Where appropriate, an example use case
 
-## Instructions
+#### Instructions
 
 When reviewing or writing the abstract, follow these principles:
 
