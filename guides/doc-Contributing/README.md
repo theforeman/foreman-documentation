@@ -7,7 +7,7 @@ This directory contains a standalone guide for documentation contributors that c
 The guide automatically combines:
 
 - **CONTRIBUTING.md** - Introduction to contribution guidelines
-- **Documentation Skills** - All slash commands in `.cursor/skills/*/SKILL.md`
+- **Documentation Skills** - All slash commands in `.claude/skills/*/SKILL.md`
 - **Vale Rules** - Project-specific linting rules in `.vale/styles/foreman-documentation/`
 
 ## Building Locally
@@ -44,7 +44,7 @@ The guide **automatically rebuilds** when source files change:
 
 When you push changes to:
 - `CONTRIBUTING.md`
-- Any skill file (`.cursor/skills/*/SKILL.md`)
+- Any skill file (`.claude/skills/*/SKILL.md`)
 - Any Vale rule (`.vale/styles/foreman-documentation/*.yml`)
 
 GitHub Actions will:
@@ -141,7 +141,7 @@ python3 -m http.server --directory ../build/Contributing 9000
 
 ### Add a new skill:
 
-1. Create `.cursor/skills/new-skill/SKILL.md`
+1. Create `.claude/skills/new-skill/SKILL.md`
 2. Run `make html` - automatically detected and included
 
 ### Add a new Vale rule:

@@ -14,7 +14,7 @@ TEMPLATE_FILE = File.join(__dir__, 'template.html')
 
 # Source files
 CONTRIBUTING_MD = File.join(ROOT_DIR, 'CONTRIBUTING.md')
-SKILLS_DIR = File.join(ROOT_DIR, '.cursor', 'skills')
+SKILLS_DIR = File.join(ROOT_DIR, '.claude', 'skills')
 VALE_RULES_DIR = File.join(ROOT_DIR, '.vale', 'styles', 'foreman-documentation')
 
 def strip_frontmatter(content)
