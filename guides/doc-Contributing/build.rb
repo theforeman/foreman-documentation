@@ -36,18 +36,36 @@ def extract_frontmatter_field(content, field)
   nil
 end
 
+def categorize_skill(skill_dir_name)
+  # Map skill directory names to categories
+  categories = {
+    'abstract' => 'Style Guidelines',
+    'heading' => 'Style Guidelines',
+    'prerequisites' => 'Style Guidelines',
+    'review-assembly-user-story' => 'Content Structure',
+    'split-web-ui-cli' => 'Content Structure',
+    'refactor-adoc' => 'File Management',
+    'validate-contribution' => 'Validation and Review'
+  }
+
+  categories[skill_dir_name] || 'Other'
+end
+
 def read_skill_files
   skills = []
   return skills unless Dir.exist?(SKILLS_DIR)
 
+  # Look for skills: .claude/skills/skill-name/SKILL.md
   Dir.glob(File.join(SKILLS_DIR, '*', 'SKILL.md')).sort.each do |skill_file|
+    skill_dir_name = File.basename(File.dirname(skill_file))
     content = File.read(skill_file)
-    skill_name = extract_frontmatter_field(content, 'name') ||
-                 File.basename(File.dirname(skill_file))
+    skill_name = extract_frontmatter_field(content, 'name') || skill_dir_name
     content = strip_frontmatter(content)
 
     skills << {
       name: skill_name,
+      dir_name: skill_dir_name,
+      category: categorize_skill(skill_dir_name),
       content: content
     }
   end
@@ -107,11 +125,24 @@ def build_markdown
     markdown << "These can be invoked in AI-assisted editors like Claude Code or Cursor."
     markdown << ""
 
-    skills.each do |skill|
-      markdown << "## Skill: #{skill[:name]}"
+    # Group skills by category
+    skills_by_category = skills.group_by { |skill| skill[:category] }
+
+    # Define category order for consistent presentation
+    category_order = ['Style Guidelines', 'Content Structure', 'File Management', 'Validation and Review', 'Other']
+
+    category_order.each do |category|
+      next unless skills_by_category[category]
+
+      markdown << "## #{category}"
       markdown << ""
-      markdown << skill[:content]
-      markdown << ""
+
+      skills_by_category[category].each do |skill|
+        markdown << "### #{skill[:name]}"
+        markdown << ""
+        markdown << skill[:content]
+        markdown << ""
+      end
     end
 
     markdown << "---"

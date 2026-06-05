@@ -10,6 +10,8 @@ The guide automatically combines:
 - **Documentation Skills** - All slash commands in `.claude/skills/*/SKILL.md`
 - **Vale Rules** - Project-specific linting rules in `.vale/styles/foreman-documentation/`
 
+Skills are automatically organized into categories in the generated guide for easier navigation.
+
 ## Building Locally
 
 ### Build the guide:
