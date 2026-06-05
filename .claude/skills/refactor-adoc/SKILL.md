@@ -7,14 +7,24 @@ disable-model-invocation: true
 
 #### Overview
 
-Change the title (if present), ID (if present), and file name of an assembly, module, or snippet according to a new title.
-Update the includes and any ID references across all documentation.
+This command changes the title, ID, and filename of an assembly, module, or snippet according to a new title, and updates all includes and ID references across the documentation.
 
-Usage:
-
+**Usage:**
 ```
 /refactor-adoc @old-file.adoc "New title"
 ```
+
+**What it does:**
+- Renames the file with the appropriate prefix (e.g., `proc_new-title.adoc`)
+- Updates the ID if present (e.g., `[id="new-title_{context}"]`)
+- Updates the title if present (e.g., `= New title`)
+- Updates all `include::` directives that reference this file
+- Updates all cross-references to the old ID throughout the documentation
+
+**When to use:**
+- When you need to rename a documentation file to better match its content
+- After significantly revising the content of a module
+- When improving heading clarity requires filename changes
 
 #### Instructions
 

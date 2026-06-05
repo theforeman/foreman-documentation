@@ -22,6 +22,53 @@ def strip_frontmatter(content)
   content.sub(/\A---\s*\n.*?\n---\s*\n/m, '')
 end
 
+def extract_guide_sections(content)
+  # Extract only sections meant for the guide (#### Overview and #### Examples)
+  lines = content.lines
+  result = []
+  capturing = false
+  section_content = []
+
+  lines.each do |line|
+    # Check if this is a level-4 heading
+    if line =~ /^####\s+(.+)$/
+      heading = $1.strip
+
+      # Save previous section if we were capturing
+      if capturing && !section_content.empty?
+        result.concat(section_content)
+        section_content = []
+      end
+
+      # Start capturing if this is Overview or Examples (case-insensitive, flexible)
+      if heading =~ /^Overview$/i || heading =~ /^Examples/i
+        capturing = true
+        section_content << line
+      else
+        capturing = false
+      end
+    # Check if this is a heading of level 1-3 (stops any section)
+    elsif line =~ /^#\{1,3\}\s+/
+      # Save previous section if we were capturing
+      if capturing && !section_content.empty?
+        result.concat(section_content)
+        section_content = []
+      end
+      capturing = false
+    # Regular content line
+    elsif capturing
+      section_content << line
+    end
+  end
+
+  # Don't forget the last section
+  if capturing && !section_content.empty?
+    result.concat(section_content)
+  end
+
+  result.join
+end
+
 def extract_frontmatter_field(content, field)
   match = content.match(/\A---\s*\n(.*?)\n---\s*\n/m)
   return nil unless match
@@ -53,6 +100,7 @@ end
 
 def read_skill_files
   skills = []
+  skipped = []
   return skills unless Dir.exist?(SKILLS_DIR)
 
   # Look for skills: .claude/skills/skill-name/SKILL.md
@@ -62,12 +110,27 @@ def read_skill_files
     skill_name = extract_frontmatter_field(content, 'name') || skill_dir_name
     content = strip_frontmatter(content)
 
+    # Extract only guide-relevant sections (Overview and Examples)
+    guide_content = extract_guide_sections(content)
+
+    # Skip skills that have no guide content
+    if guide_content.strip.empty?
+      skipped << skill_name
+      next
+    end
+
     skills << {
       name: skill_name,
       dir_name: skill_dir_name,
       category: categorize_skill(skill_dir_name),
-      content: content
+      content: guide_content
     }
+  end
+
+  # Report skipped skills
+  unless skipped.empty?
+    puts "  - Skipped #{skipped.length} skill(s) without Overview or Examples sections:"
+    skipped.each { |name| puts "    - #{name}" }
   end
 
   skills

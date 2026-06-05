@@ -7,7 +7,27 @@ disable-model-invocation: true
 
 #### Overview
 
-This file includes a web UI procedure (`.Procedure`) and a CLI procedure (`.CLI procedure`). Split it into two files: `proc_*-by-using-web-ui.adoc` and `proc_*-by-using-cli.adoc`.
+When a procedure module contains both web UI steps (`.Procedure`) and CLI steps (`.CLI procedure`) in the same file, it should be split into two separate files for better modularity and clarity.
+
+**Usage:**
+```
+/split-web-ui-cli @proc_example.adoc
+```
+
+**What it creates:**
+- `proc_original-name-by-using-web-ui.adoc` - Contains the web UI procedure
+- `proc_original-name-by-using-cli.adoc` - Contains the CLI procedure
+
+**File structure:**
+- Both files include the introduction text from the original file
+- Both files have adjusted IDs: `[id="original-id-by-using-web-ui"]` and `[id="original-id-by-using-cli"]`
+- Both files have adjusted headings: `= Original heading by using {ProjectWebUI}` and `= Original heading by using Hammer CLI`
+- Both files have adjusted abstracts if needed
+
+**When to use:**
+- When a single procedure file contains both `.Procedure` and `.CLI procedure` sections
+- When you want to make procedures more modular and easier to maintain
+- When users need to choose between different interfaces for the same task
 
 #### Instructions
 
