@@ -28,8 +28,22 @@ def extract_guide_sections(content)
   result = []
   capturing = false
   section_content = []
+  in_code_block = false
 
   lines.each do |line|
+    # Track code blocks (````)
+    if line.strip.start_with?('```')
+      in_code_block = !in_code_block
+      section_content << line if capturing
+      next
+    end
+
+    # Skip heading detection inside code blocks
+    if in_code_block
+      section_content << line if capturing
+      next
+    end
+
     # Check if this is a level-4 heading
     if line =~ /^####\s+(.+)$/
       heading = $1.strip
@@ -89,6 +103,7 @@ def categorize_skill(skill_dir_name)
     'abstract' => 'AI skills for style guidelines',
     'heading' => 'AI skills for style guidelines',
     'prerequisites' => 'AI skills for style guidelines',
+    'personas' => 'AI skills for style guidelines',
     'review-assembly-user-story' => 'AI skills for structure',
     'split-web-ui-cli' => 'AI skills for file management',
     'refactor-adoc' => 'AI skills for file management',
