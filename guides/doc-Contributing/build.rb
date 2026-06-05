@@ -61,13 +61,14 @@ def build_markdown
   markdown = []
 
   # Add title
-  markdown << "# Contributors' Guide"
+  markdown << "# About the Foreman Documentation Contributors' Guide"
   markdown << ""
-  markdown << "This guide consolidates contribution resources for the Foreman Documentation project."
-  markdown << "It concatenates resources from the following sources:"
+  markdown << "The Foreman Documentation Contributors' Guide consolidates contribution resources for the Foreman Documentation project. It consolidates resources from the following sources:"
   markdown << " - [CONTRIBUTING.md](../../CONTRIBUTING.md)"
   markdown << " - [Documentation Skills](../../.claude/skills)"
   markdown << " - [Vale Rules for Foreman documentation](../../.vale/styles/foreman-documentation)"
+  markdown << ""
+  markdown << "The guide concatenates resources from the above sources into a single guide for easy reference. For more information, see the [README](README.md)."
   markdown << ""
   markdown << "Last updated: #{Time.now.strftime('%Y-%m-%d')}"
   markdown << ""
