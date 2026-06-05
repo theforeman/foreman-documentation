@@ -90,7 +90,7 @@ def categorize_skill(skill_dir_name)
     'heading' => 'AI skills for style guidelines',
     'prerequisites' => 'AI skills for style guidelines',
     'review-assembly-user-story' => 'AI skills for structure',
-    'split-web-ui-cli' => 'AI skills for structure',
+    'split-web-ui-cli' => 'AI skills for file management',
     'refactor-adoc' => 'AI skills for file management',
     'validate-contribution' => 'AI skills for contribution guidelines'
   }

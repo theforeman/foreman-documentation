@@ -1,5 +1,5 @@
 ---
-name: refactor-adoc
+name: Rename a module
 description: Refactor adoc file by a given title
 disable-model-invocation: true
 ---
