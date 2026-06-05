@@ -1,15 +1,15 @@
 ---
-name: split-web-ui-cli
+name: Split a module into web UI and CLI modules
 description: Split a module into web UI and CLI modules
 disable-model-invocation: true
 ---
-# Split a module into web UI and CLI modules
+### Split a module into web UI and CLI modules
 
-## Overview
+#### Overview
 
 This file includes a web UI procedure (`.Procedure`) and a CLI procedure (`.CLI procedure`). Split it into two files: `proc_*-by-using-web-ui.adoc` and `proc_*-by-using-cli.adoc`.
 
-## Instructions
+#### Instructions
 
 Follow these principles:
 

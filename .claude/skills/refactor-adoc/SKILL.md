@@ -3,9 +3,9 @@ name: refactor-adoc
 description: Refactor adoc file by a given title
 disable-model-invocation: true
 ---
-# Refactor adoc file by a given title
+### Refactor adoc file by a given title
 
-## Overview
+#### Overview
 
 Change the title (if present), ID (if present), and file name of an assembly, module, or snippet according to a new title.
 Update the includes and any ID references across all documentation.
@@ -16,7 +16,7 @@ Usage:
 /refactor-adoc @old-file.adoc "New title"
 ```
 
-## Instructions
+#### Instructions
 
 Refactor the following `.adoc` file according to the following title.
 Follow these principles:

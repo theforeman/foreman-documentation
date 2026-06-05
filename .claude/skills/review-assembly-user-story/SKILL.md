@@ -1,10 +1,10 @@
 ---
-name: review-assembly-user-story
+name: An assembly covers a single user story
 description: Review assembly to ensure it follows the one-user-story principle
 ---
-# Review assembly for single user story
+### Review assembly for single user story
 
-## Overview
+#### Overview
 
 Review an assembly file to ensure it describes a single user story.
 If the assembly contains multiple user stories, split it into separate assembly files.
@@ -15,17 +15,17 @@ Usage:
 /review-assembly-user-story @assembly_example.adoc
 ```
 
-## Reasoning
+#### Reasoning
 
 An assembly must cover a single user story (what the user wants to accomplish).
 When an assembly attempts to describe multiple user stories, it often loses its focus, becomes too long, and can be confusing to follow.
 
-## Instructions
+#### Instructions
 
 Review the assembly file to determine if it follows the one-user-story principle.
 Each assembly must describe a single user story.
 
-### Step 1: Analyze the assembly
+##### Step 1: Analyze the assembly
 
 Read the assembly file and:
 
@@ -34,7 +34,7 @@ Read the assembly file and:
 3. **Review included modules** - Do they all support the same user story, or do they describe separate independent tasks?
 4. **Look for clear boundaries** - Are there sections that could stand alone as separate user stories?
 
-### Step 2: Determine if splitting is needed
+##### Step 2: Determine if splitting is needed
 
 The assembly needs splitting if:
 
@@ -51,7 +51,7 @@ The assembly is fine if:
 - Procedures are sequential steps or alternative approaches for the same task
 - Modules provide context, reference, or examples for one user story
 
-### Step 3: If splitting is needed
+##### Step 3: If splitting is needed
 
 For each identified user story:
 
@@ -61,7 +61,7 @@ For each identified user story:
 4. **Update parent files** - Replace the original assembly include with includes for all new assemblies in the `master.adoc` file
 5. **Delete the original assembly** - Once all content is split and includes are updated
 
-### Step 4: Report findings
+##### Step 4: Report findings
 
 Provide a summary that includes:
 
@@ -69,19 +69,19 @@ Provide a summary that includes:
 - If splitting occurred, list the new assembly files created and their user stories
 - Any recommendations for improving the assembly structure
 
-## Principles
+#### Principles
 
 - **One user story per assembly** - Each assembly should answer "What does the user want to accomplish?"
 - **User-centric organization** - Think from the user's perspective, not the product's features
 - **Cohesive modules** - All modules in an assembly should support the same goal
 
-## Examples
+#### Examples
 
-### Good examples (single user story):
+##### Good examples (single user story):
 - `assembly_backing-up-server-and-proxy.adoc` - User wants to back up their system
 - `assembly_configuring-email-notifications.adoc` - User wants to set up email notifications
 
-### Important considerations:
+##### Important considerations:
 - **Inverse operations belong together** - Creating and deleting (e.g., organizations), or enabling and disabling (e.g., external authentication) are part of the same user story, as users may want to revert their actions
 - **Alternative methods belong together** - Multiple procedures for the same task (web UI, CLI, API) belong in the same assembly
 - **Sequential workflows belong together** - If steps must be done in order for one goal, they belong in the same assembly
