@@ -242,20 +242,14 @@ def build_markdown
       markdown << "## #{rule[:name]}"
       markdown << ""
 
-      # Add Overview section if description exists
+      # Add description if it exists
       unless rule[:description].empty?
-        markdown << "#### Overview"
-        markdown << ""
         markdown << rule[:description]
         markdown << ""
       end
 
-      # Add the YAML rule
-      markdown << "**File:** `.vale/styles/foreman-documentation/#{rule[:name]}.yml`"
-      markdown << ""
-      markdown << "```yaml"
-      markdown << rule[:yaml]
-      markdown << "```"
+      # Link to the YAML file instead of embedding it
+      markdown << "**Rule file:** [`.vale/styles/foreman-documentation/#{rule[:name]}.yml`](../../.vale/styles/foreman-documentation/#{rule[:name]}.yml)"
       markdown << ""
     end
 
