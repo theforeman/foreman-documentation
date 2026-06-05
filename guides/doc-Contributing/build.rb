@@ -86,13 +86,13 @@ end
 def categorize_skill(skill_dir_name)
   # Map skill directory names to categories
   categories = {
-    'abstract' => 'AI skills: Style Guidelines',
-    'heading' => 'AI skills: Style Guidelines',
-    'prerequisites' => 'AI skills: Style Guidelines',
-    'review-assembly-user-story' => 'AI skills: Content Structure',
-    'split-web-ui-cli' => 'AI skills: Content Structure',
-    'refactor-adoc' => 'AI skills: File Management',
-    'validate-contribution' => 'AI skills: Validation and Review'
+    'abstract' => 'AI skills for style guidelines',
+    'heading' => 'AI skills for style guidelines',
+    'prerequisites' => 'AI skills for style guidelines',
+    'review-assembly-user-story' => 'AI skills for structure',
+    'split-web-ui-cli' => 'AI skills for structure',
+    'refactor-adoc' => 'AI skills for file management',
+    'validate-contribution' => 'AI skills for contribution guidelines'
   }
 
   categories[skill_dir_name] || 'Other'
@@ -186,7 +186,7 @@ def build_markdown
     skills_by_category = skills.group_by { |skill| skill[:category] }
 
     # Define category order for consistent presentation
-    category_order = ['AI skills: Style Guidelines', 'AI skills: Content Structure', 'AI skills: File Management', 'AI skills: Validation and Review', 'Other']
+    category_order = ['AI skills for style guidelines', 'AI skills for structure', 'AI skills for file management', 'AI skills for contribution guidelines', 'Other']
 
     category_order.each do |category|
       next unless skills_by_category[category]
