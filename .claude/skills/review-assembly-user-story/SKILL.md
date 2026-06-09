@@ -56,11 +56,10 @@ The assembly is fine if:
 For each identified user story:
 
 1. **Create a new assembly file** - Name it `assembly_<descriptive-name>.adoc`
-2. **Add the assembly header** - Include `:_mod-docs-content-type: ASSEMBLY`
-3. **Include relevant modules** - Copy the appropriate module includes for this user story
-4. **Create or update the introductory concept module** - Write a focused concept module with an abstract for this specific user story if needed
-5. **Update parent files** - Replace the original assembly include with includes for all new assemblies in the `master.adoc` file
-6. **Delete the original assembly** - Once all content is split and includes are updated
+2. **Include relevant modules** - Copy the appropriate module includes for this user story
+3. **Create or update the introductory concept module** - Write a focused concept module with an abstract for this specific user story if needed
+4. **Update parent files** - Replace the original assembly include with includes for all new assemblies in the `master.adoc` file
+5. **Delete the original assembly** - Once all content is split and includes are updated
 
 ### Step 4: Report findings
 

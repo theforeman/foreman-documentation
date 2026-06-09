@@ -1,0 +1,88 @@
+---
+name: check
+on:
+  pull_request:
+    paths:
+      - 'guides/common/modules/**.adoc'
+      - 'scripts/check-filename-id-heading-match.sh'
+      - '.github/workflows/check-filename-id-heading-match.yml'
+
+jobs:
+  check-match:
+    name: Filename-ID-Heading match
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v6
+
+      - name: Get changed module files
+        id: changed-files
+        uses: tj-actions/changed-files@v47
+        with:
+          files: |
+            guides/common/modules/con*.adoc
+            guides/common/modules/proc*.adoc
+            guides/common/modules/ref*.adoc
+
+      - name: List changed files
+        run: |
+          echo "Any modules changed? ${{ steps.changed-files.outputs.any_changed }}"
+          echo "Changed modules: ${{ steps.changed-files.outputs.all_changed_files }}"
+          echo "Count: ${{ steps.changed-files.outputs.all_changed_files_count }}"
+
+      - name: Check filename-ID-heading match with reviewdog
+        if: steps.changed-files.outputs.any_changed == 'true'
+        env:
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Install reviewdog
+          curl -sfL https://raw.githubusercontent.com/reviewdog/reviewdog/master/install.sh | sh -s -- -b /tmp
+
+          # Run our check script and convert output to reviewdog rdjsonl format
+          for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
+            ./scripts/check-filename-id-heading-match.sh "$file" 2>&1 || true
+          done | \
+          awk '
+            /Warning:/ {
+              # Remove color codes first, then extract filename
+              line = $0
+              gsub(/\x1b\[[0-9;]*m/, "", line)
+              sub(/^Warning: /, "", line)
+              file = line
+              # Reset message parts for this file
+              id_msg = ""
+              heading_msg = ""
+            }
+            /ID .* does not match expected/ {
+              # Extract ID and expected values
+              match($0, /ID '\''([^'\'']*)'\'' does not match expected '\''([^'\'']*)'\''/, arr)
+              id_value = arr[1]
+              expected = arr[2]
+              id_msg = "ID '\''" id_value "'\'' does not match expected '\''" expected "'\''"
+            }
+            /Heading .* does not match ID/ {
+              # Extract heading value
+              match($0, /Heading '\''([^'\'']*)'\''/, arr)
+              heading_value = arr[1]
+              heading_msg = " | Heading '\''" heading_value "'\'' does not match ID"
+            }
+            /^\s*$/ && file != "" && (id_msg != "" || heading_msg != "") {
+              # Empty line marks end of warning block - output the combined message
+              message = id_msg heading_msg
+              if (message != "") {
+                printf "{\"message\":\"%s\",\"location\":{\"path\":\"%s\",\"range\":{\"start\":{\"line\":3}}},\"severity\":\"WARNING\"}\n", message, file
+              }
+              file = ""
+              id_msg = ""
+              heading_msg = ""
+            }
+          ' | \
+          /tmp/reviewdog -f=rdjsonl \
+            -name="Filename-ID-heading-match" \
+            -reporter=github-pr-check \
+            -filter-mode=diff_context \
+            -fail-level=warning \
+            -level=warning
