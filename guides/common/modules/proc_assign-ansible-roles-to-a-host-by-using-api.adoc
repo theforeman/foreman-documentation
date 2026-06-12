@@ -1,0 +1,91 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="assign-ansible-roles-to-a-host-by-using-api"]
+= Assign Ansible roles to a host by using {Project} API
+
+[role="_abstract"]
+You can assign Ansible roles to your host by using {Project} API.
+Ansible roles define the Ansible content that is used to configure your host.
+
+.Prerequisites
+* Your {Project} account has a role that grants the `create_ansible_lifecycle_environment_paths`, `edit_ansible_lifecycle_environment_paths`, `view_ansible_content`, `view_ansible_lifecycle_environment_paths`, `view_ansible_lifecycle_environments`, and `view_organizations` permissions.
+* Your {Project} contains an Ansible lifecycle environment with an Ansible Execution Environment and Ansible content.
+
+.Procedure
+. Query the {Project} API to get the ID of your host:
++
+[source, json, options="nowrap", subs="verbatim,quotes,attributes"]
+----
+$ curl \
+--header "Accept: application/json" \
+--header "Content-Type: application/json" \
+--user "_My_User_Name_:__My_Password__" \
+https://{foreman-example-com}/api/v2/hosts/ \
+| jq ".results" | jq ".[]" | jq 'select(.name == "_My_Host_")' | jq ".id"
+----
+. Query the {Project} API to get the ID of your Ansible lifecycle environment:
++
+[source, json, options="nowrap", subs="verbatim,quotes,attributes"]
+----
+$ curl \
+--header "Accept: application/json" \
+--header "Content-Type: application/json" \
+--user "_My_User_Name_:__My_Password__" \
+https://{foreman-example-com}/api/v2/ansible_director/lifecycle_environments/paths/ \
+| jq ".results" | jq ".[]" | jq 'select(.name == "_My_Ansible_Lifecycle_Environment_Path_")' | jq ".lifecycle_environments" | jq ".[]" | jq 'select(.name == "_My_Ansible_Lifecycle_Environment_")' | jq ".id"
+----
+. Query the {Project} API to get the ID of your Ansible role:
++
+[source, json, options="nowrap", subs="verbatim,quotes,attributes"]
+----
+$ curl \
+--header "Accept: application/json" \
+--header "Content-Type: application/json" \
+--user "_My_User_Name_:__My_Password__" \
+https://{foreman-example-com}/api/v2/ansible_director/lifecycle_environments/_My_Ansible_Lifecycle_Environment_ID_/ \
+| jq ".content [] .roles" | jq ".[]" | jq 'select(.name == "_My_Ansible_Role_Name_")' | jq ".id"
+----
+. Create a JSON file, for example, `data.json` to define your Ansible environment:
++
+[source, json, options="nowrap", subs="verbatim,quotes,attributes"]
+----
+{
+  "assignments": [
+    {
+      "source": {
+        "type": "ACR",
+        "id": _My_Ansible_Role_ID_
+      },
+      "target": {
+        "type": "HOST",
+        "id": _My_Host_ID_
+      }
+    }
+  ]
+}
+----
+. Assign Ansible roles to your host:
++
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+$ curl \
+--data @data.json \
+--header "Accept: application/json" \
+--header "Content-Type: application/json" \
+--request POST \
+--user "_My_User_Name_:__My_Password__" \
+https://{foreman-example-com}/api/v2/ansible_director/assignments/bulk/ \
+| jq
+----
+
+.Verification
+* Query the {Project} API to verify that {Project} shows your newly assigned Ansible roles for your host:
++
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+$ curl \
+--header "Accept: application/json" \
+--user "_My_User_Name_:__My_Password__" \
+https://{foreman-example-com}/api/v2/ansible_director/assignments/HOST/_My_Host_ID_/ \
+| jq
+----

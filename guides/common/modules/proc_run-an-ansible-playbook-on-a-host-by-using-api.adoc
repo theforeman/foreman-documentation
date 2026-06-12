@@ -1,0 +1,57 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="run-an-ansible-playbook-on-a-host-by-using-api"]
+= Run an Ansible Playbook to a host by using {Project} API
+
+[role="_abstract"]
+You can run a custom Ansible Playbook to configure your host through {Project} by using {Project} API.
+
+.Prerequisites
+* Your {Project} account has a role that grants the `create_job_invocations`, `create_template_invocations`, `view_hosts`, `view_job_invocations`, `view_job_templates`, `view_remote_execution_features`, and `view_smart_proxies` permissions.
+
+.Procedure
+. Create a JSON file, for example, `data.json` to define your job invocation:
++
+[source, json, options="nowrap", subs="verbatim,quotes,attributes"]
+----
+{
+  "job_invocation": {
+    "feature": "ansible_run_playbook",
+    "inputs": {
+      "playbook": "n- name: \"_My_Custom_Ansible_Playbook_\"\n  hosts: all\n  tasks:\n    - name: \"_My_Custom_Task_\"\n      ansible.builtin.debug:\n        msg: \"_My_Custom_Message\"\n...\n"
+    },
+    "search_query": "name = _host.example.com_",
+    "targeting_type": "static_query"
+  }
+}
+----
+. Run your Ansible Playbook on your host:
++
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+$ curl \
+--data @data.json \
+--header "Accept: application/json" \
+--header "Content-Type: application/json" \
+--request POST \
+--user "_My_User_Name_:__My_Password__" \
+https://{foreman-example-com}/api/v2/job_invocations/ \
+| jq ".id"
+----
++
+Note the ID of the job.
+
+.Verification
+* Query the {Project} API to verify that {Project} ran the Ansible Playbook on your host successfully:
++
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+$ curl \
+--header "Accept: application/json" \
+--user "_My_User_Name_:__My_Password__" \
+https://{foreman-example-com}/api/v2/job_invocations/_My_Job_ID_/ \
+| jq ".status_label"
+----
+
+.Additional resources
+* xref:configuring-and-setting-up-remote-jobs[]
