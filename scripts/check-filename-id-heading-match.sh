@@ -87,7 +87,6 @@ check_file() {
         # These are the capitalized attribute names used in headings
         normalized_heading="${normalized_heading//\{projectname\}/project}"
         normalized_heading="${normalized_heading//\{project\}/project}"
-        normalized_heading="${normalized_heading//\{projectwebui\}/web-ui}"
         normalized_heading="${normalized_heading//\{projectserver\}/project-server}"
         normalized_heading="${normalized_heading//\{smartproxy\}/smartproxy}"
         normalized_heading="${normalized_heading//\{smartproxyserver\}/smartproxy-server}"
@@ -106,6 +105,11 @@ check_file() {
         normalized_heading="${normalized_heading//\{rhcloud\}/rhcloud}"
         normalized_heading="${normalized_heading//\{loraxcompose\}/lorax-compose}"
         normalized_heading="${normalized_heading//\{foreman-installer\}/foreman-installer}"
+
+        # Normalize Hammer CLI and Web UI text in headings
+        # The convention is: ID and filename contain "by-using-cli"/"by-using-web-ui", heading contains "by using Hammer CLI"/"by using {ProjectWebUI}"
+        normalized_heading="${normalized_heading//hammer-cli/cli}"
+        normalized_heading="${normalized_heading//\{projectwebui\}/web-ui}"
     fi
 
     # Check if ID matches filename
