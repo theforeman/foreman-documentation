@@ -353,6 +353,7 @@ SOFTWARE.
 <li><a href="#Importing_Report_Templates_managing-hosts">11.7. Importing report templates</a></li>
 <li><a href="#Importing_Report_Templates_Using_the_API_managing-hosts">11.8. Importing report templates using the Foreman API</a></li>
 <li><a href="#Report_Template_Safe_Mode_managing-hosts">11.9. Report template safe mode</a></li>
+<li><a href="#writing-report-templates">11.10. Writing report templates</a></li>
 </ul>
 </li>
 <li><a href="#configuring-and-setting-up-remote-jobs">12. Configuring and setting up remote jobs</a>
@@ -416,8 +417,9 @@ SOFTWARE.
 <li><a href="#importing-all-available-ansible-playbooks_managing-hosts">12.6.4. Importing all available Ansible Playbooks</a></li>
 <li><a href="#running-an-ansible-playbook-from-foreman_managing-hosts">12.6.5. Running an Ansible Playbook from Foreman</a></li>
 <li><a href="#customizing-job-templates">12.6.6. Customizing job templates</a></li>
-<li><a href="#scheduling-a-recurring-ansible-job-for-a-host">12.6.7. Scheduling a recurring Ansible job for a host</a></li>
-<li><a href="#scheduling-a-recurring-ansible-job-for-a-host-group">12.6.8. Scheduling a recurring Ansible job for a host group</a></li>
+<li><a href="#changing-the-associated-template">12.6.7. Changing the associated template</a></li>
+<li><a href="#scheduling-a-recurring-ansible-job-for-a-host">12.6.8. Scheduling a recurring Ansible job for a host</a></li>
+<li><a href="#scheduling-a-recurring-ansible-job-for-a-host-group">12.6.9. Scheduling a recurring Ansible job for a host group</a></li>
 </ul>
 </li>
 <li><a href="#remote-execution-reference_managing-hosts">12.7. Remote execution reference</a>
@@ -4653,6 +4655,356 @@ In the Create Template window, click the <strong>Help</strong> tab and expand <s
 Locate the <strong>Safemode rendering</strong> row to check the value.</p>
 </div>
 </div>
+<div class="sect2">
+<h3 id="writing-report-templates"><a class="anchor" href="#writing-report-templates"></a>11.10. Writing report templates</h3>
+<div class="paragraph _abstract">
+<p>Report templates are Ruby scripts executed on Foreman&#160;server and are able to extract, process, and present information from internal databases in a tabular form.
+They represent an easy way within Foreman to generate customizable reports.</p>
+</div>
+<div class="paragraph">
+<p>Foreman contains a selection of generic report templates.
+In the Foreman web UI, navigate to <strong>Monitor</strong> &gt; <strong>Reports</strong> &gt; <strong>Report Templates</strong> for a list of all templates.</p>
+</div>
+<div class="paragraph">
+<p>As an example, this guide shows you how to write a template, which returns the number and kind of installable errata on hosts.
+Errata contain information to update and/or patch software.
+They cover security updates, bugfixes, or new software features.
+For this purpose, every erratum contains a list of packages affected by the update.
+Keeping a watchful eye on errata is therefore always a good idea to keep your hosts up to date.
+In this context, Foreman distinguishes between two types of errata, <em>installable</em> and <em>available</em> errata:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><em>Available</em> errata for a host are always determined with respect to the latest packages maintained by Foreman.</p>
+</li>
+<li>
+<p><em>Available</em> errata may differ from <em>installable</em> errata, because hosts are normally registered to a frozen state of packages, so called content views.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The final template shows both the number of <em>applicable</em> and <em>installable</em> errata for each host.</p>
+</div>
+<div class="paragraph">
+<p>Report templates allow access to all functionalities of the Foreman API and Foreman variables.</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 5. Report template to view applicable errata</div>
+<div class="content">
+<div class="paragraph">
+<p>You can create a custom report template to get a summary of all hosts that have applicable errata:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-ruby" data-lang="ruby">&lt;%#
+name: View applicable errata
+description: A basic report template to view all applicable errata.
+model: ReportTemplate
+-%&gt;
+
+&lt;%# Loop over all hosts-%&gt;
+&lt;%-  load_hosts(includes: [:operatingsystem, :applicable_errata, :lifecycle_environment]).each_record do |host| -%&gt;
+&lt;%-    @errata = 0 -%&gt;
+&lt;%-    if host.operatingsystem.family != "Windows" -%&gt;
+&lt;%-      # Loop over all errata for the single host -%&gt;
+&lt;%-      host_applicable_errata_filtered(host).each do |erratum| -%&gt;
+&lt;%-        @errata = @errata+1 -%&gt;
+&lt;%-      end -%&gt;
+&lt;%-      report_row(
+          'Host': host.name,
+          'Operating system': host.operatingsystem,
+          'Lifecycle environment': host.lifecycle_environment,
+          'Total': @errata,
+         ) -%&gt;
+&lt;%-    end -%&gt;
+&lt;%-  end -%&gt;
+
+&lt;%= report_render -%&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The first code block is a comment that contains meta data, as indicated by the brackets <code>&lt;%# &#8230;&#8203; -%&gt;</code>.</p>
+</div>
+<div class="paragraph">
+<p>The second code block contains executable Ruby code, as indicated by the brackets <code>&lt;%- -%&gt;</code>.
+The macro <code>load_hosts</code> loads the host data contained in Foreman.
+The processed information is determined by the <code>includes</code> keyword.
+This example requires the operating system, the lifecycle environment, and the applicable errata.
+The following <code>each_record do |host|</code> iterates over all returned hosts entries saved in <code>host</code>.
+Hosts running Windows are explicitly excluded from the list of hosts.
+The applicable errata for each host are then processed through the <code>host_applicable_errata_filtered()</code> macro.
+The exact number of applicable errata is then summed up in the counter <code>@errata</code> and passed to the <code>report_row()</code> macro, which adds a corresponding host line to the report table.</p>
+</div>
+<div class="paragraph">
+<p>The third block renders the report.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 1. Example report template output</caption>
+<colgroup>
+<col style="width: 30%;">
+<col style="width: 20%;">
+<col style="width: 30%;">
+<col style="width: 20%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Host</th>
+<th class="tableblock halign-left valign-top">Operating system</th>
+<th class="tableblock halign-left valign-top">Lifecycle environment</th>
+<th class="tableblock halign-left valign-top">Total</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">host1.example.com</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enterprise Linux</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Testing</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">host2.example.com</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enterprise Linux</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Production</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">163</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">host3.example.com</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enterprise Linux</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Development</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">23</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="exampleblock">
+<div class="title">Example 6. Report template to view errata types</div>
+<div class="content">
+<div class="paragraph">
+<p>You can extend the report template to allow users to restrict the report to a list of hosts instead of all hosts and to display the kind of errata in the report.
+The modified template looks as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-ruby" data-lang="ruby">&lt;%#
+name: Applicable Errata
+description: A basic report template for gathering all applicable errata.
+template_inputs:
+- name: Hosts filter
+  required: false
+  input_type: user
+  advanced: false
+  value_type: plain
+  hidden_value: false
+model: ReportTemplate
+-%&gt;
+&lt;%# Loop over all or input list of hosts -%&gt;
+&lt;%-  load_hosts(search: input('Hosts filter'), includes: [:operatingsystem, :applicable_errata, :lifecycle_environment]).each_record do |host| -%&gt;
+&lt;%-    if host.operatingsystem.family != "Windows" -%&gt;
+&lt;%-      @errata = 0 -%&gt;
+&lt;%-      @bugfix = 0 -%&gt;
+&lt;%-      @misc_err = 0 -%&gt;
+&lt;%-      @enhancement = 0 -%&gt;
+&lt;%-      @security = 0 -%&gt;
+&lt;%-      # Loop over all errata for the single host -%&gt;
+&lt;%-      host_applicable_errata_filtered(host).each do |erratum| -%&gt;
+&lt;%-        @errata = @errata+1 -%&gt;
+&lt;%-        if erratum[:errata_type]=="security" -%&gt;
+&lt;%-          @security=@security+1 -%&gt;
+&lt;%-        elsif erratum[:errata_type]=="bugfix" -%&gt;
+&lt;%-          @bugfix=@bugfix+1 -%&gt;
+&lt;%-        elsif erratum[:errata_type]=="recommended" -%&gt;
+&lt;%-          @bugfix=@bugfix+1 -%&gt;
+&lt;%-        elsif erratum[:errata_type]=="enhancement" -%&gt;
+&lt;%-          @enhancement=@enhancement+1 -%&gt;
+&lt;%-        elsif erratum[:errata_type]=="optional" -%&gt;
+&lt;%-          @enhancement=@enhancement+1 -%&gt;
+&lt;%-        else -%&gt;
+&lt;%-          @misc_err=@misc_err+1 -%&gt;
+&lt;%-        end -%&gt;
+&lt;%-      end -%&gt;
+&lt;%-      report_row(
+          'Host': host.name,
+          'Operating system': host.operatingsystem,
+          'Lifecycle environment': host.lifecycle_environment,
+          # Library specific errata
+          'Security': @security,
+          'Bugfix': @bugfix,
+          'Enhance': @enhancement,
+          'Misc': @misc_err,
+          'Total': @errata,
+         ) -%&gt;
+&lt;%-    end -%&gt;
+&lt;%-  end -%&gt;
+&lt;%= report_render -%&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><code>load_hosts</code> is extended by <code>search: input('Hosts filter')</code>.
+The <code>input</code> macro allows users to add input during execution of the template.
+In this case, it limits the search to a list of hosts.
+The template now distinguishes between security, bugfix, and enhancement errata.</p>
+</div>
+<div class="paragraph">
+<p>Add the input name <code>Hosts filter</code> to the <strong>Inputs</strong> tab of the template.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 2. Example report template output</caption>
+<colgroup>
+<col style="width: 23%;">
+<col style="width: 12%;">
+<col style="width: 15%;">
+<col style="width: 12%;">
+<col style="width: 10%;">
+<col style="width: 12%;">
+<col style="width: 8%;">
+<col style="width: 8%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Host</th>
+<th class="tableblock halign-left valign-top">Operating system</th>
+<th class="tableblock halign-left valign-top">Lifecycle environment</th>
+<th class="tableblock halign-left valign-top">Security</th>
+<th class="tableblock halign-left valign-top">Bugfix</th>
+<th class="tableblock halign-left valign-top">Enhance</th>
+<th class="tableblock halign-left valign-top">Misc</th>
+<th class="tableblock halign-left valign-top">Total</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">host.example.com</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enterprise Linux</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Testing</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">9</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">20</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">32</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="exampleblock">
+<div class="title">Example 7. Report template to view installable and available errata</div>
+<div class="content">
+<div class="paragraph">
+<p>You can extend the report template to view errata that are installable on the host and how many packages are affected by available errata.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-ruby" data-lang="ruby">&lt;%#
+name: Applicable Errata
+description: A basic report template for gathering all applicable errata.
+template_inputs:
+- name: Hosts filter
+  required: false
+  input_type: user
+  advanced: false
+  value_type: plain
+  hidden_value: false
+model: ReportTemplate
+-%&gt;
+&lt;%# Loop over all or input list of hosts -%&gt;
+&lt;%-  load_hosts(search: input('Hosts filter'), includes: [:operatingsystem, :applicable_errata, :lifecycle_environment]).each_record do |host| -%&gt;
+&lt;%-    if host.operatingsystem.family != "Windows" -%&gt;
+&lt;%-      @errata = 0 -%&gt;
+&lt;%-      @bugfix = 0 -%&gt;
+&lt;%-      @misc_err = 0 -%&gt;
+&lt;%-      @enhancement = 0 -%&gt;
+&lt;%-      @security = 0 -%&gt;
+&lt;%-      #Content View Errata%&gt;
+&lt;%-      @cv_misc_err = host.content_facet_attributes.errata_counts[:total] -%&gt;
+&lt;%-      @cv_misc_err = @cv_misc_err - host.content_facet_attributes.errata_counts[:enhancement] -%&gt;
+&lt;%-      @cv_misc_err = @cv_misc_err - host.content_facet_attributes.errata_counts[:bugfix] -%&gt;
+&lt;%-      @cv_misc_err = @cv_misc_err - host.content_facet_attributes.errata_counts[:security] -%&gt;
+&lt;%-      # Loop over all errata for the single host -%&gt;
+&lt;%-      host_applicable_errata_filtered(host).each do |erratum| -%&gt;
+&lt;%-          @errata = @errata+1 -%&gt;
+&lt;%-          if erratum[:errata_type]=="security" -%&gt;
+&lt;%-             @security=@security+1 -%&gt;
+&lt;%-          elsif erratum[:errata_type]=="bugfix" -%&gt;
+&lt;%-             @bugfix=@bugfix+1 -%&gt;
+&lt;%-          elsif erratum[:errata_type]=="recommended" -%&gt;
+&lt;%-             @bugfix=@bugfix+1 -%&gt;
+&lt;%-          elsif erratum[:errata_type]=="enhancement" -%&gt;
+&lt;%-             @enhancement=@enhancement+1 -%&gt;
+&lt;%-          elsif erratum[:errata_type]=="optional" -%&gt;
+&lt;%-             @enhancement=@enhancement+1 -%&gt;
+&lt;%-          else -%&gt;
+&lt;%-             @misc_err=@misc_err+1 -%&gt;
+&lt;%-         end -%&gt;
+&lt;%-      end -%&gt;
+&lt;%-      report_row(
+          'Host': host.name,
+          'Operating system': host.operatingsystem,
+          'Lifecycle environment': host.lifecycle_environment,
+          # Library specific errata
+          'Security': @security,
+          'Bugfix': @bugfix,
+          'Enhance': @enhancement,
+          'Misc': @misc_err,
+          'Total': @errata,
+          # Content View specific errata
+          'CV Security': host.content_facet_attributes.errata_counts[:security],
+          'CV Bugfix': host.content_facet_attributes.errata_counts[:bugfix],
+          'CV Enhance': host.content_facet_attributes.errata_counts[:enhancement],
+          'CV Misc': @cv_misc_err,
+          'CV Total': host.content_facet_attributes.errata_counts[:total],
+          'Packages': host.content_facet_attributes.applicable_deb_count+host.content_facet_attributes.applicable_rpm_count,
+         ) -%&gt;
+&lt;%-    end -%&gt;
+&lt;%-  end -%&gt;
+&lt;%= report_render -%&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Foreman provides the number of installable errata through the host attribute <code>host.content_facet_attributes.errata_counts</code>.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 3. Example report template output</caption>
+<colgroup>
+<col style="width: 23%;">
+<col style="width: 15%;">
+<col style="width: 12%;">
+<col style="width: 15%;">
+<col style="width: 12%;">
+<col style="width: 11%;">
+<col style="width: 12%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Host</th>
+<th class="tableblock halign-left valign-top">CV Security</th>
+<th class="tableblock halign-left valign-top">CV Bugfix</th>
+<th class="tableblock halign-left valign-top">CV Enhance</th>
+<th class="tableblock halign-left valign-top">CV Misc</th>
+<th class="tableblock halign-left valign-top">CV Total</th>
+<th class="tableblock halign-left valign-top">Packages</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">host.example.com</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">6</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">13</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">0</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">20</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">242</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>If the number of installable errata is smaller than the number of available errata, update the corresponding content view as soon as possible.
+Afterwards, update your host.</p>
+</div>
+</div>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -6859,7 +7211,7 @@ For more information, see <a href="#configuring-and-setting-up-remote-jobs">Conf
 </ol>
 </div>
 <div class="exampleblock">
-<div class="title">Example 5. Example Ansible Playbook to access host parameters</div>
+<div class="title">Example 8. Example Ansible Playbook to access host parameters</div>
 <div class="content">
 <div class="paragraph">
 <p>You can use host parameters from Foreman in Ansible Playbooks.</p>
@@ -6958,7 +7310,48 @@ You can also add ERB syntax to customize your YAML Ansible template.</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="scheduling-a-recurring-ansible-job-for-a-host"><a class="anchor" href="#scheduling-a-recurring-ansible-job-for-a-host"></a>12.6.7. Scheduling a recurring Ansible job for a host</h4>
+<h4 id="changing-the-associated-template"><a class="anchor" href="#changing-the-associated-template"></a>12.6.7. Changing the associated template</h4>
+<div class="paragraph _abstract">
+<p>You can change the associated template to customize remote execution workflows.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Administer</strong> &gt; <strong>Remote Execution Features</strong>.</p>
+</li>
+<li>
+<p>Select the remote execution feature of which you want to change the associated template.</p>
+</li>
+<li>
+<p>In the <strong>Job Template</strong> menu, select a different job template.</p>
+<div class="admonitionblock caution">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Caution</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Changing the default job templates might break existing Foreman workflows.
+Evaluate carefully why you want to change the default job template.</p>
+</div>
+<div class="paragraph">
+<p>Cloned templates do not receive updates from Foreman community when upgrading Foreman.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Click <strong>Submit</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="scheduling-a-recurring-ansible-job-for-a-host"><a class="anchor" href="#scheduling-a-recurring-ansible-job-for-a-host"></a>12.6.8. Scheduling a recurring Ansible job for a host</h4>
 <div class="paragraph _abstract">
 <p>You can schedule a recurring Ansible job to run on a host at a set interval.
 This is useful for regular tasks such as compliance checks, patching, or configuration drift remediation.</p>
@@ -7005,7 +7398,7 @@ This is useful for regular tasks such as compliance checks, patching, or configu
 </div>
 </div>
 <div class="sect3">
-<h4 id="scheduling-a-recurring-ansible-job-for-a-host-group"><a class="anchor" href="#scheduling-a-recurring-ansible-job-for-a-host-group"></a>12.6.8. Scheduling a recurring Ansible job for a host group</h4>
+<h4 id="scheduling-a-recurring-ansible-job-for-a-host-group"><a class="anchor" href="#scheduling-a-recurring-ansible-job-for-a-host-group"></a>12.6.9. Scheduling a recurring Ansible job for a host group</h4>
 <div class="paragraph _abstract">
 <p>You can schedule a recurring Ansible job to run on a host group at a set interval.
 This is useful for regular tasks such as compliance checks, patching, or configuration drift remediation across all hosts that are assigned to this host group.</p>
@@ -7668,7 +8061,7 @@ Select <strong>Review</strong> from the list next to the selected template to vi
 <p>You can use Foreman-specific macros in your ERB templates to generate URLs, indent code, and reuse common patterns across templates.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 1. Generic macros</caption>
+<caption class="title">Table 4. Generic macros</caption>
 <colgroup>
 <col style="width: 50%;">
 <col style="width: 50%;">
@@ -7914,7 +8307,7 @@ falsy?(0) =&gt; true</pre>
 <p>Note that job templates accept only <code>@host</code> variables.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 2. Host-specific variables and macros</caption>
+<caption class="title">Table 5. Host-specific variables and macros</caption>
 <colgroup>
 <col style="width: 50%;">
 <col style="width: 50%;">
@@ -8172,7 +8565,7 @@ For example, to extract the last segment of the host&#8217;s IP address, you can
 <p>You can use Kickstart-specific variables in provisioning templates to inject host data and installation options.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 3. Kickstart-specific variables</caption>
+<caption class="title">Table 6. Kickstart-specific variables</caption>
 <colgroup>
 <col style="width: 50%;">
 <col style="width: 50%;">
@@ -8375,7 +8768,7 @@ In this example, a report template is used, but the steps are applicable to othe
 You can use these snippets as a starting point when writing your own templates.</p>
 </div>
 <div class="exampleblock">
-<div class="title">Example 6. Checking if a host has Puppet and Puppetlabs enabled</div>
+<div class="title">Example 9. Checking if a host has Puppet and Puppetlabs enabled</div>
 <div class="content">
 <div class="paragraph">
 <p>The following example checks if the host has the Puppet and Puppetlabs repositories enabled:</p>
@@ -8392,7 +8785,7 @@ puppetlabs_enabled = host_param_true?('enable-puppetlabs-repo')
 </div>
 </div>
 <div class="exampleblock">
-<div class="title">Example 7. Capturing major and minor versions of a host&#8217;s operating system</div>
+<div class="title">Example 10. Capturing major and minor versions of a host&#8217;s operating system</div>
 <div class="content">
 <div class="paragraph">
 <p>The following example shows how to capture the minor and major version of the host&#8217;s operating system, which can be used for package related decisions:</p>
@@ -8412,7 +8805,7 @@ os_minor = @host.operatingsystem.minor.to_i
 </div>
 </div>
 <div class="exampleblock">
-<div class="title">Example 8. Importing snippets to a template</div>
+<div class="title">Example 11. Importing snippets to a template</div>
 <div class="content">
 <div class="paragraph">
 <p>The following example imports the <strong>subscription_manager_registration</strong> snippet to the template and indents it by four spaces:</p>
@@ -8427,7 +8820,7 @@ end %&gt;</pre>
 </div>
 </div>
 <div class="exampleblock">
-<div class="title">Example 9. Conditionally importing a Kickstart snippet</div>
+<div class="title">Example 12. Conditionally importing a Kickstart snippet</div>
 <div class="content">
 <div class="paragraph">
 <p>The following example imports the <code>kickstart_networking_setup</code> snippet if the host&#8217;s subnet has the DHCP boot mode enabled:</p>
@@ -8443,7 +8836,7 @@ end %&gt;</pre>
 </div>
 </div>
 <div class="exampleblock">
-<div class="title">Example 10. Parsing values from host custom facts</div>
+<div class="title">Example 13. Parsing values from host custom facts</div>
 <div class="content">
 <div class="paragraph">
 <p>You can use the <code>host.facts</code> variable to parse values from a host&#8217;s facts and custom facts.
