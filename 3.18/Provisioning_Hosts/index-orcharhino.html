@@ -244,14 +244,15 @@ SOFTWARE.
 <ul class="sectlevel1">
 <li><a href="#Introduction_to_Provisioning_provisioning">1. Introduction to provisioning</a>
 <ul class="sectlevel2">
-<li><a href="#Provisioning-Methods-in-orcharhino_provisioning">1.1. Provisioning methods in orcharhino</a></li>
-<li><a href="#provisioning-hardware-types">1.2. Provisioning hardware types</a></li>
-<li><a href="#supported-client-platforms-in-provisioning">1.3. Supported client platforms in provisioning</a></li>
-<li><a href="#supported-cloud-providers">1.4. Supported cloud providers</a></li>
-<li><a href="#supported-virtualization-infrastructures">1.5. Supported virtualization infrastructures</a></li>
-<li><a href="#using-novnc-to-access-virtual-machines_provisioning">1.6. Using noVNC to access virtual machines</a></li>
-<li><a href="#Host_Parameter_Hierarchy_provisioning">1.7. Host parameter hierarchy</a></li>
-<li><a href="#permissions-required-to-provision-hosts">1.8. Permissions required to provision hosts</a></li>
+<li><a href="#provisioning-methods">1.1. Provisioning methods</a></li>
+<li><a href="#Provisioning-Methods-in-orcharhino_provisioning">1.2. Provisioning methods in orcharhino</a></li>
+<li><a href="#provisioning-hardware-types">1.3. Provisioning hardware types</a></li>
+<li><a href="#supported-client-platforms-in-provisioning">1.4. Supported client platforms in provisioning</a></li>
+<li><a href="#supported-cloud-providers">1.5. Supported cloud providers</a></li>
+<li><a href="#supported-virtualization-infrastructures">1.6. Supported virtualization infrastructures</a></li>
+<li><a href="#using-novnc-to-access-virtual-machines_provisioning">1.7. Using noVNC to access virtual machines</a></li>
+<li><a href="#Host_Parameter_Hierarchy_provisioning">1.8. Host parameter hierarchy</a></li>
+<li><a href="#permissions-required-to-provision-hosts">1.9. Permissions required to provision hosts</a></li>
 </ul>
 </li>
 <li><a href="#preparing-networking-for-host-management">2. Preparing networking for host management</a>
@@ -548,7 +549,326 @@ SOFTWARE.
 Using orcharhino, you can define and automate fine-grained provisioning for a large number of hosts.</p>
 </div>
 <div class="sect2">
-<h3 id="Provisioning-Methods-in-orcharhino_provisioning"><a class="anchor" href="#Provisioning-Methods-in-orcharhino_provisioning"></a>1.1. Provisioning methods in orcharhino</h3>
+<h3 id="provisioning-methods"><a class="anchor" href="#provisioning-methods"></a>1.1. Provisioning methods</h3>
+<div class="paragraph _abstract">
+<p>orcharhino supports multiple ways to provision a host: image-based, network-based, boot disk-based, and Discovery-based host provisioning.
+The optimal host provisioning method depends on the type of host, the availability of DHCP, and if it is to be cloned from an existing VM template.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="images/common/provisioning-decision-tree-orcharhino.svg" alt="Decision tree for provisioning methods in orcharhino">
+</div>
+</div>
+<div class="paragraph">
+<p>Pick a provisioning method based on the type of host that you want to provision:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Cloud instances</dt>
+<dd>
+<div class="ulist">
+<ul>
+<li>
+<p>Choose image-based provisioning.</p>
+</li>
+</ul>
+</div>
+</dd>
+<dt class="hdlist1">Virtual machines</dt>
+<dd>
+<div class="ulist">
+<ul>
+<li>
+<p>If you want to clone the VM from a template/<em>golden image</em>, choose image-based provisioning.</p>
+</li>
+<li>
+<p>If your host has a static IP address, choose boot disk-based provisioning.</p>
+</li>
+<li>
+<p>If the network of your host provides DHCP, choose network-based provisioning.</p>
+</li>
+</ul>
+</div>
+</dd>
+<dt class="hdlist1">Bare-metal hosts</dt>
+<dd>
+<div class="ulist">
+<ul>
+<li>
+<p>Choose Discovery-based provisioning.</p>
+</li>
+<li>
+<p>If your host has a static IP address, choose boot disk-based provisioning.</p>
+</li>
+<li>
+<p>If the network of your host provides DHCP, choose network-based provisioning.</p>
+</li>
+</ul>
+</div>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>Each provisioning method has a distinct set of steps to provision a host:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="images/common/provisioning-workflow-overview-orcharhino.svg" alt="Overview of provisioning workflow in orcharhino">
+</div>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Network-based provisioning</dt>
+<dd>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Start the system based on your deployment model:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>For a virtual machine, orcharhino instructs the compute resource provider to create a virtual machine.</p>
+</li>
+<li>
+<p>For a bare-metal host, you must start it manually.
+You can do this by hand or through a lights out management tool.
+For bare-metal hosts, you must submit the MAC address of the new host to orcharhino.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>The host boots over the network and automatically searches for a DHCP server, which in turn assigns an IP address and configures the network.
+The DHCP server provides a PXE/iPXE file, which is a type of provisioning template.</p>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>ATIX&#160;AG recommends having orcharhino configure and manage the DHCP server or even take over its duties through orcharhino&#160;Server or orcharhino&#160;Proxy&#160;Server.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>The new host fetches the Preseed template from orcharhino&#160;Server or orcharhino&#160;Proxy&#160;Server through TFTP and starts the unattended installation and initial configuration of the operating system.</p>
+</li>
+<li>
+<p>The new host reports back to orcharhino after finishing the installation.
+This switches the status in orcharhino to <code>installed</code>.</p>
+</li>
+</ol>
+</div>
+</dd>
+<dt class="hdlist1">Boot Disk-based provisioning</dt>
+<dd>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>The <code>boot_disk.iso</code> image contains the network configuration of the new host, that is it replaces the network configuration through DHCP in contrast to network-based provisioning.
+There are four different kinds of boot disk images:</p>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Per-host image</dt>
+<dd>
+<p>This is the default image and does not require DHCP.
+It only contains the network configuration and then points to orcharhino for the iPXE template followed by the Preseed template.</p>
+</dd>
+<dt class="hdlist1">Full-host image</dt>
+<dd>
+<p>This contains the network configuration, the kernel, the iPXE file, and the provisioning template.
+The image is operating system specific.</p>
+</dd>
+<dt class="hdlist1">Generic image</dt>
+<dd>
+<p>This is a reusable image which works for any host registered on orcharhino and requires DHCP.</p>
+</dd>
+<dt class="hdlist1">Subnet-generic image</dt>
+<dd>
+<p>This requires DHCP and chainloads the installation media from your orcharhino&#160;Proxy assigned to the subnet of the host.</p>
+</dd>
+</dl>
+</div>
+</li>
+<li>
+<p>Both a bare-metal host or a virtual machine require the <code>boot_disk.iso</code> to be attached.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Virtual machines running on VMware vSphere automatically receive the image and attach it to the new host.
+For other compute resource providers, you must attach the image by hand.</p>
+</li>
+<li>
+<p>Bare-metal host always need to receive the image manually.
+The same applies if you want to boot from a different <code>boot_disk.iso</code> image, other than the one provided by orcharhino.
+For bare-metal hosts, the MAC address of the new host must be submitted to orcharhino.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>The new host reports back to orcharhino after finishing the installation.
+This switches the status in orcharhino to <code>installed</code>.</p>
+</li>
+</ol>
+</div>
+</dd>
+<dt class="hdlist1">Image-based provisioning (PXE-less provisioning)</dt>
+<dd>
+<p>Depending on how you want to configure your image, this can be done either</p>
+<div class="ulist">
+<ul>
+<li>
+<p>with a <code>finish</code> provisioning template through SSH only, in which case you require the network configuration to be provided through DHCP;</p>
+</li>
+<li>
+<p>or by using cloud-init with a <code>userdata</code> provisioning template, in which case the image needs to point to your orcharhino&#160;Server or orcharhino&#160;Proxy&#160;Server and have built-in support for <code>cloud-init</code>.
+The exact configuration depends on your compute resource provider.</p>
+</li>
+</ul>
+</div>
+</dd>
+</dl>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>ATIX&#160;AG recommends using image-based provisioning only for hosts that have access to a DHCP server.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>orcharhino instructs the compute resource provider to create a virtual machine based on an existing VM template.</p>
+</li>
+<li>
+<p>Depending on whether a DHCP server is available,</p>
+<div class="ulist">
+<ul>
+<li>
+<p>the new virtual machine either receives its IP address and network configuration from the DHCP server,</p>
+</li>
+<li>
+<p>or a cloud-init provisioning template is used to set up the network configuration.
+This can be used with and without DHCP.</p>
+<div class="paragraph">
+<p>Alternatively, orcharhino finishes the provisioning process based on provisioning templates through SSH.</p>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>If the compute resource is a cloud provider and the image is capable of <code>user_data</code>, the new host does not need to be reachable by orcharhino&#160;Server or orcharhino&#160;Proxy&#160;Server over SSH but can itself notify orcharhino&#160;Server or orcharhino&#160;Proxy&#160;Server when it is ready.</p>
+</li>
+</ol>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 1. Operating system - template mapping</caption>
+<colgroup>
+<col style="width: 66.6666%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Operating system</th>
+<th class="tableblock halign-left valign-top">Provisioning template</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">AlmaLinux, Amazon Linux, CentOS, Oracle Linux, Red&#160;Hat Enterprise Linux, and Rocky Linux</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Kickstart templates</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Debian</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Preseed templates</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SUSE Linux Enterprise Server 16</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Agama templates</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SUSE Linux Enterprise Server 15 and 12</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">AutoYaST templates</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Ubuntu</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Preseed Autoinstall templates</p></td>
+</tr>
+</tbody>
+</table>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Discovery-based provisioning</dt>
+<dd>
+<p>Discovery-based provisioning is similar to boot disk-based provisioning.
+It uses a <code>discovery.iso</code> image to boot the host into a minimal Linux system, reports it to orcharhino, and sends various facts including its MAC address to identify the host.
+Afterwards, the host is listed on the discovered hosts page.
+Discovery is an optional plugin.</p>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Depending on whether a DHCP server is available, the host receives its network configuration and Discovery image:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>The host manually receives its network configuration and Discovery image and boots the <code>discovery.iso</code> image in an interactive way.</p>
+</li>
+<li>
+<p>The host automatically fetches its network configuration and Discovery image from the DHCP server and boots the <code>discovery.iso</code> image in a non-interactive way.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>The <code>discovery.iso</code> image contains the information to which orcharhino&#160;Server or orcharhino&#160;Proxy&#160;Server the host must report and collects facts about the host and sends it to orcharhino&#160;Server or orcharhino&#160;Proxy&#160;Server.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>If there are existing Discovery rules, the host automatically start a network-based provisioning process based on Discovery rules and host groups.</p>
+</li>
+<li>
+<p>Else, the host appears on the list of discovered hosts.
+The following process is very similar to creating a hew host.</p>
+<div class="paragraph">
+<p>There are two ways to start the installation of the operating system:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The host is rebooted and then gets the network-based provisioning template by the DHCP server.</p>
+</li>
+<li>
+<p>The installation is started by using <code>kexec</code> with the current network configuration.</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
+</dd>
+</dl>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Provisioning-Methods-in-orcharhino_provisioning"><a class="anchor" href="#Provisioning-Methods-in-orcharhino_provisioning"></a>1.2. Provisioning methods in orcharhino</h3>
 <div class="paragraph _abstract">
 <p>With orcharhino, you can provision hosts by using the following provisioning methods.</p>
 </div>
@@ -640,7 +960,7 @@ orcharhino can customize the image by running either a pre-boot or post-boot con
 </div>
 </div>
 <div class="sect2">
-<h3 id="provisioning-hardware-types"><a class="anchor" href="#provisioning-hardware-types"></a>1.2. Provisioning hardware types</h3>
+<h3 id="provisioning-hardware-types"><a class="anchor" href="#provisioning-hardware-types"></a>1.3. Provisioning hardware types</h3>
 <div class="paragraph _abstract">
 <p>With orcharhino, you can provision hosts of the following hardware types.</p>
 </div>
@@ -700,9 +1020,9 @@ You can instruct orcharhino to use a particular hardware profile by defining a c
 </div>
 </div>
 <div class="sect2">
-<h3 id="supported-client-platforms-in-provisioning"><a class="anchor" href="#supported-client-platforms-in-provisioning"></a>1.3. Supported client platforms in provisioning</h3>
+<h3 id="supported-client-platforms-in-provisioning"><a class="anchor" href="#supported-client-platforms-in-provisioning"></a>1.4. Supported client platforms in provisioning</h3>
 <div class="paragraph _abstract">
-<p>orcharhino supports the following operating systems and architectures for host provisioning.</p>
+<p>You can provision supported operating systems on hosts with supported architectures.</p>
 </div>
 <div class="paragraph">
 <p>The hosts can use the following operating systems:</p>
@@ -756,7 +1076,7 @@ You can instruct orcharhino to use a particular hardware profile by defining a c
 </div>
 </div>
 <div class="sect2">
-<h3 id="supported-cloud-providers"><a class="anchor" href="#supported-cloud-providers"></a>1.4. Supported cloud providers</h3>
+<h3 id="supported-cloud-providers"><a class="anchor" href="#supported-cloud-providers"></a>1.5. Supported cloud providers</h3>
 <div class="paragraph _abstract">
 <p>You can connect the following cloud providers as compute resources to orcharhino:</p>
 </div>
@@ -789,7 +1109,7 @@ You can instruct orcharhino to use a particular hardware profile by defining a c
 </div>
 </div>
 <div class="sect2">
-<h3 id="supported-virtualization-infrastructures"><a class="anchor" href="#supported-virtualization-infrastructures"></a>1.5. Supported virtualization infrastructures</h3>
+<h3 id="supported-virtualization-infrastructures"><a class="anchor" href="#supported-virtualization-infrastructures"></a>1.6. Supported virtualization infrastructures</h3>
 <div class="paragraph _abstract">
 <p>You can connect the following virtualization infrastructures as compute resources to orcharhino:</p>
 </div>
@@ -822,7 +1142,7 @@ You can instruct orcharhino to use a particular hardware profile by defining a c
 </div>
 </div>
 <div class="sect2">
-<h3 id="using-novnc-to-access-virtual-machines_provisioning"><a class="anchor" href="#using-novnc-to-access-virtual-machines_provisioning"></a>1.6. Using noVNC to access virtual machines</h3>
+<h3 id="using-novnc-to-access-virtual-machines_provisioning"><a class="anchor" href="#using-novnc-to-access-virtual-machines_provisioning"></a>1.7. Using noVNC to access virtual machines</h3>
 <div class="paragraph _abstract">
 <p>You can use your browser to access the VNC console of VMs created by orcharhino.</p>
 </div>
@@ -878,7 +1198,7 @@ Ensure the machine is powered on and then select <strong>Console</strong>.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="Host_Parameter_Hierarchy_provisioning"><a class="anchor" href="#Host_Parameter_Hierarchy_provisioning"></a>1.7. Host parameter hierarchy</h3>
+<h3 id="Host_Parameter_Hierarchy_provisioning"><a class="anchor" href="#Host_Parameter_Hierarchy_provisioning"></a>1.8. Host parameter hierarchy</h3>
 <div class="paragraph _abstract">
 <p>You can access host parameters when provisioning hosts.</p>
 </div>
@@ -933,9 +1253,9 @@ Ensure the machine is powered on and then select <strong>Console</strong>.</p>
 </table>
 </div>
 <div class="sect2">
-<h3 id="permissions-required-to-provision-hosts"><a class="anchor" href="#permissions-required-to-provision-hosts"></a>1.8. Permissions required to provision hosts</h3>
+<h3 id="permissions-required-to-provision-hosts"><a class="anchor" href="#permissions-required-to-provision-hosts"></a>1.9. Permissions required to provision hosts</h3>
 <div class="paragraph _abstract">
-<p>The following list provides an overview of the permissions a non-admin user requires to provision hosts.</p>
+<p>Grant these permissions to enable users to provision hosts without full administrator access.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
@@ -1106,8 +1426,7 @@ You can only assign organizations that you belong to.</p></td>
 <h2 id="preparing-networking-for-host-management"><a class="anchor" href="#preparing-networking-for-host-management"></a>2. Preparing networking for host management</h2>
 <div class="sectionbody">
 <div class="paragraph _abstract">
-<p>Each provisioning type requires some network configuration.
-Use this chapter to configure network services on your orcharhino&#160;Proxies.</p>
+<p>You must configure network services on your orcharhino&#160;Proxies based on the provisioning type.</p>
 </div>
 <div class="paragraph">
 <p>New hosts must have access to either your orcharhino&#160;Server or any orcharhino&#160;Proxy&#160;Server.
@@ -1236,8 +1555,10 @@ This filters out facts completely without storing them.</p>
 <div class="sect2">
 <h3 id="resources-for-network-based-provisioning"><a class="anchor" href="#resources-for-network-based-provisioning"></a>2.3. Resources for network-based provisioning</h3>
 <div class="paragraph _abstract">
-<p>orcharhino contains networking resources that you must set up and configure to create a host.
-It includes the following networking resources:</p>
+<p>You must set up and configure networking resources to provision hosts over a network.</p>
+</div>
+<div class="paragraph">
+<p>The following networking resources are required:</p>
 </div>
 <div class="dlist">
 <dl>
@@ -2895,7 +3216,8 @@ Click <strong>Show Diff</strong> to see information about a specific change:</p>
 <div class="sect2">
 <h3 id="kinds-of-provisioning-templates"><a class="anchor" href="#kinds-of-provisioning-templates"></a>5.2. Kinds of provisioning templates</h3>
 <div class="paragraph _abstract">
-<p>orcharhino provides templates for different host provisioning workflows.</p>
+<p>orcharhino provides templates for different host provisioning workflows.
+Choose a provisioning template type based on your compute resource and provisioning environment.</p>
 </div>
 <div class="dlist">
 <dl>
@@ -2986,8 +3308,7 @@ This technique can be used in any environment, preferably virtualized.</p>
 <div class="sect2">
 <h3 id="creating-provisioning-templates-by-using-web-ui"><a class="anchor" href="#creating-provisioning-templates-by-using-web-ui"></a>5.3. Creating provisioning templates by using orcharhino management UI</h3>
 <div class="paragraph _abstract">
-<p>A provisioning template defines the way orcharhino installs an operating system on a host.
-Use this procedure to create a new provisioning template.</p>
+<p>Define how orcharhino installs an operating system on a host by creating a provisioning template.</p>
 </div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
@@ -3371,9 +3692,8 @@ autopart</pre>
 <div class="sect2">
 <h3 id="associating-partition-tables-with-disk-encryption_provisioning"><a class="anchor" href="#associating-partition-tables-with-disk-encryption_provisioning"></a>5.13. Associating partition tables with disk encryption</h3>
 <div class="paragraph _abstract">
-<p>orcharhino contains partition tables that encrypt the disk of your host by using Linux Unified Key Setup (LUKS) during host provisioning.
-Encrypted disks on hosts protect data at rest.
-Optionally, you can also bind the disk to a Tang server through Clevis for decryption during boot.</p>
+<p>You can encrypt host disks by using Linux Unified Key Setup (LUKS) during provisioning to protect data at rest.
+Optionally, bind the disk to a Tang server through Clevis for decryption during boot.</p>
 </div>
 <div class="paragraph">
 <p>Associate the partition table with your operating system entry.
@@ -3436,7 +3756,7 @@ For more information, see <a href="https://docs.theforeman.org/3.18/Managing_Hos
 <div class="sect2">
 <h3 id="dynamic-partition-example_provisioning"><a class="anchor" href="#dynamic-partition-example_provisioning"></a>5.14. Dynamic partition example</h3>
 <div class="paragraph _abstract">
-<p>Using an Anaconda Kickstart template, the following section instructs Anaconda to erase the whole disk, automatically partition, enlarge one partition to maximum size, and then proceed to the next sequence of events in the provisioning process.</p>
+<p>This example demonstrates dynamic partitioning in a Kickstart template that erases the disk, creates partitions automatically, and enlarges one partition to maximum size.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -5032,11 +5352,11 @@ For more information, see <a href="#Configuring_iPXE_Environment_using-network-b
 <div class="sect2">
 <h3 id="pxe-loaders-in-project"><a class="anchor" href="#pxe-loaders-in-project"></a>8.12. PXE loaders in orcharhino</h3>
 <div class="paragraph _abstract">
-<p>In orcharhino, a PXE loader defines the <code>filename</code> DHCPv4 option to use during provisioning.
+<p>A PXE loader defines the <code>filename</code> DHCPv4 option to use during provisioning.
 orcharhino deploys the required files to TFTP orcharhino&#160;Proxy.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 1. PXE loaders and DHCPv4 filenames</caption>
+<caption class="title">Table 2. PXE loaders and DHCPv4 filenames</caption>
 <colgroup>
 <col style="width: 33.3333%;">
 <col style="width: 33.3333%;">
@@ -5167,9 +5487,9 @@ The host uses the ISO to boot installation media, connect to orcharhino&#160;Pro
 <dl>
 <dt class="hdlist1">Full host image</dt>
 <dd>
-<p>A boot ISO that contains the installer kernel and initial RAM disk image for a specific host.
-The boot loader on this image chain loads the installer directly from the image.
-This image is useful if the host fails to chain load from orcharhino&#160;Server or orcharhino&#160;Proxy&#160;Server correctly.
+<p>A boot disk ISO that contains the installer kernel and initial RAM disk image for a specific host.
+The boot loader on this image chainloads the installer directly from the image.
+This image is useful if the host fails to chainload from orcharhino&#160;Server or orcharhino&#160;Proxy&#160;Server correctly.
 The provisioning template still downloads from orcharhino&#160;Server.</p>
 <div class="paragraph">
 <p>This image is based on SYSLINUX and GRUB2 and works with most network cards.</p>
@@ -5180,10 +5500,10 @@ The provisioning template still downloads from orcharhino&#160;Server.</p>
 </dd>
 <dt class="hdlist1">Subnet image</dt>
 <dd>
-<p>A boot ISO that is not associated with a specific host.
+<p>A boot disk ISO that is not associated with a specific host.
 You can use this image if you have an environment with multiple subnets, where hosts do not have access to orcharhino&#160;Server but can access orcharhino&#160;Proxy in the particular subnet.
 You can use this image to boot multiple hosts on the same subnet.
-The boot loader on this image chain loads the installer from the TFTP orcharhino&#160;Proxy of the host.</p>
+The boot loader on this image chainloads the installer from the TFTP orcharhino&#160;Proxy of the host.</p>
 <div class="paragraph">
 <p>The ISO sends the MAC address of the host to orcharhino&#160;Proxy, which matches the MAC address against the host entry.
 The image does not store IP address details and requires access to a DHCP server on the network to bootstrap.
@@ -5196,8 +5516,8 @@ Only a limited number of network cards is supported.</p>
 </dd>
 <dt class="hdlist1">Generic image</dt>
 <dd>
-<p>A boot ISO that is not associated with a specific host.
-The boot loader on this image chain loads the installer from orcharhino&#160;Server.</p>
+<p>A boot disk ISO that is not associated with a specific host.
+The boot loader on this image chainloads the installer from orcharhino&#160;Server.</p>
 <div class="paragraph">
 <p>The ISO sends the MAC address of the host to orcharhino&#160;Proxy, which matches the MAC address against the host entry.
 The image does not store IP address details and requires access to a DHCP server on the network to bootstrap.</p>
@@ -5212,7 +5532,7 @@ Only a limited number of network cards is supported.</p>
 </dd>
 <dt class="hdlist1">Host image</dt>
 <dd>
-<p>A boot ISO for a specific host.
+<p>A boot disk ISO for a specific host.
 This image contains only the boot files that are necessary to access the installation media on orcharhino&#160;Server.
 You define the subnet data in orcharhino and the image is created with static networking.</p>
 <div class="paragraph">
@@ -5290,7 +5610,7 @@ The plugin must be enabled before you can generate a boot disk on your orcharhin
 <div class="sect2">
 <h3 id="generating-a-full-host-boot-disk-by-using-web-ui"><a class="anchor" href="#generating-a-full-host-boot-disk-by-using-web-ui"></a>9.4. Generating a full host boot disk by using orcharhino management UI</h3>
 <div class="paragraph _abstract">
-<p>You can generate a full boot disk for a specific host.</p>
+<p>Generate a boot disk ISO that contains the installer kernel and initial RAM disk for a specific host.</p>
 </div>
 <div class="ulist">
 <div class="title">Prerequisites</div>
@@ -5386,7 +5706,7 @@ On the host details page, open the options menu and select <strong>Full host '<e
 <div class="sect2">
 <h3 id="generating-a-full-host-boot-disk-by-using-cli"><a class="anchor" href="#generating-a-full-host-boot-disk-by-using-cli"></a>9.5. Generating a full host boot disk by using Hammer CLI</h3>
 <div class="paragraph _abstract">
-<p>You can generate a full boot disk for a specific host.</p>
+<p>Generate a boot disk ISO that contains the installer kernel and initial RAM disk for a specific host.</p>
 </div>
 <div class="ulist">
 <div class="title">Prerequisites</div>
@@ -5451,7 +5771,7 @@ For more information, see <a href="#associating-templates-with-operating-systems
 <div class="sect2">
 <h3 id="generating-a-subnet-boot-disk-by-using-web-ui"><a class="anchor" href="#generating-a-subnet-boot-disk-by-using-web-ui"></a>9.6. Generating a subnet boot disk by using orcharhino management UI</h3>
 <div class="paragraph _abstract">
-<p>You can generate a subnet boot disk.</p>
+<p>Generate a boot disk ISO not associated with a specific host that chainloads the installer from TFTP orcharhino&#160;Proxy for a subnet.</p>
 </div>
 <div class="ulist">
 <div class="title">Prerequisites</div>
@@ -5479,7 +5799,7 @@ For more information, see <a href="#associating-templates-with-operating-systems
 <div class="sect2">
 <h3 id="generating-a-subnet-boot-disk-by-using-cli"><a class="anchor" href="#generating-a-subnet-boot-disk-by-using-cli"></a>9.7. Generating a subnet boot disk by using Hammer CLI</h3>
 <div class="paragraph _abstract">
-<p>You can generate a subnet boot disk.</p>
+<p>Generate a boot disk ISO not associated with a specific host that chainloads the installer from TFTP orcharhino&#160;Proxy for a subnet.</p>
 </div>
 <div class="ulist">
 <div class="title">Prerequisites</div>
@@ -5506,7 +5826,7 @@ For more information, see <a href="#associating-templates-with-operating-systems
 <div class="sect2">
 <h3 id="generating-a-generic-boot-disk-by-using-web-ui"><a class="anchor" href="#generating-a-generic-boot-disk-by-using-web-ui"></a>9.8. Generating a generic boot disk by using orcharhino management UI</h3>
 <div class="paragraph _abstract">
-<p>You can generate a generic boot disk.</p>
+<p>Generate a boot disk ISO not associated with a specific host that chainloads the installer from orcharhino&#160;Server.</p>
 </div>
 <div class="paragraph">
 <p>This image is also available from the <code>/disks/generic</code> URL path on your orcharhino&#160;Server, for example, <code>https://orcharhino.example.com/disks/generic</code>.</p>
@@ -5537,7 +5857,7 @@ For more information, see <a href="#associating-templates-with-operating-systems
 <div class="sect2">
 <h3 id="generating-a-generic-boot-disk-by-using-cli"><a class="anchor" href="#generating-a-generic-boot-disk-by-using-cli"></a>9.9. Generating a generic boot disk by using Hammer CLI</h3>
 <div class="paragraph _abstract">
-<p>You can generate a generic boot disk.</p>
+<p>Generate a boot disk ISO not associated with a specific host that chainloads the installer from orcharhino&#160;Server.</p>
 </div>
 <div class="paragraph">
 <p>This image is also available from the <code>/disks/generic</code> URL path on your orcharhino&#160;Server, for example, <code>https://orcharhino.example.com/disks/generic</code>.</p>
@@ -5567,7 +5887,7 @@ For more information, see <a href="#associating-templates-with-operating-systems
 <div class="sect2">
 <h3 id="generating-a-host-boot-disk-by-using-web-ui"><a class="anchor" href="#generating-a-host-boot-disk-by-using-web-ui"></a>9.10. Generating a host boot disk by using orcharhino management UI</h3>
 <div class="paragraph _abstract">
-<p>You can generate a boot disk for a specific host.</p>
+<p>Generate a boot disk ISO for a specific host that contains only the boot files necessary to access the installation media.</p>
 </div>
 <div class="ulist">
 <div class="title">Prerequisites</div>
@@ -5659,7 +5979,7 @@ On the host details page, open the options menu and select <strong>Host '<em>My_
 <div class="sect2">
 <h3 id="generating-a-host-boot-disk-by-using-cli"><a class="anchor" href="#generating-a-host-boot-disk-by-using-cli"></a>9.11. Generating a host boot disk by using Hammer CLI</h3>
 <div class="paragraph _abstract">
-<p>You can generate a boot disk for a specific host.</p>
+<p>Generate a boot disk ISO for a specific host that contains only the boot files necessary to access the installation media.</p>
 </div>
 <div class="ulist">
 <div class="title">Prerequisites</div>
@@ -7171,7 +7491,7 @@ You can redirect this output to a file and copy it with the <code>scp</code> com
 <h2 id="Provisioning_Virtual_Machines_on_KVM_kvm-provisioning"><a class="anchor" href="#Provisioning_Virtual_Machines_on_KVM_kvm-provisioning"></a>11. Provisioning virtual machines on KVM (libvirt)</h2>
 <div class="sectionbody">
 <div class="paragraph _abstract">
-<p>orcharhino can connect to the <code>libvirt</code> API on the hypervisor to provision hosts and control certain virtualization functions.</p>
+<p>You can provision hosts and control virtualization functions by using the <code>libvirt</code> API on the KVM hypervisor.</p>
 </div>
 <div class="paragraph">
 <p>Only Virtual Machines created through orcharhino can be managed.
@@ -7806,8 +8126,8 @@ Replace the values in the following example with the appropriate values for your
 <h2 id="Provisioning_Virtual_Machines_in_VMware_vmware-provisioning"><a class="anchor" href="#Provisioning_Virtual_Machines_in_VMware_vmware-provisioning"></a>12. Provisioning virtual machines in VMware vSphere</h2>
 <div class="sectionbody">
 <div class="paragraph _abstract">
-<p>VMware vSphere is an enterprise-level virtualization platform from VMware.
-orcharhino can interact with the vSphere platform, including creating new virtual machines and controlling their power management states.</p>
+<p>You can create and manage virtual machines on VMware vSphere by using orcharhino.
+VMware vSphere is an enterprise-level virtualization platform.</p>
 </div>
 <div class="sect2">
 <h3 id="Installing_VMware_plugin_vmware-provisioning"><a class="anchor" href="#Installing_VMware_plugin_vmware-provisioning"></a>12.1. Installing VMware plugin</h3>
@@ -7946,7 +8266,7 @@ For security, create a dedicated user with required privileges instead of using 
 <div class="sect2">
 <h3 id="adding-a-vmware-connection-to-server-by-using-web-ui"><a class="anchor" href="#adding-a-vmware-connection-to-server-by-using-web-ui"></a>12.4. Adding a VMware connection to orcharhino&#160;Server by using orcharhino management UI</h3>
 <div class="paragraph _abstract">
-<p>Use this procedure to add a VMware vSphere connection to the compute resources of your orcharhino&#160;Server.</p>
+<p>Add VMware vSphere as a compute resource to provision and manage hosts on VMware.</p>
 </div>
 <div class="ulist">
 <div class="title">Prerequisites</div>
@@ -8016,7 +8336,7 @@ You can also add additional contexts.</p>
 <div class="sect2">
 <h3 id="adding-a-vmware-connection-to-server-by-using-cli"><a class="anchor" href="#adding-a-vmware-connection-to-server-by-using-cli"></a>12.5. Adding a VMware connection to orcharhino&#160;Server by using Hammer CLI</h3>
 <div class="paragraph _abstract">
-<p>Use this procedure to add a VMware vSphere connection to the compute resources of your orcharhino&#160;Server.</p>
+<p>Add VMware vSphere as a compute resource to provision and manage hosts on VMware.</p>
 </div>
 <div class="ulist">
 <div class="title">Prerequisites</div>
@@ -8344,7 +8664,7 @@ You can select only one interface for <strong>Provision</strong> and <strong>Pri
 <p>For image-based provisioning, click <strong>Image Based</strong>.</p>
 </li>
 <li>
-<p>If the <code>foreman_bootdisk</code> plugin is installed, and you want to use boot-disk provisioning, click <strong>Boot disk based</strong>.</p>
+<p>If the <code>foreman_bootdisk</code> plugin is installed, and you want to use boot disk-based provisioning, click <strong>Boot disk based</strong>.</p>
 </li>
 </ul>
 </div>
@@ -8940,9 +9260,8 @@ https://<em>orcharhino.example.com</em>/api/compute_resources/<em>compute_resour
 <h2 id="Provisioning_Virtual_Machines_in_Proxmox_proxmox-provisioning"><a class="anchor" href="#Provisioning_Virtual_Machines_in_Proxmox_proxmox-provisioning"></a>13. Provisioning virtual machines in Proxmox</h2>
 <div class="sectionbody">
 <div class="paragraph _abstract">
-<p>Proxmox Virtual Environment is an open-source server management platform for enterprise virtualization.
-Proxmox tightly integrates the KVM hypervisor and Linux Containers (LXC).
-orcharhino can interact with Proxmox, including creating virtual machines and controlling their power management states.</p>
+<p>You can create and manage virtual machines on Proxmox Virtual Environment by using orcharhino.
+Proxmox integrates the KVM hypervisor and Linux Containers (LXC).</p>
 </div>
 <div class="paragraph">
 <p>orcharhino supports Proxmox 8 and 9.</p>
@@ -8998,7 +9317,7 @@ This allows you to manage and deploy hosts to Proxmox.</p>
 <div class="sect2">
 <h3 id="Adding_a_Proxmox_Connection_to_orcharhino_proxmox-provisioning"><a class="anchor" href="#Adding_a_Proxmox_Connection_to_orcharhino_proxmox-provisioning"></a>13.2. Adding a Proxmox connection to orcharhino&#160;Server</h3>
 <div class="paragraph _abstract">
-<p>Use this procedure to add a Proxmox connection to orcharhino.
+<p>Add Proxmox as a compute resource to provision and manage hosts on Proxmox.
 If your Proxmox instance consists of multiple nodes, you have to create a Proxmox connection to orcharhino for each node.</p>
 </div>
 <div class="ulist">
@@ -9306,7 +9625,7 @@ You can select only one interface for <strong>Provision</strong> and <strong>Pri
 <p>For image-based provisioning, click <strong>Image Based</strong>.</p>
 </li>
 <li>
-<p>If the <code>foreman_bootdisk</code> plugin is installed and you want to use boot-disk provisioning, click <strong>Boot disk based</strong>.</p>
+<p>If the <code>foreman_bootdisk</code> plugin is installed and you want to use boot disk-based provisioning, click <strong>Boot disk based</strong>.</p>
 </li>
 </ul>
 </div>
@@ -9411,7 +9730,7 @@ The following page looks identical to creating a host with the compute resource 
 <div class="sect2">
 <h3 id="Adding_a_Remote_Console_Connection_for_a_Host_on_Proxmox_proxmox-provisioning"><a class="anchor" href="#Adding_a_Remote_Console_Connection_for_a_Host_on_Proxmox_proxmox-provisioning"></a>13.9. Adding a remote console connection for a host on Proxmox</h3>
 <div class="paragraph _abstract">
-<p>Use this procedure to add a remote console connection using VNC for a host on Proxmox.</p>
+<p>Configure VNC remote console access for KVM/QEMU hosts on Proxmox.</p>
 </div>
 <div class="admonitionblock important">
 <table>
@@ -9957,7 +10276,7 @@ If you have configured an HTTP proxy for orcharhino in <strong>Administer</stron
 <div class="sect2">
 <h3 id="adding-an-amazon-ec2-connection-to-server-by-using-web-ui"><a class="anchor" href="#adding-an-amazon-ec2-connection-to-server-by-using-web-ui"></a>15.3. Adding an Amazon EC2 connection to orcharhino&#160;Server by using orcharhino management UI</h3>
 <div class="paragraph _abstract">
-<p>Use this procedure to add the Amazon EC2 connection to the compute resources of your orcharhino&#160;Server.</p>
+<p>Add Amazon EC2 as a compute resource to provision and manage hosts on EC2.</p>
 </div>
 <div class="ulist">
 <div class="title">Prerequisites</div>
@@ -10021,7 +10340,7 @@ If you require SSH keys at a later stage, follow the procedure in <a href="#conn
 <div class="sect2">
 <h3 id="adding-an-amazon-ec2-connection-to-server-by-using-cli"><a class="anchor" href="#adding-an-amazon-ec2-connection-to-server-by-using-cli"></a>15.4. Adding an Amazon EC2 connection to orcharhino&#160;Server by using Hammer CLI</h3>
 <div class="paragraph _abstract">
-<p>Use this procedure to add the Amazon EC2 connection to the compute resources of your orcharhino&#160;Server.</p>
+<p>Add Amazon EC2 as a compute resource to provision and manage hosts on EC2.</p>
 </div>
 <div class="ulist">
 <div class="title">Prerequisites</div>
@@ -10600,7 +10919,7 @@ If you want to delete an orphaned host, navigate to <strong>Hosts</strong> &gt; 
 <h2 id="Provisioning_Cloud_Instances_on_Google_Compute_Engine_gce-provisioning"><a class="anchor" href="#Provisioning_Cloud_Instances_on_Google_Compute_Engine_gce-provisioning"></a>16. Provisioning cloud instances on Google Compute Engine</h2>
 <div class="sectionbody">
 <div class="paragraph _abstract">
-<p>orcharhino can interact with Google Compute Engine (GCE), including creating new virtual machines and controlling their power management states.</p>
+<p>You can create and manage virtual machines on Google Compute Engine (GCE) by using orcharhino.</p>
 </div>
 <div class="sect2">
 <h3 id="prerequisites-for-google-compute-engine-provisioning"><a class="anchor" href="#prerequisites-for-google-compute-engine-provisioning"></a>16.1. Prerequisites for Google Compute Engine provisioning</h3>
@@ -10667,7 +10986,7 @@ This allows you to manage and deploy hosts to GCE.</p>
 <div class="sect2">
 <h3 id="adding-a-gce-connection-by-using-web-ui"><a class="anchor" href="#adding-a-gce-connection-by-using-web-ui"></a>16.3. Adding a GCE connection to orcharhino&#160;Server by using orcharhino management UI</h3>
 <div class="paragraph _abstract">
-<p>Use this procedure to add Google Compute Engine (GCE) as a compute resource in orcharhino.</p>
+<p>Add Google Compute Engine (GCE) as a compute resource to provision and manage hosts on GCE.</p>
 </div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
@@ -10706,7 +11025,7 @@ For more information, see <a href="https://cloud.google.com/iam/docs/creating-ma
 <div class="sect2">
 <h3 id="adding-a-gce-connection-by-using-cli"><a class="anchor" href="#adding-a-gce-connection-by-using-cli"></a>16.4. Adding a GCE connection to orcharhino&#160;Server by using Hammer CLI</h3>
 <div class="paragraph _abstract">
-<p>Use this procedure to add Google Compute Engine (GCE) as a compute resource in orcharhino.</p>
+<p>Add Google Compute Engine (GCE) as a compute resource to provision and manage hosts on GCE.</p>
 </div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
@@ -11117,7 +11436,7 @@ This allows you to manage and deploy hosts to Azure.</p>
 <div class="sect2">
 <h3 id="adding-a-microsoft-azure-connection-by-using-web-ui"><a class="anchor" href="#adding-a-microsoft-azure-connection-by-using-web-ui"></a>17.3. Adding a Microsoft Azure connection by using orcharhino management UI</h3>
 <div class="paragraph _abstract">
-<p>Use this procedure to add Microsoft Azure as a compute resource in orcharhino.
+<p>Add Microsoft Azure as a compute resource to provision and manage hosts on Azure.
 Note that you must add a separate compute resource for each Microsoft Azure region that you want to use.</p>
 </div>
 <div class="olist arabic">
@@ -11180,7 +11499,7 @@ This tests if your connection to Azure Resource Manager is successful and loads 
 <div class="sect2">
 <h3 id="adding-a-microsoft-azure-connection-by-using-cli"><a class="anchor" href="#adding-a-microsoft-azure-connection-by-using-cli"></a>17.4. Adding a Microsoft Azure connection to orcharhino&#160;Server by using Hammer CLI</h3>
 <div class="paragraph _abstract">
-<p>Use this procedure to add Microsoft Azure as a compute resource in orcharhino.
+<p>Add Microsoft Azure as a compute resource to provision and manage hosts on Azure.
 Note that you must add a separate compute resource for each Microsoft Azure region that you want to use.</p>
 </div>
 <div class="ulist">
@@ -11707,8 +12026,8 @@ If you want to delete the orphaned host, navigate to <strong>Hosts</strong> &gt;
 <h2 id="boot-loader-management-and-file-structure"><a class="anchor" href="#boot-loader-management-and-file-structure"></a>Appendix A: Boot loader management and file structure</h2>
 <div class="sectionbody">
 <div class="paragraph _abstract">
-<p>orcharhino manages and serves boot loader binaries through the <strong>orcharhino&#160;Proxy</strong>, which provides the network boot services used during automated host provisioning.
-orcharhino supports PXE boot for BIOS and UEFI firmware on various architectures utilizing TFTP or HTTP(S).</p>
+<p>orcharhino manages and serves boot loader binaries through orcharhino&#160;Proxy, which provides the network boot services used during automated host provisioning.
+You can use PXE boot for BIOS and UEFI firmware.</p>
 </div>
 <div class="paragraph">
 <p>During a network-based installation, orcharhino&#160;Proxy coordinates the following services:</p>
@@ -11819,7 +12138,7 @@ If your environment uses a different path, replace the default paths with your c
 <div class="sect2">
 <h3 id="boot-loader-types-in-orcharhino"><a class="anchor" href="#boot-loader-types-in-orcharhino"></a>A.1. Boot loader types in orcharhino</h3>
 <div class="paragraph _abstract">
-<p>orcharhino uses multiple types of PXE boot loaders during network provisioning, depending on firmware type, protocol, and boot environment.</p>
+<p>You can use multiple types of PXE boot loaders during network provisioning, depending on firmware type, protocol, and boot environment.</p>
 </div>
 <div class="paragraph">
 <p>In orcharhino, you can configure a <strong>PXE Loader</strong> for each host.
@@ -11827,7 +12146,7 @@ The PXE Loader determines which boot loader binary the host retrieves during net
 Select a PXE Loader based on whether the host uses <strong>BIOS</strong>, <strong>UEFI</strong>, <strong>Secure Boot</strong>, or <strong>HTTP Boot</strong>.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 2. PXE loader types and boot protocols</caption>
+<caption class="title">Table 3. PXE loader types and boot protocols</caption>
 <colgroup>
 <col style="width: 25%;">
 <col style="width: 25%;">
@@ -11967,7 +12286,7 @@ This mechanism ensures that the correct boot loader binary (such as <code>grubx6
 without requiring administrators to manage architecture-specific filenames.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 3. PXE loader to boot loader mapping</caption>
+<caption class="title">Table 4. PXE loader to boot loader mapping</caption>
 <colgroup>
 <col style="width: 33.3333%;">
 <col style="width: 33.3333%;">
@@ -12058,7 +12377,7 @@ without requiring administrators to manage architecture-specific filenames.</p>
 For example, <code>x86_64</code> hosts use <code>grubx64.efi</code>, while <code>aarch64</code> hosts use <code>grubaa64.efi</code>.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 4. Boot loader filenames by architecture</caption>
+<caption class="title">Table 5. Boot loader filenames by architecture</caption>
 <colgroup>
 <col style="width: 33.3333%;">
 <col style="width: 33.3333%;">
@@ -12121,7 +12440,7 @@ In orcharhino, PXELinux enables hosts to boot into the OS installer automaticall
 <p>When a host is set to <strong>Build mode</strong>, orcharhino generates a host-specific configuration file and places it in the TFTP directory managed by the orcharhino&#160;Proxy.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 5. Default boot loader files</caption>
+<caption class="title">Table 6. Default boot loader files</caption>
 <colgroup>
 <col style="width: 25%;">
 <col style="width: 50%;">
@@ -12217,7 +12536,7 @@ boot loaders are stored in an organized hierarchy by OS, version, and architectu
 <p>Before placing boot loader binaries (<code>shim<em>My_Arch</em>.efi</code>, <code>grub<em>My_Arch</em>.efi</code>), you must manually create the corresponding directory hierarchy by using the <code>mkdir</code> command, for example, <code># mkdir -p /var/lib/tftpboot/bootloader-universe/pxegrub2/<em>My_Distribution</em>/<em>My_Version</em>/<em>My_Arch</em></code>.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 6. Default <code>bootloader-universe</code> files</caption>
+<caption class="title">Table 7. Default <code>bootloader-universe</code> files</caption>
 <colgroup>
 <col style="width: 25%;">
 <col style="width: 50%;">
@@ -12316,7 +12635,7 @@ $ chmod 644 grubx64.efi shimx64.efi</pre>
 Boot loaders are stored in a flat layout, but when a host enters <strong>Build mode</strong>, the orcharhino&#160;Proxy creates a host-specific directory with the required configuration files and links.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 7. Default legacy layout files</caption>
+<caption class="title">Table 8. Default legacy layout files</caption>
 <colgroup>
 <col style="width: 33.3333%;">
 <col style="width: 33.3333%;">
@@ -12475,7 +12794,7 @@ For example, a file located at <code>/var/lib/tftpboot/pxegrub2/grubx64.efi</cod
 </div>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 8. Default boot loader files</caption>
+<caption class="title">Table 9. Default boot loader files</caption>
 <colgroup>
 <col style="width: 33.3333%;">
 <col style="width: 33.3333%;">
