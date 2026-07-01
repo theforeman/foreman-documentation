@@ -1,7 +1,7 @@
 :_mod-docs-content-type: PROCEDURE
 
-[id="configuring-projectserver-to-synchronize-content-over-a-network-by-using-web-ui"]
-= Configuring {ProjectServer} to synchronize content over a network by using {ProjectWebUI}
+[id="configuring-{project-context}-server-to-synchronize-content-over-a-network-by-using-cli"]
+= Configuring {ProjectServer} to synchronize content over a network by using Hammer CLI
 
 [role="_abstract"]
 To synchronize content over a network, configure your downstream {ProjectServer} to pull repositories from a connected upstream {ProjectServer}.
@@ -20,25 +20,34 @@ To synchronize content over a network, configure your downstream {ProjectServer}
 * The downstream user is an admin or has the permissions to create product repositories and organizations.
 
 .Procedure
-. Navigate to *Content* > *Subscriptions*.
-. Click *Manage Manifest*.
-. Navigate to the *CDN Configuration* tab.
-. Select the *Network Sync* tab.
-. In the *URL* field, enter the address of the upstream {ProjectServer}.
-. In the *Username*, enter your username for upstream login.
-. In the *Password*, enter your password or personal access token for upstream login.
-. In the *Organization label* field, enter the label of the upstream organization.
-. Optional: In the *Lifecycle Environment Label* field, enter the label of the upstream lifecycle environment.
-Default is `Library`.
-. Optional: In the *Content view label* field, enter the label of the upstream content view.
-Default is `Default_Organization_View`.
-. From the *SSL CA Content Credential* menu, select a CA certificate used by the upstream {ProjectServer}.
-. Click *Update*.
-. In the {ProjectWebUI}, navigate to *Content* > *Products*.
-. Select the product that contains the repositories that you want to synchronize.
-. From the *Select Action* menu, select *Sync Now* to synchronize all repositories within the product.
+. Connect to your downstream {ProjectServer} using SSH.
+. View information about the upstream CA certificate:
 +
-You can also create a synchronization plan to ensure updates on a regular basis.
+[options="nowrap" subs="+quotes"]
+----
+$ hammer content-credential show \
+--name="_My_Upstream_CA_Cert_" \
+--organization="_My_Downstream_Organization_"
+----
++
+Note the ID of the CA certificate for the next step.
+. Set CDN configuration to an upstream {ProjectServer}:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+$ hammer organization configure-cdn \
+--name="_My_Downstream_Organization_" \
+--type=network_sync \
+--url https://_upstream-{foreman-example-com}_ \
+--username _upstream_username_ --password _upstream_password_ \
+--ssl-ca-credential-id "_My_Upstream_CA_Cert_ID" \
+--upstream-organization-label="_My_Upstream_Organization_" \
+[--upstream-lifecycle-environment-label="_My_Lifecycle_Environment_"] \
+[--upstream-content-view-label="_My_Content_View_"]
+----
++
+The default lifecycle environment label is `Library`.
+The default content view label is `Default_Organization_View`.
 
 .Additional resources
 ifdef::katello,satellite,red_hat_enterprise_linux[]
@@ -46,4 +55,3 @@ ifdef::katello,satellite,red_hat_enterprise_linux[]
 * {ContentManagementDocURL}enabling-red-hat-repositories-by-using-web-ui[Enabling Red{nbsp}Hat repositories in _{ContentManagementDocTitle}_]
 endif::[]
 * {ContentManagementDocURL}importing-custom-ssl-certificates-by-using-web-ui[Importing {customssl} certificates by using {ProjectWebUI} in _{ContentManagementDocTitle}_]
-* {ContentManagementDocURL}creating-a-sync-plan-by-using-web-ui[Creating a sync plan by using {ProjectWebUI} in _{ContentManagementDocTitle}_]
