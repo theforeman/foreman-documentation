@@ -72,6 +72,7 @@ check_file() {
     normalized_id="${normalized_id//\{freeipa-context\}/freeipa}"
     normalized_id="${normalized_id//\{insights-id\}/insights}"
     normalized_id="${normalized_id//\{insights-iop-id\}/insights}"
+    normalized_id="${normalized_id//\{ISS-id\}/inter-server-synchronization}"
     normalized_id="${normalized_id//\{foreman-installer\}/foreman-installer}"
     normalized_id="${normalized_id//\{awx-context\}/awx}"
     normalized_id="${normalized_id//\{compute-resource-id\}/compute-resource}"
@@ -95,6 +96,7 @@ check_file() {
         normalized_heading="${normalized_heading//\{freeipa\}/freeipa}"
         normalized_heading="${normalized_heading//\{insights\}/insights}"
         normalized_heading="${normalized_heading//\{insights-iop\}/insights}"
+        normalized_heading="${normalized_heading//\{iss\}/inter-server-synchronization}"
         normalized_heading="${normalized_heading//\{nbsp\}/}"  # Remove non-breaking spaces
         normalized_heading="${normalized_heading//\{customssl\}/custom-ssl}"
         normalized_heading="${normalized_heading//\{customfiletype\}/custom-file-type}"
