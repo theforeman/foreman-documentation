@@ -11,9 +11,19 @@ script: |
   count := 0
   step_positions := []
   position := 0
+  in_procedure := false
 
   for line in lines {
-    if text.re_match("^\\. [^\\.]", line) {
+    // Detect .Procedure heading (only one per file)
+    if text.re_match("^\\.Procedure", line) {
+      in_procedure = true
+    }
+    // Reset when we encounter another heading at the same level
+    if text.re_match("^\\.[A-Z]", line) && !text.re_match("^\\.Procedure", line) {
+      in_procedure = false
+    }
+    // Count steps only when inside a .Procedure section
+    if in_procedure && text.re_match("^\\. [^\\.]", line) {
       count += 1
       step_positions = append(step_positions, position)
     }
