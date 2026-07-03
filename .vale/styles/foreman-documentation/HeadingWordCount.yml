@@ -1,0 +1,56 @@
+# Check that module headings have between 3 and 11 words.
+# A module has a single heading (the line starting with =).
+# Note: AsciiDoc attributes like {Project} count as one word each.
+---
+extends: script
+message: "Heading must have between 3 and 11 words."
+level: error
+scope: raw
+script: |
+  // Import required Tengo modules
+  text := import("text")  // Text manipulation functions
+  fmt := import("fmt")    // String formatting functions
+
+  // Initialize empty array to store rule violations
+  matches := []
+
+  // Compile regex to find the module heading
+  // Each module contains exactly one heading (line starting with = )
+  // Pattern breakdown:
+  //   (?m)        - Multi-line mode (^ and $ match line boundaries, not just string boundaries)
+  //   ^=[ \t]+    - Matches line starting with = followed by whitespace
+  //   (.+)$       - Captures the heading text to end of line
+  heading_regex := text.re_compile(`(?m)^=[ \t]+(.+)$`)
+
+  // Find the heading (there's only one per module)
+  // scope = the full document text being checked
+  // 1 = find only first match (since there's only one heading per module)
+  result := heading_regex.find(scope, 1)
+
+  // Check if a heading was found (find returns undefined if no match)
+  if result != undefined && len(result) > 0 && len(result[0]) > 1 {
+    // result[0][1] = captured group (just the heading text)
+    heading_text := result[0][1].text
+
+    // Count words including AsciiDoc attributes as words
+    // Match either {AttributeName} or regular words
+    word_regex := text.re_compile(`\{[A-Za-z][A-Za-z0-9_-]*\}|\b\w+\b`)
+    words := word_regex.find(heading_text, -1)
+
+    // Get word count (0 if no words found)
+    word_count := 0
+    if words != undefined {
+      word_count = len(words)
+    }
+
+    // Check if word count is outside valid range (3-11)
+    if word_count < 3 || word_count > 11 {
+      msg := fmt.sprintf("Heading must have between 3 and 11 words (currently %d words).", word_count)
+      matches = append(matches, {
+        begin: result[0][1].begin,
+        end: result[0][1].end,
+        message: msg
+      })
+    }
+  }
+
