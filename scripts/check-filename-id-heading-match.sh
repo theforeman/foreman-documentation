@@ -72,10 +72,12 @@ check_file() {
     normalized_id="${normalized_id//\{freeipa-context\}/freeipa}"
     normalized_id="${normalized_id//\{insights-id\}/insights}"
     normalized_id="${normalized_id//\{insights-iop-id\}/insights}"
+    normalized_id="${normalized_id//\{ISS-id\}/inter-server-synchronization}"
     normalized_id="${normalized_id//\{foreman-installer\}/foreman-installer}"
     normalized_id="${normalized_id//\{awx-context\}/awx}"
-    normalized_id="${normalized_id//\{compute-resource-context\}/computeresource}"
-    normalized_id="${normalized_id//\{CRname\}/cr}"
+    normalized_id="${normalized_id//\{compute-resource-id\}/compute-resource}"
+    normalized_id="${normalized_id//\{OpenStack-id\}/openstack}"
+    normalized_id="${normalized_id//\{KubeVirt-id\}/kubevirt}"
 
     # Normalize heading for comparison
     local normalized_heading=""
@@ -94,10 +96,10 @@ check_file() {
         normalized_heading="${normalized_heading//\{freeipa\}/freeipa}"
         normalized_heading="${normalized_heading//\{insights\}/insights}"
         normalized_heading="${normalized_heading//\{insights-iop\}/insights}"
+        normalized_heading="${normalized_heading//\{iss\}/inter-server-synchronization}"
         normalized_heading="${normalized_heading//\{nbsp\}/}"  # Remove non-breaking spaces
         normalized_heading="${normalized_heading//\{customssl\}/custom-ssl}"
         normalized_heading="${normalized_heading//\{customfiletype\}/custom-file-type}"
-        normalized_heading="${normalized_heading//\{crname\}/cr}"
         normalized_heading="${normalized_heading//\{openstack\}/openstack}"
         normalized_heading="${normalized_heading//\{keycloak\}/keycloak}"
         normalized_heading="${normalized_heading//\{rhel\}/rhel}"
@@ -105,6 +107,9 @@ check_file() {
         normalized_heading="${normalized_heading//\{rhcloud\}/rhcloud}"
         normalized_heading="${normalized_heading//\{loraxcompose\}/lorax-compose}"
         normalized_heading="${normalized_heading//\{foreman-installer\}/foreman-installer}"
+        normalized_heading="${normalized_heading//\{compute-resource\}/compute-resource}"
+        normalized_heading="${normalized_heading//\{openstack\}/openstack}"
+        normalized_heading="${normalized_heading//\{kubevirt\}/kubevirt}"
 
         # Normalize Hammer CLI and Web UI text in headings
         # The convention is: ID and filename contain "by-using-cli"/"by-using-web-ui", heading contains "by using Hammer CLI"/"by using {ProjectWebUI}"
