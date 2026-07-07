@@ -1,26 +1,20 @@
 SHELL := /bin/bash
-BUILD_DIR = ../build/Contributing
-OUTPUT = $(BUILD_DIR)/index.html
+
+# Include standard AsciiDoc build system first to get its default targets
+include ../common/Makefile
 
 # Find all skill files and vale rules dynamically
-SKILL_FILES = $(shell find ../../.cursor/skills -name 'SKILL.md' 2>/dev/null)
+SKILL_FILES = $(shell find ../../.claude/skills -name 'SKILL.md' 2>/dev/null)
 VALE_RULES = $(shell find ../../.vale/styles/foreman-documentation -name '*.yml' 2>/dev/null)
-SOURCES = build.rb template.html ../../CONTRIBUTING.md $(SKILL_FILES) $(VALE_RULES)
+BUILD_SOURCES = build.rb ../../CONTRIBUTING.md $(SKILL_FILES) $(VALE_RULES)
 
-.PHONY: all html clean serve
-
-all: html
-
-html: $(OUTPUT)
-
-$(OUTPUT): $(SOURCES)
-	@mkdir -p $(BUILD_DIR)
+# Generate AsciiDoc from Markdown sources before building
+topics/contributing-generated.adoc: $(BUILD_SOURCES)
+	@echo "Generating AsciiDoc from Markdown sources..."
 	bundle exec ruby build.rb
 
-clean:
-	@rm -rf $(BUILD_DIR)
+# Make master.adoc depend on the generated file to ensure it's created before any build
+master.adoc: topics/contributing-generated.adoc
 
-serve: html
-	@echo "Serving Contributors' Guide at http://localhost:8813"
-	@echo "Press Ctrl+C to stop"
-	python3 -m http.server --directory $(BUILD_DIR) 8813
+# Also hook into prepare target for explicit prepare calls
+prepare: topics/contributing-generated.adoc
