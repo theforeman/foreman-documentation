@@ -1,16 +1,14 @@
 #!/usr/bin/env ruby
 # Build script for Contributors' Guide
-# Concatenates markdown sources and converts to HTML
+# Concatenates markdown sources and converts to AsciiDoc
 
-require 'kramdown'
+require 'kramdown-asciidoc'
 require 'fileutils'
 
 # Paths
 ROOT_DIR = File.expand_path('../..', __dir__)
-GUIDES_BUILD_DIR = File.join(File.dirname(__dir__), 'build')
-OUTPUT_DIR = File.join(GUIDES_BUILD_DIR, 'Contributing')
-OUTPUT_FILE = File.join(OUTPUT_DIR, 'index.html')
-TEMPLATE_FILE = File.join(__dir__, 'template.html')
+DOC_DIR = __dir__
+OUTPUT_FILE = File.join(DOC_DIR, 'topics', 'contributing-generated.adoc')
 
 # Source files
 CONTRIBUTING_MD = File.join(ROOT_DIR, 'CONTRIBUTING.md')
@@ -307,14 +305,13 @@ def build_markdown
           markdown << ""
         end
 
-        # Add AI-specific content (Instructions, etc.) in a collapsible section
+        # Add AI-specific content (Instructions, etc.) - will be wrapped in collapsible block
         unless skill[:ai_content].strip.empty?
-          markdown << "<details markdown=\"1\">"
-          markdown << "<summary><strong>View AI tool instructions</strong></summary>"
+          markdown << "<!-- COLLAPSIBLE_START: AI Tool Instructions -->"
           markdown << ""
           markdown << skill[:ai_content]
           markdown << ""
-          markdown << "</details>"
+          markdown << "<!-- COLLAPSIBLE_END -->"
           markdown << ""
         end
       end
@@ -343,13 +340,14 @@ def build_markdown
         markdown << ""
       end
 
-      # Embed the YAML content in a collapsible section
-      markdown << "<details>"
-      markdown << "<summary><strong>View rule definition</strong></summary>"
+      # Embed the YAML content - will be wrapped in collapsible block
+      markdown << "<!-- COLLAPSIBLE_START: Rule Definition -->"
       markdown << ""
-      markdown << "<pre><code class=\"language-yaml\">#{rule[:yaml]}</code></pre>"
+      markdown << "```yaml"
+      markdown << rule[:yaml].strip
+      markdown << "```"
       markdown << ""
-      markdown << "</details>"
+      markdown << "<!-- COLLAPSIBLE_END -->"
       markdown << ""
     end
 
@@ -360,86 +358,78 @@ def build_markdown
   markdown.join("\n")
 end
 
-def convert_to_html(markdown_content)
-  # Convert markdown to HTML using kramdown
-  doc = Kramdown::Document.new(
-    markdown_content,
-    input: 'GFM',
-    hard_wrap: false,  # Don't treat single line breaks as <br>, join into paragraphs
-    syntax_highlighter: 'rouge',
-    syntax_highlighter_opts: {
-      line_numbers: false,
-      css_class: 'highlight'
-    },
-    auto_ids: true,
-    toc_levels: (1..3).to_a
-  )
-
-  doc.to_html
+def convert_to_asciidoc(markdown_content)
+  # Convert markdown to AsciiDoc using kramdown-asciidoc
+  Kramdown::AsciiDoc.convert(markdown_content, input: 'GFM')
 end
 
-def generate_toc(markdown_content)
-  # Extract headings for TOC
-  toc = []
-  markdown_content.each_line do |line|
-    # Match markdown headings (# through ###)
-    if line =~ /^(\#{1,3})\s+(.+)$/
-      level = $1.length
-      title = $2.strip
-      # Create anchor from title
-      anchor = title.downcase.gsub(/[^\w\s-]/, '').gsub(/\s+/, '-')
-      toc << { level: level, title: title, anchor: anchor }
+def wrap_collapsible_sections(asciidoc_content)
+  # Post-process to wrap marked sections in HTML details blocks
+  # Note: HTML comments get converted to AsciiDoc comments (//) by kramdown
+  lines = asciidoc_content.lines
+  result = []
+  in_collapsible = false
+  collapsible_title = nil
+  collapsible_content = []
+
+  lines.each do |line|
+    # Match AsciiDoc comment syntax (kramdown converts <!-- --> to //)
+    if line =~ /^\/\/\s*COLLAPSIBLE_START:\s*(.+?)$/
+      in_collapsible = true
+      collapsible_title = $1.strip
+      collapsible_content = []
+    elsif line =~ /^\/\/\s*COLLAPSIBLE_END\s*$/
+      # Output HTML details block using AsciiDoc passthrough
+      result << "++++\n"
+      result << "<details>\n"
+      result << "<summary>#{collapsible_title}</summary>\n"
+      result << "<div class=\"content\">\n"
+      result << "++++\n"
+      result << "\n"
+      result.concat(collapsible_content)
+      result << "\n"
+      result << "++++\n"
+      result << "</div>\n"
+      result << "</details>\n"
+      result << "++++\n"
+      result << "\n"
+      in_collapsible = false
+      collapsible_title = nil
+      collapsible_content = []
+    elsif in_collapsible
+      collapsible_content << line
+    else
+      result << line
     end
   end
-  toc
+
+  result.join
 end
 
-def inject_into_template(html_content, markdown_content)
-  unless File.exist?(TEMPLATE_FILE)
-    puts "Warning: Template file not found at #{TEMPLATE_FILE}"
-    puts "Creating basic HTML output without template."
-    return "<html><body>#{html_content}</body></html>"
-  end
-
-  template = File.read(TEMPLATE_FILE)
-  toc = generate_toc(markdown_content)
-
-  # Build TOC HTML
-  toc_html = toc.map do |item|
-    indent = '  ' * (item[:level] - 1)
-    "#{indent}<li class=\"toc-level-#{item[:level]}\"><a href=\"##{item[:anchor]}\">#{item[:title]}</a></li>"
-  end.join("\n")
-
-  # Replace placeholders in template
-  template.gsub!('{{CONTENT}}', html_content)
-  template.gsub!('{{TOC}}', toc_html)
-  template.gsub!('{{BUILD_DATE}}', Time.now.strftime('%Y-%m-%d %H:%M:%S'))
-
-  template
-end
 
 # Main build process
 def build
   puts "Building Contributors' Guide..."
 
   # Create output directory
-  FileUtils.mkdir_p(OUTPUT_DIR)
+  topics_dir = File.dirname(OUTPUT_FILE)
+  FileUtils.mkdir_p(topics_dir)
 
   # Build markdown content
   puts "  - Concatenating markdown sources..."
   markdown_content = build_markdown
 
-  # Convert to HTML
-  puts "  - Converting to HTML..."
-  html_content = convert_to_html(markdown_content)
+  # Convert to AsciiDoc
+  puts "  - Converting to AsciiDoc..."
+  asciidoc_content = convert_to_asciidoc(markdown_content)
 
-  # Inject into template
-  puts "  - Applying template..."
-  final_html = inject_into_template(html_content, markdown_content)
+  # Wrap collapsible sections
+  puts "  - Wrapping collapsible sections..."
+  asciidoc_content = wrap_collapsible_sections(asciidoc_content)
 
   # Write output
   puts "  - Writing to #{OUTPUT_FILE}..."
-  File.write(OUTPUT_FILE, final_html)
+  File.write(OUTPUT_FILE, asciidoc_content)
 
   puts "Build complete! Output: #{OUTPUT_FILE}"
   puts "  Size: #{File.size(OUTPUT_FILE)} bytes"

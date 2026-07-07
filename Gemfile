@@ -7,8 +7,7 @@ gem 'sass'
 # For TOC generation
 gem 'nokogiri'
 
-# For Contributors' Guide (markdown to HTML)
-gem 'kramdown'
-gem 'kramdown-parser-gfm'
+# For Contributors' Guide (markdown to AsciiDoc)
+gem 'kramdown-asciidoc'
 
 gem 'logger'
