@@ -6,14 +6,6 @@
 [role="_abstract"]
 Estimate how much disk space a {Project} backup requires so you can ensure enough storage is available and avoid backup failures.
 
-A full backup requires space to store the following data:
-
-* Uncompressed {Project} database and configuration files
-* Compressed {Project} database and configuration files
-* An extra 20% of the total estimated space to ensure a reliable backup
-
-Compression occurs after the archives are created to decrease the time when {Project} services are unavailable.
-
 ifdef::satellite[]
 [NOTE]
 ====
@@ -22,14 +14,34 @@ Backups do not include container images for {insights-iop}.
 endif::[]
 
 .Procedure
-. Estimate the size of uncompressed directories containing {Project} database and configuration files:
+. Calculate the size of the uncompressed backup data:
+.. Determine the size of PostgreSQL database data:
 +
 [options="nowrap", subs="+quotes,attributes"]
 ----
-# du -sh {postgresql-data-dir} /var/lib/pulp
+# du -sh {postgresql-data-dir}
 100G    {postgresql-data-dir}
+----
+.. Determine the size of Pulp data:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# du -sh /var/lib/pulp
 100G	/var/lib/pulp
-
+----
+ifdef::containerized[]
+.. Determine the size of the {foremanctl} configuration files:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+#What is the location?#
+----
+endif::[]
+ifndef::containerized[]
+.. Determine the size of the configuration files:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
 # du -csh /var/lib/tftpboot /etc /root/ssl-build \
 /var/www/html/pub /opt/puppetlabs
 16M   /var/lib/tftpboot
@@ -39,10 +51,36 @@ endif::[]
 2M    /opt/puppetlabs
 942M  total
 ----
-. Calculate how much space is required to store the compressed data.
+endif::[]
+. Calculate the expected size of the compressed backup data:
 +
-The following table describes the compression ratio of all data items included in the backup:
+The compression ratio of the backup data is as follows:
 +
+ifdef::containerized[]
+.Backup data compression ratio
+|===
+|Data type |Directory |Compression ratio
+
+|PostgreSQL database files
+|`{postgresql-data-dir}`
+|80{range}85%
+
+|Pulp data
+|`/var/lib/pulp`
+|Not compressed
+
+|{foremanctl} configuration
+|#What is the location?#
+|85%
+|===
++
+In this example, the backup data is compressed as follows:
++
+* 100 GB of PostgreSQL database data is compressed to 15-20 GB
+* 100 GB of Pulp data is not compressed and occupies 100 GB of space
+* 10 MB of {foremanctl} configuration is compressed to 1.5 MB
+endif::[]
+ifndef::containerized[]
 .Backup data compression ratio
 [cols="4,6,3,5"]
 |===
@@ -73,7 +111,21 @@ a|`/var/lib/tftpboot`
 |===
 +
 In this example, the compressed backup data occupies 120 GB in total.
-. To calculate the amount of available space you require to store a backup, calculate the sum of the estimated values of compressed and uncompressed backup data, and add an extra 20% to ensure a reliable backup.
+endif::[]
+. Add up the size fo the uncompressed and compressed data, and add a 20% safety margin.
+ifdef::containerized[]
+For example:
++
+--
+* 201 GB of uncompressed data + 120 GB of compressed data = 321 GB
+* 20% safety margin = 64 GB
+* Total space required: 321 GB + 64 GB = 385 GB
+--
++
+To ensure a successful backup or restore, 385 GB of space must be allocated for the backup location.
+endif::[]
+ifndef::containerized[]
 +
 This example requires 201 GB plus 120 GB for the uncompressed and compressed backup data, 321 GB in total.
-With 64 GB of extra space, 385 GB must be allocated for the backup location.
+With 64 GB of extra space, allocate 385 GB of space for the backup location.
+endif::[]
