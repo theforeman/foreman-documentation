@@ -1,0 +1,51 @@
+# Check that abstract paragraphs are between 50 and 300 characters long.
+---
+extends: script
+message: "Abstract must be between 50 and 300 characters. Place any information that exceeds 300 characters in a new paragraph or paragraphs. It cannot be part of the abstract."
+level: error
+scope: raw
+script: |
+  // Import required Tengo modules
+  text := import("text")  // Text manipulation functions
+  fmt := import("fmt")    // String formatting functions
+
+  // Initialize empty array to store rule violations
+  matches := []
+
+  // Compile regex to find the abstract paragraph in AsciiDoc
+  // Each module contains exactly one abstract (a single paragraph following [role="_abstract"])
+  // Pattern breakdown:
+  //   \[role="_abstract"\]  - Matches the abstract role marker
+  //   \s*\n                 - Matches optional whitespace and newline after marker
+  //   ([\s\S]+?)            - Captures the abstract paragraph (non-greedy, including newlines)
+  //   \n\n                  - Matches double newline (blank line) that ends paragraph
+  // Note: Using [\s\S] instead of . to match across multiple lines
+  abstract_regex := text.re_compile(`\[role="_abstract"\]\s*\n([\s\S]+?)\n\n`)
+
+  // Find the abstract (there's only one per module)
+  // scope = the full document text being checked
+  // 1 = find only first match (since there's only one abstract per module)
+  result := abstract_regex.find(scope, 1)
+
+  // Check if an abstract was found (find returns undefined if no match)
+  if result != undefined && len(result) > 0 && len(result[0]) > 1 {
+    // result[0][0] = full match including [role="_abstract"] marker
+    // result[0][1] = captured group (just the abstract paragraph text)
+    abstract_text := result[0][1].text
+
+    // Count characters in the abstract
+    char_count := len(abstract_text)
+
+    // Check if character count is outside valid range (50-300)
+    if char_count < 50 || char_count > 300 {
+      // Build custom error message with actual character count
+      msg := fmt.sprintf("Abstract must be between 50 and 300 characters (currently %d characters).", char_count)
+
+      // Add this violation to the matches array
+      matches = append(matches, {
+        begin: result[0][1].begin,    // Start position of abstract paragraph
+        end: result[0][1].end,        // End position of abstract paragraph
+        message: msg                  // Custom error message with character count
+      })
+    }
+  }
