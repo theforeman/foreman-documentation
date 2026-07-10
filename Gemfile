@@ -6,3 +6,6 @@ gem 'sass'
 
 # For TOC generation
 gem 'nokogiri'
+
+# For Contributors' Guide (markdown to AsciiDoc)
+gem 'kramdown-asciidoc'
