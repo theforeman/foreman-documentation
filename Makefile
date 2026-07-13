@@ -16,8 +16,9 @@ endif
 all: html
 
 prep:
-	bundle install --path vendor
-	cd web && bundle install --path ../vendor
+	bundle config set path 'vendor'
+	bundle install
+	cd web && bundle config set path 'vendor' && bundle install
 	mkdir -p $(DEST)/nightly
 
 clean:

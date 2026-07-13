@@ -6,3 +6,5 @@ gem 'sass'
 
 # For TOC generation
 gem 'nokogiri'
+
+gem 'logger'
