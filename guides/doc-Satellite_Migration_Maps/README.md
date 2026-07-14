@@ -62,6 +62,7 @@ These categories are used for:
 3. Download PDF
 
 ### Guidelines
+
 - Do not add the use case to your TOC if the use case is empty
 - Do **not create new categories** without DocX team approval
 - Category definitions current as of July 6, 2026
