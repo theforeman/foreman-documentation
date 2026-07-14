@@ -242,22 +242,155 @@ SOFTWARE.
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#guide-not-ready-yet">1. Guide not ready yet</a></li>
+<li><a href="#Using_an_NFS_Share_for_Content_Storage_content-management">Appendix A: Using an NFS share for content storage</a></li>
 </ul>
 </div>
 </div>
 <div id="content">
 <div class="sect1">
-<h2 id="guide-not-ready-yet"><a class="anchor" href="#guide-not-ready-yet"></a>1. Guide not ready yet</h2>
+<h2 id="Using_an_NFS_Share_for_Content_Storage_content-management"><a class="anchor" href="#Using_an_NFS_Share_for_Content_Storage_content-management"></a>Appendix A: Using an NFS share for content storage</h2>
 <div class="sectionbody">
 <div class="paragraph _abstract">
-<p>This guide is not ready yet.</p>
+<p>Your environment requires adequate hard disk space to fulfill content storage.
+In some situations, it is useful to use an NFS share to store this content.
+This appendix shows how to mount the NFS share on your Foreman&#160;server&#8217;s content management component.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Important</div>
+</td>
+<td class="content">
+Use high-bandwidth, low-latency storage for the <code>/var/lib/pulp</code> file system.
+Foreman has many I/O-intensive operations; therefore, high-latency, low-bandwidth storage might have issues with performance degradation.
+</td>
+</tr>
+</table>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>The NFS share exists and provides the appropriate permissions to Foreman&#160;server and its <code>apache</code> user.
+This example uses a share at <code>nfs.example.com:/Foreman/pulp</code>.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Stop Foreman services on your Foreman&#160;server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl stop foreman.target</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Ensure Foreman&#160;server has the <code>nfs-utils</code> package installed:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf install nfs-utils</pre>
+</div>
+</div>
+</li>
+<li>
+<p>You need to copy the existing contents of <code>/var/lib/pulp</code> to the NFS share.
+First, mount the NFS share to a temporary location:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># mkdir /mnt/temp
+# mount -o rw nfs.example.com:/Foreman/pulp /mnt/temp</pre>
+</div>
 </div>
 <div class="paragraph">
-<p>Foreman is a community project.
-The source is maintained in <a href="https://github.com/theforeman/foreman-documentation/">foreman-documentation on GitHub</a> where you can create <a href="https://github.com/theforeman/foreman-documentation/issues">issues</a> and <a href="https://github.com/theforeman/foreman-documentation/pulls">pull requests</a>.
-Thanks for your contribution.</p>
+<p>Copy the existing contents of <code>/var/lib/pulp</code> to the temporary location:</p>
 </div>
+<div class="listingblock">
+<div class="content">
+<pre># cp -r /var/lib/pulp/* /mnt/temp/.</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Set the permissions for all files on the share to use the <code>pulp</code> user.</p>
+</li>
+<li>
+<p>Unmount the temporary storage location:</p>
+<div class="listingblock">
+<div class="content">
+<pre># umount /mnt/temp</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Remove the existing contents of <code>/var/lib/pulp</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre># rm -rf /var/lib/pulp/*</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Edit the <code>/etc/fstab</code> file and add the following line:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">nfs.example.com:/Foreman/pulp    /var/lib/pulp   nfs    rw,hard,intr,context="system_u:object_r:pulpcore_var_lib_t:s0"</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This makes the mount persistent across system reboots.
+Ensure to include the SELinux context.</p>
+</div>
+</li>
+<li>
+<p>Enable the mount:</p>
+<div class="listingblock">
+<div class="content">
+<pre># mount -a</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Confirm the NFS share mounts to <code>var/lib/pulp</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># df
+Filesystem                         1K-blocks     Used Available Use% Mounted on
+...
+nfs.example.com:/Foreman/pulp 309506048 58632800 235128224  20% /var/lib/pulp
+...</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Also confirm that the existing content exists at the mount on <code>/var/lib/pulp</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># ls /var/lib/pulp</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Start Foreman services on your Foreman&#160;server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl start foreman.target</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<!-- "Fork me on GitHub" CSS ribbon v0.2.3 | MIT License -->
+<!-- https://github.com/simonwhitaker/github-fork-ribbon-css -->
+<a class="release-ribbon right-top fixed" data-ribbon="Pre-release version" title="Pre-release version">
+Pre-release version
+</a>
+<a class="issue-ribbon right-bottom fixed" href="https://github.com/theforeman/foreman-documentation/issues/new?template=report-issue.md" data-ribbon="Report issue" title="Report issue">
+Report issue
+</a>
 </div>
 </div>
 </div>
