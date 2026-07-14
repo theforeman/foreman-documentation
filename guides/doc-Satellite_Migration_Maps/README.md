@@ -63,13 +63,13 @@ These categories are used for:
 
 ### Guidelines
 
-- Do not add the use case to your TOC if the use case is empty
-- Do **not create new categories** without DocX team approval
-- Category definitions current as of July 6, 2026
+- Do not add the use case to your TOC if the use case is empty.
+- Do not create new categories without DocX team approval.
+- Category definitions current as of July 6, 2026.
 
 ## Map Structure
 
-The guide uses a hierarchical map structure:
+The guide uses a hierarchical map structure.
 
 ### Master File
 
@@ -79,30 +79,12 @@ This is the main DITA navigation map.
 ### Map Files
 
 Map files organize content by job categories.
-Each map file:
-- Has the prefix `map_` (e.g., `map_install.adoc`, `map_plan.adoc`)
-- Defines a `:context:` attribute matching the category name
-- Sets `:_mod-docs-content-type: MAP`
-- Includes a category heading (e.g., `= Install`)
-- Includes assemblies and modules from `../common/` with `leveloffset=+1`
-
-Example map file structure:
-```asciidoc
-:_mod-docs-content-type: MAP
-:context: install
-
-[id="install"]
-= Install
-
-include::../common/assembly_installing-server-connected.adoc[leveloffset=+1]
-```
-
-### Content Files
-
-Content is stored in `../common/` and organized as:
-
-- **Assemblies** (`assembly_*.adoc`) - Collections of related modules on a specific topic
-- **Modules** (`modules/con_*.adoc`, `modules/proc_*.adoc`, `modules/ref_*.adoc`) - Individual content units (concepts, procedures, references)
+Each map file has the following:
+- `map_` prefix (e.g., `map_install.adoc`, `map_plan.adoc`)
+- `:context:` attribute matching the category name
+- `:_mod-docs-content-type: MAP`
+- Category heading (e.g., `= Install`)
+- Assemblies and modules from `../common/` with `leveloffset=+1`
 
 ## Building the Guide
 
