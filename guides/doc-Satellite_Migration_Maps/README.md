@@ -1,4 +1,4 @@
-(# Migration Maps
+# Migration Maps
 
 This directory contains Asciidoc migration maps, which organize Foreman/Satellite documentation into job-based categories following the DITA map structure.
 
