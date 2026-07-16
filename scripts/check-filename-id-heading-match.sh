@@ -98,7 +98,6 @@ check_file() {
         normalized_heading="${normalized_heading//\{insights-iop\}/insights}"
         normalized_heading="${normalized_heading//\{iss\}/inter-server-synchronization}"
         normalized_heading="${normalized_heading//\{nbsp\}/}"  # Remove non-breaking spaces
-        normalized_heading="${normalized_heading//\{customssl\}/custom-ssl}"
         normalized_heading="${normalized_heading//\{customfiletype\}/custom-file-type}"
         normalized_heading="${normalized_heading//\{openstack\}/openstack}"
         normalized_heading="${normalized_heading//\{keycloak\}/keycloak}"
