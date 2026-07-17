@@ -1,0 +1,80 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="renewing-a-custom-server-ca-certificate"]
+= Renewing a custom server CA certificate
+
+[role="_abstract"]
+If you need to update the certification authority (CA) certificate that signed your {ProjectServer} and {SmartProxyServers} certificates, add the new CA certificate and use a temporary dual CA certificate file to retain the HTTPS connections to your {ProjectServer} during the renewal.
+
+.Procedure
+. Check if the existing server certificate can be validated with the new CA certififcate.
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# openssl verify -CAfile _/root/{project-context}_cert/old_ca_cert_bundle.pem_ /root/_{project-context}_cert/{project-context}_cert.pem_
+----
+. If the check did not succeed, use both the old and the new CA certificate while updating consumers.
+.. Add the new SSL certificate to the CA certificate file on {ProjectServer} and keep the old SSL certificate.
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# cat _/root/{project-context}_cert/old_ca_cert_bundle.pem_ _/root/{project-context}_cert/new_ca_cert_bundle.pem_ > _/root/{project-context}_cert/ca_cert_bundle.pem_
+----
+.. Renew the certificates on {ProjectServer}.
++
+[options="nowrap" subs="+quotes,attributes"]
+ifdef::containerized[]
+----
+# {foremanctl} deploy \
+--certificate-source custom_server \
+--certificate-server-certificate "_/root/{project-context}_cert/{project-context}_cert.pem_" \
+--certificate-server-key "_/root/{project-context}_cert/{project-context}_cert_key.pem_" \
+--certificate-server-ca-certificate "_/root/{project-context}_cert/ca_cert_bundle.pem_"
+----
+endif::[]
+ifndef::containerized[]
+----
+# {installer-scenario} \
+--certs-server-cert "/root/_{project-context}_cert/{project-context}_cert.pem_" \
+--certs-server-key "/root/_{project-context}_cert/{project-context}_cert_key.pem_" \
+--certs-server-ca-cert "/root/_{project-context}_cert/ca_cert_bundle.pem_" \
+--certs-update-server \
+--certs-update-server-ca
+----
+endif::[]
+.. Refresh the certificates on any {SmartProxyServers}.
+.. Deploy the dual CA certificate on hosts.
+.. Remove the old certificate from the CA certificates file on {ProjectServer}, so the CA certificate file contains only the new SSL certificate.
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# cat _/root/{project-context}_cert/new_ca_cert_bundle.pem_ > _/root/{project-context}_cert/ca_cert_bundle.pem_
+----
+. Renew the certificates on {ProjectServer}.
++
+[options="nowrap" subs="+quotes,attributes"]
+ifdef::containerized[]
+----
+# {foremanctl} deploy \
+--certificate-source custom_server \
+--certificate-server-certificate "_/root/{project-context}_cert/{project-context}_cert.pem_" \
+--certificate-server-key "_/root/{project-context}_cert/{project-context}_cert_key.pem_" \
+--certificate-server-ca-certificate "_/root/{project-context}_cert/ca_cert_bundle.pem_"
+----
+endif::[]
+ifndef::containerized[]
+----
+# {installer-scenario} \
+--certs-server-cert "/root/_{project-context}_cert/{project-context}_cert.pem_" \
+--certs-server-key "/root/_{project-context}_cert/{project-context}_cert_key.pem_" \
+--certs-server-ca-cert "/root/_{project-context}_cert/ca_cert_bundle.pem_" \
+--certs-update-server \
+--certs-update-server-ca
+----
+endif::[]
+. Refresh the certificates on any {SmartProxyServers}.
+. Deploy the new CA certificate on hosts.
+
+.Additional resources
+* {InstallingSmartProxyDocURL}configuring-{smart-proxy-context}-server-with-ssl-certificates[Configuring {SmartProxyServer} with SSL certificates in _{InstallingSmartProxyDocTitle}_]
+* {ManagingHostsDocURL}refreshing-the-self-signed-ca-certificate-on-hosts[Refreshing the self-signed CA certificate on hosts in _{ManagingHostsDocTitle}_]
