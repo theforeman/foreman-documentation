@@ -68,9 +68,7 @@ check_file() {
     normalized_id="${normalized_id//\{customreposid\}/repositories}"
     normalized_id="${normalized_id//\{customrepoid\}/repository}"
     normalized_id="${normalized_id//\{customproductid\}/product}"
-    normalized_id="${normalized_id//\{FreeIPA-context\}/freeipa}"
-    normalized_id="${normalized_id//\{freeipa-context\}/freeipa}"
-    normalized_id="${normalized_id//\{freeipa-id\}/freeipa}"
+    normalized_id="${normalized_id//\{FreeIPA-id\}/freeipa}"
     normalized_id="${normalized_id//\{insights-id\}/insights}"
     normalized_id="${normalized_id//\{insights-iop-id\}/insights}"
     normalized_id="${normalized_id//\{ISS-id\}/inter-server-synchronization}"
@@ -113,7 +111,7 @@ check_file() {
 
         # Normalize Hammer CLI and Web UI text in headings
         # The convention is: ID and filename contain "by-using-cli"/"by-using-web-ui", heading contains "by using Hammer CLI"/"by using {ProjectWebUI}"
-        normalized_heading="${normalized_heading//hammer-cli/cli}"
+        normalized_heading="${normalized_heading//by-using-hammer-cli/by-using-cli}"
         normalized_heading="${normalized_heading//\{projectwebui\}/web-ui}"
     fi
 
