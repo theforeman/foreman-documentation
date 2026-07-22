@@ -1,0 +1,96 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="configuring-journald-retention_{context}"]
+= Configuring journald log retention and disk space limits
+
+[role="_abstract"]
+Because containerized {ProjectServer} routes all service logs through `journald`, you must configure `journald` retention settings to prevent unbounded log growth from consuming disk space on the `/var` partition.
+These settings replace the `logrotate` configuration used in traditional {Project} deployments.
+
+.Prerequisites
+* You have root access to the {ProjectServer} host.
+* You understand that containerized {ProjectServer} routes all logs through `journald`.
+For more information, see xref:containerized-logging-architecture_{context}[].
+
+.Procedure
+. Create the drop-in configuration directory if it does not exist:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# mkdir -p /etc/systemd/journald.conf.d
+----
+. Create a drop-in configuration file with your retention settings:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# cat > /etc/systemd/journald.conf.d/10-{project-context}-retention.conf << EOF
+[Journal]
+Storage=persistent
+SystemMaxUse=10G
+SystemKeepFree=5G
+MaxRetentionSec=4week
+MaxFileSec=1week
+Compress=yes
+EOF
+----
++
+[NOTE]
+====
+Do not edit `/etc/systemd/journald.conf` directly.
+Use a drop-in file in `/etc/systemd/journald.conf.d/` so that your settings are preserved during system updates.
+====
+. Restart the `systemd-journald` service to apply the new settings:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# systemctl restart systemd-journald
+----
+. Verify the current disk usage of journal files:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# journalctl --disk-usage
+----
+. Optional: To reduce journal size immediately, rotate the current journal files and vacuum old entries.
++
+To remove journal files older than a specific time period:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# journalctl --rotate
+# journalctl --vacuum-time=2weeks
+----
++
+To reduce journal files to a specific size:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# journalctl --rotate
+# journalctl --vacuum-size=5G
+----
+
+.Verification
+* Confirm that the retention limits are applied by running:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# journalctl --disk-usage
+----
++
+The reported usage must not exceed the `SystemMaxUse` value after `journald` has completed its next rotation cycle.
+
+.Troubleshooting
+* If `SystemMaxUse` does not appear to take effect,
+ifdef::satellite[]
+see https://access.redhat.com/solutions/7026910[Known issue with SystemMaxUse] in the _{Team} Knowledgebase_.
+endif::[]
+ifndef::satellite[]
+check that the `Storage=persistent` setting is enabled and that the `/var/log/journal/` directory exists.
+endif::[]
+Ensure that the drop-in file name begins with a number so that it is loaded in the correct order.
+
+.Additional resources
+* For a description of all available `journald` retention parameters, see xref:journald-retention-parameters_{context}[].
+ifdef::satellite[]
+* {RHELDocsBaseURL}9/html-single/configuring_basic_system_settings/index#configuring-a-persistent-journal_assembly_troubleshooting-problems-using-log-files[Configuring a persistent journal in _{RHEL}{nbsp}9 Configuring basic system settings_]
+endif::[]

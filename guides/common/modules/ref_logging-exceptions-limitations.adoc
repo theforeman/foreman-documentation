@@ -1,0 +1,59 @@
+:_mod-docs-content-type: REFERENCE
+
+[id="logging-exceptions-limitations_{context}"]
+= Logging exceptions and limitations
+
+[role="_abstract"]
+Some containerized {Project} services have limitations or non-standard behavior for log level configuration.
+Understanding these exceptions helps you choose the correct approach when configuring log levels for individual services.
+
+[discrete]
+== Services without per-service log level parameters
+
+The following services do not have dedicated `{foremanctl} deploy` log level parameters.
+To change the log level for these services, use their native configuration mechanisms.
+
+ifdef::satellite,katello,orcharhino[]
+* *Candlepin* -- No `{foremanctl}` log level parameter.
+Configure Candlepin logging through its native Log4j configuration.
+* *Pulp* -- No `{foremanctl}` log level parameter.
+Configure Pulp logging through its Django settings.
+* *PostgreSQL* -- No `{foremanctl}` log level parameter.
+Configure PostgreSQL logging through `postgresql.conf`.
+endif::[]
+* *httpd* -- No `{foremanctl}` log level parameter.
+Apache HTTP Server log levels are controlled through the `LogLevel` directive in the virtual host configuration.
+
+ifdef::satellite,katello,orcharhino[]
+[discrete]
+== Non-standard log level vocabulary
+
+Valkey uses a different set of log level values than other {Project} services:
+
+* `debug` -- Detailed diagnostic output for development and troubleshooting
+* `verbose` -- More detailed than `notice` but less than `debug`
+* `notice` -- Default level; records moderately important events
+* `warning` -- Records only warnings and more severe events
+* `nothing` -- Suppresses all log output
+
+Use the `--valkey-log-level` parameter to set these values.
+The standard `--log-level` parameter values (`debug`, `info`, `warn`, `error`, `fatal`) do not apply to Valkey.
+endif::[]
+
+[discrete]
+== Alternative log routing
+
+The Apache HTTP Server (`httpd`) uses `systemd-cat` to pipe log output instead of writing to stdout.
+This approach was adopted because `/dev/stdout` is unreliable under `systemd` on {EL} 9.
+As a result, `httpd` logs use the `-t` (syslog identifier) filter with `journalctl` instead of the `-u` (unit) filter.
+
+[discrete]
+== Incompatible traditional tools
+
+The following tools and commands from traditional {Project} deployments are not compatible with containerized {Project}:
+
+* `foreman-tail` -- This command reads from log files that do not exist in containerized deployments.
+Use `journalctl -f -u foreman` instead.
+* `foreman-rake errors:fetch_log` -- This command reads error information from log files.
+Use `journalctl -u foreman -p err` instead.
+* Individual loggers (`--foreman-loggers`) -- The `{foremanctl} deploy` command does not yet support enabling individual loggers such as `ldap:true` or `sql:true`.

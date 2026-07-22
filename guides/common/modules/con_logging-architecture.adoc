@@ -1,0 +1,44 @@
+:_mod-docs-content-type: CONCEPT
+
+[id="logging-architecture_{context}"]
+= Logging architecture
+
+[role="_abstract"]
+{ProjectServer} routes all service output through `systemd` and `journald` instead of writing to individual log files.
+You can use standard `journalctl` commands to view, filter, and manage logs for all {Project} services.
+
+Each service runs as a Podman Quadlet container managed by `systemd`.
+When a containerized service writes to standard output or standard error, the Podman container runtime captures the output and delivers it to `systemd`, which stores it in the system journal managed by `journald`.
+This means all {Project} service logs are available through a single interface: the `journalctl` command.
+
+The logging pipeline follows this path: the application inside the container writes output to stdout or stderr, Podman captures the container output, the `systemd` unit associated with the container forwards the output to `journald`, and `journald` stores the log data in binary journal files under `/var/log/journal/`.
+
+{Project} services use two distinct mechanisms to deliver log data to `journald`:
+
+stdout and stderr capture::
+Most Podman container services, such as Foreman,
+ifdef::satellite,katello,orcharhino[]
+Candlepin, Valkey,
+endif::[]
+and {SmartProxy}, write their output to stdout or stderr.
+The `systemd` unit captures this output and stores it in `journald` under the unit name.
+You filter these logs by using the `journalctl -u _unit_name_` command.
+
+`systemd-cat` piping::
+The Apache HTTP Server (`httpd`) uses `systemd-cat` to pipe output with custom syslog identifier tags instead of writing to stdout.
+You filter these logs by using the `journalctl -t _tag_name_` command, where the tag identifies the specific virtual host or log type.
+
+ifdef::satellite,katello,orcharhino[]
+Not all services support per-service log level configuration through `{foremanctl}`.
+Services such as Candlepin, Pulp, PostgreSQL, and `httpd` do not have dedicated log level parameters in `{foremanctl} deploy`.
+To adjust the log level for these services, use their native configuration mechanisms.
+
+Valkey uses a different log level vocabulary than other {Project} services.
+Instead of the standard `debug`, `info`, `warn`, `error`, and `fatal` levels, Valkey uses `debug`, `verbose`, `notice`, `warning`, and `nothing`.
+endif::[]
+
+If you use scripts or monitoring integrations that reference traditional log file paths, you must update them to use `journalctl` commands.
+For a mapping of traditional log paths to their `journalctl` equivalents, see xref:traditional-vs-containerized-logging_{context}[].
+
+NOTE: In disconnected environments, the core journald-based logging architecture works the same way as in connected environments because all logging is local to the host.
+// If you previously forwarded log files to an external system, you must reconfigure your log forwarding to read from `journald` instead of file paths.

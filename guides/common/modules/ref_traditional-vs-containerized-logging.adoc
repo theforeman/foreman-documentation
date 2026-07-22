@@ -1,0 +1,99 @@
+:_mod-docs-content-type: REFERENCE
+
+[id="traditional-vs-containerized-logging_{context}"]
+= Traditional and containerized logging comparison
+
+[role="_abstract"]
+If you are migrating from a traditional {Project} deployment to a containerized deployment, use the following tables to find the `journalctl` equivalents for log file paths, commands, and configuration options.
+
+.Log file path mapping
+[options="header"]
+|===
+| Traditional log path | Containerized equivalent
+
+| `/var/log/foreman/production.log`
+| `journalctl -u foreman`
+
+ifdef::satellite,katello,orcharhino[]
+| `/var/log/candlepin/candlepin.log`
+| `journalctl -u candlepin`
+
+| `/var/log/candlepin/error.log`
+| `journalctl -u candlepin -p err`
+endif::[]
+
+| `/var/log/foreman-proxy/proxy.log`
+| `journalctl -u foreman-proxy`
+
+| `/var/log/{apache-log-dir}/foreman-ssl_access_ssl.log`
+| `journalctl -t httpd-ssl-access`
+
+| `/var/log/{apache-log-dir}/foreman-ssl_error_ssl.log`
+| `journalctl -t httpd-ssl-error`
+
+| `/var/log/{apache-log-dir}/foreman_access.log`
+| `journalctl -t httpd-access`
+
+| `/var/log/{apache-log-dir}/foreman_error.log`
+| `journalctl -t httpd-error`
+
+ifdef::satellite,katello,orcharhino[]
+| `/var/log/redis/redis.log`
+| `journalctl -u valkey`
+endif::[]
+|===
+
+.Command mapping
+[options="header"]
+|===
+| Traditional command | Containerized equivalent
+
+| `foreman-tail`
+| `journalctl -f -u foreman`
+
+| `tail -f /var/log/foreman/production.log`
+| `journalctl -u foreman -f`
+
+| `tail -f /var/log/foreman-proxy/proxy.log`
+| `journalctl -u foreman-proxy -f`
+
+ifdef::satellite,katello,orcharhino[]
+| `tail -f /var/log/candlepin/candlepin.log`
+| `journalctl -u candlepin -f`
+endif::[]
+
+| `foreman-rake errors:fetch_log`
+| `journalctl -u foreman -p err`
+
+| `{legacy-installer} --foreman-logging-level debug`
+| `{foremanctl} deploy --foreman-log-level debug`
+
+| `{legacy-installer} --foreman-proxy-log-level DEBUG`
+| `{foremanctl} deploy --foreman-proxy-log-level debug`
+
+| `{legacy-installer} --reset-foreman-logging-level`
+| `{foremanctl} deploy --log-level info`
+|===
+
+.Configuration mapping
+[options="header"]
+|===
+| Traditional configuration | Containerized equivalent
+
+| Logrotate configuration in `/etc/logrotate.d/`
+| `journald` retention settings in `/etc/systemd/journald.conf.d/`
+
+| `{legacy-installer} --foreman-logging-level`
+| `{foremanctl} deploy --foreman-log-level`
+
+| `{legacy-installer} --foreman-proxy-log`
+| `{foremanctl} deploy --foreman-proxy-log-level`
+
+| `{legacy-installer} --foreman-logging-layout`
+| No equivalent.
+`journald` uses its own structured format.
+
+| `{legacy-installer} --foreman-logging-type`
+| No equivalent.
+All output goes to `journald` in containerized deployments.
+|===

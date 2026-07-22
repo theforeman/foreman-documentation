@@ -1,0 +1,80 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="configuring-log-levels_{context}"]
+= Configuring service log levels
+
+[role="_abstract"]
+You can configure the log level for containerized {Project} services by using `{foremanctl} deploy` parameters.
+Increasing the log level to `debug` provides detailed output for troubleshooting a specific service, while resetting it to the default level reduces log volume in production.
+
+The `--log-level` parameter sets a global baseline log level for all services that support per-service log level configuration.
+You can override the global level for individual services by using service-specific parameters such as `--foreman-log-level` and `--foreman-proxy-log-level`.
+
+.Prerequisites
+* Containerized {ProjectServer} is installed and running.
+* You have root access to the {ProjectServer} host.
+
+.Procedure
+. To set the global log level for all supported services, run `{foremanctl} deploy` with the `--log-level` option:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {foremanctl} deploy --log-level debug
+----
++
+Valid values are `debug`, `info`, `warn`, `error`, and `fatal`.
+The default value is `info`.
+. To override the log level for a specific service, use the service-specific parameter.
++
+For example, to set only Foreman to `debug` while keeping other services at the global level:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {foremanctl} deploy --foreman-log-level debug
+----
++
+To set only {SmartProxy} to `debug`:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {foremanctl} deploy --foreman-proxy-log-level debug
+----
+ifdef::satellite,katello,orcharhino[]
+. To configure the log level for Valkey, use the `--valkey-log-level` parameter.
++
+Valkey uses a different set of log level values than other services:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {foremanctl} deploy --valkey-log-level debug
+----
++
+Valid Valkey log level values are `debug`, `verbose`, `notice`, `warning`, and `nothing`.
+The default value is `notice`.
+endif::[]
+. After you complete debugging, reset the log level to the default:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {foremanctl} deploy --log-level info
+----
+
+.Verification
+* Verify that the log level change took effect by checking the `journalctl` output for the affected service:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# journalctl -u foreman --since "1 minute ago"
+----
++
+When the log level is set to `debug`, the output contains detailed diagnostic messages.
+
+[NOTE]
+====
+Not all services support per-service log level parameters in `{foremanctl} deploy`.
+ifdef::satellite,katello,orcharhino[]
+Candlepin, Pulp, PostgreSQL, and `httpd` do not have dedicated log level parameters.
+endif::[]
+For a list of supported parameters, see xref:foremanctl-log-level-parameters_{context}[].
+For exceptions and limitations, see xref:logging-exceptions-limitations_{context}[].
+====
