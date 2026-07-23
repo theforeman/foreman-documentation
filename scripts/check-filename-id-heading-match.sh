@@ -60,16 +60,15 @@ check_file() {
 
     # Replace attributes with their filename equivalents
     normalized_id="${normalized_id//\{project-context\}/project}"
-    normalized_id="${normalized_id//\{smart-proxy-context\}/smartproxy}"
-    normalized_id="${normalized_id//\{smart-proxies-context\}/smartproxies}"
-    normalized_id="${normalized_id//\{smart-proxy-context-titlecase\}/smartproxy}"
+    normalized_id="${normalized_id//\{smart-proxy-context\}/smart-proxy}"
+    normalized_id="${normalized_id//\{smart-proxies-context\}/smart-proxies}"
+    normalized_id="${normalized_id//\{smart-proxy-context-titlecase\}/smart-proxy}"
     normalized_id="${normalized_id//\{ProjectNameID\}/project}"
     normalized_id="${normalized_id//\{ProjectServerID\}/project-server}"
     normalized_id="${normalized_id//\{customreposid\}/repositories}"
     normalized_id="${normalized_id//\{customrepoid\}/repository}"
     normalized_id="${normalized_id//\{customproductid\}/product}"
-    normalized_id="${normalized_id//\{FreeIPA-context\}/freeipa}"
-    normalized_id="${normalized_id//\{freeipa-context\}/freeipa}"
+    normalized_id="${normalized_id//\{FreeIPA-id\}/freeipa}"
     normalized_id="${normalized_id//\{insights-id\}/insights}"
     normalized_id="${normalized_id//\{insights-iop-id\}/insights}"
     normalized_id="${normalized_id//\{ISS-id\}/inter-server-synchronization}"
@@ -90,15 +89,14 @@ check_file() {
         normalized_heading="${normalized_heading//\{projectname\}/project}"
         normalized_heading="${normalized_heading//\{project\}/project}"
         normalized_heading="${normalized_heading//\{projectserver\}/project-server}"
-        normalized_heading="${normalized_heading//\{smartproxy\}/smartproxy}"
-        normalized_heading="${normalized_heading//\{smartproxyserver\}/smartproxy-server}"
-        normalized_heading="${normalized_heading//\{smartproxyservers\}/smartproxy-servers}"
+        normalized_heading="${normalized_heading//\{smartproxy\}/smart-proxy}"
+        normalized_heading="${normalized_heading//\{smartproxyserver\}/smart-proxy-server}"
+        normalized_heading="${normalized_heading//\{smartproxyservers\}/smart-proxy-servers}"
         normalized_heading="${normalized_heading//\{freeipa\}/freeipa}"
         normalized_heading="${normalized_heading//\{insights\}/insights}"
         normalized_heading="${normalized_heading//\{insights-iop\}/insights}"
         normalized_heading="${normalized_heading//\{iss\}/inter-server-synchronization}"
         normalized_heading="${normalized_heading//\{nbsp\}/}"  # Remove non-breaking spaces
-        normalized_heading="${normalized_heading//\{customssl\}/custom-ssl}"
         normalized_heading="${normalized_heading//\{customfiletype\}/custom-file-type}"
         normalized_heading="${normalized_heading//\{openstack\}/openstack}"
         normalized_heading="${normalized_heading//\{keycloak\}/keycloak}"
@@ -113,7 +111,7 @@ check_file() {
 
         # Normalize Hammer CLI and Web UI text in headings
         # The convention is: ID and filename contain "by-using-cli"/"by-using-web-ui", heading contains "by using Hammer CLI"/"by using {ProjectWebUI}"
-        normalized_heading="${normalized_heading//hammer-cli/cli}"
+        normalized_heading="${normalized_heading//by-using-hammer-cli/by-using-cli}"
         normalized_heading="${normalized_heading//\{projectwebui\}/web-ui}"
     fi
 
