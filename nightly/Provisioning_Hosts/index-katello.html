@@ -361,10 +361,13 @@ SOFTWARE.
 <li><a href="#configuring-smart-proxy-for-secure-boot">8.4. Configuring Smart&#160;Proxy for Secure Boot</a>
 <ul class="sectlevel3">
 <li><a href="#configuring-smart-proxy-to-provision-almalinux-on-Secure-Boot-enabled-hosts">8.4.1. Configuring Smart&#160;Proxy to provision AlmaLinux on Secure Boot enabled hosts</a></li>
-<li><a href="#configuring-smart-proxy-to-provision-debian-on-Secure-Boot-enabled-hosts">8.4.2. Configuring Smart&#160;Proxy to provision Debian on Secure Boot enabled hosts</a></li>
-<li><a href="#configuring-smart-proxy-to-provision-rhel-on-Secure-Boot-enabled-hosts">8.4.3. Configuring Smart&#160;Proxy to provision Red&#160;Hat Enterprise Linux on Secure Boot enabled hosts</a></li>
-<li><a href="#configuring-smart-proxy-to-provision-rocky-on-Secure-Boot-enabled-hosts">8.4.4. Configuring Smart&#160;Proxy to provision Rocky Linux on Secure Boot enabled hosts</a></li>
-<li><a href="#configuring-smart-proxy-to-provision-ubuntu-on-Secure-Boot-enabled-hosts">8.4.5. Configuring Smart&#160;Proxy to provision Ubuntu on Secure Boot enabled hosts</a></li>
+<li><a href="#configuring-smart-proxy-to-provision-centos-on-Secure-Boot-enabled-hosts">8.4.2. Configuring Smart&#160;Proxy to provision CentOS Stream on Secure Boot enabled hosts</a></li>
+<li><a href="#configuring-smart-proxy-to-provision-debian-on-Secure-Boot-enabled-hosts">8.4.3. Configuring Smart&#160;Proxy to provision Debian on Secure Boot enabled hosts</a></li>
+<li><a href="#configuring-smart-proxy-to-provision-oracle_linux-on-Secure-Boot-enabled-hosts">8.4.4. Configuring Smart&#160;Proxy to provision Oracle Linux on Secure Boot enabled hosts</a></li>
+<li><a href="#configuring-smart-proxy-to-provision-rhel-on-Secure-Boot-enabled-hosts">8.4.5. Configuring Smart&#160;Proxy to provision Red&#160;Hat Enterprise Linux on Secure Boot enabled hosts</a></li>
+<li><a href="#configuring-smart-proxy-to-provision-rocky-on-Secure-Boot-enabled-hosts">8.4.6. Configuring Smart&#160;Proxy to provision Rocky Linux on Secure Boot enabled hosts</a></li>
+<li><a href="#configuring-smart-proxy-to-provision-suse_linux_enterprise_server-on-Secure-Boot-enabled-hosts">8.4.7. Configuring Smart&#160;Proxy to provision SUSE Linux Enterprise Server on Secure Boot enabled hosts</a></li>
+<li><a href="#configuring-smart-proxy-to-provision-ubuntu-on-Secure-Boot-enabled-hosts">8.4.8. Configuring Smart&#160;Proxy to provision Ubuntu on Secure Boot enabled hosts</a></li>
 </ul>
 </li>
 <li><a href="#creating-hosts-with-pxe-boot-provisioning-by-using-web-ui">8.5. Creating hosts with PXE boot provisioning by using Foreman web UI</a></li>
@@ -4644,7 +4647,135 @@ You can download the <code>shim-x64</code> package from <a href="https://repo.al
 </div>
 </div>
 <div class="sect3">
-<h4 id="configuring-smart-proxy-to-provision-debian-on-Secure-Boot-enabled-hosts"><a class="anchor" href="#configuring-smart-proxy-to-provision-debian-on-Secure-Boot-enabled-hosts"></a>8.4.2. Configuring Smart&#160;Proxy to provision Debian on Secure Boot enabled hosts</h4>
+<h4 id="configuring-smart-proxy-to-provision-centos-on-Secure-Boot-enabled-hosts"><a class="anchor" href="#configuring-smart-proxy-to-provision-centos-on-Secure-Boot-enabled-hosts"></a>8.4.2. Configuring Smart&#160;Proxy to provision CentOS Stream on Secure Boot enabled hosts</h4>
+<div class="paragraph _abstract">
+<p>Secure Boot follows a chain of trust from the start of the host to the loading of Linux kernel modules.
+The first shim that is loaded determines which distribution can be booted or loaded by using a <code>kexec</code> system call until the next reboot.</p>
+</div>
+<div class="paragraph">
+<p>To provision CentOS Stream on Secure Boot enabled hosts, you have to provide signed shim and GRUB2 binaries provided by the vendor of your operating system.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Important</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>You have to perform the following configuration steps on each TFTP Smart&#160;Proxy for a subnet to provision Secure Boot enabled hosts on that subnet.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The following example works for CentOS Stream on x86_64 architecture.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Ensure that the <code>cpio</code> package is installed on your Smart&#160;Proxy.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Set the path for the shim and GRUB2 binaries for the operating system of your host:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># BOOTLOADER_PATH="/var/lib/tftpboot/bootloader-universe/pxegrub2/centos/default/x86_64"</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you require specific versions of the shim and GRUB2 binaries for the version of the operating system of your host, replace <code>default</code> with the <strong>Major</strong> and <strong>Minor</strong> version of the operating system separated by a dot.
+If no <strong>Minor</strong> version is set, replace <code>default</code> with the <strong>Major</strong> version.</p>
+</div>
+<div class="paragraph">
+<p>Foreman community recommends to not use version-specific shim and GRUB2 binaries unless it is really necessary.</p>
+</div>
+</li>
+<li>
+<p>Create the directory to store the shim and GRUB2 binaries for the operating system of your host:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># install -o foreman-proxy -g foreman-proxy -d $BOOTLOADER_PATH</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Download the shim and GRUB2 packages for the operating system of your host.
+For example:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># wget -O /tmp/grub2-efi-x64.rpm <em>https://server.example.com/grub2-efi-x64.rpm</em>
+# wget -O /tmp/shim-x64.rpm <em>https://server.example.com/shim-x64.rpm</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can download the <code>grub2-efi-x64</code> package from <a href="https://mirror.stream.centos.org/10-stream/BaseOS/x86_64/os/Packages/" class="bare">https://mirror.stream.centos.org/10-stream/BaseOS/x86_64/os/Packages/</a>.
+You can download the <code>shim-x64</code> package from <a href="https://mirror.stream.centos.org/10-stream/BaseOS/x86_64/os/Packages/" class="bare">https://mirror.stream.centos.org/10-stream/BaseOS/x86_64/os/Packages/</a>.</p>
+</div>
+</li>
+<li>
+<p>Extract the shim and GRUB2 binaries:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># rpm2cpio /tmp/grub2-efi-x64.rpm | cpio -idv --directory /tmp
+# rpm2cpio /tmp/shim-x64.rpm | cpio -idv --directory /tmp</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Make the shim and GRUB2 binaries available for host provisioning:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># cp /tmp/boot/efi/EFI/centos/grubx64.efi $BOOTLOADER_PATH/grubx64.efi
+# cp /tmp/boot/efi/EFI/centos/shimx64.efi $BOOTLOADER_PATH/shimx64.efi
+# ln -sr $BOOTLOADER_PATH/grubx64.efi $BOOTLOADER_PATH/boot.efi
+# ln -sr $BOOTLOADER_PATH/shimx64.efi $BOOTLOADER_PATH/boot-sb.efi
+# chmod 644 $BOOTLOADER_PATH/grubx64.efi $BOOTLOADER_PATH/shimx64.efi</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">Verification</div>
+<ul>
+<li>
+<p>Verify the contents of your boot loader directory:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-none" data-lang="none"># tree /var/lib/tftpboot/bootloader-universe
+/var/lib/tftpboot/bootloader-universe
+└── pxegrub2
+    └── centos
+        └── default
+            └── x86_64
+                ├── boot.efi -&gt; grubx64.efi
+                ├── boot-sb.efi -&gt; shimx64.efi
+                ├── grubx64.efi
+                └── shimx64.efi</code></pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Next steps</div>
+<ul>
+<li>
+<p>You can now provision Secure Boot enabled CentOS Stream hosts by using the <strong>Grub2 UEFI SecureBoot</strong> and <strong>Grub2 UEFI HTTPS SecureBoot</strong> PXE loaders.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="configuring-smart-proxy-to-provision-debian-on-Secure-Boot-enabled-hosts"><a class="anchor" href="#configuring-smart-proxy-to-provision-debian-on-Secure-Boot-enabled-hosts"></a>8.4.3. Configuring Smart&#160;Proxy to provision Debian on Secure Boot enabled hosts</h4>
 <div class="paragraph _abstract">
 <p>Secure Boot follows a chain of trust from the start of the host to the loading of Linux kernel modules.
 The first shim that is loaded determines which distribution can be booted or loaded by using a <code>kexec</code> system call until the next reboot.</p>
@@ -4772,7 +4903,135 @@ You can download the <code>shim-signed</code> package from <a href="http://ftp.d
 </div>
 </div>
 <div class="sect3">
-<h4 id="configuring-smart-proxy-to-provision-rhel-on-Secure-Boot-enabled-hosts"><a class="anchor" href="#configuring-smart-proxy-to-provision-rhel-on-Secure-Boot-enabled-hosts"></a>8.4.3. Configuring Smart&#160;Proxy to provision Red&#160;Hat Enterprise Linux on Secure Boot enabled hosts</h4>
+<h4 id="configuring-smart-proxy-to-provision-oracle_linux-on-Secure-Boot-enabled-hosts"><a class="anchor" href="#configuring-smart-proxy-to-provision-oracle_linux-on-Secure-Boot-enabled-hosts"></a>8.4.4. Configuring Smart&#160;Proxy to provision Oracle Linux on Secure Boot enabled hosts</h4>
+<div class="paragraph _abstract">
+<p>Secure Boot follows a chain of trust from the start of the host to the loading of Linux kernel modules.
+The first shim that is loaded determines which distribution can be booted or loaded by using a <code>kexec</code> system call until the next reboot.</p>
+</div>
+<div class="paragraph">
+<p>To provision Oracle Linux on Secure Boot enabled hosts, you have to provide signed shim and GRUB2 binaries provided by the vendor of your operating system.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Important</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>You have to perform the following configuration steps on each TFTP Smart&#160;Proxy for a subnet to provision Secure Boot enabled hosts on that subnet.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The following example works for Oracle Linux on x86_64 architecture.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Ensure that the <code>cpio</code> package is installed on your Smart&#160;Proxy.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Set the path for the shim and GRUB2 binaries for the operating system of your host:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># BOOTLOADER_PATH="/var/lib/tftpboot/bootloader-universe/pxegrub2/redhat/default/x86_64"</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you require specific versions of the shim and GRUB2 binaries for the version of the operating system of your host, replace <code>default</code> with the <strong>Major</strong> and <strong>Minor</strong> version of the operating system separated by a dot.
+If no <strong>Minor</strong> version is set, replace <code>default</code> with the <strong>Major</strong> version.</p>
+</div>
+<div class="paragraph">
+<p>Foreman community recommends to not use version-specific shim and GRUB2 binaries unless it is really necessary.</p>
+</div>
+</li>
+<li>
+<p>Create the directory to store the shim and GRUB2 binaries for the operating system of your host:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># install -o foreman-proxy -g foreman-proxy -d $BOOTLOADER_PATH</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Download the shim and GRUB2 packages for the operating system of your host.
+For example:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># wget -O /tmp/grub2-efi-x64.rpm <em>https://server.example.com/grub2-efi-x64.rpm</em>
+# wget -O /tmp/shim-x64.rpm <em>https://server.example.com/shim-x64.rpm</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can download the <code>grub2-efi-x64</code> package from <a href="https://yum.oracle.com/repo/OracleLinux/OL10/baseos/latest/x86_64/" class="bare">https://yum.oracle.com/repo/OracleLinux/OL10/baseos/latest/x86_64/</a>.
+You can download the <code>shim-x64</code> package from <a href="https://yum.oracle.com/repo/OracleLinux/OL10/baseos/latest/x86_64/" class="bare">https://yum.oracle.com/repo/OracleLinux/OL10/baseos/latest/x86_64/</a>.</p>
+</div>
+</li>
+<li>
+<p>Extract the shim and GRUB2 binaries:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># rpm2cpio /tmp/grub2-efi-x64.rpm | cpio -idv --directory /tmp
+# rpm2cpio /tmp/shim-x64.rpm | cpio -idv --directory /tmp</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Make the shim and GRUB2 binaries available for host provisioning:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># cp /tmp/boot/efi/EFI/redhat/grubx64.efi $BOOTLOADER_PATH/grubx64.efi
+# cp /tmp/boot/efi/EFI/redhat/shimx64.efi $BOOTLOADER_PATH/shimx64.efi
+# ln -sr $BOOTLOADER_PATH/grubx64.efi $BOOTLOADER_PATH/boot.efi
+# ln -sr $BOOTLOADER_PATH/shimx64.efi $BOOTLOADER_PATH/boot-sb.efi
+# chmod 644 $BOOTLOADER_PATH/grubx64.efi $BOOTLOADER_PATH/shimx64.efi</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">Verification</div>
+<ul>
+<li>
+<p>Verify the contents of your boot loader directory:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-none" data-lang="none"># tree /var/lib/tftpboot/bootloader-universe
+/var/lib/tftpboot/bootloader-universe
+└── pxegrub2
+    └── redhat
+        └── default
+            └── x86_64
+                ├── boot.efi -&gt; grubx64.efi
+                ├── boot-sb.efi -&gt; shimx64.efi
+                ├── grubx64.efi
+                └── shimx64.efi</code></pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Next steps</div>
+<ul>
+<li>
+<p>You can now provision Secure Boot enabled Oracle Linux hosts by using the <strong>Grub2 UEFI SecureBoot</strong> and <strong>Grub2 UEFI HTTPS SecureBoot</strong> PXE loaders.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="configuring-smart-proxy-to-provision-rhel-on-Secure-Boot-enabled-hosts"><a class="anchor" href="#configuring-smart-proxy-to-provision-rhel-on-Secure-Boot-enabled-hosts"></a>8.4.5. Configuring Smart&#160;Proxy to provision Red&#160;Hat Enterprise Linux on Secure Boot enabled hosts</h4>
 <div class="paragraph _abstract">
 <p>Secure Boot follows a chain of trust from the start of the host to the loading of Linux kernel modules.
 The first shim that is loaded determines which distribution can be booted or loaded by using a <code>kexec</code> system call until the next reboot.</p>
@@ -4890,7 +5149,7 @@ You can download the <code>grub2-efi-x64</code> and <code>shim-x64</code> packag
 </div>
 </div>
 <div class="sect3">
-<h4 id="configuring-smart-proxy-to-provision-rocky-on-Secure-Boot-enabled-hosts"><a class="anchor" href="#configuring-smart-proxy-to-provision-rocky-on-Secure-Boot-enabled-hosts"></a>8.4.4. Configuring Smart&#160;Proxy to provision Rocky Linux on Secure Boot enabled hosts</h4>
+<h4 id="configuring-smart-proxy-to-provision-rocky-on-Secure-Boot-enabled-hosts"><a class="anchor" href="#configuring-smart-proxy-to-provision-rocky-on-Secure-Boot-enabled-hosts"></a>8.4.6. Configuring Smart&#160;Proxy to provision Rocky Linux on Secure Boot enabled hosts</h4>
 <div class="paragraph _abstract">
 <p>Secure Boot follows a chain of trust from the start of the host to the loading of Linux kernel modules.
 The first shim that is loaded determines which distribution can be booted or loaded by using a <code>kexec</code> system call until the next reboot.</p>
@@ -5018,7 +5277,135 @@ You can download the <code>shim-x64</code> package from <a href="http://dl.rocky
 </div>
 </div>
 <div class="sect3">
-<h4 id="configuring-smart-proxy-to-provision-ubuntu-on-Secure-Boot-enabled-hosts"><a class="anchor" href="#configuring-smart-proxy-to-provision-ubuntu-on-Secure-Boot-enabled-hosts"></a>8.4.5. Configuring Smart&#160;Proxy to provision Ubuntu on Secure Boot enabled hosts</h4>
+<h4 id="configuring-smart-proxy-to-provision-suse_linux_enterprise_server-on-Secure-Boot-enabled-hosts"><a class="anchor" href="#configuring-smart-proxy-to-provision-suse_linux_enterprise_server-on-Secure-Boot-enabled-hosts"></a>8.4.7. Configuring Smart&#160;Proxy to provision SUSE Linux Enterprise Server on Secure Boot enabled hosts</h4>
+<div class="paragraph _abstract">
+<p>Secure Boot follows a chain of trust from the start of the host to the loading of Linux kernel modules.
+The first shim that is loaded determines which distribution can be booted or loaded by using a <code>kexec</code> system call until the next reboot.</p>
+</div>
+<div class="paragraph">
+<p>To provision SUSE Linux Enterprise Server on Secure Boot enabled hosts, you have to provide signed shim and GRUB2 binaries provided by the vendor of your operating system.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Important</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>You have to perform the following configuration steps on each TFTP Smart&#160;Proxy for a subnet to provision Secure Boot enabled hosts on that subnet.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>The following example works for SUSE Linux Enterprise Server on x86_64 architecture.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Ensure that the <code>cpio</code> package is installed on your Smart&#160;Proxy.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Set the path for the shim and GRUB2 binaries for the operating system of your host:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># BOOTLOADER_PATH="/var/lib/tftpboot/bootloader-universe/pxegrub2/sles/default/x86_64"</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you require specific versions of the shim and GRUB2 binaries for the version of the operating system of your host, replace <code>default</code> with the <strong>Major</strong> and <strong>Minor</strong> version of the operating system separated by a dot.
+If no <strong>Minor</strong> version is set, replace <code>default</code> with the <strong>Major</strong> version.</p>
+</div>
+<div class="paragraph">
+<p>Foreman community recommends to not use version-specific shim and GRUB2 binaries unless it is really necessary.</p>
+</div>
+</li>
+<li>
+<p>Create the directory to store the shim and GRUB2 binaries for the operating system of your host:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># install -o foreman-proxy -g foreman-proxy -d $BOOTLOADER_PATH</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Download the shim and GRUB2 packages for the operating system of your host.
+For example:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># wget -O /tmp/grub2-x86_64-efi.rpm <em>https://server.example.com/grub2-x86_64-efi.rpm</em>
+# wget -O /tmp/shim.x86_64.rpm <em>https://server.example.com/shim.x86_64.rpm</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can download the <code>grub2-x86_64-efi</code> package from the SUSE Linux Enterprise Server Basesystem Pool repository published on your Smart&#160;Proxy.
+You can download the <code>shim</code> package from the SUSE Linux Enterprise Server Basesystem Pool repository published on your Smart&#160;Proxy.</p>
+</div>
+</li>
+<li>
+<p>Extract the shim and GRUB2 binaries:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># rpm2cpio /tmp/grub2-x86_64-efi.rpm | cpio -idv --directory /tmp
+# rpm2cpio /tmp/shim.x86_64.rpm | cpio -idv --directory /tmp</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Make the shim and GRUB2 binaries available for host provisioning:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># cp /tmp/usr/lib64/efi/grub.efi $BOOTLOADER_PATH/grubx64.efi
+# cp /tmp/usr/lib64/efi/shim.efi $BOOTLOADER_PATH/shimx64.efi
+# ln -sr $BOOTLOADER_PATH/grubx64.efi $BOOTLOADER_PATH/boot.efi
+# ln -sr $BOOTLOADER_PATH/shimx64.efi $BOOTLOADER_PATH/boot-sb.efi
+# chmod 644 $BOOTLOADER_PATH/grubx64.efi $BOOTLOADER_PATH/shimx64.efi</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">Verification</div>
+<ul>
+<li>
+<p>Verify the contents of your boot loader directory:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-none" data-lang="none"># tree /var/lib/tftpboot/bootloader-universe
+/var/lib/tftpboot/bootloader-universe
+└── pxegrub2
+    └── sles
+        └── default
+            └── x86_64
+                ├── boot.efi -&gt; grubx64.efi
+                ├── boot-sb.efi -&gt; shimx64.efi
+                ├── grubx64.efi
+                └── shimx64.efi</code></pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Next steps</div>
+<ul>
+<li>
+<p>You can now provision Secure Boot enabled SUSE Linux Enterprise Server hosts by using the <strong>Grub2 UEFI SecureBoot</strong> and <strong>Grub2 UEFI HTTPS SecureBoot</strong> PXE loaders.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="configuring-smart-proxy-to-provision-ubuntu-on-Secure-Boot-enabled-hosts"><a class="anchor" href="#configuring-smart-proxy-to-provision-ubuntu-on-Secure-Boot-enabled-hosts"></a>8.4.8. Configuring Smart&#160;Proxy to provision Ubuntu on Secure Boot enabled hosts</h4>
 <div class="paragraph _abstract">
 <p>Secure Boot follows a chain of trust from the start of the host to the loading of Linux kernel modules.
 The first shim that is loaded determines which distribution can be booted or loaded by using a <code>kexec</code> system call until the next reboot.</p>
