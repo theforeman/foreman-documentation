@@ -47,3 +47,56 @@ jobs:
       - name: Check HTML links of all builds
         run: |
           make linkchecker-tryer
+
+  theme-link-check:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+        working-directory: guides
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+
+      - name: Build satellite docs
+        run: |
+          # Undo the "satellite is always containerized" overrides
+          sed -e '/:containerized:/d' -e '/include::attributes-containerized/d' -i common/attributes-satellite.adoc
+
+          bundle exec make -j ${{ env.MAKE_J }} html BUILD=satellite LINKS=local
+
+      - name: Extract TOC
+        run: |
+          mkdir -p build/ci-toc
+          bundle exec ruby scripts/extract_links_toc \
+              --f2l upstream_filename_to_satellite_link.json \
+              --output-toc-file build/ci-toc/toc.json \
+              --output-aliases-file build/ci-toc/aliases.json \
+              build/**/index-satellite.html
+
+      - name: Stage documentation TOC for CI artifact
+        run: |
+          mkdir -p "${GITHUB_WORKSPACE}/toc-artifact"
+          cp build/ci-toc/toc.json build/ci-toc/aliases.json "${GITHUB_WORKSPACE}/toc-artifact/"
+
+      - name: Upload documentation TOC
+        uses: actions/upload-artifact@v7
+        with:
+          name: documentation-toc
+          path: toc-artifact
+          if-no-files-found: error
+
+  foreman-theme-satellite-plugin:
+    needs: theme-link-check
+    # TODO
+    # uses: theforeman/foreman_theme_satellite/.github/workflows/toc-check.yml@develop
+    uses: adamruzicka/foreman_theme_satellite/.github/workflows/toc-check.yml@ci
+    secrets: inherit
+    with:
+      documentation_toc_artifact: documentation-toc
