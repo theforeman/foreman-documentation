@@ -238,11 +238,414 @@ SOFTWARE.
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
+<li><a href="#managing-custom-file-type-content-in-satellite">1. Managing custom file type content in Satellite</a>
+<ul class="sectlevel2">
+<li><a href="#creating-a-local-source-for-a-custom-file-type-repository">1.1. Creating a local source for a custom file type repository</a></li>
+<li><a href="#creating-a-remote-source-for-a-custom-file-type-repository">1.2. Creating a remote source for a custom file type repository</a></li>
+<li><a href="#creating-a-custom-file-type-repository-by-using-web-ui">1.3. Creating a custom file type repository by using Satellite web UI</a></li>
+<li><a href="#creating-a-custom-file-type-repository-by-using-cli">1.4. Creating a custom file type repository by using Hammer CLI</a></li>
+</ul>
+</li>
 <li><a href="#storing-content-on-an-nfs-share">Appendix A: Storing content on an NFS share</a></li>
 </ul>
 </div>
 </div>
 <div id="content">
+<div class="sect1">
+<h2 id="managing-custom-file-type-content-in-satellite"><a class="anchor" href="#managing-custom-file-type-content-in-satellite"></a>1. Managing custom file type content in Satellite</h2>
+<div class="sectionbody">
+<div class="paragraph _abstract">
+<p>You can use custom file type repositories in custom products to store and distribute arbitrary files such as SSH keys, source code, or ISO images in Satellite.</p>
+</div>
+<div class="paragraph">
+<p>You can upload files to the repository and synchronize files from an upstream Satellite&#160;Server.
+When you add files to a custom file type repository, you can use the normal Satellite management functions such as adding a specific version to a content view to provide version control and making the repository of files available on various Capsule&#160;Servers.</p>
+</div>
+<div class="paragraph">
+<p>You can create a file type repository in Satellite&#160;Server only in a custom product, but there is flexibility in how you create the repository source.
+You can create an independent repository source in a directory on Satellite&#160;Server, or on a remote HTTP server, and then synchronize the contents of that directory into Satellite.
+This method is useful when you have multiple files to add to a Satellite repository.</p>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/managing_hosts/index#consuming-custom-file-type-content-on-hosts">Consuming custom file type content on hosts in <em>Managing hosts</em></a></p>
+</li>
+</ul>
+</div>
+<div class="sect2">
+<h3 id="creating-a-local-source-for-a-custom-file-type-repository"><a class="anchor" href="#creating-a-local-source-for-a-custom-file-type-repository"></a>1.1. Creating a local source for a custom file type repository</h3>
+<div class="paragraph _abstract">
+<p>When you have multiple files to import, you can prepare a directory on Satellite&#160;Server as a local Pulp source.
+Then, synchronize files from this directory into a custom file type repository.</p>
+</div>
+<div class="paragraph">
+<p>Configure a directory on the base system where Satellite is installed as the repository source.
+To create a file type repository in a directory on a remote server, see <a href="#creating-a-remote-source-for-a-custom-file-type-repository">Creating a remote source for a custom file type repository</a>.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On your Satellite&#160;Server, install the Pulp Manifest package:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf install pulp-manifest</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create a directory that you want to use as the file type repository, such as:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># mkdir -p /var/lib/pulp/<em>local_repos</em>/<em>my_file_repo</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Add the parent folder to allowed import paths:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foremanctl deploy --content-import-path /var/lib/pulp/<em>local_repos</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To add multiple import paths, use the <code>--content-import-path</code> option multiple times:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foremanctl deploy --content-import-path /var/lib/pulp/<em>local_repo1</em> \
+--content-import-path /var/lib/pulp/<em>local_repo2</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Add files to the directory or create a test file:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># touch /var/lib/pulp/<em>local_repos</em>/<em>my_file_repo</em>/<em>test.txt</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create the Pulp Manifest:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># pulp-manifest /var/lib/pulp/<em>local_repos</em>/<em>my_file_repo</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Verify the manifest was created:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ls /var/lib/pulp/<em>local_repos</em>/<em>my_file_repo</em>
+PULP_MANIFEST test.txt</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">Next steps</div>
+<ul>
+<li>
+<p>You can import your local source as a custom file type repository.
+Use the <code>file://</code> URL scheme and the name of the directory to specify an <strong>Upstream URL</strong>, such as <code>file:///var/lib/pulp/<em>local_repos</em>/<em>my_file_repo</em></code>.
+For more information, see <a href="#creating-a-custom-file-type-repository-by-using-web-ui">Creating a custom file type repository by using Satellite web UI</a>.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="creating-a-remote-source-for-a-custom-file-type-repository"><a class="anchor" href="#creating-a-remote-source-for-a-custom-file-type-repository"></a>1.2. Creating a remote source for a custom file type repository</h3>
+<div class="paragraph _abstract">
+<p>You can prepare a directory on a remote HTTP server as a Pulp source and synchronize files into a custom file type repository on Satellite&#160;Server.</p>
+</div>
+<div class="paragraph">
+<p>Configure a directory on a remote server as the repository source.
+To create a file type repository in a directory on the base system where Satellite&#160;Server is installed, see <a href="#creating-a-local-source-for-a-custom-file-type-repository">Creating a local source for a custom file type repository</a>.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>You have a server running Red&#160;Hat Enterprise Linux 9 registered to your Satellite or the Red&#160;Hat CDN.</p>
+</li>
+<li>
+<p>Your server has an entitlement to the Red&#160;Hat Enterprise Linux Server and Red&#160;Hat Satellite repositories.</p>
+</li>
+<li>
+<p>You have installed an HTTP server.
+For more information about configuring a web server, see <a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/deploying_web_servers_and_reverse_proxies/setting-apache-http-server_deploying-web-servers-and-reverse-proxies">Setting up the Apache HTTP web server</a> in Red&#160;Hat Enterprise Linux&#160;9 <em>Deploying web servers and reverse proxies</em>.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On your HTTP server, enable the required repositories:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># subscription-manager repos \
+--enable=rhel-9-for-x86_64-appstream-rpms \
+--enable=rhel-9-for-x86_64-baseos-rpms \
+--enable=satellite-6.20-for-rhel-9-x86_64-rpms</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Install the Pulp Manifest package:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf install pulp-manifest</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create a directory that you want to use as the file type repository in the HTTP server&#8217;s public folder:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># mkdir /var/www/html/pub/<em>my_file_repo</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Add files to the directory or create a test file:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># touch /var/www/html/pub/<em>my_file_repo</em>/<em>test.txt</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create the Pulp Manifest:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># pulp-manifest /var/www/html/pub/<em>my_file_repo</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Verify the manifest was created:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ls /var/www/html/pub/<em>my_file_repo</em>
+PULP_MANIFEST test.txt</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">Next steps</div>
+<ul>
+<li>
+<p>You can import your remote source as a custom file type repository.
+Use the path to the directory to specify an <strong>Upstream URL</strong>, such as <code>http://server.example.com/<em>my_file_repo</em></code>.
+For more information, see <a href="#creating-a-custom-file-type-repository-by-using-web-ui">Creating a custom file type repository by using Satellite web UI</a>.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="creating-a-custom-file-type-repository-by-using-web-ui"><a class="anchor" href="#creating-a-custom-file-type-repository-by-using-web-ui"></a>1.3. Creating a custom file type repository by using Satellite web UI</h3>
+<div class="paragraph _abstract">
+<p>You can add a custom file type repository to an existing custom product.
+Select the <code>file</code> repository type and follow the same workflow as when you add other custom content.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Content</strong> &gt; <strong>Products</strong>.</p>
+</li>
+<li>
+<p>Select a product that you want to create a repository for.</p>
+</li>
+<li>
+<p>On the <strong>Repositories</strong> tab, click <strong>New Repository</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter a name for the repository.
+Satellite automatically completes the <strong>Label</strong> field based on the name.</p>
+</li>
+<li>
+<p>Optional: In the <strong>Description</strong> field, enter a description for the repository.</p>
+</li>
+<li>
+<p>From the <strong>Type</strong> list, select <code>file</code> as type of repository.</p>
+</li>
+<li>
+<p>Optional: In the <strong>Upstream URL</strong> field, enter the URL of the upstream repository to use as a source.
+If you do not enter an upstream URL, you can manually upload packages.</p>
+</li>
+<li>
+<p>Select <strong>Verify SSL</strong> to verify that the SSL certificates of the repository are signed by a trusted CA.</p>
+</li>
+<li>
+<p>Optional: In the <strong>Upstream Username</strong> field, enter the user name for the upstream repository if required for authentication.
+Clear this field if the repository does not require authentication.</p>
+</li>
+<li>
+<p>Optional: In the <strong>Upstream Password</strong> field, enter the corresponding password for the upstream repository.
+Clear this field if the repository does not require authentication.</p>
+</li>
+<li>
+<p>Optional: In the <strong>Upstream Authentication Token</strong> field, provide the token of the upstream repository user for authentication.
+Leave this field empty if the repository does not require authentication.</p>
+</li>
+<li>
+<p>From the <strong>Download Policy</strong> list, select the type of synchronization Satellite&#160;Server performs.</p>
+</li>
+<li>
+<p>From the <strong>Mirroring Policy</strong> list, select the type of content synchronization Satellite&#160;Server performs.</p>
+</li>
+<li>
+<p>Optional: In the <strong>HTTP Proxy Policy</strong> field, select an HTTP proxy.
+By default, it uses the <code>Global Default</code> HTTP proxy.</p>
+</li>
+<li>
+<p>Optional: You can clear the <strong>Unprotected</strong> checkbox to require a subscription entitlement certificate for accessing this repository.
+By default, the repository is published through HTTP.</p>
+</li>
+<li>
+<p>Optional: In the <strong>SSL CA Cert</strong> field, select the SSL CA Certificate for the repository.</p>
+</li>
+<li>
+<p>Optional: In the <strong>SSL Client Cert</strong> field, select the SSL Client Certificate for the repository.</p>
+</li>
+<li>
+<p>Optional: In the <strong>SSL Client Key</strong> field, select the SSL Client Key for the repository.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong> to create the repository.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="creating-a-custom-file-type-repository-by-using-cli"><a class="anchor" href="#creating-a-custom-file-type-repository-by-using-cli"></a>1.4. Creating a custom file type repository by using Hammer CLI</h3>
+<div class="paragraph _abstract">
+<p>You can add a custom file type repository to an existing custom product.
+Select the <code>file</code> repository type and follow the same workflow as when you add other custom content.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Create a custom product:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer product create \
+--name "<em>My_File_Product</em>" \
+--organization-id <em>My_Organization_ID</em> \
+--sync-plan "<em>My_Sync_Plan</em>"</pre>
+</div>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 1. Optional parameters for the <code>hammer product create</code> command</caption>
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>Option</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Description</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--gpg-key-id</code> <em>gpg_key_id</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">GPG key numeric identifier</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--sync-plan-id</code> <em>sync_plan_id</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sync plan numeric identifier</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--sync-plan</code> <em>sync_plan_name</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sync plan name to search by</p></td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p>Create a <code>file</code> type repository:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer repository create \
+--content-type file \
+--name "<em>My_Files</em>" \
+--organization-id <em>My_Organization_ID</em> \
+--product "<em>My_File_Product</em>"</pre>
+</div>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 2. Optional parameters for the <code>hammer repository create</code> command</caption>
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>Option</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Description</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--checksum-type</code> <em>sha_version</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Repository checksum (either <code>sha256</code>, <code>sha384</code>, or <code>sha512</code>)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--download-policy</code> <em>policy_name</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Download policy for repositories (either <code>immediate</code> or <code>on_demand</code>)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--gpg-key-id</code> <em>gpg_key_id</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">GPG key numeric identifier</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--gpg-key</code> <em>gpg_key_name</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Key name to search by</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--mirror-on-sync</code> <em>boolean</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Must this repo be mirrored from the source, and stale packages removed, when synced?
+Set to <code>true</code> or <code>false</code>, <code>yes</code> or <code>no</code>, <code>1</code> or <code>0</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--publish-via-http</code> <em>boolean</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Must this also be published using HTTP? Set to <code>true</code> or <code>false</code>, <code>yes</code> or <code>no</code>, <code>1</code> or <code>0</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--upstream-password</code> <em>repository_password</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Password for the upstream repository user</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--upstream-username</code> <em>repository_username</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Upstream repository user, if required for authentication</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--url</code> <em>My_Repository_URL</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">URL of the remote repository</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--verify-ssl-on-sync</code> <em>boolean</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Verify that the upstream SSL certificates of the remote repository are signed by a trusted CA? Set to <code>true</code> or <code>false</code>, <code>yes</code> or <code>no</code>, <code>1</code> or <code>0</code>.</p></td>
+</tr>
+</tbody>
+</table>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
 <div class="sect1">
 <h2 id="storing-content-on-an-nfs-share"><a class="anchor" href="#storing-content-on-an-nfs-share"></a>Appendix A: Storing content on an NFS share</h2>
 <div class="sectionbody">

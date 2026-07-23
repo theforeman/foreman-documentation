@@ -253,6 +253,16 @@ SOFTWARE.
 <li><a href="#Installing_OSTree_Content_from_foreman_Server_content-management">1.7. Installing OSTree content from Foreman&#160;server on hosts</a></li>
 </ul>
 </li>
+<li><a href="#managing-custom-file-type-content-in-foreman">2. Managing file type content in Foreman</a>
+<ul class="sectlevel2">
+<li><a href="#creating-a-local-source-for-a-custom-file-type-repository">2.1. Creating a local source for a file type repository</a></li>
+<li><a href="#creating-a-remote-source-for-a-custom-file-type-repository">2.2. Creating a remote source for a file type repository</a></li>
+<li><a href="#creating-a-custom-file-type-repository-by-using-web-ui">2.3. Creating a file type repository by using Foreman web UI</a></li>
+<li><a href="#creating-a-custom-file-type-repository-by-using-cli">2.4. Creating a file type repository by using Hammer CLI</a></li>
+<li><a href="#creating-file-type-repositories-for-installation-media-for-debian-13">2.5. Creating file type repositories for installation media for Debian 13</a></li>
+<li><a href="#creating-file-type-repositories-for-installation-media-for-ubuntu-26-04">2.6. Creating file type repositories for installation media for Ubuntu 26.04</a></li>
+</ul>
+</li>
 <li><a href="#storing-content-on-an-nfs-share">Appendix A: Storing content on an NFS share</a></li>
 </ul>
 </div>
@@ -675,6 +685,592 @@ For more information, see <a href="#importing-ostree-content-by-using-web-ui">Im
 </div>
 </li>
 </ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="managing-custom-file-type-content-in-foreman"><a class="anchor" href="#managing-custom-file-type-content-in-foreman"></a>2. Managing file type content in Foreman</h2>
+<div class="sectionbody">
+<div class="paragraph _abstract">
+<p>You can use file type repositories in products to store and distribute arbitrary files such as SSH keys, source code, or ISO images in Foreman.</p>
+</div>
+<div class="paragraph">
+<p>You can upload files to the repository and synchronize files from an upstream Foreman&#160;server.
+When you add files to a file type repository, you can use the normal Foreman management functions such as adding a specific version to a content view to provide version control and making the repository of files available on various Smart&#160;Proxy&#160;servers.</p>
+</div>
+<div class="paragraph">
+<p>You can create a file type repository in Foreman&#160;server only in a product, but there is flexibility in how you create the repository source.
+You can create an independent repository source in a directory on Foreman&#160;server, or on a remote HTTP server, and then synchronize the contents of that directory into Foreman.
+This method is useful when you have multiple files to add to a Foreman repository.</p>
+</div>
+<div class="paragraph">
+<p>You can also use file type repositories to provide local installation media for Debian and Ubuntu in disconnected environments.</p>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="https://docs.theforeman.org/nightly/Managing_Hosts/index-containerized-katello.html#consuming-custom-file-type-content-on-hosts">Consuming file type content on hosts in <em>Managing hosts</em></a></p>
+</li>
+</ul>
+</div>
+<div class="sect2">
+<h3 id="creating-a-local-source-for-a-custom-file-type-repository"><a class="anchor" href="#creating-a-local-source-for-a-custom-file-type-repository"></a>2.1. Creating a local source for a file type repository</h3>
+<div class="paragraph _abstract">
+<p>When you have multiple files to import, you can prepare a directory on Foreman&#160;server as a local Pulp source.
+Then, synchronize files from this directory into a file type repository.</p>
+</div>
+<div class="paragraph">
+<p>Configure a directory on the base system where Foreman is installed as the repository source.
+To create a file type repository in a directory on a remote server, see <a href="#creating-a-remote-source-for-a-custom-file-type-repository">Creating a remote source for a file type repository</a>.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On your Foreman&#160;server, install the Pulp Manifest package:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf install pulp-manifest</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create a directory that you want to use as the file type repository, such as:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># mkdir -p /var/lib/pulp/<em>local_repos</em>/<em>my_file_repo</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Add the parent folder to allowed import paths:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foremanctl deploy --content-import-path /var/lib/pulp/<em>local_repos</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To add multiple import paths, use the <code>--content-import-path</code> option multiple times:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foremanctl deploy --content-import-path /var/lib/pulp/<em>local_repo1</em> \
+--content-import-path /var/lib/pulp/<em>local_repo2</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Add files to the directory or create a test file:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># touch /var/lib/pulp/<em>local_repos</em>/<em>my_file_repo</em>/<em>test.txt</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create the Pulp Manifest:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># pulp-manifest /var/lib/pulp/<em>local_repos</em>/<em>my_file_repo</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Verify the manifest was created:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ls /var/lib/pulp/<em>local_repos</em>/<em>my_file_repo</em>
+PULP_MANIFEST test.txt</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">Next steps</div>
+<ul>
+<li>
+<p>You can import your local source as a file type repository.
+Use the <code>file://</code> URL scheme and the name of the directory to specify an <strong>Upstream URL</strong>, such as <code>file:///var/lib/pulp/<em>local_repos</em>/<em>my_file_repo</em></code>.
+For more information, see <a href="#creating-a-custom-file-type-repository-by-using-web-ui">Creating a file type repository by using Foreman web UI</a>.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="creating-a-remote-source-for-a-custom-file-type-repository"><a class="anchor" href="#creating-a-remote-source-for-a-custom-file-type-repository"></a>2.2. Creating a remote source for a file type repository</h3>
+<div class="paragraph _abstract">
+<p>You can prepare a directory on a remote HTTP server as a Pulp source and synchronize files into a file type repository on Foreman&#160;server.</p>
+</div>
+<div class="paragraph">
+<p>Configure a directory on a remote server as the repository source.
+To create a file type repository in a directory on the base system where Foreman&#160;server is installed, see <a href="#creating-a-local-source-for-a-custom-file-type-repository">Creating a local source for a file type repository</a>.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>You have a server running Enterprise Linux 9 registered to your Foreman.</p>
+</li>
+<li>
+<p>You have installed an HTTP server.
+For more information about configuring a web server, see <a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/deploying_web_servers_and_reverse_proxies/setting-apache-http-server_deploying-web-servers-and-reverse-proxies">Setting up the Apache HTTP web server</a> in Red&#160;Hat Enterprise Linux&#160;9 <em>Deploying web servers and reverse proxies</em>.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On your HTTP server, enable the required repositories:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf config-manager --add-repo=https://yum.theforeman.org/pulpcore/3.105/el9/x86_64/
+# echo "gpgkey=https://yum.theforeman.org/pulpcore/3.105/GPG-RPM-KEY-pulpcore" \
+&gt;&gt; /etc/yum.repos.d/yum.theforeman.org_pulpcore_3.105_el9_x86_64_.repo</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Install the Pulp Manifest package:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf install pulp-manifest</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create a directory that you want to use as the file type repository in the HTTP server&#8217;s public folder:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># mkdir /var/www/html/pub/<em>my_file_repo</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Add files to the directory or create a test file:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># touch /var/www/html/pub/<em>my_file_repo</em>/<em>test.txt</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create the Pulp Manifest:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># pulp-manifest /var/www/html/pub/<em>my_file_repo</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Verify the manifest was created:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ls /var/www/html/pub/<em>my_file_repo</em>
+PULP_MANIFEST test.txt</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">Next steps</div>
+<ul>
+<li>
+<p>You can import your remote source as a file type repository.
+Use the path to the directory to specify an <strong>Upstream URL</strong>, such as <code>http://server.example.com/<em>my_file_repo</em></code>.
+For more information, see <a href="#creating-a-custom-file-type-repository-by-using-web-ui">Creating a file type repository by using Foreman web UI</a>.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="creating-a-custom-file-type-repository-by-using-web-ui"><a class="anchor" href="#creating-a-custom-file-type-repository-by-using-web-ui"></a>2.3. Creating a file type repository by using Foreman web UI</h3>
+<div class="paragraph _abstract">
+<p>You can add a file type repository to an existing product.
+Select the <code>file</code> repository type and follow the same workflow as when you add other content.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Content</strong> &gt; <strong>Products</strong>.</p>
+</li>
+<li>
+<p>Select a product that you want to create a repository for.</p>
+</li>
+<li>
+<p>On the <strong>Repositories</strong> tab, click <strong>New Repository</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter a name for the repository.
+Foreman automatically completes the <strong>Label</strong> field based on the name.</p>
+</li>
+<li>
+<p>Optional: In the <strong>Description</strong> field, enter a description for the repository.</p>
+</li>
+<li>
+<p>From the <strong>Type</strong> list, select <code>file</code> as type of repository.</p>
+</li>
+<li>
+<p>Optional: In the <strong>Upstream URL</strong> field, enter the URL of the upstream repository to use as a source.
+If you do not enter an upstream URL, you can manually upload packages.</p>
+</li>
+<li>
+<p>Select <strong>Verify SSL</strong> to verify that the SSL certificates of the repository are signed by a trusted CA.</p>
+</li>
+<li>
+<p>Optional: In the <strong>Upstream Username</strong> field, enter the user name for the upstream repository if required for authentication.
+Clear this field if the repository does not require authentication.</p>
+</li>
+<li>
+<p>Optional: In the <strong>Upstream Password</strong> field, enter the corresponding password for the upstream repository.
+Clear this field if the repository does not require authentication.</p>
+</li>
+<li>
+<p>Optional: In the <strong>Upstream Authentication Token</strong> field, provide the token of the upstream repository user for authentication.
+Leave this field empty if the repository does not require authentication.</p>
+</li>
+<li>
+<p>From the <strong>Download Policy</strong> list, select the type of synchronization Foreman&#160;server performs.</p>
+</li>
+<li>
+<p>From the <strong>Mirroring Policy</strong> list, select the type of content synchronization Foreman&#160;server performs.</p>
+</li>
+<li>
+<p>Optional: In the <strong>HTTP Proxy Policy</strong> field, select an HTTP proxy.
+By default, it uses the <code>Global Default</code> HTTP proxy.</p>
+</li>
+<li>
+<p>Optional: You can clear the <strong>Unprotected</strong> checkbox to require a subscription entitlement certificate for accessing this repository.
+By default, the repository is published through HTTP.</p>
+</li>
+<li>
+<p>Optional: In the <strong>SSL CA Cert</strong> field, select the SSL CA Certificate for the repository.</p>
+</li>
+<li>
+<p>Optional: In the <strong>SSL Client Cert</strong> field, select the SSL Client Certificate for the repository.</p>
+</li>
+<li>
+<p>Optional: In the <strong>SSL Client Key</strong> field, select the SSL Client Key for the repository.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong> to create the repository.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="creating-a-custom-file-type-repository-by-using-cli"><a class="anchor" href="#creating-a-custom-file-type-repository-by-using-cli"></a>2.4. Creating a file type repository by using Hammer CLI</h3>
+<div class="paragraph _abstract">
+<p>You can add a file type repository to an existing product.
+Select the <code>file</code> repository type and follow the same workflow as when you add other content.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Create a product:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer product create \
+--name "<em>My_File_Product</em>" \
+--organization-id <em>My_Organization_ID</em> \
+--sync-plan "<em>My_Sync_Plan</em>"</pre>
+</div>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 1. Optional parameters for the <code>hammer product create</code> command</caption>
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>Option</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Description</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--gpg-key-id</code> <em>gpg_key_id</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">GPG key numeric identifier</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--sync-plan-id</code> <em>sync_plan_id</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sync plan numeric identifier</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--sync-plan</code> <em>sync_plan_name</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sync plan name to search by</p></td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p>Create a <code>file</code> type repository:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer repository create \
+--content-type file \
+--name "<em>My_Files</em>" \
+--organization-id <em>My_Organization_ID</em> \
+--product "<em>My_File_Product</em>"</pre>
+</div>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 2. Optional parameters for the <code>hammer repository create</code> command</caption>
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top"><strong>Option</strong></th>
+<th class="tableblock halign-left valign-top"><strong>Description</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--checksum-type</code> <em>sha_version</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Repository checksum (either <code>sha256</code>, <code>sha384</code>, or <code>sha512</code>)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--download-policy</code> <em>policy_name</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Download policy for repositories (either <code>immediate</code> or <code>on_demand</code>)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--gpg-key-id</code> <em>gpg_key_id</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">GPG key numeric identifier</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--gpg-key</code> <em>gpg_key_name</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Key name to search by</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--mirror-on-sync</code> <em>boolean</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Must this repo be mirrored from the source, and stale packages removed, when synced?
+Set to <code>true</code> or <code>false</code>, <code>yes</code> or <code>no</code>, <code>1</code> or <code>0</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--publish-via-http</code> <em>boolean</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Must this also be published using HTTP? Set to <code>true</code> or <code>false</code>, <code>yes</code> or <code>no</code>, <code>1</code> or <code>0</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--upstream-password</code> <em>repository_password</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Password for the upstream repository user</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--upstream-username</code> <em>repository_username</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Upstream repository user, if required for authentication</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--url</code> <em>My_Repository_URL</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">URL of the remote repository</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--verify-ssl-on-sync</code> <em>boolean</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Verify that the upstream SSL certificates of the remote repository are signed by a trusted CA? Set to <code>true</code> or <code>false</code>, <code>yes</code> or <code>no</code>, <code>1</code> or <code>0</code>.</p></td>
+</tr>
+</tbody>
+</table>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="creating-file-type-repositories-for-installation-media-for-debian-13"><a class="anchor" href="#creating-file-type-repositories-for-installation-media-for-debian-13"></a>2.5. Creating file type repositories for installation media for Debian 13</h3>
+<div class="paragraph _abstract">
+<p>You can use file type repositories to provide local installation media for Debian.
+This allows you to provision hosts running Debian 13 in disconnected environments.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Content</strong> &gt; <strong>Products</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Create Product</strong>.</p>
+</li>
+<li>
+<p>Enter a <strong>Name</strong> for your product.</p>
+</li>
+<li>
+<p>Optional: Select a sync plan from the <strong>Sync Plan</strong> drop down menu.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong> to create the product.</p>
+</li>
+<li>
+<p>On the <strong>Repositories</strong> tab of the previously created product, click <strong>New Repository</strong>.</p>
+</li>
+<li>
+<p>Enter a <strong>Name</strong> for the repository.</p>
+<div class="paragraph">
+<p>If you use the file type repository as installation medium for offline installations, Foreman community recommends adding <code>offline installation media</code> to indicate the offline installation capability, for example, <code>Debian 13 offline installation media</code>.</p>
+</div>
+</li>
+<li>
+<p>Select <code>file</code> as <strong>Type</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Upstream URL</strong> field, enter the URL of the file type repository that contains your Debian 13 installation medium.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong> to create the repository.</p>
+</li>
+<li>
+<p>On the <strong>Repositories</strong> tab, select your previously created repository and click <strong>Sync Now</strong>.</p>
+</li>
+<li>
+<p>After you have synchronized the repository, navigate to <strong>Content</strong> &gt; <strong>Products</strong>.</p>
+</li>
+<li>
+<p>Select the previously created product.</p>
+</li>
+<li>
+<p>On the <strong>Repositories</strong> tab, select the previously created repository.</p>
+</li>
+<li>
+<p>Copy the <strong>Published At</strong> URL.</p>
+</li>
+<li>
+<p>Navigate to <strong>Hosts</strong> &gt; <strong>Installation Media</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Create Medium</strong>.</p>
+</li>
+<li>
+<p>Enter a <strong>Name</strong> for the installation media.</p>
+<div class="paragraph">
+<p>Foreman community recommends adding <code>local</code> to indicate that the installation medium is stored on your Foreman locally.
+You can use this installation medium to provision hosts in disconnected environments.</p>
+</div>
+</li>
+<li>
+<p>Enter the copied URL as <strong>Path</strong>.</p>
+</li>
+<li>
+<p>Select the <strong>Operating System Family</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong> to create the installation media.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="creating-file-type-repositories-for-installation-media-for-ubuntu-26-04"><a class="anchor" href="#creating-file-type-repositories-for-installation-media-for-ubuntu-26-04"></a>2.6. Creating file type repositories for installation media for Ubuntu 26.04</h3>
+<div class="paragraph _abstract">
+<p>You can use file type repositories to provide local installation media for Ubuntu.
+This allows you to provision hosts running Ubuntu 26.04 in disconnected environments.</p>
+</div>
+<div class="paragraph">
+<p>To provision Ubuntu 26.04, you need to provide both the ISO image and the extracted ISO image on your Foreman&#160;server or the relevant Smart&#160;Proxy&#160;server.
+This example uses Foreman&#160;server.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Content</strong> &gt; <strong>Products</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Create Product</strong>.</p>
+</li>
+<li>
+<p>Enter a <strong>Name</strong> for your product.</p>
+</li>
+<li>
+<p>Optional: Select a sync plan from the <strong>Sync Plan</strong> drop down menu.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong> to create the product.</p>
+</li>
+<li>
+<p>On the <strong>Repositories</strong> tab of the previously created product, click <strong>New Repository</strong>.</p>
+</li>
+<li>
+<p>Enter a <strong>Name</strong> for the repository.</p>
+<div class="paragraph">
+<p>If you use the file type repository as installation medium for offline installations, Foreman community recommends adding <code>offline installation media</code> to indicate the offline installation capability, for example, <code>Ubuntu 26.04 offline installation media</code>.</p>
+</div>
+</li>
+<li>
+<p>Select <code>file</code> as <strong>Type</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Upstream URL</strong> field, enter the URL of the file type repository that contains your Ubuntu 26.04 installation medium.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong> to create the repository.</p>
+</li>
+<li>
+<p>On the <strong>Repositories</strong> tab, select your previously created repository and click <strong>Sync Now</strong>.</p>
+</li>
+<li>
+<p>After you have synchronized the repository, navigate to <strong>Content</strong> &gt; <strong>Products</strong>.</p>
+</li>
+<li>
+<p>Select the previously created product.</p>
+</li>
+<li>
+<p>On the <strong>Repositories</strong> tab, select the previously created repository.</p>
+</li>
+<li>
+<p>Copy the <strong>Published At</strong> URL.</p>
+</li>
+<li>
+<p>On your Foreman&#160;server, use the <strong>Published At</strong> URL from your synchronized file repository to download the ISO image:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ wget --directory-prefix /tmp/ https://foreman.example.com/pulp/content/<em>My_Organization_Label</em>/Library/custom/<em>My_Product</em>/<em>My_Repository</em>/ubuntu-26.04-latest.iso</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Mount the ISO image:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># mount ubuntu-26.04-latest.iso /mnt</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Provide the ISO image and the extracted directory under <em>foreman.example.com/pub</em>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># mkdir --parents /var/www/html/pub/installation_media/ubuntu/26.04-x86_64/
+# cp ubuntu-26.04-latest.iso /var/www/html/pub/installation_media/ubuntu/26.04-x86_64.iso
+# cp --archive /mnt/* /var/www/html/pub/installation_media/ubuntu/26.04-x86_64/</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Ensure that the path in <code>/pub/</code> matches the path in your <em>Preseed default PXELinux Autoinstall</em> template.</p>
+</div>
+</li>
+<li>
+<p>Unmount and delete the ISO image:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># umount /mnt/
+# rm --force ubuntu-26.04-latest.iso</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">Next steps</div>
+<ul>
+<li>
+<p>Use <code>http://foreman.example.com/pub/installation_media/ubuntu/26.04-x86_64/</code> to set up your installation media entry in Foreman.</p>
+</li>
+</ul>
 </div>
 </div>
 </div>
