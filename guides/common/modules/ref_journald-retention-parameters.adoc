@@ -1,0 +1,73 @@
+:_mod-docs-content-type: REFERENCE
+
+[id="journald-retention-and-disk-space-parameters"]
+= journald retention and disk space parameters
+
+[role="_abstract"]
+`journald` parameters in a drop-in file under `/etc/systemd/journald.conf.d/` control log retention, disk usage, and storage behavior for your containerized {ProjectServer}.
+
+.journald retention parameters
+[cols="2,3,1,2", options="header"]
+|===
+| Parameter
+| Description
+| Default
+| Recommended for {Project}
+
+| `Storage`
+| Controls where journal data is stored.
+Set to `persistent` to store logs on disk in `/var/log/journal/`.
+Other values: `volatile` (RAM only), `auto` (disk if `/var/log/journal/` exists), `none` (discard all logs).
+| `auto`
+| `persistent`
+
+| `SystemMaxUse`
+| Maximum disk space that journal files consume on persistent storage.
+| 10% of file system
+| `10G`
+
+| `SystemKeepFree`
+| Minimum free space to keep on the file system containing the journal.
+If the available space drops below this threshold, `journald` removes the oldest journal files.
+| 15% of file system
+| `5G`
+
+| `SystemMaxFileSize`
+| Maximum size of individual journal files on persistent storage.
+| 1/8 of `SystemMaxUse`
+| Default
+
+| `RuntimeMaxUse`
+| Maximum disk space that journal files consume on volatile (tmpfs) storage.
+Applies only when `Storage=volatile`.
+| 10% of RAM
+| Not applicable for persistent storage
+
+| `RuntimeKeepFree`
+| Minimum free space to keep on the volatile storage file system.
+| 15% of RAM
+| Not applicable for persistent storage
+
+| `MaxRetentionSec`
+| Maximum time to store journal entries.
+Entries older than this value are removed, regardless of disk usage.
+| No limit
+| `4week`
+
+| `MaxFileSec`
+| Maximum time span stored in a single journal file.
+After this period, `journald` rotates to a new file.
+| `1month`
+| `1week`
+
+| `Compress`
+| Compress journal data objects larger than the default threshold.
+| `yes`
+| `yes`
+|===
+
+[NOTE]
+====
+When both `SystemMaxUse` and `MaxRetentionSec` are configured, `journald` enforces whichever limit is reached first.
+If `SystemMaxUse` and `SystemKeepFree` conflict, `journald` enforces the more restrictive of the two values.
+====
