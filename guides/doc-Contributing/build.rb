@@ -26,22 +26,8 @@ def extract_visible_sections(content)
   result = []
   capturing = false
   section_content = []
-  in_code_block = false
 
   lines.each do |line|
-    # Track code blocks (````)
-    if line.strip.start_with?('```')
-      in_code_block = !in_code_block
-      section_content << line if capturing
-      next
-    end
-
-    # Skip heading detection inside code blocks
-    if in_code_block
-      section_content << line if capturing
-      next
-    end
-
     # Check if this is a level-4 heading
     if line =~ /^####\s+(.+)$/
       heading = $1.strip
@@ -87,22 +73,8 @@ def extract_ai_sections(content)
   result = []
   capturing = true  # Start capturing by default
   section_content = []
-  in_code_block = false
 
   lines.each do |line|
-    # Track code blocks (````)
-    if line.strip.start_with?('```')
-      in_code_block = !in_code_block
-      section_content << line if capturing
-      next
-    end
-
-    # Skip heading detection inside code blocks
-    if in_code_block
-      section_content << line if capturing
-      next
-    end
-
     # Check if this is a level-4 heading
     if line =~ /^####\s+(.+)$/
       heading = $1.strip
