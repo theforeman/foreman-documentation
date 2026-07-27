@@ -25,7 +25,12 @@ clean:
 	$(MAKE) -C guides/ clean
 	rm -rf $(DEST) web/output/
 
-html: build-foreman-el build-foreman-deb build-containerized-katello build-containerized-orcharhino build-katello build-orcharhino build-satellite
+BUILDS = foreman-el foreman-deb containerized-katello containerized-orcharhino katello orcharhino satellite
+
+html: FORCE prep
+	@for b in $(BUILDS); do \
+		$(MAKE) -C guides/ html BUILD=$$b || exit 1; \
+	done
 
 build-%: FORCE prep
 	$(MAKE) -C guides/ html BUILD=$*
