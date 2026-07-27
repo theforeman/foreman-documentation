@@ -5,17 +5,12 @@ disable-model-invocation: false
 ---
 #### Overview
 
-Foreman documentation follows specific conventions for code, images, attributes, conditionals, and file structure. These conventions ensure consistency across all guides and enable multi-product builds from a single source.
+Foreman documentation follows specific conventions for code, attributes, conditionals, and file structure. These conventions ensure consistency across all guides and enable multi-product builds from a single source.
 
 **Code conventions:**
 - Use UTF-8 character encoding in source files
 - Do not add trailing whitespace on lines or in files
 - Surround user input with underscores to indicate variable input (e.g., `hammer organization create --name "_My_Organization_"`)
-
-**Images:**
-- Save guide-specific images to `guides/doc-<GuideName>/images/`
-- Save images to `guides/common/images/`
-- Create editable diagrams using [diagrams.net](https://www.diagrams.net/) in `drawio` format, place in `guides/image-sources/`, export to SVG
 
 **AsciiDoc attributes:**
 - Use attributes instead of hardcoded product names: `{Project}` instead of `Foreman`, `{ProjectServer}` instead of `Satellite Server`, `{SmartProxy}` instead of `Capsule`, etc.
