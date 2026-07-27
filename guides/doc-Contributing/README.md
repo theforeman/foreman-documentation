@@ -69,21 +69,6 @@ The Makefile tracks dependencies automatically. Running `make html` will:
 - Rebuild only if needed
 - Skip if already up-to-date
 
-## File Structure
-
-```
-guides/doc-Contributing/
-├── README.md                        # This file
-├── Makefile                         # Build system with dependency tracking
-├── build.rb                         # Ruby script: concatenate markdown → AsciiDoc
-├── master.adoc                      # Main AsciiDoc file
-├── topics/
-│   └── contributing-generated.adoc  # Generated AsciiDoc content
-├── common -> ../common              # Symlink to shared content
-└── images/
-    └── common -> ../../common/images  # Symlink to shared images
-```
-
 ## How It Works
 
 1. **build.rb** reads and concatenates:
