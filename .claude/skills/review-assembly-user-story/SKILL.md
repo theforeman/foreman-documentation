@@ -20,7 +20,7 @@ An assembly must cover a single user story - what the user wants to accomplish. 
 - It contains procedures for multiple independent tasks that users might want to do separately
 - The concept module describes multiple distinct use cases or workflows
 - Different sections serve different user goals
-- Modules could be logically grouped into 2 or more cohesive assemblies
+- Modules could be logically grouped into two or more cohesive assemblies
 
 **When an assembly is fine:**
 - All procedures work toward a single user goal

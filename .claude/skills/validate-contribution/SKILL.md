@@ -14,13 +14,13 @@ Foreman documentation follows specific conventions for code, images, attributes,
 
 **Images:**
 - Save guide-specific images to `guides/doc-<GuideName>/images/`
-- Save shared images to `guides/common/images/`
+- Save images to `guides/common/images/`
 - Create editable diagrams using [diagrams.net](https://www.diagrams.net/) in `drawio` format, place in `guides/image-sources/`, export to SVG
 
 **AsciiDoc attributes:**
 - Use attributes instead of hardcoded product names: `{Project}` instead of `Foreman`, `{ProjectServer}` instead of `Satellite Server`, `{SmartProxy}` instead of `Capsule`, etc.
 - To use attributes in code blocks, add the `subs="+quotes,attributes"` option
-- Attributes are located in the files named `attributes*.adoc` in `guides/common`.
+- Attributes are located in the files named `attributes*.adoc` in `guides/common/`.
 
 **Conditional content:**
 - Use `ifdef::[]` to show content only for specific builds.
@@ -58,8 +58,7 @@ When invoked (manually or automatically after making changes), validate modified
 - Vale linting issues
 
 **Report only if issues were discovered (do not auto-fix):**
-- Image locations (guide-specific vs. shared directories)
-- Assembly structure issues (nested assemblies)
+- Nested assemblies
 - Conditional content usage
 
 **Report final validation step:**

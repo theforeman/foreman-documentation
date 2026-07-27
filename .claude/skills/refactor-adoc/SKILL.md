@@ -14,7 +14,7 @@ This command changes the title, ID, and filename of an assembly, module, or snip
 
 **What it does:**
 - Renames the file with the appropriate prefix (e.g., `proc_new-title.adoc`)
-- Updates the ID if present (e.g., `[id="new-title_{context}"]`)
+- Updates the ID if present (e.g., `[id="new-title"]`)
 - Updates the title if present (e.g., `= New title`)
 - Updates all `include::` directives that reference this file
 - Updates all cross-references to the old ID throughout the documentation

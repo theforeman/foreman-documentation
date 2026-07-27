@@ -48,4 +48,4 @@ Follow the principles outlined in the Overview section above.
 
 #### Post-command cleanup
 
-If you rename a heading, use the `/refactor-adoc` command to update the module's ID, filename, and all references and links to the module in the repository.
+If you rename a heading, use the `/refactor-adoc` command to update the anchor, and filename of the module and all references and links to the module in the repository.
