@@ -1,6 +1,6 @@
 # Find all skill files and vale rules dynamically
-SKILL_FILES = $(shell find ../../.claude/skills -name 'SKILL.md' 2>/dev/null)
-VALE_RULES = $(shell find ../../.vale/styles/foreman-documentation -name '*.yml' 2>/dev/null)
+SKILL_FILES = $(shell find ../../.claude/skills -name 'SKILL.md')
+VALE_RULES = $(shell find ../../.vale/styles/foreman-documentation -name '*.yml')
 BUILD_SOURCES = build.rb ../../CONTRIBUTING.md $(SKILL_FILES) $(VALE_RULES)
 
 include ../common/Makefile
