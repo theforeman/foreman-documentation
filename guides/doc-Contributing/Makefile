@@ -1,5 +1,3 @@
-SHELL := /bin/bash
-
 # Include standard AsciiDoc build system first to get its default targets
 include ../common/Makefile
 
