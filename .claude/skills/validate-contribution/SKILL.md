@@ -21,7 +21,7 @@ Foreman documentation follows specific conventions for code, attributes, conditi
 - Use `ifdef::[]` to show content only for specific builds.
 For example, `ifdef::katello[]` to show content only for the katello build target.
 - Use `ifndef::[]` to hide content for specific builds
-For example, `ifndef::satellite[] to hide content for the satellite build target.
+For example, `ifndef::satellite[]` to hide content for the satellite build target.
 - Use comma for logic "or": `ifdef::katello,satellite[]`
 - Nest conditionals for logic "and".
 
