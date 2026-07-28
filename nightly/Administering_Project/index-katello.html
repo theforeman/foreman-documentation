@@ -435,8 +435,8 @@ SOFTWARE.
 </li>
 <li><a href="#renewing-certificates">12. Renewing certificates</a>
 <ul class="sectlevel2">
-<li><a href="#planning-for-self-signed-ca-certificate-renewal">12.1. Planning for self-signed CA certificate renewal</a></li>
-<li><a href="#renewing-a-custom-ssl-certificate-on-foreman-server">12.2. Renewing a custom SSL certificate on Foreman&#160;server</a></li>
+<li><a href="#renewing-a-custom-ssl-certificate-on-foreman-server">12.1. Renewing a custom SSL certificate on Foreman&#160;server</a></li>
+<li><a href="#renewing-a-custom-server-ca-certificate">12.2. Renewing a custom server CA certificate</a></li>
 <li><a href="#renewing-a-custom-ssl-certificate-on-smart-proxy-server">12.3. Renewing a custom SSL certificate on Smart&#160;Proxy&#160;server</a></li>
 </ul>
 </li>
@@ -5473,44 +5473,7 @@ For deleted repositories, wait for the next scheduled orphan cleanup or remove o
 <p>You can renew the CA certificate on Foreman&#160;server or the custom SSL certificate on Foreman&#160;server as well as on Smart&#160;Proxy&#160;server.</p>
 </div>
 <div class="sect2">
-<h3 id="planning-for-self-signed-ca-certificate-renewal"><a class="anchor" href="#planning-for-self-signed-ca-certificate-renewal"></a>12.1. Planning for self-signed CA certificate renewal</h3>
-<div class="paragraph _abstract">
-<p>If you need to update the Certification Authority (CA) certificate on your Foreman&#160;server, add the new CA certificate and use a temporary dual CA certificate file to retain the HTTPS connections to your Foreman&#160;server during the renewal.</p>
-</div>
-<div class="olist arabic">
-<div class="title">Procedure</div>
-<ol class="arabic">
-<li>
-<p>Add the new SSL certificate to the CA certificate file on Foreman&#160;server and keep the old SSL certificate.</p>
-</li>
-<li>
-<p>Renew the certificates on Foreman&#160;server and any Smart&#160;Proxy&#160;servers.</p>
-</li>
-<li>
-<p>Deploy the dual CA certificate on hosts.</p>
-</li>
-<li>
-<p>Remove the old certificate from the CA certificates file on Foreman&#160;server, so the CA certificate file contains only the new SSL certificate.</p>
-</li>
-<li>
-<p>Renew the certificates on Foreman&#160;server and any Smart&#160;Proxy&#160;servers.</p>
-</li>
-<li>
-<p>Deploy the new CA certificate on hosts.</p>
-</li>
-</ol>
-</div>
-<div class="ulist">
-<div class="title">Additional resources</div>
-<ul>
-<li>
-<p><a href="https://docs.theforeman.org/nightly/Managing_Hosts/index-katello.html#refreshing-the-self-signed-ca-certificate-on-hosts">Refreshing the self-signed CA certificate on hosts in <em>Managing hosts</em></a></p>
-</li>
-</ul>
-</div>
-</div>
-<div class="sect2">
-<h3 id="renewing-a-custom-ssl-certificate-on-foreman-server"><a class="anchor" href="#renewing-a-custom-ssl-certificate-on-foreman-server"></a>12.2. Renewing a custom SSL certificate on Foreman&#160;server</h3>
+<h3 id="renewing-a-custom-ssl-certificate-on-foreman-server"><a class="anchor" href="#renewing-a-custom-ssl-certificate-on-foreman-server"></a>12.1. Renewing a custom SSL certificate on Foreman&#160;server</h3>
 <div class="paragraph _abstract">
 <p>You can deploy a renewed custom SSL certificate on Foreman&#160;server to replace an expiring certificate and maintain trusted access to the Foreman web UI and API.</p>
 </div>
@@ -5575,6 +5538,97 @@ For example, <code>https://foreman.example.com</code>.</p>
 <li>
 <p>If you have changed the CA certificate on Foreman&#160;server, refresh the CA certificate on your hosts.
 For more information, see <a href="https://docs.theforeman.org/nightly/Managing_Hosts/index-katello.html#refreshing-the-self-signed-ca-certificate-on-hosts">Refreshing the self-signed CA certificate on hosts</a> in <em>Managing hosts</em>.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="renewing-a-custom-server-ca-certificate"><a class="anchor" href="#renewing-a-custom-server-ca-certificate"></a>12.2. Renewing a custom server CA certificate</h3>
+<div class="paragraph _abstract">
+<p>If you need to update the certification authority (CA) certificate that signed your Foreman&#160;server and Smart&#160;Proxy&#160;servers certificates, add the new CA certificate and use a temporary dual CA certificate file to retain the HTTPS connections to your Foreman&#160;server during the renewal.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Check if the existing server certificate can be validated with the new CA certififcate.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># openssl verify -CAfile <em>/root/foreman_cert/old_ca_cert_bundle.pem</em> /root/<em>foreman_cert/foreman_cert.pem</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>If the check did not succeed, use both the old and the new CA certificate while updating consumers.</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Add the new SSL certificate to the CA certificate file on Foreman&#160;server and keep the old SSL certificate.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># cat <em>/root/foreman_cert/old_ca_cert_bundle.pem</em> <em>/root/foreman_cert/new_ca_cert_bundle.pem</em> &gt; <em>/root/foreman_cert/ca_cert_bundle.pem</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Renew the certificates on Foreman&#160;server.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer --scenario katello \
+--certs-server-cert "/root/<em>foreman_cert/foreman_cert.pem</em>" \
+--certs-server-key "/root/<em>foreman_cert/foreman_cert_key.pem</em>" \
+--certs-server-ca-cert "/root/<em>foreman_cert/ca_cert_bundle.pem</em>" \
+--certs-update-server \
+--certs-update-server-ca</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Refresh the certificates on any Smart&#160;Proxy&#160;servers.</p>
+</li>
+<li>
+<p>Deploy the dual CA certificate on hosts.</p>
+</li>
+<li>
+<p>Remove the old certificate from the CA certificates file on Foreman&#160;server, so the CA certificate file contains only the new SSL certificate.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># cat <em>/root/foreman_cert/new_ca_cert_bundle.pem</em> &gt; <em>/root/foreman_cert/ca_cert_bundle.pem</em></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>Renew the certificates on Foreman&#160;server.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-installer --scenario katello \
+--certs-server-cert "/root/<em>foreman_cert/foreman_cert.pem</em>" \
+--certs-server-key "/root/<em>foreman_cert/foreman_cert_key.pem</em>" \
+--certs-server-ca-cert "/root/<em>foreman_cert/ca_cert_bundle.pem</em>" \
+--certs-update-server \
+--certs-update-server-ca</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Refresh the certificates on any Smart&#160;Proxy&#160;servers.</p>
+</li>
+<li>
+<p>Deploy the new CA certificate on hosts.</p>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="https://docs.theforeman.org/nightly/Installing_Proxy/index-katello.html#configuring-smart-proxy-server-with-ssl-certificates">Configuring Smart&#160;Proxy&#160;server with SSL certificates in <em>Installing a Smart&#160;Proxy&#160;Server nightly on Enterprise Linux</em></a></p>
+</li>
+<li>
+<p><a href="https://docs.theforeman.org/nightly/Managing_Hosts/index-katello.html#refreshing-the-self-signed-ca-certificate-on-hosts">Refreshing the self-signed CA certificate on hosts in <em>Managing hosts</em></a></p>
 </li>
 </ul>
 </div>
