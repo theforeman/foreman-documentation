@@ -86,7 +86,7 @@ Provide a summary that includes:
 **Good examples (single user story):**
 - `assembly_backing-up-server-and-proxy.adoc` - User wants to back up their system
 - `assembly_configuring-email-notifications.adoc` - User wants to set up email notifications
-- `assembly_managing-organizations.adoc` - User wants to create and delete organizations (inverse operations belong together)
+- `assembly_managing-organizations.adoc` - User wants to create and delete organizations
 
 #### Principles
 
