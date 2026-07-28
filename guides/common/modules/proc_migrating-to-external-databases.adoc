@@ -4,12 +4,79 @@
 = Migrating to external databases
 
 [role="_abstract"]
-Back up and transfer existing data, then use the `{foreman-installer}` command to configure {Project} to connect to an external PostgreSQL database server.
+Migrate internal PostgreSQL databases from {ProjectServer} to a dedicated external host when you need to reduce server load or manage the database independently.
 
 .Prerequisites
 * You have installed and configured a PostgreSQL server on an external server.
+* You have confirmed that {ProjectServer} currently uses internal databases.
+For more information, see xref:determining-whether-your-{project-context}-server-uses-internal-or-external-databases[Determining whether your {ProjectServer} uses internal or external databases].
+* You have scheduled a maintenance window.
+ifdef::containerized[]
+The `{foremanctl} backup` command stops all {Project} services during the backup process.
+endif::containerized[]
+
+ifdef::containerized[]
+[NOTE]
+====
+The Insights Operating Platform (IOP) feature requires internal database mode.
+You cannot migrate to an external database while IOP is enabled on {ProjectServer}.
+If IOP is enabled, disable it before you start the migration:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# {foremanctl} deploy --remove-feature iop
+----
+====
+endif::containerized[]
 
 .Procedure
+
+ifdef::containerized[]
+. On {ProjectServer}, create a directory for the backup:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# mkdir /var/_My_Migration_Backup_Directory_
+----
+. Back up the internal databases:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# {foremanctl} backup /var/_My_Migration_Backup_Directory_ \
+ifndef::foreman-el,foreman-deb[]
+--skip-pulp-content \
+endif::[]
+----
++
+The backup stops all {Project} services, creates database dumps, and then restarts the services.
+The command creates a timestamped subdirectory, for example `/var/_My_Migration_Backup_Directory_/foreman-backup-_TIMESTAMP_/`, that contains `foreman.dump`, `candlepin.dump`, and `pulp.dump` files.
++
+[NOTE]
+====
+The backup fails if Foreman or Pulp tasks are running.
+Wait for active tasks to finish before you run the backup, or add the `--wait-for-tasks` flag to wait for running tasks to complete:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# {foremanctl} backup /var/_My_Migration_Backup_Directory_ --wait-for-tasks \
+ifndef::foreman-el,foreman-deb[]
+--skip-pulp-content \
+endif::[]
+----
+====
+. Verify the backup:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# ls -lh /var/_My_Migration_Backup_Directory_/foreman-backup-*/
+# cat /var/_My_Migration_Backup_Directory_/foreman-backup-*/metadata.yml
+# ls -lh /var/_My_Migration_Backup_Directory_/foreman-backup-*/*.dump
+----
++
+Confirm that the timestamped backup directory contains `foreman.dump`, `candlepin.dump`, `pulp.dump`, and `metadata.yml` files.
+endif::containerized[]
+
+ifndef::containerized[]
 . On {ProjectServer}, stop all {Project} services except for PostgreSQL:
 +
 [options="nowrap", subs="+quotes,attributes"]
@@ -33,16 +100,82 @@ ifndef::foreman-el,foreman-deb[]
 endif::[]
 /var/_My_Migration_Backup_Directory_
 ----
+endif::containerized[]
+
 . Transfer the data to the new external databases:
++
+In the following commands, replace `_TIMESTAMP_` with the timestamp directory that the backup created.
 +
 [options="nowrap", subs="+quotes,attributes"]
 ----
+ifdef::containerized[]
+PGPASSWORD='_Foreman_Password_' pg_restore --host=_postgres.example.com_ --username=foreman --dbname=foreman < /var/_My_Migration_Backup_Directory_/foreman-backup-_TIMESTAMP_/foreman.dump
+ifndef::foreman-el,foreman-deb[]
+PGPASSWORD='_Candlepin_Password_' pg_restore --host=_postgres.example.com_ --username=candlepin --dbname=candlepin < /var/_My_Migration_Backup_Directory_/foreman-backup-_TIMESTAMP_/candlepin.dump
+PGPASSWORD='_Pulpcore_Password_' pg_restore --host=_postgres.example.com_ --username=pulp --dbname=pulpcore < /var/_My_Migration_Backup_Directory_/foreman-backup-_TIMESTAMP_/pulp.dump
+endif::[]
+endif::containerized[]
+ifndef::containerized[]
 PGPASSWORD='_Foreman_Password_' pg_restore --host=_postgres.example.com_ --username=foreman --dbname=foreman < /var/_My_Migration_Backup_Directory_/foreman.dump
 ifndef::foreman-el,foreman-deb[]
 PGPASSWORD='_Candlepin_Password_' pg_restore --host=_postgres.example.com_ --username=candlepin --dbname=candlepin < /var/_My_Migration_Backup_Directory_/candlepin.dump
 PGPASSWORD='_Pulpcore_Password_' pg_restore --host=_postgres.example.com_ --username=pulp --dbname=pulpcore < /var/_My_Migration_Backup_Directory_/pulpcore.dump
 endif::[]
+endif::containerized[]
 ----
+
+ifdef::containerized[]
+. Use the `{foremanctl} deploy` command to update {Project} to point to the new external databases:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# {foremanctl} deploy \
+--database-mode external \
+--database-host _postgres.example.com_ \
+--database-port 5432 \
+--foreman-database-name foreman \
+--foreman-database-user foreman \
+--foreman-database-password _Foreman_Password_ \
+ifndef::foreman-el,foreman-deb[]
+--candlepin-database-name candlepin \
+--candlepin-database-user candlepin \
+--candlepin-database-password _Candlepin_Password_ \
+--pulp-database-name pulpcore \
+--pulp-database-user pulp \
+--pulp-database-password _Pulpcore_Password_ \
+endif::[]
+----
++
+For a complete list of external database parameters, including optional SSL connection options, see {InstallingServerDocURL}deploy-{project-context}-server-configuration-with-an-external-database[Deploy {ProjectServer} configuration with an external database] in _{InstallingServerDocTitle}_.
+. Verify that {ProjectServer} uses the external databases and that {Project} is operational:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# grep database_mode /var/lib/foremanctl/parameters.yaml
+# {foremanctl} health
+$ hammer ping
+----
++
+Confirm that `database_mode` is set to `external`, that `{foremanctl} health` reports no failures, and that `hammer ping` returns a successful response before you remove the internal PostgreSQL deployment.
+. Remove the obsolete internal PostgreSQL deployment on {ProjectServer}:
++
+The internal PostgreSQL database runs as a Podman container managed by the `postgresql.service` systemd unit.
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# systemctl stop postgresql.service
+# systemctl disable postgresql.service
+# rm -rf /var/lib/pgsql/data
+----
++
+[NOTE]
+====
+When you switch to external databases, `{foremanctl} deploy` does not remove Podman quadlet unit files under `/etc/containers/systemd/` (for example, `postgresql.container` and `postgresql.image`) or Podman secrets (for example, `postgresql-admin-password`).
+Stopping the service and removing `/var/lib/pgsql/data` disables the internal database and frees the data volume.
+====
+endif::containerized[]
+
+ifndef::containerized[]
 . Use the `{foreman-installer}` command to update {Project} to point to the new 
 ifndef::foreman-deb,foreman-el[]
 databases:
@@ -88,3 +221,4 @@ ifdef::foreman-deb[]
 +
 If you run {ProjectServer} on Debian 12, you have to adjust the paths of PostgreSQL config and data directories which depend on the PostgreSQL version.
 endif::[]
+endif::containerized[]
