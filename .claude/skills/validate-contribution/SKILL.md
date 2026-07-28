@@ -49,7 +49,7 @@ When invoked (manually or automatically after making changes), validate modified
 - Variable input formatting
 - Missing `subs="+quotes,attributes"` in code blocks that use attributes
 - File naming and prefixes (`con_`, `proc_`, `ref_`, `snip_`)
-- Content type attributes (must be on first line)
+- Content type attribute on first line
 - Vale linting issues
 
 **Report only if issues were discovered (do not auto-fix):**
