@@ -276,9 +276,10 @@ SOFTWARE.
 <li><a href="#_abstractlength">7.1. AbstractLength</a></li>
 <li><a href="#_avoidbrandedterminology">7.2. AvoidBrandedTerminology</a></li>
 <li><a href="#_capitalization">7.3. Capitalization</a></li>
-<li><a href="#_headingwordcount">7.4. HeadingWordCount</a></li>
-<li><a href="#_onesentenceperline">7.5. OneSentencePerLine</a></li>
-<li><a href="#_proceduresteplimit">7.6. ProcedureStepLimit</a></li>
+<li><a href="#_conceptattributelink">7.4. ConceptAttributeLink</a></li>
+<li><a href="#_headingwordcount">7.5. HeadingWordCount</a></li>
+<li><a href="#_onesentenceperline">7.6. OneSentencePerLine</a></li>
+<li><a href="#_proceduresteplimit">7.7. ProcedureStepLimit</a></li>
 </ul>
 </li>
 </ul>
@@ -331,7 +332,7 @@ SOFTWARE.
 <p>The guide concatenates resources from the above sources into a single guide for easy reference. When one of these resources changes, the guide is automatically updated. For more information, see the <a href="README.html">doc-Contributing/README</a>.</p>
 </div>
 <div class="paragraph">
-<p>Last updated: 2026-07-28</p>
+<p>Last updated: 2026-07-29</p>
 </div>
 <hr>
 </div>
@@ -1663,7 +1664,101 @@ swap:
 </details>
 </div>
 <div class="sect2">
-<h3 id="_headingwordcount"><a class="anchor" href="#_headingwordcount"></a>7.4. HeadingWordCount</h3>
+<h3 id="_conceptattributelink"><a class="anchor" href="#_conceptattributelink"></a>7.4. ConceptAttributeLink</h3>
+<div class="paragraph">
+<p>Do not include links or cross references in the main body of a concept module. In concept modules, links are allowed only in the Additional resources section.  Based on ConceptLink.yml from <a href="https://github.com/jhradilek/asciidoctor-dita-vale" class="bare">https://github.com/jhradilek/asciidoctor-dita-vale</a>.</p>
+</div>
+<details>
+<summary>Rule Definition</summary>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">---
+extends: script
+message: "To improve content usability and user focus, links and cross references in the main body of a concept module are discouraged. Move them to the Additional resources section."
+level: warning
+scope: raw
+script: |
+  text              := import("text")
+  matches           := []
+
+  r_add_resources   := text.re_compile("^(?:={2,}[ \\t]+|\\.{1,2})Additional resources[ \\t]*$")
+  r_any_title       := text.re_compile("^(?:={2,}[ \\t]+|\\.{1,2})[^ \\t.].*$")
+  r_attr_link       := text.re_compile("\\{[0-9A-Za-z_][0-9A-Za-z_-]*URL\\}[^\\[\\n]*\\[[^\\]]*\\]")
+  r_code_block      := text.re_compile("^(?:\\.{4,}|-{4,})[ \\t]*$")
+  r_comment_block   := text.re_compile("^/{4,}\\s*$")
+  r_comment_line    := text.re_compile("^(//|//[^/].*)$")
+  r_content_type    := text.re_compile("^:_(?:mod-docs-content|content|module)-type:[ \\t]+(?i:assembly|concept)")
+
+  document          := text.split(text.trim_suffix(scope, "\n"), "\n")
+
+  is_relevant       := false
+  in_code_block     := false
+  in_comment_block  := false
+  in_add_resources  := false
+  start             := 0
+  end               := 0
+
+  for line in document {
+    start += end
+    end    = len(line) + 1
+
+    if r_comment_block.match(line) {
+      delimiter := text.trim_space(line)
+      if ! in_comment_block {
+        in_comment_block = delimiter
+      } else if in_comment_block == delimiter {
+        in_comment_block = false
+      }
+      continue
+    }
+    if in_comment_block { continue }
+    if r_comment_line.match(line) { continue }
+
+    if r_code_block.match(line) {
+      delimiter := text.trim_space(line)
+      if ! in_code_block {
+        in_code_block = delimiter
+      } else if in_code_block == delimiter {
+        in_code_block = false
+      }
+      continue
+    }
+    if in_code_block { continue }
+
+    if r_content_type.match(line) {
+      is_relevant = true
+      continue
+    }
+
+    if r_add_resources.match(line) {
+      in_add_resources = true
+      continue
+    }
+
+    if r_any_title.match(line) {
+      in_add_resources = false
+      continue
+    }
+
+    if in_add_resources { continue }
+
+    for i, entry in r_attr_link.find(line, -1) {
+      link := entry[0]
+      matches = append(matches, {begin: start + link.begin, end: start + link.end - 1})
+    }
+  }
+
+  if ! is_relevant {
+    matches = []
+  }</code></pre>
+</div>
+</div>
+</div>
+</details>
+</div>
+<div class="sect2">
+<h3 id="_headingwordcount"><a class="anchor" href="#_headingwordcount"></a>7.5. HeadingWordCount</h3>
 <div class="paragraph">
 <p>Check that module headings have between 3 and 11 words. A module has a single heading (the line starting with =). Note: AsciiDoc attributes like {Project} count as one word each.</p>
 </div>
@@ -1730,7 +1825,7 @@ script: |
 </details>
 </div>
 <div class="sect2">
-<h3 id="_onesentenceperline"><a class="anchor" href="#_onesentenceperline"></a>7.5. OneSentencePerLine</h3>
+<h3 id="_onesentenceperline"><a class="anchor" href="#_onesentenceperline"></a>7.6. OneSentencePerLine</h3>
 <div class="paragraph">
 <p>Write one sentence per line. This makes diffs easier to read, simplifies reviewing changes, and helps track modifications to individual sentences. End each sentence with proper punctuation (period, question mark, or exclamation point) before starting a new line.</p>
 </div>
@@ -1755,7 +1850,7 @@ tokens:
 </details>
 </div>
 <div class="sect2">
-<h3 id="_proceduresteplimit"><a class="anchor" href="#_proceduresteplimit"></a>7.6. ProcedureStepLimit</h3>
+<h3 id="_proceduresteplimit"><a class="anchor" href="#_proceduresteplimit"></a>7.7. ProcedureStepLimit</h3>
 <div class="paragraph">
 <p>Limit procedures to a maximum of 10 steps. Procedures with too many steps are difficult to follow.</p>
 </div>
