@@ -1,0 +1,65 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="troubleshooting-host-header-rejection"]
+= Troubleshooting host header rejection
+
+[role="_abstract"]
+{Project} validates the HTTP `Host` header in each request against the server's FQDN and any names declared with `--server-alias`.
+{Project} rejects requests from undeclared hostnames or IP addresses with a `403 Forbidden` error.
+Over HTTPS, the TLS handshake can also fail if the certificate does not cover the hostname.
+
+To resolve this, declare the hostname as a server alias.
+
+.Procedure
+. Confirm that requests with the FQDN succeed:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# curl -s https://_server.example.com_/api/v2/ping | python3 -m json.tool
+----
++
+A successful response returns JSON with service status information, for example:
++
+[options="nowrap"]
+----
+{
+    "results": {
+        "foreman": {
+            "database": {"active": true, "duration_ms": "1"},
+            "cache": {"servers": [{"status": "ok", "duration_ms": "0"}]}
+        }
+    }
+}
+----
+. Confirm that the alternate hostname is rejected:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# curl -sk https://_alternate.example.com_/api/v2/ping
+----
++
+Over HTTPS, you might see the following client-side TLS rejection:
++
+[options="nowrap"]
+----
+SSL: no alternative certificate subject name matches target hostname 'alternate.example.com'
+----
++
+If you bypass certificate verification with the `--insecure` option, or connect over HTTP, {Project} returns:
++
+[options="nowrap"]
+----
+HTTP/1.1 403 Forbidden
+----
+. If the hostname is legitimate, declare it as a server alias.
+For more information, see xref:configuring-an-alternate-cname_{context}[].
+
+.Verification
+* Repeat the request for the alternate hostname without the `--insecure` option:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# curl -s https://_alternate.example.com_/api/v2/ping | python3 -m json.tool
+----
++
+The request returns JSON with service status information.
