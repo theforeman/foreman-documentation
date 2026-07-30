@@ -1,62 +1,73 @@
 :_mod-docs-content-type: PROCEDURE
 
 [id="troubleshooting-host-header-rejection"]
-= Troubleshooting host header rejection
+= Troubleshooting 403 Forbidden errors when connecting to {Project}
 
 [role="_abstract"]
-{Project} rejects HTTP requests whose `Host` header does not match the server FQDN or a declared `--server-alias` with a `403 Forbidden` error.
-To allow access from an alternate hostname, declare it as a server alias.
+If you receive a `403 Forbidden` error when connecting to a {ProjectServer} by using a hostname, the request might be rejected by host header validation.
+
+{Project} validates the HTTP `Host` header on every incoming request.
+Only requests whose `Host` header matches the server FQDN or a declared server alias are accepted.
+Requests that use an IP address, a short hostname, or any other undeclared name are rejected with a `403 Forbidden` error.
 
 .Procedure
-. Confirm that requests with the FQDN succeed:
+. Confirm that the error is a `403 Forbidden` response from your {ProjectServer}:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-# curl --silent https://_server.example.com_/api/v2/ping | python3 -m json.tool
+$ curl --head --insecure https://_hostname.example.com_
 ----
-+
-A successful response returns JSON with service status information, for example:
-+
-[source, none, options="nowrap"]
-----
-{
-    "results": {
-        "foreman": {
-            "database": {"active": true, "duration_ms": "1"},
-            "cache": {"servers": [{"status": "ok", "duration_ms": "0"}]}
-        }
-    }
-}
-----
-. Confirm that the alternate hostname is rejected:
-+
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
-# curl --head --insecure https://_alternate.example.com_/api/v2/ping
-----
-+
-Over HTTPS, you might see the following client-side TLS rejection:
-+
-[source, none, options="nowrap"]
-----
-SSL: no alternative certificate subject name matches target hostname 'alternate.example.com'
-----
-+
-If you bypass certificate verification with the `--insecure` option, or connect over HTTP, {Project} returns:
 +
 [source, none, options="nowrap"]
 ----
 HTTP/1.1 403 Forbidden
 ----
-. If the hostname is legitimate, declare it as a server alias.
-For more information, see xref:configuring-an-alternate-cname_{context}[].
-
-.Verification
-* Repeat the request for the alternate hostname without the `--insecure` option:
+. Verify that host header validation caused the rejection:
+.. Retrieve the request ID from the response headers:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-$ curl --silent https://_alternate.example.com_/api/v2/ping | python3 -m json.tool
+$ curl --head --insecure https://_hostname.example.com_ 2>&1 | grep -i x-request-id
+----
++
+.Example output
+[source, none, options="nowrap"]
+----
+X-Request-Id: 1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d
+----
+.. Search the {ProjectServer} production log for the request ID from the response header:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# grep _request_ID_ /var/log/foreman/production.log
+----
+. Retrieve the FQDN and any server aliases that {ProjectServer} currently accepts:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# hostname --fqdn
+----
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# grep ServerAlias /etc/httpd/conf.d/05-foreman-ssl.conf
+----
++
+If _hostname.example.com_ does not appear in either output, host header validation is rejecting the request.
+. Resolve the problem:
+* If _hostname.example.com_ is a legitimate alternate name for your {ProjectServer}, declare it as a server alias.
+For more information, see xref:configuring-an-alternate-cname_{context}[].
+* If _hostname.example.com_ is not a name you expect your {Project} to answer, the request might indicate a misconfiguration in your network or a security concern.
+ifdef::satellite[]
+Open a Red{nbsp}Hat Support case for further investigation.
+endif::[]
+
+.Verification
+* After you configure a server alias, verify that the request succeeds:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+$ curl --silent https://_hostname.example.com_/api/v2/ping | python3 -m json.tool
 ----
 +
 The request returns JSON with service status information.
