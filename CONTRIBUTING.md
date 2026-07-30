@@ -65,7 +65,7 @@ The `Foreman documentation conventions guide` describes guidelines specific to w
 It complements, but should not duplicate, the following resources:
 
 * The AsciiDoc and RedHat style packages for the Vale linter.
-See [Vale for writers at Red Hat](https://redhat-documentation.github.io/vale-at-red-hat/docs/main/user-guide/introduction/).
+See [Vale at Red Hat](https://redhat-documentation.github.io/vale-at-red-hat/)
 * [Red Hat supplementary style guide for product documentation](https://redhat-documentation.github.io/supplementary-style-guide/)
 
 ### Code conventions
