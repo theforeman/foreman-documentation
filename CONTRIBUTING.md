@@ -63,6 +63,6 @@ Each PR should undergo style review.
 ## Additional resources
 
 * The AsciiDoc and RedHat style packages for the Vale linter.
-See [Vale for writers at Red Hat](https://redhat-documentation.github.io/vale-at-red-hat/docs/main/user-guide/introduction/)
+See [Vale at Red Hat](https://redhat-documentation.github.io/vale-at-red-hat/)
 * [Red Hat supplementary style guide for product documentation](https://redhat-documentation.github.io/supplementary-style-guide/)
 * Instructions for building and testing documentation locally. See [guides/README.md](guides/README.md)
