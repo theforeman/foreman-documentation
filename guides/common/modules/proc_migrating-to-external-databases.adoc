@@ -6,6 +6,14 @@
 [role="_abstract"]
 Migrate internal PostgreSQL databases from {ProjectServer} to a dedicated external host when you need to reduce server load or manage the database independently.
 
+ifdef::containerized[]
+[NOTE]
+====
+{insights-iop} requires internal database mode.
+You cannot migrate to an external database while {insights-iop} is enabled on {ProjectServer}.
+====
+endif::containerized[]
+
 .Prerequisites
 * You have installed and configured a PostgreSQL server on an external server.
 * You have confirmed that {ProjectServer} currently uses internal databases.
@@ -15,22 +23,7 @@ ifdef::containerized[]
 The `{foremanctl} backup` command stops all {Project} services during the backup process.
 endif::containerized[]
 
-ifdef::containerized[]
-[NOTE]
-====
-The Insights Operating Platform (IOP) feature requires internal database mode.
-You cannot migrate to an external database while IOP is enabled on {ProjectServer}.
-If IOP is enabled, disable it before you start the migration:
-+
-[options="nowrap", subs="+quotes,attributes"]
-----
-# {foremanctl} deploy --remove-feature iop
-----
-====
-endif::containerized[]
-
 .Procedure
-
 ifdef::containerized[]
 . On {ProjectServer}, create a directory for the backup:
 +
@@ -44,7 +37,7 @@ ifdef::containerized[]
 ----
 # {foremanctl} backup /var/_My_Migration_Backup_Directory_ \
 ifndef::foreman-el,foreman-deb[]
---skip-pulp-content \
+--skip-pulp-content
 endif::[]
 ----
 +
@@ -55,12 +48,13 @@ The command creates a timestamped subdirectory, for example `/var/_My_Migration_
 ====
 The backup fails if Foreman or Pulp tasks are running.
 Wait for active tasks to finish before you run the backup, or add the `--wait-for-tasks` flag to wait for running tasks to complete:
-+
+
 [options="nowrap", subs="+quotes,attributes"]
 ----
-# {foremanctl} backup /var/_My_Migration_Backup_Directory_ --wait-for-tasks \
+# {foremanctl} backup /var/_My_Migration_Backup_Directory_ \
+--wait-for-tasks \
 ifndef::foreman-el,foreman-deb[]
---skip-pulp-content \
+--skip-pulp-content
 endif::[]
 ----
 ====
@@ -68,14 +62,13 @@ endif::[]
 +
 [options="nowrap", subs="+quotes,attributes"]
 ----
-# ls -lh /var/_My_Migration_Backup_Directory_/foreman-backup-*/
+# ls -lh /var/_My_Migration_Backup_Directory_/foreman-backup-\*/
 # cat /var/_My_Migration_Backup_Directory_/foreman-backup-*/metadata.yml
-# ls -lh /var/_My_Migration_Backup_Directory_/foreman-backup-*/*.dump
+# ls -lh /var/_My_Migration_Backup_Directory_/foreman-backup-\*/*.dump
 ----
 +
 Confirm that the timestamped backup directory contains `foreman.dump`, `candlepin.dump`, `pulp.dump`, and `metadata.yml` files.
 endif::containerized[]
-
 ifndef::containerized[]
 . On {ProjectServer}, stop all {Project} services except for PostgreSQL:
 +
@@ -101,10 +94,7 @@ endif::[]
 /var/_My_Migration_Backup_Directory_
 ----
 endif::containerized[]
-
 . Transfer the data to the new external databases:
-+
-In the following commands, replace `_TIMESTAMP_` with the timestamp directory that the backup created.
 +
 [options="nowrap", subs="+quotes,attributes"]
 ----
@@ -123,6 +113,10 @@ PGPASSWORD='_Pulpcore_Password_' pg_restore --host=_postgres.example.com_ --user
 endif::[]
 endif::containerized[]
 ----
+ifdef::containerized[]
++
+Replace `foreman-backup-_TIMESTAMP_` with the timestamp directory that the backup created.
+endif::containerized[]
 
 ifdef::containerized[]
 . Use the `{foremanctl} deploy` command to update {Project} to point to the new external databases:
@@ -170,11 +164,10 @@ The internal PostgreSQL database runs as a Podman container managed by the `post
 +
 [NOTE]
 ====
-When you switch to external databases, `{foremanctl} deploy` does not remove Podman quadlet unit files under `/etc/containers/systemd/` (for example, `postgresql.container` and `postgresql.image`) or Podman secrets (for example, `postgresql-admin-password`).
+When you switch to external databases, `{foremanctl} deploy` does not remove Podman quadlet unit files under `/etc/containers/systemd/`, such as `postgresql.container` and `postgresql.image`, or Podman secrets, such as `postgresql-admin-password`.
 Stopping the service and removing `/var/lib/pgsql/data` disables the internal database and frees the data volume.
 ====
 endif::containerized[]
-
 ifndef::containerized[]
 . Use the `{foreman-installer}` command to update {Project} to point to the new 
 ifndef::foreman-deb,foreman-el[]
