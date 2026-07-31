@@ -4,7 +4,7 @@
 = Configuring {SmartProxyServer} with a default SSL certificate
 
 [role="_abstract"]
-Use this section to configure {SmartProxyServer} with an SSL certificate that is signed by {ProjectServer} default Certificate Authority (CA).
+If your {ProjectServer} is configured with the default certificate, you must configure your {SmartProxyServer} with the SSL certificate that is signed by {ProjectServer} default Certificate Authority (CA).
 
 .Prerequisites
 ifndef::foreman-deb[]
@@ -23,6 +23,37 @@ For more information, see xref:opening-required-ports[].
 endif::[]
 
 .Procedure
+ifdef::containerized[]
+. On your {ProjectServer}, generate an authentication bundle for the {SmartProxyServer}:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foremanctl} auth-bundle _{smartproxy-example-com}_
+----
+. On your {ProjectServer}, copy the authentication bundle to {SmartProxyServer}:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# scp /var/lib/foremanctl/certs/bundles/_{smartproxy-example-com}_.tar.gz \
+root@_{smartproxy-example-com}_:/root/_{smartproxy-example-com}_.tar.gz
+----
++
+[IMPORTANT]
+====
+The authentication bundle contains TLS private keys and OAuth credentials.
+Treat the bundle as highly sensitive and delete any copies after deployment.
+====
+. On the {SmartProxyServer}, deploy the configuration:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foremanctl} deploy-proxy \
+--flavor {foremanctl-proxy-scenario} \
+--auth-bundle /root/_{smartproxy-example-com}_.tar.gz \
+--foreman-fqdn _{foreman-example-com}_
+----
+endif::[]
+ifndef::containerized[]
 . On {ProjectServer}, to store all the source certificate files for your {SmartProxyServer}, create a directory that is accessible only to the `root` user, for example `/root/{smart-proxy-context}_cert`:
 +
 [options="nowrap", subs="+quotes,attributes"]
@@ -60,6 +91,7 @@ _output omitted_
 root@_{smartproxy-example-com}_:/root/_{smartproxy-example-com}_-certs.tar
 ----
 . On {SmartProxyServer}, to deploy the certificate, enter the `{foreman-installer}` command that the `{certs-generate}` command returns.
+endif::[]
 +
 [IMPORTANT]
 ====
