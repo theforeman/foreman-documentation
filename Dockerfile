@@ -13,6 +13,7 @@ RUN dnf group install -y development-tools && \
     gem install \
         asciidoctor-tabs:1.0.0.beta.6 \
         ffi:1.17.4 \
+        kramdown-asciidoc:2.1.1 \
         nokogiri:1.19.4 \
         racc:1.8.1 \
         rb-fsevent:0.11.2 \
