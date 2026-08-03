@@ -1,31 +1,33 @@
 :_mod-docs-content-type: PROCEDURE
 
-[id="Updating_Server_{context}"]
-= Updating {ProjectServer}
+[id="updating-connected-{project-context}-server"]
+= Updating connected {ProjectServer}
 
 [role="_abstract"]
 ifdef::satellite[]
 Update your connected {ProjectServer} to the next patch version.
 You can follow this process to update the underlying operating system between minor release versions.
-For information to update a disconnected {Project} setup, see xref:Updating-Disconnected-{project-context}_{context}[].
 endif::[]
 ifndef::satellite[]
 Update your {ProjectServer} to the next patch version.
 endif::[]
 
 ifdef::satellite[]
+ifndef::containerized[]
 If you use the {insights-iop}, the following process updates {insights-iop} to the latest version.
 The `{foreman-maintain}` tool pulls the new container images of the {insights-iop} automatically.
+endif::[]
 endif::[]
 
 .Prerequisites
 * Back up your {ProjectServer}.
 For more information, see {AdministeringDocURL}backing-up-{project-context}[Backing up {Project}] in _{AdministeringDocTitle}_.
 
+ifndef::containerized[]
 include::snip_warning-maintain-config-noop.adoc[]
+endif::[]
 
 .Procedure
-ifdef::satellite[]
 . Ensure the {Project} Maintenance repository is enabled:
 +
 [options="nowrap" subs="attributes"]
@@ -33,20 +35,42 @@ ifdef::satellite[]
 # subscription-manager repos --enable \
 {RepoRHEL9ServerSatelliteMaintenanceProjectVersion}
 ----
-endif::[]
-. Use the health check option to determine if the system is ready for update.
-On first use of this command, `{foreman-maintain}` prompts you to enter the hammer admin user credentials and saves them in the `/etc/foreman-maintain/foreman-maintain-hammer.yml` file.
+. Use the health check option to determine if the system is ready for update:
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
+ifdef::containerized[]
+# {foremanctl} health
+endif::[]
+ifndef::containerized[]
 # {foreman-maintain} update check
+endif::[]
 ----
 +
 Review the results and address any highlighted error conditions before performing the update.
+ifndef::containerized[]
++
+On first use of this command, `{foreman-maintain}` prompts you to enter the Hammer admin user credentials and saves them in the `/etc/foreman-maintain/foreman-maintain-hammer.yml` file.
+endif::[]
+. Upgrade the `{project-installer-package}` package:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# dnf upgrade {project-installer-package}
+----
 . Because of the lengthy update time, use a utility such as `tmux` to suspend and reattach a communication session.
 You can then check the update progress without staying connected to the command shell continuously.
 +
 If you lose connection to the command shell where the update command is running, you can see the logged messages in the `{installer-log-file}` file to check if the process completed successfully.
+ifdef::containerized[]
+. Re-deploy {ProjectServer} to perform the update:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foremanctl} deploy
+----
+endif::[]
+ifndef::containerized[]
 . Perform the update:
 +
 [options="nowrap" subs="+quotes,attributes"]
@@ -55,6 +79,7 @@ If you lose connection to the command shell where the update command is running,
 ----
 +
 include::snip_steps-needs-reboot.adoc[]
+endif::[]
 
 .Additional resources
 * {AdministeringDocURL}Restoring_from_a_Full_Backup_admin[Restoring {ProjectServer} or {SmartProxyServer} from a Backup]
