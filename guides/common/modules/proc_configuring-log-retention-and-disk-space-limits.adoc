@@ -1,16 +1,14 @@
 :_mod-docs-content-type: PROCEDURE
 
-[id="configuring-journald-log-retention-and-disk-space-limits"]
-= Configuring journald log retention and disk space limits
+[id="configuring-log-retention-and-disk-space-limits"]
+= Configuring log retention and disk space limits
 
 [role="_abstract"]
-Configure `journald` retention settings to prevent unbounded log growth on the `/var` partition.
-These settings replace the `logrotate` configuration used in traditional deployments.
+You can configure `journald` retention settings to control how much disk space logs consume on the `/var` partition.
+Without retention limits, logs can fill the disk on busy {ProjectServer} hosts.
 
 .Prerequisites
 * You have root access to the {ProjectServer} host.
-* You understand that containerized {ProjectServer} routes all logs through `journald`.
-For more information, see xref:logging-architecture-overview[].
 
 .Procedure
 . Create the drop-in configuration directory if it does not exist:
@@ -37,7 +35,7 @@ EOF
 [NOTE]
 ====
 Do not edit `/etc/systemd/journald.conf` directly.
-Use a drop-in file in `/etc/systemd/journald.conf.d/` so that your settings are preserved during system updates.
+Use a drop-in file in the `/etc/systemd/journald.conf.d/` directory so that system updates do not overwrite your settings.
 ====
 . Restart the `systemd-journald` service to apply the new settings:
 +
@@ -45,13 +43,9 @@ Use a drop-in file in `/etc/systemd/journald.conf.d/` so that your settings are 
 ----
 # systemctl restart systemd-journald
 ----
-. Verify the current disk usage of journal files:
-+
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
-# journalctl --disk-usage
-----
-. Optional: To reduce journal size immediately, rotate the current journal files and vacuum old entries.
+
+////
+. _Optional_: To reduce journal size immediately, rotate the current journal files and vacuum old entries.
 +
 To remove journal files older than a specific time period:
 +
@@ -68,16 +62,16 @@ To reduce journal files to a specific size:
 # journalctl --rotate
 # journalctl --vacuum-size=5G
 ----
+////
 
 .Verification
-* Confirm that the retention limits are applied by running:
+* Check how much disk space `systemd` journal log files use on your system.
+The reported usage must not exceed the `SystemMaxUse` value after `journald` has completed its next rotation cycle.
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 # journalctl --disk-usage
 ----
-+
-The reported usage must not exceed the `SystemMaxUse` value after `journald` has completed its next rotation cycle.
 
 .Troubleshooting
 * If `SystemMaxUse` does not appear to take effect,
