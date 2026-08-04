@@ -293,6 +293,7 @@ SOFTWARE.
 <ul class="sectlevel3">
 <li><a href="#configuring-foreman-with-an-alternate-cname_foreman">5.3.1. Configuring Foreman with an alternate CNAME</a></li>
 <li><a href="#configuring-hosts-to-use-an-alternate-cname-for-content-management_foreman">5.3.2. Configuring hosts to use an alternate Foreman CNAME for content management</a></li>
+<li><a href="#troubleshooting-host-header-rejection">5.3.3. Troubleshooting host header rejection</a></li>
 </ul>
 </li>
 <li><a href="#configuring-foreman-server-with-a-custom-ssl-certificate">5.4. Configuring Foreman&#160;server with a custom SSL certificate</a>
@@ -1783,6 +1784,96 @@ baseurl=https://<em>My-Alternate-FQDN.example.com</em>/pulp/content/</code></pre
 <ul>
 <li>
 <p>Now you can register the host with the <code>subscription-manager</code>.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="troubleshooting-host-header-rejection"><a class="anchor" href="#troubleshooting-host-header-rejection"></a>5.3.3. Troubleshooting host header rejection</h4>
+<div class="paragraph _abstract">
+<p>If you receive a <code>403 Forbidden</code> error when connecting to Foreman&#160;server by using a hostname, the request might be rejected by host header validation.
+If the hostname is legitimate, declare it as a server alias.</p>
+</div>
+<div class="paragraph">
+<p>Foreman validates the HTTP <code>Host</code> header on every incoming request.
+Only requests whose <code>Host</code> header matches the server FQDN or a declared server alias are accepted.
+Requests that use an IP address, a short hostname, or any other undeclared name are rejected with a <code>403 Forbidden</code> error.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Confirm that the error is a <code>403 Forbidden</code> response from your Foreman&#160;server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ curl --head --insecure https://<em>hostname.example.com</em></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-none" data-lang="none">HTTP/1.1 403 Forbidden</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Verify that host header validation caused the rejection by checking the Foreman&#160;server journal for the blocked-host message:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># journalctl --unit foreman --reverse --lines 5 --grep "Blocked hosts"</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Example output</div>
+<div class="content">
+<pre class="highlight nowrap"><code class="language-none" data-lang="none">Jul 15 21:49:28 foreman.example.com foreman[52746]: 2026-07-15T21:49:28 [E|app|] [ActionDispatch::HostAuthorization::DefaultResponseApp] Blocked hosts: <em>hostname.example.com</em>, <em>hostname.example.com</em></code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Retrieve the FQDN and any server aliases that Foreman&#160;server currently accepts:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hostname --fqdn</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># podman secret inspect foreman-settings-yaml --showsecret --format "{{.SecretData}}" | grep ":hosts:" --after-context=3</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If <em>hostname.example.com</em> does not appear in either output, host header validation is rejecting the request.</p>
+</div>
+</li>
+<li>
+<p>Resolve the problem:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>If <em>hostname.example.com</em> is a legitimate alternate name for your Foreman&#160;server, declare it as a server alias.
+For more information, see <a href="#configuring-an-alternate-cname_foreman">Configuring an alternate CNAME for Foreman</a>.</p>
+</li>
+<li>
+<p>If <em>hostname.example.com</em> is not a name you expect your Foreman to answer, the request might indicate a misconfiguration in your network or a security concern.</p>
+</li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">Verification</div>
+<ul>
+<li>
+<p>After you configure a server alias, verify that the request succeeds:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ curl --silent https://<em>hostname.example.com</em>/api/v2/ping | python3 -m json.tool</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The request returns JSON with service status information.</p>
+</div>
 </li>
 </ul>
 </div>
