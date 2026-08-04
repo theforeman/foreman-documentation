@@ -7,7 +7,7 @@
 #### Contributor checklists
 
 * [x] I am okay with my commits getting squashed when you merge this PR.
-* [ ] I am familiar with the [contributing](https://github.com/theforeman/foreman-documentation/blob/master/CONTRIBUTING.md) guidelines.
+* [ ] I am familiar with the [contributing guidelines](https://docs.theforeman.org/nightly/Contributing/index-katello.html#_contributing_to_foreman_documentation).
 
 Please cherry-pick my commits into:
 
