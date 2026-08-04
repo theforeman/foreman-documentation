@@ -1,0 +1,67 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="troubleshooting-host-header-rejection"]
+= Troubleshooting host header rejection
+
+[role="_abstract"]
+If you receive a `403 Forbidden` error when connecting to {ProjectServer} by using a hostname, the request might be rejected by host header validation.
+If the hostname is legitimate, declare it as a server alias.
+
+{Project} validates the HTTP `Host` header on every incoming request.
+Only requests whose `Host` header matches the server FQDN or a declared server alias are accepted.
+Requests that use an IP address, a short hostname, or any other undeclared name are rejected with a `403 Forbidden` error.
+
+.Procedure
+. Confirm that the error is a `403 Forbidden` response from your {ProjectServer}:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+$ curl --head --insecure https://_hostname.example.com_
+----
++
+[source, none, options="nowrap"]
+----
+HTTP/1.1 403 Forbidden
+----
+. Verify that host header validation caused the rejection by checking the {ProjectServer} journal for the blocked-host message:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# journalctl --unit foreman --reverse --lines 5 --grep "Blocked hosts"
+----
++
+.Example output
+[source, none, options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+Jul 15 21:49:28 {foreman-example-com} foreman[52746]: 2026-07-15T21:49:28 [E|app|] [ActionDispatch::HostAuthorization::DefaultResponseApp] Blocked hosts: _hostname.example.com_, _hostname.example.com_
+----
+. Retrieve the FQDN and any server aliases that {ProjectServer} currently accepts:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# hostname --fqdn
+----
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# podman secret inspect foreman-settings-yaml --showsecret --format "{{.SecretData}}" | grep ":hosts:" --after-context=3
+----
++
+If _hostname.example.com_ does not appear in either output, host header validation is rejecting the request.
+. Resolve the problem:
+* If _hostname.example.com_ is a legitimate alternate name for your {ProjectServer}, declare it as a server alias.
+For more information, see xref:configuring-an-alternate-cname_{context}[].
+* If _hostname.example.com_ is not a name you expect your {Project} to answer, the request might indicate a misconfiguration in your network or a security concern.
+ifdef::satellite[]
+Open a Red{nbsp}Hat Support case for further investigation.
+endif::[]
+
+.Verification
+* After you configure a server alias, verify that the request succeeds:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+$ curl --silent https://_hostname.example.com_/api/v2/ping | python3 -m json.tool
+----
++
+The request returns JSON with service status information.
