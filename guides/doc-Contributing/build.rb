@@ -9,6 +9,7 @@ require 'fileutils'
 ROOT_DIR = File.expand_path('../..', __dir__)
 DOC_DIR = __dir__
 OUTPUT_FILE = File.join(DOC_DIR, 'topics', 'contributing-generated.adoc')
+GITHUB_REPO_URL = 'https://github.com/theforeman/foreman-documentation'
 
 # Source files
 CONTRIBUTING_MD = File.join(ROOT_DIR, 'CONTRIBUTING.md')
@@ -167,12 +168,13 @@ def read_skill_files
       next
     end
 
+    skill_base_dir = File.dirname(skill_file)
     skills << {
       name: skill_name,
       dir_name: skill_dir_name,
       category: categorize_skill(skill_dir_name),
-      visible_content: visible_content,
-      ai_content: ai_content
+      visible_content: rewrite_local_links(visible_content, skill_base_dir),
+      ai_content: rewrite_local_links(ai_content, skill_base_dir)
     }
   end
 
@@ -222,6 +224,22 @@ def read_vale_rules
   rules
 end
 
+def rewrite_local_links(markdown_content, base_dir)
+  markdown_content.gsub(/\[([^\]]+)\]\(([^)]+)\)/) do |match|
+    text = Regexp.last_match(1)
+    path = Regexp.last_match(2)
+
+    if path =~ /\A(https?:|#|mailto:|ftp:)/
+      match
+    else
+      full_path = File.expand_path(path, base_dir)
+      repo_relative = full_path.sub("#{ROOT_DIR}/", '')
+      kind = File.directory?(full_path) ? 'tree' : 'blob'
+      "[#{text}](#{GITHUB_REPO_URL}/#{kind}/master/#{repo_relative})"
+    end
+  end
+end
+
 def build_markdown
   markdown = []
 
@@ -229,11 +247,14 @@ def build_markdown
   markdown << "# About the Foreman Documentation Contributors' Guide"
   markdown << ""
   markdown << "The Foreman Documentation Contributors' Guide consolidates contribution guidelines for the Foreman Documentation project from the following sources:"
-  markdown << " - [CONTRIBUTING.md](../../CONTRIBUTING.md)"
-  markdown << " - [Documentation AI Skills](../../.claude/skills)"
-  markdown << " - [Vale Rules for Foreman documentation](../../.vale/styles/foreman-documentation)"
-  markdown << ""
-  markdown << "The guide concatenates resources from the above sources into a single guide for easy reference. When one of these resources changes, the guide is automatically updated. For more information, see the [doc-Contributing/README](README.md)."
+  header_links = <<~HEADER
+     - [CONTRIBUTING.md](../../CONTRIBUTING.md)
+     - [Documentation AI Skills](../../.claude/skills)
+     - [Vale Rules for Foreman documentation](../../.vale/styles/foreman-documentation)
+
+    The guide concatenates resources from the above sources into a single guide for easy reference. When one of these resources changes, the guide is automatically updated. For more information, see the [doc-Contributing/README](README.md).
+  HEADER
+  markdown << rewrite_local_links(header_links, DOC_DIR)
   markdown << ""
   markdown << "Last updated: #{Time.now.strftime('%Y-%m-%d')}"
   markdown << ""
@@ -242,7 +263,7 @@ def build_markdown
 
   # Add CONTRIBUTING.md
   if File.exist?(CONTRIBUTING_MD)
-    markdown << File.read(CONTRIBUTING_MD)
+    markdown << rewrite_local_links(File.read(CONTRIBUTING_MD), ROOT_DIR)
     markdown << ""
     markdown << "---"
     markdown << ""
