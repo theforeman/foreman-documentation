@@ -250,19 +250,24 @@ SOFTWARE.
 <li><a href="#available-backup-methods">2.1.1. Available backup methods</a></li>
 <li><a href="#best-practices-for-backing-up-foreman">2.1.2. Best practices for backing up Foreman</a></li>
 <li><a href="#directories-created-during-backups">2.1.3. Directories created during backups</a></li>
-<li><a href="#Estimating_the_Size_of_a_Backup_admin">2.1.4. Estimating the size of a backup</a></li>
+<li><a href="#estimating-the-size-of-a-backup">2.1.4. Estimating the size of a backup</a></li>
 </ul>
 </li>
 <li><a href="#performing-a-full-backup">2.2. Performing a full backup</a></li>
 <li><a href="#Performing_a_Backup_Without_Pulp_Content_admin">2.3. Performing a backup without Pulp content</a></li>
 </ul>
 </li>
-<li><a href="#renewing-certificates">3. Renewing certificates</a>
+<li><a href="#restoring-foreman-from-backup">3. Restoring Foreman from backup</a>
 <ul class="sectlevel2">
-<li><a href="#renewing-self-signed-certificates-on-foreman-server">3.1. Renewing self-signed certificates on Foreman&#160;server</a></li>
-<li><a href="#renewing-self-signed-ca-certificates">3.2. Renewing self-signed CA certificates</a></li>
-<li><a href="#renewing-a-custom-ssl-certificate-on-foreman-server">3.3. Renewing a custom SSL certificate on Foreman&#160;server</a></li>
-<li><a href="#renewing-a-custom-server-ca-certificate">3.4. Renewing a custom server CA certificate</a></li>
+<li><a href="#Restoring_from_a_Full_Backup_admin">3.1. Restoring from a full backup</a></li>
+</ul>
+</li>
+<li><a href="#renewing-certificates">4. Renewing certificates</a>
+<ul class="sectlevel2">
+<li><a href="#renewing-self-signed-certificates-on-foreman-server">4.1. Renewing self-signed certificates on Foreman&#160;server</a></li>
+<li><a href="#renewing-self-signed-ca-certificates">4.2. Renewing self-signed CA certificates</a></li>
+<li><a href="#renewing-a-custom-ssl-certificate-on-foreman-server">4.3. Renewing a custom SSL certificate on Foreman&#160;server</a></li>
+<li><a href="#renewing-a-custom-server-ca-certificate">4.4. Renewing a custom server CA certificate</a></li>
 </ul>
 </li>
 </ul>
@@ -482,70 +487,64 @@ If you use the <code>--preserve-directory</code> option, no data is removed if t
 </div>
 </div>
 <div class="sect3">
-<h4 id="Estimating_the_Size_of_a_Backup_admin"><a class="anchor" href="#Estimating_the_Size_of_a_Backup_admin"></a>2.1.4. Estimating the size of a backup</h4>
+<h4 id="estimating-the-size-of-a-backup"><a class="anchor" href="#estimating-the-size-of-a-backup"></a>2.1.4. Estimating the size of a backup</h4>
 <div class="paragraph _abstract">
 <p>Estimate how much disk space a Foreman backup requires so you can ensure enough storage is available and avoid backup failures.</p>
-</div>
-<div class="paragraph">
-<p>A full backup requires space to store the following data:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Uncompressed Foreman database and configuration files</p>
-</li>
-<li>
-<p>Compressed Foreman database and configuration files</p>
-</li>
-<li>
-<p>An extra 20% of the total estimated space to ensure a reliable backup</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>Compression occurs after the archives are created to decrease the time when Foreman services are unavailable.</p>
 </div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
 <ol class="arabic">
 <li>
-<p>Estimate the size of uncompressed directories containing Foreman database and configuration files:</p>
+<p>Calculate the size of the uncompressed backup data:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Determine the size of PostgreSQL database data:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># du -sh /var/lib/pgsql/data /var/lib/pulp
-100G    /var/lib/pgsql/data
-100G	/var/lib/pulp
-
-# du -csh /var/lib/tftpboot /etc /root/ssl-build \
-/var/www/html/pub /opt/puppetlabs
-16M   /var/lib/tftpboot
-37M   /etc
-900K  /root/ssl-build
-100K  /var/www/html/pub
-2M    /opt/puppetlabs
-942M  total</pre>
+<pre class="nowrap"># du -sh /var/lib/pgsql/data
+100G    /var/lib/pgsql/data</pre>
 </div>
 </div>
 </li>
 <li>
-<p>Calculate how much space is required to store the compressed data.</p>
+<p>Determine the size of Pulp data:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># du -sh /var/lib/pulp
+100G	/var/lib/pulp</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Determine the size of the foremanctl configuration files:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># du -sh /var/lib/foremanctl
+10MB	/var/lib/pulp</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>Calculate the expected size of the compressed backup data:</p>
 <div class="paragraph">
-<p>The following table describes the compression ratio of all data items included in the backup:</p>
+<p>The compression ratio of the backup data is as follows:</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
 <caption class="title">Table 2. Backup data compression ratio</caption>
 <colgroup>
-<col style="width: 22.2222%;">
 <col style="width: 33.3333%;">
-<col style="width: 16.6666%;">
-<col style="width: 27.7779%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
 </colgroup>
 <thead>
 <tr>
 <th class="tableblock halign-left valign-top">Data type</th>
 <th class="tableblock halign-left valign-top">Directory</th>
-<th class="tableblock halign-left valign-top">Ratio</th>
-<th class="tableblock halign-left valign-top">Example results</th>
+<th class="tableblock halign-left valign-top">Compression ratio</th>
 </tr>
 </thead>
 <tbody>
@@ -553,45 +552,58 @@ If you use the <code>--preserve-directory</code> option, no data is removed if t
 <td class="tableblock halign-left valign-top"><p class="tableblock">PostgreSQL database files</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>/var/lib/pgsql/data</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">80&#8202;&#8211;&#8202;85%</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">100 GB &#8594; 20 GB</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Pulp RPM files</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Pulp data</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>/var/lib/pulp</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">(not compressed)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">100 GB</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Not compressed</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Configuration files</p></td>
-<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p><code>/var/lib/tftpboot</code></p>
-</div>
-<div class="paragraph">
-<p><code>/etc</code></p>
-</div>
-<div class="paragraph">
-<p><code>/root/ssl-build</code></p>
-</div>
-<div class="paragraph">
-<p><code>/var/www/html/pub</code></p>
-</div>
-<div class="paragraph">
-<p><code>/opt/puppetlabs</code></p>
-</div></div></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">foremanctl configuration</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>/var/lib/foremanctl</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">85%</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">942 MB &#8594; 141 MB</p></td>
 </tr>
 </tbody>
 </table>
 <div class="paragraph">
-<p>In this example, the compressed backup data occupies 120 GB in total.</p>
+<p>In this example, the backup data is compressed as follows:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>100 GB of PostgreSQL database data is compressed to 15-20 GB</p>
+</li>
+<li>
+<p>100 GB of Pulp data is not compressed and occupies 100 GB of space</p>
+</li>
+<li>
+<p>10 MB of foremanctl configuration is compressed to 1.5 MB</p>
+</li>
+</ul>
 </div>
 </li>
 <li>
-<p>To calculate the amount of available space you require to store a backup, calculate the sum of the estimated values of compressed and uncompressed backup data, and add an extra 20% to ensure a reliable backup.</p>
+<p>Add up the size of the uncompressed and compressed data, and add a 20% safety margin.
+For example:</p>
+<div class="openblock">
+<div class="content">
+<div class="ulist">
+<ul>
+<li>
+<p>201 GB of uncompressed data + 120 GB of compressed data = 321 GB</p>
+</li>
+<li>
+<p>20% safety margin = 64 GB</p>
+</li>
+<li>
+<p>Total space required: 321 GB + 64 GB = 385 GB</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
 <div class="paragraph">
-<p>This example requires 201 GB plus 120 GB for the uncompressed and compressed backup data, 321 GB in total.
-With 64 GB of extra space, 385 GB must be allocated for the backup location.</p>
+<p>To ensure a successful backup or restore, 385 GB of space must be allocated for the backup location.</p>
 </div>
 </li>
 </ol>
@@ -609,7 +621,7 @@ A full backup is useful when you want to prepare for a future restore from scrat
 <ul>
 <li>
 <p>Your backup location must have sufficient available disk space to store the backup.
-For more information, see <a href="#Estimating_the_Size_of_a_Backup_admin">Estimating the size of a backup</a>.</p>
+For more information, see <a href="#estimating-the-size-of-a-backup">Estimating the size of a backup</a>.</p>
 </li>
 <li>
 <p>To enable Foreman to save the backup to an NFS share, the <code>root</code> user of your Foreman&#160;server must be able to write to the NFS share.
@@ -672,7 +684,7 @@ A backup without Pulp content is useful for debugging purposes and is only inten
 <ul>
 <li>
 <p>Your backup location must have sufficient available disk space to store the backup.
-For more information, see <a href="#Estimating_the_Size_of_a_Backup_admin">Estimating the size of a backup</a>.</p>
+For more information, see <a href="#estimating-the-size-of-a-backup">Estimating the size of a backup</a>.</p>
 </li>
 </ul>
 </div>
@@ -693,14 +705,128 @@ For more information, see <a href="#Estimating_the_Size_of_a_Backup_admin">Estim
 </div>
 </div>
 <div class="sect1">
-<h2 id="renewing-certificates"><a class="anchor" href="#renewing-certificates"></a>3. Renewing certificates</h2>
+<h2 id="restoring-foreman-from-backup"><a class="anchor" href="#restoring-foreman-from-backup"></a>3. Restoring Foreman from backup</h2>
+<div class="sectionbody">
+<div class="paragraph _abstract">
+<p>You can restore your Foreman&#160;server from a backup to recover after failure or data loss.
+This process outlines how to restore the backup on the same server that generated the backup, and all data covered by the backup is deleted on the target system.
+If the original system is unavailable, provision a system with the same configuration settings and host name.</p>
+</div>
+<div class="sect2">
+<h3 id="Restoring_from_a_Full_Backup_admin"><a class="anchor" href="#Restoring_from_a_Full_Backup_admin"></a>3.1. Restoring from a full backup</h3>
+<div class="paragraph _abstract">
+<p>Restore your Foreman&#160;server from a full backup to return the system to the state at the time of the backup.
+When the restore process completes, all processes are online, and all databases and system configuration revert to the state at the time of the backup.</p>
+</div>
+<div class="paragraph">
+<p>The restore process can take a long time to complete.
+The <code>foremanctl restore</code> command performs the following actions:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Validation checks to verify the backup integrity, disk space, and system requirements</p>
+</li>
+<li>
+<p>Restoring databases, Pulp content, encryption keys, OAuth secrets, and passwords</p>
+</li>
+<li>
+<p>Configuring and starting of services</p>
+</li>
+<li>
+<p>Confirming that services are running as expected</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Your Foreman&#160;server must have the same host name, configuration, and be the same minor version (X.Y) as the original system.</p>
+</li>
+<li>
+<p>The target directory must exist and be writable.
+The target directory is read from the configuration files contained within the backup archive.</p>
+</li>
+<li>
+<p>If the backed up system had FIPS enabled, the system on which you are restoring must also have FIPS enabled.</p>
+</li>
+<li>
+<p>Your system must have enough space to extract the backup data.
+Your system must also have enough space left for the backup data after the restoration.
+For more information, see <a href="#estimating-the-size-of-a-backup">Estimating the size of a backup</a>.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Restore the correct SELinux contexts:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># restorecon -Rv /</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Install Foreman&#160;server on the system where you want to restore the backup.
+For more information, see <a href="https://docs.theforeman.org/nightly/Installing_Server/index-containerized-katello.html#">Installing Foreman&#160;Server with Katello nightly plugin (containerized) on Enterprise Linux</a>.</p>
+</li>
+<li>
+<p>Copy the backup data to the local file system on Foreman&#160;server.
+Use <code>/var/</code> or <code>/var/tmp/</code>.</p>
+</li>
+<li>
+<p>Optional: Validate the backup to ensure that all files required for the restore process exist and the backup metadata is valid:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foremanctl restore <em>/var/backup_directory</em> --validate</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Run the restoration script:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foremanctl restore <em>/var/backup_directory</em> --force</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>--force</code> option is required to confirm that the data from the fresh Foreman deployment installed on the system will be permanently deleted and replaced by the data from the backup.</p>
+</div>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">Next steps</div>
+<ul>
+<li>
+<p>If you create a new instance of your Foreman&#160;server, decommission the old instance after restoring the backup.
+Cloned instances are not supposed to run in parallel in a production environment.</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Troubleshooting</div>
+<ul>
+<li>
+<p>Review the <code>/var/log/foreman/production.log</code> and <code>/var/log/messages</code> log files.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="renewing-certificates"><a class="anchor" href="#renewing-certificates"></a>4. Renewing certificates</h2>
 <div class="sectionbody">
 <div class="paragraph _abstract">
 <p>You can renew default self-signed server and client certificates as well as the default self-signed certificate authority on Foreman&#160;server to prevent them from expiring.
 You can also renew the custom SSL certificate as well as the custom certificate authority certificate on Foreman&#160;server and on Smart&#160;Proxy&#160;server.</p>
 </div>
 <div class="sect2">
-<h3 id="renewing-self-signed-certificates-on-foreman-server"><a class="anchor" href="#renewing-self-signed-certificates-on-foreman-server"></a>3.1. Renewing self-signed certificates on Foreman&#160;server</h3>
+<h3 id="renewing-self-signed-certificates-on-foreman-server"><a class="anchor" href="#renewing-self-signed-certificates-on-foreman-server"></a>4.1. Renewing self-signed certificates on Foreman&#160;server</h3>
 <div class="paragraph _abstract">
 <p>You can renew expired self-signed server and client certificates on Foreman&#160;server to restore secure connections.
 You can also specify a custom validity period instead of the default 7300 days.</p>
@@ -743,7 +869,7 @@ This is typically displayed as a shield, padlock, or tune icon next to the addre
 </div>
 </div>
 <div class="sect2">
-<h3 id="renewing-self-signed-ca-certificates"><a class="anchor" href="#renewing-self-signed-ca-certificates"></a>3.2. Renewing self-signed CA certificates</h3>
+<h3 id="renewing-self-signed-ca-certificates"><a class="anchor" href="#renewing-self-signed-ca-certificates"></a>4.2. Renewing self-signed CA certificates</h3>
 <div class="paragraph _abstract">
 <p>The self-signed certificate authority (CA) certificate on your Foreman&#160;server is valid for 20 years by default.
 If you need to renew it because the expiration date is close, follow the below procedure.</p>
@@ -800,7 +926,7 @@ For more information, see <a href="https://docs.theforeman.org/nightly/Managing_
 </div>
 </div>
 <div class="sect2">
-<h3 id="renewing-a-custom-ssl-certificate-on-foreman-server"><a class="anchor" href="#renewing-a-custom-ssl-certificate-on-foreman-server"></a>3.3. Renewing a custom SSL certificate on Foreman&#160;server</h3>
+<h3 id="renewing-a-custom-ssl-certificate-on-foreman-server"><a class="anchor" href="#renewing-a-custom-ssl-certificate-on-foreman-server"></a>4.3. Renewing a custom SSL certificate on Foreman&#160;server</h3>
 <div class="paragraph _abstract">
 <p>You can deploy a renewed custom SSL certificate on Foreman&#160;server to replace an expiring certificate and maintain trusted access to the Foreman web UI and API.</p>
 </div>
@@ -845,7 +971,7 @@ For example, <code>https://foreman.example.com</code>.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="renewing-a-custom-server-ca-certificate"><a class="anchor" href="#renewing-a-custom-server-ca-certificate"></a>3.4. Renewing a custom server CA certificate</h3>
+<h3 id="renewing-a-custom-server-ca-certificate"><a class="anchor" href="#renewing-a-custom-server-ca-certificate"></a>4.4. Renewing a custom server CA certificate</h3>
 <div class="paragraph _abstract">
 <p>If you need to update the certification authority (CA) certificate that signed your Foreman&#160;server and Smart&#160;Proxy&#160;servers certificates, add the new CA certificate and use a temporary dual CA certificate file to retain the HTTPS connections to your Foreman&#160;server during the renewal.</p>
 </div>
