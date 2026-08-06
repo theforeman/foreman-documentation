@@ -4,70 +4,42 @@
 = journald retention and disk space parameters
 
 [role="_abstract"]
-You can use these `journald` parameters in a drop-in file under `/etc/systemd/journald.conf.d/` to control how long {ProjectServer} keeps logs and how much disk space they consume.
+The following table lists recommended `journald` retention values for {ProjectServer}.
+For the complete parameter reference, see {RHELDocsBaseURL}9/html-single/configuring_basic_system_settings/index#configuring-a-persistent-journal_assembly_troubleshooting-problems-using-log-files[Configuring a persistent journal in _{RHEL}{nbsp}9 Configuring basic system settings_].
 
-.journald retention parameters
-[cols="2,3,1,2", options="header"]
+.Recommended journald retention values for {Project}
+[cols="2,1,2", options="header"]
 |===
 | Parameter
-| Description
-| Default
-| Recommended for {Project}
+| Recommended value
+| Reason
 
 | `Storage`
-| Controls where journal data is stored.
-Set to `persistent` to store logs on disk in `/var/log/journal/`.
-Other values: `volatile` (RAM only), `auto` (disk if `/var/log/journal/` exists), `none` (discard all logs).
-| `auto`
 | `persistent`
+| Ensures logs survive reboots.
 
 | `SystemMaxUse`
-| Maximum disk space that journal files consume on persistent storage.
-| 10% of file system
 | `10G`
+| Caps total journal size on disk.
 
 | `SystemKeepFree`
-| Minimum free space to keep on the file system containing the journal.
-If the available space drops below this threshold, `journald` removes the oldest journal files.
-| 15% of file system
 | `5G`
-
-| `SystemMaxFileSize`
-| Maximum size of individual journal files on persistent storage.
-| 1/8 of `SystemMaxUse`
-| Default
-
-| `RuntimeMaxUse`
-| Maximum disk space that journal files consume on volatile (tmpfs) storage.
-Applies only when `Storage=volatile`.
-| 10% of RAM
-| Not applicable for persistent storage
-
-| `RuntimeKeepFree`
-| Minimum free space to keep on the volatile storage file system.
-| 15% of RAM
-| Not applicable for persistent storage
+| Prevents logs from exhausting the `/var` partition.
 
 | `MaxRetentionSec`
-| Maximum time to store journal entries.
-Entries older than this value are removed, regardless of disk usage.
-| No limit
 | `4week`
+| Removes entries older than four weeks regardless of disk usage.
 
 | `MaxFileSec`
-| Maximum time span stored in a single journal file.
-After this period, `journald` rotates to a new file.
-| `1month`
 | `1week`
+| Rotates journal files weekly for easier cleanup.
 
 | `Compress`
-| Compress journal data objects larger than the default threshold.
 | `yes`
-| `yes`
+| Reduces disk footprint.
 |===
 
 [NOTE]
 ====
 When both `SystemMaxUse` and `MaxRetentionSec` are configured, `journald` enforces whichever limit is reached first.
-If `SystemMaxUse` and `SystemKeepFree` conflict, `journald` enforces the more restrictive of the two values.
 ====
