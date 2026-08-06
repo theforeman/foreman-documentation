@@ -283,12 +283,27 @@ SOFTWARE.
 <li><a href="#republishing-content-view-metadata-by-using-cli">2.8. Republishing content view metadata by using CLI</a></li>
 </ul>
 </li>
-<li><a href="#managing-custom-file-type-content-in-satellite">3. Managing custom file type content in Satellite</a>
+<li><a href="#Managing_Activation_Keys_content-management">3. Managing activation keys</a>
 <ul class="sectlevel2">
-<li><a href="#creating-a-local-source-for-a-custom-file-type-repository">3.1. Creating a local source for a custom file type repository</a></li>
-<li><a href="#creating-a-remote-source-for-a-custom-file-type-repository">3.2. Creating a remote source for a custom file type repository</a></li>
-<li><a href="#creating-a-custom-file-type-repository-by-using-web-ui">3.3. Creating a custom file type repository by using Satellite web UI</a></li>
-<li><a href="#creating-a-custom-file-type-repository-by-using-cli">3.4. Creating a custom file type repository by using Hammer CLI</a></li>
+<li><a href="#best-practices-for-activation-keys_content-management">3.1. Best practices for activation keys</a></li>
+<li><a href="#creating-an-activation-key-by-using-web-ui">3.2. Creating an activation key by using Satellite web UI</a></li>
+<li><a href="#creating-an-activation-key-by-using-cli">3.3. Creating an activation key by using Hammer CLI</a></li>
+<li><a href="#setting-the-service-level-by-using-web-ui">3.4. Setting the service level by using Satellite web UI</a></li>
+<li><a href="#setting-the-service-level-by-using-cli">3.5. Setting the service level by using Hammer CLI</a></li>
+<li><a href="#enabling-and-disabling-repositories-on-activation-key_content-management">3.6. Enabling and disabling repositories on activation key</a></li>
+<li><a href="#activation-keys-and-host-registration">3.7. Activation keys and host registration</a></li>
+<li><a href="#multiple-activation-keys-and-content-view-environments">3.8. Multiple activation keys and content view environments</a></li>
+<li><a href="#assigning-content-view-environments-to-an-activation-key-by-using-web-ui">3.9. Assigning content view environments to an activation key by using Satellite web UI</a></li>
+<li><a href="#assigning-content-view-environments-to-an-activation-key-by-using-cli">3.10. Assigning content view environments to an activation key by using Hammer CLI</a></li>
+<li><a href="#removing-all-content-view-environments-from-an-activation-key">3.11. Removing all content view environments from an activation key</a></li>
+</ul>
+</li>
+<li><a href="#managing-custom-file-type-content-in-satellite">4. Managing custom file type content in Satellite</a>
+<ul class="sectlevel2">
+<li><a href="#creating-a-local-source-for-a-custom-file-type-repository">4.1. Creating a local source for a custom file type repository</a></li>
+<li><a href="#creating-a-remote-source-for-a-custom-file-type-repository">4.2. Creating a remote source for a custom file type repository</a></li>
+<li><a href="#creating-a-custom-file-type-repository-by-using-web-ui">4.3. Creating a custom file type repository by using Satellite web UI</a></li>
+<li><a href="#creating-a-custom-file-type-repository-by-using-cli">4.4. Creating a custom file type repository by using Hammer CLI</a></li>
 </ul>
 </li>
 <li><a href="#required-red-hat-repositories">Appendix A: Required Red Hat repositories</a></li>
@@ -1618,7 +1633,634 @@ Satellite can regenerate metadata for repositories that do not use complete mirr
 </div>
 </div>
 <div class="sect1">
-<h2 id="managing-custom-file-type-content-in-satellite"><a class="anchor" href="#managing-custom-file-type-content-in-satellite"></a>3. Managing custom file type content in Satellite</h2>
+<h2 id="Managing_Activation_Keys_content-management"><a class="anchor" href="#Managing_Activation_Keys_content-management"></a>3. Managing activation keys</h2>
+<div class="sectionbody">
+<div class="paragraph _abstract">
+<p>Activation keys automate host configuration during registration to Satellite by assigning content view environments, enabling repositories, and defining system purpose.
+Create and configure your activation keys to scale consistent content access across many hosts.</p>
+</div>
+<div class="paragraph">
+<p>You can use activation keys during host registration to improve the speed, simplicity and consistency of the process.
+Note that activation keys are used only when hosts are registered.
+If changes are made to an activation key, it is applicable only to hosts that are registered with the amended activation key in the future.
+The changes are not made to existing hosts.</p>
+</div>
+<div class="paragraph">
+<p>Activation keys can define the following properties for hosts:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Available products and repositories</p>
+</li>
+<li>
+<p>Content view environments</p>
+</li>
+<li>
+<p>Host collection membership</p>
+</li>
+<li>
+<p>System purpose</p>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Content view conflicts between host creation and registration</dt>
+<dd>
+<p>When you provision a host, Satellite uses provisioning templates and other content from the content view that you set in the host group or host settings.
+When the host is registered, the content view environments from the activation key overwrite the original content view from the host group or host settings.
+Then Satellite uses the content view environments from the activation key for every future task, for example, rebuilding a host.</p>
+<div class="paragraph">
+<p>When you rebuild a host, ensure that you set the content view that you want to use in the activation key and not in the host group or host settings.</p>
+</div>
+</dd>
+<dt class="hdlist1">Using multiple activation keys with a host</dt>
+<dd>
+<p>A host can be associated with multiple activation keys that are combined to define the host settings.
+In case of conflicting settings, the last specified activation key takes precedence.
+You can specify the order of precedence by setting a host group parameter as follows:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer hostgroup set-parameter \
+--hostgroup "<em>My_Host_Group</em>" \
+--name "<em>My_Activation_Key</em>" \
+--value "<em>name_of_first_key</em>", "<em>name_of_second_key</em>", ...</pre>
+</div>
+</div>
+</dd>
+</dl>
+</div>
+</li>
+</ul>
+</div>
+<div class="sect2">
+<h3 id="best-practices-for-activation-keys_content-management"><a class="anchor" href="#best-practices-for-activation-keys_content-management"></a>3.1. Best practices for activation keys</h3>
+<div class="paragraph _abstract">
+<p>Plan dedicated activation keys per use case, use descriptive names, and automate key management with Hammer or Ansible to keep host content modular and consistent.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Create an activation key for each use case.
+This structures, modularizes, and simplifies content management on hosts.</p>
+</li>
+<li>
+<p>Use a naming convention for activation keys to indicate the content and lifecycle environment, for example, <code>red-hat-enterprise-linux-webserver</code>.</p>
+</li>
+<li>
+<p>Automate activation key management by using a Hammer script or an <a href="https://theforeman.github.io/foreman-ansible-modules/develop/index.html">Ansible Playbook</a>.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="creating-an-activation-key-by-using-web-ui"><a class="anchor" href="#creating-an-activation-key-by-using-web-ui"></a>3.2. Creating an activation key by using Satellite web UI</h3>
+<div class="paragraph _abstract">
+<p>Create an activation key and associate content view environments, system purpose, and repository overrides for host registration.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Content</strong> &gt; <strong>Lifecycle</strong> &gt; <strong>Activation Keys</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Create Activation Key</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter the name of the activation key.</p>
+</li>
+<li>
+<p>If you want to set a limit, clear the <strong>Unlimited hosts</strong> checkbox, and in the <strong>Limit</strong> field, enter the maximum number of systems you can register with the activation key.
+If you want unlimited hosts to register with the activation key, ensure the <strong>Unlimited Hosts</strong> checkbox is selected.</p>
+</li>
+<li>
+<p>Optional: In the <strong>Description</strong> field, enter a description for the activation key.</p>
+</li>
+<li>
+<p>On the <strong>Content view environments</strong> card, click <strong>Assign content view environments</strong>.</p>
+</li>
+<li>
+<p>Select a lifecycle environment.</p>
+</li>
+<li>
+<p>Select a content view.</p>
+</li>
+<li>
+<p>Optional: Click <strong>Assign another content view environment</strong> to assign additional content view environments to the activation key.</p>
+</li>
+<li>
+<p>Optional: Drag and drop the content view environments to change the order of the content view environments.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong> to save the content view environments.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong> to save the activation key.</p>
+</li>
+<li>
+<p>Optional: In the <strong>System Purpose</strong> section, you can configure the activation key to set system purpose attributes on hosts during registration.
+This helps determine which repositories are available on the host.
+It also helps with reporting in the Subscriptions service of the Red Hat Hybrid Cloud Console.</p>
+</li>
+<li>
+<p>On the <strong>Repository Sets</strong> tab, override repositories to Enabled or Disabled as desired.
+For more information, see <a href="#enabling-and-disabling-repositories-on-activation-key_content-management">Enabling and disabling repositories on activation key</a>.</p>
+</li>
+<li>
+<p>Optional: On the <strong>Host Collections</strong> tab, click <strong>Add</strong> to view a list of available host collections.
+Select your host collection and click <strong>Add Selected</strong>.
+This ensures that hosts become part of your host collection during the host registration process.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="creating-an-activation-key-by-using-cli"><a class="anchor" href="#creating-an-activation-key-by-using-cli"></a>3.3. Creating an activation key by using Hammer CLI</h3>
+<div class="paragraph _abstract">
+<p>Create an activation key and associate content view environments, system purpose, and repository overrides for host registration.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Create the activation key:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer activation-key create \
+--name "<em>My_Activation_Key</em>" \
+--unlimited-hosts \
+--description "<em>Example Stack in the Development Environment</em>" \
+--content-view-environments "<em>Development</em>/<em>Stack</em>" \
+--organization "<em>My_Organization</em>"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Optional: Configure the activation key with system purpose attributes to set on hosts during registration.
+This helps determine which repositories are available on the host.
+It also helps with reporting in the Subscriptions service of the Red Hat Hybrid Cloud Console.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer activation-key update \
+--organization "<em>My_Organization</em>" \
+--name "<em>My_Activation_Key</em>" \
+--service-level "<em>Standard</em>" \
+--purpose-usage "<em>Development/Test</em>" \
+--purpose-role "<em>Red&#160;Hat Enterprise Linux Server</em>"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>List the product content associated with the activation key:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer activation-key product-content \
+--content-access-mode-all true \
+--name "<em>My_Activation_Key</em>" \
+--organization "<em>My_Organization</em>"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Override the default auto-enable status for the Red Hat Satellite Client 6 repository:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer activation-key content-override \
+--name "<em>My_Activation_Key</em>" \
+--content-label "<em>My_Content_Label</em>" \
+--value 1 \
+--organization "<em>My_Organization</em>"</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For a custom repository, the content label consists of your organization label, product label, and repository label split by underscores.
+For example, <code>Example_Satellite_Client_Red_Hat_Enterprise_Linux_9</code>.
+For content from Red&#160;Hat, the content label is taken from the Red&#160;Hat manifest.
+For example, <code>rhel-10-for-x86_64-baseos-rpms</code>.</p>
+</div>
+<div class="paragraph">
+<p>The default status is set to disabled.</p>
+</div>
+</li>
+<li>
+<p>Optional: Assign a host collection to your activation key:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer activation-key add-host-collection \
+--host-collection-id <em>My_Host_Collection_ID \
+--id _My_Activation_Key_ID \
+--organization-id _My_Organization_ID</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This ensures that hosts become part of your host collection during the host registration process.</p>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="setting-the-service-level-by-using-web-ui"><a class="anchor" href="#setting-the-service-level-by-using-web-ui"></a>3.4. Setting the service level by using Satellite web UI</h3>
+<div class="paragraph _abstract">
+<p>Configure an activation key to set the default subscription service level that hosts inherit when they register with the activation key.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Content</strong> &gt; <strong>Lifecycle</strong> &gt; <strong>Activation Keys</strong>.</p>
+</li>
+<li>
+<p>Click the activation key name you want to edit.</p>
+</li>
+<li>
+<p>Click the edit icon next to <strong>Service Level</strong>.</p>
+</li>
+<li>
+<p>Select the required service level from the list.
+The list only contains service levels available to the activation key.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="setting-the-service-level-by-using-cli"><a class="anchor" href="#setting-the-service-level-by-using-cli"></a>3.5. Setting the service level by using Hammer CLI</h3>
+<div class="paragraph _abstract">
+<p>Configure an activation key to set the default subscription service level that hosts inherit when they register with the activation key.</p>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>Set the service level to Premium on your activation key:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer activation-key update \
+--name "<em>My_Activation_Key</em>" \
+--organization "<em>My_Organization</em>" \
+--service-level premium</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="enabling-and-disabling-repositories-on-activation-key_content-management"><a class="anchor" href="#enabling-and-disabling-repositories-on-activation-key_content-management"></a>3.6. Enabling and disabling repositories on activation key</h3>
+<div class="paragraph _abstract">
+<p>Override repository set status on an activation key to control which repositories are enabled when hosts register with the activation key.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Content</strong> &gt; <strong>Lifecycle</strong> &gt; <strong>Activation Keys</strong>.</p>
+</li>
+<li>
+<p>Select an activation key.</p>
+</li>
+<li>
+<p>Select the <strong>Repository Sets</strong> tab.</p>
+</li>
+<li>
+<p>Optional: Clear the <strong>Limit to Environment</strong> checkbox to view repositories that are available in the lifecycle environment of the activation key.</p>
+</li>
+<li>
+<p>Optional: Use the <strong>Repository type</strong> dropdown menu to filter repositories by type.</p>
+</li>
+<li>
+<p>Optional: Use the <strong>Status</strong> dropdown menu to filter repositories by status.</p>
+</li>
+<li>
+<p>Select the desired repositories or click the <strong>Select All</strong> checkbox to select all repositories.</p>
+</li>
+<li>
+<p>From the <strong>Select Action</strong> list, select <strong>Override to Enabled</strong>, <strong>Override to Disabled</strong>, or <strong>Reset to Default</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="activation-keys-and-host-registration"><a class="anchor" href="#activation-keys-and-host-registration"></a>3.7. Activation keys and host registration</h3>
+<div class="paragraph _abstract">
+<p>Use activation keys during provisioning or when registering existing Red&#160;Hat Enterprise Linux hosts to apply subscription and content settings automatically.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The <code>Kickstart</code> provisioning templates in Satellite contain commands to register the host, using an activation key that is defined when creating a host.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>You can use multiple activation keys when registering a host.
+For example, you can use one activation key to enable specific repositories and another to assign content view environments.</p>
+</div>
+<div class="paragraph">
+<p>If there are conflicting settings in activation keys, the rightmost key takes precedence.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Settings that conflict: <strong>Service Level</strong>, <strong>Release Version</strong>, <strong>Environment</strong>, <strong>Content View</strong>, and <strong>Product Content</strong>.</p>
+</li>
+<li>
+<p>Settings that do not conflict and the host gets the union of them: <strong>Host Collections</strong>.</p>
+</li>
+<li>
+<p>Settings that influence the behavior of the key itself and not the host configuration: <strong>Content Host Limit</strong>.</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/managing_hosts/index#registering-hosts-to-satellite">Registering hosts to Satellite in <em>Managing hosts</em></a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="multiple-activation-keys-and-content-view-environments"><a class="anchor" href="#multiple-activation-keys-and-content-view-environments"></a>3.8. Multiple activation keys and content view environments</h3>
+<div class="paragraph _abstract">
+<p>When you register a host with multiple activation keys, Satellite merges their settings and resolves conflicts by key order and the <strong>Allow multiple content views</strong> setting.</p>
+</div>
+<div class="paragraph">
+<p>When multiple activation keys assign the same attributes, Satellite decides how to resolve conflicts.
+In general, the host receives the union of non-conflicting settings and the setting from the last activation key for conflicting settings.</p>
+</div>
+<div class="paragraph">
+<p>Conflicting settings, where the setting from the last activation key wins, include:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>System purpose attributes</p>
+</li>
+<li>
+<p>Release version</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Non-conflicting settings, where the host receives the union of them, include:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Host collections</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Activation key behavior regarding multiple content view environments depends on the <strong>Allow multiple content views</strong> setting.
+If you enable <strong>Allow multiple content views</strong>, content view environments are treated as non-conflicting.
+If you disable <strong>Allow multiple content views</strong>, content view environments are considered conflicting.</p>
+</div>
+<div class="paragraph">
+<p>When you enable <strong>Allow multiple content views</strong> and register a host with multiple activation keys, the host receives all content view environments from each activation key, in the order they are passed.</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 2. Example with <strong>Allow multiple content views</strong> enabled</div>
+<div class="content">
+<div class="paragraph">
+<p>Assuming that:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Activation key <code>ak_multi</code> assigns content view environments <code>dev/cv2</code>, <code>dev/cv3</code>.</p>
+</li>
+<li>
+<p>Activation key <code>ak4</code> assigns content view environments <code>dev/cv4</code>.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>A host registered with activation keys <code>ak_multi</code> and <code>ak4</code> receives content view environments <code>dev/cv2</code>, <code>dev/cv3</code>, and <code>dev/cv4</code>.</p>
+</div>
+<div class="paragraph">
+<p>If the order is reversed, with <code>ak4</code> followed by <code>ak_multi</code>, the host receives content view environments <code>dev/cv4</code>, <code>dev/cv2</code>, and <code>dev/cv3</code>.</p>
+</div>
+</div>
+</div>
+<div class="paragraph">
+<p>When you disable <strong>Allow multiple content views</strong> and register a host with multiple activation keys, the host receives the content view environments from the last activation key with any content view environments.
+If any of the activation keys is a multi-environment activation key, registration fails with an error, regardless of the order.</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 3. Example with <strong>Allow multiple content views</strong> disabled</div>
+<div class="content">
+<div class="paragraph">
+<p>Assuming that:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Activation key <code>ak_multi</code> assigns content view environments <code>dev/cv2</code>, <code>dev/cv3</code>.</p>
+</li>
+<li>
+<p>Activation key <code>ak4</code> assigns content view environment <code>dev/cv4</code>.</p>
+</li>
+<li>
+<p>Activation key <code>ak5</code> assigns content view environment <code>dev/cv5</code>.</p>
+</li>
+<li>
+<p>Activation key <code>ak_none</code> assigns no content view environments.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>If you attempt to register a host with activation keys <code>ak_multi</code>, <code>ak4</code>, registration fails because <code>ak_multi</code> is a multi-environment activation key.</p>
+</div>
+<div class="paragraph">
+<p>If you register a host with activation keys <code>ak4</code>, <code>ak5</code>, the host receives <code>dev/cv5</code>, as <code>ak5</code> is the last activation key with content view environments.</p>
+</div>
+<div class="paragraph">
+<p>If you register a host with activation keys <code>ak4</code>, <code>ak5</code>, <code>ak_none</code>, the host receives <code>dev/cv5</code> because <code>ak5</code> is the last activation key with content view environments.</p>
+</div>
+<div class="paragraph">
+<p>If you register a host with activation keys <code>ak5</code>, <code>ak4</code>, the host receives <code>dev/cv4</code>, as <code>ak4</code> is the last activation key with content view environments.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="assigning-content-view-environments-to-an-activation-key-by-using-web-ui"><a class="anchor" href="#assigning-content-view-environments-to-an-activation-key-by-using-web-ui"></a>3.9. Assigning content view environments to an activation key by using Satellite web UI</h3>
+<div class="paragraph _abstract">
+<p>Assign content view environments to an activation key so registered hosts receive content from the content view environments you specify, in the order you define.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>If you want to assign multiple content view environments, the <strong>Allow multiple content views</strong> setting must be enabled.</p>
+</li>
+<li>
+<p>You have created an activation key.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Content</strong> &gt; <strong>Lifecycle</strong> &gt; <strong>Activation Keys</strong>.</p>
+</li>
+<li>
+<p>Click the name of the activation key to which you want to assign content view environments.</p>
+</li>
+<li>
+<p>On the the <strong>Content view environments</strong> card, click <strong>Assign content view environments</strong>.</p>
+</li>
+<li>
+<p>Select a lifecycle environment.</p>
+</li>
+<li>
+<p>Select a content view.</p>
+</li>
+<li>
+<p>Optional: Click <strong>Assign another content view environment</strong> to assign additional content view environments to the activation key.</p>
+</li>
+<li>
+<p>Optional: Drag and drop the content view environments to change the order of the content view environments.</p>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">Verification</div>
+<ul>
+<li>
+<p>The <strong>Details</strong> tab of the activation key displays the assigned content view environments in order.</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="#multiple-activation-keys-and-content-view-environments">Multiple activation keys and content view environments</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="assigning-content-view-environments-to-an-activation-key-by-using-cli"><a class="anchor" href="#assigning-content-view-environments-to-an-activation-key-by-using-cli"></a>3.10. Assigning content view environments to an activation key by using Hammer CLI</h3>
+<div class="paragraph _abstract">
+<p>Assign content view environments to an activation key so registered hosts receive content from the content view environments you specify, in the order you define.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>If you want to assign multiple content view environments, the <strong>Allow multiple content views</strong> setting must be enabled.</p>
+</li>
+<li>
+<p>You have created an activation key.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Display the available content view environments to obtain their labels or IDs:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer content-view-environment list</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Assign content view environments to an activation key:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>By using their labels:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer activation-key update \
+--id <em>My_Activation_Key_ID</em> \
+--organization-id <em>My_Organization_ID</em> \
+--content-view-environments <em>"My_env1/My_cv1,My_env2/My_cv2"</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>By using their IDs:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer activation-key update \
+--id <em>My_Activation_Key_ID</em> \
+--organization-id <em>My_Organization_ID</em> \
+--content-view-environment-ids [<em>My_content_view_env_ID_1</em>, <em>My_content_view_env_ID_2</em>]</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="#multiple-activation-keys-and-content-view-environments">Multiple activation keys and content view environments</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="removing-all-content-view-environments-from-an-activation-key"><a class="anchor" href="#removing-all-content-view-environments-from-an-activation-key"></a>3.11. Removing all content view environments from an activation key</h3>
+<div class="paragraph _abstract">
+<p>Remove all content view environments from an activation key when you need to clear assignments before reconfiguring the activation key.</p>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>Remove all content view environments from the activation key by passing an empty array:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer activation-key update \
+--content-view-environment-ids [] \
+--name <em>My_Activation_Key</em> \
+--organization-id <em>My_Organization_ID</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Remove all content view environments from an activation key by passing an empty string:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer activation-key update \
+--content-view-environments "" \
+--name <em>My_Activation_Key</em> \
+--organization-id <em>My_Organization_ID</em></pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="managing-custom-file-type-content-in-satellite"><a class="anchor" href="#managing-custom-file-type-content-in-satellite"></a>4. Managing custom file type content in Satellite</h2>
 <div class="sectionbody">
 <div class="paragraph _abstract">
 <p>You can use custom file type repositories in custom products to store and distribute arbitrary files such as SSH keys, source code, or ISO images in Satellite.</p>
@@ -1641,7 +2283,7 @@ This method is useful when you have multiple files to add to a Satellite reposit
 </ul>
 </div>
 <div class="sect2">
-<h3 id="creating-a-local-source-for-a-custom-file-type-repository"><a class="anchor" href="#creating-a-local-source-for-a-custom-file-type-repository"></a>3.1. Creating a local source for a custom file type repository</h3>
+<h3 id="creating-a-local-source-for-a-custom-file-type-repository"><a class="anchor" href="#creating-a-local-source-for-a-custom-file-type-repository"></a>4.1. Creating a local source for a custom file type repository</h3>
 <div class="paragraph _abstract">
 <p>When you have multiple files to import, you can prepare a directory on Satellite&#160;Server as a local Pulp source.
 Then, synchronize files from this directory into a custom file type repository.</p>
@@ -1725,7 +2367,7 @@ For more information, see <a href="#creating-a-custom-file-type-repository-by-us
 </div>
 </div>
 <div class="sect2">
-<h3 id="creating-a-remote-source-for-a-custom-file-type-repository"><a class="anchor" href="#creating-a-remote-source-for-a-custom-file-type-repository"></a>3.2. Creating a remote source for a custom file type repository</h3>
+<h3 id="creating-a-remote-source-for-a-custom-file-type-repository"><a class="anchor" href="#creating-a-remote-source-for-a-custom-file-type-repository"></a>4.2. Creating a remote source for a custom file type repository</h3>
 <div class="paragraph _abstract">
 <p>You can prepare a directory on a remote HTTP server as a Pulp source and synchronize files into a custom file type repository on Satellite&#160;Server.</p>
 </div>
@@ -1817,7 +2459,7 @@ For more information, see <a href="#creating-a-custom-file-type-repository-by-us
 </div>
 </div>
 <div class="sect2">
-<h3 id="creating-a-custom-file-type-repository-by-using-web-ui"><a class="anchor" href="#creating-a-custom-file-type-repository-by-using-web-ui"></a>3.3. Creating a custom file type repository by using Satellite web UI</h3>
+<h3 id="creating-a-custom-file-type-repository-by-using-web-ui"><a class="anchor" href="#creating-a-custom-file-type-repository-by-using-web-ui"></a>4.3. Creating a custom file type repository by using Satellite web UI</h3>
 <div class="paragraph _abstract">
 <p>You can add a custom file type repository to an existing custom product.
 Select the <code>file</code> repository type and follow the same workflow as when you add other custom content.</p>
@@ -1893,7 +2535,7 @@ By default, the repository is published through HTTP.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="creating-a-custom-file-type-repository-by-using-cli"><a class="anchor" href="#creating-a-custom-file-type-repository-by-using-cli"></a>3.4. Creating a custom file type repository by using Hammer CLI</h3>
+<h3 id="creating-a-custom-file-type-repository-by-using-cli"><a class="anchor" href="#creating-a-custom-file-type-repository-by-using-cli"></a>4.4. Creating a custom file type repository by using Hammer CLI</h3>
 <div class="paragraph _abstract">
 <p>You can add a custom file type repository to an existing custom product.
 Select the <code>file</code> repository type and follow the same workflow as when you add other custom content.</p>
