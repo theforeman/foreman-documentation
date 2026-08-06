@@ -270,6 +270,15 @@ SOFTWARE.
 <li><a href="#renewing-a-custom-server-ca-certificate">4.4. Renewing a custom server CA certificate</a></li>
 </ul>
 </li>
+<li><a href="#using-webhooks-in-foreman">5. Using webhooks in Foreman</a>
+<ul class="sectlevel2">
+<li><a href="#webhook-behavior-and-integration">5.1. Webhook behavior and integration</a></li>
+<li><a href="#installing-webhooks-plugin_admin">5.2. Installing the webhooks plugin</a></li>
+<li><a href="#creating-a-webhook-template_admin">5.3. Creating a webhook template</a></li>
+<li><a href="#creating-a-webhook_admin">5.4. Creating a webhook</a></li>
+<li><a href="#webhooks-available-events_admin">5.5. Available webhook events</a></li>
+</ul>
+</li>
 </ul>
 </div>
 </div>
@@ -1058,6 +1067,378 @@ For example, <code>https://foreman.example.com</code>.</p>
 </li>
 </ul>
 </div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="using-webhooks-in-foreman"><a class="anchor" href="#using-webhooks-in-foreman"></a>5. Using webhooks in Foreman</h2>
+<div class="sectionbody">
+<div class="paragraph _abstract">
+<p>A webhook is a way for a web page or web application to provide other applications with information in real time.
+You can use webhooks to define a call to an external API based on Foreman internal event by using a fire-and-forget message exchange pattern.</p>
+</div>
+<div class="sect2">
+<h3 id="webhook-behavior-and-integration"><a class="anchor" href="#webhook-behavior-and-integration"></a>5.1. Webhook behavior and integration</h3>
+<div class="paragraph _abstract">
+<p>You can use webhooks as a way to integrate Foreman with external systems.
+For example, webhooks can integrate with monitoring systems to send alerts when a host is created or deleted.</p>
+</div>
+<div class="paragraph">
+<p>Webhooks are only triggered after an event occurs.
+The request usually contains details of the event.
+An event triggers callbacks, such as sending an e-mail confirming a host has been provisioned.
+The application sending the request does not wait for the response, or ignores it.</p>
+</div>
+<div class="paragraph">
+<p>Because webhooks use HTTP, no new infrastructure needs be added to existing web services.
+Webhooks are useful where the action you want to perform in the external system can be achieved through its API.</p>
+</div>
+<div class="paragraph">
+<p>Payload of a webhook is created from webhook templates.
+Webhook templates use the same ERB syntax as Provisioning templates.
+Available variables:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>@event_name</code>: Name of an event.</p>
+</li>
+<li>
+<p><code>@webhook_id</code>: Unique event ID.</p>
+</li>
+<li>
+<p><code>@payload</code>: Payload data, different for each event type.
+To access individual fields, use <code>@payload[:key_name]</code> Ruby hash syntax.</p>
+</li>
+<li>
+<p><code>@payload[:object]</code>: Database object for events triggered by database actions (create, update, delete).
+Not available for custom events.</p>
+</li>
+<li>
+<p><code>@payload[:context]</code>: Additional information as hash like request and session UUID, remote IP address, user, organization and location.</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="#webhooks-available-events_admin">Available webhook events</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="installing-webhooks-plugin_admin"><a class="anchor" href="#installing-webhooks-plugin_admin"></a>5.2. Installing the webhooks plugin</h3>
+<div class="paragraph _abstract">
+<p>Use the following procedure to install the webhooks plugin.
+Then, you can configure Foreman&#160;server to send webhook requests.</p>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>On your Foreman&#160;server, install the webhooks plugin:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foremanctl --add-feature webhooks</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="creating-a-webhook-template_admin"><a class="anchor" href="#creating-a-webhook-template_admin"></a>5.3. Creating a webhook template</h3>
+<div class="paragraph _abstract">
+<p>Webhook templates are used to generate the body of HTTP request to a configured target when a webhook is triggered.
+You can create a webhook template in the Foreman web UI.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Administer</strong> &gt; <strong>Webhook</strong> &gt; <strong>Webhook Templates</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Clone an existing template</strong> or <strong>Create Template</strong>.</p>
+</li>
+<li>
+<p>Enter a name for the template.</p>
+</li>
+<li>
+<p>Use the editor to make changes to the template payload.</p>
+<div class="paragraph">
+<p>A webhook HTTP payload must be created using Foreman template syntax.
+The webhook template can use a special variable called <code>@object</code> that can represent the main object of the event.
+<code>@object</code> can be missing in case of certain events.
+You can determine what data are actually available with the <code>@payload</code> variable.</p>
+</div>
+<div class="paragraph">
+<p>For more information, see <a href="https://docs.theforeman.org/nightly/Managing_Hosts/index-containerized-katello.html#Template_Writing_Reference_managing-hosts">Template Writing Reference</a> in <em>Managing hosts</em> and for available template macros and methods, visit <code>/templates_doc</code> on Foreman&#160;server.</p>
+</div>
+</li>
+<li>
+<p>Optional: Enter the description and audit comment.</p>
+</li>
+<li>
+<p>Assign organizations and locations.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong>.</p>
+</li>
+</ol>
+</div>
+<div class="exampleblock">
+<div class="title">Example 1. Creating a webhook template</div>
+<div class="content">
+<div class="paragraph">
+<p>When creating a webhook template, you must follow the format of the target application for which the template is intended.
+For example, an application can expect a <code>"text"</code> field with the webhook message.
+Refer to the documentation of your target application to find more about how your webhook template format should look like.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Running remote execution jobs</dt>
+<dd>
+<p>This webhook template defines a message with the ID and result of a remote execution job.
+The webhook which uses this template can be subscribed to events such as <code>Actions Remote Execution Run Host Job Succeeded</code> or <code>Actions Remote Execution Run Host Job Failed</code>.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">{
+    "text": "job invocation &lt;%= @object.job_invocation_id %&gt; finished with result &lt;%= @object.task.result %&gt;"
+}</pre>
+</div>
+</div>
+</dd>
+<dt class="hdlist1">Creating users</dt>
+<dd>
+<p>This webhook template defines a message with the login and email of a created user.
+The webhook which uses this template should be subscribed to the <code>User Created</code> event.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">{
+    "text": "user with login &lt;%= @object.login %&gt; and email &lt;%= @object.mail %&gt; created"
+}</pre>
+</div>
+</div>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="creating-a-webhook_admin"><a class="anchor" href="#creating-a-webhook_admin"></a>5.4. Creating a webhook</h3>
+<div class="paragraph _abstract">
+<p>When creating a webhook in the Foreman web UI, you can customize events, payloads, HTTP authentication, content type, and headers.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Foreman web UI, navigate to <strong>Administer</strong> &gt; <strong>Webhook</strong> &gt; <strong>Webhooks</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Create new</strong>.</p>
+</li>
+<li>
+<p>From the <strong>Subscribe to</strong> list, select an event.</p>
+</li>
+<li>
+<p>Enter a <strong>Name</strong> for your webhook.</p>
+</li>
+<li>
+<p>Enter a <strong>Target URL</strong>.
+Webhooks make HTTP requests to pre-configured URLs.
+The target URL can be a dynamic URL.</p>
+</li>
+<li>
+<p>Click <strong>Template</strong> to select a template.
+Webhook templates are used to generate the body of the HTTP request to Foreman&#160;server when a webhook is triggered.</p>
+</li>
+<li>
+<p>Enter an HTTP method.</p>
+</li>
+<li>
+<p>Optional: If you do not want activate the webhook when you create it, uncheck the <strong>Enabled</strong> flag.</p>
+</li>
+<li>
+<p>Click the <strong>Credentials</strong> tab.</p>
+</li>
+<li>
+<p>Optional: If HTTP authentication is required, enter <strong>User</strong> and <strong>Password</strong>.</p>
+</li>
+<li>
+<p>Optional: Uncheck <strong>Verify SSL</strong> if you do not want to verify the server certificate against the system certificate store or Foreman CA.</p>
+</li>
+<li>
+<p>On the <strong>Additional</strong> tab, enter the <strong>HTTP Content Type</strong>.
+For example, <code>application/json</code>, <code>application/xml</code> or <code>text/plain</code> on the payload you define.
+The application does not attempt to convert the content to match the specified content type.</p>
+</li>
+<li>
+<p>Optional: Provide HTTP headers as JSON.
+ERB is also allowed.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="webhooks-available-events_admin"><a class="anchor" href="#webhooks-available-events_admin"></a>5.5. Available webhook events</h3>
+<div class="paragraph _abstract">
+<p>Review the webhook events that are available from the Foreman web UI.</p>
+</div>
+<div class="paragraph">
+<p><code>Action</code> events trigger webhooks only on <code>success</code>, so if an action fails, a webhook is not triggered.</p>
+</div>
+<div class="paragraph">
+<p>For more information about payload, go to <strong>Administer</strong> &gt; <strong>About</strong> &gt; <strong>Support</strong> &gt; <strong>Templates DSL</strong>.
+A list of available types is provided in the following table.
+Some events are marked as <strong>custom</strong>, in that case, the payload is an object object but a Ruby hash (key-value data structure) so syntax is different.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 40%;">
+<col style="width: 30%;">
+<col style="width: 30%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Event name</th>
+<th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">Payload</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Actions Katello Content View Promote Succeeded</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A content view was successfully promoted.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Actions::Katello::ContentView::Promote</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Actions Katello Content View Publish Succeeded</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A repository was successfully synchronized.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Actions::Katello::ContentView::Publish</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Actions Remote Execution Run Host Job Succeeded</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A generic remote execution job succeeded for a host.
+This event is emitted for all Remote Execution jobs, when complete.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Actions::RemoteExecution::RunHostJob</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Actions Remote Execution Run Host Job Katello Errata Install Succeeded</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Install errata using the Katello interface.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Actions::RemoteExecution::RunHostJob</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Actions Remote Execution Run Host Job Katello Group Install Succeeded</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Install package group using the Katello interface.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Actions::RemoteExecution::RunHostJob</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Actions Remote Execution Run Host Job Katello Package Install Succeeded</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Install package using the Katello interface.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Actions::RemoteExecution::RunHostJob</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Actions Remote Execution Run Host Job Katello Group Remove</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Remove package group using the Katello interface.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Actions::RemoteExecution::RunHostJob</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Actions Remote Execution Run Host Job Katello Package Remove Succeeded</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Remove package using the Katello interface.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Actions::RemoteExecution::RunHostJob</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Actions Remote Execution Run Host Job Katello Service Restart Succeeded</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Restart Services using the Katello interface.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Actions::RemoteExecution::RunHostJob</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Actions Remote Execution Run Host Job Katello Group Update Succeeded</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Update package group using the Katello interface.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Actions::RemoteExecution::RunHostJob</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Actions Remote Execution Run Host Job Katello Package Update Succeeded</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Update package using the Katello interface.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Actions::RemoteExecution::RunHostJob</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Actions Remote Execution Run Host Job Puppet Run Host Succeeded</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Perform a single Puppet run.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Actions::RemoteExecution::RunHostJob</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Actions Remote Execution Run Host Job Katello Module Stream Action Succeeded</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Perform a module stream action using the Katello interface.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Actions::RemoteExecution::RunHostJob</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Build Entered</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A host entered the build mode.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Custom event: <code>@payload[:id]</code> (host id), <code>@payload[:hostname]</code> (host name).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Build Exited</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A host build mode was canceled, either it was successfully provisioned or the user canceled the build manually.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Custom event: <code>@payload[:id]</code> (host id), <code>@payload[:hostname]</code> (host name).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Config Report Created/Updated/Destroyed</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Common database operations on a configuration report.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>ConfigReport</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Content View Created/Updated/Destroyed</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Common database operations on a content view.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Katello::ContentView</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Domain Created/Updated/Destroyed</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Common database operations on a domain.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Domain</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Host Created/Updated/Destroyed</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Common database operations on a host.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Host</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Hostgroup Created/Updated/Destroyed</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Common database operations on a hostgroup.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Hostgroup</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Model Created/Updated/Destroyed</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Common database operations on a model.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Model</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Status Changed</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Global host status of a host changed.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Custom event: <code>@payload[:id]</code> (host id), <code>@payload[:hostname]</code>, <code>@payload[:global_status]</code> (hash)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Subnet Created/Updated/Destroyed</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Common database operations on a subnet.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Subnet</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Template Render Performed</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A report template was rendered.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Template</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>User Created/Updated/Destroyed</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Common database operations on a user.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>User</code></p></td>
+</tr>
+</tbody>
+</table>
 <!-- "Fork me on GitHub" CSS ribbon v0.2.3 | MIT License -->
 <!-- https://github.com/simonwhitaker/github-fork-ribbon-css -->
 <a class="release-ribbon right-top fixed" data-ribbon="Pre-release version" title="Pre-release version">
