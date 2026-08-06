@@ -4,8 +4,23 @@
 = Restoring from a full backup
 
 [role="_abstract"]
-Restore {ProjectServer} or {SmartProxyServer} from a full backup return the system to the state at the time of the backup.
+ifdef::containerized[]
+Restore your {ProjectServer} from a full backup to return the system to the state at the time of the backup.
+endif::[]
+ifndef::containerized[]
+Restore {ProjectServer} or {SmartProxyServer} from a full backup to return the system to the state at the time of the backup.
+endif::[]
 When the restore process completes, all processes are online, and all databases and system configuration revert to the state at the time of the backup.
+
+ifdef::containerized[]
+The restore process can take a long time to complete.
+The `{foremanctl} restore` command performs the following actions:
+
+* Validation checks to verify the backup integrity, disk space, and system requirements
+* Restoring databases, Pulp content, encryption keys, OAuth secrets, and passwords
+* Configuring and starting of services
+* Confirming that services are running as expected
+endif::[]
 
 .Prerequisites
 * Your {ProjectServer} must have the same host name, configuration, and be the same minor version (X.Y) as the original system.
@@ -14,8 +29,14 @@ The target directory is read from the configuration files contained within the b
 ifndef::foreman-deb[]
 * If the backed up system had FIPS enabled, the system on which you are restoring must also have FIPS enabled.
 endif::[]
+ifdef::containerized[]
+* Your system must have enough space to extract the backup data.
+Your system must also have enough space left for the backup data after the restoration.
+For more information, see xref:estimating-the-size-of-a-backup[].
+endif::[]
 
 .Procedure
+ifndef::containerized[]
 . Ensure that you have enough space to store the backup data on the base system of {ProjectServer} or {SmartProxyServer} as well as enough space after the restoration to contain all the data in the `/etc/` and `/var/` directories contained within the backup.
 +
 To check the space used by a directory:
@@ -33,6 +54,7 @@ To check for free space:
 ----
 +
 Add the ``--total`` option to get a total of the results from more than one directory.
+endif::[]
 ifndef::foreman-deb[]
 . Restore the correct SELinux contexts:
 +
@@ -41,6 +63,11 @@ ifndef::foreman-deb[]
 # restorecon -Rv /
 ----
 endif::[]
+ifdef::containerized[]
+. Install {ProjectServer} on the system where you want to restore the backup.
+For more information, see {InstallingServerDocURL}[{InstallingServerDocTitle}].
+endif::[]
+ifndef::containerized[]
 . Choose the appropriate method to install {Project} or {SmartProxy}:
 ** To install {ProjectServer} from a connected network, follow the procedures in {InstallingServerDocURL}[{InstallingServerDocTitle}].
 ifdef::satellite[]
@@ -53,21 +80,41 @@ If you have used {insights-iop}, enable it.
 For more information, see {InstallingServerDisconnectedDocURL}installing-and-configuring-{insights-iop-id}[Installing and configuring {insights-iop}].
 endif::[]
 ** To install a {SmartProxyServer}, follow the procedures in {InstallingSmartProxyDocURL}[{InstallingSmartProxyDocTitle}].
+endif::[]
 . Copy the backup data to the local file system on {ProjectServer}.
 Use `/var/` or `/var/tmp/`.
-. Run the restoration script.
+ifdef::containerized[]
+. Optional: Validate the backup to ensure that all files required for the restore process exist and the backup metadata is valid:
 +
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {foremanctl} restore _/var/backup_directory_ --validate
+----
+endif::[]
+. Run the restoration script:
++
+ifdef::containerized[]
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {foremanctl} restore _/var/backup_directory_ --force
+----
++
+The `--force` option is required to confirm that the data from the fresh {Project} deployment installed on the system will be permanently deleted and replaced by the data from the backup.
+endif::[]
+ifndef::containerized[]
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 # {foreman-maintain} restore __/var/backup_directory__
 ----
-+
-Where _backup_directory_ is the time-stamped directory or subdirectory containing the backed-up data.
-+
-The restore process can take a long time to complete, because of the amount of data to copy.
+endif::[]
 
 .Next steps
+ifdef::containerized[]
+* If you create a new instance of your {ProjectServer}, decommission the old instance after restoring the backup.
+endif::[]
+ifndef::containerized[]
 * If you create a new instance of {ProjectServer} or {SmartProxyServer}, decommission the old instance after restoring the backup.
+endif::[]
 Cloned instances are not supposed to run in parallel in a production environment.
 
 .Troubleshooting
