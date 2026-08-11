@@ -39,7 +39,7 @@ endif
 endif
 
 .SHELLFLAGS = -o pipefail -c
-.PHONY = all prepare html clean browser server linkchecker
+.PHONY: all prepare html clean browser server linkchecker
 
 all: html
 
