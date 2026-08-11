@@ -7,7 +7,6 @@ ROOTDIR = $(realpath .)
 NAME = $(notdir $(ROOTDIR))
 DEST_DIR = $(BUILD_DIR)/$(subst doc-,,$(NAME))
 DEST_HTML = $(DEST_DIR)/index-$(BUILD).html
-IMAGES_DIR = $(DEST_DIR)/images
 IMAGES_TS = $(DEST_DIR)/.timestamp-images
 CSS_SOURCES = $(shell find $(COMMON_DIR)/css -type f)
 DOCINFO_SOURCES = $(shell find $(COMMON_DIR)/ -type f -name docinfo\*.html)
@@ -43,8 +42,13 @@ endif
 
 all: html
 
-prepare:
-	@mkdir -p $(BUILD_DIR) $(DEST_DIR) $(IMAGES_DIR)
+$(BUILD_DIR):
+	@mkdir -p $@
+
+$(DEST_DIR):
+	@mkdir -p $@
+
+prepare: $(BUILD_DIR) $(DEST_DIR)
 
 html: prepare $(IMAGES_TS) $(DEST_HTML)
 
@@ -69,9 +73,9 @@ ccutil:
 $(DEST_DIR)/style.css: $(CSS_SOURCES)
 	bundle exec sass --sourcemap=none --no-cache --style $(CSS_STYLE) -I $(COMMON_DIR)/css $(COMMON_DIR)/css/default.scss $@
 
-$(IMAGES_TS): $(IMAGES)
+$(IMAGES_TS): $(DEST_DIR) $(IMAGES)
 	@[[ -h ./images/common ]] || echo "FAILURE: Missing ./images dir with ./images/common symlink to commons!"
-	cp -rf $(CP_ARGS) ./images/* $(IMAGES_DIR)
+	cp -rf --update $(CP_ARGS) -t $(DEST_DIR) ./images
 	@touch $(IMAGES_TS)
 
 $(DEST_HTML): $(SOURCES) $(DEPENDENCIES) $(DOCINFO_SOURCES) $(DEST_DIR)/style.css $(IMAGES_TS)
