@@ -75,13 +75,12 @@ css: prepare $(DEST_DIR)/style.css
 $(DEST_DIR)/style.css: $(CSS_SOURCES)
 	bundle exec sass --sourcemap=none --no-cache --style $(CSS_STYLE) -I $(COMMON_DIR)/css $(COMMON_DIR)/css/default.scss $@.tmp.$$$$ && mv $@.tmp.$$$$ $@
 
-$(IMAGES_TS): $(DEST_DIR) $(IMAGES)
-	@[[ -h ./images/common ]] || echo "FAILURE: Missing ./images dir with ./images/common symlink to commons!"
-	cp -rf --update $(CP_ARGS) -t $(DEST_DIR) ./images
+$(IMAGES_TS): $(BUILD_DIR) $(IMAGES)
+	cp -rf --update $(CP_ARGS) -t $(BUILD_DIR) common/images
 	@touch $(IMAGES_TS)
 
 $(DEST_HTML): $(SOURCES) $(DEPENDENCIES) $(DOCINFO_SOURCES) $(DEST_DIR)/style.css $(IMAGES_TS)
-	bundle exec asciidoctor -r asciidoctor-tabs -a build=$(BUILD) $(BASEURL_ATTR) -a docinfo=shared -a docinfodir=common -a date_mdy="$(DATE_MDY)" -a date_my="$(DATE_MY)" -a docdatetime="$(DATE_MY)" -a stylesheet=$(DEST_DIR)/style.css -a attribute-missing=warn -b html5 -d book --trace -o $@ $< 2>&1 | tee $@.log 1>&2
+	bundle exec asciidoctor -r asciidoctor-tabs -a build=$(BUILD) $(BASEURL_ATTR) -a docinfo=shared -a docinfodir=common -a imagesdir=../images -a date_mdy="$(DATE_MDY)" -a date_my="$(DATE_MY)" -a docdatetime="$(DATE_MY)" -a stylesheet=$(DEST_DIR)/style.css -a attribute-missing=warn -b html5 -d book --trace -o $@ $< 2>&1 | tee $@.log 1>&2
 	@echo CHECKING FOR ASCIIDOCTOR ERRORS AND WARNINGS
 	@! grep -Eq "^asciidoctor: (ERROR|WARNING)" $@.log
 	@echo CHECKING FOR ORPHAN XREFS HTML LINKS
