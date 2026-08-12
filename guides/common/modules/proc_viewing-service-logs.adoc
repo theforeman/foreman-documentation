@@ -4,48 +4,63 @@
 = Viewing service logs
 
 [role="_abstract"]
-You can view and filter logs for any containerized {Project} service by using `journalctl` with the appropriate unit or syslog identifier filter.
-Monitoring service output helps you verify service health, troubleshoot issues, and follow log output in real time.
+You can view and filter logs for any {Project} service by using `journalctl` with the appropriate unit filter.
+Use correlation IDs to trace a single request across multiple services such as Foreman and Pulp.
 
 .Prerequisites
 * {ProjectServer} is installed and running.
 * You have root access to the {ProjectServer} host.
 
 .Procedure
-* View logs for a specific service.
+* To view logs for a specific service:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-# {foremanctl} -u _<service name>_
+# journalctl -u _<service_name>_
 ----
-+
-For example, to view 100 most recent logs of Foreman:
+* To follow log output in real time, add the `-f` flag:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-# {foremanctl} logs show foreman --tail 100
+# journalctl -f -u _<service_name>_
 ----
++
+For example:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# journalctl -f -u foreman
+Aug 10 07:19:29 quadlet.example.com foreman[1632]: 2026-08-10T07:19:29 [I|app|eb515c9c] Started GET "/api/v2/ping" for 192.168.124.1
+Aug 10 07:19:29 quadlet.example.com foreman[1632]: 2026-08-10T07:19:29 [I|app|eb515c9c] Processing by Api::V2::PingController#ping as JSON
+Aug 10 07:19:29 quadlet.example.com foreman[1632]: 2026-08-10T07:19:29 [I|app|eb515c9c] Completed 200 OK in 186ms (Views: 12.8ms | ActiveRecord: 8.1ms | Allocations: 42460)
+----
++
+In this output, `eb515c9c` is the correlation ID.
 
-* Filter logs by time range.
+* To trace a request across services, locate the correlation ID in the log output and filter by it:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-# {foremanctl} logs show _service_name_ --since _YYYY-MM-DD HH:MM:SS_
+# journalctl --grep _<correlation_ID>_
 ----
 +
-For example, to view Pulp logs since 8:00 AM on July 15, 2026:
+For example:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-# {foremanctl} logs show pulp --since "2026-07-15 08:00:00"
+# journalctl --grep eb515c9c
+Aug 10 07:19:29 quadlet.example.com foreman[1632]: 2026-08-10T07:19:29 [I|app|eb515c9c] Started GET "/api/v2/ping" for 192.168.124.1
+Aug 10 07:19:29 quadlet.example.com foreman[1632]: 2026-08-10T07:19:29 [I|app|eb515c9c] Processing by Api::V2::PingController#ping as JSON
+Aug 10 07:19:29 quadlet.example.com pulp-api[1193]: pulp [eb515c9c-cb85-44fa-bd6e-c49eaab71bc5]: "GET /pulp/api/v3/status/ HTTP/1.1" 200 6250
+Aug 10 07:19:29 quadlet.example.com foreman[1632]: 2026-08-10T07:19:29 [I|app|eb515c9c] Completed 200 OK in 186ms (Views: 12.8ms | ActiveRecord: 8.1ms | Allocations: 42460)
 ----
 
 .Verification
-* If no log output appears, verify that the service is running:
+* Verify that the command returns log entries for the expected service:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-# systemctl status _service_name_
+# journalctl -u _<service_name>_ -n 5
 ----
 
 .Additional resources
