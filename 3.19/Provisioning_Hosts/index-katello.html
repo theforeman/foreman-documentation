@@ -237,7 +237,7 @@ SOFTWARE.
 <h1>Provisioning hosts</h1>
 <div class="details">
 <span id="revnumber">version 3.19,</span>
-<span id="revdate">published Aug 11 2026</span>
+<span id="revdate">published Aug 12 2026</span>
 </div>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
@@ -482,7 +482,7 @@ SOFTWARE.
 <li><a href="#Creating_Hosts_on_Proxmox_provisioning">13.6. Creating hosts on Proxmox</a></li>
 <li><a href="#deleting-a-virtual-machine-on-proxmox">13.7. Deleting a virtual machine on Proxmox</a></li>
 <li><a href="#importing-a-virtual-machine-from-proxmox-into-foreman">13.8. Importing a virtual machine from Proxmox into Foreman</a></li>
-<li><a href="#Adding_a_Remote_Console_Connection_for_a_Host_on_Proxmox_provisioning">13.9. Adding a remote console connection for a host on Proxmox</a></li>
+<li><a href="#adding-a-virtual-console-connection-for-a-host-on-proxmox">13.9. Adding a virtual console connection for a host on Proxmox</a></li>
 </ul>
 </li>
 <li><a href="#provisioning-virtual-machines-on-kubevirt">14. Provisioning virtual machines on KubeVirt</a>
@@ -10838,30 +10838,21 @@ The following page looks identical to creating a host with the compute resource 
 </div>
 </div>
 <div class="sect2">
-<h3 id="Adding_a_Remote_Console_Connection_for_a_Host_on_Proxmox_provisioning"><a class="anchor" href="#Adding_a_Remote_Console_Connection_for_a_Host_on_Proxmox_provisioning"></a>13.9. Adding a remote console connection for a host on Proxmox</h3>
+<h3 id="adding-a-virtual-console-connection-for-a-host-on-proxmox"><a class="anchor" href="#adding-a-virtual-console-connection-for-a-host-on-proxmox"></a>13.9. Adding a virtual console connection for a host on Proxmox</h3>
 <div class="paragraph _abstract">
-<p>Configure VNC remote console access for KVM/QEMU hosts on Proxmox.</p>
-</div>
-<div class="admonitionblock important">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Important</div>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>This procedure only works for hosts based on <code>qemu</code>.
-It does not work for LXC container on Proxmox.</p>
-</div>
-</td>
-</tr>
-</table>
+<p>Configure Foreman and Proxmox to access the virtual console of your host through Foreman web UI.</p>
 </div>
 <div class="ulist">
 <div class="title">Prerequisites</div>
 <ul>
 <li>
-<p>Ensure that your host has <code>Standard VGA</code> selected from the <strong>VGA</strong> list.</p>
+<p>Your Foreman&#160;server has open ports for the virtual console.</p>
+</li>
+<li>
+<p>Your host has the VGA output <code>Standard VGA</code>.</p>
+</li>
+<li>
+<p>Your host has the type <code>KVM/Qemu server</code>.</p>
 </li>
 </ul>
 </div>
@@ -10869,27 +10860,11 @@ It does not work for LXC container on Proxmox.</p>
 <div class="title">Procedure</div>
 <ol class="arabic">
 <li>
-<p>On your Proxmox, open the required port for VNC:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># firewall-cmd --add-port=<em>My_Port</em>/tcp --permanent</pre>
-</div>
-</div>
+<p>On your Proxmox, open the required port for VNC.</p>
 <div class="paragraph">
 <p>The port is the sum of <code>5900</code> and the VMID of your host.
-You can view the VMID on the <strong>VM</strong> tab for your host in the Foreman web UI.
-For example, if your host has the VMID 142, open port <code>6042</code> on your Proxmox.</p>
-</div>
-<div class="paragraph">
-<p>To enable a remote console connection for multiple hosts, open a range of ports using <code>firewall-cmd --add-port=5900-<em>My_Upper_Port_Range_Limit</em>/tcp --permanent</code>.</p>
-</div>
-</li>
-<li>
-<p>Reload the firewall configuration:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># firewall-cmd --reload</pre>
-</div>
+You can find the VMID of your host on Proxmox.
+For example, if your host has the VMID 142, open port <code>6042</code>.</p>
 </div>
 </li>
 <li>
@@ -10904,33 +10879,40 @@ For example, if your host has the VMID 142, open port <code>6042</code> on your 
 </div>
 </li>
 <li>
-<p>Restart your host on Proxmox.</p>
-</li>
-<li>
-<p>Optional: Verify that the required port for VNC is open:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># netstat -ltunp</pre>
-</div>
-</div>
+<p>Reboot your host on Proxmox.</p>
 </li>
 <li>
 <p>On your Foreman&#160;server, allow the <code>websockify</code> capability in SELinux:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># setsebool -P foreman_rails_can_connect_all on
-# setsebool -P websockify_can_connect_all on</pre>
+<pre class="nowrap"># setsebool -P foreman_rails_can_connect_all on &amp;&amp; setsebool -P websockify_can_connect_all on</pre>
 </div>
 </div>
 </li>
 <li>
-<p>If you use a SSL certificate, import the SSL certificate from Foreman&#160;server into your browser.
+<p>If you use a custom SSL certificate, import the SSL certificate from Foreman&#160;server into your browser.
 For more information, see <a href="https://docs.theforeman.org/3.19/Configuring_User_Authentication/index-katello.html#importing-the-katello-root-ca-certificate-by-using-browser">Importing the Katello root CA certificate by using browser</a> in <em>Configuring authentication for Foreman users</em>.</p>
 <div class="paragraph">
 <p>The remote console connection to your host will fail if you choose to temporarily accept not checking the certificates in your browser.</p>
 </div>
 </li>
 </ol>
+</div>
+<div class="ulist">
+<div class="title">Next steps</div>
+<ul>
+<li>
+<p>You can now view the virtual console of your host in Foreman web UI.</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="https://docs.theforeman.org/3.19/Planning_for_Project/index-katello.html#foreman-port-and-firewall-requirements">Foreman&#160;server port and firewall requirements in <em>Planning for Foreman</em></a></p>
+</li>
+</ul>
 </div>
 </div>
 </div>
