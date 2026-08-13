@@ -10,24 +10,25 @@
 [id="user-interface-and-experience"]
 === User interface & experience
 
-//If this section would be empty otherwise, comment out the section heading.
-
-//To add a headline feature, use AsciiDoc's description lists: https://docs.asciidoctor.org/asciidoc/latest/lists/description/
-//Summary::
-//Description
-//+
-//Optional second paragraph of description
+TypeScript support for the frontend::
+The {Project} frontend can now use TypeScript, giving contributors static typing and better editor tooling when working on frontend code.
 
 [id="infrastructure-and-platform-updates"]
 === Infrastructure & platform updates
 
-//If this section would be empty otherwise, comment out the section heading.
+ifndef::foreman-deb[]
+(Containerized deployments only) Enterprise Linux 10 support::
++
+--
+{Project} {ProjectVersion} introduces support for running {ProjectServer} and {SmartProxyServers} on {EL} 10, but only for containerized deployments managed with `{foremanctl}`.
 
-//To add a headline feature, use AsciiDoc's description lists: https://docs.asciidoctor.org/asciidoc/latest/lists/description/
-//Summary::
-//Description
-//+
-//Optional second paragraph of description
+Running {Project} through the RPM installer on {EL} 10 is not supported, and there is currently no migration path from an RPM-installer-based installation to a `{foremanctl}`-based one.
+This migration path is planned for an upcoming {Project} release.
+If you run {Project} through the RPM installer, remain on your current, supported {EL} release until migration guidance is available.
+
+For more details, see the https://community.theforeman.org/t/rebuilding-our-rpms-for-el10/47083[EL10 RPM rebuild announcement].
+--
+endif::[]
 
 ifdef::containerized[]
 Containerized deployments use Valkey instead of Redis::
@@ -42,8 +43,27 @@ See https://developers.redhat.com/articles/2024/01/02/exploring-x86-64-v3-red-ha
 --
 endif::[]
 
-[id="networking-and-connectivity"]
-=== Networking & connectivity
+Ruby 3.3 support::
+{Project} can now run on Ruby 3.3.
+
+`settings.d` support::
++
+--
+{Project} settings can now be split across multiple files in a `settings.d` directory instead of a single settings file.
+
+For example, instead of editing `config/settings.yaml` directly, you can create `config/settings.d/10-local.yaml` with just the keys you want to override:
+
+[source,yaml]
+----
+---
+:require_ssl: true
+----
+
+Files in `config/settings.d/` are loaded in sorted filename order, after `config/settings.plugins.d/*.yaml`, so they can override both the defaults in `config/settings.yaml` and any plugin-provided settings.
+--
+
+//[id="networking-and-connectivity"]
+//=== Networking & connectivity
 
 //If this section would be empty otherwise, comment out the section heading.
 
@@ -53,8 +73,8 @@ endif::[]
 //+
 //Optional second paragraph of description
 
-[id="clients"]
-=== Clients
+//[id="clients"]
+//=== Clients
 
 //If this section would be empty otherwise, comment out the section heading.
 
@@ -75,6 +95,10 @@ endif::[]
 //+
 //Optional second paragraph of description
 
+(Containerized deployments only) Documentation is incomplete at time of release::
+Documentation is not yet complete and does not describe the complete set of functionality available in containerized deployments.
+This is work in progress and we are continuously adding the remaining documentation to our guides, as we continue verifying that the described functionality is working as expected in containerized deployments.
+
 [id="foreman-upgrade-warnings"]
 == Upgrade warnings
 
@@ -89,16 +113,21 @@ The `ssl_disabled_ciphers` and `tls_disabled_versions` Smart Proxy parameters ha
 * `ssl_disabled_ciphers` (an array of cipher suites to disable) is replaced by `tls_ciphers` (an OpenSSL cipher string). When unset, the Smart Proxy auto-detects: `PROFILE=SYSTEM` if crypto-policies are present, otherwise `HIGH`.
 * `tls_disabled_versions` (an array of TLS versions to disable) is replaced by `tls_min_version` (a single minimum version: `1.0`, `1.1`, `1.2`, or `1.3`). When unset, the minimum version is determined by the system OpenSSL configuration.
 
+ifndef::containerized[]
 If you customized these settings through `{foreman-installer}`, the old parameters are automatically removed during upgrade.
+endif::[]
 No automatic migration of values is performed.
 If you previously set custom TLS cipher or version restrictions, reconfigure them using the new parameters after upgrading.
 --
 
-//To add a headline feature, use AsciiDoc's description list: https://docs.asciidoctor.org/asciidoc/latest/lists/description/
-//Summary::
-//Description
-//+
-//Optional second paragraph of description
+ifdef::containerized[]
+Container image builds no longer drop `RAILS_LOG_TO_STDOUT`::
++
+--
+`script/foreman-rake` used a login shell (`runuser - foreman ...`), which cleared `RAILS_LOG_TO_STDOUT` during the container image build and caused install-time `rake` boots to write `production.log` into the image layer instead of stdout.
+The variable is now preserved across `runuser`, so container image logs correctly include this output.
+--
+endif::[]
 
 ifdef::containerized[]
 {Project} rejects HTTP requests with unrecognized host headers::
@@ -113,9 +142,3 @@ endif::[]
 
 //If there are deprecations, comment out the following line.
 There are no deprecations with Foreman {ProjectVersion}.
-
-//To add a headline feature, use AsciiDoc's description list: https://docs.asciidoctor.org/asciidoc/latest/lists/description/
-//Summary::
-//Description
-//+
-//Optional second paragraph of description
