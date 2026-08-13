@@ -6,11 +6,16 @@
 [role="_abstract"]
 In {Project}, you can use {compute-resource} provisioning to create hosts over a network connection or from an existing image.
 
+ifdef::vmware-provisioning[]
+For network-based provisioning, you must create a host to access either {ProjectServer} or {SmartProxyServers} on a VMware vSphere virtual network, so that the host has access to PXE provisioning services.
+The new host entry triggers the VMware vSphere server to create the virtual machine.
+If the virtual machine detects the defined {SmartProxy} through the virtual network, the virtual machine boots to PXE and begins to install the chosen operating system.
+endif::[]
 For more information about additional host creation parameters for this compute resource, enter the `hammer host create --help` command.
 
 .Prerequisites
 * For network-based provisioning, if you use a virtual network on the {compute-resource} server for provisioning, select a network that does not provide DHCP assignments.
-* This causes DHCP conflicts with {ProjectServer} when booting new hosts.
+This causes DHCP conflicts with {ProjectServer} when booting new hosts.
 * If you want to create a host over a network connection, the new host must be able to access your {ProjectServer} or {SmartProxyServers} on a {compute-resource} virtual network, so that the host has access to PXE provisioning services.
 This new host entry triggers the {compute-resource} server to create and start a virtual machine.
 If the virtual machine detects the defined {SmartProxyServer} through the virtual network, the virtual machine boots to PXE and begins to install the chosen operating system.
@@ -40,6 +45,25 @@ $ hammer host create \
 --volume="pool_name=default,capacity=20G,format_type=qcow2"
 ----
 endif::[]
+ifdef::vmware-provisioning[]
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+$ hammer host create \
+--build true \
+--compute-attributes="cpus=1,corespersocket=2,memory_mb=1024,cluster=MyCluster,path=MyVMs,start=true" \
+--compute-resource "_My_VMware_" \
+--enabled true \
+--hostgroup "_My_Host_Group_" \
+--interface "managed=true,primary=true,provision=true,compute_type=VirtualE1000,compute_network=mynetwork" \
+--location "_My_Location_" \
+--managed true \
+--name "_My_Host_" \
+--organization "_My_Organization_" \
+--provision-method build \
+--volume="size_gb=20G,datastore=Data,name=myharddisk,thin=true"
+----
+endif::[]
 ** To use image-based provisioning, create the host with the `hammer host create` command and include `--provision-method image`.
 Replace the values in the following example with the appropriate values for your environment.
 ifdef::kvm-provisioning[]
@@ -59,5 +83,24 @@ $ hammer host create \
 --organization "_My_Organization_" \
 --provision-method "image" \
 --volume="pool_name=default,capacity=20G,format_type=qcow2"
+----
+endif::[]
+ifdef::vmware-provisioning[]
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+$ hammer host create \
+--compute-attributes="cpus=1,corespersocket=2,memory_mb=1024,cluster=MyCluster,path=MyVMs,start=true" \
+--compute-resource "_My_VMware_" \
+--enabled true \
+--hostgroup "_My_Host_Group_" \
+--image "_My_VMware_Image_" \
+--interface "managed=true,primary=true,provision=true,compute_type=VirtualE1000,compute_network=mynetwork" \
+--location "_My_Location_" \
+--managed true \
+--name "_My_Host_" \
+--organization "_My_Organization_" \
+--provision-method image \
+--volume="size_gb=20G,datastore=Data,name=myharddisk,thin=true"
 ----
 endif::[]
