@@ -38,7 +38,7 @@ endif
 endif
 
 .SHELLFLAGS = -o pipefail -c
-.PHONY: all prepare html clean browser server linkchecker
+.PHONY: all prepare html clean browser server linkchecker css
 
 all: html
 
@@ -70,8 +70,10 @@ ccutil:
 		ccutil compile --lang=en-US --format html-single ; \
 	fi
 
+css: prepare $(DEST_DIR)/style.css
+
 $(DEST_DIR)/style.css: $(CSS_SOURCES)
-	bundle exec sass --sourcemap=none --no-cache --style $(CSS_STYLE) -I $(COMMON_DIR)/css $(COMMON_DIR)/css/default.scss $@
+	bundle exec sass --sourcemap=none --no-cache --style $(CSS_STYLE) -I $(COMMON_DIR)/css $(COMMON_DIR)/css/default.scss $@.tmp.$$$$ && mv $@.tmp.$$$$ $@
 
 $(IMAGES_TS): $(DEST_DIR) $(IMAGES)
 	@[[ -h ./images/common ]] || echo "FAILURE: Missing ./images dir with ./images/common symlink to commons!"
