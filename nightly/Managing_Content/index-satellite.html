@@ -557,12 +557,18 @@ SOFTWARE.
 <li><a href="#importing-an-iso-image-by-using-cli">14.4. Importing an ISO image by using Hammer CLI</a></li>
 </ul>
 </li>
-<li><a href="#managing-custom-file-type-content-in-satellite">15. Managing custom file type content in Satellite</a>
+<li><a href="#managing-ansible-content">15. Managing Ansible content</a>
 <ul class="sectlevel2">
-<li><a href="#creating-a-local-source-for-a-custom-file-type-repository">15.1. Creating a local source for a custom file type repository</a></li>
-<li><a href="#creating-a-remote-source-for-a-custom-file-type-repository">15.2. Creating a remote source for a custom file type repository</a></li>
-<li><a href="#creating-a-custom-file-type-repository-by-using-web-ui">15.3. Creating a custom file type repository by using Satellite web UI</a></li>
-<li><a href="#creating-a-custom-file-type-repository-by-using-cli">15.4. Creating a custom file type repository by using Hammer CLI</a></li>
+<li><a href="#synchronizing-ansible-collections">15.1. Synchronizing Ansible Collections</a></li>
+<li><a href="#consuming-content-from-an-ansible-collection-repository">15.2. Consuming content from an Ansible Collection repository</a></li>
+</ul>
+</li>
+<li><a href="#managing-custom-file-type-content-in-satellite">16. Managing custom file type content in Satellite</a>
+<ul class="sectlevel2">
+<li><a href="#creating-a-local-source-for-a-custom-file-type-repository">16.1. Creating a local source for a custom file type repository</a></li>
+<li><a href="#creating-a-remote-source-for-a-custom-file-type-repository">16.2. Creating a remote source for a custom file type repository</a></li>
+<li><a href="#creating-a-custom-file-type-repository-by-using-web-ui">16.3. Creating a custom file type repository by using Satellite web UI</a></li>
+<li><a href="#creating-a-custom-file-type-repository-by-using-cli">16.4. Creating a custom file type repository by using Hammer CLI</a></li>
 </ul>
 </li>
 <li><a href="#required-red-hat-repositories">Appendix A: Required Red Hat repositories</a></li>
@@ -11588,7 +11594,210 @@ You must use the Hammer CLI to upload files larger than 15 MB to a repository.</
 </div>
 </div>
 <div class="sect1">
-<h2 id="managing-custom-file-type-content-in-satellite"><a class="anchor" href="#managing-custom-file-type-content-in-satellite"></a>15. Managing custom file type content in Satellite</h2>
+<h2 id="managing-ansible-content"><a class="anchor" href="#managing-ansible-content"></a>15. Managing Ansible content</h2>
+<div class="sectionbody">
+<div class="paragraph _abstract">
+<p>Managing Ansible content in Satellite includes importing Ansible collections from different sources, synchronizing them, and distributing them to your hosts.
+This enables maintaining consistent automation across your infrastructure.</p>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/managing_configurations_by_using_ansible_integration/index#">Managing configurations by using Ansible integration</a></p>
+</li>
+</ul>
+</div>
+<div class="sect2">
+<h3 id="synchronizing-ansible-collections"><a class="anchor" href="#synchronizing-ansible-collections"></a>15.1. Synchronizing Ansible Collections</h3>
+<div class="paragraph _abstract">
+<p>On Satellite, you can synchronize your Ansible Collections from Private Automation Hub, <code>console.redhat.com</code>, and other Satellite instances to centrally manage and distribute automation content across your infrastructure.
+Ansible Collections will appear on Satellite as a new repository type in the Satellite web UI menu under <strong>Content</strong> after the sync.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Content</strong> &gt; <strong>Products</strong>.</p>
+</li>
+<li>
+<p>Select the required product name.</p>
+</li>
+<li>
+<p>In the <strong>Products</strong> window, select the name of a product that you want to create a repository for.</p>
+</li>
+<li>
+<p>Click the <strong>Repositories</strong> tab, and then click <strong>New Repository</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter a name for the repository.</p>
+<div class="paragraph">
+<p>The <strong>Label</strong> field is populated automatically based on the name.</p>
+</div>
+</li>
+<li>
+<p>From the <strong>Type</strong> list, select <strong>ansible collection</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Upstream URL</strong> field, enter the URL for the upstream collections repository.</p>
+<div class="paragraph">
+<p>The URL can be any Ansible Galaxy endpoint.
+For example, <code>https://console.redhat.com/api/automation-hub/</code>.</p>
+</div>
+</li>
+<li>
+<p>Optional: In the <strong>Requirements.yml</strong> field, you can specify the list of collections you want to sync from the endpoint and their versions.</p>
+<div class="paragraph">
+<p>If you do not specify a list of collections, Satellite synchronizes all Ansible collections from the endpoint.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">---
+collections:
+- name: my_namespace.my_collection
+  version: 1.2.3</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For more information, see <a href="https://docs.ansible.com/ansible/latest/galaxy/user_guide.html#installing-roles-and-collections-from-the-same-requirements-yml-file">Installing roles and collections from the same requirements.yml file</a> in the <em>Galaxy User Guide</em>.</p>
+</div>
+</li>
+<li>
+<p>Optional: Deselect <strong>Sync Dependencies</strong> if you do not want Satellite to resolve and synchronize dependencies.
+By default, Satellite synchronizes all required dependencies.</p>
+</li>
+<li>
+<p>Authenticate:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>To sync Ansible collections from <strong>Private Automation Hub</strong>:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Navigate to <a href="https://console.redhat.com/ansible/automation-hub/token">Connect to Hub</a>.
+Click <strong>Load token</strong>.</p>
+</li>
+<li>
+<p>Enter the token in the <strong>Auth Token</strong> field in the Satellite web UI.</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>To sync Ansible collections from <code>console.redhat.com</code>:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Navigate to <a href="https://console.redhat.com/ansible/automation-hub/token">Connect to Hub</a>.
+Click <strong>Load token</strong>.</p>
+</li>
+<li>
+<p>Enter the authentication token in the <strong>Auth Token</strong> field in the Satellite web UI.</p>
+</li>
+<li>
+<p>Copy the SSO URL from the SSO URL section.</p>
+</li>
+<li>
+<p>Enter the SSO URL in the <strong>Auth URL</strong> field in the Satellite web UI.</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>To sync Ansible collections from Satellite, leave both authentication fields blank.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Navigate to the Ansible Collections repository.</p>
+</li>
+<li>
+<p>From the <strong>Select Action</strong> menu, select <strong>Sync Now</strong>.</p>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="https://console.redhat.com/ansible/automation-hub/token">Connect to Hub</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="consuming-content-from-an-ansible-collection-repository"><a class="anchor" href="#consuming-content-from-an-ansible-collection-repository"></a>15.2. Consuming content from an Ansible Collection repository</h3>
+<div class="paragraph _abstract">
+<p>Configure hosts to consume content from an Ansible Collection repository on Satellite&#160;Server or Capsule&#160;Server to ensure consistent automation content across your infrastructure.
+You can configure the Ansible Galaxy client to use your Satellite&#160;Server or Capsule&#160;Server as a Galaxy server.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>You have synchronized an Ansible Collection to a Satellite repository.</p>
+</li>
+<li>
+<p>The <code>ansible-core</code> package is installed on the host.
+This package is available in AppStream repositories.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On the host, configure the <code>ansible-galaxy</code> client to use Satellite&#160;Server or Capsule&#160;Server as the Galaxy server.
+Add the required sections to an <code>ansible.cfg</code> file, for example:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">[galaxy]
+server_list = <em>My_Library_Server</em>, <em>My_Promoted_CV_Server</em>
+
+[galaxy_server.<em>My_Library_Server</em>]
+url = https://<em>server.example.com</em>/pulp_ansible/galaxy/<em>My_Organization_Label</em>/Library/custom/<em>My_Product_Label</em>/<em>My_Repository_Label</em>/api/
+
+[galaxy_server.<em>My_Promoted_CV_Server</em>]
+url = https://<em>server.example.com</em>/pulp_ansible/galaxy/<em>My_Organization_Label</em>/<em>My_Lifecycle_Environment_Label</em>/<em>My_Content_View_Label</em>/custom/<em>My_Product_Label</em>/<em>My_Repository_Label</em>/api/</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Replace <code>server.example.com</code> with the fully qualified domain name of your Satellite&#160;Server or Capsule&#160;Server.</p>
+</div>
+</li>
+<li>
+<p>Install an Ansible Collection from your Galaxy server.
+For example:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ansible-galaxy collection install <em>My_Namespace.My_Collection</em> \
+--server <em>My_Library_Server</em></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="https://docs.ansible.com/projects/ansible/latest/collections_guide/collections_installing.html#configuring-the-ansible-galaxy-client">Configuring the ansible-galaxy client in the <em>Ansible Collections Guide</em></a></p>
+</li>
+<li>
+<p><a href="https://docs.ansible.com/projects/ansible/latest/reference_appendices/config.html#the-configuration-file">The configuration file in the <em>Ansible Reference Appendix</em></a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="managing-custom-file-type-content-in-satellite"><a class="anchor" href="#managing-custom-file-type-content-in-satellite"></a>16. Managing custom file type content in Satellite</h2>
 <div class="sectionbody">
 <div class="paragraph _abstract">
 <p>You can use custom file type repositories in custom products to store and distribute arbitrary files such as SSH keys, source code, or ISO images in Satellite.</p>
@@ -11611,7 +11820,7 @@ This method is useful when you have multiple files to add to a Satellite reposit
 </ul>
 </div>
 <div class="sect2">
-<h3 id="creating-a-local-source-for-a-custom-file-type-repository"><a class="anchor" href="#creating-a-local-source-for-a-custom-file-type-repository"></a>15.1. Creating a local source for a custom file type repository</h3>
+<h3 id="creating-a-local-source-for-a-custom-file-type-repository"><a class="anchor" href="#creating-a-local-source-for-a-custom-file-type-repository"></a>16.1. Creating a local source for a custom file type repository</h3>
 <div class="paragraph _abstract">
 <p>When you have multiple files to import, you can prepare a directory on Satellite&#160;Server as a local Pulp source.
 Then, synchronize files from this directory into a custom file type repository.</p>
@@ -11695,7 +11904,7 @@ For more information, see <a href="#creating-a-custom-file-type-repository-by-us
 </div>
 </div>
 <div class="sect2">
-<h3 id="creating-a-remote-source-for-a-custom-file-type-repository"><a class="anchor" href="#creating-a-remote-source-for-a-custom-file-type-repository"></a>15.2. Creating a remote source for a custom file type repository</h3>
+<h3 id="creating-a-remote-source-for-a-custom-file-type-repository"><a class="anchor" href="#creating-a-remote-source-for-a-custom-file-type-repository"></a>16.2. Creating a remote source for a custom file type repository</h3>
 <div class="paragraph _abstract">
 <p>You can prepare a directory on a remote HTTP server as a Pulp source and synchronize files into a custom file type repository on Satellite&#160;Server.</p>
 </div>
@@ -11787,7 +11996,7 @@ For more information, see <a href="#creating-a-custom-file-type-repository-by-us
 </div>
 </div>
 <div class="sect2">
-<h3 id="creating-a-custom-file-type-repository-by-using-web-ui"><a class="anchor" href="#creating-a-custom-file-type-repository-by-using-web-ui"></a>15.3. Creating a custom file type repository by using Satellite web UI</h3>
+<h3 id="creating-a-custom-file-type-repository-by-using-web-ui"><a class="anchor" href="#creating-a-custom-file-type-repository-by-using-web-ui"></a>16.3. Creating a custom file type repository by using Satellite web UI</h3>
 <div class="paragraph _abstract">
 <p>You can add a custom file type repository to an existing custom product.
 Select the <code>file</code> repository type and follow the same workflow as when you add other custom content.</p>
@@ -11863,7 +12072,7 @@ By default, the repository is published through HTTP.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="creating-a-custom-file-type-repository-by-using-cli"><a class="anchor" href="#creating-a-custom-file-type-repository-by-using-cli"></a>15.4. Creating a custom file type repository by using Hammer CLI</h3>
+<h3 id="creating-a-custom-file-type-repository-by-using-cli"><a class="anchor" href="#creating-a-custom-file-type-repository-by-using-cli"></a>16.4. Creating a custom file type repository by using Hammer CLI</h3>
 <div class="paragraph _abstract">
 <p>You can add a custom file type repository to an existing custom product.
 Select the <code>file</code> repository type and follow the same workflow as when you add other custom content.</p>
