@@ -13,23 +13,32 @@ Configure periodic backups of the active server.
 
 .Procedure
 . Define a schedule for periodic offline backups of your active {ProjectServer}.
-Consider your tolerance for potential data loss and your storage options: Taking backups frequently will result in smaller amounts of data loss in case of a disaster, but backups require a significant amount of storage space.
+Consider your tolerance for potential data loss and your storage options: Taking backups often will result in smaller amounts of data loss in case of a disaster, but backups require a significant amount of storage space.
 ifdef::katello,satellite[]
 For information about the size of {Project} backups, see xref:estimating-the-size-of-a-backup[].
 endif::[]
 +
+ifndef::containerized[]
 You can combine full backups with incremental backups.
 For an example of a `cron` job that ensures regular backups, see xref:Example_of_a_Weekly_Full_Backup_Followed_by_Daily_Incremental_Backups_{context}[].
+endif::[]
+ifdef::containerized[]
+{foremanctl} currently supports only full backups.
+For an example of a `cron` job that ensures regular full backups, see xref:Example_of_a_Weekly_Full_Backup_Followed_by_Daily_Incremental_Backups_{context}[].
+endif::[]
 . Schedule periodic offline backups of your active {ProjectServer} to be taken according to the schedule you defined.
 For information about performing backups, see xref:backing-up-{project-context}[].
 . Ensure that the backup directories are encrypted and regularly synchronized to a secure location.
-By default, {Project} stores the backups in the `_/var/{project-context}-backup_` directory.
+{Project} creates the backup in the directory that you specify when you run the backup command, for example, `_/var/{project-context}-backup_`.
 +
 [IMPORTANT]
 ====
-ifndef::foreman-el,foreman-deb[]
+ifndef::foreman-el,foreman-deb,containerized[]
 {ProjectServer} backups contain sensitive information from the `/root/ssl-build` directory.
-For example, they can contain hostnames, ssh keys, request files, and SSL certificates.
+For example, they can contain hostnames, SSH keys, request files, and SSL certificates.
+endif::[]
+ifdef::containerized[]
+{ProjectServer} backups contain sensitive information such as database passwords, OAuth keys, and encryption keys.
 endif::[]
 Encrypting or moving the backups to a secure location helps minimize the risk of damage or unauthorized access to the hosts.
 ====
@@ -37,6 +46,15 @@ Encrypting or moving the backups to a secure location helps minimize the risk of
 For information about restoring backups, see xref:restoring-{project-context}-from-backup[].
 . Optional: Automate backup restoration to keep the passive server periodically updated with the latest backup.
 A regularly restored passive server helps reduce switchover time if the active server fails.
+Because restoring a backup requires the passive server to be powered on and reachable, schedule the automation to power on the passive server for the duration of each restore and power it off again afterward.
++
+ifdef::containerized[]
+[NOTE]
+====
+After the first automated restore, the passive server already has an existing deployment.
+Each subsequent restore in the automation must include the `--force` option of the `{foremanctl} restore` command, otherwise the restore fails.
+====
+endif::[]
 +
 Consider how often you want the backups to be restored: More frequent updates reduce potential data loss but increase infrastructure and automation costs.
 . Power off the passive server.
@@ -49,7 +67,9 @@ Consider how many backups you want to store: Regularly removing outdated backups
 . Perform further testing steps in an isolated staging environment:
 .. Mimic a full outage on the active server.
 To make sure the active server is inaccessible, you can turn the machine off, halt the virtual machine (VM) if your server runs on a VM, or isolate the machine by using a firewall.
+.. Power on the passive server.
 .. Switch DNS records of the active server with the DNS records of the passive server.
 .. Assess the functionality of the test {ProjectServer}.
 For more information, see xref:retrieving-the-status-of-services-by-using-cli_{context}[].
+.. Power off the passive server after the test completes.
 .. Perform these verification checks regularly.
