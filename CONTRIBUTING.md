@@ -24,6 +24,9 @@ As a maintainer, I will:
 * Keep non-trivial PRs open for at least 24 hours (72 hours if over the weekend) to allow for input from the community.
 Examples of trivial PRs: Fixing a typo, fixing markup, or fixing links.
 Non-trivial PRs might not only benefit from additional review but they also represent an opportunity for community members to ask questions and learn.
++
+Time-critical release changes, such as release notes, can be merged without waiting 24 hours, but still require peer review and an ACK.
+* Make sure all PRs, including trivial ones, have received an ACK before merging.
 
 ## Pull request checklists
 
