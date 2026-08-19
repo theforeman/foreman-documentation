@@ -1,0 +1,106 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="updating-{project-context}-server"]
+= Updating {ProjectServer}
+
+[role="_abstract"]
+ifdef::satellite[]
+Update your connected {ProjectServer} to the next patch version.
+You can follow this process to update the underlying operating system between minor release versions.
+endif::[]
+ifndef::satellite[]
+You can update your {ProjectServer} to the latest packages published by {Team}.
+endif::[]
+
+ifdef::orcharhino[]
+If you want to upgrade {Project} to the next version, see xref:sources/installation_and_maintenance/upgrading_orcharhino_server.adoc[Upgrading {ProjectServer}] or xref:sources/installation_and_maintenance/upgrading_orcharhino_proxy_server.adoc[Upgrading {SmartProxyServer}].
+endif::[]
+
+ifdef::satellite[]
+ifndef::containerized[]
+If you use the {insights-iop}, the following process updates {insights-iop} to the latest version.
+The `{foreman-maintain}` tool pulls the new container images of the {insights-iop} automatically.
+endif::[]
+endif::[]
+
+.Prerequisites
+* Back up your {ProjectServer}.
+For more information, see {AdministeringDocURL}backing-up-{project-context}[Backing up {Project}] in _{AdministeringDocTitle}_.
+
+ifdef::satellite[]
+ifndef::containerized[]
+include::snip_warning-maintain-config-noop.adoc[]
+endif::[]
+endif::[]
+
+.Procedure
+ifdef::containerized[]
+. Use the health check option to determine if the system is ready for update:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foremanctl} health
+----
++
+Review the results and address any highlighted error conditions before performing the update.
+. Upgrade the `{project-installer-package}` package:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# dnf upgrade {project-installer-package}
+----
+. Re-deploy {ProjectServer} to perform the update:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foremanctl} deploy
+----
++
+{Project} pulls new images and runs all required update tasks, including update tasks required by {Project} dependencies and your configured plugins.
+As a result, this `{foremanctl} deploy` run might take longer than usual.
+endif::[]
+ifndef::containerized[]
+. On your {ProjectServer}, start {Project} maintenance mode:
++
+[options="nowrap" subs="+quotes,verbatim,attributes"]
+----
+# {foreman-maintain} maintenance-mode start
+----
+. Upgrade all packages:
++
+[options="nowrap" subs="+quotes,verbatim,attributes"]
+----
+# {project-package-update}
+----
+. Reconfigure {ProjectServer}:
++
+[options="nowrap" subs="+quotes,verbatim,attributes"]
+----
+# {foreman-installer}
+----
+. Stop {Project} maintenance mode:
++
+[options="nowrap" subs="+quotes,verbatim,attributes"]
+----
+# {foreman-maintain} maintenance-mode stop
+----
+endif::[]
+
+.Verification
+* On your {ProjectServer}, verify that all {Project} services are running:
++
+[options="nowrap" subs="+quotes,verbatim,attributes"]
+----
+ifdef::containerized[]
+# {foremanctl} health
+endif::[]
+ifndef::containerized[]
+# {foreman-maintain} service status -b
+endif::[]
+----
+
+ifndef::containerized[]
+.Next steps
+* Update your {SmartProxyServers}.
+For more information, see xref:updating-{smart-proxy-context}-server[]
+endif::[]
