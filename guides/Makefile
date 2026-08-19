@@ -3,17 +3,24 @@ SHELL := /bin/bash
 SUBDIRS = $(shell ls -d doc-* | grep -v 'doc-Contributing')
 CONTRIBUTING_DIR = doc-Contributing
 
-.PHONY: all clean html linkchecker linkchecker-tryer serve subdirs $(SUBDIRS) contributing
+.PHONY: all clean html linkchecker linkchecker-tryer serve subdirs $(SUBDIRS) contributing contributing-css css
 
 all: html
 
 html: subdirs contributing
+
+css: subdirs contributing-css
 
 subdirs: $(SUBDIRS)
 
 contributing:
 	@if [ -d "$(CONTRIBUTING_DIR)" ]; then \
 		$(MAKE) -C "$(CONTRIBUTING_DIR)" html; \
+	fi
+
+contributing-css:
+	@if [ -d "$(CONTRIBUTING_DIR)" ]; then \
+		$(MAKE) -C "$(CONTRIBUTING_DIR)" css; \
 	fi
 
 $(SUBDIRS):
