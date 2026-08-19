@@ -303,20 +303,31 @@ SOFTWARE.
 <li><a href="#renewing-a-custom-server-ca-certificate">5.4. Renewing a custom server CA certificate</a></li>
 </ul>
 </li>
-<li><a href="#using-webhooks-in-foreman">6. Using webhooks in Foreman</a>
+<li><a href="#managing-logs-for-project">6. Managing logs for Foreman</a>
 <ul class="sectlevel2">
-<li><a href="#webhook-behavior-and-integration">6.1. Webhook behavior and integration</a></li>
-<li><a href="#installing-webhooks-plugin_admin">6.2. Installing the webhooks plugin</a></li>
-<li><a href="#creating-a-webhook-template_admin">6.3. Creating a webhook template</a></li>
-<li><a href="#creating-a-webhook_admin">6.4. Creating a webhook</a></li>
-<li><a href="#webhooks-available-events_admin">6.5. Available webhook events</a></li>
+<li><a href="#logging-architecture-overview">6.1. Logging architecture overview</a></li>
+<li><a href="#viewing-service-logs">6.2. Viewing service logs</a></li>
+<li><a href="#setting-service-log-levels">6.3. Setting service log levels</a>
+<ul class="sectlevel3">
+<li><a href="#log-level-parameters">6.3.1. Log level parameters</a></li>
 </ul>
 </li>
-<li><a href="#working-efficiently-with-web-ui">7. Working efficiently with Foreman web UI</a>
+</ul>
+</li>
+<li><a href="#using-webhooks-in-foreman">7. Using webhooks in Foreman</a>
 <ul class="sectlevel2">
-<li><a href="#efficiency-tips-for-web-ui">7.1. Efficiency tips for Foreman web UI</a></li>
-<li><a href="#web-ui-search-query-reference">7.2. Foreman web UI search query reference</a></li>
-<li><a href="#useful-search-examples">7.3. Useful search examples</a></li>
+<li><a href="#webhook-behavior-and-integration">7.1. Webhook behavior and integration</a></li>
+<li><a href="#installing-webhooks-plugin_admin">7.2. Installing the webhooks plugin</a></li>
+<li><a href="#creating-a-webhook-template_admin">7.3. Creating a webhook template</a></li>
+<li><a href="#creating-a-webhook_admin">7.4. Creating a webhook</a></li>
+<li><a href="#webhooks-available-events_admin">7.5. Available webhook events</a></li>
+</ul>
+</li>
+<li><a href="#working-efficiently-with-web-ui">8. Working efficiently with Foreman web UI</a>
+<ul class="sectlevel2">
+<li><a href="#efficiency-tips-for-web-ui">8.1. Efficiency tips for Foreman web UI</a></li>
+<li><a href="#web-ui-search-query-reference">8.2. Foreman web UI search query reference</a></li>
+<li><a href="#useful-search-examples">8.3. Useful search examples</a></li>
 </ul>
 </li>
 </ul>
@@ -1765,14 +1776,310 @@ For example, <code>https://foreman.example.com</code>.</p>
 </div>
 </div>
 <div class="sect1">
-<h2 id="using-webhooks-in-foreman"><a class="anchor" href="#using-webhooks-in-foreman"></a>6. Using webhooks in Foreman</h2>
+<h2 id="managing-logs-for-project"><a class="anchor" href="#managing-logs-for-project"></a>6. Managing logs for Foreman</h2>
+<div class="sectionbody">
+<div class="paragraph _abstract">
+<p>With centralized logging, you can monitor Foreman service health, diagnose errors, and control log retention and disk usage in a single interface.
+You can also collect diagnostic data and attach it to support cases.</p>
+</div>
+<div class="sect2">
+<h3 id="logging-architecture-overview"><a class="anchor" href="#logging-architecture-overview"></a>6.1. Logging architecture overview</h3>
+<div class="paragraph _abstract">
+<p>Foreman&#160;server manages all service logs by using a centralized system built on <code>systemd</code> and <code>journald</code>.
+Instead of searching through separate log files in different directories, you can manage all service activity from a single pipeline.</p>
+</div>
+<div class="paragraph">
+<p>All Foreman services send their log output to <code>stdout</code> by default.
+The container runtime automatically captures this data stream and passes it to the logging daemon.</p>
+</div>
+<div class="paragraph">
+<p>You interact with the logging architecture through the following key components:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>With the <code>journald</code> service, you collect and store all service logs in one place.
+By default, you lose log history when the system reboots as <code>journald</code> stores log data in volatile memory.
+You can configure <code>journald</code> to store logs in persistent storage so that you can retain log history across system restarts.</p>
+<div class="paragraph">
+<p>For details on configuring the <code>journald</code> service, see the official Red&#160;Hat Enterprise Linux documentation.</p>
+</div>
+</li>
+<li>
+<p>With <code>journalctl</code>, you can view, search, and filter logs for any service from a single interface without opening individual log files.</p>
+</li>
+<li>
+<p>Use the <code>foremanctl deploy</code> command to change log levels or adjust logging verbosity.</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="https://access.redhat.com/solutions/696893">How to enable persistent logging for the systemd journal</a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/automating_system_administration_by_using_rhel_system_roles/configuring-the-systemd-journal-by-using-the-journald-rhel-system-role_automating-system-administration-by-using-rhel-system-roles">Configuring the systemd journal by using RHEL system roles in <em>Red&#160;Hat Enterprise Linux&#160;9 Automating system administration by using RHEL system roles</em></a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/configuring_basic_system_settings/assembly_troubleshooting-problems-using-log-files_configuring-basic-system-settings">Troubleshooting problems using log files in <em>Red&#160;Hat Enterprise Linux&#160;9 Configuring basic system settings</em></a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="viewing-service-logs"><a class="anchor" href="#viewing-service-logs"></a>6.2. Viewing service logs</h3>
+<div class="paragraph _abstract">
+<p>You can view and filter logs for any Foreman service by using <code>journalctl</code> with the appropriate unit filter.
+Use correlation IDs to trace a single request across multiple services such as Foreman and Pulp.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Foreman&#160;server is installed and running.</p>
+</li>
+<li>
+<p>You have root access to the Foreman&#160;server host.</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>To view logs for a specific service:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># journalctl --unit <em>My_Service</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>To follow log output in real time, add the <code>--follow</code> flag:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># journalctl --follow --unit <em>My_Service</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># journalctl --follow --unit foreman</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">Aug 10 07:19:29 foreman.example.com foreman[1632]: 2026-08-10T07:19:29 [I|app|eb515c9c] Started GET "/api/v2/ping" for 192.168.124.1
+Aug 10 07:19:29 foreman.example.com foreman[1632]: 2026-08-10T07:19:29 [I|app|eb515c9c] Processing by Api::V2::PingController#ping as JSON
+Aug 10 07:19:29 foreman.example.com foreman[1632]: 2026-08-10T07:19:29 [I|app|eb515c9c] Completed 200 OK in 186ms (Views: 12.8ms | ActiveRecord: 8.1ms | Allocations: 42460)</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In this output, <code>eb515c9c</code> is the correlation ID.</p>
+</div>
+</li>
+<li>
+<p>To trace a request across services, locate the correlation ID in the log output and filter by it:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># journalctl --grep <em>My_Correlation_ID</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># journalctl --grep eb515c9c</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">Aug 10 07:19:29 foreman.example.com foreman[1632]: 2026-08-10T07:19:29 [I|app|eb515c9c] Started GET "/api/v2/ping" for 192.168.124.1
+Aug 10 07:19:29 foreman.example.com foreman[1632]: 2026-08-10T07:19:29 [I|app|eb515c9c] Processing by Api::V2::PingController#ping as JSON
+Aug 10 07:19:29 foreman.example.com pulp-api[1193]: pulp [eb515c9c-cb85-44fa-bd6e-c49eaab71bc5]: "GET /pulp/api/v3/status/ HTTP/1.1" 200 6250
+Aug 10 07:19:29 foreman.example.com foreman[1632]: 2026-08-10T07:19:29 [I|app|eb515c9c] Completed 200 OK in 186ms (Views: 12.8ms | ActiveRecord: 8.1ms | Allocations: 42460)</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Verification</div>
+<ul>
+<li>
+<p>Verify that the command returns log entries for the expected service:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># journalctl --unit <em>My_Service</em> -n 5</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="setting-service-log-levels"><a class="anchor" href="#setting-service-log-levels"></a>6.3. Setting service log levels</h3>
+<div class="paragraph _abstract">
+<p>You can set the log level for Foreman services by using <code>foremanctl deploy</code> parameters.</p>
+</div>
+<div class="paragraph">
+<p>At the initial deployment, when the containers are first created, the log level is set to the default value of <code>info</code>.
+You can change the log level for all services or for individual services.</p>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>To set the global log level for all supported services, run:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foremanctl deploy --log-level <em>Log_Level</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For example, to set the global log level to <code>debug</code>, run:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foremanctl deploy --log-level debug</pre>
+</div>
+</div>
+</li>
+<li>
+<p>To override the log level for a specific service, use a service-specific parameter, such as <code>--foreman-log-level</code> and <code>--foreman-proxy-log-level</code>.</p>
+<div class="paragraph">
+<p>For example, to set only Foreman to <code>error</code> while keeping other services at the global level, run:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foremanctl deploy --foreman-log-level error</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>After you complete debugging, reset the log level to the default to avoid filling up host disk space:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foremanctl deploy --reset-foreman-log-level</pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Each service inherits the default value from the <code>log-level</code> parameter, unless you set the value for the service by using the <code><em>My_Service</em>-log-level</code> parameter.
+Running <code>foremanctl deploy --log-level <em>New_Log_Level</em></code> or <code>foremanctl deploy --reset-log-level</code> does not affect the <code>--<em>My_Service</em>-log-level</code> parameters.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Verification</div>
+<ul>
+<li>
+<p>Verify that a new log level took effect as actions occur:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># journalctl --unit foreman --follow</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="#log-level-parameters">Log level parameters</a></p>
+</li>
+</ul>
+</div>
+<div class="sect3">
+<h4 id="log-level-parameters"><a class="anchor" href="#log-level-parameters"></a>6.3.1. Log level parameters</h4>
+<div class="paragraph _abstract">
+<p>You can control the log detail level of containerized Foreman services with the <code>foremanctl deploy</code> log level parameters.</p>
+</div>
+<div class="paragraph">
+<p>The <code>--log-level</code> parameter sets the global baseline for all services.
+The valid values are: <code>debug</code>, <code>info</code>, <code>warn</code>, <code>error</code>, <code>fatal</code> out of which <code>info</code> is the default.</p>
+</div>
+<div class="paragraph">
+<p>Per-service parameters override this value and translate it to the native vocabulary of each service:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><code>--foreman-log-level</code></dt>
+<dd>
+<p>Foreman service.
+Values: <code>debug</code>, <code>info</code>, <code>warn</code>, <code>error</code>, <code>fatal</code>.</p>
+</dd>
+<dt class="hdlist1"><code>--foreman-proxy-log-level</code></dt>
+<dd>
+<p>Foreman Proxy.
+Values: <code>debug</code>, <code>info</code>, <code>warn</code>, <code>error</code>, <code>fatal</code>.</p>
+</dd>
+<dt class="hdlist1"><code>--pulp-log-level</code></dt>
+<dd>
+<p>Pulp services (<code>pulpcore-api</code>, <code>pulpcore-content</code>, <code>pulpcore-worker</code>).
+Values: <code>debug</code>, <code>info</code>, <code>warning</code>, <code>error</code>, <code>critical</code>.</p>
+</dd>
+<dt class="hdlist1"><code>--valkey-log-level</code></dt>
+<dd>
+<p>Valkey.
+Independent of <code>--log-level</code>.
+Values: <code>debug</code>, <code>verbose</code>, <code>notice</code>, <code>warning</code>, <code>nothing</code>.
+Default: <code>notice</code>.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>These services do not have dedicated <code>foremanctl deploy</code> log level parameters and are not affected by the global <code>--log-level</code> parameter:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Candlepin</p>
+</li>
+<li>
+<p>PostgreSQL</p>
+</li>
+<li>
+<p>httpd</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="using-webhooks-in-foreman"><a class="anchor" href="#using-webhooks-in-foreman"></a>7. Using webhooks in Foreman</h2>
 <div class="sectionbody">
 <div class="paragraph _abstract">
 <p>A webhook is a way for a web page or web application to provide other applications with information in real time.
 You can use webhooks to define a call to an external API based on Foreman internal event by using a fire-and-forget message exchange pattern.</p>
 </div>
 <div class="sect2">
-<h3 id="webhook-behavior-and-integration"><a class="anchor" href="#webhook-behavior-and-integration"></a>6.1. Webhook behavior and integration</h3>
+<h3 id="webhook-behavior-and-integration"><a class="anchor" href="#webhook-behavior-and-integration"></a>7.1. Webhook behavior and integration</h3>
 <div class="paragraph _abstract">
 <p>You can use webhooks as a way to integrate Foreman with external systems.
 For example, webhooks can integrate with monitoring systems to send alerts when a host is created or deleted.</p>
@@ -1823,7 +2130,7 @@ Not available for custom events.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="installing-webhooks-plugin_admin"><a class="anchor" href="#installing-webhooks-plugin_admin"></a>6.2. Installing the webhooks plugin</h3>
+<h3 id="installing-webhooks-plugin_admin"><a class="anchor" href="#installing-webhooks-plugin_admin"></a>7.2. Installing the webhooks plugin</h3>
 <div class="paragraph _abstract">
 <p>Use the following procedure to install the webhooks plugin.
 Then, you can configure Foreman&#160;server to send webhook requests.</p>
@@ -1843,7 +2150,7 @@ Then, you can configure Foreman&#160;server to send webhook requests.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="creating-a-webhook-template_admin"><a class="anchor" href="#creating-a-webhook-template_admin"></a>6.3. Creating a webhook template</h3>
+<h3 id="creating-a-webhook-template_admin"><a class="anchor" href="#creating-a-webhook-template_admin"></a>7.3. Creating a webhook template</h3>
 <div class="paragraph _abstract">
 <p>Webhook templates are used to generate the body of HTTP request to a configured target when a webhook is triggered.
 You can create a webhook template in the Foreman web UI.</p>
@@ -1923,7 +2230,7 @@ The webhook which uses this template should be subscribed to the <code>User Crea
 </div>
 </div>
 <div class="sect2">
-<h3 id="creating-a-webhook_admin"><a class="anchor" href="#creating-a-webhook_admin"></a>6.4. Creating a webhook</h3>
+<h3 id="creating-a-webhook_admin"><a class="anchor" href="#creating-a-webhook_admin"></a>7.4. Creating a webhook</h3>
 <div class="paragraph _abstract">
 <p>When creating a webhook in the Foreman web UI, you can customize events, payloads, HTTP authentication, content type, and headers.</p>
 </div>
@@ -1979,7 +2286,7 @@ ERB is also allowed.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="webhooks-available-events_admin"><a class="anchor" href="#webhooks-available-events_admin"></a>6.5. Available webhook events</h3>
+<h3 id="webhooks-available-events_admin"><a class="anchor" href="#webhooks-available-events_admin"></a>7.5. Available webhook events</h3>
 <div class="paragraph _abstract">
 <p>Review the webhook events that are available from the Foreman web UI.</p>
 </div>
@@ -2137,13 +2444,13 @@ This event is emitted for all Remote Execution jobs, when complete.</p></td>
 </div>
 </div>
 <div class="sect1">
-<h2 id="working-efficiently-with-web-ui"><a class="anchor" href="#working-efficiently-with-web-ui"></a>7. Working efficiently with Foreman web UI</h2>
+<h2 id="working-efficiently-with-web-ui"><a class="anchor" href="#working-efficiently-with-web-ui"></a>8. Working efficiently with Foreman web UI</h2>
 <div class="sectionbody">
 <div class="paragraph _abstract">
 <p>The Foreman web UI includes search, bookmarking, keyboard shortcuts, and various settings to help you work more efficiently.</p>
 </div>
 <div class="sect2">
-<h3 id="efficiency-tips-for-web-ui"><a class="anchor" href="#efficiency-tips-for-web-ui"></a>7.1. Efficiency tips for Foreman web UI</h3>
+<h3 id="efficiency-tips-for-web-ui"><a class="anchor" href="#efficiency-tips-for-web-ui"></a>8.1. Efficiency tips for Foreman web UI</h3>
 <div class="paragraph _abstract">
 <p>Use these keyboard shortcuts and techniques to navigate and search more efficiently in the Foreman web UI.</p>
 </div>
@@ -2182,7 +2489,7 @@ To set a color for the instance title banner, edit the <strong>Instance color</s
 </div>
 </div>
 <div class="sect2">
-<h3 id="web-ui-search-query-reference"><a class="anchor" href="#web-ui-search-query-reference"></a>7.2. Foreman web UI search query reference</h3>
+<h3 id="web-ui-search-query-reference"><a class="anchor" href="#web-ui-search-query-reference"></a>8.2. Foreman web UI search query reference</h3>
 <div class="paragraph _abstract">
 <p>Use search query syntax and operators in the Foreman web UI to filter lists of resources on Foreman web UI pages.
 Parameter-based queries help you find the resources you need faster and more precisely than free-text search in large inventories.</p>
@@ -2353,7 +2660,7 @@ Returns matches that contain or not contain the values, respectively.</p></td>
 </table>
 </div>
 <div class="sect2">
-<h3 id="useful-search-examples"><a class="anchor" href="#useful-search-examples"></a>7.3. Useful search examples</h3>
+<h3 id="useful-search-examples"><a class="anchor" href="#useful-search-examples"></a>8.3. Useful search examples</h3>
 <div class="paragraph _abstract">
 <p>The following examples demonstrate useful ways to filter and find resources in Foreman web UI.
 Use them as starting points to build your own searches that match your specific needs.</p>
