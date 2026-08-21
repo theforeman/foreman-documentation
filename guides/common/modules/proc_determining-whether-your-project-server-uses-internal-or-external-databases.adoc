@@ -4,12 +4,37 @@
 = Determining whether your {ProjectServer} uses internal or external databases
 
 [role="_abstract"]
-You can confirm whether your {ProjectServer} uses internal or external databases by checking the status of the PostgreSQL database service.
+You can confirm whether your {ProjectServer} uses internal or external databases by checking PostgreSQL deployment on the server.
 
 .Procedure
+ifdef::containerized[]
+. On {ProjectServer}, inspect the persisted database mode:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# grep database_mode /var/lib/foremanctl/parameters.yaml
+----
++
+If the output shows `database_mode: internal`, {ProjectServer} uses the default internal PostgreSQL deployment.
+If the output shows `database_mode: external`, {ProjectServer} is configured to use an external PostgreSQL host.
+. Optional: Confirm the status of the local PostgreSQL container service:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# systemctl status postgresql.service
+----
++
+When {ProjectServer} uses internal databases, the `postgresql.service` unit is active.
+When {ProjectServer} uses external databases, the local `postgresql.service` unit is inactive or not enabled.
++
+This check reflects steady-state configuration.
+During a migration to external databases, `database_mode` in `/var/lib/foremanctl/parameters.yaml` may already show `external` while the local `postgresql.service` unit is still active until you remove the internal PostgreSQL deployment.
+endif::[]
+ifndef::containerized[]
 * On {ProjectServer}, query the status of your databases:
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
 # {foreman-maintain} service status --only postgresql
 ----
+endif::[]
