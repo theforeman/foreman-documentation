@@ -296,8 +296,8 @@ SOFTWARE.
 </li>
 <li><a href="#configuring-an-ldap-server-as-an-external-identity-provider-for-project_authentication">7. Configuring an LDAP server as an external identity provider for Foreman</a>
 <ul class="sectlevel2">
-<li><a href="#Configuring_TLS_for_Secure_LDAP_authentication">7.1. Configuring TLS for secure LDAP</a></li>
-<li><a href="#Configuring_Project_to_Use_LDAP_authentication">7.2. Configuring Foreman to use LDAP</a></li>
+<li><a href="#obtaining-a-ca-certificate-for-ldaps">7.1. Obtaining a CA certificate for LDAPS</a></li>
+<li><a href="#configuring-foreman-to-use-ldap">7.2. Configuring Foreman to use LDAP</a></li>
 <li><a href="#Example_Settings_for_LDAP_Connections_authentication">7.3. Example settings for LDAP connections</a></li>
 <li><a href="#Example_LDAP_Filters_authentication">7.4. Example LDAP filters</a></li>
 </ul>
@@ -3452,86 +3452,33 @@ The <code>TLS_DHE_RSA_WITH_AES_256_GCM_SHA384</code> cipher is known to cause in
 With Foreman, you can use one or multiple LDAP directories for external authentication.</p>
 </div>
 <div class="sect2">
-<h3 id="Configuring_TLS_for_Secure_LDAP_authentication"><a class="anchor" href="#Configuring_TLS_for_Secure_LDAP_authentication"></a>7.1. Configuring TLS for secure LDAP</h3>
+<h3 id="obtaining-a-ca-certificate-for-ldaps"><a class="anchor" href="#obtaining-a-ca-certificate-for-ldaps"></a>7.1. Obtaining a CA certificate for LDAPS</h3>
 <div class="paragraph _abstract">
-<p>If Foreman uses TLS to establish a secure LDAP connection (LDAPS), you must obtain the CA certificates of your LDAP server and add them to the trusted CA list on the base operating system of your Foreman&#160;server.</p>
+<p>If Foreman uses TLS to establish a secure LDAP connection (LDAPS), the CA certificates of your LDAP server must be trusted by Foreman.</p>
 </div>
 <div class="ulist">
-<div class="title">Prerequisite</div>
+<div class="title">Prerequisites</div>
 <ul>
 <li>
 <p>If your LDAP server uses a certificate chain with intermediate certificate authorities, the trusted CA list must contain all root and intermediate certificates.</p>
 </li>
 </ul>
 </div>
-<div class="olist arabic">
-<div class="title">Procedure</div>
-<ol class="arabic">
-<li>
-<p>Obtain the CA certificate from the LDAP Server:</p>
-<div class="olist loweralpha">
-<ol class="loweralpha" type="a">
-<li>
-<p>If you use Active Directory Certificate Services, export the Enterprise PKI CA Certificate using the Base64 encoded X.509 format.
-See <a href="https://access.redhat.com/solutions/1498773">How to configure Active Directory authentication with <code>TLS</code> on Foreman</a> for information on creating and exporting a CA certificate from an Active Directory server.</p>
-</li>
-<li>
-<p>Download the LDAP server certificate to a temporary location on the Foreman&#160;server, such as <code>/tmp/<em>example.crt</em></code>.
-You will remove the certificate when finished.</p>
-<div class="paragraph">
-<p>The filename extensions <code>.cer</code> and <code>.crt</code> are only conventions and can refer to DER binary or PEM ASCII format certificates.</p>
-</div>
-</li>
-</ol>
-</div>
-</li>
-<li>
-<p>Add the LDAP server certificate to the system truststore:</p>
-<div class="olist loweralpha">
-<ol class="loweralpha" type="a">
-<li>
-<p>Import the certificate:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># cp /tmp/<em>example.crt</em> /etc/pki/ca-trust/source/anchors</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Update the certificate authority truststore:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># update-ca-trust extract</pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
-</li>
-<li>
-<p>Delete the downloaded LDAP certificate from the temporary location on your Foreman&#160;server.</p>
-</li>
-<li>
-<p>Restart Foreman services:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># foreman-maintain service restart</pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
 <div class="ulist">
-<div class="title">Additional resources</div>
+<div class="title">Procedure</div>
 <ul>
 <li>
-<p><a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/securing_networks/using-shared-system-certificates_securing-networks">Using shared system certificates in <em>Red&#160;Hat Enterprise Linux&#160;9 Securing networks</em></a></p>
+<p>Obtain the CA certificate from the LDAP Server.
+If you use Active Directory Certificate Services, export the Enterprise PKI CA Certificate, using the Base64 encoded X.509 format.
+For more information, see  <a href="https://access.redhat.com/solutions/1498773">How to configure Active Directory authentication with TLS on Red Hat Satellite 6</a>.
+Ensure that you provide the certificate in PEM ASCII format.
+Foreman does not accept binary formats.</p>
 </li>
 </ul>
 </div>
 </div>
 <div class="sect2">
-<h3 id="Configuring_Project_to_Use_LDAP_authentication"><a class="anchor" href="#Configuring_Project_to_Use_LDAP_authentication"></a>7.2. Configuring Foreman to use LDAP</h3>
+<h3 id="configuring-foreman-to-use-ldap"><a class="anchor" href="#configuring-foreman-to-use-ldap"></a>7.2. Configuring Foreman to use LDAP</h3>
 <div class="paragraph _abstract">
 <p>Configure an LDAP authentication source to enable users to log in to Foreman with their existing LDAP credentials.</p>
 </div>
@@ -3612,9 +3559,12 @@ After a user authenticates by using one of these methods, they cannot use the ot
 </li>
 <li>
 <p>On the <strong>LDAP server</strong> tab, enter the details of your LDAP server.</p>
-<div class="paragraph">
-<p>For TLS encrypted connections, select <strong>LDAPS</strong> to enable encryption.</p>
-</div>
+</li>
+<li>
+<p>For TLS encrypted connections, select <strong>LDAPS</strong> to enable encryption.
+In the <strong>CA certificate</strong> field, paste one or more PEM-encoded CA certificates to verify the TLS certificate of the LDAP server.
+If you leave this field blank, Foreman uses the system truststore.
+If you set a CA certificate, only the configured certificates are trusted and the system truststore is not consulted.</p>
 </li>
 <li>
 <p>On the <strong>Account</strong> tab, enter the account information and domain name details.

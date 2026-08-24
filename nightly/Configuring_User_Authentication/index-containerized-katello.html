@@ -270,13 +270,21 @@ SOFTWARE.
 <li><a href="#configuring-the-active-directory-authentication-source-on-foreman-server">4.2. Configuring the Active Directory authentication source on Foreman&#160;server</a></li>
 </ul>
 </li>
-<li><a href="#managing-external-user-groups">5. Managing external user groups</a>
+<li><a href="#configuring-an-ldap-server-as-an-external-identity-provider-for-project_authentication">5. Configuring an LDAP server as an external identity provider for Foreman</a>
 <ul class="sectlevel2">
-<li><a href="#associating-external-users-with-user-groups">5.1. Associating external users with user groups</a></li>
-<li><a href="#refreshing-external-user-groups-for-ldap-using-web-ui">5.2. Refreshing external user groups for LDAP using Foreman web UI</a></li>
+<li><a href="#obtaining-a-ca-certificate-for-ldaps">5.1. Obtaining a CA certificate for LDAPS</a></li>
+<li><a href="#configuring-foreman-to-use-ldap">5.2. Configuring Foreman to use LDAP</a></li>
+<li><a href="#Example_Settings_for_LDAP_Connections_authentication">5.3. Example settings for LDAP connections</a></li>
+<li><a href="#Example_LDAP_Filters_authentication">5.4. Example LDAP filters</a></li>
 </ul>
 </li>
-<li><a href="#resetting-external-authentication-configuration-for-kerberos-sso">6. Resetting external authentication configuration for Kerberos SSO</a></li>
+<li><a href="#managing-external-user-groups">6. Managing external user groups</a>
+<ul class="sectlevel2">
+<li><a href="#associating-external-users-with-user-groups">6.1. Associating external users with user groups</a></li>
+<li><a href="#refreshing-external-user-groups-for-ldap-using-web-ui">6.2. Refreshing external user groups for LDAP using Foreman web UI</a></li>
+</ul>
+</li>
+<li><a href="#resetting-external-authentication-configuration-for-kerberos-sso">7. Resetting external authentication configuration for Kerberos SSO</a></li>
 </ul>
 </div>
 </div>
@@ -1703,7 +1711,369 @@ The <code>TLS_DHE_RSA_WITH_AES_256_GCM_SHA384</code> cipher is known to cause in
 </div>
 </div>
 <div class="sect1">
-<h2 id="managing-external-user-groups"><a class="anchor" href="#managing-external-user-groups"></a>5. Managing external user groups</h2>
+<h2 id="configuring-an-ldap-server-as-an-external-identity-provider-for-project_authentication"><a class="anchor" href="#configuring-an-ldap-server-as-an-external-identity-provider-for-project_authentication"></a>5. Configuring an LDAP server as an external identity provider for Foreman</h2>
+<div class="sectionbody">
+<div class="paragraph _abstract">
+<p>Lightweight Directory Access Protocol (LDAP) is a set of open protocols used to access centrally stored information over a network.
+With Foreman, you can use one or multiple LDAP directories for external authentication.</p>
+</div>
+<div class="sect2">
+<h3 id="obtaining-a-ca-certificate-for-ldaps"><a class="anchor" href="#obtaining-a-ca-certificate-for-ldaps"></a>5.1. Obtaining a CA certificate for LDAPS</h3>
+<div class="paragraph _abstract">
+<p>If Foreman uses TLS to establish a secure LDAP connection (LDAPS), the CA certificates of your LDAP server must be trusted by Foreman.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>If your LDAP server uses a certificate chain with intermediate certificate authorities, the trusted CA list must contain all root and intermediate certificates.</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>Obtain the CA certificate from the LDAP Server.
+If you use Active Directory Certificate Services, export the Enterprise PKI CA Certificate, using the Base64 encoded X.509 format.
+For more information, see  <a href="https://access.redhat.com/solutions/1498773">How to configure Active Directory authentication with TLS on Red Hat Satellite 6</a>.
+Ensure that you provide the certificate in PEM ASCII format.
+Foreman does not accept binary formats.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="configuring-foreman-to-use-ldap"><a class="anchor" href="#configuring-foreman-to-use-ldap"></a>5.2. Configuring Foreman to use LDAP</h3>
+<div class="paragraph _abstract">
+<p>Configure an LDAP authentication source to enable users to log in to Foreman with their existing LDAP credentials.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>While you can configure the LDAP server integrated with FreeIPA as an external authentication source, FreeIPA users will not be able to log in by using single sign-on.
+Instead, consider configuring FreeIPA as an external identity provider.
+For more information, see <a href="#configuring-kerberos-sso-with-freeipa-in-foreman">Configuring Kerberos SSO with FreeIPA in Foreman</a>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Important</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Users cannot use both FreeIPA and LDAP as an authentication method.
+After a user authenticates by using one of these methods, they cannot use the other method.</p>
+</div>
+<div class="paragraph">
+<p>To change the authentication method for a user, remove the automatically created user from Foreman.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Your LDAP server complies with the <a href="https://datatracker.ietf.org/doc/html/rfc2307">RFC 2307</a> schema.</p>
+</li>
+<li>
+<p>Your user account has the following permissions:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><code>view_authenticators</code>, <code>create_authenticators</code>, <code>edit_authenticators</code></p>
+</li>
+<li>
+<p><code>view_locations</code>, <code>assign_locations</code></p>
+</li>
+<li>
+<p><code>view_organizations</code>, <code>assign_organizations</code></p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On your Foreman&#160;server, enable the Network Information System (NIS) service so that SELinux does not block outgoing LDAP connections:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># setsebool -P nis_enabled on</pre>
+</div>
+</div>
+</li>
+<li>
+<p>In the Foreman web UI, navigate to <strong>Administer</strong> &gt; <strong>Authentication Sources</strong>.</p>
+</li>
+<li>
+<p>From the <strong>LDAP</strong> menu, select <strong>Create</strong>.</p>
+</li>
+<li>
+<p>On the <strong>LDAP server</strong> tab, enter the details of your LDAP server.</p>
+</li>
+<li>
+<p>For TLS encrypted connections, select <strong>LDAPS</strong> to enable encryption.
+In the <strong>CA certificate</strong> field, paste one or more PEM-encoded CA certificates to verify the TLS certificate of the LDAP server.</p>
+</li>
+<li>
+<p>On the <strong>Account</strong> tab, enter the account information and domain name details.
+For more information, see the following sections:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="#Example_Settings_for_LDAP_Connections_authentication">Example settings for LDAP connections</a></p>
+</li>
+<li>
+<p><a href="#Example_LDAP_Filters_authentication">Example LDAP filters</a></p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>On the <strong>Attribute mappings</strong> tab, map LDAP attributes to Foreman attributes.</p>
+</li>
+<li>
+<p>On the <strong>Locations</strong> tab, select the locations you want Foreman to assign to users created from the LDAP authentication source.
+These locations are available to users after they log in for the first time.</p>
+</li>
+<li>
+<p>On the <strong>Organizations</strong> tab, select the organizations you want Foreman to assign to users created from the LDAP authentication source.
+These locations are available to users after they log in for the first time.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong>.</p>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">Next steps</div>
+<ul>
+<li>
+<p>If you did not select <strong>Automatically Create Accounts In Foreman</strong> on the <strong>Account</strong> tab, create user accounts manually.
+For more information, see <a href="https://docs.theforeman.org/nightly/Administering_Project/index-containerized-katello.html#Managing_Users_and_Roles_admin">Managing users and roles</a> in <em>Administering Foreman</em>.</p>
+</li>
+<li>
+<p>If you selected <strong>Automatically Create Accounts In Foreman</strong>, LDAP users can now log in to Foreman using their LDAP accounts and passwords.</p>
+</li>
+<li>
+<p>After users log in for the first time, the Foreman administrator must assign roles to them manually.
+For more information about assigning appropriate roles to user accounts, see <a href="https://docs.theforeman.org/nightly/Administering_Project/index-containerized-katello.html#assigning-roles-to-a-user-by-using-cli">Assigning roles to a user by using Hammer CLI</a> in <em>Administering Foreman</em>.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Example_Settings_for_LDAP_Connections_authentication"><a class="anchor" href="#Example_Settings_for_LDAP_Connections_authentication"></a>5.3. Example settings for LDAP connections</h3>
+<div class="paragraph _abstract">
+<p>Examples of settings for LDAP connections show how you can configure the necessary LDAP fields for user accounts from various external authentication sources.</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 3. Example settings for Active Directory LDAP connections</div>
+<div class="content">
+<div class="paragraph">
+<p>This example uses a dedicated service account called <em>redhat</em> that has bind, read, and search permissions on the user and group entries.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Account Username</strong>: DOMAIN\redhat</p>
+</li>
+<li>
+<p><strong>Account password</strong>: P@ssword</p>
+</li>
+<li>
+<p><strong>Base DN</strong>: DC=example,DC=COM</p>
+</li>
+<li>
+<p><strong>Login name attribute</strong>: userPrincipalName</p>
+</li>
+<li>
+<p><strong>First name attribute</strong>: givenName</p>
+</li>
+<li>
+<p><strong>Last name attribute</strong>: sn</p>
+</li>
+<li>
+<p><strong>Email address attribute</strong>: mail</p>
+</li>
+<li>
+<p><strong>Photo attribute</strong>: thumbnailPhoto</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The <code>userPrincipalName</code> attribute allows the use of whitespace in usernames.
+The <code>sAMAccountName</code> attribute, which provides backwards compatibility with legacy Microsoft systems, does not allow the use of whitespace in usernames.</p>
+</div>
+</div>
+</div>
+<div class="exampleblock">
+<div class="title">Example 4. Example settings for FreeIPA LDAP connections</div>
+<div class="content">
+<div class="paragraph">
+<p>This example uses a dedicated service account called <em>redhat</em> that has bind, read, and search permissions on the user and group entries.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Account Username</strong>: uid=redhat,cn=users,cn=accounts,dc=example,dc=com</p>
+</li>
+<li>
+<p><strong>Base DN</strong>: dc=example,dc=com</p>
+</li>
+<li>
+<p><strong>Groups Base DN</strong>: cn=groups,cn=accounts,dc=example,dc=com</p>
+</li>
+<li>
+<p><strong>Login name attribute</strong>: uid</p>
+</li>
+<li>
+<p><strong>First name attribute</strong>: givenName</p>
+</li>
+<li>
+<p><strong>Last name attribute</strong>: sn</p>
+</li>
+<li>
+<p><strong>Email address attribute</strong>: mail</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="exampleblock">
+<div class="title">Example 5. Example settings for POSIX LDAP connections</div>
+<div class="content">
+<div class="paragraph">
+<p>This example uses a dedicated service account called <em>redhat</em> that has bind, read, and search permissions on the user and group entries.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Account Username</strong>: uid=redhat,ou=users,dc=example,dc=com</p>
+</li>
+<li>
+<p><strong>Base DN</strong>: dc=example,dc=com</p>
+</li>
+<li>
+<p><strong>Groups Base DN</strong>: cn=employee,ou=userclass,dc=example,dc=com</p>
+</li>
+<li>
+<p><strong>Login name attribute</strong>: uid</p>
+</li>
+<li>
+<p><strong>First name attribute</strong>: givenName</p>
+</li>
+<li>
+<p><strong>Last name attribute</strong>: sn</p>
+</li>
+<li>
+<p><strong>Email address attribute</strong>: mail</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Example_LDAP_Filters_authentication"><a class="anchor" href="#Example_LDAP_Filters_authentication"></a>5.4. Example LDAP filters</h3>
+<div class="paragraph _abstract">
+<p>Examples of LDAP filters show how you can set up appropriate search filters for connecting your LDAP server as an external authentication source for Foreman.</p>
+</div>
+<div class="exampleblock">
+<div class="title">Example 6. Example LDAP filters for allowing specific users to login</div>
+<div class="content">
+<div class="paragraph">
+<p>You are using the following LDAP directory structure:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">DC=Domain,DC=Example
+   |
+   |----- CN=Users
+         |
+         |----- CN=Group1
+         |----- CN=Group2
+         |----- CN=User1
+         |----- CN=User2
+         |----- CN=User3</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Group membership is defined as follows:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>Group1</code> includes users <code>User1</code> and <code>User3</code></p>
+</li>
+<li>
+<p><code>Group2</code> includes users <code>User2</code> and <code>User3</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For example, you can define the following search filters:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 75%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Search result (users)</th>
+<th class="tableblock halign-left valign-top">Filter</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">User1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">(distinguishedName=cn=User1,cn=Users,dc=domain,dc=example)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">User1, User3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">(memberOf=cn=Group1,cn=Users,dc=domain,dc=example)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">User2, User3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">(memberOf=cn=Group2,cn=Users,dc=domain,dc=example)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">User1, User2, User3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">(|(memberOf=cn=Group1,cn=Users,dc=domain,dc=example)(memberOf=cn=Group2,cn=Users,dc=domain,dc=example))</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">User1, User2, User3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">(memberOf:1.2.840.113556.1.4.1941:=cn=Users,dc=domain,dc=example)</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Because group <code>Users</code> is a nested group that contains groups <code>Group1</code> and <code>Group2</code>, the filter must include <code>memberOf:1.2.840.113556.1.4.1941:=</code> before the nested group name.
+This enables you to filter all users from the nested group.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="managing-external-user-groups"><a class="anchor" href="#managing-external-user-groups"></a>6. Managing external user groups</h2>
 <div class="sectionbody">
 <div class="paragraph _abstract">
 <p>When using external authentication sources, such as FreeIPA or Active&#160;Directory, you can configure group membership to control user access and permissions in Foreman.
@@ -1725,7 +2095,7 @@ It is not possible to alter user membership of external user groups in the Forem
 </table>
 </div>
 <div class="sect2">
-<h3 id="associating-external-users-with-user-groups"><a class="anchor" href="#associating-external-users-with-user-groups"></a>5.1. Associating external users with user groups</h3>
+<h3 id="associating-external-users-with-user-groups"><a class="anchor" href="#associating-external-users-with-user-groups"></a>6.1. Associating external users with user groups</h3>
 <div class="paragraph _abstract">
 <p>Foreman does not associate external users with their user group automatically.
 To associate these external users with their user group, you must create the user group on your Foreman&#160;server.</p>
@@ -1786,7 +2156,7 @@ Alternatively, select the <strong>Administrator</strong> checkbox to assign all 
 </div>
 </div>
 <div class="sect2">
-<h3 id="refreshing-external-user-groups-for-ldap-using-web-ui"><a class="anchor" href="#refreshing-external-user-groups-for-ldap-using-web-ui"></a>5.2. Refreshing external user groups for LDAP using Foreman web UI</h3>
+<h3 id="refreshing-external-user-groups-for-ldap-using-web-ui"><a class="anchor" href="#refreshing-external-user-groups-for-ldap-using-web-ui"></a>6.2. Refreshing external user groups for LDAP using Foreman web UI</h3>
 <div class="paragraph _abstract">
 <p>You can refresh external user groups manually.
 This is useful if you want to immediately update membership changes from your LDAP source.</p>
@@ -1817,7 +2187,7 @@ This is corrected automatically when the scheduled task runs.</p>
 </div>
 </div>
 <div class="sect1">
-<h2 id="resetting-external-authentication-configuration-for-kerberos-sso"><a class="anchor" href="#resetting-external-authentication-configuration-for-kerberos-sso"></a>6. Resetting external authentication configuration for Kerberos SSO</h2>
+<h2 id="resetting-external-authentication-configuration-for-kerberos-sso"><a class="anchor" href="#resetting-external-authentication-configuration-for-kerberos-sso"></a>7. Resetting external authentication configuration for Kerberos SSO</h2>
 <div class="sectionbody">
 <div class="paragraph _abstract">
 <p>You can disable external authentication with FreeIPA or Active Directory (AD) by resetting the configuration for the <code>IPA</code> authentication type.
