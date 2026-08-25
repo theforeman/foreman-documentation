@@ -26,19 +26,40 @@ For example, to schedule the cron job to run every day at 15:00, enter the follo
 endif::[]
 ifdef::containerized[]
 * To configure the time at which {Project} runs the cron job, set the Systemd timer to the time you want in OnCalendar format.
-For example, to schedule the cron job to run every day at 15:00, enter the following command:
+For example, to schedule the cron job to run every day at 15:00, run the following commands:
+
+.Procedure
+. Edit the timer's schedule with a drop-in override:
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
-# systemctl cat foreman-recurring@daily.timer "15:00:00"
+# systemctl edit foreman-recurring@daily.timer
 ----
-// Refine
+
+. Replace the inherited `daily` values:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+[Timer]
+OnCalendar=
+OnCalendar=15:00:00
+----
+
+. Apply and verify the results:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# systemctl daemon-reload
+# systemctl restart foreman-recurring@daily.timer
+# systemctl list-timers foreman-recurring@daily.timer
+----
+
 endif::[]
 ifndef::containerized[]
 * To configure the period after which {Project} deletes the tasks, edit the `:rules:` section in the `/etc/foreman/plugins/foreman-tasks.yaml` file.
 endif::[]
 ifdef::containerized[]
-* To configure the period after which {Project} deletes the tasks, use `foreman-rake` task parameters (`TASK_SEARCH`, `AFTER`, `STATES`, etc.) or the web UI.  
+* To configure the period after which {Project} deletes the tasks, use `foreman-rake` task parameters (`TASK_SEARCH`, `AFTER`, `STATES`, etc.) or the web UI.
 endif::[]
 * To disable regular task cleanup on {Project}, enter the following command:
 ifndef::containerized[]
@@ -52,7 +73,7 @@ ifdef::containerized[]
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
-# sudo systemctl disable foreman-recurring@daily.timer
+# systemctl disable foreman-recurring@daily.timer
 ----
 endif::[]
 * To reenable regular task cleanup on {Project}, enter the following command:
