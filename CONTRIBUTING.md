@@ -26,6 +26,7 @@ Examples of trivial PRs: Fixing a typo, fixing markup, or fixing links.
 Non-trivial PRs might not only benefit from additional review but they also represent an opportunity for community members to ask questions and learn.
 +
 Time-critical release changes, such as release notes, can be merged without waiting 24 hours, but still require peer review and an ACK.
+* If a PR is switched from *draft* state to a *ready for review* state, keep it open for 24 hours after switching (72 hours if over the weekend) to allow for input from the community.
 * Make sure all PRs, including trivial ones, have received an ACK before merging.
 
 ## Pull request checklists
