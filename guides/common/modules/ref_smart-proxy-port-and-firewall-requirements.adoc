@@ -6,20 +6,24 @@
 [role="_abstract"]
 The following tables indicate the destination port and the direction of incoming and outgoing traffic for {SmartProxyServers}.
 
+ifndef::satellite[]
 [NOTE]
 ====
 ICMP to Port 7 UDP and TCP must not be rejected, but can be dropped.
 The DHCP {SmartProxy} sends an ECHO REQUEST to the Client network to verify that an IP address is free.
 A response prevents IP addresses from being allocated.
 ====
+endif::[]
 
 .{SmartProxy} incoming traffic
 [cols="15%,15%,15%,15%,20%,20%",options="header"]
 |====
 | Destination Port | Protocol | Service |Source| Required For | Description
+ifdef::containerized[]
 | 53 | TCP and UDP | DNS | DNS Servers and clients | Name resolution | DNS (optional)
 | 67 | UDP | DHCP | Client | Dynamic IP | DHCP (optional)
 | 69 | UDP | TFTP | Client | TFTP Server (optional) |
+endif::[]
 ifdef::katello,satellite,orcharhino[]
 | 443, 80 | TCP | HTTPS, HTTP | Client | Content Retrieval | Content
 | 443, 80 | TCP | HTTPS, HTTP| Client | Host registration | {SmartProxy} CA RPM installation
@@ -30,18 +34,27 @@ ifdef::katello,satellite,orcharhino[]
 Uploading facts
 
 Sending installed packages and traces
+ifndef::satellite[]
 | 1883 | TCP | MQTT | Client | Pull based REX (optional) | Hosts for REX job notification (optional)
+endif::[]
 endif::[]
 | 8000 | TCP | HTTP | Client | Provisioning templates | Template retrieval for client installers, iPXE or UEFI HTTP Boot
 | 8000 | TCP | HTTP | Client | PXE Boot | Installation
+ifndef::satellite[]
 | 8140 | TCP | HTTPS | Client | OpenVox agent | Client updates (optional)
-ifdef::katello,satellite,orcharhino[]
+endif::[]
+ifdef::katello,orcharhino[]
 | 8443 | TCP | HTTPS | Client | Host registration | Deprecated and only needed for Client hosts deployed before upgrades
+endif::[]
+ifdef::satellite[]
+| 9090 | TCP | HTTPS | Client | Host registration | Deprecated and only needed for Client hosts deployed before upgrades
 endif::[]
 | {smartproxy_port} | TCP | HTTPS | {ProjectName} | {SmartProxy} API | {SmartProxy} functionality
 | {smartproxy_port} | TCP | HTTPS | Client | Register Endpoint | Client registration with {SmartProxyServers}
 | {smartproxy_port} | TCP | HTTPS | Client | OpenSCAP | Configure Client (if the OpenSCAP plugin is installed)
-| {smartproxy_port} | TCP | HTTPS | Discovered Node|Discovery |Host discovery and provisioning (if the discovery plugin is installed)
+ifndef::satellite[]
+| {smartproxy_port} | TCP | HTTPS | Discovered Node|Discovery |Host Discovery and provisioning (if the Discovery plugin is installed)
+endif::[]
 ifdef::katello,satellite,orcharhino[]
 | {smartproxy_port} | TCP | HTTPS | Client | Pull based REX (optional) | Hosts for REX job notification (optional)
 endif::[]
@@ -52,12 +65,16 @@ endif::[]
 
 |====
 | Destination Port | Protocol | Service | Destination | Required For | Description
+ifndef::satellite[]
 | | ICMP | ping  | Client | DHCP | Free IP checking (optional)
 | 7 | TCP | echo | Client | DHCP |Free IP checking (optional)
+endif::[]
 | 22 | TCP | SSH | Target host | Remote execution | Run jobs
+ifdef::satellite[]
 | 53 | TCP and UDP | DNS | DNS Servers on the internet | DNS Server | Resolve DNS records (optional)
 | 53 | TCP and UDP | DNS | DNS Server | {SmartProxy} DNS | Validation of DNS conflicts (optional)
 | 68 | UDP | DHCP | Client | Dynamic IP | DHCP (optional)
+endif::[]
 | 443 | TCP | HTTPS | {Project} | {SmartProxy} | {SmartProxy}
 
 Configuration management
@@ -74,10 +91,12 @@ ifdef::katello,satellite,orcharhino[]
 | 443 | TCP | HTTPS | {Project} | Content | Sync
 | 443 | TCP | HTTPS | {Project} | Client communication | Forward requests from Client to {Project}
 endif::[]
+ifndef::satellite[]
 | 443 | TCP | HTTPS | Infoblox DHCP Server| DHCP management | When using Infoblox for DHCP, management of the DHCP leases (optional)
 | 623 |  |  | Client | Power management | BMC On/Off/Cycle/Status
 | 7911 | TCP | DHCP, OMAPI | DHCP Server| DHCP | The DHCP target is configured using `--foreman-proxy-dhcp-server` and defaults to localhost
 
 ISC and `remote_isc` use a configurable port that defaults to 7911 and uses OMAPI
-| 8443 | TCP | HTTPS | Client | Discovery | {SmartProxy} sends reboot command to the discovered host (optional)
+| 9090 | TCP | HTTPS | Client | Discovery | {SmartProxy} sends reboot command to the discovered host (optional)
+endif::[]
 |====
