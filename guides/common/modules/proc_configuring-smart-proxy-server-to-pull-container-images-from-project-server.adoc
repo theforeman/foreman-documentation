@@ -1,0 +1,62 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="configuring-{smart-proxy-context}-server-to-pull-container-images-from-{project-context}-server"]
+= Configuring {SmartProxyServer} to pull container images from {ProjectServer}
+
+[role="_abstract"]
+On your {SmartProxyServer}, authenticate to the {ProjectServer} container registry and redirect container image pulls to your {ProjectServer}, so that the {SmartProxy} pulls its container images through {ProjectServer} instead of from `registry.redhat.io`.
+
+.Prerequisites
+* You have synchronized the {SmartProxy} container images to your {ProjectServer}.
+For more information, see xref:serving-{smart-proxy-context}-container-images-from-{project-context}-server[].
+* If {ProjectServer} uses a self-signed certificate, you have configured Podman on the {SmartProxy} to trust the {ProjectServer} certificate authority.
+For more information, see xref:configuring-podman-to-trust-the-certificate-authority[].
+
+.Procedure
+. On your {SmartProxyServer}, log in to the {ProjectServer} container registry.
+Store the credentials in the authentication file that the {SmartProxy} uses to pull its container images:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# podman login --authfile /etc/foreman/registry-auth.json _{foreman-example-com}_
+----
++
+Enter your {Project} username and password.
+This is a one-time interactive login: every later image pull, including the deployment in the following steps, reads this authentication file, so you do not need to log in again.
++
+[IMPORTANT]
+====
+Because image pulls are redirected to your {ProjectServer}, use your {ProjectServer} credentials, not your `registry.redhat.io` credentials.
+====
++
+Optional: Confirm that the login succeeded and that {ProjectServer} serves the {SmartProxy} container images:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# podman search _{foreman-example-com}_/
+----
+. On your {SmartProxyServer}, create the registry mirror configuration file `/etc/containers/registries.conf.d/50-foremanctl-mirror.conf` with one `+[[registry]]+` block per image namespace.
+Point each block at your product path on {ProjectServer}:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+[[registry]]
+prefix = "registry.redhat.io/satellite"
+location = "_{foreman-example-com}_/_my_organization_/{smart-proxy-context}_container_images"
+
+[[registry]]
+prefix = "registry.redhat.io/rhel10"
+location = "_{foreman-example-com}_/_my_organization_/{smart-proxy-context}_container_images"
+----
++
+Use the shared product path that you noted when you synchronized the container images to your {ProjectServer}.
+
+.Verification
+* Pull one image for each prefix and confirm that the image comes from your {ProjectServer}:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# podman pull --authfile /etc/foreman/registry-auth.json registry.redhat.io/rhel10/postgresql-16:latest
+----
++
+In the `Trying to pull` line of the output, verify that the source is your {ProjectServer}, not `registry.redhat.io`.
