@@ -1,0 +1,63 @@
+---
+name: Squash gh-pages History
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly on Sunday at midnight UTC
+  workflow_dispatch:     # Allow manual triggers
+    inputs:
+      retention_days:
+        description: 'Days of commit history to retain'
+        required: false
+        default: '90'
+        type: string
+
+jobs:
+  squash-history:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          fetch-depth: 0  # Full history needed to count commits
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Squash history retaining last N days
+        env:
+          RETENTION_DAYS: ${{ inputs.retention_days || '90' }}
+        run: |
+          CUTOFF_DATE=$(date -d "$RETENTION_DAYS days ago" --utc +%Y-%m-%dT%H:%M:%S)
+          echo "Retention period: $RETENTION_DAYS days (cutoff: $CUTOFF_DATE)"
+
+          # Count commits within retention window
+          KEPT_COMMITS=$(git rev-list --count --since="$CUTOFF_DATE" HEAD)
+          TOTAL_COMMITS=$(git rev-list --count HEAD)
+
+          echo "Total commits: $TOTAL_COMMITS"
+          echo "Commits to keep: $KEPT_COMMITS"
+
+          if [ $KEPT_COMMITS -lt $TOTAL_COMMITS ]; then
+            echo "Squashing history..."
+
+            # Store current HEAD
+            CURRENT_HEAD=$(git rev-parse HEAD)
+
+            # Create orphan branch with current files
+            git checkout --orphan temp-squashed
+            git rm -rf .
+            git checkout $CURRENT_HEAD -- .
+            git commit -m "Squashed history - retained last $RETENTION_DAYS days ($KEPT_COMMITS commits)"
+
+            # Replace gh-pages with squashed history
+            git branch -M temp-squashed gh-pages
+            git push origin gh-pages --force
+
+            echo "✓ History squashed successfully"
+            echo "New commit count: $(git rev-list --count HEAD)"
+          else
+            echo "All $TOTAL_COMMITS commits are within $RETENTION_DAYS-day window. No action needed."
+          fi
