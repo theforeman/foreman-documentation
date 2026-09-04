@@ -1,0 +1,47 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="reclaim-disk-space-by-removing-ansible-execution-environments"]
+= Reclaim disk space by removing Ansible Execution Environments
+
+[role="_abstract"]
+Delete previously used Ansible Execution Environments on your {ProjectServer} to reclaim disk space.
+Ansible Director builds and stores job-specific container images that are based on your prebuilt Ansible Execution Environment and the assigned Ansible content.
+
+.Prerequisites
+* You have `root` access to your {ProjectServer} through SSH.
+
+.Procedure
+. On your {ProjectServer}, switch to the `foreman-proxy` user:
++
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+# sudo -u foreman-proxy /bin/bash
+----
+. Change to your home directory:
++
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+$ cd
+----
+. Remove all previously used Ansible Execution Environments:
++
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+$ podman image list | grep "^localhost/ansible_director/" | grep --invert-match "latest" | awk '{print $3}' | xargs podman image rm --force
+----
++
+This command deletes all container images that are build by Ansible Director but not your Ansible Execution Environments.
+. Remove all unreferenced container images:
++
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+$ podman image prune --force
+----
+
+.Verification
+* As `foreman-proxy` user on {ProjectServer}, verify that there are no job-specific container images anymore:
++
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+$ if ! podman image list | grep "^localhost/ansible_director/" | grep --invert-match --quiet "latest"; then true; else echo "ERROR: There are still job-specific container images." && false; fi
+----
