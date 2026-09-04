@@ -1,0 +1,48 @@
+---
+name: Squash gh-pages History
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly on Sunday at midnight UTC
+  workflow_dispatch:     # Allow manual triggers
+
+jobs:
+  squash-history:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          fetch-depth: 0  # Full history needed to count commits
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Squash history to last 100 commits
+        run: |
+          TOTAL=$(git rev-list --count HEAD)
+          echo "Total commits: $TOTAL"
+
+          if [ $TOTAL -gt 100 ]; then
+            echo "Squashing history..."
+
+            # Store current HEAD
+            CURRENT_HEAD=$(git rev-parse HEAD)
+
+            # Create orphan branch with current files
+            git checkout --orphan temp-squashed
+            git rm -rf .
+            git checkout $CURRENT_HEAD -- .
+            git commit -m "Squashed history - retained last 100 commits"
+
+            # Replace gh-pages with squashed history
+            git branch -M temp-squashed gh-pages
+            git push origin gh-pages --force
+
+            echo "✓ History squashed successfully"
+            echo "New commit count: $(git rev-list --count HEAD)"
+          else
+            echo "Repository has $TOTAL commits (≤ 100). No action needed."
+          fi
