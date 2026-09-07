@@ -11,6 +11,7 @@ html: subdirs contributing
 
 css: subdirs contributing-css
 
+# Allow parallel jobs to flow through from parent make -j
 subdirs: $(SUBDIRS)
 
 contributing:
