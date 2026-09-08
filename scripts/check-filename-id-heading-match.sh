@@ -78,7 +78,7 @@ check_file() {
     normalized_id="${normalized_id//\{OpenStack-id\}/openstack}"
     normalized_id="${normalized_id//\{KubeVirt-id\}/kubevirt}"
     normalized_id="${normalized_id//\{a-KubeVirt-id\}/a-kubevirt}"
-    normalized_id="${normalized_id//\{client-os-context}/client-os}"
+    normalized_id="${normalized_id//\{client-os-context\}/client-os}"
 
     # Normalize heading for comparison
     local normalized_heading=""
