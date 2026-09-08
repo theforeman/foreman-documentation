@@ -40,10 +40,20 @@ To build both the static site and the guides for easy local testing, a global `M
 * `serve`: serves the result directory via a python web server (the default target)
 
 To use the `Makefile`, you must first install the `gcc`, `gcc-c++`, and `ruby-devel` packages.
-Then, to test the entire site locally, perform `make serve` command and open up `http://localhost:5000`.
-Use `PORT=5008` to change the web server port (5000 by default).
-This builds all contexts, so the initial build might be slow. 
-For faster builds on modern multi-core machines, use the `-j` option.
+To test the entire site locally, first build the guides and then serve them:
+
+```
+make html serve
+```
+
+Then open `http://localhost:5000`. Use `PORT=5008` to change the web server port (5000 by default).
+
+Building all contexts is slow. For faster development builds, build only one variant:
+
+```
+make build-foreman-el serve
+```
+
 Stable versions are symlinks to the nightly (current) version, which can cause issues for deleted (or renamed) guides.
 
 ### `.vale` subdirectory
