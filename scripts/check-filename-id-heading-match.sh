@@ -77,6 +77,7 @@ check_file() {
     normalized_id="${normalized_id//\{compute-resource-id\}/compute-resource}"
     normalized_id="${normalized_id//\{OpenStack-id\}/openstack}"
     normalized_id="${normalized_id//\{KubeVirt-id\}/kubevirt}"
+    normalized_id="${normalized_id//\{a-KubeVirt-id\}/a-kubevirt}"
 
     # Normalize heading for comparison
     local normalized_heading=""
@@ -108,6 +109,7 @@ check_file() {
         normalized_heading="${normalized_heading//\{compute-resource\}/compute-resource}"
         normalized_heading="${normalized_heading//\{openstack\}/openstack}"
         normalized_heading="${normalized_heading//\{kubevirt\}/kubevirt}"
+	normalized_heading="${normalized_heading//\{a-kubevirt\}/a-kubevirt}"
 
         # Normalize Hammer CLI and Web UI text in headings
         # The convention is: ID and filename contain "by-using-cli"/"by-using-web-ui", heading contains "by using Hammer CLI"/"by using {ProjectWebUI}"
