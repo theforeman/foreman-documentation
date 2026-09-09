@@ -61,6 +61,8 @@ Stable versions are symlinks to the nightly (current) version, which can cause i
 This repository uses the [Vale](https://vale.sh/) linter.
 The `.vale/styles/` subdirectory includes a project-specific `foreman-documentation` style package with rules to check for Foreman documentation project conventions.
 When adding a new rule to the `foreman-documentation` style, make sure it does not duplicate the other styles included in `.vale/styles/`.
+Run `make vale` to run the CI-style changed-file check in Podman without
+installing Vale locally. Use `make vale-all` to scan all guides.
 
 ### `.claude` subdirectory
 
