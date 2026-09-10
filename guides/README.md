@@ -95,6 +95,17 @@ The following command checks all links except example.com domain:
 
 	make linkchecker
 
+## Running Vale
+
+Vale runs in Podman, so it does not need to be installed locally. From the
+repository root:
+
+    make vale
+
+Target `vale` checks working-tree changes, or the files changed by `HEAD` when
+the checkout is clean. Use `vale-all` to check everything, or set `VALE_FILES`
+and `VALE_FLAGS=--minAlertLevel=suggestion` to customize the full scan.
+
 ### Disabling the linkchecker for a specific URL pattern
 
 You can disable the linkcheck job for specific URL pattern, for example for unreleased downstream documentation or to exclude URLs that cannot resolve by design.
