@@ -7,13 +7,17 @@
 You can encrypt sensitive Ansible data files using the Ansible Vault tool and configure Ansible to access the encrypted files using a password stored in a file.
 
 .Procedure
+ifndef::containerized[]
 . If you customized `/etc/ansible/ansible.cfg`, copy your configuration from `/etc/ansible/ansible.cfg` to `/usr/share/foreman-proxy/.ansible.cfg`.
+endif::[]
 . Encrypt the sensitive file using the `ansible-vault` command:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-# ansible-vault encrypt /etc/ansible/roles/_Role_Name_/vars/main.yml
+ifndef::containerized[# ansible-vault encrypt /etc/ansible/roles/_Role_Name_/vars/main.yml]
+ifdef::containerized[# ansible-vault encrypt /var/lib/foreman-proxy/ansible/roles/_Role_Name_/vars/main.yml]
 ----
+ifndef::containerized[]
 +
 Note that `ansible-vault` changes the file permissions to `600`.
 . Change the group and permissions of the encrypted file to ensure that the `foreman-proxy` user can read it:
@@ -31,6 +35,30 @@ Note that `ansible-vault` changes the file permissions to `600`.
 # chown foreman-proxy:foreman-proxy /usr/share/foreman-proxy/.ansible_vault_password
 # chmod 0400 /usr/share/foreman-proxy/.ansible_vault_password
 ----
+endif::[]
+ifdef::containerized[]
+. Create a podman secret with the vault password:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# printf '_My_Ansible_Vault_Password_' | podman secret create foreman-proxy-ansible-vault-password -
+----
+. Create a systemd drop-in at `/etc/containers/systemd/foreman-proxy.container.d/ansible-vault.conf` to propagate the secret into the container:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+[Container]
+Secret=foreman-proxy-ansible-vault-password,type=mount,target=/etc/foreman-proxy/.ansible_vault_password
+----
+. Have systemd reload the container definitions and restart the service to recreate the container:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+systemctl daemon-reload
+systemctl restart foreman-proxy
+----
+endif::[]
+ifndef::containerized::[]
 . Add the path of the Vault password file to the `[defaults]` section in `/usr/share/foreman-proxy/.ansible.cfg`:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
@@ -38,5 +66,15 @@ Note that `ansible-vault` changes the file permissions to `600`.
 [defaults]
 vault_password_file = /usr/share/foreman-proxy/.ansible_vault_password
 ----
+endif::[]
+ifdef::containerized[]
+. Add the path of the Vault password file to the `[defaults]` section in `/var/lib/foreman-proxy/ansible/ansible.cfg`:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+[defaults]
+vault_password_file = /etc/foreman-proxy/.ansible_vault_password
+----
+endif::[]
 +
 The path to the Vault password file must be absolute.
