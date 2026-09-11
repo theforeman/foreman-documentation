@@ -17,7 +17,6 @@ ID_SUBSTITUTIONS = (
     ("{smart-proxies-context}", "smart-proxies"),
     ("{smart-proxy-context-titlecase}", "smart-proxy"),
     ("{ProjectNameID}", "project"),
-    ("{ProjectServerID}", "project-server"),
     ("{customreposid}", "repositories"),
     ("{customrepoid}", "repository"),
     ("{customproductid}", "product"),
@@ -26,7 +25,9 @@ ID_SUBSTITUTIONS = (
     ("{insights-iop-id}", "insights"),
     ("{ISS-id}", "inter-server-synchronization"),
     ("{foreman-installer}", "foreman-installer"),
+    ("{foremanctl}", "foremanctl"),
     ("{awx-context}", "awx"),
+    ("{awx-id}", "awx"),
     ("{compute-resource-id}", "compute-resource"),
     ("{OpenStack-id}", "openstack"),
     ("{KubeVirt-id}", "kubevirt"),
@@ -54,12 +55,14 @@ HEADING_SUBSTITUTIONS = (
     ("{rhcloud}", "rhcloud"),
     ("{loraxcompose}", "lorax-compose"),
     ("{foreman-installer}", "foreman-installer"),
+    ("{foremanctl}", "foremanctl"),
     ("{compute-resource}", "compute-resource"),
     ("{openstack}", "openstack"),
     ("{kubevirt}", "kubevirt"),
     ("{a-kubevirt}", "a-kubevirt"),
     ("{client-os}", "client-os"),
     ("by-using-hammer-cli", "by-using-cli"),
+    ("by-using-project-api", "by-using-api"),
     ("{projectwebui}", "web-ui"),
 )
 
@@ -125,9 +128,13 @@ def check_file(path: Path) -> int:
 
 def files_to_check(target: Path) -> list[Path]:
     if target.is_file():
-        return [target]
+        return [target] if target.name.startswith(("con_", "proc_", "ref_")) else []
     if target.is_dir():
-        return sorted(path for path in target.rglob("*.adoc") if path.is_file())
+        return sorted(
+            path
+            for path in target.rglob("*.adoc")
+            if path.is_file() and path.name.startswith(("con_", "proc_", "ref_"))
+        )
     print(f"{RED}Error:{NC} '{target}' is not a file or directory")
     sys.exit(1)
 

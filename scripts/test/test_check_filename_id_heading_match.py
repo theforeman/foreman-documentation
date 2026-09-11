@@ -33,7 +33,7 @@ def test_valid_module(script: Path) -> None:
 
 @pytest.mark.parametrize("script", SCRIPTS)
 def test_attribute_normalization(script: Path) -> None:
-    result = run_script(script, FIXTURES / "proc_project-server.adoc")
+    result = run_script(script, FIXTURES / "con_project-server.adoc")
 
     assert result.returncode == 0
     assert "All IDs match their filenames" in result.stdout
@@ -42,6 +42,28 @@ def test_attribute_normalization(script: Path) -> None:
 @pytest.mark.parametrize("script", SCRIPTS)
 def test_heading_normalization(script: Path) -> None:
     result = run_script(script, FIXTURES / "ref_by-using-cli.adoc")
+
+    assert result.returncode == 0
+    assert "All IDs match their filenames" in result.stdout
+
+
+@pytest.mark.parametrize("script", SCRIPTS)
+@pytest.mark.parametrize(
+    ("filename", "module_id", "heading"),
+    (
+        ("proc_smart-proxy-server.adoc", "{smart-proxy-context}-server", "{SmartProxyServer}"),
+        ("ref_foremanctl.adoc", "{foremanctl}", "{foremanctl}"),
+        ("ref_awx.adoc", "{awx-id}", "AWX"),
+        ("ref_by-using-web-ui.adoc", "by-using-web-ui", "By using {ProjectWebUI}"),
+        ("ref_by-using-api.adoc", "by-using-api", "By using {Project} API"),
+        ("ref_by-using-ansible.adoc", "by-using-ansible", "By using Ansible"),
+    ),
+)
+def test_additional_heading_normalization(
+    script: Path, filename: str, module_id: str, heading: str
+) -> None:
+    fixture = FIXTURES / filename
+    result = run_script(script, fixture)
 
     assert result.returncode == 0
     assert "All IDs match their filenames" in result.stdout
@@ -71,8 +93,18 @@ def test_directory_target_is_recursive_and_only_checks_adoc_files(script: Path) 
     result = run_script(script, FIXTURES)
 
     assert result.returncode == 1
-    assert "Checked 6 module(s)" in result.stdout
+    assert "Checked 12 module(s)" in result.stdout
     assert "Found 3 warning(s)" in result.stdout
+
+
+@pytest.mark.parametrize("script", SCRIPTS)
+def test_snippet_target_is_ignored(script: Path) -> None:
+    result = run_script(script, FIXTURES / "snip_must-not-contain-an-id.adoc")
+
+    assert result.returncode == 0
+    assert "Checked 0 module(s)" in result.stdout
+    assert "All IDs match their filenames" in result.stdout
+    assert "No ID found" not in result.stdout
 
 
 @pytest.mark.parametrize("script", SCRIPTS)
