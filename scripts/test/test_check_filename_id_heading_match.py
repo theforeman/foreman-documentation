@@ -47,6 +47,26 @@ def test_heading_normalization(script: Path) -> None:
     assert "All IDs match their filenames" in result.stdout
 
 
+@pytest.mark.parametrize("script", SCRIPTS)
+@pytest.mark.parametrize(
+    ("filename", "module_id", "heading"),
+    (
+        ("proc_smart-proxy-server.adoc", "{smart-proxy-context}-server", "{SmartProxyServer}"),
+        ("ref_by-using-web-ui.adoc", "by-using-web-ui", "By using {ProjectWebUI}"),
+        ("ref_by-using-api.adoc", "by-using-api", "By using {Project} API"),
+        ("ref_by-using-ansible.adoc", "by-using-ansible", "By using Ansible"),
+    ),
+)
+def test_additional_heading_normalization(
+    script: Path, filename: str, module_id: str, heading: str
+) -> None:
+    fixture = FIXTURES / filename
+    result = run_script(script, fixture)
+
+    assert result.returncode == 0
+    assert "All IDs match their filenames" in result.stdout
+
+
 @pytest.mark.parametrize(
     ("fixture", "messages"),
     (
@@ -71,7 +91,7 @@ def test_directory_target_is_recursive_and_only_checks_adoc_files(script: Path) 
     result = run_script(script, FIXTURES)
 
     assert result.returncode == 1
-    assert "Checked 6 module(s)" in result.stdout
+    assert "Checked 10 module(s)" in result.stdout
     assert "Found 3 warning(s)" in result.stdout
 
 
