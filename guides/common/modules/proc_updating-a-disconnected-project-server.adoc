@@ -1,0 +1,190 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="updating-a-disconnected-{project-context}-server"]
+= Updating a disconnected {ProjectServer}
+
+[role="_abstract"]
+Update your disconnected {ProjectServer} to the next patch version.
+You export the required repositories and container images from a connected {ProjectServer}, transfer them to your disconnected {ProjectServer}, and use them to update your disconnected {ProjectServer}.
+
+The update process also updates the base operating system on your disconnected {ProjectServer} when a new minor version is available.
+
+.Prerequisites
+* Consider backing up your disconnected {ProjectServer}.
+For more information, see {AdministeringDocURL}backing-up-{project-context}[Backing up {Project}] in _{AdministeringDocTitle}_.
+* You have a connected {ProjectServer} installed with the same set of `{foremanctl}` features and the same version as your disconnected {ProjectServer}.
+* Your connected system has enough disk space to store the exported repositories and container images.
+
+.Procedure
+. On your disconnected {ProjectServer}, use the health check option to determine if the system is ready for update:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foremanctl} health
+----
++
+Review the results and address any highlighted error conditions before performing the update.
+. Export the required repository content from your connected {ProjectServer}.
+You will be exporting the following repositories:
++
+--
+* `Red Hat Enterprise Linux 9 for x86_64 - BaseOS RPMs 9`
+* `Red Hat Enterprise Linux 9 for x86_64 - AppStream RPMs 9`
+* `Red Hat Satellite {ProjectVersion} for RHEL 9 x86_64 RPMs`
+--
++
+Perform these steps on your connected {ProjectServer}:
++
+.. Synchronize the repositories:
+For example, to synchronize them by using Hammer CLI:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+$ hammer repository synchronize \
+--name "Red Hat Enterprise Linux 9 for x86_64 - BaseOS RPMs 9" \
+--product "Red Hat Enterprise Linux for x86_64" \
+--organization _My_Organization_
+----
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+$ hammer repository synchronize \
+--name "Red Hat Enterprise Linux 9 for x86_64 - AppStream RPMs 9" \
+--product "Red Hat Enterprise Linux for x86_64" \
+--organization _My_Organization_
+----
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+$ hammer repository synchronize \
+--name "Red Hat Satellite {ProjectVersion} for RHEL 9 x86_64 RPMs" \
+--product "Red Hat Satellite" \
+--organization _My_Organization_
+----
+.. Ensure the download policy is set to *Immediate* for each of the repositories.
+For example, to set the download policy by using Hammer CLI:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+$ hammer repository update \
+--name "Red Hat Enterprise Linux 9 for x86_64 - BaseOS RPMs 9" \
+--product "Red Hat Enterprise Linux for x86_64" \
+--organization _My_Organization_
+--download-policy immediate
+----
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+$ hammer repository update \
+--name "Red Hat Enterprise Linux 9 for x86_64 - AppStream RPMs 9" \
+--product "Red Hat Enterprise Linux for x86_64" \
+--organization _My_Organization_
+--download-policy immediate
+----
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+$ hammer repository update \
+--name "Red Hat Satellite {ProjectVersion} for RHEL 9 x86_64 RPMs" \
+--product "Red Hat Satellite" \
+--organization _My_Organization_
+--download-policy immediate
+----
+.. Export each repository in the syncable format.
+For example, to export the repositories by using Hammer CLI:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+$ hammer content-export complete repository \
+--name "Red Hat Enterprise Linux 9 for x86_64 - BaseOS RPMs 9" \
+--product "Red Hat Enterprise Linux for x86_64" \
+--organization _My_Organization_
+--format syncable
+----
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+$ hammer content-export complete repository \
+--name "Red Hat Enterprise Linux 9 for x86_64 - AppStream RPMs 9" \
+--product "Red Hat Enterprise Linux for x86_64" \
+--organization _My_Organization_
+--format syncable
+----
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+$ hammer content-export complete repository \
+--name "Red Hat Satellite {ProjectVersion} for RHEL 9 x86_64 RPMs" \
+--product "Red Hat Satellite" \
+--organization _My_Organization_
+--format syncable
+----
+. Export the required container images from your connected {ProjectServer}.
+Perform these steps on your connected {ProjectServer}:
+.. Pull the required images:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foremanctl} pull-images
+----
++
+.. Confirm the correct images have been downloaded:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+$ podman images
+----
++
+The list of images must match the list of images on your disconnected {ProjectServer}.
+If an image or images are missing, ensure `{foremanctl}` feature parameters are identical between the connected and disconnected {ProjectServer}.
+.. Export all downloaded images:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+$ podman save $(podman images \
+--format "{{.Repository}}:{{.Tag}}" | tr '\n' ' ') \
+--output _My_Container_Images_.tar
+----
+. Transfer the exported repositories and downloaded images to your disconnected {ProjectServer}.
+. Configure your disconnected {ProjectServer} to use the exported repositories and container images when updating.
+Perform these steps on your disconnected {ProjectServer}:
+.. Create the `/etc/yum.repos.d/update.repo` file and update the `baseurl` values to point to the local file system:
++
+[source, ini, options="nowrap" subs="+quotes,verbatim,attributes"]
+----
+[{RepoRHEL9BaseOS}]
+name=Red Hat Enterprise Linux 9 for x86_64 - BaseOS (RPMs)
+enabled=1
+metadata_expire=-1
+gpgcheck=0
+baseurl=file:///_BaseOS_Export_Location_/content/dist/rhel9/9/x86_64/baseos/os
+
+[{RepoRHEL9AppStream}]
+name=Red Hat Enterprise Linux 9 for x86_64 - AppStream (RPMs)
+enabled=1
+metadata_expire=-1
+gpgcheck=0
+baseurl=file:///_AppStream_Export_Location_/content/dist/rhel9/9/x86_64/appstream/os
+
+[{RepoRHEL9ServerSatelliteServerProjectVersion}]
+name={ProjectName} {ProjectVersion} for RHEL 9 Server RPMs x86_64
+enabled=1
+metadata_expire=-1
+gpgcheck=0
+baseurl=file:///_{Project}_Export_Location_/content/dist/layered/rhel9/x86_64/satellite/{ProjectVersion}/os/
+----
+.. Stage the required container images:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+$ podman load --input _My_Container_Images_.tar
+----
+. On your disconnected {ProjectServer}, re-deploy `{foremanctl}` to perform the update:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# dnf {foremanctl} deploy
+----
++
+{Project} pulls new images and runs all required update tasks, including update tasks required by {Project} dependencies and your configured plugins.
+As a result, this `{foremanctl} deploy` run might take longer than usual.
