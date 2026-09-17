@@ -254,8 +254,8 @@ SOFTWARE.
 <li><a href="#registering-capsule-server">2.1. Registering Capsule&#160;Server</a>
 <ul class="sectlevel3">
 <li><a href="#prerequisites-for-registering-capsule-server-to-satellite-server">2.1.1. Prerequisites for registering Capsule&#160;Server to Satellite&#160;Server</a></li>
-<li><a href="#registering-a-host-to-satellite-by-using-web-ui_capsule">2.1.2. Registering a host to Satellite by using Satellite web UI</a></li>
-<li><a href="#registering-a-host-to-satellite-by-using-cli_capsule">2.1.3. Registering a host to Satellite by using Hammer CLI</a></li>
+<li><a href="#registering-a-host-to-satellite-by-using-web-ui">2.1.2. Registering a host to Satellite by using Satellite web UI</a></li>
+<li><a href="#registering-a-host-to-satellite-by-using-cli">2.1.3. Registering a host to Satellite by using Hammer CLI</a></li>
 <li><a href="#registering-a-host-to-satellite-by-using-api_capsule">2.1.4. Registering a host to Satellite by using Satellite API</a></li>
 </ul>
 </li>
@@ -822,10 +822,65 @@ HTTP proxies between Capsule&#160;Server and Satellite&#160;Server are not suppo
 </div>
 </div>
 <div class="sect3">
-<h4 id="registering-a-host-to-satellite-by-using-web-ui_capsule"><a class="anchor" href="#registering-a-host-to-satellite-by-using-web-ui_capsule"></a>2.1.2. Registering a host to Satellite by using Satellite web UI</h4>
+<h4 id="registering-a-host-to-satellite-by-using-web-ui"><a class="anchor" href="#registering-a-host-to-satellite-by-using-web-ui"></a>2.1.2. Registering a host to Satellite by using Satellite web UI</h4>
 <div class="paragraph _abstract">
-<p>You can register hosts with Satellite using the host registration feature in the Satellite web UI.
-For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/managing_hosts/index#registering-hosts-to-satellite">Registering hosts to Satellite</a> in <em>Managing hosts</em>.</p>
+<p>You can register a host to Satellite by using the Satellite web UI with registration templates.
+During the registration process, you can set up various integration features and host tools.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Your Satellite account has the <strong>Register hosts</strong> role assigned or a role with equivalent permissions.</p>
+</li>
+<li>
+<p>Root privileges are available on the host that you want to register.</p>
+</li>
+<li>
+<p>Either <code>curl</code> or <code>wget</code> is installed on the host that you want to register.</p>
+</li>
+<li>
+<p>Your host is configured for registration.</p>
+</li>
+<li>
+<p>An activation key must be available for your host.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/managing_content/index#Managing_Activation_Keys_content-management">Managing Activation Keys</a> in <em>Managing content</em>.</p>
+</li>
+<li>
+<p>Optional: If you want to register your host to Red&#160;Hat Lightspeed, the <strong>BaseOS</strong> and <strong>AppStream</strong> RPM repositories must be synchronized and made available in the activation key that you use.
+For example, for RHEL&#160;8 hosts, <code>rhel-8-for-x86_64-baseos-rpms</code> and <code>rhel-8-for-x86_64-appstream-rpms</code> repositories are required.
+This is required to install the <code>insights-client</code> package on your host.</p>
+</li>
+<li>
+<p>Red Hat Satellite Client 6 repository for the operating system version of the host is synchronized on Satellite&#160;Server and enabled in the activation key you use.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/managing_content/index#adding-content-to-satellite">Adding content to Satellite</a> in <em>Managing content</em>.
+This repository is required for the remote execution pull client, OpenVox agent, Tracer, and other tools.</p>
+</li>
+<li>
+<p>If you want to use Capsule&#160;Servers instead of your Satellite&#160;Server, ensure that you have configured your Capsule&#160;Servers accordingly.</p>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Important</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>It is essential to add your Capsule&#160;Server to the list of trusted proxies on Satellite&#160;Server!</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/installing_capsule_server/index#configuring-capsule-server-for-host-registration-and-provisioning">Configuring Capsule&#160;Server for host registration and provisioning</a> in <em>Installing Capsule Server</em>.</p>
+</div>
+</li>
+<li>
+<p>If your Satellite&#160;Server or Capsule&#160;Server is behind an HTTP proxy, Subscription Manager on your host is configured to use the HTTP proxy for connection.
+For more information, see <a href="https://access.redhat.com/solutions/65300">How to access Red Hat Subscription Manager (RHSM) through a firewall or proxy</a> in the <em>Red&#160;Hat Knowledgebase</em>.</p>
+</li>
+</ul>
 </div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
@@ -834,11 +889,100 @@ For more information, see <a href="https://docs.redhat.com/en/documentation/red_
 <p>In the Satellite web UI, navigate to <strong>Hosts</strong> &gt; <strong>Register Host</strong>.</p>
 </li>
 <li>
-<p>From the <strong>Activation Keys</strong> list, select the activation keys to assign to your host.</p>
+<p>Enter the details for how you want the registered host to be configured.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>If you select a host group from the <strong>Host Group</strong> list, the following fields inherit their values from the host group:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Operating system</strong></p>
+</li>
+<li>
+<p><strong>Activation Keys</strong></p>
+</li>
+<li>
+<p><strong>Lifecycle environment</strong></p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>A Capsule behind a load balancer takes precedence over the Capsule selected in the Satellite web UI as the content source of the host.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>On the <strong>General</strong> tab, in the <strong>Activation Keys</strong> field, enter one or more activation keys to assign to your host.</p>
+</li>
+<li>
+<p>Specify any other registration details that you require.
+The available settings include the following:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>On the <strong>General</strong> tab, in the <strong>Capsule</strong> field, you can select the Capsule to register your host through.
+A Capsule behind a load balancer takes precedence over a Capsule selected in the Satellite web UI as the content source of the host.</p>
+</li>
+<li>
+<p>On the <strong>General</strong> tab, in the <strong>Download utility</strong> field, you can select <code>wget</code> if you want to register your host by using a <code>wget</code> command.
+By default, Satellite generates a <code>curl</code> command.</p>
+</li>
+<li>
+<p>On the <strong>General</strong> tab, you can select the <strong>Insecure</strong> option to make the first call insecure.
+During this first call, your host downloads the CA file from Satellite.
+Your host will use this CA file to connect to Satellite with all future calls making them secure.</p>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Important</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Insecure calls expose your hosts to man-in-the-middle attacks.</p>
+</div>
+<div class="paragraph">
+<p>If an attacker, located in the network between Satellite and your host, fetches the CA file from the first insecure call, the attacker will be able to access the content of the API calls to and from your host and the JSON Web Tokens (JWT).
+Therefore, if you have chosen to deploy SSH keys during registration, the attacker will be able to access your host using the SSH key.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>On the <strong>Advanced</strong> tab, in the <strong>Repositories</strong> field, you can list repositories to be added before the registration is performed.
+You do not have to specify repositories if you provide them in an activation key.</p>
+</li>
+<li>
+<p>On the <strong>Advanced</strong> tab, you can configure
+remote execution, Red&#160;Hat Lightspeed, and packages to be installed.</p>
+</li>
+<li>
+<p>On the <strong>Advanced</strong> tab, in the <strong>Token lifetime (hours)</strong> field, you can change the validity duration of the JSON Web Token (JWT) that Satellite uses for authentication.
+The duration of this token defines how long the generated registration command works.</p>
+<div class="paragraph">
+<p>Note that Satellite applies the permissions of the user who generates the registration command to authorization of your host.
+If the user loses or gains additional permissions, the permissions of the JWT change too.
+Therefore, do not delete, block, or change permissions of the user during the token duration.</p>
+</div>
+<div class="paragraph">
+<p>The scope of the JWTs is limited to the registration endpoints only and cannot be used anywhere else.</p>
+</div>
 </li>
 <li>
 <p>On the <strong>Advanced</strong> tab, select the <strong>Set up container registry certs</strong> checkbox.
 This configures the Capsule to trust the Satellite&#160;Server certificate authority during registration, so that the Capsule can pull container images from Satellite&#160;Server without additional configuration.</p>
+</li>
+<li>
+<p>On the <strong>Advanced</strong> tab, you can enable container and Flatpak registry access without a username or password by selecting the <strong>Set up container registry certs</strong> checkbox.
+Using certificate-based authentication also enforces lifecycle management of container and Flatpak content for the host.</p>
+</li>
+</ul>
+</div>
 </li>
 <li>
 <p>Click <strong>Generate</strong> to create the registration command.</p>
@@ -850,16 +994,88 @@ This configures the Capsule to trust the Satellite&#160;Server certificate autho
 <p>Connect to your host using SSH and run the registration command.</p>
 </li>
 <li>
-<p>Check the <code>/etc/yum.repos.d/redhat.repo</code> file and ensure that the appropriate repositories have been enabled.</p>
+<p>Run the registration command as <code>root</code> on the host that you want to register.
+After registration completes, any Ansible roles assigned to a host group you specified when configuring the registration template will run on the host.</p>
 </li>
 </ol>
 </div>
+<div class="ulist">
+<div class="title">Verification</div>
+<ul>
+<li>
+<p>If your activation key was supposed to enable repositories, check the <code>/etc/yum.repos.d/redhat.repo</code> file and verify that the repositories have been enabled.</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/managing_hosts/index#registering-hosts-to-satellite">Registering hosts to Satellite in <em>Managing hosts</em></a></p>
+</li>
+</ul>
+</div>
 </div>
 <div class="sect3">
-<h4 id="registering-a-host-to-satellite-by-using-cli_capsule"><a class="anchor" href="#registering-a-host-to-satellite-by-using-cli_capsule"></a>2.1.3. Registering a host to Satellite by using Hammer CLI</h4>
+<h4 id="registering-a-host-to-satellite-by-using-cli"><a class="anchor" href="#registering-a-host-to-satellite-by-using-cli"></a>2.1.3. Registering a host to Satellite by using Hammer CLI</h4>
 <div class="paragraph _abstract">
-<p>You can register hosts with Satellite using the host registration feature in Hammer CLI.
-For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/managing_hosts/index#registering-hosts-to-satellite">Registering hosts to Satellite</a> in <em>Managing hosts</em>.</p>
+<p>You can register a host to Satellite by using Hammer CLI with registration templates.
+During the registration process, you can set up various integration features and host tools.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Your Satellite account has the <strong>Register hosts</strong> role assigned or a role with equivalent permissions.</p>
+</li>
+<li>
+<p>Root privileges are available on the host that you want to register.</p>
+</li>
+<li>
+<p>Either <code>curl</code> or <code>wget</code> is installed on the host that you want to register.</p>
+</li>
+<li>
+<p>Your host is configured for registration.</p>
+</li>
+<li>
+<p>An activation key must be available for your host.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/managing_content/index#Managing_Activation_Keys_content-management">Managing Activation Keys</a> in <em>Managing content</em>.</p>
+</li>
+<li>
+<p>Optional: If you want to register your host to Red&#160;Hat Lightspeed, the <strong>BaseOS</strong> and <strong>AppStream</strong> RPM repositories must be synchronized and made available in the activation key that you use.
+For example, for RHEL&#160;8 hosts, <code>rhel-8-for-x86_64-baseos-rpms</code> and <code>rhel-8-for-x86_64-appstream-rpms</code> repositories are required.
+This is required to install the <code>insights-client</code> package on your host.</p>
+</li>
+<li>
+<p>Red Hat Satellite Client 6 repository for the operating system version of the host is synchronized on Satellite&#160;Server and enabled in the activation key you use.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/managing_content/index#adding-content-to-satellite">Adding content to Satellite</a> in <em>Managing content</em>.
+This repository is required for the remote execution pull client, OpenVox agent, Tracer, and other tools.</p>
+</li>
+<li>
+<p>If you want to use Capsule&#160;Servers instead of your Satellite&#160;Server, ensure that you have configured your Capsule&#160;Servers accordingly.</p>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Important</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>It is essential to add your Capsule&#160;Server to the list of trusted proxies on Satellite&#160;Server!</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/installing_capsule_server/index#configuring-capsule-server-for-host-registration-and-provisioning">Configuring Capsule&#160;Server for host registration and provisioning</a> in <em>Installing Capsule Server</em>.</p>
+</div>
+</li>
+<li>
+<p>If your Satellite&#160;Server or Capsule&#160;Server is behind an HTTP proxy, Subscription Manager on your host is configured to use the HTTP proxy for connection.
+For more information, see <a href="https://access.redhat.com/solutions/65300">How to access Red Hat Subscription Manager (RHSM) through a firewall or proxy</a> in the <em>Red&#160;Hat Knowledgebase</em>.</p>
+</li>
+</ul>
 </div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
@@ -873,30 +1089,94 @@ For more information, see <a href="https://docs.redhat.com/en/documentation/red_
 </div>
 </div>
 <div class="paragraph">
-<p>If your hosts do not trust the SSL certificate of Satellite&#160;Server, you can disable SSL validation by adding the <code>--insecure</code> flag to the registration command.</p>
+<p>If your hosts do not trust the SSL certificate of Satellite&#160;Server, append <code>--insecure true</code> to disable SSL validation.</p>
 </div>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">$ hammer host-registration generate-command \
---activation-keys "<em>My_Activation_Key</em>" \
---insecure true</pre>
-</div>
+<div class="paragraph">
+<p>For more information, see the Hammer CLI help with <code>hammer host-registration generate-command --help</code>.</p>
 </div>
 </li>
 <li>
-<p>Connect to your host using SSH and run the registration command.</p>
-</li>
-<li>
-<p>Check the <code>/etc/yum.repos.d/redhat.repo</code> file and ensure that the appropriate repositories have been enabled.</p>
+<p>Connect to your host using SSH and run the registration command as <code>root</code>.</p>
 </li>
 </ol>
+</div>
+<div class="ulist">
+<div class="title">Verification</div>
+<ul>
+<li>
+<p>If your activation key was supposed to enable repositories, check the <code>/etc/yum.repos.d/redhat.repo</code> file and verify that the repositories have been enabled.</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/managing_hosts/index#registering-hosts-to-satellite">Registering hosts to Satellite in <em>Managing hosts</em></a></p>
+</li>
+</ul>
 </div>
 </div>
 <div class="sect3">
 <h4 id="registering-a-host-to-satellite-by-using-api_capsule"><a class="anchor" href="#registering-a-host-to-satellite-by-using-api_capsule"></a>2.1.4. Registering a host to Satellite by using Satellite API</h4>
 <div class="paragraph _abstract">
-<p>You can register hosts with Satellite using the host registration feature in the Satellite API.
-For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/managing_hosts/index#registering-hosts-to-satellite">Registering hosts to Satellite</a> in <em>Managing hosts</em>.</p>
+<p>You can register a host to Satellite by using Satellite API with registration templates.
+During the registration process, you can set up various integration features and host tools.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Your Satellite account has the <strong>Register hosts</strong> role assigned or a role with equivalent permissions.</p>
+</li>
+<li>
+<p>Root privileges are available on the host that you want to register.</p>
+</li>
+<li>
+<p>Either <code>curl</code> or <code>wget</code> is installed on the host that you want to register.</p>
+</li>
+<li>
+<p>Your host is configured for registration.</p>
+</li>
+<li>
+<p>An activation key must be available for your host.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/managing_content/index#Managing_Activation_Keys_content-management">Managing Activation Keys</a> in <em>Managing content</em>.</p>
+</li>
+<li>
+<p>Optional: If you want to register your host to Red&#160;Hat Lightspeed, the <strong>BaseOS</strong> and <strong>AppStream</strong> RPM repositories must be synchronized and made available in the activation key that you use.
+For example, for RHEL&#160;8 hosts, <code>rhel-8-for-x86_64-baseos-rpms</code> and <code>rhel-8-for-x86_64-appstream-rpms</code> repositories are required.
+This is required to install the <code>insights-client</code> package on your host.</p>
+</li>
+<li>
+<p>Red Hat Satellite Client 6 repository for the operating system version of the host is synchronized on Satellite&#160;Server and enabled in the activation key you use.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/managing_content/index#adding-content-to-satellite">Adding content to Satellite</a> in <em>Managing content</em>.
+This repository is required for the remote execution pull client, OpenVox agent, Tracer, and other tools.</p>
+</li>
+<li>
+<p>If you want to use Capsule&#160;Servers instead of your Satellite&#160;Server, ensure that you have configured your Capsule&#160;Servers accordingly.</p>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Important</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>It is essential to add your Capsule&#160;Server to the list of trusted proxies on Satellite&#160;Server!</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/installing_capsule_server/index#configuring-capsule-server-for-host-registration-and-provisioning">Configuring Capsule&#160;Server for host registration and provisioning</a> in <em>Installing Capsule Server</em>.</p>
+</div>
+</li>
+<li>
+<p>If your Satellite&#160;Server or Capsule&#160;Server is behind an HTTP proxy, Subscription Manager on your host is configured to use the HTTP proxy for connection.
+For more information, see <a href="https://access.redhat.com/solutions/65300">How to access Red Hat Subscription Manager (RHSM) through a firewall or proxy</a> in the <em>Red&#160;Hat Knowledgebase</em>.</p>
+</li>
+</ul>
 </div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
@@ -905,10 +1185,12 @@ For more information, see <a href="https://docs.redhat.com/en/documentation/red_
 <p>Generate the host registration command using the Satellite API:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># curl -X POST https://satellite.example.com/api/registration_commands \
+<pre class="nowrap">$ curl \
+--data '{ "registration_command": { "activation_keys": ["<em>My_Activation_Key_1</em>, <em>My_Activation_Key_2</em>"] }}' \
+--header 'Content-Type: application/json' \
+--request POST \
 --user "<em>My_User_Name</em>" \
--H 'Content-Type: application/json' \
--d '{ "registration_command": { "activation_keys": ["<em>My_Activation_Key_1</em>, <em>My_Activation_Key_2</em>"] }}'</pre>
+https://satellite.example.com/api/registration_commands</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -916,15 +1198,16 @@ For more information, see <a href="https://docs.redhat.com/en/documentation/red_
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># curl -X POST https://satellite.example.com/api/registration_commands \
+<pre class="nowrap">$ curl \
+--data '{ "registration_command": { "activation_keys": ["<em>My_Activation_Key_1</em>, <em>My_Activation_Key_2</em>"], "insecure": true }}' \
+--header 'Content-Type: application/json' \
+--request POST \
 --user "<em>My_User_Name</em>" \
--H 'Content-Type: application/json' \
--d '{ "registration_command": { "activation_keys": ["<em>My_Activation_Key_1</em>, <em>My_Activation_Key_2</em>"], "insecure": true }}'</pre>
+https://satellite.example.com/api/registration_commands</pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Use an activation key to simplify specifying the environments.
-For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/managing_content/index#Managing_Activation_Keys_content-management">Managing Activation Keys</a> in <em>Managing content</em>.</p>
+<p>Use an activation key to simplify specifying the environments.</p>
 </div>
 <div class="paragraph">
 <p>To enter a password as a command line argument, use <code>username:password</code> syntax.
@@ -936,10 +1219,23 @@ To generate a token in the Satellite web UI, navigate to <strong>My Account</str
 <li>
 <p>Connect to your host using SSH and run the registration command.</p>
 </li>
-<li>
-<p>Check the <code>/etc/yum.repos.d/redhat.repo</code> file and ensure that the appropriate repositories have been enabled.</p>
-</li>
 </ol>
+</div>
+<div class="ulist">
+<div class="title">Verification</div>
+<ul>
+<li>
+<p>If your activation key was supposed to enable repositories, check the <code>/etc/yum.repos.d/redhat.repo</code> file and verify that the repositories have been enabled.</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/managing_hosts/index#registering-hosts-to-satellite">Registering hosts to Satellite in <em>Managing hosts</em></a></p>
+</li>
+</ul>
 </div>
 </div>
 </div>
