@@ -1,0 +1,46 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="recognizing-host-ip-addresses-behind-{smart-proxy-context}"]
+= Recognizing host IP addresses behind {SmartProxyServer}
+
+[role="_abstract"]
+Add your {SmartProxyServer} to the list of trusted proxies on {ProjectServer} so that {Project} records the real IP address of hosts that register or are provisioned through your {SmartProxyServer}.
+
+When hosts register or are provisioned through a {SmartProxyServer}, their requests reach {ProjectServer} through the {SmartProxy}.
+{Project} reads the client IP address from the `X-Forwarded-For` HTTP header that {SmartProxy} sets.
+For security reasons, {Project} recognizes this header only from trusted proxies.
+
+.Procedure
+. On {ProjectServer}, add your {SmartProxyServer} to the list of trusted proxies:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foremanctl} deploy \
+--foreman-trusted-proxy _My_Proxy_IP_address_
+----
++
+Enter the valid IPv4 or IPv6 address of your {SmartProxyServer}, or a network range in CIDR notation.
+To trust more than one proxy, repeat the `--foreman-trusted-proxy` option for each address or range.
++
+The command adds the address to the list of trusted proxies that is already stored, so you do not have to repeat entries that you added earlier.
+The localhost ranges `127.0.0.0/8` and `::1` are always trusted and you do not need to add them.
++
+[WARNING]
+====
+Trust only the specific addresses or the narrowest possible ranges of your {SmartProxies}.
+{Project} accepts the `X-Forwarded-For` header from any source within a trusted range. Therefore, a client within the range might forge this header to bypass IP-based access controls or falsify the host IP addresses that {Project} records.
+====
+. Optional: Remove an address or range from the list of trusted proxies:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foremanctl} deploy \
+--foreman-trusted-proxy-remove _My_Proxy_IP_address_
+----
++
+You cannot remove the localhost ranges `127.0.0.0/8` and `::1`, or any addresses that {foremanctl} adds for registered {SmartProxies} during deployment.
+
+.Verification
+. Register or provision a host through your {SmartProxyServer}.
+. In the {ProjectWebUI}, navigate to *Hosts* > *All Hosts* and select the host.
+. Confirm that the IP address that {Project} recorded for the host is the real IP address of the host and not the IP address of your {SmartProxyServer}.
