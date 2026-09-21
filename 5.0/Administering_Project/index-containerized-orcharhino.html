@@ -338,12 +338,15 @@ SOFTWARE.
 </li>
 <li><a href="#performing-a-full-offline-backup">6.2. Performing a full offline backup</a></li>
 <li><a href="#performing-an-offline-backup-without-pulp-content">6.3. Performing an offline backup without Pulp content</a></li>
-<li><a href="#example-of-a-weekly-full-backup">6.4. Example of a weekly full backup</a></li>
+<li><a href="#Performing_an_Incremental_Backup_admin">6.4. Performing an incremental backup</a></li>
+<li><a href="#example-of-a-weekly-full-backup">6.5. Example of a weekly full backup</a></li>
+<li><a href="#Example_of_a_Weekly_Full_Backup_Followed_by_Daily_Incremental_Backups_admin">6.6. Example of a weekly full backup followed by daily incremental backups</a></li>
 </ul>
 </li>
 <li><a href="#restoring-orcharhino-from-backup">7. Restoring orcharhino from backup</a>
 <ul class="sectlevel2">
 <li><a href="#Restoring_from_a_Full_Backup_admin">7.1. Restoring from a full backup</a></li>
+<li><a href="#Restoring_from_Incremental_Backups_admin">7.2. Restoring from incremental backups</a></li>
 </ul>
 </li>
 <li><a href="#renewing-certificates">8. Renewing certificates</a>
@@ -2924,6 +2927,15 @@ You can skip this action by using the <code>--skip-pulp-content</code> option wi
 </ul>
 </div>
 </dd>
+<dt class="hdlist1">Incremental backup</dt>
+<dd>
+<p>Incremental backups are offline backups that capture only files that have changed since a previous backup.
+They require less time and storage than a full offline backup.</p>
+<div class="paragraph">
+<p>The backup process creates snapshot files that track changes, allowing you to chain incremental backups.
+All backups in the chain are required for restore.</p>
+</div>
+</dd>
 </dl>
 </div>
 </div>
@@ -3043,7 +3055,7 @@ The <code>foremanctl backup</code> command does not overwrite backups, therefore
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap"># du -sh /var/lib/foremanctl
-10MB	/var/lib/pulp</pre>
+10MB	/var/lib/foremanctl</pre>
 </div>
 </div>
 </li>
@@ -3240,13 +3252,117 @@ For more information, see <a href="#estimating-the-size-of-a-backup">Estimating 
 </div>
 </div>
 <div class="sect2">
-<h3 id="example-of-a-weekly-full-backup"><a class="anchor" href="#example-of-a-weekly-full-backup"></a>6.4. Example of a weekly full backup</h3>
+<h3 id="Performing_an_Incremental_Backup_admin"><a class="anchor" href="#Performing_an_Incremental_Backup_admin"></a>6.4. Performing an incremental backup</h3>
+<div class="paragraph _abstract">
+<p>Run an incremental backup to perform an offline backup that captures any changes since a previous full backup.
+Incremental backups use less time and storage than a full offline backup.</p>
+</div>
+<div class="paragraph">
+<p>To perform incremental backups, you must perform a full backup as a reference to create the first incremental backup of a sequence.
+Keep the most recent full backup and a complete sequence of incremental backups to restore from.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Your backup location must have sufficient available disk space to store the backup.
+For more information, see <a href="#estimating-the-size-of-a-backup">Estimating the size of a backup</a>.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Perform a full offline backup.
+For more information, see <a href="#performing-a-full-offline-backup">Performing a full offline backup</a>.</p>
+</li>
+<li>
+<p>Create the first incremental backup by specifying the full backup directory as the base:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foremanctl backup <em>/var/backup</em> --base-backup <em>/var/backup/full_backup</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This creates a new backup directory containing only files changed since the full backup.</p>
+</div>
+</li>
+<li>
+<p>Create the second incremental backup by specifying the first incremental backup as the base:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foremanctl backup <em>/var/backup</em> --base-backup <em>/var/backup/first_incremental_backup</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This creates a directory for the second incremental backup in your backup directory.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>You can point to a different version of the backup, and make a series of increments with that version of the backup as the starting point.
+For example, if you want to make a new incremental backup from the full backup rather than the first or second incremental backup, point to the full backup directory:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foremanctl backup <em>/var/backup</em> --base-backup <em>/var/backup/full_backup</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can chain incremental backups, but all backups in the chain are required for restore.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="example-of-a-weekly-full-backup"><a class="anchor" href="#example-of-a-weekly-full-backup"></a>6.5. Example of a weekly full backup</h3>
 <div class="paragraph _abstract">
 <p>The following cron line runs a full backup every Sunday.</p>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap">0 0 * * 0 PATH=/sbin:/bin:/usr/sbin:/usr/bin foremanctl backup <em>/var/backup_directory</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note that the <code>foremanctl backup</code> command requires <code>/sbin</code> and <code>/usr/sbin</code> directories to be in <code>PATH</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Example_of_a_Weekly_Full_Backup_Followed_by_Daily_Incremental_Backups_admin"><a class="anchor" href="#Example_of_a_Weekly_Full_Backup_Followed_by_Daily_Incremental_Backups_admin"></a>6.6. Example of a weekly full backup followed by daily incremental backups</h3>
+<div class="paragraph _abstract">
+<p>The following script performs a full backup on a Sunday followed by incremental backups for each of the following days.
+A new subdirectory is created for each day that an incremental backup is performed.
+The script requires a daily cron job.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-bash" data-lang="bash">#!/bin/bash -e
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+DESTINATION=/var/backup_directory
+if [[ $(date +%w) == 0 ]]; then
+  foremanctl backup $DESTINATION
+   ls -td -- $DESTINATION/<strong>/ | head -n 1 &gt; $DESTINATION/.last_full_backup
+  else
+    foremanctl backup $DESTINATION --base-backup "$(cat
+  $DESTINATION/.last_full_backup)"
+  fi
+else
+  LAST=$(ls -td -- $DESTINATION/</strong>/ | head -n 1)
+  foremanctl backup $DESTINATION --base-backup "$LAST"
+fi
+exit 0</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -3355,6 +3471,64 @@ This procedure uses <em>/var/backup_directory</em>.</p>
 <li>
 <p>If you create a new instance of orcharhino&#160;Server or orcharhino&#160;Proxy&#160;Server, decommission the old instance after restoring the backup.
 Cloned instances are not supposed to run in parallel in a production environment.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="Restoring_from_Incremental_Backups_admin"><a class="anchor" href="#Restoring_from_Incremental_Backups_admin"></a>7.2. Restoring from incremental backups</h3>
+<div class="paragraph _abstract">
+<p>Restore orcharhino&#160;Server or orcharhino&#160;Proxy&#160;Server from an incremental backup to return the system to the state at the time of the backup.
+When the restore process completes, all processes are online, and all databases and system configuration revert to the state at the time of the backup.</p>
+</div>
+<div class="paragraph">
+<p>If you have multiple branches of incremental backups, select your full backup and each incremental backup for the <em>branch</em> you want to restore, in chronological order.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>If the backed up system had FIPS enabled, the system on which you are restoring must also have FIPS enabled.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Restore the last full backup by following the instructions in <a href="#Restoring_from_a_Full_Backup_admin">Restoring from a full backup</a>.</p>
+</li>
+<li>
+<p>Copy the incremental backup data to the local file system on orcharhino&#160;Server.</p>
+</li>
+<li>
+<p>Restore the incremental backups in the same sequence that they are made:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foremanctl restore <em>/var/backup/first_incremental_backup</em> --force
+# foremanctl restore <em>/var/backup/second_incremental_backup</em> --force</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>--force</code> flag is required for subsequent restores because the system is already deployed.</p>
+</div>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">Next steps</div>
+<ul>
+<li>
+<p>If you create a new instance of orcharhino&#160;Server or orcharhino&#160;Proxy&#160;Server, decommission the old instance after restoring the backup.
+Cloned instances are not supposed to run in parallel in a production environment.</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Troubleshooting</div>
+<ul>
+<li>
+<p>Review the <code>/var/log/foreman/production.log</code> and <code>/var/log/messages</code> log files.</p>
 </li>
 </ul>
 </div>
