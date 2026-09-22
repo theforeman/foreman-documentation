@@ -273,7 +273,8 @@ SOFTWARE.
 </ul>
 </li>
 <li><a href="#resetting-custom-ssl-certificate-to-default-self-signed-certificate-on-capsule-server">2.6. Resetting custom SSL certificate to default self-signed certificate on Capsule&#160;Server</a></li>
-<li><a href="#assigning-organization-and-location-to-capsule-server">2.7. Assigning organization and location to Capsule&#160;Server</a></li>
+<li><a href="#recognizing-host-ip-addresses-behind-capsule-server">2.7. Recognizing host IP addresses behind Capsule&#160;Server</a></li>
+<li><a href="#assigning-organization-and-location-to-capsule-server">2.8. Assigning organization and location to Capsule&#160;Server</a></li>
 </ul>
 </li>
 <li><a href="#performing-additional-configuration-on-capsule-server_capsule">3. Performing additional configuration on Capsule&#160;Server</a>
@@ -873,7 +874,7 @@ This repository is required for the remote execution pull client, OpenVox agent,
 </table>
 </div>
 <div class="paragraph">
-<p>For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/installing_capsule_server/index#configuring-capsule-server-for-host-registration-and-provisioning">Configuring Capsule&#160;Server for host registration and provisioning</a> in <em>Installing Capsule Server</em>.</p>
+<p>For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/installing_capsule_server/index#recognizing-host-ip-addresses-behind-capsule-server">Recognizing host IP addresses behind Capsule&#160;Server</a> in <em>Installing Capsule Server</em>.</p>
 </div>
 </li>
 <li>
@@ -1068,7 +1069,7 @@ This repository is required for the remote execution pull client, OpenVox agent,
 </table>
 </div>
 <div class="paragraph">
-<p>For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/installing_capsule_server/index#configuring-capsule-server-for-host-registration-and-provisioning">Configuring Capsule&#160;Server for host registration and provisioning</a> in <em>Installing Capsule Server</em>.</p>
+<p>For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/installing_capsule_server/index#recognizing-host-ip-addresses-behind-capsule-server">Recognizing host IP addresses behind Capsule&#160;Server</a> in <em>Installing Capsule Server</em>.</p>
 </div>
 </li>
 <li>
@@ -1169,7 +1170,7 @@ This repository is required for the remote execution pull client, OpenVox agent,
 </table>
 </div>
 <div class="paragraph">
-<p>For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/installing_capsule_server/index#configuring-capsule-server-for-host-registration-and-provisioning">Configuring Capsule&#160;Server for host registration and provisioning</a> in <em>Installing Capsule Server</em>.</p>
+<p>For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/installing_capsule_server/index#recognizing-host-ip-addresses-behind-capsule-server">Recognizing host IP addresses behind Capsule&#160;Server</a> in <em>Installing Capsule Server</em>.</p>
 </div>
 </li>
 <li>
@@ -1895,7 +1896,68 @@ For more information, see <a href="https://docs.redhat.com/en/documentation/red_
 </div>
 </div>
 <div class="sect2">
-<h3 id="assigning-organization-and-location-to-capsule-server"><a class="anchor" href="#assigning-organization-and-location-to-capsule-server"></a>2.7. Assigning organization and location to Capsule&#160;Server</h3>
+<h3 id="recognizing-host-ip-addresses-behind-capsule-server"><a class="anchor" href="#recognizing-host-ip-addresses-behind-capsule-server"></a>2.7. Recognizing host IP addresses behind Capsule&#160;Server</h3>
+<div class="paragraph _abstract">
+<p>Add your Capsule&#160;Server to the list of trusted proxies on Satellite&#160;Server so that Satellite records the real IP address of hosts that register or are provisioned through your Capsule&#160;Server.</p>
+</div>
+<div class="paragraph">
+<p>When hosts register or are provisioned through a Capsule&#160;Server, their requests reach Satellite&#160;Server through the Capsule.
+Satellite reads the client IP address from the <code>X-Forwarded-For</code> HTTP header that Capsule sets.
+For security reasons, Satellite recognizes this header only from trusted proxies.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On Satellite&#160;Server, add your Capsule&#160;Server to the list of trusted proxies:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellitectl deploy \
+--foreman-trusted-proxy <em>My_Proxy_IP_address</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Enter all IPv4 and IPv6 addresses of your Capsule&#160;Server, or a network range in CIDR notation.
+To trust more than one proxy, repeat the <code>--foreman-trusted-proxy</code> option for each address or range.</p>
+</div>
+<div class="paragraph">
+<p>The command adds the address to the list of trusted proxies that is already stored, so you do not have to repeat entries that you added earlier.
+The localhost ranges <code>127.0.0.0/8</code> and <code>::1</code> are always trusted and you do not need to add them.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Warning</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Trust only the specific addresses or the narrowest possible ranges of your Capsules.
+Satellite accepts the <code>X-Forwarded-For</code> header from any source within a trusted range.
+Therefore, a client within the range might forge this header to bypass IP-based access controls or falsify the host IP addresses that Satellite records.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Optional: Remove an address or range from the list of trusted proxies:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellitectl deploy \
+--foreman-trusted-proxy-remove <em>My_Proxy_IP_address</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You cannot remove the localhost ranges <code>127.0.0.0/8</code> and <code>::1</code>.</p>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="assigning-organization-and-location-to-capsule-server"><a class="anchor" href="#assigning-organization-and-location-to-capsule-server"></a>2.8. Assigning organization and location to Capsule&#160;Server</h3>
 <div class="paragraph _abstract">
 <p>Assign the correct organization and location to Capsule&#160;Server to properly manage your Capsule&#160;Server within your organizational structure.</p>
 </div>
