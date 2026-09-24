@@ -114,6 +114,9 @@ check_file() {
         normalized_heading="${normalized_heading//\{kubevirt\}/kubevirt}"
 	normalized_heading="${normalized_heading//\{a-kubevirt\}/a-kubevirt}"
 	normalized_heading="${normalized_heading//\{client-os\}/client-os}"
+	normalized_heading="${normalized_heading//\{customrepo\}/repository}"
+	normalized_heading="${normalized_heading//\{customrepos\}/repositories}"
+	normalized_heading="${normalized_heading//\{customproduct\}/product}"
 
         # Normalize Hammer CLI and Web UI text in headings
         # The convention is: ID and filename contain "by-using-cli"/"by-using-web-ui", heading contains "by using Hammer CLI"/"by using {ProjectWebUI}"
