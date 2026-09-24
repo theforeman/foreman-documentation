@@ -267,10 +267,11 @@ SOFTWARE.
 <li><a href="#configuring-a-host-to-run-ansible-roles-in-check-mode">4.3. Configuring a host to run Ansible roles in check mode</a></li>
 </ul>
 </li>
-<li><a href="#Integrating_orcharhino_and_AWX_ansible">5. Integrating orcharhino and AWX</a>
+<li><a href="#using-ansible-vault-with-orcharhino_ansible">5. Using Ansible Vault with orcharhino</a></li>
+<li><a href="#Integrating_orcharhino_and_AWX_ansible">6. Integrating orcharhino and AWX</a>
 <ul class="sectlevel2">
-<li><a href="#Adding_orcharhino_Server_to_AWX_as_a_Dynamic_Inventory_Item_ansible">5.1. Adding orcharhino&#160;Server to AWX as a dynamic inventory item</a></li>
-<li><a href="#Configuring_Provisioning_Callback_for_a_Host_ansible">5.2. Configuring provisioning callback for a host</a></li>
+<li><a href="#Adding_orcharhino_Server_to_AWX_as_a_Dynamic_Inventory_Item_ansible">6.1. Adding orcharhino&#160;Server to AWX as a dynamic inventory item</a></li>
+<li><a href="#Configuring_Provisioning_Callback_for_a_Host_ansible">6.2. Configuring provisioning callback for a host</a></li>
 </ul>
 </li>
 <li><a href="#ansible-role-and-collection-paths-in-orcharhino">Appendix A: Ansible role and collection paths in orcharhino</a></li>
@@ -882,14 +883,72 @@ This helps you reduce risk when validating role behavior on a host.</p>
 </div>
 </div>
 <div class="sect1">
-<h2 id="Integrating_orcharhino_and_AWX_ansible"><a class="anchor" href="#Integrating_orcharhino_and_AWX_ansible"></a>5. Integrating orcharhino and AWX</h2>
+<h2 id="using-ansible-vault-with-orcharhino_ansible"><a class="anchor" href="#using-ansible-vault-with-orcharhino_ansible"></a>5. Using Ansible Vault with orcharhino</h2>
+<div class="sectionbody">
+<div class="paragraph _abstract">
+<p>You can encrypt sensitive Ansible data files using the Ansible Vault tool and configure Ansible to access the encrypted files using a password stored in a file.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Create a podman secret with the vault password:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># printf '<em>My_Ansible_Vault_Password</em>' | podman secret create foreman-proxy-ansible-vault-password -</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create a systemd drop-in at <code>/etc/containers/systemd/foreman-proxy.container.d/ansible-vault.conf</code> to propagate the secret into the container:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-ini" data-lang="ini">[Container]
+Secret=foreman-proxy-ansible-vault-password,type=mount,target=/etc/foreman-proxy/.ansible_vault_password</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Restart the <code>foreman-proxy</code> container:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl daemon-reload &amp;&amp; systemctl restart foreman-proxy</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Add the path of the Vault password file to the <code>[defaults]</code> section in <code>/var/lib/foreman-proxy/ansible/ansible.cfg</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-ini" data-lang="ini">[defaults]
+vault_password_file = /etc/foreman-proxy/.ansible_vault_password</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The path to the Vault password file must be absolute.</p>
+</div>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="https://docs.ansible.com/projects/ansible/latest/vault_guide/vault_encrypting_content.html">Encrypting content with Ansible Vault</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="Integrating_orcharhino_and_AWX_ansible"><a class="anchor" href="#Integrating_orcharhino_and_AWX_ansible"></a>6. Integrating orcharhino and AWX</h2>
 <div class="sectionbody">
 <div class="paragraph _abstract">
 <p>You can integrate orcharhino and AWX to use orcharhino&#160;Server as a dynamic inventory source for AWX.
 When provisioning new hosts from orcharhino&#160;Server, you can use the provisioning callback function to trigger playbook runs from AWX.</p>
 </div>
 <div class="sect2">
-<h3 id="Adding_orcharhino_Server_to_AWX_as_a_Dynamic_Inventory_Item_ansible"><a class="anchor" href="#Adding_orcharhino_Server_to_AWX_as_a_Dynamic_Inventory_Item_ansible"></a>5.1. Adding orcharhino&#160;Server to AWX as a dynamic inventory item</h3>
+<h3 id="Adding_orcharhino_Server_to_AWX_as_a_Dynamic_Inventory_Item_ansible"><a class="anchor" href="#Adding_orcharhino_Server_to_AWX_as_a_Dynamic_Inventory_Item_ansible"></a>6.1. Adding orcharhino&#160;Server to AWX as a dynamic inventory item</h3>
 <div class="paragraph _abstract">
 <p>To add orcharhino&#160;Server to AWX as a dynamic inventory item, you must create a credential for a orcharhino&#160;Server user on AWX, add an AWX user to the credential, and then configure an inventory source.</p>
 </div>
@@ -1032,7 +1091,7 @@ For more information, see
 </div>
 </div>
 <div class="sect2">
-<h3 id="Configuring_Provisioning_Callback_for_a_Host_ansible"><a class="anchor" href="#Configuring_Provisioning_Callback_for_a_Host_ansible"></a>5.2. Configuring provisioning callback for a host</h3>
+<h3 id="Configuring_Provisioning_Callback_for_a_Host_ansible"><a class="anchor" href="#Configuring_Provisioning_Callback_for_a_Host_ansible"></a>6.2. Configuring provisioning callback for a host</h3>
 <div class="paragraph _abstract">
 <p>When you create hosts in orcharhino, you can use AWX to run playbooks to configure your newly created hosts.
 This is called <em>provisioning callback</em> in AWX.</p>
@@ -1266,7 +1325,11 @@ System-installed roles and collections are located in <code>/usr/share/ansible</
 However, you can customize other Ansible configuration options as usual.</p>
 </div>
 <div class="paragraph">
-<p>Ansible reads configuration provided by orcharhino&#160;Proxy.</p>
+<p>Ansible reads configuration from a configuration file and the environment provided by orcharhino&#160;Proxy.
+If you need to customize Ansible configuration, you can do so in the <code>/var/lib/foreman-proxy/ansible/ansible.cfg</code> file.</p>
+</div>
+<div class="paragraph">
+<p>Note that environment variables take precedence over values in <code>ansible.cfg</code>, which ensures that the essential configuration required by orcharhino is retained.</p>
 </div>
 <div class="paragraph">
 <p>The following table lists the essential Ansible configuration options managed by orcharhino.</p>
