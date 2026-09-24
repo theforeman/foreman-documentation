@@ -75,6 +75,7 @@ check_file() {
     normalized_id="${normalized_id//\{foreman-installer\}/foreman-installer}"
     normalized_id="${normalized_id//\{foremanctl\}/foremanctl}"
     normalized_id="${normalized_id//\{awx-context\}/awx}"
+    normalized_id="${normalized_id//\{awx-id\}/awx}"
     normalized_id="${normalized_id//\{compute-resource-id\}/compute-resource}"
     normalized_id="${normalized_id//\{OpenStack-id\}/openstack}"
     normalized_id="${normalized_id//\{KubeVirt-id\}/kubevirt}"
