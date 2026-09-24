@@ -18,6 +18,7 @@ An assembly must cover a single user story - what the user wants to accomplish. 
 
 **When an assembly needs splitting:**
 - It contains procedures for multiple independent tasks that users might want to do separately
+- It combines setup and recurring tasks that users perform at widely different intervals
 - The concept module describes multiple distinct use cases or workflows
 - Different sections serve different user goals
 - Modules could be logically grouped into two or more cohesive assemblies
@@ -51,6 +52,7 @@ Read the assembly file and:
 The assembly needs splitting if:
 
 - It contains procedures for multiple independent tasks that users might want to do separately
+- It combines setup and recurring tasks that users perform at widely different intervals
 - The concept module describes multiple distinct use cases or workflows
 - Different sections serve different user goals (e.g., "creating/deleting" vs "configuring" vs "monitoring")
 - Modules could be logically grouped into 2 or more cohesive assemblies
@@ -87,6 +89,9 @@ Provide a summary that includes:
 - `assembly_backing-up-server-and-proxy.adoc` - User wants to back up their system
 - `assembly_configuring-email-notifications.adoc` - User wants to set up email notifications
 - `assembly_managing-organizations.adoc` - User wants to create and delete organizations
+
+**Example that needs splitting:**
+- An assembly that combines importing a subscription manifest with synchronizing repository content. Importing a manifest is an occasional setup task, while synchronizing content is a recurring operation that users need to access independently.
 
 #### Principles
 
