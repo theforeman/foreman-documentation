@@ -2,9 +2,13 @@ SHELL := /bin/bash
 MAKEFLAGS += -j
 DEST := result
 PORT := 5000
+VALE_IMAGE ?= docker.io/jdkato/vale
+VALE_FILES ?= guides/common
+VALE_FLAGS ?= --minAlertLevel=error
+CHANGED_FILES = $(shell scripts/changed-files.py)
 VERSION_LINKS := 5.0 3.19 3.18 3.17 3.16 3.15 3.14 3.13 3.12 3.11 3.10 3.9 3.8 3.7 3.6 3.5 3.4 3.3 3.2 3.1 3.0 2.5 2.4
 
-.PHONY: all clean html web compile serve prep FORCE toc css
+.PHONY: all clean html web compile serve prep vale vale-all FORCE toc css
 
 UNAME = $(shell uname)
 ifeq ($(UNAME), Linux)
@@ -21,6 +25,16 @@ prep:
 	bundle install
 	cd web && bundle config set path 'vendor' && bundle install
 	mkdir -p $(DEST)/nightly
+
+vale-all:
+	podman run --rm --userns=keep-id -v "$(CURDIR):/work:Z" -w /work --entrypoint /bin/sh $(VALE_IMAGE) -c 'vale sync && vale --config=.vale.ini $(VALE_FLAGS) $(VALE_FILES)'
+
+vale:
+	@if [ -z "$(CHANGED_FILES)" ]; then \
+		echo "No changed AsciiDoc files to lint."; \
+	else \
+		podman run --rm --userns=keep-id -v "$(CURDIR):/work:Z" -w /work --entrypoint /bin/sh $(VALE_IMAGE) -c "vale sync && vale --config=.vale.ini $(VALE_FLAGS) $(CHANGED_FILES)"; \
+	fi
 
 clean:
 	$(MAKE) -C guides/ clean
