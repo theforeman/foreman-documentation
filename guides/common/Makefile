@@ -1,4 +1,5 @@
 SHELL := /bin/bash
+LATEST_STABLE_VERSION ?= $(shell ruby -rjson -e 'puts Dir["$(CURDIR)/../../web/releases/*.json"].filter_map { |path| release = JSON.parse(File.read(path)); File.basename(path, ".json") if release["state"] == "supported" }.max_by { |version| version.split(".").map(&:to_i) }')
 BUILD = foreman-el
 BUILD_DIR = ../build
 BUILD_DIRA = $(realpath $(BUILD_DIR))/
@@ -9,7 +10,7 @@ DEST_DIR = $(BUILD_DIR)/$(subst doc-,,$(NAME))
 DEST_HTML = $(DEST_DIR)/index-$(BUILD).html
 IMAGES_TS = $(DEST_DIR)/.timestamp-images
 CSS_SOURCES = $(shell find $(COMMON_DIR)/css -type f)
-DOCINFO_SOURCES = $(shell find $(COMMON_DIR)/ -type f -name docinfo\*.html)
+DOCINFO_SOURCES = $(shell find $(COMMON_DIR)/ -type f -name docinfo\*.html) $(COMMON_DIR)/robots_meta.rb
 SOURCES = master.adoc $(shell find . -type f -name \*.adoc)
 DEPENDENCIES = $(shell find $(COMMON_DIR) -type f -name \*.adoc)
 IMAGES = $(shell find ./images ./common/images -type f 2>/dev/null || true)
@@ -80,7 +81,7 @@ $(IMAGES_TS): $(BUILD_DIR) $(IMAGES)
 	@touch $(IMAGES_TS)
 
 $(DEST_HTML): $(SOURCES) $(DEPENDENCIES) $(DOCINFO_SOURCES) $(DEST_DIR)/style.css $(IMAGES_TS)
-	bundle exec asciidoctor -r asciidoctor-tabs -a build=$(BUILD) $(BASEURL_ATTR) -a docinfo=shared -a docinfodir=common -a imagesdir=../images -a date_mdy="$(DATE_MDY)" -a date_my="$(DATE_MY)" -a docdatetime="$(DATE_MY)" -a stylesheet=$(DEST_DIR)/style.css -a attribute-missing=warn -b html5 -d book --trace -o $@ $< 2>&1 | tee $@.log 1>&2
+	bundle exec asciidoctor -r asciidoctor-tabs -r ./common/robots_meta.rb -a build=$(BUILD) -a latest-stable-version=$(LATEST_STABLE_VERSION) $(BASEURL_ATTR) -a docinfo=shared -a docinfodir=common -a imagesdir=../images -a date_mdy="$(DATE_MDY)" -a date_my="$(DATE_MY)" -a docdatetime="$(DATE_MY)" -a stylesheet=$(DEST_DIR)/style.css -a attribute-missing=warn -b html5 -d book --trace -o $@ $< 2>&1 | tee $@.log 1>&2
 	@echo CHECKING FOR ASCIIDOCTOR ERRORS AND WARNINGS
 	@! grep -Eq "^asciidoctor: (ERROR|WARNING)" $@.log
 	@echo CHECKING FOR ORPHAN XREFS HTML LINKS

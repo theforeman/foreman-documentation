@@ -2,6 +2,8 @@ SHELL := /bin/bash
 # All doc- directories except doc-Contributing (which has separate build system)
 SUBDIRS = $(shell ls -d doc-* | grep -v 'doc-Contributing')
 CONTRIBUTING_DIR = doc-Contributing
+LATEST_STABLE_VERSION = $(shell ruby -rjson -e 'puts Dir["../web/releases/*.json"].filter_map { |path| release = JSON.parse(File.read(path)); File.basename(path, ".json") if release["state"] == "supported" }.max_by { |version| version.split(".").map(&:to_i) }')
+export LATEST_STABLE_VERSION
 
 .PHONY: all clean html linkchecker linkchecker-tryer serve subdirs $(SUBDIRS) contributing contributing-css css
 
