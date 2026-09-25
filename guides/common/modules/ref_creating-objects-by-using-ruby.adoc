@@ -26,7 +26,7 @@ $password = '_My_Password_'
 org_name = "_My_Organization_"
 environments = [ "Development", "Testing", "Production" ]
 
-# Performs a GET by using the passed URL location
+# Send a GET request to the specified API endpoint.
 def get_json(location)
   response = RestClient::Request.new(
     :method => :get,
@@ -39,7 +39,7 @@ def get_json(location)
   JSON.parse(response.to_str)
 end
 
-# Performs a POST and passes the data to the URL location
+# Send JSON data in a POST request to the specified API endpoint.
 def post_json(location, json_data)
   response = RestClient::Request.new(
     :method => :post,
@@ -53,33 +53,33 @@ def post_json(location, json_data)
   JSON.parse(response.to_str)
 end
 
-# Creates a hash with ids mapping to names for an array of records
+# Map record IDs to names.
 def id_name_map(records)
   records.inject({}) do |map, record|
     map.update(record['id'] => record['name'])
   end
 end
 
-# Get list of existing organizations
+# Retrieve the existing organizations.
 orgs = get_json("#\{katello_url}/organizations")
 org_list = id_name_map(orgs['results'])
 
 if !org_list.has_value?(org_name)
-  # If our organization is not found, create it
+  # Create the organization if it does not exist.
   puts "Creating organization: \t#\{org_name}"
   org_id = post_json("#\{katello_url}/organizations", JSON.generate({"name"=> org_name}))["id"]
 else
-  # Our organization exists, so let's grab it
+  # Reuse the existing organization ID.
   org_id = org_list.key(org_name)
   puts "Organization \"#\{org_name}\" exists"
 end
 
-# Get list of organization's lifecycle environments
+# Retrieve the lifecycle environments in the organization.
 envs = get_json("#\{katello_url}/organizations/#\{org_id}/environments")
 env_list = id_name_map(envs['results'])
 prior_env_id = env_list.key("Library")
 
-# Exit the script if at least one life cycle environment already exists
+# Exit if any requested lifecycle environment already exists.
 environments.each do |e|
   if env_list.has_value?(e)
     puts "ERROR: One of the Environments is not unique to organization"
@@ -87,7 +87,7 @@ environments.each do |e|
   end
 end
 
- # Create life cycle environments
+# Create the lifecycle environments in sequence.
 environments.each do |environment|
   puts "Creating environment: \t#\{environment}"
   prior_env_id = post_json("#\{katello_url}/organizations/#\{org_id}/environments", JSON.generate({"name" => environment, "organization_id" => org_id, "prior_id" => prior_env_id}))["id"]
