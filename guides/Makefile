@@ -2,12 +2,23 @@ SHELL := /bin/bash
 # All doc- directories except doc-Contributing (which has separate build system)
 SUBDIRS = $(shell ls -d doc-* | grep -v 'doc-Contributing')
 CONTRIBUTING_DIR = doc-Contributing
+IMAGES = $(shell find common/images -type f)
+IMAGES_TS = build/images/.timestamp-images
 
-.PHONY: all clean html linkchecker linkchecker-tryer serve subdirs $(SUBDIRS) contributing contributing-css css
+.PHONY: all clean html linkchecker linkchecker-tryer serve subdirs $(SUBDIRS) contributing contributing-css css images
 
 all: html
 
 html: subdirs contributing
+
+subdirs contributing: | $(IMAGES_TS)
+
+images: $(IMAGES_TS)
+
+$(IMAGES_TS): $(IMAGES)
+	mkdir -p build
+	cp -rf --update -lL -t build common/images
+	@touch $(IMAGES_TS)
 
 css: subdirs contributing-css
 
