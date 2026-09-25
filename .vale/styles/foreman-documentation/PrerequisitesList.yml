@@ -1,0 +1,68 @@
+# Format prerequisites in procedure modules as unordered lists.
+---
+extends: script
+message: "Prerequisites must use an unordered list. Start each prerequisite with '* '."
+level: error
+scope: raw
+script: |
+  text := import("text")
+  matches := []
+
+  r_procedure := text.re_compile(`(?m)^:_(?:mod-docs-content|content|module)-type:[ \t]+PROCEDURE[ \t]*$`)
+  r_prerequisites := text.re_compile(`^\.Prerequisites[ \t]*$`)
+  r_unordered_item := text.re_compile(`^\*[ \t]+\S`)
+  r_include := text.re_compile(`^include::[^\[]+\[[^\]]*\][ \t]*$`)
+  r_conditional := text.re_compile(`^(?:ifdef|ifndef|ifeval|else|endif)::.*\[[^\]]*\][ \t]*$`)
+  r_comment_line := text.re_compile(`^//(?:[^/].*)?$`)
+  r_comment_block := text.re_compile(`^/{4,}[ \t]*$`)
+  r_section := text.re_compile(`^\.[A-Z]`)
+
+  if r_procedure.match(scope) {
+    lines := text.split(scope, "\n")
+    awaiting_item := false
+    in_comment_block := false
+    marker_begin := 0
+    marker_end := 0
+    position := 0
+
+    for line in lines {
+      line_begin := position
+      line_end := line_begin + len(line)
+      position = line_end + 1
+
+      if r_prerequisites.match(line) {
+        awaiting_item = true
+        marker_begin = line_begin
+        marker_end = line_end
+        continue
+      }
+
+      if ! awaiting_item { continue }
+
+      if r_comment_block.match(line) {
+        in_comment_block = !in_comment_block
+        continue
+      }
+      if in_comment_block { continue }
+
+      if text.trim_space(line) == "" || r_comment_line.match(line) || r_conditional.match(line) {
+        continue
+      }
+
+      if r_unordered_item.match(line) || r_include.match(line) {
+        awaiting_item = false
+        continue
+      }
+
+      if r_section.match(line) {
+        matches = append(matches, {begin: marker_begin, end: marker_end})
+      } else {
+        matches = append(matches, {begin: line_begin, end: line_end})
+      }
+      awaiting_item = false
+    }
+
+    if awaiting_item {
+      matches = append(matches, {begin: marker_begin, end: marker_end})
+    }
+  }
