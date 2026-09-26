@@ -5,6 +5,7 @@ import re
 import sys
 import time
 from subprocess import DEVNULL, STDOUT, call
+from urllib.parse import urlparse
 
 
 RETRIES = 5
@@ -17,11 +18,18 @@ TRANSIENT_ERROR_MARKERS = (
     "RemoteDisconnected",
     "TimeoutError",
 )
+TRUSTED_TRANSIENT_HOSTS = (
+    "cloud.debian.org",
+    "docs.redhat.com",
+    "github.com",
+    "ipxe.org",
+    "ovirt.org",
+)
 
 
 def parse_linkchecker_output(linkchecker_output):
-    pattern = re.compile(r"^URL\s+\`(?P<url>.+)\'$\n" +
-                         r"(^Name\s+\`(?P<name>.*?)\'$\n)?" +
+    pattern = re.compile(r"^URL\s+\`(?P<url>[^\r\n]+)\'$\n" +
+                         r"(^Name\s+\`(?P<name>[^\r\n]*)\'$\n)?" +
                          r"^Parent URL\s+(?P<parent>.*?)$\n"+
                          r".*?^Result\s+(?P<result>.*?)$"
                          , flags=re.M + re.S)
@@ -48,8 +56,14 @@ def find_bad_links(linkchecker_output):
 
 
 def is_transient_failure(message):
+    url_match = re.search(r"^URL\s+\`(?P<url>[^\r\n]+)\'$", message, flags=re.M)
     match = re.search(r"^Result\s+(?P<result>.*?)$", message, flags=re.M)
-    if not match:
+    if not url_match or not match:
+        return False
+
+    hostname = urlparse(url_match.group("url")).hostname
+    if not hostname or not any(hostname == trusted_host or hostname.endswith(f".{trusted_host}")
+                               for trusted_host in TRUSTED_TRANSIENT_HOSTS):
         return False
 
     result = match.group("result")

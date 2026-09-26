@@ -16,25 +16,67 @@ LOADER.exec_module(LINKCHECKER_TRYER)
 
 
 class TransientFailureTest(unittest.TestCase):
+    def test_multiple_failures_are_parsed_separately(self):
+        output = """URL        `https://example.com/missing'
+Name       `missing'
+Parent URL file:///tmp/index.html, line 1, col 1
+Real URL   https://example.com/missing
+Result     Error: 404 Not Found
+
+URL        `https://ovirt.org/slow'
+Name       `slow'
+Parent URL file:///tmp/index.html, line 2, col 1
+Real URL   https://example.com/slow
+Result     Error: ConnectionError: RemoteDisconnected
+"""
+
+        messages = list(LINKCHECKER_TRYER.parse_linkchecker_output(output).values())
+
+        self.assertEqual(len(messages), 2)
+        self.assertFalse(LINKCHECKER_TRYER.is_transient_failure(messages[0]))
+        self.assertTrue(LINKCHECKER_TRYER.is_transient_failure(messages[1]))
+
     def test_read_timeout_is_transient(self):
-        message = "Result     Error: ReadTimeout: request timed out"
+        message = """URL        `https://docs.redhat.com/slow'
+Result     Error: ReadTimeout: request timed out"""
 
         self.assertTrue(LINKCHECKER_TRYER.is_transient_failure(message))
 
     def test_connection_reset_is_transient(self):
-        message = "Result     Error: ConnectionError: RemoteDisconnected"
+        message = """URL        `https://ipxe.org/slow'
+Result     Error: ConnectionError: RemoteDisconnected"""
 
         self.assertTrue(LINKCHECKER_TRYER.is_transient_failure(message))
 
     def test_too_many_requests_is_transient(self):
-        message = "Result     Error: 429 Too Many Requests"
+        message = """URL        `https://cloud.debian.org/limited'
+Result     Error: 429 Too Many Requests"""
+
+        self.assertTrue(LINKCHECKER_TRYER.is_transient_failure(message))
+
+    def test_service_unavailable_on_trusted_host_is_transient(self):
+        message = """URL        `https://github.com/theforeman/foreman'
+Result     Error: 503 Service Unavailable"""
 
         self.assertTrue(LINKCHECKER_TRYER.is_transient_failure(message))
 
     def test_not_found_is_not_transient(self):
-        message = "Result     Error: 404 Not Found"
+        message = """URL        `https://docs.redhat.com/missing'
+Result     Error: 404 Not Found"""
 
         self.assertFalse(LINKCHECKER_TRYER.is_transient_failure(message))
+
+    def test_network_error_on_untrusted_host_is_not_transient(self):
+        message = """URL        `https://stale.example.com/slow'
+Result     Error: NameResolutionError: name or service not known"""
+
+        self.assertFalse(LINKCHECKER_TRYER.is_transient_failure(message))
+
+    def test_trusted_subdomain_is_transient(self):
+        message = """URL        `https://access.docs.redhat.com/slow'
+Result     Error: ReadTimeout: request timed out"""
+
+        self.assertTrue(LINKCHECKER_TRYER.is_transient_failure(message))
 
 
 class MainOutputTest(unittest.TestCase):
