@@ -9,11 +9,19 @@ from subprocess import DEVNULL, STDOUT, call
 
 RETRIES = 5
 SLEEP_TIME = 30
+TRANSIENT_ERROR_MARKERS = (
+    "ConnectionError",
+    "ConnectTimeout",
+    "NameResolutionError",
+    "ReadTimeout",
+    "RemoteDisconnected",
+    "TimeoutError",
+)
 
 
 def parse_linkchecker_output(linkchecker_output):
-    pattern = re.compile(r"^URL\s+\`(?P<url>.+)\'$\n" +
-                         r"(^Name\s+\`(?P<name>.*?)\'$\n)?" +
+    pattern = re.compile(r"^URL\s+\`(?P<url>[^\r\n]+)\'$\n" +
+                         r"(^Name\s+\`(?P<name>[^\r\n]*)\'$\n)?" +
                          r"^Parent URL\s+(?P<parent>.*?)$\n"+
                          r".*?^Result\s+(?P<result>.*?)$"
                          , flags=re.M + re.S)
@@ -39,18 +47,40 @@ def find_bad_links(linkchecker_output):
     return bad_links.values()
 
 
+def is_transient_failure(message):
+    match = re.search(r"^Result\s+(?P<result>.*?)$", message, flags=re.M)
+    if not match:
+        return False
+
+    result = match.group("result")
+    return (any(marker in result for marker in TRANSIENT_ERROR_MARKERS) or
+            re.search(r"^Error: (429|5\d\d)\b", result) is not None)
+
+
 def main():
-    messages = find_bad_links(''.join(fileinput.input()))
+    messages = list(find_bad_links(''.join(fileinput.input())))
+    transient_failures = [message for message in messages if is_transient_failure(message)]
+    broken_links = [message for message in messages if not is_transient_failure(message)]
+
+    if transient_failures:
+        print("\n")
+        print("-------------------------------------------------")
+        print("----------===IGNORED TRANSIENT ERRORS===----------")
+        print("-------------------------------------------------")
+        for message in transient_failures:
+            print(message)
+            print()
 
     print("\n")
     print("-------------------------------------------------")
     print("----------=========FINAL RESULT========----------")
     print("-------------------------------------------------")
-    for message in messages:
+    for message in broken_links:
         print(message)
         print()
-    if messages:
+    if broken_links:
         sys.exit(1)
+    print("No broken links")
 
 
 if __name__ == '__main__':
