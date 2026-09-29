@@ -58,6 +58,12 @@ check_file() {
     # Normalize for comparison - handle attribute substitutions
     local normalized_id="$id_value"
 
+    # Strip the trailing _{context} suffix used to keep IDs unique when a
+    # module is reused across multiple assemblies in the same build. The
+    # suffix is not part of the filename or heading, so remove it before
+    # comparing.
+    normalized_id="${normalized_id%_\{context\}}"
+
     # Replace attributes with their filename equivalents
     normalized_id="${normalized_id//\{project-context\}/project}"
     normalized_id="${normalized_id//\{smart-proxy-context\}/smart-proxy}"
