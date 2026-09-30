@@ -98,9 +98,51 @@ for image in "${images[@]}"; do
   podman load --input /tmp/$\{name}.tar
 done
 ----
+. On the connected system, download the vulnerability metadata files that {insights-iop} requires:
++
+--
+* `cvemap.xml`: The CVE map that {Project} serves locally for VMAAS vulnerability correlation.
+* `cpe-dictionary.xml`: Common Platform Enumeration (CPE) data for vulnerability assessment.
+* `repository-to-cpe.json`: The mapping of repositories to CPE identifiers.
+* `vex-latest.tar.zst`: CSAF VEX (Vulnerability Exploitability eXchange) data.
+--
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+$ curl -o cvemap.xml https://security.access.redhat.com/data/meta/v1/cvemap.xml
+$ curl -o cpe-dictionary.xml https://security.access.redhat.com/data/meta/v1/cpe-dictionary.xml
+$ curl -o repository-to-cpe.json https://security.access.redhat.com/data/metrics/repository-to-cpe.json
+----
++
+For `vex-latest.tar.zst`:
+
+.. Retrieve the name of the latest archive from `archive_latest.txt`:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+$ curl https://security.access.redhat.com/data/csaf/v2/vex/archive_latest.txt
+----
+.. Download the archive and save it as `vex-latest.tar.zst`.
+.. Replace _archive_name_ with the file name that `archive_latest.txt` returns:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+$ curl -o vex-latest.tar.zst https://security.access.redhat.com/data/csaf/v2/vex/_archive_name_
+----
+. Transfer the `cvemap.xml`, `cpe-dictionary.xml`, `repository-to-cpe.json`, and `vex-latest.tar.zst` files to your disconnected {ProjectServer}.
+. Copy the files to `/var/lib/foreman/`:
++
+[options="nowrap", subs="+quotes"]
+----
+# cp cvemap.xml cpe-dictionary.xml repository-to-cpe.json vex-latest.tar.zst /var/lib/foreman/
+----
++
+The target directory defaults to `/var/lib/foreman/` and is configurable: the `cvemap.xml`, `cpe-dictionary.xml`, and `repository-to-cpe.json` files use the `iop_vuln_metadata_downloader_manual_dir` setting, and the `vex-latest.tar.zst` file uses the `iop_vex_downloader_manual_dir` setting.
+{Project} watches this directory and, after the plugin is enabled, automatically publishes the files under `/var/www/html/pub/iop/data/`: `cvemap.xml` and `cpe-dictionary.xml` to `meta/v1/`, `repository-to-cpe.json` to `metrics/`, and `vex-latest.tar.zst` to `csaf/v2/vex/`.
+While these files are present, the vulnerability metadata downloader remains in offline mode and does not attempt to download them over the network.
 . Enable the {insights-iop} plugin:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-# {foreman-installer} --enable-iop
+# {foremanctl} deploy --add-feature iop
 ----
