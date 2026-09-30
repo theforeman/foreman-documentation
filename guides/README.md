@@ -49,8 +49,10 @@ If you run the command in a`doc-*/` subdirectory, a single guide is built.
 This is the default build for `make html`.
 - `make BUILD=foreman-deb` - This builds guides for Foreman on Debian/Ubuntu without the Katello plugin.
 - `make BUILD=katello` - This builds guides for Foreman on EL with the Katello plugin.
+- `make BUILD=containerized-katello` - This builds guides for a containerized Foreman deployment with the Katello plugin.
 - `make BUILD=satellite` - This builds a preview of guides for Satellite.
 - `make BUILD=orcharhino` - This builds a preview of guides for orcharhino.
+- `make BUILD=containerized-orcharhino` - This builds a preview of guides for a containerized orcharhino deployment.
 - `make browser` (run from a `doc-*/` subdirectory) - This builds the HTML version and opens a new tab in a browser.
 
 To view the built HTML artifact, go to the `./build` subdirectory and locate the `*.html` file you need.
@@ -83,6 +85,11 @@ Run the following commands from your `foreman-documentation` directory:
    On SELinux enabled systems, run this command:
 
        rm -rf guides/build && podman run --rm -v $(pwd):/foreman-documentation:Z foreman_documentation make html
+
+   To build a containerized deployment variant, set `BUILD` to `containerized-katello` or `containerized-orcharhino`.
+   For example:
+
+       rm -rf guides/build && podman run --rm -v $(pwd):/foreman-documentation:Z foreman_documentation make html BUILD=containerized-katello
 
 ## Testing link integrity with linkchecker
 
