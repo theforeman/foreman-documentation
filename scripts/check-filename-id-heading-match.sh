@@ -70,7 +70,6 @@ check_file() {
     normalized_id="${normalized_id//\{smart-proxies-context\}/smart-proxies}"
     normalized_id="${normalized_id//\{smart-proxy-context-titlecase\}/smart-proxy}"
     normalized_id="${normalized_id//\{ProjectNameID\}/project}"
-    normalized_id="${normalized_id//\{ProjectServerID\}/project-server}"
     normalized_id="${normalized_id//\{customreposid\}/repositories}"
     normalized_id="${normalized_id//\{customrepoid\}/repository}"
     normalized_id="${normalized_id//\{customproductid\}/product}"
