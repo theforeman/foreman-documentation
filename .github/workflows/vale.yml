@@ -19,20 +19,25 @@ jobs:
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Fetch PR diff commits
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          git fetch --no-tags --depth=1 origin "$BASE_SHA" "refs/pull/$PR_NUMBER/head"
 
       - name: Get changed files
         id: changed-files
-        uses: tj-actions/changed-files@v47
-        with:
-          files: |
-            guides/common/*.adoc
-            guides/common/modules/*.adoc
-          files_ignore: |
-            guides/common/attributes*.adoc
-            guides/common/header.adoc
-            guides/common/ribbons.adoc
-          json: true
-          escape_json: false
+        run: |
+          changed_files="$(scripts/changed-files.py | paste -sd ' ' -)"
+          {
+            echo "any_changed=$([[ -n "$changed_files" ]] && echo true || echo false)"
+            echo "all_changed_files=$changed_files"
+            echo "all_changed_files_count=$(printf '%s\n' "$changed_files" | wc -w)"
+          } >> "$GITHUB_OUTPUT"
 
       - name: List changed files
         run: |
@@ -63,17 +68,25 @@ jobs:
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Fetch PR diff commits
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          git fetch --no-tags --depth=1 origin "$BASE_SHA" "refs/pull/$PR_NUMBER/head"
 
       - name: Get changed files
         id: changed-files
-        uses: tj-actions/changed-files@v47
-        with:
-          files: |
-            guides/common/modules/*.adoc
-            guides/doc-Satellite_Documentation_Maps/*.adoc
-            guides/doc-Satellite_Documentation_Maps/maps/*.adoc
-          json: true
-          escape_json: false
+        run: |
+          changed_files="$(scripts/changed-files.py --dita | paste -sd ' ' -)"
+          {
+            echo "any_changed=$([[ -n "$changed_files" ]] && echo true || echo false)"
+            echo "all_changed_files=$changed_files"
+            echo "all_changed_files_count=$(printf '%s\n' "$changed_files" | wc -w)"
+          } >> "$GITHUB_OUTPUT"
 
       - name: List changed files
         run: |
