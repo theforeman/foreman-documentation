@@ -4,7 +4,7 @@ DEST := result
 PORT := 5000
 VERSION_LINKS := 5.0 3.19 3.18 3.17 3.16 3.15 3.14 3.13 3.12 3.11 3.10 3.9 3.8 3.7 3.6 3.5 3.4 3.3 3.2 3.1 3.0 2.5 2.4
 
-.PHONY: all clean html web compile serve prep FORCE toc css
+.PHONY: all clean html web compile serve prep FORCE toc css images
 
 UNAME = $(shell uname)
 ifeq ($(UNAME), Linux)
@@ -34,7 +34,10 @@ html: build-foreman-el build-foreman-deb build-containerized-katello build-conta
 css: prep
 	$(MAKE) -j -C guides/ css
 
-build-%: FORCE css
+images:
+	$(MAKE) -C guides/ images
+
+build-%: FORCE css images
 	$(MAKE) -C guides/ html BUILD=$*
 
 web: prep
