@@ -222,7 +222,7 @@ SOFTWARE.
 }
 </style>
 </head>
-<body class="book">
+<body class="book toc2 toc-left">
     <div id="wrap">
       <script src="/js/versions.js"></script>
       <script src="/js/nav.js"></script>
@@ -239,9 +239,283 @@ SOFTWARE.
 <span id="revnumber">version Nightly,</span>
 <span id="revdate">published Oct 2026</span>
 </div>
+<div id="toc" class="toc2">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#introduction-to-performance-tuning">1. Introduction to performance tuning</a></li>
+<li><a href="#tuning-hardware-and-operating-system">2. Tuning hardware and operating system</a>
+<ul class="sectlevel2">
+<li><a href="#enabling-tuned-profiles">2.1. Enabling tuned profiles</a></li>
+<li><a href="#transparent-hugepage-and-database-performance">2.2. Transparent Hugepage and database performance</a></li>
+</ul>
+</li>
+<li><a href="#tuning-the-postgresql-database">3. Tuning the PostgreSQL database</a>
+<ul class="sectlevel2">
+<li><a href="#benchmarking-raw-database-performance">3.1. Benchmarking raw database performance</a></li>
+</ul>
+</li>
+<li><a href="#tuning-the-redis-cache">4. Tuning the Redis Cache</a></li>
+</ul>
+</div>
 </div>
 <div id="content">
-
+<div class="sect1">
+<h2 id="introduction-to-performance-tuning"><a class="anchor" href="#introduction-to-performance-tuning"></a>1. Introduction to performance tuning</h2>
+<div class="sectionbody">
+<div class="paragraph _abstract">
+<p>Tune orcharhino to improve system response times and handle larger numbers of managed hosts.
+Performance tuning helps optimize resource usage and ensures smooth operations as your infrastructure scales.</p>
+</div>
+<div class="paragraph">
+<p>You can tune orcharhino in three primary scenarios:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Selecting the appropriate deployment size during initial installation</p>
+</li>
+<li>
+<p>Optimizing an existing deployment to handle increased load</p>
+</li>
+<li>
+<p>Troubleshooting performance degradation</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>orcharhino includes several components that you can tune independently to achieve optimal performance for your environment.
+You can tune at the operating system level (tuned profiles, transparent hugepage settings), application level (Puma workers and threads, Apache httpd processes, Dynflow orchestrator, remote execution transport), database level (PostgreSQL configuration), and caching level (Redis configuration).</p>
+</div>
+<div class="paragraph">
+<p>Before tuning your deployment, review the hardware and software requirements in <a href="https://docs.theforeman.org/nightly/Installing_Server/index-containerized-orcharhino.html#preparing-your-environment-for-orcharhino-server-installation">Preparing your environment for orcharhino&#160;Server installation</a> in <em>Installing orcharhino&#160;Server (containerized)</em>.
+Most configuration changes require a orcharhino restart, so test all tuning changes in a staging environment and set up monitoring to evaluate the effectiveness of changes in your specific environment.</p>
+</div>
+<div class="paragraph">
+<p>Your environment may differ from the testing environment used to develop these recommendations, so results may vary.
+Monitor your deployment health after configuration changes.
+orcharhino provides a health check command to verify system status.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="tuning-hardware-and-operating-system"><a class="anchor" href="#tuning-hardware-and-operating-system"></a>2. Tuning hardware and operating system</h2>
+<div class="sectionbody">
+<div class="paragraph _abstract">
+<p>You can tune the hardware and operating system to optimize orcharhino performance for your scenario.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">CPU</dt>
+<dd>
+<p>The more physical cores that are available to orcharhino, the higher throughput can be achieved for the tasks.
+Some of the orcharhino components such as Puppet and PostgreSQL are CPU intensive applications and can really benefit from the higher number of available CPU cores.</p>
+</dd>
+<dt class="hdlist1">Memory</dt>
+<dd>
+<p>The higher amount of memory available in the system running orcharhino, the better will be the response times for the orcharhino operations.
+Since orcharhino uses PostgreSQL as the database solutions, any additional memory coupled with the tunings will provide a boost to the response times of the applications due to increased data retention in the memory.</p>
+</dd>
+<dt class="hdlist1">Disk</dt>
+<dd>
+<p>orcharhino should be deployed using SSDs to avoid performance bottlenecks.
+Components such as PostgreSQL benefit from using SSDs due to their lower latency compared to HDDs.</p>
+</dd>
+<dt class="hdlist1">Network</dt>
+<dd>
+<p>The communication between the orcharhino&#160;Server and orcharhino&#160;Proxies is impacted by the network performance.
+A decent network with a minimum jitter and low latency is required to enable hassle free operations such as orcharhino&#160;Server and orcharhino&#160;Proxies synchronization.
+At the very least, ensure it is not causing connection resets and similar problems.</p>
+</dd>
+<dt class="hdlist1">Server Power Management</dt>
+<dd>
+<p>Your server by default is likely to be configured to conserve power.
+While this is a good approach to keep the max power consumption in check, it also has a side effect of lowering the performance that orcharhino can achieve.
+For a server running orcharhino, it is recommended to set the BIOS to enable the system to be run in performance mode to boost the maximum performance levels that orcharhino can achieve.</p>
+</dd>
+</dl>
+</div>
+<div class="sect2">
+<h3 id="enabling-tuned-profiles"><a class="anchor" href="#enabling-tuned-profiles"></a>2.1. Enabling tuned profiles</h3>
+<div class="paragraph _abstract">
+<p>Enable tuned profiles to automatically optimize orcharhino performance settings.
+Tuned profiles apply optimizations tailored to your environment.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Install <code>tuned</code> on your orcharhino&#160;Proxy:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf install tuned</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Check if <code>tuned</code> is running:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl status tuned</pre>
+</div>
+</div>
+</li>
+<li>
+<p>If <code>tuned</code> is not running, enable it:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl enable --now tuned</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Optional: View a list of available <code>tuned</code> profiles:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># tuned-adm list</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Enable a <code>tuned</code> profile depending on your scenario:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># tuned-adm profile "<em>My_Tuned_Profile</em>"</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="transparent-hugepage-and-database-performance"><a class="anchor" href="#transparent-hugepage-and-database-performance"></a>2.2. Transparent Hugepage and database performance</h3>
+<div class="paragraph _abstract">
+<p>Transparent Hugepage can reduce database performance in orcharhino.
+PostgreSQL and Redis workloads perform poorly when this feature is enabled.</p>
+</div>
+<div class="paragraph">
+<p>Transparent Hugepage is a memory management technique used by the Linux kernel to reduce the overhead of using the Translation Lookaside Buffer (TLB) by using larger sized memory pages.
+Due to databases having Sparse Memory Access patterns instead of Contiguous Memory access patterns, database workloads often perform poorly when Transparent Hugepage is enabled.</p>
+</div>
+<div class="paragraph">
+<p>In deployments with databases running on separate servers, the benefit of using Transparent Hugepage on the orcharhino&#160;Server might be limited.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="tuning-the-postgresql-database"><a class="anchor" href="#tuning-the-postgresql-database"></a>3. Tuning the PostgreSQL database</h2>
+<div class="sectionbody">
+<div class="paragraph _abstract">
+<p>Configure PostgreSQL database settings to improve response times.
+Tuning PostgreSQL reduces query latency and improves system responsiveness, especially with high database activity.</p>
+</div>
+<div class="paragraph">
+<p>The PostgreSQL authors recommend disabling Transparent Hugepage on servers running PostgreSQL.</p>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="#transparent-hugepage-and-database-performance">Transparent Hugepage and database performance</a></p>
+</li>
+</ul>
+</div>
+<div class="sect2">
+<h3 id="benchmarking-raw-database-performance"><a class="anchor" href="#benchmarking-raw-database-performance"></a>3.1. Benchmarking raw database performance</h3>
+<div class="paragraph _abstract">
+<p>Use <code>pgbench</code> to measure raw PostgreSQL performance and validate storage behavior on your orcharhino environment.
+Benchmarking helps you establish baseline performance metrics and verify that tuning changes improve database responsiveness.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>A non-production system with a valid backup.</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Warning</div>
+</td>
+<td class="content">
+<div class="ulist">
+<ul>
+<li>
+<p>Never run benchmarks on a production system or without a valid backup.</p>
+</li>
+<li>
+<p>Before you start testing, determine how large the database files are.
+Testing with a very small database does not produce meaningful results.
+For example, if the database is only 20 GiB and the buffer pool is 32 GiB, the benchmark does not show problems with a large number of connections because the data fits entirely in the buffer pool.</p>
+</li>
+</ul>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Ensure the PostgreSQL data directory <code>/var/lib/pgsql</code> has enough space for the benchmark workload.
+You might need to resize the volume to 100 GiB or more, depending on how long the benchmark runs and how much data it generates.</p>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Choice of filesystem for PostgreSQL data directory might matter as well.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Install the PGBench utility:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf install postgresql-contrib</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="tuning-the-redis-cache"><a class="anchor" href="#tuning-the-redis-cache"></a>4. Tuning the Redis Cache</h2>
+<div class="sectionbody">
+<div class="paragraph _abstract">
+<p>Understanding Redis tuning helps you improve caching and task tracking performance.
+Proper Redis setup keeps memory use stable and improves orcharhino responsiveness.</p>
+</div>
+<div class="paragraph">
+<p>Redis is an in-memory data store.
+Foreman and Pulp use Redis for caching and Dynflow uses Redis to track its tasks.
+Given the way orcharhino uses Redis, its memory consumption should be stable.</p>
+</div>
+<div class="paragraph">
+<p>The Redis authors recommend disabling Transparent Hugepage on servers running Redis.</p>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="#transparent-hugepage-and-database-performance">Transparent Hugepage and database performance</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
 </div>
 <div id="footer">
 <div id="footer-text">
