@@ -8,7 +8,9 @@ Headings should be clear, concise, and use familiar keywords that help users und
 
 **General principles for all headings:**
 - Make the heading 3-11 words long
-- Use clear headings with familiar keywords for users
+- Make the heading understandable without surrounding context by naming the subject and, for procedures, the action or outcome
+- Use familiar terms that users are likely to search for and reuse key nouns from the content
+- Avoid generic headings such as "Overview", "Additional configuration", or "Other options"
 - Ensure the heading summarizes the contents of the part of the documentation it introduces
 
 **Module-type-specific principles:**

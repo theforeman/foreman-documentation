@@ -16,8 +16,14 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin
 DESTINATION=/var/backup_directory
 if [[ $(date +%w) == 0 ]]; then
   {foremanctl} backup $DESTINATION
+   ls -td -- $DESTINATION/*/ | head -n 1 > $DESTINATION/.last_full_backup
+  else
+    {foremanctl} backup $DESTINATION --base-backup "$(cat
+  $DESTINATION/.last_full_backup)"
+  fi
 else
-  {foremanctl} backup $DESTINATION
+  LAST=$(ls -td -- $DESTINATION/*/ | head -n 1)
+  {foremanctl} backup $DESTINATION --base-backup "$LAST"
 fi
 exit 0
 ----
@@ -40,7 +46,6 @@ endif::[]
 
 ifdef::containerized[]
 Note that the `{foremanctl} backup` command requires `/sbin` and `/usr/sbin` directories to be in `PATH`.
-Incremental backup is not available.
 endif::[]
 ifndef::containerized[]
 Note that the {``{foreman-maintain} backup``} command requires `/sbin` and `/usr/sbin` directories to be in `PATH` and the `--assumeyes` option is used to skip the confirmation prompt.
