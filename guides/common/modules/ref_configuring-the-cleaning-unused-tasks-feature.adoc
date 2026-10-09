@@ -7,14 +7,19 @@
 {Project} automatically cleans up old tasks.
 You can configure the automatic cleaning process according to your needs.
 
+ifndef::containerized[]
 By default, {Project} executes a cron job that cleans tasks every day at 19:45.
+endif::[]
+ifdef::containerized[]
+By default, {Project} runs a systemd timer that cleans tasks every day at midnight (`OnCalendar=daily`).
+endif::[]
 {Project} removes the following tasks during the cleaning:
-
-* Tasks that have run successfully and are older than thirty days
-* All tasks that are older than a year
+* Tasks that have run successfully and are older than 30 days
+* All tasks that are older than 1 year
 
 You can configure the cleaning unused tasks feature using these options:
 
+ifndef::containerized[]
 * To configure the time at which {Project} runs the cron job, set the `--foreman-plugin-tasks-cron-line` parameter to the time you want in cron format.
 For example, to schedule the cron job to run every day at 15:00, enter the following command:
 +
@@ -22,16 +27,74 @@ For example, to schedule the cron job to run every day at 15:00, enter the follo
 ----
 # {foreman-installer} --foreman-plugin-tasks-cron-line "00 15 * * *"
 ----
+endif::[]
+ifdef::containerized[]
+* To configure the time at which {Project} runs the cron job, you can set the systemd timer to the time you want in the OnCalendar format.
+For example, to schedule the cron job to run every day at 15:00, complete the following steps:
++
+--
+. Edit the timer schedule with a drop-in override:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# systemctl edit foreman-recurring@daily.timer
+----
+. Replace the inherited `daily` value:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+[Timer]
+OnCalendar=
+OnCalendar=15:00:00
+----
++
+[NOTE]
+====
+The timer uses `RandomizedDelaySec=120` by default, so the cleanup may start up to 2 minutes after the configured time.
+====
+. Apply and verify the results:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# systemctl daemon-reload
+# systemctl restart foreman-recurring@daily.timer
+# systemctl list-timers foreman-recurring@daily.timer
+----
+--
+endif::[]
+ifndef::containerized[]
 * To configure the period after which {Project} deletes the tasks, edit the `:rules:` section in the `/etc/foreman/plugins/foreman-tasks.yaml` file.
-* To disable regular task cleanup on {Project}, enter the following command:
+endif::[]
+ifdef::containerized[]
+* To configure the period after which {Project} deletes the tasks, use `foreman-rake` task parameters, such as `TASK_SEARCH`, `AFTER`, `STATES`, or the {ProjectWebUI}.
+endif::[]
+* To disable regular task cleanup on {Project}, you can enter the following command:
+ifndef::containerized[]
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
 # {foreman-installer} --foreman-plugin-tasks-automatic-cleanup false
 ----
-* To reenable regular task cleanup on {Project}, enter the following command:
+endif::[]
+ifdef::containerized[]
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# systemctl disable foreman-recurring@daily.timer
+----
+endif::[]
+* To reenable regular task cleanup on {Project}, you can enter the following command:
+ifndef::containerized[]
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
 # {foreman-installer} --foreman-plugin-tasks-automatic-cleanup true
 ----
+endif::[]
+ifdef::containerized[]
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# systemctl enable foreman-recurring@daily.timer
+----
+endif::[]
