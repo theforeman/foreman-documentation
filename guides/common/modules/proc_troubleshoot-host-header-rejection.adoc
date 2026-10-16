@@ -4,26 +4,56 @@
 = Troubleshoot host header rejection
 
 [role="_abstract"]
-If you receive a `403 Forbidden` error when connecting to {ProjectServer} by using a hostname, the request might be rejected by host header validation.
+If you receive a `403 Forbidden` error when connecting to {ProjectServer} or a {SmartProxyServer} by using a hostname, the request might be rejected by host header validation.
 If the hostname is legitimate, declare it as a server alias.
 
-{Project} validates the HTTP `Host` header on every incoming request.
-Only requests whose `Host` header matches the server FQDN or a declared server alias are accepted.
+{Project} and each {SmartProxy} validate the HTTP `Host` and `X-Forwarded-Host` headers on every incoming request.
+Only requests whose hostname matches the FQDN of the component or a declared server alias are accepted.
 Requests that use an IP address, a short hostname, or any other undeclared name are rejected with a `403 Forbidden` error.
+When a request passes through a reverse proxy or a load balancer, the forwarded hostname must also be permitted.
+
+{ProjectServer} and each {SmartProxyServer} maintain their lists of permitted hostnames independently.
+Run the diagnostic commands on the component that rejected the request.
+
+[IMPORTANT]
+====
+In the {SmartProxy} settings file, the `:permitted_hosts` setting governs this error, not the adjacent `:trusted_hosts` setting.
+Adding a hostname to `:trusted_hosts` does not make a {SmartProxy} accept that hostname in a host header.
+====
+
+.Prerequisites
+* You have `root` access on the {ProjectServer} or {SmartProxyServer} that rejected the request.
 
 .Procedure
-. Confirm that the error is a `403 Forbidden` response from your {ProjectServer}:
+. Confirm that the error is a `403 Forbidden` response:
++
+--
+* If you sent the request to {ProjectServer}:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 $ curl --head --insecure https://_hostname.example.com_
 ----
+* If you sent the request to a {SmartProxyServer}:
 +
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+$ curl --head --insecure https://_hostname.example.com_:{smartproxy_port}/features
+----
+--
++
+.Example output
 [source, none, options="nowrap"]
 ----
 HTTP/1.1 403 Forbidden
 ----
-. Verify that host header validation caused the rejection by checking the {ProjectServer} journal for the blocked-host message:
++
+To inspect the response body, repeat the command without the `--head` option.
+The response body of a request that a {SmartProxy} rejects is `Host not permitted`.
+. Verify that host header validation caused the rejection by checking the journal on the component that rejected the request:
++
+--
+* On {ProjectServer}, check for the blocked-host message:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
@@ -35,29 +65,81 @@ HTTP/1.1 403 Forbidden
 ----
 Jul 15 21:49:28 {foreman-example-com} foreman[52746]: 2026-07-15T21:49:28 [E|app|] [ActionDispatch::HostAuthorization::DefaultResponseApp] Blocked hosts: _hostname.example.com_, _hostname.example.com_
 ----
-. Retrieve the FQDN and any server aliases that {ProjectServer} currently accepts:
+* On a {SmartProxyServer}, check the recent {SmartProxy} journal for entries from `Rack::Protection::HostAuthorization`:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# journalctl --unit foreman-proxy --reverse --lines 50
+----
+--
+. If a {SmartProxy} rejected the request, confirm that the {SmartProxy} enforces its list of permitted hostnames:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# journalctl --unit foreman-proxy --no-pager --grep "permitted_hosts is configured but not enforced" _SYSTEMD_INVOCATION_ID="$(systemctl show foreman-proxy.service --property=InvocationID --value)"
+----
++
+The `systemctl show` command returns the ID of the current {SmartProxy} service invocation, which restricts the journal search to the time since the service last started.
+Without that restriction, a warning that an earlier version of the {SmartProxy} logged can still match, because an update restarts the {SmartProxy} without rebooting the host.
++
+If the output contains the warning, the {SmartProxy} accepts any hostname, host header validation is not the cause of the error, and you must look for another cause.
+. Retrieve the hostnames that the component currently accepts:
++
+--
+* On the component that rejected the request, retrieve its FQDN:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
 # hostname --fqdn
 ----
+* On {ProjectServer}, retrieve the hostnames that {Project} accepts:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-# podman secret inspect foreman-settings-yaml --showsecret --format "{{.SecretData}}" | grep ":hosts:" --after-context=3
+# podman secret inspect foreman-settings-yaml --showsecret --format "{{.SecretData}}"
 ----
 +
-If _hostname.example.com_ does not appear in either output, host header validation is rejecting the request.
+{Project} renders the hostnames as a YAML block sequence under the `:hosts:` key, with one indented entry for the FQDN of {ProjectServer} and one for each server alias that you declared.
+Inspect the whole secret rather than filtering it, because a filter can hide entries.
+* On {ProjectServer} or on a {SmartProxyServer}, retrieve the hostnames that the {SmartProxy} on that machine accepts:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# podman secret inspect foreman-proxy-settings-yml --showsecret --format "{{.SecretData}}" | grep ":permitted_hosts:"
+----
++
+The {SmartProxy} renders this list as a single-line JSON array, so the key and all of its values are on one line.
+--
++
+If the list is empty or the key is missing, the component accepts every hostname and host header validation is not the cause of the error.
+If the list is not empty and _hostname.example.com_ does not appear in it, host header validation is rejecting the request.
 . Resolve the problem:
-* If _hostname.example.com_ is a legitimate alternate name for your {ProjectServer}, declare it as a server alias.
+* If _hostname.example.com_ is a legitimate alternate name for your {ProjectServer}, declare it as a server alias on {ProjectServer}:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# {foremanctl} deploy --server-alias _hostname.example.com_
+----
++
+ifndef::installing-capsule-server[]
 For more information, see xref:configure-an-alternate-cname_{context}[].
+endif::[]
+ifdef::installing-capsule-server[]
+For more information, see {InstallingServerDocURL}configure-an-alternate-cname_{project-context}[Configure an alternate CNAME for {Project}] in _{InstallingServerDocTitle}_.
+endif::[]
+* If _hostname.example.com_ is a legitimate alternate name for an external {SmartProxyServer}, declare it as a server alias on that {SmartProxyServer}:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# {foremanctl} deploy-proxy --server-alias _hostname.example.com_
+----
 * If _hostname.example.com_ is not a name you expect your {Project} to answer, the request might indicate a misconfiguration in your network or a security concern.
 ifdef::satellite[]
 Open a Red{nbsp}Hat Support case for further investigation.
 endif::[]
 
 .Verification
-* After you configure a server alias, verify that the request succeeds:
+* After you declare a server alias on {ProjectServer}, verify that the request succeeds:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
@@ -65,3 +147,14 @@ $ curl --silent https://_hostname.example.com_/api/v2/ping | python3 -m json.too
 ----
 +
 The request returns JSON with service status information.
+* After you declare a server alias on a {SmartProxyServer}, verify that the response is no longer `403 Forbidden`:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+$ curl --head --insecure https://_hostname.example.com_:{smartproxy_port}/features
+----
+
+ifndef::installing-capsule-server[]
+.Additional resources
+* xref:host-header-validation[]
+endif::[]
