@@ -42,8 +42,6 @@ class ReleaseDataSource < ::Nanoc::DataSource
         context = build.merge(
           'foreman' => version,
           'katello' => release['katello'],
-          'state' => release['state'],
-          'version' => version,
           'other_builds' => [],
         )
 
