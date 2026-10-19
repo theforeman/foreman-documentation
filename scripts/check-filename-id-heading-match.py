@@ -12,6 +12,7 @@ GREEN = "\033[0;32m"
 NC = "\033[0m"
 
 ID_SUBSTITUTIONS = (
+    ("_{context}", ""),
     ("{project-context}", "project"),
     ("{smart-proxy-context}", "smart-proxy"),
     ("{smart-proxies-context}", "smart-proxies"),
