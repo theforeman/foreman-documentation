@@ -737,23 +737,35 @@ SOFTWARE.
 <li><a href="#cloning-hosts-in-satellite">10.7.2. Cloning hosts in Satellite</a></li>
 </ul>
 </li>
-<li><a href="#maintain-satellite-with-minimal-service-interruption">10.8. Maintain Satellite with minimal service interruption</a></li>
-<li><a href="#manage-hosts-when-inbound-connections-are-blocked">10.9. Manage hosts when inbound connections are blocked</a>
+<li><a href="#installing-flatpak-applications-on-hosts">10.8. Installing Flatpak applications on hosts</a>
 <ul class="sectlevel3">
-<li><a href="#configuring-pull-based-transport-for-remote-execution">10.9.1. Configuring pull-based transport for remote execution</a></li>
+<li><a href="#installing-flatpak-applications-on-a-host-from-satellite-server">10.8.1. Installing Flatpak applications on a host from Satellite&#160;Server</a></li>
+<li><a href="#installing-flatpak-applications-on-a-host-from-capsule-server">10.8.2. Installing Flatpak applications on a host from Capsule&#160;Server</a></li>
 </ul>
 </li>
-<li><a href="#prepare-for-failures-and-recover">10.10. Prepare for failures and recover</a></li>
-<li><a href="#correct-configuration-drift-on-hosts">10.11. Correct configuration drift on hosts</a>
+<li><a href="#consuming-custom-file-type-content-on-hosts">10.9. Consuming custom file type content on hosts</a>
 <ul class="sectlevel3">
-<li><a href="#applying-ansible-definitions-to-hosts">10.11.1. Applying Ansible definitions to hosts</a>
+<li><a href="#downloading-files-to-a-host-from-a-custom-file-type-repository-by-using-web-ui">10.9.1. Downloading files to a host from a custom file type repository by using Satellite web UI</a></li>
+<li><a href="#downloading-files-to-a-host-from-a-custom-file-type-repository-by-using-cli">10.9.2. Downloading files to a host from a custom file type repository by using Hammer CLI</a></li>
+</ul>
+</li>
+<li><a href="#maintain-satellite-with-minimal-service-interruption">10.10. Maintain Satellite with minimal service interruption</a></li>
+<li><a href="#manage-hosts-when-inbound-connections-are-blocked">10.11. Manage hosts when inbound connections are blocked</a>
+<ul class="sectlevel3">
+<li><a href="#configuring-pull-based-transport-for-remote-execution">10.11.1. Configuring pull-based transport for remote execution</a></li>
+</ul>
+</li>
+<li><a href="#prepare-for-failures-and-recover">10.12. Prepare for failures and recover</a></li>
+<li><a href="#correct-configuration-drift-on-hosts">10.13. Correct configuration drift on hosts</a>
+<ul class="sectlevel3">
+<li><a href="#applying-ansible-definitions-to-hosts">10.13.1. Applying Ansible definitions to hosts</a>
 <ul class="sectlevel4">
 <li><a href="#running-ansible-roles-on-a-host">Running Ansible roles on a host</a></li>
 <li><a href="#running-ansible-roles-on-a-host-group">Running Ansible roles on a host group</a></li>
 <li><a href="#configuring-a-host-to-run-ansible-roles-in-check-mode">Configuring a host to run Ansible roles in check mode</a></li>
 </ul>
 </li>
-<li><a href="#enabling-power-management-on-hosts">10.11.2. Enabling power management on hosts</a></li>
+<li><a href="#enabling-power-management-on-hosts">10.13.2. Enabling power management on hosts</a></li>
 </ul>
 </li>
 </ul>
@@ -18043,18 +18055,476 @@ For more information, see <a href="https://docs.redhat.com/en/documentation/red_
 </div>
 </div>
 <div class="sect2">
-<h3 id="maintain-satellite-with-minimal-service-interruption"><a class="anchor" href="#maintain-satellite-with-minimal-service-interruption"></a>10.8. Maintain Satellite with minimal service interruption</h3>
+<h3 id="installing-flatpak-applications-on-hosts"><a class="anchor" href="#installing-flatpak-applications-on-hosts"></a>10.8. Installing Flatpak applications on hosts</h3>
+<div class="paragraph _abstract">
+<p>After you synchronize Flatpak repositories in Satellite, you can install Flatpak applications on hosts from Satellite&#160;Server or Capsule&#160;Server.
+On each host, add a Flatpak remote, authenticate to the container registry, and install the applications you need.</p>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/managing_content/index#managing-flatpak-repositories-in-project">Managing Flatpak repositories in Satellite in <em>Managing content</em></a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/administering_the_system_using_the_gnome_desktop_environment/assembly_installing-applications-using-flatpak_administering-the-system-using-the-gnome-desktop-environment">Installing applications using Flatpak</a></p>
+</li>
+</ul>
+</div>
+<div class="sect3">
+<h4 id="installing-flatpak-applications-on-a-host-from-satellite-server"><a class="anchor" href="#installing-flatpak-applications-on-a-host-from-satellite-server"></a>10.8.1. Installing Flatpak applications on a host from Satellite&#160;Server</h4>
+<div class="paragraph _abstract">
+<p>Connect your host to the Flatpak remote on Satellite&#160;Server, authenticate to the container registry, and install Flatpak applications published through your content views.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Flatpak is installed on the host.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/administering_the_system_using_the_gnome_desktop_environment/assembly_installing-applications-using-flatpak_administering-the-system-using-the-gnome-desktop-environment#setting-up-flatpak_assembly_installing-applications-using-flatpak">Setting up Flatpak</a>.</p>
+</li>
+<li>
+<p>Flatpak application repositories are published through content views.</p>
+</li>
+<li>
+<p>Flatpak runtime repositories are available to hosts alongside application repositories.
+Flatpak applications, such as <code>rhel9/firefox-flatpak</code>, depend on the runtime for installation.</p>
+</li>
+<li>
+<p>The Red&#160;Hat Flatpak remote is enabled.</p>
+</li>
+<li>
+<p>Podman is installed on the host.</p>
+</li>
+<li>
+<p>Podman is configured to trust the certificate authority of Satellite&#160;Server.
+For more information, see <a href="#configuring-podman-to-trust-the-certificate-authority">Configuring Podman to trust the certificate authority</a>.</p>
+</li>
+<li>
+<p>Your Satellite account has the <code>view_lifecycle_environments</code>, <code>view_products</code>, and <code>view_content_views</code> permissions, unless the lifecycle environment allows unauthenticated pull.</p>
+</li>
+<li>
+<p>Your Satellite account has a role that grants the <code>create_personal_access_tokens</code> permission to generate an access token for authentication.
+Satellite generates a token automatically when you run <code>podman login</code>.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On the managed host, add your Satellite&#160;Server as a Flatpak remote:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ flatpak remote-add --authenticator-name=org.flatpak.Authenticator.Oci katello oci+https://<em>satellite.example.com</em>/</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Log in the host to the container registry using one of the following methods:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Certificate authentication</p>
+<div class="ulist">
+<ul>
+<li>
+<p>When registering a host to Satellite or Capsule, select the <strong>Set up container registry certs</strong> checkbox.</p>
+</li>
+<li>
+<p>If the host is already registered, run the <strong>Flatpak - Login to registry via podman</strong> job template on the host.
+Set <strong>Set up certificate authentication</strong> to <code>true</code> and enter the URL of your Capsule as the registry URL.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Using Podman</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Log in using Podman:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ podman login <em>satellite.example.com</em></pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Install your application.
+For example, to install the Mozilla Firefox Flatpak:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ flatpak install firefox</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/administering_the_system_using_the_gnome_desktop_environment/assembly_installing-applications-using-flatpak_administering-the-system-using-the-gnome-desktop-environment#launching-flatpak-applications_assembly_installing-applications-using-flatpak">Launching Flatpak applications</a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/administering_the_system_using_the_gnome_desktop_environment/assembly_installing-applications-using-flatpak_administering-the-system-using-the-gnome-desktop-environment#updating-flatpak-applications_assembly_installing-applications-using-flatpak">Updating Flatpak applications</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="installing-flatpak-applications-on-a-host-from-capsule-server"><a class="anchor" href="#installing-flatpak-applications-on-a-host-from-capsule-server"></a>10.8.2. Installing Flatpak applications on a host from Capsule&#160;Server</h4>
+<div class="paragraph _abstract">
+<p>Connect your host to the Flatpak remote on Capsule&#160;Server, authenticate to the container registry, and install Flatpak applications.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Capsules synchronize Flatpaks and make them available to all hosts, but not organizations, content views, or lifecycle environments.
+Clients receive the latest Flatpaks synchronized on the Capsule globally.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Flatpak repositories are synchronized to Capsule&#160;Server.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/managing_content/index#adding-lifecycle-environments-by-using-web-ui">Adding lifecycle environments to Capsule&#160;Servers by using Satellite web UI in <em>Managing content</em></a>.</p>
+</li>
+<li>
+<p>Flatpak is installed on the host.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/administering_the_system_using_the_gnome_desktop_environment/assembly_installing-applications-using-flatpak_administering-the-system-using-the-gnome-desktop-environment#setting-up-flatpak_assembly_installing-applications-using-flatpak">Setting up Flatpak</a>.</p>
+</li>
+<li>
+<p>Flatpak runtime repositories are available to hosts alongside application repositories.
+Flatpak applications, such as <code>rhel9/firefox-flatpak</code>, depend on the runtime for installation.</p>
+</li>
+<li>
+<p>Podman is installed on the host.</p>
+</li>
+<li>
+<p>Podman is configured to trust the certificate authority of Capsule&#160;Server.
+For more information, see <a href="#configuring-podman-to-trust-the-certificate-authority">Configuring Podman to trust the certificate authority</a>.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On the managed host, add the Capsule as a Flatpak remote:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ flatpak remote-add --authenticator-name=org.flatpak.Authenticator.Oci katello oci+https://capsule.example.com/</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Log in the host to the container registry using one of the following methods:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Certificate authentication</p>
+<div class="ulist">
+<ul>
+<li>
+<p>When registering a host to Capsule, select the <strong>Set up container registry certs</strong> checkbox.</p>
+</li>
+<li>
+<p>If the host is already registered, run the <strong>Flatpak - Login to registry via podman</strong> job template on the host.
+Set <strong>Set up certificate authentication</strong> to <code>true</code> and enter the URL of your Capsule as the registry URL.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Using Podman</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Log in using Podman:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ podman login <em>capsule.example.com</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You might need to log in to the registry again if you have not saved your credentials.</p>
+</div>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Optional: Save your credentials permanently using one of the following options:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>To save the credentials for the current user:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ cp $XDG_RUNTIME_DIR/containers/auth.json $HOME/.config/flatpak/oci-auth.json</pre>
+</div>
+</div>
+</li>
+<li>
+<p>To save the credentials system-wide:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ cp $XDG_RUNTIME_DIR/containers/auth.json /etc/flatpak/oci-auth.json</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Install your application.
+For example, to install the Mozilla Firefox Flatpak:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ flatpak install firefox</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="consuming-custom-file-type-content-on-hosts"><a class="anchor" href="#consuming-custom-file-type-content-on-hosts"></a>10.9. Consuming custom file type content on hosts</h3>
+<div class="paragraph _abstract">
+<p>After you upload or synchronize files to Satellite, you can download files to hosts from a custom file type repository.
+You can download the files over HTTP or HTTPS, which depends on the repository settings.</p>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/managing_content/index#managing-custom-file-type-content-in-satellite">Managing custom file type content in Satellite in <em>Managing content</em></a></p>
+</li>
+</ul>
+</div>
+<div class="sect3">
+<h4 id="downloading-files-to-a-host-from-a-custom-file-type-repository-by-using-web-ui"><a class="anchor" href="#downloading-files-to-a-host-from-a-custom-file-type-repository-by-using-web-ui"></a>10.9.1. Downloading files to a host from a custom file type repository by using Satellite web UI</h4>
+<div class="paragraph _abstract">
+<p>You can download files to a host over HTTPS and optionally over HTTP if the <strong>Unprotected</strong> option for the repository is selected.
+Use Satellite web UI to find the download URL of the custom file type repository.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>You have a custom file type repository.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/managing_content/index#creating-a-custom-file-type-repository-by-using-web-ui">Creating a custom file type repository by using Satellite web UI</a> in <em>Managing content</em>.</p>
+</li>
+<li>
+<p>You know the name of the file you want to download.</p>
+</li>
+<li>
+<p>To download the files over HTTPS, your host has the following certificates:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>The <code>katello-server-ca.crt</code> certificate.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/configuring_authentication_for_red_hat_satellite_users/index#importing-the-katello-root-ca-certificate-by-using-browser">Importing the Katello root CA certificate by using browser</a> in <em>Configuring authentication for Red&#160;Hat Satellite users</em>.</p>
+</li>
+<li>
+<p>An Organization Debug Certificate.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/administering_red_hat_satellite/index#Creating_an_Organization_Debug_Certificate_admin">Creating an Organization Debug Certificate</a> in <em>Administering Red&#160;Hat Satellite</em>.</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Content</strong> &gt; <strong>Products</strong>.</p>
+</li>
+<li>
+<p>Select a custom product by name.</p>
+</li>
+<li>
+<p>Select a file type repository by name.</p>
+</li>
+<li>
+<p>Ensure to select the <strong>Unprotected</strong> checkbox to access the repository published through HTTP.</p>
+</li>
+<li>
+<p>Copy the <strong>Published At</strong> URL.</p>
+</li>
+<li>
+<p>On your host, download the file from Satellite&#160;Server:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>For HTTPS:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># curl \
+--cacert <em>./_katello-server-ca.crt</em> \
+--cert <em>./_My_Organization_key-cert.pem</em> \
+--remote-name \
+https://<em>satellite.example.com</em>/pulp/content/<em>My_Organization_Label</em>/Library/custom/<em>My_Product_Label</em>/<em>My_Repository_Label</em>/<em>My_File</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>For HTTP:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># curl \
+--remote-name \
+http://<em>satellite.example.com</em>/pulp/content/<em>My_Organization_Label</em>/Library/custom/<em>My_Product_Label</em>/<em>My_Repository_Label</em>/<em>My_File</em></pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="downloading-files-to-a-host-from-a-custom-file-type-repository-by-using-cli"><a class="anchor" href="#downloading-files-to-a-host-from-a-custom-file-type-repository-by-using-cli"></a>10.9.2. Downloading files to a host from a custom file type repository by using Hammer CLI</h4>
+<div class="paragraph _abstract">
+<p>You can download files to a host over HTTPS and optionally over HTTP if the <strong>Unprotected</strong> option for the repository is selected.
+Use Hammer CLI to find the download URL of the custom file type repository.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>You have a custom file type repository.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/managing_content/index#creating-a-custom-file-type-repository-by-using-cli">Creating a custom file type repository by using Hammer CLI</a> in <em>Managing content</em>.</p>
+</li>
+<li>
+<p>You know the name of the file you want to download.</p>
+</li>
+<li>
+<p>To download the files over HTTPS, your host has the following certificates:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>The <code>katello-server-ca.crt</code> certificate.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/configuring_authentication_for_red_hat_satellite_users/index#importing-the-katello-root-ca-certificate-by-using-command-line">Importing the Katello root CA certificate by using command line</a> in <em>Configuring authentication for Red&#160;Hat Satellite users</em>.</p>
+</li>
+<li>
+<p>An Organization Debug Certificate.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/administering_red_hat_satellite/index#Creating_an_Organization_Debug_Certificate_admin">Creating an Organization Debug Certificate</a> in <em>Administering Red&#160;Hat Satellite</em>.</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>List the file type repositories:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer repository list --content-type file</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Display the repository information.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer repository info \
+--name "<em>My_Files</em>" \
+--organization-id <em>My_Organization_ID</em> \
+--product "<em>My_File_Product</em>"</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If <strong>Unprotected</strong> is enabled, the output is similar to this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"><strong>Publish Via HTTP:   yes</strong>
+Published At:       https://<em>satellite.example.com</em>/pulp/content/<em>My_Organization_Label</em>/Library/custom/<em>My_File_Product_Label</em>/<em>My_Files_Label</em>/</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If <strong>Unprotected</strong> is not enabled, the output is similar to this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"><strong>Publish Via HTTP:   no</strong>
+Published At:       https://<em>satellite.example.com</em>/pulp/content/<em>My_Organization_Label</em>/Library/custom/<em>My_File_Product_Label</em>/<em>My_Files_Label</em>/</pre>
+</div>
+</div>
+</li>
+<li>
+<p>On your host, download the file from Satellite&#160;Server:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>For HTTPS:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># curl \
+--cacert <em>./_katello-server-ca.crt</em> \
+--cert <em>./_My_Organization_key-cert.pem</em> \
+--remote-name \
+https://<em>satellite.example.com</em>/pulp/content/<em>My_Organization_Label</em>/Library/custom/<em>My_Product_Label</em>/<em>My_Repository_Label</em>/<em>My_File</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>For HTTP:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># curl \
+--remote-name \
+http://<em>satellite.example.com</em>/pulp/content/<em>My_Organization_Label</em>/Library/custom/<em>My_Product_Label</em>/<em>My_Repository_Label</em>/<em>My_File</em></pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="maintain-satellite-with-minimal-service-interruption"><a class="anchor" href="#maintain-satellite-with-minimal-service-interruption"></a>10.10. Maintain Satellite with minimal service interruption</h3>
 <div class="paragraph _abstract">
 <p>Complete routine Satellite maintenance tasks efficiently to keep the system performing well without extended downtime.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="manage-hosts-when-inbound-connections-are-blocked"><a class="anchor" href="#manage-hosts-when-inbound-connections-are-blocked"></a>10.9. Manage hosts when inbound connections are blocked</h3>
+<h3 id="manage-hosts-when-inbound-connections-are-blocked"><a class="anchor" href="#manage-hosts-when-inbound-connections-are-blocked"></a>10.11. Manage hosts when inbound connections are blocked</h3>
 <div class="paragraph _abstract">
 <p>Use pull-based management methods when security policies prevent inbound connections to hosts.</p>
 </div>
 <div class="sect3">
-<h4 id="configuring-pull-based-transport-for-remote-execution"><a class="anchor" href="#configuring-pull-based-transport-for-remote-execution"></a>10.9.1. Configuring pull-based transport for remote execution</h4>
+<h4 id="configuring-pull-based-transport-for-remote-execution"><a class="anchor" href="#configuring-pull-based-transport-for-remote-execution"></a>10.11.1. Configuring pull-based transport for remote execution</h4>
 <div class="paragraph _abstract">
 <p>By default, remote execution uses push-based SSH as the transport mechanism for the Script provider.
 If your infrastructure prohibits outgoing connections from Red&#160;Hat Satellite to hosts, you can use remote execution with pull-based transport instead, because the host initiates the connection to Red&#160;Hat Satellite.
@@ -18130,18 +18600,18 @@ For more information, see <a href="https://docs.redhat.com/en/documentation/red_
 </div>
 </div>
 <div class="sect2">
-<h3 id="prepare-for-failures-and-recover"><a class="anchor" href="#prepare-for-failures-and-recover"></a>10.10. Prepare for failures and recover</h3>
+<h3 id="prepare-for-failures-and-recover"><a class="anchor" href="#prepare-for-failures-and-recover"></a>10.12. Prepare for failures and recover</h3>
 <div class="paragraph _abstract">
 <p>Back up Satellite and set up disaster recovery so you can restore operations quickly if production systems fail.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="correct-configuration-drift-on-hosts"><a class="anchor" href="#correct-configuration-drift-on-hosts"></a>10.11. Correct configuration drift on hosts</h3>
+<h3 id="correct-configuration-drift-on-hosts"><a class="anchor" href="#correct-configuration-drift-on-hosts"></a>10.13. Correct configuration drift on hosts</h3>
 <div class="paragraph _abstract">
 <p>Enforce host configurations on-demand or automatically at intervals to maintain desired state and correct configuration drift.</p>
 </div>
 <div class="sect3">
-<h4 id="applying-ansible-definitions-to-hosts"><a class="anchor" href="#applying-ansible-definitions-to-hosts"></a>10.11.1. Applying Ansible definitions to hosts</h4>
+<h4 id="applying-ansible-definitions-to-hosts"><a class="anchor" href="#applying-ansible-definitions-to-hosts"></a>10.13.1. Applying Ansible definitions to hosts</h4>
 <div class="paragraph _abstract">
 <p>When a host has one or more Ansible roles assigned to it, Satellite can run the roles on the host to apply and enforce the configuration state that the roles define.</p>
 </div>
@@ -18239,7 +18709,7 @@ This helps you reduce risk when validating role behavior on a host.</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="enabling-power-management-on-hosts"><a class="anchor" href="#enabling-power-management-on-hosts"></a>10.11.2. Enabling power management on hosts</h4>
+<h4 id="enabling-power-management-on-hosts"><a class="anchor" href="#enabling-power-management-on-hosts"></a>10.13.2. Enabling power management on hosts</h4>
 <div class="paragraph _abstract">
 <p>Enable the baseboard management controller (BMC) module on Red&#160;Hat Satellite to perform remote power management tasks on hosts, including power cycling and monitoring power states.</p>
 </div>
