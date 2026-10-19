@@ -9,33 +9,15 @@ A request that uses an undeclared hostname is rejected with a `403 Forbidden` er
 Declare every hostname that clients, load balancers, monitoring systems, and automation use.
 
 {Project} and each {SmartProxy} validate the HTTP `Host` and `X-Forwarded-Host` headers of every incoming request against a list of permitted hostnames.
-Port numbers are ignored in the comparison.
 When a request passes through a reverse proxy or a load balancer, the forwarded hostname must also be permitted.
 
-`{foremanctl}` generates the list of permitted hostnames for each component from the FQDN of that component and the server aliases that you declare for it:
-
-* On {ProjectServer}, the `{foremanctl} deploy --server-alias` command sets the list for {Project} and for the {SmartProxy} that runs on {ProjectServer}.
-* On an external {SmartProxyServer}, the `{foremanctl} deploy-proxy --server-alias` command sets the list for the {SmartProxy} on that machine.
-Server aliases that you declare on {ProjectServer} do not apply to an external {SmartProxyServer}.
+`{foremanctl}` generates a separate list of permitted hostnames for {Project} and for each {SmartProxy}, from the FQDN and the server aliases for that server.
 
 `{foremanctl}` regenerates the list on every deployment, so edits that you make directly to a settings file do not persist.
-To declare an additional hostname, add it as a server alias and run the deployment command for that component again.
+To declare an additional hostname, add it as a server alias and run the deployment command for that server again.
 
 Host header validation fails open.
-When the list of permitted hostnames of a component is empty, that component accepts any hostname.
-Package-based installations never populate the list, so their behavior is unchanged and they require no action.
-A {SmartProxy} enforces its list of permitted hostnames only when it runs a Sinatra version that provides host authorization.
-A {SmartProxy} that cannot enforce the list logs a warning when the service starts and accepts any hostname.
-
-Restricting the hostnames that your deployment answers to reduces your exposure to attacks that rely on a forged host header, such as host header injection, cache poisoning, and routing-based server-side request forgery.
-An attacker who can make a component accept an arbitrary hostname can steer the links and redirects that the component generates toward a site that the attacker controls.
-
-[IMPORTANT]
-====
-In the {SmartProxy} settings file, the `:permitted_hosts` setting holds the list of permitted hostnames.
-It is unrelated to the adjacent `:trusted_hosts` setting, which lists the client machines that are authorized to call restricted {SmartProxy} API modules.
-Adding a hostname to `:trusted_hosts` does not make a {SmartProxy} accept that hostname in a host header.
-====
+When a list of permitted hostnames is empty, {Project} or the {SmartProxy} that uses that list accepts any hostname.
 
 .Additional resources
 * xref:troubleshoot-host-header-rejection[]
