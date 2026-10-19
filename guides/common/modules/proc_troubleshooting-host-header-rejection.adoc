@@ -8,12 +8,12 @@ If you receive a `403 Forbidden` error when connecting to {ProjectServer} or a {
 If the hostname is legitimate, declare it as a server alias.
 
 {Project} and each {SmartProxy} validate the HTTP `Host` and `X-Forwarded-Host` headers on every incoming request.
-Only requests whose hostname matches the FQDN of the component or a declared server alias are accepted.
+Only requests whose hostname matches the FQDN of the machine that received the request or a declared server alias are accepted.
 Requests that use an IP address, a short hostname, or any other undeclared name are rejected with a `403 Forbidden` error.
 When a request passes through a reverse proxy or a load balancer, the forwarded hostname must also be permitted.
 
 {ProjectServer} and each {SmartProxyServer} maintain their lists of permitted hostnames independently.
-Run the diagnostic commands on the component that rejected the request.
+Run the diagnostic commands on the {ProjectServer} or {SmartProxyServer} that rejected the request.
 
 [IMPORTANT]
 ====
@@ -50,7 +50,7 @@ HTTP/1.1 403 Forbidden
 +
 To inspect the response body, repeat the command without the `--head` option.
 The response body of a request that a {SmartProxy} rejects is `Host not permitted`.
-. Verify that host header validation caused the rejection by checking the journal on the component that rejected the request:
+. Verify that host header validation caused the rejection by checking the journal on the {ProjectServer} or {SmartProxyServer} that rejected the request:
 +
 --
 * On {ProjectServer}, check for the blocked-host message:
@@ -83,10 +83,10 @@ The `systemctl show` command returns the ID of the current {SmartProxy} service 
 Without that restriction, a warning that an earlier version of the {SmartProxy} logged can still match, because an update restarts the {SmartProxy} without rebooting the host.
 +
 If the output contains the warning, the {SmartProxy} accepts any hostname, host header validation is not the cause of the error, and you must look for another cause.
-. Retrieve the hostnames that the component currently accepts:
+. Retrieve the hostnames that {Project} or the {SmartProxy} currently accepts:
 +
 --
-* On the component that rejected the request, retrieve its FQDN:
+* On the {ProjectServer} or {SmartProxyServer} that rejected the request, retrieve its FQDN:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
@@ -111,7 +111,7 @@ Inspect the whole secret rather than filtering it, because a filter can hide ent
 The {SmartProxy} renders this list as a single-line JSON array, so the key and all of its values are on one line.
 --
 +
-If the list is empty or the key is missing, the component accepts every hostname and host header validation is not the cause of the error.
+If the list is empty or the key is missing, {Project} or the {SmartProxy} accepts every hostname and host header validation is not the cause of the error.
 If the list is not empty and _hostname.example.com_ does not appear in it, host header validation is rejecting the request.
 . Resolve the problem:
 * If _hostname.example.com_ is a legitimate alternate name for your {ProjectServer}, declare it as a server alias on {ProjectServer}:
