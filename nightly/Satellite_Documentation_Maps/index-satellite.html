@@ -279,6 +279,11 @@ SOFTWARE.
 <li><a href="#rhel-system-roles-in-satellite">2.5.3. Red&#160;Hat Enterprise Linux System Roles in Satellite</a></li>
 </ul>
 </li>
+<li><a href="#understand-performance-tuning">2.6. Understand performance tuning</a>
+<ul class="sectlevel3">
+<li><a href="#introduction-to-performance-tuning">2.6.1. Introduction to performance tuning</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li><a href="#_get_started">3. Get started</a>
@@ -1073,9 +1078,26 @@ SOFTWARE.
 <li><a href="#optimize-performance-for-scale">16.1. Optimize performance for scale</a>
 <ul class="sectlevel3">
 <li><a href="#storing-content-on-an-nfs-share">16.1.1. Storing content on an NFS share</a></li>
-<li><a href="#tuning-performance-with-predefined-profiles">16.1.2. Tuning performance with predefined profiles</a></li>
-<li><a href="#capsule-server-scalability-considerations-when-managing-puppet-clients">16.1.3. Capsule&#160;Server scalability considerations when managing Puppet clients</a></li>
-<li><a href="#best-practices-for-optimizing-storage">16.1.4. Best practices for optimizing storage</a></li>
+<li><a href="#tuning-hardware-and-operating-system">16.1.2. Tuning hardware and operating system</a>
+<ul class="sectlevel4">
+<li><a href="#enabling-tuned-profiles">Enabling tuned profiles</a></li>
+<li><a href="#transparent-hugepage-and-database-performance">Transparent Hugepage and database performance</a></li>
+</ul>
+</li>
+<li><a href="#tuning-the-postgresql-database">16.1.3. Tuning the PostgreSQL database</a>
+<ul class="sectlevel4">
+<li><a href="#benchmarking-raw-database-performance">Benchmarking raw database performance</a></li>
+</ul>
+</li>
+<li><a href="#tuning-the-valkey-cache">16.1.4. Tuning the Valkey cache</a></li>
+<li><a href="#capsule-configuration-tuning">16.1.5. Capsule configuration tuning</a>
+<ul class="sectlevel4">
+<li><a href="#capsule-performance-tests">Capsule performance tests</a></li>
+</ul>
+</li>
+<li><a href="#tuning-performance-with-predefined-profiles">16.1.6. Tuning performance with predefined profiles</a></li>
+<li><a href="#capsule-server-scalability-considerations-when-managing-puppet-clients">16.1.7. Capsule&#160;Server scalability considerations when managing Puppet clients</a></li>
+<li><a href="#best-practices-for-optimizing-storage">16.1.8. Best practices for optimizing storage</a></li>
 </ul>
 </li>
 <li><a href="#distribute-load-between-capsule-servers">16.2. Distribute load between Capsule&#160;Servers</a></li>
@@ -2102,6 +2124,65 @@ For up-to-date information about support levels and a complete list of available
 <div class="paragraph">
 <p>To use Red&#160;Hat Enterprise Linux System Roles, import them from your Capsule&#160;Server using the same process as any other Ansible role.
 For more information, see <a href="#importing-ansible-roles-and-variables">Importing Ansible roles and variables</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="understand-performance-tuning"><a class="anchor" href="#understand-performance-tuning"></a>2.6. Understand performance tuning</h3>
+<div class="paragraph _abstract">
+<p>Optimize Satellite performance to ensure smooth operations as your infrastructure scales.</p>
+</div>
+<div class="sect3">
+<h4 id="introduction-to-performance-tuning"><a class="anchor" href="#introduction-to-performance-tuning"></a>2.6.1. Introduction to performance tuning</h4>
+<div class="paragraph _abstract">
+<p>Tune Satellite to improve system response times and handle larger numbers of managed hosts.
+Performance tuning helps optimize resource usage and ensures smooth operations as your infrastructure scales.</p>
+</div>
+<div class="paragraph">
+<p>You can tune Satellite in three primary scenarios:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Selecting the appropriate deployment size during initial installation</p>
+</li>
+<li>
+<p>Optimizing an existing deployment to handle increased load</p>
+</li>
+<li>
+<p>Troubleshooting performance degradation</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Satellite includes several components that you can tune independently to achieve optimal performance for your environment.
+You can tune at the operating system level (tuned profiles, transparent hugepage settings), application level (Puma workers and threads, Apache httpd processes, Dynflow orchestrator, remote execution transport), database level (PostgreSQL configuration), and caching level (Valkey configuration).</p>
+</div>
+<div class="paragraph">
+<p>Before tuning your deployment, review the hardware and software requirements in <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/installing_satellite_server_in_a_connected_network_environment/index#preparing-your-environment-for-satellite-server-installation">Preparing your environment for Satellite&#160;Server installation</a> in <em>Installing Satellite&#160;Server in a connected network environment</em>.
+Most configuration changes require a Satellite restart, so test all tuning changes in a staging environment and set up monitoring to evaluate the effectiveness of changes in your specific environment.</p>
+</div>
+<div class="paragraph">
+<p>Your environment may differ from the testing environment used to develop these recommendations, so results may vary.
+Monitor your deployment health after configuration changes.
+Satellite provides a health check command to verify system status.</p>
+</div>
+<div class="paragraph">
+<p>While these guidelines cover many situations, contact Red Hat support if you have a specific use case that is not included.</p>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="#tuning-hardware-and-operating-system">Tuning hardware and operating system</a></p>
+</li>
+<li>
+<p><a href="#tuning-the-postgresql-database">Tuning the PostgreSQL database</a></p>
+</li>
+<li>
+<p><a href="#tuning-the-valkey-cache">Tuning the Valkey cache</a></p>
+</li>
+</ul>
 </div>
 </div>
 </div>
@@ -35115,7 +35196,349 @@ nfs.example.com:/Satellite/pulp 309506048 58632800 235128224  20% /var/lib/pulp
 </div>
 </div>
 <div class="sect3">
-<h4 id="tuning-performance-with-predefined-profiles"><a class="anchor" href="#tuning-performance-with-predefined-profiles"></a>16.1.2. Tuning performance with predefined profiles</h4>
+<h4 id="tuning-hardware-and-operating-system"><a class="anchor" href="#tuning-hardware-and-operating-system"></a>16.1.2. Tuning hardware and operating system</h4>
+<div class="paragraph _abstract">
+<p>You can tune the hardware and operating system to optimize Satellite performance for your scenario.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">CPU</dt>
+<dd>
+<p>The more physical cores that are available to Satellite, the higher throughput can be achieved for the tasks.
+Some of the Satellite components such as Puppet and PostgreSQL are CPU intensive applications and can really benefit from the higher number of available CPU cores.</p>
+</dd>
+<dt class="hdlist1">Memory</dt>
+<dd>
+<p>The higher amount of memory available in the system running Satellite, the better will be the response times for the Satellite operations.
+Since Satellite uses PostgreSQL as the database solutions, any additional memory coupled with the tunings will provide a boost to the response times of the applications due to increased data retention in the memory.</p>
+</dd>
+<dt class="hdlist1">Disk</dt>
+<dd>
+<p>Satellite should be deployed using SSDs to avoid performance bottlenecks.
+Components such as PostgreSQL benefit from using SSDs due to their lower latency compared to HDDs.</p>
+</dd>
+<dt class="hdlist1">Network</dt>
+<dd>
+<p>The communication between the Satellite&#160;Server and Capsules is impacted by the network performance.
+A decent network with a minimum jitter and low latency is required to enable hassle free operations such as Satellite&#160;Server and Capsules synchronization.
+At the very least, ensure it is not causing connection resets and similar problems.</p>
+</dd>
+<dt class="hdlist1">Server Power Management</dt>
+<dd>
+<p>Your server by default is likely to be configured to conserve power.
+While this is a good approach to keep the max power consumption in check, it also has a side effect of lowering the performance that Satellite can achieve.
+For a server running Satellite, it is recommended to set the BIOS to enable the system to be run in performance mode to boost the maximum performance levels that Satellite can achieve.</p>
+</dd>
+</dl>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/installing_satellite_server_in_a_connected_network_environment/index#system-requirements_satellite">System requirements in <em>Installing Satellite&#160;Server in a connected network environment</em></a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/installing_satellite_server_in_a_connected_network_environment/index#storage-requirements_satellite">Storage requirements in <em>Installing Satellite&#160;Server in a connected network environment</em></a></p>
+</li>
+</ul>
+</div>
+<div class="sect4">
+<h5 id="enabling-tuned-profiles"><a class="anchor" href="#enabling-tuned-profiles"></a>Enabling tuned profiles</h5>
+<div class="paragraph _abstract">
+<p>Enable tuned profiles to automatically optimize Satellite performance settings.
+Tuned profiles apply optimizations tailored to your environment.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Install <code>tuned</code> on your Capsule:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf install tuned</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Check if <code>tuned</code> is running:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl status tuned</pre>
+</div>
+</div>
+</li>
+<li>
+<p>If <code>tuned</code> is not running, enable it:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl enable --now tuned</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Optional: View a list of available <code>tuned</code> profiles:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># tuned-adm list</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Enable a <code>tuned</code> profile depending on your scenario:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># tuned-adm profile "<em>My_Tuned_Profile</em>"</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect4">
+<h5 id="transparent-hugepage-and-database-performance"><a class="anchor" href="#transparent-hugepage-and-database-performance"></a>Transparent Hugepage and database performance</h5>
+<div class="paragraph _abstract">
+<p>Transparent Hugepage can reduce database performance in Satellite.
+PostgreSQL and Valkey workloads perform poorly when this feature is enabled.</p>
+</div>
+<div class="paragraph">
+<p>Transparent Hugepage is a memory management technique used by the Linux kernel to reduce the overhead of using the Translation Lookaside Buffer (TLB) by using larger sized memory pages.
+Due to databases having Sparse Memory Access patterns instead of Contiguous Memory access patterns, database workloads often perform poorly when Transparent Hugepage is enabled.</p>
+</div>
+<div class="paragraph">
+<p>In deployments with databases running on separate servers, the benefit of using Transparent Hugepage on the Satellite&#160;Server might be limited.</p>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="https://access.redhat.com/solutions/1320153">How to disable transparent hugepages (THP) on Red Hat Enterprise Linux</a></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="tuning-the-postgresql-database"><a class="anchor" href="#tuning-the-postgresql-database"></a>16.1.3. Tuning the PostgreSQL database</h4>
+<div class="paragraph _abstract">
+<p>Configure PostgreSQL database settings to improve response times.
+Tuning PostgreSQL reduces query latency and improves system responsiveness, especially with high database activity.</p>
+</div>
+<div class="paragraph">
+<p>The PostgreSQL authors recommend disabling Transparent Hugepage on servers running PostgreSQL.</p>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="#transparent-hugepage-and-database-performance">Transparent Hugepage and database performance</a></p>
+</li>
+</ul>
+</div>
+<div class="sect4">
+<h5 id="benchmarking-raw-database-performance"><a class="anchor" href="#benchmarking-raw-database-performance"></a>Benchmarking raw database performance</h5>
+<div class="paragraph _abstract">
+<p>Use <code>pgbench</code> to measure raw PostgreSQL performance and validate storage behavior on your Satellite environment.
+Benchmarking helps you establish baseline performance metrics and verify that tuning changes improve database responsiveness.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>A non-production system with a valid backup.</p>
+</li>
+</ul>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Warning</div>
+</td>
+<td class="content">
+<div class="ulist">
+<ul>
+<li>
+<p>Never run benchmarks on a production system or without a valid backup.</p>
+</li>
+<li>
+<p>Before you start testing, determine how large the database files are.
+Testing with a very small database does not produce meaningful results.
+For example, if the database is only 20 GiB and the buffer pool is 32 GiB, the benchmark does not show problems with a large number of connections because the data fits entirely in the buffer pool.</p>
+</li>
+</ul>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>To identify the largest tables by disk space for
+Candlepin, Foreman, and Pulp,
+use the <a href="https://github.com/RedHatSatellite/satellite-support/blob/master/postgres-size-report">postgres-size-report</a> script in the <a href="https://github.com/RedHatSatellite/satellite-support">satellite-support</a> Git repository.
+For more information, see <a href="https://github.com/RedHatSatellite/satellite-support">github.com/RedHatSatellite/satellite-support</a>.</p>
+</li>
+<li>
+<p>Ensure the PostgreSQL data directory <code>/var/lib/pgsql</code> has enough space for the benchmark workload.
+You might need to resize the volume to 100 GiB or more, depending on how long the benchmark runs and how much data it generates.</p>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Choice of filesystem for PostgreSQL data directory might matter as well.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Install the PGBench utility:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf install postgresql-contrib</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="tuning-the-valkey-cache"><a class="anchor" href="#tuning-the-valkey-cache"></a>16.1.4. Tuning the Valkey cache</h4>
+<div class="paragraph _abstract">
+<p>Understanding Valkey tuning helps you improve caching and task tracking performance.
+Proper Valkey setup keeps memory use stable and improves Satellite responsiveness.</p>
+</div>
+<div class="paragraph">
+<p>Valkey is an in-memory data store.
+Foreman and Pulp use Valkey for caching and Dynflow uses Valkey to track its tasks.
+Given the way Satellite uses Valkey, its memory consumption should be stable.</p>
+</div>
+<div class="paragraph">
+<p>The Valkey authors recommend disabling Transparent Hugepage on servers running Valkey.</p>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="#transparent-hugepage-and-database-performance">Transparent Hugepage and database performance</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="capsule-configuration-tuning"><a class="anchor" href="#capsule-configuration-tuning"></a>16.1.5. Capsule configuration tuning</h4>
+<div class="paragraph _abstract">
+<p>Capsule tuning distributes load to deliver content across networks.
+Properly configured Capsules reduce Satellite&#160;Server load and improve remote execution performance.</p>
+</div>
+<div class="paragraph">
+<p>Capsules do not improve performance for operations that extensively use the Satellite API,
+such as host registration or package profile update.</p>
+</div>
+<div class="sect4">
+<h5 id="capsule-performance-tests"><a class="anchor" href="#capsule-performance-tests"></a>Capsule performance tests</h5>
+<div class="paragraph _abstract">
+<p>Review performance test results for different Capsule hardware configurations to determine the optimal sizing for your deployment.
+Choose the right resources based on your expected workload for content delivery, host registration, and remote execution tasks.</p>
+</div>
+<div class="paragraph">
+<p>Red&#160;Hat tested the following configurations:</p>
+</div>
+<table class="tableblock frame-all grid-all" style="width: 79%;">
+<colgroup>
+<col style="width: 48%;">
+<col style="width: 19%;">
+<col style="width: 33%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Capsule HW configuration</th>
+<th class="tableblock halign-left valign-top">CPUs</th>
+<th class="tableblock halign-left valign-top">RAM</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">minimal</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">12 GiB</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">large</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">8</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">24 GiB</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">extra large</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">16</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">46 GiB</p></td>
+</tr>
+</tbody>
+</table>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Content delivery use case</dt>
+<dd>
+<p>In a download test where we concurrently downloaded a 40MB repo of 2000 packages on 100, 200, .. 1000 hosts, we saw roughly 50% improvement in average download duration every time when we doubled Capsule&#160;Server resources.
+For more precise numbers, see the table below.</p>
+</dd>
+</dl>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 25%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Concurrent downloading hosts</th>
+<th class="tableblock halign-left valign-top">Minimal (4 CPU and 12 GiB RAM) &#8594; Large (8 CPU and 24 GiB RAM)</th>
+<th class="tableblock halign-left valign-top">Large (8 CPU and 24 GiB RAM) &#8594; Extra Large (16 CPU and 46 GiB RAM)</th>
+<th class="tableblock halign-left valign-top">Minimal (4 CPU and 12 GiB RAM) &#8594; Extra Large (16 CPU and 46 GiB RAM)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Average Improvement</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">~ 50% (e.g. for 700 concurrent downloads in average 9 seconds vs. 4.4 seconds per package)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">~ 40% (e.g. for 700 concurrent downloads in average 4.4 seconds vs. 2.5 seconds per package)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">~ 70% (e.g. for 700 concurrent downloads in average 9 seconds vs. 2.5 seconds per package)</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>When we compared download performance from Satellite&#160;Server vs. from Capsule&#160;Server, we have seen only about 5% speedup, but that is expected as Capsule&#160;Server&#8217;s main benefit is in getting content closer to geographically distributed clients (or clients in different networks) and in handling part of the load Satellite&#160;Server would have to handle itself.
+In some smaller hardware configurations (8 CPUs and 24 GiB), Satellite&#160;Server was not able to handle downloads from more than 500 concurrent clients, while a Capsule&#160;Server with the same hardware configuration was able to service more than 1000 and possibly even more.</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Concurrent registrations use case</dt>
+<dd>
+<p>For concurrent registrations, a bottleneck is usually CPU speed, but all configs were able to handle even high concurrency without swapping.
+Hardware resources used for Capsule have only minimal impact on registration performance.
+For example, Capsule&#160;Server with 16 CPUs and 46 GiB RAM have at most a 9% registration speed improvement when compared to a Capsule&#160;Server with 4 CPUs and 12 GiB RAM.</p>
+</dd>
+<dt class="hdlist1">Remote execution use case</dt>
+<dd>
+<p>We have tested executing remote execution jobs by using both SSH and Ansible backend on 500, 2000 and 4000 hosts.
+All configurations were able to handle all of the tests without errors, except for the smallest configuration (4 CPUs and 12 GiB memory) which failed to finish on all 4000 hosts.</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="tuning-performance-with-predefined-profiles"><a class="anchor" href="#tuning-performance-with-predefined-profiles"></a>16.1.6. Tuning performance with predefined profiles</h4>
 <div class="paragraph _abstract">
 <p>If your Satellite deployment includes a large number of hosts, you can use predefined tuning profiles to configure your Satellite&#160;Server to use the optimal amount of CPU cores and memory.
 This can help improve Satellite performance.</p>
@@ -35190,7 +35613,7 @@ This can help improve Satellite performance.</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="capsule-server-scalability-considerations-when-managing-puppet-clients"><a class="anchor" href="#capsule-server-scalability-considerations-when-managing-puppet-clients"></a>16.1.3. Capsule&#160;Server scalability considerations when managing Puppet clients</h4>
+<h4 id="capsule-server-scalability-considerations-when-managing-puppet-clients"><a class="anchor" href="#capsule-server-scalability-considerations-when-managing-puppet-clients"></a>16.1.7. Capsule&#160;Server scalability considerations when managing Puppet clients</h4>
 <div class="paragraph _abstract">
 <p>Capsule&#160;Server scalability when managing Puppet clients depends on the number of CPUs, the run-interval distribution, and the number of Puppet managed resources.</p>
 </div>
@@ -35295,7 +35718,7 @@ The limit of 100 concurrent requests applies.</p>
 </table>
 </div>
 <div class="sect3">
-<h4 id="best-practices-for-optimizing-storage"><a class="anchor" href="#best-practices-for-optimizing-storage"></a>16.1.4. Best practices for optimizing storage</h4>
+<h4 id="best-practices-for-optimizing-storage"><a class="anchor" href="#best-practices-for-optimizing-storage"></a>16.1.8. Best practices for optimizing storage</h4>
 <div class="paragraph _abstract">
 <p>You can optimize your storage by following the storage best practices.
 These include using LVM for <code>/var</code>, high-bandwidth storage for critical directories, and appropriate file systems to improve I/O performance and scalability.</p>
