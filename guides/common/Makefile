@@ -80,6 +80,7 @@ $(IMAGES_TS): $(BUILD_DIR) $(IMAGES)
 	@touch $(IMAGES_TS)
 
 $(DEST_HTML): $(SOURCES) $(DEPENDENCIES) $(DOCINFO_SOURCES) $(DEST_DIR)/style.css $(IMAGES_TS)
+	@if grep --quiet ":DocState: stable" common/attributes.adoc; then sed --in-place "/robots/d" common/docinfo.html; fi
 	bundle exec asciidoctor -r asciidoctor-tabs -a build=$(BUILD) $(BASEURL_ATTR) -a docinfo=shared -a docinfodir=common -a imagesdir=../images -a date_mdy="$(DATE_MDY)" -a date_my="$(DATE_MY)" -a docdatetime="$(DATE_MY)" -a stylesheet=$(DEST_DIR)/style.css -a attribute-missing=warn -b html5 -d book --trace -o $@ $< 2>&1 | tee $@.log 1>&2
 	@echo CHECKING FOR ASCIIDOCTOR ERRORS AND WARNINGS
 	@! grep -Eq "^asciidoctor: (ERROR|WARNING)" $@.log
