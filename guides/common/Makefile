@@ -85,3 +85,12 @@ $(DEST_HTML): $(SOURCES) $(DEPENDENCIES) $(DOCINFO_SOURCES) $(DEST_DIR)/style.cs
 	@! grep -Eq "^asciidoctor: (ERROR|WARNING)" $@.log
 	@echo CHECKING FOR ORPHAN XREFS HTML LINKS
 	@! grep -RE '<a href="#[a-zA-Z0-9_-]+">\[[a-zA-Z0-9_-]+\]</a>' $@
+	@echo "CHECKING FOR DANGLING INTERNAL LINKS (Guard A, report-only)"
+	@dangling=$$(comm -23 \
+	  <(grep -oE 'href="#[^"]+"' $@ | sed -E 's/href="#(.*)"/\1/' | sort -u) \
+	  <(grep -oE ' id="[^"]+"'   $@ | sed -E 's/ id="(.*)"/\1/'    | sort -u)); \
+	  n=$$(printf '%s\n' "$$dangling" | grep -c .); \
+	  if [ "$$n" -gt 0 ]; then echo "REPORT: $$n dangling internal link id(s):"; printf '%s\n' "$$dangling"; else echo "OK: no dangling internal links"; fi
+	@echo "CHECKING FOR UNRESOLVED XREF LITERALS (Guard B, report-only)"
+	@n=$$(grep -oE 'xref:\[' $@ | wc -l); \
+	  if [ "$$n" -gt 0 ]; then echo "REPORT: $$n unresolved 'xref:[' literal(s)"; else echo "OK: no unresolved xref literals"; fi
