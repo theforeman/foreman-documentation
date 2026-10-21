@@ -835,6 +835,20 @@ SOFTWARE.
 <li><a href="#enabling-power-management-on-hosts">10.13.2. Enabling power management on hosts</a></li>
 </ul>
 </li>
+<li><a href="#converting-hosts-to-rhel">10.14. Converting hosts to Red&#160;Hat Enterprise Linux</a>
+<ul class="sectlevel3">
+<li><a href="#overview-of-the-conversion-process">10.14.1. Overview of the conversion process</a></li>
+<li><a href="#converting-a-host-to-rhel">10.14.2. Converting a host to Red&#160;Hat Enterprise Linux</a></li>
+<li><a href="#ansible-variables-for-conversion_managing-hosts">10.14.3. Ansible variables for conversion</a></li>
+</ul>
+</li>
+<li><a href="#host-management-and-monitoring-by-using-cockpit">10.15. Host management and monitoring by using the RHEL web console</a>
+<ul class="sectlevel3">
+<li><a href="#Enabling_Cockpit_on_Server_managing-hosts">10.15.1. Enabling the RHEL web console on Satellite</a></li>
+<li><a href="#managing-and-monitoring-hosts-using-cockpit">10.15.2. Managing and monitoring hosts using the RHEL web console</a></li>
+<li><a href="#disabling-cockpit-on-project_managing-hosts">10.15.3. Disabling the RHEL web console on Satellite</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li><a href="#_develop">11. Develop</a>
@@ -1186,7 +1200,6 @@ SOFTWARE.
 <li><a href="#enabling-vulnerability-analysis-on-hosts">Enabling vulnerability analysis on hosts</a></li>
 <li><a href="#exclusion-of-hosts-from-red-hat-lightspeed-analytics_insights-in-satellite">Exclusion of hosts from Red&#160;Hat Lightspeed analytics</a></li>
 <li><a href="#troubleshooting-red-hat-lightspeed-in-satellite">Troubleshooting Red&#160;Hat Lightspeed in Satellite</a></li>
-<li><a href="#host-parameter-hierarchy">Host parameter hierarchy</a></li>
 </ul>
 </li>
 </ul>
@@ -20250,17 +20263,15 @@ For example, it can have hostnames, SSH keys, request files and SSL certificates
 The <code>satellitectl backup</code> command does not overwrite backups, therefore you must select the correct directory or subdirectory when restoring from a backup.</p>
 </div>
 <div class="paragraph">
-<p>Satellite creates the following default backup directories:</p>
+<p>Satellite names each subdirectory <code>foreman-backup-<em>TIMESTAMP</em></code>, for example <code>foreman-backup-20260617T104115</code>.
+The <code>foreman-backup-</code> prefix is the same for Satellite&#160;Server and Capsule&#160;Server backups.</p>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p><code>satellite-backup</code> on Satellite&#160;Server</p>
-</li>
-<li>
-<p><code>satellite-proxy-backup</code> on Capsule&#160;Server</p>
-</li>
-</ul>
+<div class="paragraph">
+<p>Satellite stores the backup in the directory that you specify as an argument to the <code>satellitectl backup</code> command.
+For example, running the <code>satellitectl backup /var/backup</code> command creates the backup in the <code>/var/backup/</code> directory, for example <code>/var/backup/foreman-backup-20260617T104115/</code>.</p>
+</div>
+<div class="paragraph">
+<p>To identify which deployment a backup was taken from, read the <code>metadata.yml</code> file inside the subdirectory.</p>
 </div>
 </div>
 <div class="sect5">
@@ -21818,6 +21829,436 @@ Red&#160;Hat Satellite uses this NIC to pass credentials to the host.</p>
 <li>
 <p>Configure a BMC interface on your host.
 For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/managing_hosts/index#configuring-a-baseboard-management-controller-interface">Configuring a baseboard management controller (BMC) interface</a> in <em>Managing hosts</em>.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="converting-hosts-to-rhel"><a class="anchor" href="#converting-hosts-to-rhel"></a>10.14. Converting hosts to Red&#160;Hat Enterprise Linux</h3>
+<div class="paragraph _abstract">
+<p>You can convert Red&#160;Hat Enterprise Linux derivative distributions, such as CentOS or Oracle Linux, to supported Red&#160;Hat Enterprise Linux on a host while retaining installed applications and configurations.
+This helps you move your hosts to Red&#160;Hat Enterprise Linux without a full reinstall.</p>
+</div>
+<div class="sect3">
+<h4 id="overview-of-the-conversion-process"><a class="anchor" href="#overview-of-the-conversion-process"></a>10.14.1. Overview of the conversion process</h4>
+<div class="paragraph _abstract">
+<p>You can use the Convert2RHEL utilities in Satellite to convert CentOS or Oracle Linux hosts to Red&#160;Hat Enterprise Linux.
+The process replaces packages with Red&#160;Hat Enterprise Linux equivalents while retaining applications and configurations.</p>
+</div>
+<div class="paragraph">
+<p>The conversion process is similar to a minor release upgrade of Red&#160;Hat Enterprise Linux in which every RPM package on the system is replaced.
+Third-party packages and non-Red Hat packages that are not available in Red&#160;Hat Enterprise Linux are retained.</p>
+</div>
+<div class="paragraph">
+<p>The Convert2RHEL utility removes unnecessary packages such as logos or packages known to cause issues during the conversion.
+The utility replaces the <code>CentOS-release</code> or <code>Oracle-release</code> package with the <code>rhel-release</code> package, and all packages signed by CentOS or Oracle with their Red Hat equivalents.
+The utility also subscribes the host to Red&#160;Hat Subscription Management.</p>
+</div>
+<div class="paragraph">
+<p>The duration of the conversion process depends on the number of packages that have to be replaced, network speed, storage speed, and similar factors.</p>
+</div>
+<div class="paragraph">
+<p>These following conversions are supported by Red&#160;Hat:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>CentOS Linux 7 to Red&#160;Hat Enterprise Linux 7</p>
+</li>
+<li>
+<p>Oracle Linux 7 to Red&#160;Hat Enterprise Linux 7</p>
+</li>
+<li>
+<p>Oracle Linux 8 to Red&#160;Hat Enterprise Linux 8</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>If you convert to a RHEL version that is in the Extended Life Phase and you do not plan to upgrade your host to a fully supported RHEL version, Red&#160;Hat recommends using an Extended Life Cycle Support (ELS) Add-On subscription during the conversion.
+Note that the conversion and the subsequent upgrade without an ELS subscription come with a limited support scope.</p>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="https://access.redhat.com/support/policy/updates/errata#Extended_Life_Cycle_Phase">Extended Life Phase</a></p>
+</li>
+<li>
+<p><a href="https://access.redhat.com/support/policy/convert2rhel-support">RHEL Conversion Support Policy</a></p>
+</li>
+<li>
+<p><a href="https://access.redhat.com/support/policy/ipu-support">RHEL In-place upgrade Support Policy</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="converting-a-host-to-rhel"><a class="anchor" href="#converting-a-host-to-rhel"></a>10.14.2. Converting a host to Red&#160;Hat Enterprise Linux</h4>
+<div class="paragraph _abstract">
+<p>You can convert a host to Red&#160;Hat Enterprise Linux by using the Convert2RHEL Ansible role and playbook in Satellite.
+The role prepares conversion data on Satellite&#160;Server, and the playbook runs the conversion on the host.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>You have reviewed the <a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/8/html-single/converting_from_a_linux_distribution_to_rhel_using_the_convert2rhel_utility/index#con_supported-conversion-paths_converting-from-a-linux-distribution-to-rhel">supported conversion paths</a> in <em>Red&#160;Hat Enterprise Linux&#160;8 Converting from a Linux distribution to RHEL using the Convert2RHEL utility</em>.</p>
+</li>
+<li>
+<p>A subscription manifest is uploaded to your Satellite with sufficient Red&#160;Hat Enterprise Linux entitlements allocated for the conversions you intend.
+Alternatively, you can use Ansible variables to tell the role to import the manifest from disk.
+The manifest must be imported to the organization to which you will register hosts for conversion.</p>
+<div class="paragraph">
+<p>You can update your allocations and download the updated manifest from the <a href="https://access.redhat.com">Red Hat Customer Portal</a>.
+For more information, see <a href="https://docs.redhat.com/en/documentation/subscription_central/1-latest/html-single/creating_and_managing_manifests_for_a_connected_satellite_server/index#proc-exporting-downloading-manifest-satellite-connected">Exporting and downloading a manifest</a> in <em>Creating and managing manifests for a connected Satellite Server</em>.</p>
+</div>
+</li>
+<li>
+<p>Red Hat repositories are enabled and synchronized in Satellite for the minor Red&#160;Hat Enterprise Linux version to which you convert your hosts.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/managing_content/index#enabling-red-hat-repositories-by-using-web-ui">Enabling Red&#160;Hat repositories by using Satellite web UI</a> and <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/managing_content/index#synchronizing-repositories-ad-hoc">Synchronizing repositories ad hoc</a> in <em>Managing content</em>.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Import the <code>redhat.satellite.convert2rhel</code> Ansible role and variables.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/managing_configurations_by_using_ansible_integration/index#Importing_Ansible_Roles_and_Variables_ansible">Importing Ansible Roles and Variables</a> in <em>Managing configurations by using Ansible integration</em>.</p>
+</li>
+<li>
+<p>Configure Ansible variables for generation of conversion data.
+For more information, see <a href="#ansible-variables-for-conversion_managing-hosts">Ansible variables for conversion</a>.</p>
+</li>
+<li>
+<p>Assign the <code>redhat.satellite.convert2rhel</code> role to the host that represents Satellite&#160;Server.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/managing_configurations_by_using_ansible_integration/index#Assigning_Ansible_Roles_to_an_Existing_Host_ansible">Assigning Ansible Roles to an Existing Host</a> in <em>Managing configurations by using Ansible integration</em>.</p>
+</li>
+<li>
+<p>Run the Ansible role on Satellite&#160;Server.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/managing_configurations_by_using_ansible_integration/index#running-ansible-roles-on-a-host">Running Ansible roles on a host</a> in <em>Managing configurations by using Ansible integration</em>.</p>
+<div class="paragraph">
+<p>The Ansible role generates data required for host conversion, that is, repositories, certificates, activation keys, and host groups.
+The role enables the <code>rhel-7-server-rpms</code> repository with the <strong>7Server</strong> release and <strong>x86_64</strong> architecture, or <code>rhel-8-for-x86_64-baseos-rpms</code> and <code>rhel-8-for-x86_64-appstream-rpms</code>, or both, depending on which variables you have set in the previous steps.</p>
+</div>
+</li>
+<li>
+<p>Register a host for conversion by using a generated host group.</p>
+<div class="paragraph">
+<p>Use the global registration template to register and subscribe your host before the conversion.
+Select the host group that was generated for the conversion you intend, such as <code>CentOS 7 converting</code> if you convert the host from CentOS&#160;7.
+For more information, see <a href="#registering-hosts-by-using-global-registration">Registering hosts by using global registration</a>.</p>
+</div>
+</li>
+<li>
+<p>Run the pre-conversion analysis on the host group to verify if your hosts are ready for the conversion.
+Execute a remote job with the following settings:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Job category</strong>: <code>Convert 2 RHEL</code></p>
+</li>
+<li>
+<p><strong>Job template</strong>: <code>Convert2RHEL analyze</code></p>
+</li>
+<li>
+<p>If you want to use an Extended Lifecycle Support add-on subscription, set the <strong>ELS</strong> option to <code>yes</code>.</p>
+<div class="paragraph">
+<p>For more information, see <a href="#configuring-and-setting-up-remote-jobs">Configuring and setting up remote jobs</a>.</p>
+</div>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Review pre-conversion analysis reports and resolve all issues that are blocking the conversion.
+Repeat this step until you resolve all blocking issues.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/8/html-single/converting_from_a_linux_distribution_to_rhel_using_the_convert2rhel_utility/index#reviewing-the-pre-conversion-analysis-report_converting-using-the-command-line">Reviewing the pre-conversion analysis report</a> in <em>Red&#160;Hat Enterprise Linux&#160;8 Converting from a Linux distribution to RHEL using the Convert2RHEL utility</em>.</p>
+</div>
+</li>
+<li>
+<p>Run the Convert2RHEL playbook on the host group.
+Execute a remote job with the following settings:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Job category</strong>: <code>Convert 2 RHEL</code></p>
+</li>
+<li>
+<p><strong>Job template</strong>: <code>Convert to RHEL</code></p>
+</li>
+<li>
+<p><strong>Activation key</strong>:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><code>convert2rhel_rhel7</code> if you convert to Red&#160;Hat Enterprise Linux 7</p>
+</li>
+<li>
+<p><code>convert2rhel_rhel8</code> if you convert to Red&#160;Hat Enterprise Linux 8</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>If you want to use an Extended Lifecycle Support add-on subscription, set the <strong>ELS</strong> option to <code>yes</code>.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>For more information, see <a href="#configuring-and-setting-up-remote-jobs">Configuring and setting up remote jobs</a>.</p>
+</div>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="https://access.redhat.com/articles/2360841">How to perform an unsupported conversion from a RHEL-derived Linux distribution to RHEL in the <em>Red&#160;Hat Knowledgebase</em></a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="ansible-variables-for-conversion_managing-hosts"><a class="anchor" href="#ansible-variables-for-conversion_managing-hosts"></a>10.14.3. Ansible variables for conversion</h4>
+<div class="paragraph _abstract">
+<p>Configure the required Ansible variables for the Convert2RHEL role before you run it to generate conversion data on Satellite&#160;Server.
+This reference lists the variables and their intended values.</p>
+</div>
+<div class="paragraph">
+<p>Satellite imports most of the required Ansible variables from the <code>redhat.satellite.convert2rhel</code> role.
+However, some variables are not imported.
+These variables are marked with an asterisk <code>*</code> in the tables below.
+You must create those additional variables manually and assign them to the <code>redhat.satellite.convert2rhel</code> role.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 14. Required variables for conversion</caption>
+<colgroup>
+<col style="width: 44.4444%;">
+<col style="width: 11.1111%;">
+<col style="width: 44.4445%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Intent and value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>satellite_server_url</code> *</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">URL of your Satellite&#160;Server, such as <code>https://satellite.example.com</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>satellite_username</code> *</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Your user name</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>satellite_password</code> *</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Your password</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>satellite_organization</code> *</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Name of your organization</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>satellite_content_rhel_wait_for_syncs</code> *</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Set to <code>false</code> if you do not want Satellite&#160;Server to wait until repository sync finishes before continuing with data generation. (default: <code>true</code>)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>satellite_validate_certs</code> *</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Set to <code>true</code> if you want to enable certificate checks in Ansible. (default: <code>true</code>)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>satellite_convert2rhel_manage_subscription</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Set to <code>false</code> if you already have a manifest on your Satellite&#160;Server.
+If you upload a new manifest from disk, the current manifest will be overwritten. (default: <code>true</code>)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>satellite_content_rhel_enable_rhel7</code> *</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enables Red&#160;Hat Enterprise Linux 7 repositories.
+Set to <code>false</code> if you do not intend to convert hosts to Red&#160;Hat Enterprise Linux 7. (default: <code>true</code>)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>satellite_convert2rhel_enable_oracle7</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Set to <code>true</code> if you want to prepare conversion data for Oracle Linux 7.
+Otherwise, you must set the value to <code>false</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>satellite_content_rhel_enable_rhel8</code> *</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enables Red&#160;Hat Enterprise Linux 8 repositories.
+Set to <code>false</code> if you do not intend to convert hosts to Red&#160;Hat Enterprise Linux 8. (default: <code>true</code>)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>satellite_convert2rhel_enable_oracle8</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Set to <code>true</code> if you want to prepare conversion data for Oracle Linux 8.
+Otherwise, you must set the value to <code>false</code>.</p></td>
+</tr>
+</tbody>
+</table>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 15. Optional variables for conversion</caption>
+<colgroup>
+<col style="width: 44.4444%;">
+<col style="width: 11.1111%;">
+<col style="width: 44.4445%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Intent and value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>satellite_manifest_path</code> *</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Path to a manifest to upload from disk, such as <code>~/manifest.zip</code>.
+You must set this path if you upload a new manifest from disk using <code>satellite_convert2rhel_manage_subscription</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>satellite_content_rhel_rhel8_releasever</code> *</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Minor release version, such as <code>8.5</code>.
+Set this variable if the minor release version of your system differs from the latest Red&#160;Hat Enterprise Linux release to prevent conversion issues. (default: latest)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="host-management-and-monitoring-by-using-cockpit"><a class="anchor" href="#host-management-and-monitoring-by-using-cockpit"></a>10.15. Host management and monitoring by using the RHEL web console</h3>
+<div class="paragraph _abstract">
+<p>You can use the RHEL web console web interface to perform actions and monitor Red&#160;Hat Enterprise Linux hosts.
+Enable RHEL web console integration in Satellite to view host dashboards and use RHEL web console features, such as Red&#160;Hat Image Builder, from within the Satellite web UI.</p>
+</div>
+<div class="sect3">
+<h4 id="Enabling_Cockpit_on_Server_managing-hosts"><a class="anchor" href="#Enabling_Cockpit_on_Server_managing-hosts"></a>10.15.1. Enabling the RHEL web console on Satellite</h4>
+<div class="paragraph _abstract">
+<p>You can enable the RHEL web console on Satellite&#160;Server so that you can access RHEL web console features for your hosts from within the Satellite web UI.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>You have root or sudo access on Satellite&#160;Server.</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>Enable the RHEL web console on your Satellite&#160;Server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># DO_NOT_USE_foreman-installer_IN_CONTAINERIZED_BUILDS --enable-foreman-plugin-remote-execution-cockpit --reset-foreman-plugin-remote-execution-cockpit-ensure</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="managing-and-monitoring-hosts-using-cockpit"><a class="anchor" href="#managing-and-monitoring-hosts-using-cockpit"></a>10.15.2. Managing and monitoring hosts using the RHEL web console</h4>
+<div class="paragraph _abstract">
+<p>You can access the RHEL web console UI through the Satellite web UI to manage and monitor Red&#160;Hat Enterprise Linux hosts.
+Use it to view dashboards, run commands, or use integrated features such as Red&#160;Hat Image Builder.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>You have enabled the RHEL web console in Satellite.</p>
+</li>
+<li>
+<p>You have installed the RHEL web console on the host that you want to manage and monitor.</p>
+<div class="paragraph">
+<p>Satellite provides a job template named <strong>Service Action &#8211; Enable Web Console</strong> under the <strong>Ansible Services</strong> job category that you can use to install the RHEL web console.
+For more information about running remote jobs, see <a href="#configuring-and-setting-up-remote-jobs">Configuring and setting up remote jobs</a>.</p>
+</div>
+</li>
+<li>
+<p>Satellite or Capsule can authenticate to the host with SSH keys.
+For more information, see <a href="#Distributing_SSH_Keys_for_Remote_Execution_managing-hosts">Distributing SSH keys for remote execution</a>.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Hosts</strong> &gt; <strong>All Hosts</strong> and select the host that you want to manage and monitor with the RHEL web console.</p>
+</li>
+<li>
+<p>In the upper right of the host window, open the options menu and select <strong>Web Console</strong>.</p>
+<div class="paragraph">
+<p>You can now access the full range of features available for host monitoring and management, for example, Red&#160;Hat Image Builder, through the RHEL web console.</p>
+</div>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html/managing_systems_in_the_rhel_web_console/index"><em>Managing systems using the RHEL&#160;10 web console</em></a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html/composing_a_customized_rhel_system_image/creating-system-images-with-gui#accessing-the-rhel-image-builder-dashboard-in-the-rhel-web-console"><em>Accessing the RHEL image builder dashboard in the RHEL web console</em> in <em>Red&#160;Hat Enterprise Linux&#160;10 Composing a customized RHEL system image</em></a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="disabling-cockpit-on-project_managing-hosts"><a class="anchor" href="#disabling-cockpit-on-project_managing-hosts"></a>10.15.3. Disabling the RHEL web console on Satellite</h4>
+<div class="paragraph _abstract">
+<p>You can disable the RHEL web console on Satellite&#160;Server when you no longer need to access RHEL web console features for hosts from the Satellite web UI.</p>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>Disable the RHEL web console on your Satellite&#160;Server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># DO_NOT_USE_foreman-installer_IN_CONTAINERIZED_BUILDS --foreman-plugin-remote-execution-cockpit-ensure absent</pre>
+</div>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Important</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>You can enable or disable RHEL web console integration independently on Capsule&#160;Servers.
+After completing the procedure on your Satellite&#160;Server, you can disable RHEL web console integration on your Capsule&#160;Servers:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># DO_NOT_USE_foreman-installer_IN_CONTAINERIZED_BUILDS --foreman-proxy-plugin-remote-execution-script-cockpit-integration false</pre>
+</div>
+</div>
+</td>
+</tr>
+</table>
+</div>
 </li>
 </ul>
 </div>
@@ -25651,7 +26092,7 @@ For more information about managing users, roles, and permission filters, see <a
 For more information about creating credentials, see
 <a href="https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/using_automation_execution/controller-credentials#controller-create-credential">Creating new credentials</a> and <a href="https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/using_automation_execution/controller-credentials#ref-controller-credential-satellite">Red&#160;Hat Satellite&#160;6 credential type</a> in <em>Red Hat Ansible Automation Platform documentation</em>.</p>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 14. Satellite credentials</caption>
+<caption class="title">Table 16. Satellite credentials</caption>
 <colgroup>
 <col style="width: 33.3333%;">
 <col style="width: 66.6667%;">
@@ -25703,7 +26144,7 @@ For more information, see
 <p>In the new inventory, add Satellite&#160;Server as the inventory source, specifying the following inventory source options.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 15. Inventory source options</caption>
+<caption class="title">Table 17. Inventory source options</caption>
 <colgroup>
 <col style="width: 33.3333%;">
 <col style="width: 66.6667%;">
@@ -26877,7 +27318,7 @@ Use ad hoc synchronization for the initial download or whenever you need to upda
 The following table provides estimates of how long it would take to synchronize content, depending on the available internet bandwidth:</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 16. Estimated duration for first-time synchronization</caption>
+<caption class="title">Table 18. Estimated duration for first-time synchronization</caption>
 <colgroup>
 <col style="width: 25%;">
 <col style="width: 25%;">
@@ -28057,7 +28498,7 @@ Without filters, a content view includes all content from its selected repositor
 <dd>
 <p>There are two types of content filters:</p>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 17. Filter types</caption>
+<caption class="title">Table 19. Filter types</caption>
 <colgroup>
 <col style="width: 25%;">
 <col style="width: 75%;">
@@ -28092,7 +28533,7 @@ In this situation, select which content to include, then which content to exclud
 <dd>
 <p>You can filter content based on the following content types:</p>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 18. Content types</caption>
+<caption class="title">Table 20. Content types</caption>
 <colgroup>
 <col style="width: 40%;">
 <col style="width: 60%;">
@@ -33421,7 +33862,7 @@ Select the <code>file</code> repository type and follow the same workflow as whe
 </div>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 19. Optional parameters for the <code>hammer product create</code> command</caption>
+<caption class="title">Table 21. Optional parameters for the <code>hammer product create</code> command</caption>
 <colgroup>
 <col style="width: 50%;">
 <col style="width: 50%;">
@@ -33460,7 +33901,7 @@ Select the <code>file</code> repository type and follow the same workflow as whe
 </div>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 20. Optional parameters for the <code>hammer repository create</code> command</caption>
+<caption class="title">Table 22. Optional parameters for the <code>hammer repository create</code> command</caption>
 <colgroup>
 <col style="width: 50%;">
 <col style="width: 50%;">
@@ -36079,7 +36520,7 @@ To do so, specify the environment name in the <strong>Search</strong> field, for
 <p>You can use logical and symbolic operators to build precise search queries when limiting user permissions.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 21. Logical operators</caption>
+<caption class="title">Table 23. Logical operators</caption>
 <colgroup>
 <col style="width: 22.2222%;">
 <col style="width: 77.7778%;">
@@ -36104,7 +36545,7 @@ To do so, specify the environment name in the <strong>Search</strong> field, for
 </tbody>
 </table>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 22. Symbolic operators</caption>
+<caption class="title">Table 24. Symbolic operators</caption>
 <colgroup>
 <col style="width: 22.2222%;">
 <col style="width: 77.7778%;">
@@ -36270,7 +36711,7 @@ The following widgets are available:</p>
 <p>An overview of the configuration states and the number of hosts associated with it during the last reporting interval.
 The following table shows the descriptions of the possible configuration states.</p>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 23. Host configuration states</caption>
+<caption class="title">Table 25. Host configuration states</caption>
 <colgroup>
 <col style="width: 11.1111%;">
 <col style="width: 33.3333%;">
@@ -36382,7 +36823,7 @@ All products that are in the queue for synchronization, are unsynchronized or ha
 <p>An overview of the status of reports received from the <code>virt-who</code> daemon running on hosts in the environment.
 The following table shows the possible states.</p>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 24. virt-who configuration states</caption>
+<caption class="title">Table 26. virt-who configuration states</caption>
 <colgroup>
 <col style="width: 22.2222%;">
 <col style="width: 77.7778%;">
@@ -38774,7 +39215,7 @@ The exact number of applicable errata is then summed up in the counter <code>@er
 <p>The third block renders the report.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 25. Example report template output</caption>
+<caption class="title">Table 27. Example report template output</caption>
 <colgroup>
 <col style="width: 30%;">
 <col style="width: 20%;">
@@ -38884,7 +39325,7 @@ The template now distinguishes between security, bugfix, and enhancement errata.
 <p>Add the input name <code>Hosts filter</code> to the <strong>Inputs</strong> tab of the template.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 26. Example report template output</caption>
+<caption class="title">Table 28. Example report template output</caption>
 <colgroup>
 <col style="width: 23%;">
 <col style="width: 12%;">
@@ -38999,7 +39440,7 @@ model: ReportTemplate
 <p>Satellite provides the number of installable errata through the host attribute <code>host.content_facet_attributes.errata_counts</code>.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 27. Example report template output</caption>
+<caption class="title">Table 29. Example report template output</caption>
 <colgroup>
 <col style="width: 23%;">
 <col style="width: 15%;">
@@ -39270,7 +39711,7 @@ The changes have an immediate effect.</p>
 <li>
 <p>The following example shows the configuration options for using an SMTP server:</p>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 28. Using an SMTP server as a delivery method</caption>
+<caption class="title">Table 30. Using an SMTP server as a delivery method</caption>
 <colgroup>
 <col style="width: 25%;">
 <col style="width: 25%;">
@@ -39325,7 +39766,7 @@ The changes have an immediate effect.</p>
 <li>
 <p>The following example uses <strong>gmail.com</strong> as an SMTP server:</p>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 29. Using gmail.com as an SMTP server</caption>
+<caption class="title">Table 31. Using gmail.com as an SMTP server</caption>
 <colgroup>
 <col style="width: 25%;">
 <col style="width: 25%;">
@@ -39704,7 +40145,7 @@ Advisor groups related recommendations into pathways.</p>
 <p>Red&#160;Hat Lightspeed services hosted in the Red&#160;Hat Hybrid Cloud Console are not limited to the listed services.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 30. Availability of Red&#160;Hat Lightspeed services</caption>
+<caption class="title">Table 32. Availability of Red&#160;Hat Lightspeed services</caption>
 <colgroup>
 <col style="width: 33.3333%;">
 <col style="width: 33.3333%;">
@@ -40357,7 +40798,7 @@ However, this process can take some time to complete.</p>
 <p>You can set
 these parameters
 at any level.
-For more information, see <a href="#host-parameter-hierarchy">Host parameter hierarchy</a>.</p>
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/managing_hosts/index#host-parameter-hierarchy">Host parameter hierarchy</a> in <em>Managing hosts</em>.</p>
 </div>
 </div>
 <div class="sect4">
@@ -41022,7 +41463,7 @@ The Insights client will not be installed on newly registered hosts.</p>
 <p>You can set
 this parameter
 at any level.
-For more information, see <a href="#host-parameter-hierarchy">Host parameter hierarchy</a>.</p>
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/managing_hosts/index#host-parameter-hierarchy">Host parameter hierarchy</a> in <em>Managing hosts</em>.</p>
 </div>
 </div>
 <div class="sect4">
@@ -41049,61 +41490,6 @@ For more information, see <a href="#host-parameter-hierarchy">Host parameter hie
 <div class="paragraph">
 <p>For more information about viewing and filtering service logs, such as following log output in real time or tracing a request by its correlation ID, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/administering_red_hat_satellite/index#viewing-service-logs">Viewing service logs</a> in <em>Administering Red&#160;Hat Satellite</em>.</p>
 </div>
-</div>
-<div class="sect4">
-<h5 id="host-parameter-hierarchy"><a class="anchor" href="#host-parameter-hierarchy"></a>Host parameter hierarchy</h5>
-<div class="paragraph _abstract">
-<p>You can access host parameters when provisioning hosts.</p>
-</div>
-<div class="paragraph">
-<p>Hosts inherit their parameters from the following locations, in order of increasing precedence:</p>
-</div>
-<table class="tableblock frame-all grid-all stretch">
-<colgroup>
-<col style="width: 50%;">
-<col style="width: 50%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">Parameter Level</th>
-<th class="tableblock halign-left valign-top">Set in Satellite web UI</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Globally defined parameters</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Configure</strong> &gt; <strong>Global parameters</strong></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Organization-level parameters</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Administer</strong> &gt; <strong>Organizations</strong></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Location-level parameters</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Administer</strong> &gt; <strong>Locations</strong></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Domain-level parameters</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Infrastructure</strong> &gt; <strong>Domains</strong></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Subnet-level parameters</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Infrastructure</strong> &gt; <strong>Subnets</strong></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Operating system-level parameters</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Hosts</strong> &gt; <strong>Provisioning Setup</strong> &gt; <strong>Operating Systems</strong></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Host group-level parameters</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Configure</strong> &gt; <strong>Host Groups</strong></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Host parameters</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Hosts</strong> &gt; <strong>All Hosts</strong></p></td>
-</tr>
-</tbody>
-</table>
 </div>
 </div>
 </div>
@@ -41140,7 +41526,7 @@ This can help improve Satellite performance.</p>
 <li>
 <p>Select the profile that best matches your use case:</p>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 31. Predefined tuning profiles</caption>
+<caption class="title">Table 33. Predefined tuning profiles</caption>
 <colgroup>
 <col style="width: 25%;">
 <col style="width: 25%;">
@@ -41743,7 +42129,7 @@ The limit of 100 concurrent requests applies.</p>
 <p>The following table describes the scalability limits using the recommended 4 CPUs.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 32. Puppet scalability using 4 CPUs</caption>
+<caption class="title">Table 34. Puppet scalability using 4 CPUs</caption>
 <colgroup>
 <col style="width: 50%;">
 <col style="width: 50%;">
@@ -41773,7 +42159,7 @@ The limit of 100 concurrent requests applies.</p>
 <p>The following table describes the scalability limits using the minimum 2 CPUs.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 33. Puppet scalability using 2 CPUs</caption>
+<caption class="title">Table 35. Puppet scalability using 2 CPUs</caption>
 <colgroup>
 <col style="width: 50%;">
 <col style="width: 50%;">
@@ -45652,7 +46038,7 @@ If there is no search, then subtotal is equal to total.</p>
 The following codes are common for all resources in the Satellite API.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 34. API response codes</caption>
+<caption class="title">Table 36. API response codes</caption>
 <colgroup>
 <col style="width: 28.5714%;">
 <col style="width: 71.4286%;">
@@ -48695,7 +49081,7 @@ Select <strong>Review</strong> from the list next to the selected template to vi
 <p>You can use Satellite-specific macros in your ERB templates to generate URLs, indent code, and reuse common patterns across templates.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 35. Generic macros</caption>
+<caption class="title">Table 37. Generic macros</caption>
 <colgroup>
 <col style="width: 50%;">
 <col style="width: 50%;">
@@ -48941,7 +49327,7 @@ falsy?(0) =&gt; true</pre>
 <p>Note that job templates accept only <code>@host</code> variables.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 36. Host-specific variables and macros</caption>
+<caption class="title">Table 38. Host-specific variables and macros</caption>
 <colgroup>
 <col style="width: 50%;">
 <col style="width: 50%;">
@@ -49199,7 +49585,7 @@ For example, to extract the last segment of the host&#8217;s IP address, you can
 <p>You can use Kickstart-specific variables in provisioning templates to inject host data and installation options.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 37. Kickstart-specific variables</caption>
+<caption class="title">Table 39. Kickstart-specific variables</caption>
 <colgroup>
 <col style="width: 50%;">
 <col style="width: 50%;">
@@ -51381,7 +51767,7 @@ Because some of the accounts have hard-coded UIDs and GIDs, it is not possible t
 <p>Because of potential conflicts with local users that Satellite creates, you cannot use external identity providers for the system users of the Satellite base operating system.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
-<caption class="title">Table 38. Technical users provided and required by Satellite</caption>
+<caption class="title">Table 40. Technical users provided and required by Satellite</caption>
 <colgroup>
 <col style="width: 14.2857%;">
 <col style="width: 14.2857%;">
