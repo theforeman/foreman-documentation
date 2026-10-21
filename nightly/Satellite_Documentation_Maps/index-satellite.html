@@ -430,6 +430,13 @@ SOFTWARE.
 </li>
 </ul>
 </li>
+<li><a href="#update-satellite-server">7.3. Update Satellite&#160;Server</a>
+<ul class="sectlevel3">
+<li><a href="#satellite-update-planning">7.3.1. Satellite update planning</a></li>
+<li><a href="#update-your-satellite-server">7.3.2. Update your Satellite&#160;Server</a></li>
+<li><a href="#update-capsule-server">7.3.3. Update Capsule&#160;Server</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li><a href="#_migrate">8. Migrate</a></li>
@@ -495,6 +502,11 @@ SOFTWARE.
 </ul>
 </li>
 <li><a href="#hammer-cli-cheat-sheet-for-exporting-and-importing-content">9.5.6. Hammer CLI cheat sheet for exporting and importing content</a></li>
+</ul>
+</li>
+<li><a href="#update-satellite-server-in-a-disconnected-environment">9.6. Update Satellite&#160;Server in a disconnected environment</a>
+<ul class="sectlevel3">
+<li><a href="#update-a-disconnected-satellite-server">9.6.1. Update a disconnected Satellite&#160;Server</a></li>
 </ul>
 </li>
 </ul>
@@ -7681,6 +7693,204 @@ For more information, see <a href="https://docs.redhat.com/en/documentation/red_
 </div>
 </div>
 </div>
+<div class="sect2">
+<h3 id="update-satellite-server"><a class="anchor" href="#update-satellite-server"></a>7.3. Update Satellite&#160;Server</h3>
+<div class="paragraph _abstract">
+<p>Update Satellite&#160;Server and Capsule&#160;Servers to the next patch version to receive bug fixes, security updates, and minor improvements.</p>
+</div>
+<div class="sect3">
+<h4 id="satellite-update-planning"><a class="anchor" href="#satellite-update-planning"></a>7.3.1. Satellite update planning</h4>
+<div class="paragraph _abstract">
+<p>Updating Satellite applies a patch release to your Satellite&#160;Server and Capsule&#160;Servers.
+Regular updates help keep your Satellite environment up-to-date and typically present minimal disruption to your operations.</p>
+</div>
+<div class="paragraph">
+<p>Updating a Satellite&#160;Server or Capsule&#160;Server performs a patch release.
+A patch release updates your Satellite&#160;Server and Capsule&#160;Server to a new patch release version, such as from 6.20.0 to 6.20.1.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Important</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Perform updates regularly to resolve security vulnerabilities and other issues.
+Updating a Satellite&#160;Server or Capsule&#160;Server is often fast and non-disruptive to your operating environment.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Always update Satellite&#160;Server, Capsule&#160;Server, or the operating system by using <code>satellitectl</code>.
+If there are pending Satellite&#160;Server updates, updating the operating system will update both.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="update-your-satellite-server"><a class="anchor" href="#update-your-satellite-server"></a>7.3.2. Update your Satellite&#160;Server</h4>
+<div class="paragraph _abstract">
+<p>Update your connected Satellite&#160;Server to the next patch version.
+You can follow this process to update the underlying operating system between minor release versions.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Consider backing up your Satellite&#160;Server.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/administering_red_hat_satellite/index#backing-up-satellite">Backing up Satellite</a> in <em>Administering Red&#160;Hat Satellite</em>.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Optional: Use the health check option to determine if the system is ready for update:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellitectl health</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Review the results and address any highlighted error conditions before performing the update.</p>
+</div>
+</li>
+<li>
+<p>Upgrade the <code>satellitectl</code> package:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf upgrade satellitectl</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Pull the updated container images:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellitectl pull-images</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Stop Satellite services:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl stop foreman.target</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Re-deploy Satellite&#160;Server to perform the update:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellitectl deploy</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Satellite pulls new images and runs all required update tasks, including update tasks required by Satellite dependencies and your configured plugins.
+As a result, this <code>satellitectl deploy</code> run might take longer than usual.</p>
+</div>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">Verification</div>
+<ul>
+<li>
+<p>On your Satellite&#160;Server, verify that all Satellite services are running:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellitectl health</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="update-capsule-server"><a class="anchor" href="#update-capsule-server"></a>7.3.3. Update Capsule&#160;Server</h4>
+<div class="paragraph _abstract">
+<p>You can update your Capsule&#160;Server to the latest packages published by Red&#160;Hat.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>The Capsule product on your Satellite&#160;Server has been synchronized.</p>
+</li>
+<li>
+<p>The <code>Capsule Container Images</code> product on your Satellite&#160;Server has been synchronized.</p>
+</li>
+<li>
+<p>A new version of the content view with which the Capsule is registered has been published and promoted.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Optional: Use the health check option to determine if your Capsule&#160;Server is ready for update:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellitectl health</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Review the results and address any highlighted error conditions before performing the update.</p>
+</div>
+</li>
+<li>
+<p>Stop Satellite services:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl stop foreman.target</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Upgrade the packages on your Capsule&#160;Server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf upgrade</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Pull the updated container images:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellitectl pull-images</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Redeploy the Capsule to perform the upgrade:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellitectl deploy-proxy</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">Verification</div>
+<ul>
+<li>
+<p>Verify that all Satellite services are running:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellitectl health</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -10170,6 +10380,296 @@ The importing Satellite&#160;Server extracts the <code>/var/lib/pulp/imports</co
 </tr>
 </tbody>
 </table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="update-satellite-server-in-a-disconnected-environment"><a class="anchor" href="#update-satellite-server-in-a-disconnected-environment"></a>9.6. Update Satellite&#160;Server in a disconnected environment</h3>
+<div class="paragraph _abstract">
+<p>Update disconnected Satellite&#160;Server and Capsule&#160;Servers to the next patch version to receive bug fixes, security updates, and minor improvements.</p>
+</div>
+<div class="sect3">
+<h4 id="update-a-disconnected-satellite-server"><a class="anchor" href="#update-a-disconnected-satellite-server"></a>9.6.1. Update a disconnected Satellite&#160;Server</h4>
+<div class="paragraph _abstract">
+<p>Update your disconnected Satellite&#160;Server to the next patch version.
+You export the required repositories and container images from a connected Satellite&#160;Server, transfer them to your disconnected Satellite&#160;Server, and use them to update your disconnected Satellite&#160;Server.</p>
+</div>
+<div class="paragraph">
+<p>The update process also updates the base operating system on your disconnected Satellite&#160;Server when a new minor version is available.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Consider backing up your disconnected Satellite&#160;Server.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/administering_red_hat_satellite/index#backing-up-satellite">Backing up Satellite</a> in <em>Administering Red&#160;Hat Satellite</em>.</p>
+</li>
+<li>
+<p>You have a connected Satellite&#160;Server installed with the same set of <code>satellitectl</code> features and the same version as your disconnected Satellite&#160;Server.</p>
+</li>
+<li>
+<p>Your connected system has enough disk space to store the exported repositories and container images.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Optional: On your disconnected Satellite&#160;Server, use the health check option to determine if the system is ready for update:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellitectl health</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Review the results and address any highlighted error conditions before performing the update.</p>
+</div>
+</li>
+<li>
+<p>Export the required repository content from your connected Satellite&#160;Server.
+Perform these steps on your connected Satellite&#160;Server.</p>
+<div class="paragraph">
+<p>You will be exporting the following repositories:</p>
+</div>
+<div class="openblock">
+<div class="content">
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Red Hat Enterprise Linux 10 for x86_64 - BaseOS (RPMs)</strong></p>
+</li>
+<li>
+<p><strong>Red Hat Enterprise Linux 10 for x86_64 - AppStream (RPMs)</strong></p>
+</li>
+<li>
+<p><strong>Red&#160;Hat Satellite 6.20 for RHEL 10 Server RPMs x86_64</strong></p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Synchronize the repositories:
+For example, to synchronize them by using Hammer CLI:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer repository synchronize \
+--name "Red Hat Enterprise Linux 10 for x86_64 - BaseOS RPMs 10" \
+--product "Red Hat Enterprise Linux for x86_64" \
+--organization <em>My_Organization</em></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer repository synchronize \
+--name "Red Hat Enterprise Linux 10 for x86_64 - AppStream RPMs 10" \
+--product "Red Hat Enterprise Linux for x86_64" \
+--organization <em>My_Organization</em></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer repository synchronize \
+--name "Red Hat Satellite 6.20 for RHEL 10 x86_64 RPMs" \
+--product "Red Hat Satellite" \
+--organization <em>My_Organization</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Ensure the download policy is set to <strong>Immediate</strong> for each of the repositories.
+For example, to set the download policy by using Hammer CLI:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer repository update \
+--name "Red Hat Enterprise Linux 10 for x86_64 - BaseOS RPMs 10" \
+--product "Red Hat Enterprise Linux for x86_64" \
+--organization <em>My_Organization</em> \
+--download-policy immediate</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer repository update \
+--name "Red Hat Enterprise Linux 10 for x86_64 - AppStream RPMs 10" \
+--product "Red Hat Enterprise Linux for x86_64" \
+--organization <em>My_Organization</em> \
+--download-policy immediate</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer repository update \
+--name "Red Hat Satellite 6.20 for RHEL 10 x86_64 RPMs" \
+--product "Red Hat Satellite" \
+--organization <em>My_Organization</em> \
+--download-policy immediate</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Export each repository in the syncable format.
+For example, to export the repositories by using Hammer CLI:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer content-export complete repository \
+--name "Red Hat Enterprise Linux 10 for x86_64 - BaseOS RPMs 10" \
+--product "Red Hat Enterprise Linux for x86_64" \
+--organization <em>My_Organization</em> \
+--format syncable</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer content-export complete repository \
+--name "Red Hat Enterprise Linux 10 for x86_64 - AppStream RPMs 10" \
+--product "Red Hat Enterprise Linux for x86_64" \
+--organization <em>My_Organization</em> \
+--format syncable</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer content-export complete repository \
+--name "Red Hat Satellite 6.20 for RHEL 10 x86_64 RPMs" \
+--product "Red Hat Satellite" \
+--organization <em>My_Organization</em> \
+--format syncable</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>Export the required container images from your connected Satellite&#160;Server.
+Perform these steps on your connected Satellite&#160;Server:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Pull the required images:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellitectl pull-images</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Confirm the correct images have been downloaded:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ podman images</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The list of images must match the list of images on your disconnected Satellite&#160;Server.
+If an image or images are missing, ensure <code>satellitectl</code> feature parameters are identical between the connected and disconnected Satellite&#160;Server.</p>
+</div>
+</li>
+<li>
+<p>Export all downloaded images:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ podman save $(podman images \
+--format "{{.Repository}}:{{.Tag}}" | tr '\n' ' ') \
+--output <em>My_Container_Images</em>.tar</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>Transfer the exported repositories and downloaded images to your disconnected Satellite&#160;Server.</p>
+</li>
+<li>
+<p>Configure your disconnected Satellite&#160;Server to use the exported repositories and container images when updating.
+Perform these steps on your disconnected Satellite&#160;Server:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Create the <code>/etc/yum.repos.d/update.repo</code> file and update the <code>baseurl</code> values to point to the local file system:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-ini" data-lang="ini">[rhel-10-for-x86_64-baseos-rpms]
+name=Red Hat Enterprise Linux 10 for x86_64 - BaseOS (RPMs)
+enabled=1
+metadata_expire=-1
+gpgcheck=0
+baseurl=file:///<em>BaseOS_Export_Location</em>/content/dist/rhel10/10/x86_64/baseos/os
+
+[rhel-10-for-x86_64-appstream-rpms]
+name=Red Hat Enterprise Linux 10 for x86_64 - AppStream (RPMs)
+enabled=1
+metadata_expire=-1
+gpgcheck=0
+baseurl=file:///<em>AppStream_Export_Location</em>/content/dist/rhel10/10/x86_64/appstream/os
+
+[satellite-6.20-for-rhel-10-x86_64-rpms]
+name=Red&#160;Hat Satellite 6.20 for RHEL 10 Server RPMs x86_64
+enabled=1
+metadata_expire=-1
+gpgcheck=0
+baseurl=file:///<em>Satellite_Export_Location</em>/content/dist/layered/rhel10/x86_64/satellite/6.20/os/</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Stage the required container images:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ podman load --input <em>My_Container_Images</em>.tar</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>On your disconnected Satellite&#160;Server, upgrade the <code>satellitectl</code> package:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf upgrade satellitectl</pre>
+</div>
+</div>
+</li>
+<li>
+<p>On your disconnected Satellite&#160;Server, stop the existing Satellite services:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl stop foreman.target</pre>
+</div>
+</div>
+</li>
+<li>
+<p>On your disconnected Satellite&#160;Server, redeploy <code>satellitectl</code> to perform the update:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellitectl deploy</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Satellite pulls new images and runs all required update tasks, including update tasks required by Satellite dependencies and your configured plugins.
+As a result, this <code>satellitectl deploy</code> run might take longer than usual.</p>
+</div>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">Verification</div>
+<ul>
+<li>
+<p>On your Satellite&#160;Server, verify that all Satellite services are running:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># satellitectl health</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
 </div>
 </div>
 </div>
