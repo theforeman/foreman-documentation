@@ -19,6 +19,15 @@ Specifically, note that a map file must have the `:_mod-docs-content-type: MAP` 
 
 To add a sub-job under a top-level job, include the required `con_*.adoc`, `proc_*.adoc`, and `ref_*.adoc` files in a top-level job MAP file.
 
+## Cross-guide links
+
+The Maps build overrides every `*DocURL` attribute to `xref:` so that cross-guide links resolve inside the single-page map. Use:
+
+* `{FooDocURL}anchor[text]`: link to a **section** of another guide (resolves to the reused module in the map).
+* `{FooDocURLExternal}[text]`: link to another guide **as a whole** (stays external; `{FooDocURL}[text]` would render as broken `xref:[text]`).
+
+When adding a whole-guide link, if the `:FooDocURLExternal:` attribute does not exist yet, add it to `../common/attributes-external-doc-urls.adoc`.
+
 ## Guide structure
 
 * `master.adoc`: This is the top-level guide file.
