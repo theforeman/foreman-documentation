@@ -156,3 +156,29 @@ Presence of this file will cause build check via `ccutil`, a tool used by Red Ha
 * Update `web/content/js/nav.js` to add a new item on the top-level menu.
 
 New guides can typically be created as copies of existing guides, just make sure to clean images, topics and `docinfo.xml`.
+
+## Linking to another guide
+
+To link from one guide to another, use the per-guide attributes rather than hard-coding a URL or a book title:
+
+* `{<Guide>DocURL}` resolves to the other guide's base URL (defined in `guides/common/attributes-base.adoc`, overridden per product in `attributes-<product>.adoc`).
+* `{<Guide>DocTitle}` resolves to the other guide's title (defined in `guides/common/attributes-titles.adoc`).
+* `{In<Guide>Doc}` resolves to the suffix ` in _<Guide title>_` that tells the reader which book the link points to.
+
+Write cross-guide links like this:
+
+    For more information, see {ManagingHostsDocURL}registering-hosts-by-using-global-registration[Registering hosts by using global registration]{InManagingHostsDoc}.
+
+This renders as "... see Registering hosts by using global registration in _Managing hosts_." with the link text pointing to the other guide.
+
+**Do not** write the book-title suffix by hand (for example ``[Link text] in _{ManagingHostsDocTitle}_``). Always use the `{In<Guide>Doc}` attribute instead.
+
+In the Navigation Maps, the `:map:` attribute is set globally (in its `master.adoc`), which empties every `{In<Guide>Doc}` attribute. This way the aggregated Maps navigation, where these links resolve internally, does not show a dangling " in _Book title_" after each link. The suffix still renders in every standalone guide.
+
+### Adding a new target guide
+
+When you add a guide that others will link to, define its three attributes alongside the existing entries:
+
+1. `{<Guide>DocURL}` in `guides/common/attributes-base.adoc` (plus any per-product override).
+2. `{<Guide>DocTitle}` in `guides/common/attributes-titles.adoc`.
+3. `{In<Guide>Doc}` in `guides/common/attributes-titles.adoc`: add a `pass:a,q[ in _{<Guide>DocTitle}_]` definition in the suffix block near the end of the file, and a matching empty definition inside the `ifdef::map[]` block so it is suppressed in the Maps build.
