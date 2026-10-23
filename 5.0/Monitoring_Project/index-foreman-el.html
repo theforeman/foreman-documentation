@@ -267,6 +267,13 @@ SOFTWARE.
 <li><a href="#retrieving-metrics-in-the-grafana-web-ui">6.4. Retrieving metrics in the Grafana web UI</a></li>
 </ul>
 </li>
+<li><a href="#accessing-grafana-remotely">7. Accessing Grafana remotely</a>
+<ul class="sectlevel2">
+<li><a href="#accessing-grafana-remotely-on-linux-or-macos">7.1. Accessing Grafana remotely on Linux or macOS</a></li>
+<li><a href="#accessing-grafana-remotely-on-windows-with-putty">7.2. Accessing Grafana remotely on Windows with PuTTY</a></li>
+<li><a href="#accessing-grafana-remotely-on-windows-with-powershell-or-command-prompt">7.3. Accessing Grafana remotely on Windows with PowerShell or Command Prompt</a></li>
+</ul>
+</li>
 </ul>
 </div>
 </div>
@@ -854,13 +861,13 @@ Retrieve the name of the active log file:</p>
 <p>To print current values of a particular metric, enter the following command:</p>
 <div class="listingblock">
 <div class="content">
-<pre># pmval -f 1 disk.partitions.write</pre>
+<pre># pmrep -P 1 disk.partitions.write</pre>
 </div>
 </div>
 <div class="paragraph">
 <p>In this example, metric instances on writes to disk partitions are displayed.
 PCP converts the number of writes to disk partitions from a counter value to a rate value.
-The <code>-f 1</code> argument specifies to abbreviate the values to one decimal place.</p>
+The <code>-P 1</code> argument specifies to abbreviate the values to one decimal place.</p>
 </div>
 <div class="paragraph">
 <p>Example output:</p>
@@ -885,8 +892,11 @@ samples:   all
 <p>To print system performance summary every 2 seconds, enter the following command:</p>
 <div class="listingblock">
 <div class="content">
-<pre># pmstat -t 2sec</pre>
+<pre># pmrep -t 2sec :pmstat</pre>
 </div>
+</div>
+<div class="paragraph">
+<p>The <code>:pmstat</code> metricset provides a system performance summary equivalent to <code>pmstat</code>, including CPU, memory, swap, I/O, and load average metrics.</p>
 </div>
 </li>
 </ul>
@@ -896,6 +906,21 @@ samples:   all
 <h3 id="retrieving-archived-metrics"><a class="anchor" href="#retrieving-archived-metrics"></a>6.3. Retrieving archived metrics</h3>
 <div class="paragraph _abstract">
 <p>Use these commands to analyze historical performance data from PCP archive files, including viewing specific metrics over time ranges, comparing time periods, and investigating past performance issues on your Foreman.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The archive file name depends on your pmlogger configuration and can differ from the examples below.
+Use the path shown when you verify your PCP configuration.</p>
+</div>
+</td>
+</tr>
+</table>
 </div>
 <div class="ulist">
 <ul>
@@ -919,19 +944,24 @@ samples:   all
 <p>List disk writes for each partition, over the time period covered by the archive file:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># pmval --archive /var/log/pcp/pmlogger/<em>foreman.example.com</em>/<em>20230831.00.10</em> \
-  -f 1 disk.partitions.write</pre>
+<pre class="nowrap"># pmrep -a /var/log/pcp/pmlogger/<em>foreman.example.com</em>/<em>20230831.00.10</em> \
+  -P 1 disk.partitions.write</pre>
 </div>
+</div>
+<div class="paragraph">
+<p>The <code>-P 1</code> argument specifies to abbreviate the values to one decimal place.</p>
 </div>
 </li>
 <li>
 <p>List disk write operations per partition, with a 2-second interval, over the time period between 14:00 and 14:15:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># pmval --archive /var/log/pcp/pmlogger/<em>foreman.example.com</em>/<em>20230831.00.10</em> \
+<pre class="nowrap"># pmrep -a /var/log/pcp/pmlogger/<em>foreman.example.com</em>/<em>20230831.00.10</em> \
   -d -t 2sec \
-  -f 3 disk.partitions.write \
-  -S @14:00 -T @14:15</pre>
+  -p \
+  -P 3 \
+  -S @14:00 -T @14:15 \
+  disk.partitions.write</pre>
 </div>
 </div>
 </li>
@@ -981,6 +1011,121 @@ samples:   all
 <p><a href="https://grafana.com/">Grafana Labs website</a></p>
 </li>
 </ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="accessing-grafana-remotely"><a class="anchor" href="#accessing-grafana-remotely"></a>7. Accessing Grafana remotely</h2>
+<div class="sectionbody">
+<div class="paragraph _abstract">
+<p>By default, Grafana runs on <code>http://localhost:3000</code> on the Foreman&#160;server and is only accessible locally.
+To access Grafana from a remote workstation, you can create an SSH tunnel that forwards your local port 3000 to the Foreman&#160;server port 3000.
+Choose the procedure that matches your workstation&#8217;s operating system and tools.</p>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="https://grafana.com/">Grafana Labs website</a></p>
+</li>
+</ul>
+</div>
+<div class="sect2">
+<h3 id="accessing-grafana-remotely-on-linux-or-macos"><a class="anchor" href="#accessing-grafana-remotely-on-linux-or-macos"></a>7.1. Accessing Grafana remotely on Linux or macOS</h3>
+<div class="paragraph _abstract">
+<p>By default, Grafana runs on <code>http://localhost:3000</code> on the Foreman&#160;server and is only accessible locally.
+To access Grafana from a remote workstation, create an SSH tunnel that forwards your local port 3000 to the Foreman&#160;server port 3000.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>On your local workstation, create an SSH tunnel:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ssh -L 3000:localhost:3000 root@<em>foreman.example.com</em> -N</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>-L</code> flag creates the port forwarding tunnel, and <code>-N</code> prevents executing any remote commands.
+Keep this terminal session open while accessing Grafana.</p>
+</div>
+<div class="paragraph">
+<p>To run the tunnel in the background, add the <code>-f</code> flag: <code>ssh -f -L 3000:localhost:3000 root@<em>foreman.example.com</em> -N</code>.
+To close a background tunnel, find its PID with <code>ps aux | grep "3000:localhost[:]3000"</code> and then run <code>kill <em>PID</em></code>.</p>
+</div>
+</li>
+<li>
+<p>Open your web browser and navigate to <code>http://localhost:3000</code>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="accessing-grafana-remotely-on-windows-with-putty"><a class="anchor" href="#accessing-grafana-remotely-on-windows-with-putty"></a>7.2. Accessing Grafana remotely on Windows with PuTTY</h3>
+<div class="paragraph _abstract">
+<p>By default, Grafana runs on <code>http://localhost:3000</code> on the Foreman&#160;server and is only accessible locally.
+To access Grafana from a remote workstation, create an SSH tunnel that forwards your local port 3000 to the Foreman&#160;server port 3000.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Open PuTTY and enter your Foreman&#160;server hostname or IP address.</p>
+</li>
+<li>
+<p>In the left menu, navigate to <strong>Connection</strong> &#8594; <strong>SSH</strong> &#8594; <strong>Tunnels</strong>.</p>
+</li>
+<li>
+<p>Configure the port forwarding:</p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Source port</strong>: <code>3000</code></p>
+</li>
+<li>
+<p><strong>Destination</strong>: <code>localhost:3000</code></p>
+</li>
+<li>
+<p>Click <strong>Add</strong>.</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Return to the <strong>Session</strong> category and connect to your Foreman&#160;server.</p>
+</li>
+<li>
+<p>After connecting, open your web browser and navigate to <code>http://localhost:3000</code>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="accessing-grafana-remotely-on-windows-with-powershell-or-command-prompt"><a class="anchor" href="#accessing-grafana-remotely-on-windows-with-powershell-or-command-prompt"></a>7.3. Accessing Grafana remotely on Windows with PowerShell or Command Prompt</h3>
+<div class="paragraph _abstract">
+<p>By default, Grafana runs on <code>http://localhost:3000</code> on the Foreman&#160;server and is only accessible locally.
+To access Grafana from a remote workstation, create an SSH tunnel that forwards your local port 3000 to the Foreman&#160;server port 3000.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>If you have OpenSSH installed on Windows 10 or later, open PowerShell or Command Prompt and create an SSH tunnel:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ssh -L 3000:localhost:3000 root@<em>foreman.example.com</em> -N</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Keep this window open while accessing Grafana.</p>
+</div>
+</li>
+<li>
+<p>Open your web browser and navigate to <code>http://localhost:3000</code>.</p>
+</li>
+</ol>
 </div>
 <!-- "Fork me on GitHub" CSS ribbon v0.2.3 | MIT License -->
 <!-- https://github.com/simonwhitaker/github-fork-ribbon-css -->
