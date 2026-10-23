@@ -11,7 +11,7 @@ IMAGES_TS = $(DEST_DIR)/.timestamp-images
 CSS_SOURCES = $(shell find $(COMMON_DIR)/css -type f)
 DOCINFO_SOURCES = $(shell find $(COMMON_DIR)/ -type f -name docinfo\*.html)
 SOURCES = master.adoc $(shell find . -type f -name \*.adoc)
-DEPENDENCIES = $(shell find $(COMMON_DIR) -type f -name \*.adoc)
+DEPENDENCIES = $(shell find $(COMMON_DIR) -type f \( -name \*.adoc -o -name \*.rb \))
 IMAGES = $(shell find ./images ./common/images -type f 2>/dev/null || true)
 UNAME = $(shell uname)
 DATE_MDY = $(shell LC_ALL=C date "+%b %d %Y")
@@ -80,7 +80,7 @@ $(IMAGES_TS): $(BUILD_DIR) $(IMAGES)
 	@touch $(IMAGES_TS)
 
 $(DEST_HTML): $(SOURCES) $(DEPENDENCIES) $(DOCINFO_SOURCES) $(DEST_DIR)/style.css $(IMAGES_TS)
-	bundle exec asciidoctor -r asciidoctor-tabs -a build=$(BUILD) $(BASEURL_ATTR) -a docinfo=shared -a docinfodir=common -a imagesdir=../images -a date_mdy="$(DATE_MDY)" -a date_my="$(DATE_MY)" -a docdatetime="$(DATE_MY)" -a stylesheet=$(DEST_DIR)/style.css -a attribute-missing=warn -b html5 -d book --trace -o $@ $< 2>&1 | tee $@.log 1>&2
+	bundle exec asciidoctor -r asciidoctor-tabs -r $(COMMON_DIR)/extensions/command-prompts.rb -a build=$(BUILD) $(BASEURL_ATTR) -a docinfo=shared -a docinfodir=common -a imagesdir=../images -a date_mdy="$(DATE_MDY)" -a date_my="$(DATE_MY)" -a docdatetime="$(DATE_MY)" -a stylesheet=$(DEST_DIR)/style.css -a attribute-missing=warn -b html5 -d book --trace -o $@ $< 2>&1 | tee $@.log 1>&2
 	@echo CHECKING FOR ASCIIDOCTOR ERRORS AND WARNINGS
 	@! grep -Eq "^asciidoctor: (ERROR|WARNING)" $@.log
 	@echo CHECKING FOR ORPHAN XREFS HTML LINKS
