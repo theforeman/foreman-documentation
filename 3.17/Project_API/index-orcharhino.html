@@ -237,7 +237,7 @@ SOFTWARE.
 <h1>Using the orcharhino REST API</h1>
 <div class="details">
 <span id="revnumber">version 7.4 (unsupported),</span>
-<span id="revdate">published Oct 21 2026</span>
+<span id="revdate">published Oct 22 2026</span>
 </div>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
@@ -643,34 +643,30 @@ https://<em>orcharhino.example.com</em>/katello/api/activation_keys \
 <div class="listingblock">
 <div class="content">
 <pre class="highlight nowrap"><code class="language-none" data-lang="none">{
+    "service_level": null,
+    "content_overrides": [],
     "id": 2,
     "name": "TestKey",
     "description": "Just for testing",
     "unlimited_hosts": true,
-    "auto_attach": true,
-    "content_view_id": null,
-    "environment_id": null,
+    "content_view_environment_labels": "",
     "usage_count": 0,
     "user_id": 3,
     "max_hosts": null,
     "release_version": null,
-    "service_level": null,
-    "content_overrides": [
-
-    ],
+    "purpose_usage": null,
+    "purpose_role": null,
+    "organization_id": 1,
     "organization": {
         "name": "Default Organization",
         "label": "Default_Organization",
         "id": 1
     },
-    "created_at": "2024-02-16 12:37:47 UTC",
-    "updated_at": "2024-02-16 12:37:48 UTC",
-    "content_view": null,
-    "environment": null,
-    "products": null,
-    "host_collections": [
-
-    ],
+    "created_at": "2026-10-19 07:11:45 UTC",
+    "updated_at": "2026-10-19 07:11:45 UTC",
+    "content_view_environments": [],
+    "host_collections": [],
+    "multi_content_view_environment": false,
     "permissions": {
         "view_activation_keys": true,
         "edit_activation_keys": true,
@@ -734,34 +730,30 @@ https://<em>orcharhino.example.com</em>/katello/api/activation_keys/2 \
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap">{
+    "service_level": null,
+    "content_overrides": [],
     "id": 2,
     "name": "TestKey",
     "description": "Just for testing",
     "unlimited_hosts": false,
-    "auto_attach": true,
-    "content_view_id": null,
-    "environment_id": null,
+    "content_view_environment_labels": "",
     "usage_count": 0,
     "user_id": 3,
     "max_hosts": 10,
     "release_version": null,
-    "service_level": null,
-    "content_overrides": [
-
-    ],
+    "purpose_usage": null,
+    "purpose_role": null,
+    "organization_id": 1,
     "organization": {
         "name": "Default Organization",
         "label": "Default_Organization",
         "id": 1
     },
-    "created_at": "2024-02-16 12:37:47 UTC",
-    "updated_at": "2024-02-16 12:46:17 UTC",
-    "content_view": null,
-    "environment": null,
-    "products": null,
-    "host_collections": [
-
-    ],
+    "created_at": "2026-10-19 07:11:45 UTC",
+    "updated_at": "2026-10-19 07:20:12 UTC",
+    "content_view_environments": [],
+    "host_collections": [],
+    "multi_content_view_environment": false,
     "permissions": {
         "view_activation_keys": true,
         "edit_activation_keys": true,
@@ -1610,8 +1602,8 @@ If any of the lifecycle environments already exist in the organization, the scri
 require 'rest-client'
 require 'json'
 
-url = 'https://orcharhino.example.com/api/v2/'
-katello_url = "#{url}/katello/api/v2/"
+url = 'https://orcharhino.example.com'
+katello_url = "#{url}/katello/api/v2"
 
 $username = '_My_User_Name_'
 $password = '_My_Password_'
@@ -1809,8 +1801,7 @@ except ImportError:
 
 # URL to your orcharhino&#160;Server
 URL = "https://orcharhino.example.com"
-FOREMAN_API = f"{URL}/api/"
-KATELLO_API = f"{URL}/katello/api/"
+KATELLO_API = f"{URL}/katello/api/v2"
 POST_HEADERS = {'content-type': 'application/json'}
 # Default credentials to login to orcharhino
 USERNAME = "admin"
@@ -1855,12 +1846,12 @@ def main():
     """
 
     # Check if our organization already exists
-    org = get_json(f"{FOREMAN_API}/organizations/{ORG_NAME}")
+    org = get_json(f"{KATELLO_API}/organizations/{ORG_NAME}")
 
     # If our organization is not found, create it
     if org.get('error', None):
         org_id = post_json(
-            f"{FOREMAN_API}/organizations/",
+            f"{KATELLO_API}/organizations/",
             json.dumps({"name": ORG_NAME})
         )["id"]
         print("Creating organization:\t" + ORG_NAME)
@@ -1893,7 +1884,7 @@ def main():
             json.dumps({
                 "name": environment,
                 "organization_id": org_id,
-                "prior": prior_env_id
+                "prior_id": prior_env_id
             })
         )["id"]
 
@@ -1926,6 +1917,8 @@ except ImportError:
     sys.exit(-1)
 
 HOSTNAME = "orcharhino.example.com"
+# Name of the managed host whose information you want to retrieve.
+MANAGED_HOSTNAME = "host.example.com"
 # URL for the API to your orcharhino&#160;Server
 FOREMAN_API = f"https://{HOSTNAME}/api/"
 KATELLO_API = f"https://{HOSTNAME}/katello/api/v2/"
@@ -1934,6 +1927,8 @@ POST_HEADERS = {'content-type': 'application/json'}
 # Default credentials to login to orcharhino
 USERNAME = "admin"
 PASSWORD = "password"
+# Name of the organization whose subscriptions you want to retrieve.
+ORGANIZATION_NAME = "Default Organization"
 # Ignore SSL for now
 SSL_VERIFY = False
 #SSL_VERIFY = "./path/to/CA-certificate.crt" # Put the path to your CA certificate here to allow SSL_VERIFY
@@ -1977,7 +1972,7 @@ def display_info_for_subs(url):
             print(f"{str(sub['id']):10}{sub['name']:90}{str(sub['start_date']):30}")
 
 def main():
-    host = HOSTNAME
+    host = MANAGED_HOSTNAME
     print(f"Displaying all info for host {host} ...")
     display_all_results(FOREMAN_API + 'hosts/' + host)
 
@@ -1989,7 +1984,13 @@ def main():
     display_info_for_hosts(FOREMAN_API + 'hosts?per_page=1&amp;search=name~' + host_pattern)
 
     print(f"Displaying basic info for subscriptions")
-    display_info_for_subs(KATELLO_API + 'subscriptions')
+    organization = get_results(KATELLO_API + 'organizations/' + ORGANIZATION_NAME)
+    if organization:
+        display_info_for_subs(
+            KATELLO_API + f"subscriptions?organization_id=\{organization['id']}"
+        )
+    else:
+        print(f"Organization '{ORGANIZATION_NAME}' does not exist.")
 
     environment = 'production'
     print(f"Displaying basic info for hosts in environment {environment}...")
@@ -2948,51 +2949,46 @@ Note also that the indexes are used after the path variable, for example, ${path
 <pre class="nowrap">$ curl \
 --user <em>My_User_Name</em>:<em>My_Password</em> \
 --header Accept:application/json \
---header Content-Type:multipart/form-data \
 --request PUT \
---data-urlencode size=$size \
---data-urlencode offset=0 \
---data-urlencode content@${path}0 \
+--form size=$size \
+--form offset=0 \
+--form content=@${path}0 \
 https://<em>orcharhino.example.com</em>/katello/api/v2/repositories/76/content_uploads/$upload_id
 
 $ curl \
 --user <em>My_User_Name</em>:<em>My_Password</em> \
 --header Accept:application/json \
---header Content-Type:multipart/form-data \
 --request PUT \
---data-urlencode size=$size \
---data-urlencode offset=2000000 \
---data-urlencode content@${path}1 \
+--form size=$size \
+--form offset=2000000 \
+--form content=@${path}1 \
 https://<em>orcharhino.example.com</em>/katello/api/v2/repositories/76/content_uploads/$upload_id
 
 $ curl \
 --user <em>My_User_Name</em>:<em>My_Password</em> \
 --header Accept:application/json \
---header Content-Type:multipart/form-data \
 --request PUT \
---data-urlencode size=$size \
---data-urlencode offset=4000000 \
---data-urlencode content@${path}2 \
+--form size=$size \
+--form offset=4000000 \
+--form content=@${path}2 \
 https://<em>orcharhino.example.com</em>/katello/api/v2/repositories/76/content_uploads/$upload_id
 
 $ curl \
 --user <em>My_User_Name</em>:<em>My_Password</em> \
 --header Accept:application/json \
---header Content-Type:multipart/form-data \
 --request PUT \
---data-urlencode size=$size \
---data-urlencode offset=6000000
---data-urlencode content@${path}3 \
+--form size=$size \
+--form offset=6000000 \
+--form content=@${path}3 \
 https://<em>orcharhino.example.com</em>/katello/api/v2/repositories/76/content_uploads/$upload_id
 
 $ curl \
 --user <em>My_User_Name</em>:<em>My_Password</em> \
 --header Accept:application/json \
---header Content-Type:multipart/form-data \
 --request PUT \
---data-urlencode size=$size \
---data-urlencode offset=8000000 \
---data-urlencode content@${path}4 \
+--form size=$size \
+--form offset=8000000 \
+--form content=@${path}4 \
 https://<em>orcharhino.example.com</em>/katello/api/v2/repositories/76/content_uploads/$upload_id</pre>
 </div>
 </div>
@@ -3066,7 +3062,7 @@ https://<em>orcharhino.example.com</em>/katello/api/v2/repositories/76/content_u
 --header "Content-Type:application/json" \
 --request PUT \
 --user <em>My_User_Name</em>:<em>My_Password</em> \
---data "{\"uploads\":[{\"content_unit_id\": \"/pulp/api/v3/content/file/files/c1bcdfb8-d840-4604-845e-86e82454c747/\", \"name\": \"$name\", \ \"checksum\": \"$checksum\" }]}" \
+--data "{\"uploads\":[{\"content_unit_id\": \"/pulp/api/v3/content/file/files/c1bcdfb8-d840-4604-845e-86e82454c747/\", \"name\": \"$name\", \"checksum\": \"$checksum\" }]}" \
 https://<em>orcharhino.example.com</em>/katello/api/v2/repositories/76/import_uploads</pre>
 </div>
 </div>
@@ -3111,8 +3107,10 @@ For this example, locate <strong>os_title</strong> and <strong>model</strong>.</
 <div class="listingblock">
 <div class="content">
 <pre class="nowrap">$ curl \
+--get \
 --user <em>My_User_Name</em>:<em>My_Password</em> \
-https://<em>orcharhino.example.com</em>/api/v2/hosts?search=os_title=\"RedHat+7.7\",model=\"PowerEdge+R330\" \
+--data-urlencode 'search=os_title="RedHat 7.7",model="PowerEdge R330"' \
+https://<em>orcharhino.example.com</em>/api/v2/hosts \
 | python3 -m json.tool</pre>
 </div>
 </div>
@@ -3168,7 +3166,7 @@ The list contains 5 entries per page and returns the second page.</p>
 <pre class="nowrap">$ curl \
 --request GET \
 --user <em>My_User_Name</em>:<em>My_Password</em> \
-https://orcharhino.example.com/katello/api/architectures?organization_id=1&amp;amp;per_page=5&amp;amp;page=2</pre>
+'https://orcharhino.example.com/api/architectures?organization_id=1&amp;per_page=5&amp;page=2'</pre>
 </div>
 </div>
 </dd>
@@ -3189,7 +3187,7 @@ https://orcharhino.example.com/katello/api/architectures?organization_id=1&amp;a
   curl \
   --request GET \
   --user <em>My_User_Name</em>:<em>My_Password</em> \
-  https://orcharhino.example.com/katello/api/content_views?per_page=5&amp;amp;page=$i; \
+  "https://orcharhino.example.com/katello/api/content_views?per_page=5&amp;page=$i"; \
 done</code></pre>
 </div>
 </div>
