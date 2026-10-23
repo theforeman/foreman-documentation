@@ -1,0 +1,116 @@
+:_mod-docs-content-type: REFERENCE
+
+[id="object-creation-with-python"]
+= Object creation with Python
+
+[role="_abstract"]
+You can use the Python `requests` module to create {Project} organizations and lifecycle environments programmatically. 
+
+This script connects to the {Project} API, creates an organization, and then creates three lifecycle environments in the organization.
+If the organization already exists, the script uses that organization.
+If any of the lifecycle environments already exist in the organization, the script returns an error and exits.
+
+[source, Python, subs="attributes"]
+----
+#!/usr/bin/python3
+
+import json
+import sys
+
+try:
+    import requests
+except ImportError:
+    print("Please install the python-requests module.")
+    sys.exit(-1)
+
+# URL to your {ProjectServer}
+URL = "https://{foreman-example-com}"
+KATELLO_API = f"\{URL}/katello/api/v2"
+POST_HEADERS = {'content-type': 'application/json'}
+# Default credentials to login to {ProjectX}
+USERNAME = "admin"
+PASSWORD = "changeme"
+# Ignore SSL for now
+SSL_VERIFY = False
+
+# Name of the organization to be either created or used
+ORG_NAME = "MyOrg"
+# Name for life cycle environments to be either created or used
+ENVIRONMENTS = ["Development", "Testing", "Production"]
+
+
+def get_json(location):
+    """
+    Send a GET request to the specified API endpoint.
+    """
+    r = requests.get(location, auth=(USERNAME, PASSWORD), verify=SSL_VERIFY)
+    return r.json()
+
+
+def post_json(location, json_data):
+    """
+    Send JSON data in a POST request to the specified API endpoint.
+    """
+    result = requests.post(
+        location,
+        data=json_data,
+        auth=(USERNAME, PASSWORD),
+        verify=SSL_VERIFY,
+        headers=POST_HEADERS
+    )
+    return result.json()
+
+
+def main():
+    """Create or reuse an organization and create lifecycle environments."""
+
+    # Look up the organization by name.
+    org = get_json(f"\{KATELLO_API}/organizations/\{ORG_NAME}")
+
+    # Create the organization if it does not exist.
+    if org.get('error', None):
+        org_id = post_json(
+            f"\{KATELLO_API}/organizations/",
+            json.dumps({"name": ORG_NAME})
+        )["id"]
+        print("Creating organization:\t" + ORG_NAME)
+    else:
+        # Reuse the existing organization ID.
+        org_id = org['id']
+        print(f"Organization '\{ORG_NAME}' exists.")
+
+    # Retrieve all lifecycle environments in the organization.
+    envs = get_json(
+        f"\{KATELLO_API}/organizations/\{org_id}/environments/"
+    )
+
+    # Map lifecycle environment IDs to names and find the Library environment ID.
+    prior_env_id = 0
+    env_list = {}
+    for env in envs['results']:
+        env_list[env['id']] = env['name']
+        prior_env_id = env['id'] if env['name'] == "Library" else prior_env_id
+
+    # Exit the script if at least one life cycle environment already exists
+    if all(environment in env_list.values() for environment in ENVIRONMENTS):
+        print("ERROR: One of the Environments is not unique to organization")
+        sys.exit(-1)
+
+    # Create the lifecycle environments in sequence.
+    for environment in ENVIRONMENTS:
+        new_env_id = post_json(
+            f"\{KATELLO_API}/organizations/\{org_id}/environments/",
+            json.dumps({
+                "name": environment,
+                "organization_id": org_id,
+                "prior_id": prior_env_id
+            })
+        )["id"]
+
+        print("Creating environment:\t" + environment)
+        prior_env_id = new_env_id
+
+
+if __name__ == "__main__":
+    main()
+----
