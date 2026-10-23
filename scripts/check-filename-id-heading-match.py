@@ -71,7 +71,6 @@ HEADING_SUBSTITUTIONS = (
     ("{customgpg}", "custom-gpg"),
     ("{pat}", "personal-access-token"),
     ("{smartproxies}", "smart-proxies"),
-    ("-for-{productname}", ""),
     ("by-using-hammer-cli", "by-using-cli"),
     ("by-using-project-api", "by-using-api"),
     ("{projectwebui}", "web-ui"),
