@@ -4,22 +4,21 @@
 = Grub2 UEFI boot loader and the bootloader-universe structure
 
 [role="_abstract"]
-*PXEGrub2* GRUB-based PXE boot loader supports BIOS and UEFI environments, as well as Secure Boot environments.
-The `bootloader-universe` directory structure organizes Grub2 binaries by OS and architecture.
+The `bootloader-universe` layout lets Grub2 UEFI hosts use boot loader binaries for their operating system and architecture.
 
-PXEGrub2 is managed by the {SmartProxy}’s TFTP service, which provides PXE clients with the appropriate boot loader binaries and configuration files.
+To use these binaries for a host, select a Grub2 UEFI PXE loader and a subnet whose TFTP {SmartProxy} advertises `bootloader_universe`.
+On that {SmartProxy}, create and populate `/var/lib/tftpboot/bootloader-universe/pxegrub2/__OS_Name__/__Release__/__Architecture__/` or the corresponding `default` directory before {Project} deploys the host's PXEGrub2 configuration.
 
-By using the `bootloader-universe` directory structure, Grub2-based UEFI boot loaders can be organized and managed by distribution, version, and architecture.
-This feature does not require explicit configuration.
-It is automatically enabled when the {SmartProxy} uses the
-`/var/lib/tftpboot/bootloader-universe/pxegrub2/` directory structure.
+The {SmartProxy} checks the exact release directory first, then `default` for the same OS and architecture.
+`__OS_Name__` is the lowercased *Name* of the host's operating system in {Project}; `__Release__` is its major and minor version separated by a dot, or only its major version if minor is empty; `__Architecture__` is its architecture name.
+The first directory that exists is selected, even if required `.efi` files are missing.
+The {SmartProxy} links every `.efi` file in that directory into the host's `host-config/__MAC_Address__/grub2/` directory.
+If neither directory exists, it links to the shared binaries in `/var/lib/tftpboot/grub2/` instead.
 
-The `bootloader-universe` directory enables multiple operating system versions and architectures to coexist without conflicts.
+With the capability, {Project} uses a host-specific DHCP filename ending in `boot.efi` or `boot-sb.efi` even if no matching `bootloader-universe` directory exists.
+Without the capability, {Project} uses a shared `grub2/grub__My_Arch__.efi` or `grub2/shim__My_Arch__.efi` filename directly.
+If you create a matching directory for an already configured host, rebuild its TFTP configuration to update its links.
 
-When the {SmartProxy} recognizes the `/var/lib/tftpboot/bootloader-universe/pxegrub2/` structure,
-boot loaders are stored in an organized hierarchy by OS, version, and architecture.
-
-Before placing boot loader binaries (`shim__My_Arch__.efi`, `grub__My_Arch__.efi`), you must manually create the corresponding directory hierarchy by using the `mkdir` command, for example, `# mkdir -p /var/lib/tftpboot/bootloader-universe/pxegrub2/__My_Distribution__/__My_Version__/__My_Arch__`.
 
 .Default `bootloader-universe` files
 [cols="1,2,1", options="header"]
@@ -86,10 +85,7 @@ $ chmod 644 grubx64.efi shimx64.efi
 The `chmod` command ensures that TFTP and HTTPBoot clients can read these files.
 ====
 
-In addition to the `bootloader-universe` layout, {Project} also supports the *Legacy layout* for backward compatibility.
-
-If the `/var/lib/tftpboot/bootloader-universe/pxegrub2/` structure is not used, {Project} falls back to the legacy `/var/lib/tftpboot/grub2/` directory.
-Boot loaders are stored in a flat layout, but when a host enters *Build mode*, the {SmartProxy} creates a host-specific directory with the required configuration files and links.
+The shared Grub2 directory is used when no matching release-specific or `default` directory exists for the host.
 
 .Default legacy layout files
 [cols="1,1,1", options="header"]
