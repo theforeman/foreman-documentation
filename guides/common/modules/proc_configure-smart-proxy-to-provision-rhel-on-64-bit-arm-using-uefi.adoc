@@ -1,0 +1,86 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="configure-{smart-proxy-context}-to-provision-rhel-on-64-bit-arm-using-uefi"]
+= Configure {SmartProxy} to provision {RHEL} on 64-bit ARM using UEFI
+
+[role="_abstract"]
+You can provision {RHEL} hosts on the 64-bit ARM (`aarch64`) architecture by placing the `aarch64` boot loader binaries on your TFTP {SmartProxy}.
+
+The procedure is similar to the 64-bit AMD and Intel (`x86_64`) architecture described in xref:configuring-{smart-proxy-context}-to-provision-rhel-by-using-uefi[Configuring {SmartProxy} to provision {RHEL} by using UEFI], with the following differences:
+
+* Replace the `x86_64` and `x64` strings in the boot loader binary filenames and paths with their `aarch64` equivalents.
+* Extract the boot loader binaries from the corresponding `aarch64` RPM package instead of the `x86_64` package.
+
+ifdef::satellite[]
+[NOTE]
+====
+On the 64-bit ARM architecture, {Project} supports provisioning only on an ARM server that is equipped with a FUJITSU-MONAKA CPU.
+====
+endif::[]
+
+[IMPORTANT]
+====
+Perform the following configuration steps on each TFTP {SmartProxy} for a subnet to provision hosts using UEFI on that subnet.
+====
+
+.Prerequisites
+* Ensure that the `cpio` package is installed on your {SmartProxy}.
+
+.Procedure
+. Set the path for the shim and GRUB2 binaries for the operating system of your host:
++
+[options="nowrap" subs="+quotes,verbatim,attributes"]
+----
+# BOOTLOADER_PATH="/var/lib/tftpboot/bootloader-universe/pxegrub2/redhat/default/aarch64"
+----
++
+If you require specific versions of the shim and GRUB2 binaries for the version of the operating system of your host, replace `default` with the *Major* and *Minor* version of the operating system separated by a dot.
+If no *Minor* version is set, replace `default` with the *Major* version.
++
+{Team} recommends to not use version-specific shim and GRUB2 binaries unless it is really necessary.
+. Create the directory to store the shim and GRUB2 binaries for the operating system of your host:
++
+[options="nowrap" subs="+quotes,verbatim,attributes"]
+----
+# install -o foreman-proxy -g foreman-proxy -d $BOOTLOADER_PATH
+----
+. Download the `grub2-efi-aa64` and `shim-aa64` packages for the operating system of your host.
+You can download the `grub2-efi-aa64` and `shim-aa64` packages from https://access.redhat.com/downloads/content/package-browser[Package browser] on the Red{nbsp}Hat Customer Portal.
+. Extract the shim and GRUB2 binaries:
++
+[options="nowrap" subs="+quotes,verbatim,attributes"]
+----
+# rpm2cpio /tmp/grub2-efi-aa64.rpm | cpio -idv --directory /tmp
+# rpm2cpio /tmp/shim-aa64.rpm | cpio -idv --directory /tmp
+----
+. Make the shim and GRUB2 binaries available for host provisioning:
++
+[options="nowrap" subs="+quotes,verbatim,attributes"]
+----
+# cp /tmp/boot/efi/EFI/redhat/grubaa64.efi $BOOTLOADER_PATH/grubaa64.efi
+# cp /tmp/boot/efi/EFI/redhat/shimaa64.efi $BOOTLOADER_PATH/shimaa64.efi
+# ln -sr $BOOTLOADER_PATH/grubaa64.efi $BOOTLOADER_PATH/boot.efi
+# ln -sr $BOOTLOADER_PATH/shimaa64.efi $BOOTLOADER_PATH/boot-sb.efi
+# chmod 644 $BOOTLOADER_PATH/grubaa64.efi $BOOTLOADER_PATH/shimaa64.efi
+----
+
+.Verification
+* Verify the contents of your boot loader directory:
++
+[source, none, options="nowrap" subs="+quotes,verbatim,attributes"]
+----
+# tree /var/lib/tftpboot/bootloader-universe
+/var/lib/tftpboot/bootloader-universe
+└── pxegrub2
+    └── redhat
+        └── default
+            └── aarch64
+                ├── boot.efi -> grubaa64.efi
+                ├── boot-sb.efi -> shimaa64.efi
+                ├── grubaa64.efi
+                └── shimaa64.efi
+----
+
+.Next steps
+* You can now provision {RHEL} hosts on the 64-bit ARM architecture by using the *Grub2 UEFI* and *Grub2 UEFI HTTPS* PXE loaders.
+* Alternatively, to use the legacy flat boot loader layout, place `grubaa64.efi` and `shimaa64.efi` directly in the `/var/lib/tftpboot/grub2/` directory.
