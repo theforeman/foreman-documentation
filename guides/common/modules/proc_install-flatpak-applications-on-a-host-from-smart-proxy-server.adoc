@@ -1,0 +1,68 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="install-flatpak-applications-on-a-host-from-{smart-proxy-context}-server"]
+= Install Flatpak applications on a host from {SmartProxyServer}
+
+[role="_abstract"]
+Connect your host to the Flatpak remote on {SmartProxyServer}, authenticate to the container registry, and install Flatpak applications.
+
+[NOTE]
+====
+{SmartProxies} synchronize Flatpaks and make them available to all hosts, but not organizations, content views, or lifecycle environments. 
+Clients receive the latest Flatpaks synchronized on the {SmartProxy} globally.
+====
+
+.Prerequisites
+* Flatpak repositories are synchronized to {SmartProxyServer}.
+For more information, see {ContentManagementDocURL}add-lifecycle-environments-to-{smart-proxy-context}-servers-by-using-web-ui[Add lifecycle environments to {SmartProxyServer}s by using {ProjectWebUI} in _{ContentManagementDocTitle}_].
+* Flatpak is installed on the host.
+ifdef::katello,satellite,red_hat_enterprise_linux[]
+For more information, see {RHELDocsBaseURL}9/html/administering_the_system_using_the_gnome_desktop_environment/assembly_installing-applications-using-flatpak_administering-the-system-using-the-gnome-desktop-environment#setting-up-flatpak_assembly_installing-applications-using-flatpak[Setting up Flatpak].
+endif::[]
+* Flatpak runtime repositories are available to hosts alongside application repositories.
+Flatpak applications, such as `rhel9/firefox-flatpak`, depend on the runtime for installation.
+* Podman is installed on the host.
+* Podman is configured to trust the certificate authority of {SmartProxyServer}.
+For more information, see xref:configure-podman-to-trust-the-certificate-authority[].
+
+.Procedure
+. On the managed host, add the {SmartProxy} as a Flatpak remote:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+$ flatpak remote-add --authenticator-name=org.flatpak.Authenticator.Oci katello oci+https://{smartproxy-example-com}/
+----
+. Log in the host to the container registry using one of the following methods: 
+* Certificate authentication
+** When registering a host to {SmartProxy}, select the *Set up container registry certs* checkbox.
+** If the host is already registered, run the *Flatpak - Login to registry via podman* job template on the host.
+Set *Set up certificate authentication* to `true` and enter the URL of your {SmartProxy} as the registry URL.
+* Using Podman
+** Log in using Podman:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+$ podman login _{smartproxy-example-com}_
+----
++
+You might need to log in to the registry again if you have not saved your credentials.
+. Optional: Save your credentials permanently using one of the following options:
+* To save the credentials for the current user:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+$ cp $XDG_RUNTIME_DIR/containers/auth.json $HOME/.config/flatpak/oci-auth.json
+----
+* To save the credentials system-wide:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+$ cp $XDG_RUNTIME_DIR/containers/auth.json /etc/flatpak/oci-auth.json
+----
+. Install your application.
+For example, to install the Mozilla Firefox Flatpak:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+$ flatpak install firefox
+----
