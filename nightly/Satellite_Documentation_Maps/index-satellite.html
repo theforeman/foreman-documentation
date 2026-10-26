@@ -245,6 +245,13 @@ SOFTWARE.
 <ul class="sectlevel3">
 <li><a href="#satellite-use-cases">2.1.1. Satellite use cases</a></li>
 <li><a href="#content-flow-in-satellite">2.1.2. Content flow in Satellite</a></li>
+<li><a href="#configuration-management-with-puppet-in-satellite">2.1.3. Configuration management with Puppet in Satellite</a>
+<ul class="sectlevel4">
+<li><a href="#how-puppet-integrates-with-satellite">How Puppet integrates with Satellite</a></li>
+<li><a href="#high-level-steps-for-configuration-management-with-puppet">High-level steps for configuration management with Puppet</a></li>
+<li><a href="#openvox-versions-supported-for-integration-with-satellite">OpenVox versions supported for integration with Satellite</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li><a href="#satellite-architecture-overview">2.2. Satellite architecture overview</a>
@@ -827,6 +834,18 @@ SOFTWARE.
 </ul>
 </li>
 <li><a href="#clone-hosts-in-satellite">10.8.2. Clone hosts in Satellite</a></li>
+<li><a href="#deploy-puppet-managed-hosts">10.8.3. Deploy Puppet-managed hosts</a>
+<ul class="sectlevel4">
+<li><a href="#managing-puppet-modules">Managing Puppet modules</a></li>
+<li><a href="#importing-and-creating-puppet-resources">Importing and creating Puppet resources</a></li>
+<li><a href="#configuring-openvox-agent">Configuring OpenVox agent</a></li>
+<li><a href="#configuring-puppet-smart-class-parameters">Configuring Puppet smart class parameters</a></li>
+<li><a href="#assigning-a-puppet-class-to-a-host-group">Assigning a Puppet class to a host group</a></li>
+<li><a href="#assigning-a-puppet-class-to-an-individual-host">Assigning a Puppet class to an individual host</a></li>
+<li><a href="#running-puppet-once-using-ssh">Running Puppet once using SSH</a></li>
+<li><a href="#configuring-puppet-enforcement-intervals">Configuring Puppet enforcement intervals</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li><a href="#installing-flatpak-applications-on-hosts">10.9. Installing Flatpak applications on hosts</a>
@@ -1081,6 +1100,12 @@ SOFTWARE.
 <li><a href="#enable-host-configuration-management-integrations">12.3. Enable host configuration management integrations</a>
 <ul class="sectlevel3">
 <li><a href="#enable-the-ansible-plugin">12.3.1. Enable the Ansible plugin</a></li>
+<li><a href="#enabling-puppet-integration-with-satellite">12.3.2. Enabling Puppet integration with Satellite</a>
+<ul class="sectlevel4">
+<li><a href="#installing-openvox-server-on-satellite-server-and-capsule-servers">Installing OpenVox server on Satellite&#160;Server and Capsule&#160;Servers</a></li>
+</ul>
+</li>
+<li><a href="#disabling-puppet-integration-with-satellite">12.3.3. Disabling Puppet integration with Satellite</a></li>
 </ul>
 </li>
 <li><a href="#configuring-host-network-interfaces">12.4. Configuring host network interfaces</a>
@@ -1573,12 +1598,13 @@ SOFTWARE.
 <li><a href="#ansible-integration-settings">19.4.15. Ansible integration settings</a></li>
 </ul>
 </li>
-<li><a href="#technical-users-provided-and-required-by-satellite">19.5. Technical users provided and required by Satellite</a></li>
-<li><a href="#glossary-of-terms-used-in-satellite">19.6. Glossary of terms used in Satellite</a></li>
-<li><a href="#required-red-hat-repositories">19.7. Required Red Hat repositories</a></li>
-<li><a href="#ansible-versions-supported-for-integration-with-satellite">19.8. Ansible versions supported for integration with Satellite</a></li>
-<li><a href="#ansible-role-and-collection-paths-in-satellite">19.9. Ansible role and collection paths in Satellite</a></li>
-<li><a href="#essential-ansible-configuration">19.10. Essential Ansible configuration</a></li>
+<li><a href="#host-parameter-hierarchy">19.5. Host parameter hierarchy</a></li>
+<li><a href="#technical-users-provided-and-required-by-satellite">19.6. Technical users provided and required by Satellite</a></li>
+<li><a href="#glossary-of-terms-used-in-satellite">19.7. Glossary of terms used in Satellite</a></li>
+<li><a href="#required-red-hat-repositories">19.8. Required Red Hat repositories</a></li>
+<li><a href="#ansible-versions-supported-for-integration-with-satellite">19.9. Ansible versions supported for integration with Satellite</a></li>
+<li><a href="#ansible-role-and-collection-paths-in-satellite">19.10. Ansible role and collection paths in Satellite</a></li>
+<li><a href="#essential-ansible-configuration">19.11. Essential Ansible configuration</a></li>
 </ul>
 </li>
 </ul>
@@ -1739,6 +1765,207 @@ Hosts can be physical or virtual.</p>
 <p><a href="#manage-software-content-lifecycles">Manage software content lifecycles</a></p>
 </li>
 </ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="configuration-management-with-puppet-in-satellite"><a class="anchor" href="#configuration-management-with-puppet-in-satellite"></a>2.1.3. Configuration management with Puppet in Satellite</h4>
+<div class="paragraph _abstract">
+<p>To automate host configurations across your infrastructure and keep them consistent, Satellite integrates with OpenVox server for Puppet-based configuration management.
+This automation helps you consistently manage configurations of hosts registered to Satellite.</p>
+</div>
+<div class="paragraph">
+<p>Puppet is a configuration management tool to automate host configurations across your infrastructure.
+Satellite uses OpenVox server as the Puppet-compatible central server for the integration.</p>
+</div>
+<div class="sect4">
+<h5 id="how-puppet-integrates-with-satellite"><a class="anchor" href="#how-puppet-integrates-with-satellite"></a>How Puppet integrates with Satellite</h5>
+<div class="paragraph _abstract">
+<p>Puppet uses a server-agent architecture.
+OpenVox server communicates with OpenVox agents on hosts registered to Satellite to manage the Puppet configuration of these hosts.
+Satellite components integrate with that architecture to provide configuration management capabilities in Satellite.</p>
+</div>
+<div class="paragraph">
+<p>Puppet architecture in Satellite comprises the following components:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">OpenVox server</dt>
+<dd>
+<p>OpenVox server is the central component that stores Puppet configuration definitions in Satellite.
+It runs on Satellite&#160;Server or Capsule&#160;Servers.</p>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Puppet server is no longer supported for Puppet integration with Satellite.
+To integrate your Puppet infrastructure with Satellite, you need to use an OpenVox server instead.
+An OpenVox server is functionally equivalent to a Puppet server.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</dd>
+<dt class="hdlist1">OpenVox agent</dt>
+<dd>
+<p>OpenVox agent is a service that communicates with an OpenVox server to manage the configuration of hosts.
+It runs on hosts registered to Satellite.</p>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>As a legacy alternative, Puppet agent also remains compatible with Satellite for Puppet integration.
+However, an OpenVox agent is the recommended agent for Puppet integration, and it is functionally equivalent to a Puppet agent.
+You cannot run both OpenVox agent and Puppet agent on the same host.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</dd>
+<dt class="hdlist1">Puppet modules</dt>
+<dd>
+<p>A Puppet module is a collection of classes, manifests, resources, files, and templates.
+The Puppet modules work as components of host configuration definitions.</p>
+</dd>
+<dt class="hdlist1">Puppet environments</dt>
+<dd>
+<p>Puppet environments are used to control versions of configuration definitions or to manage variants of the definitions, and to test the definitions before you deploy them on production.
+You can create multiple Puppet environments.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>On each run, the OpenVox agent collects Puppet facts about the host and sends them to the OpenVox server.
+The OpenVox server forwards those facts to Satellite.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>To list Puppet facts on a host, run the <code>puppet facts</code> command.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>Satellite acts as an external node classifier (ENC) for the OpenVox server.
+Based on the facts and other definitions Satellite receives from the OpenVox server, Satellite constructs the ENC answer to the OpenVox server.</p>
+</div>
+<div class="paragraph">
+<p>Based on the ENC answer, the OpenVox server compiles a catalog for the host and sends it to the agent.</p>
+</div>
+<div class="paragraph">
+<p>The agent evaluates the system state on the host.
+If the agent finds differences between the desired state defined in the catalog and the actual state, known as drifts, it enforces correction of the state of the host.</p>
+</div>
+<div class="paragraph">
+<p>The agent reports correction results back to the OpenVox server.
+The OpenVox server receives correction results from the agent and reports them to Satellite.</p>
+</div>
+<div class="paragraph">
+<p>If the Puppet modules you are using support the use of parameters, you can override parameters of the module by using Smart Class parameters in Satellite.
+In Satellite, you define the parameters as key-value pairs, which behave similar to host parameters or Ansible variables.</p>
+</div>
+</div>
+<div class="sect4">
+<h5 id="high-level-steps-for-configuration-management-with-puppet"><a class="anchor" href="#high-level-steps-for-configuration-management-with-puppet"></a>High-level steps for configuration management with Puppet</h5>
+<div class="paragraph _abstract">
+<p>After you deploy an OpenVox agent on a host, use Satellite to manage Puppet modules, import classes, set parameter overrides, and assign classes to hosts so configuration is applied automatically or on demand.</p>
+</div>
+<div class="paragraph">
+<p>Configuration management with Puppet involves the following high-level steps:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Managing Puppet modules on the OpenVox server by installing and updating them.</p>
+</li>
+<li>
+<p>Importing Puppet classes and environments from Puppet modules into Satellite.</p>
+</li>
+<li>
+<p>Optional: Creating config groups from Puppet classes.</p>
+</li>
+<li>
+<p>Configuring overrides of Smart Class parameters on various levels.</p>
+</li>
+<li>
+<p>Assigning Puppet classes or config groups to host groups or individual hosts.</p>
+</li>
+<li>
+<p>Configuring intervals for runs of the OpenVox agent on hosts and for configuration enforcement runs of the OpenVox server.</p>
+</li>
+<li>
+<p>Monitoring configuration management using reports in the Satellite web UI.</p>
+</li>
+<li>
+<p>Configuring email notifications.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>After assigning Puppet classes or config groups, Satellite runs configuration management automatically in the configured intervals to enforce Puppet configuration on your hosts, or you can initiate it manually on demand with the <strong>Run Puppet Once</strong> feature.</p>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="#monitor-satellite-resources">Monitor Satellite resources in <em>Administering Red&#160;Hat Satellite</em></a></p>
+</li>
+<li>
+<p><a href="#configure-email-notification-preferences">Configure email notification preferences in <em>Administering Red&#160;Hat Satellite</em></a></p>
+</li>
+<li>
+<p><a href="#running-puppet-once-using-ssh">Running Puppet once using SSH</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect4">
+<h5 id="openvox-versions-supported-for-integration-with-satellite"><a class="anchor" href="#openvox-versions-supported-for-integration-with-satellite"></a>OpenVox versions supported for integration with Satellite</h5>
+<div class="paragraph _abstract">
+<p>Before you begin with the Puppet integration, review which versions of the OpenVox server and OpenVox agent are supported for integration with Satellite.</p>
+</div>
+<div class="paragraph">
+<p>OpenVox Server 8 is supported on Satellite&#160;Server and Capsule&#160;Servers.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Important</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>The Puppet modules you use must be compatible with the OpenVox Server version you run.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<p>OpenVox Agent 8 is supported on hosts registered to Satellite.</p>
+</div>
+<div class="paragraph">
+<p>Additionally, Puppet agent 7 remains compatible with OpenVox in Satellite as a legacy alternative.
+Hosts registered to Satellite that run Puppet agent 7 can still integrate with the OpenVox implementation in Satellite.
+However, Puppet agent 7 is end of life.
+Red&#160;Hat recommends to use OpenVox agent 8.</p>
+</div>
 </div>
 </div>
 </div>
@@ -21639,6 +21866,1193 @@ For more information, see xref:[<em>Provisioning hosts</em>].</p>
 </ol>
 </div>
 </div>
+<div class="sect3">
+<h4 id="deploy-puppet-managed-hosts"><a class="anchor" href="#deploy-puppet-managed-hosts"></a>10.8.3. Deploy Puppet-managed hosts</h4>
+<div class="paragraph _abstract">
+<p>When you deploy hosts across your infrastructure, you can use Puppet to ensure all hosts have the same standard configurations.
+Satellite integrates with OpenVox server to automate Puppet-based configuration management so you can deploy hosts with consistent configurations from the start.</p>
+</div>
+<div class="paragraph">
+<p>When managing host configurations at scale, you need to organize which Puppet modules, classes, and parameters are available to your hosts.
+This organization helps you deploy consistent configurations across your hosts and keep them updated over time.</p>
+</div>
+<div class="paragraph">
+<p>After you enable Puppet integration with Satellite, you can install Puppet modules from Puppet Forge or custom sources.
+You then import their classes and environments into Satellite, organize classes into reusable configuration groups, and customize module behavior through smart class parameters.
+With these configurations organized in Satellite, you can assign appropriate configurations to host groups or individual hosts.
+This approach ensures consistency while keeping flexibility for host-specific requirements.</p>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="#configuration-management-with-puppet-in-satellite">Configuration management with Puppet in Satellite</a></p>
+</li>
+<li>
+<p><a href="#enabling-puppet-integration-with-satellite">Enabling Puppet integration with Satellite</a></p>
+</li>
+</ul>
+</div>
+<div class="sect4">
+<h5 id="managing-puppet-modules"><a class="anchor" href="#managing-puppet-modules"></a>Managing Puppet modules</h5>
+<div class="paragraph _abstract">
+<p>Managing Puppet modules includes installing the modules from your preferred source and keeping them updated.
+Puppet modules contain the classes, manifests, and resources that define configurations you can apply to your hosts.</p>
+</div>
+<div class="sect5">
+<h6 id="installing-a-puppet-module-on-satellite-server"><a class="anchor" href="#installing-a-puppet-module-on-satellite-server"></a>Installing a Puppet module on Satellite&#160;Server</h6>
+<div class="paragraph _abstract">
+<p>You can install a pre-built Puppet module from the Puppet Forge or a private Puppet module that is not available on the Puppet Forge by manually coping the module to your Satellite&#160;Server.
+The Puppet Forge is a repository that provides Puppet modules contributed by the community.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Puppet modules flagged as <em>supported</em> are officially supported and tested by Puppet Inc.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Navigate to <a href="https://forge.puppet.com/">forge.puppet.com</a> and search for the Puppet module you want.</p>
+</li>
+<li>
+<p>Choose how to install the Puppet module:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>To install from the Puppet forge, install the Puppet module on your Satellite&#160;Server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># puppet module install <em>My_Puppet_Module</em> -i /etc/puppetlabs/code/environments/production/modules</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Use the <code>-i</code> parameter to specify the path and Puppet environment, for example <code>production</code>.</p>
+</div>
+<div class="paragraph">
+<p>Once the installation is completed, the output looks as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">Notice: Preparing to install into /etc/puppetlabs/code/environments/production/modules ...
+Notice: Created target directory /etc/puppetlabs/code/environments/production/modules
+Notice: Downloading from https://forgeapi.puppet.com ...
+Notice: Installing -- do not interrupt ...
+/etc/puppetlabs/code/environments/production/modules
+|-| puppetlabs-ntp (v8.3.0)
+  |-- puppetlabs-stdlib (v4.25.1) [/etc/puppetlabs/code/environments/production/modules]</pre>
+</div>
+</div>
+</li>
+<li>
+<p>To install manually, copy the module and its dependencies to Satellite&#160;Server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ scp -r <em>My_Puppet_Module</em> root@satellite.example.com:/etc/puppetlabs/code/environments/production/modules/<em>My_Puppet_Module</em></pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect5">
+<h6 id="updating-a-puppet-module-on-your-satellite-server"><a class="anchor" href="#updating-a-puppet-module-on-your-satellite-server"></a>Updating a Puppet module on your Satellite&#160;Server</h6>
+<div class="paragraph _abstract">
+<p>Regularly updating Puppet modules installed on your Satellite&#160;Server helps ensure they stay up-to-date with their source.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Connect to your OpenVox server using SSH and find out where the Puppet modules are located:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># puppet config print modulepath</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This returns output as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">/etc/puppetlabs/code/environments/production/modules:/etc/puppetlabs/code/environments/common:/etc/puppetlabs/code/modules:/opt/puppetlabs/puppet/modules:/usr/share/puppet/modules</pre>
+</div>
+</div>
+</li>
+<li>
+<p>If the module is located in the path as displayed above, the following command updates a module:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># puppet module upgrade <em>module name</em></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="importing-and-creating-puppet-resources"><a class="anchor" href="#importing-and-creating-puppet-resources"></a>Importing and creating Puppet resources</h5>
+<div class="paragraph _abstract">
+<p>After installing Puppet modules on Satellite&#160;Server or Capsule&#160;Server, you must import the Puppet classes and environments into Satellite.
+You can also create custom Puppet environments and configuration groups to organize your Puppet configuration.</p>
+</div>
+<div class="sect5">
+<h6 id="importing-puppet-classes-and-environments-into-satellite"><a class="anchor" href="#importing-puppet-classes-and-environments-into-satellite"></a>Importing Puppet classes and environments into Satellite</h6>
+<div class="paragraph _abstract">
+<p>Import Puppet classes and environments from the installed Puppet modules to Satellite&#160;Server or any attached Capsule&#160;Server before you assign any of the classes to hosts.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Ensure to select <strong>Any Organization</strong> and <strong>Any Location</strong> as context, otherwise the import might fail.</p>
+</li>
+<li>
+<p>Before you run an import of Puppet modules into Satellite, the environment must already exist as the folder <code>/etc/puppetlabs/code/environments/<em>example_environment</em></code> on the OpenVox server and contain installed Puppet modules.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Configure</strong> &gt; <strong>Puppet ENC</strong> &gt; <strong>Classes</strong> or <strong>Configure</strong> &gt; <strong>Puppet ENC</strong> &gt; <strong>Environments</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Import</strong> in the upper right corner and select which Capsule you want to import modules from.
+You may typically choose between your Satellite&#160;Server or any attached Capsule&#160;Server.</p>
+</li>
+<li>
+<p>Select the Puppet environments to import using checkboxes on the left.</p>
+</li>
+<li>
+<p>Click <strong>Update</strong> to import the Puppet environments and classes to Satellite.</p>
+</li>
+<li>
+<p>The import should result in a notification as follows:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">Successfully updated environments and Puppet classes from the on-disk Puppet installation</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect5">
+<h6 id="creating-a-custom-puppet-environment"><a class="anchor" href="#creating-a-custom-puppet-environment"></a>Creating a custom Puppet environment</h6>
+<div class="paragraph _abstract">
+<p>By creating a custom Puppet environment in Satellite, you can test custom configuration before applying it to the Puppet production environment.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Configure</strong> &gt; <strong>Puppet Environments</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Create Puppet Environment</strong> to create a Puppet environment.</p>
+</li>
+<li>
+<p>Enter a <strong>Name</strong>, alphanumeric characters and underscores are allowed, such as <code>example_environment</code>.</p>
+</li>
+<li>
+<p>Optional: Set a location context.</p>
+</li>
+<li>
+<p>Optional: Set an organization context.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong> to create the Puppet environment.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect5">
+<h6 id="creating-a-puppet-config-group"><a class="anchor" href="#creating-a-puppet-config-group"></a>Creating a Puppet config group</h6>
+<div class="paragraph _abstract">
+<p>A Puppet config group is a named list of Puppet classes that allows you to combine their capabilities and assign them to hosts at a click.
+This is equivalent to the concept of profiles in pure Puppet.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Configure</strong> &gt; <strong>Puppet ENC</strong> &gt; <strong>Config Groups</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Create Config Group</strong>.</p>
+</li>
+<li>
+<p>Select the classes you want to add to the config group.</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Choose a meaningful <strong>Name</strong> for the Puppet config group.</p>
+</li>
+<li>
+<p>Add selected Puppet classes to the <strong>Included Classes</strong> field.</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>Click <strong>Submit</strong> to save the changes.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="configuring-openvox-agent"><a class="anchor" href="#configuring-openvox-agent"></a>Configuring OpenVox agent</h5>
+<div class="paragraph _abstract">
+<p>To enable Puppet integration, you must install and configure the OpenVox agent on your hosts.
+The OpenVox agent communicates with Satellite&#160;Server or Capsule&#160;Server to enforce configuration management.</p>
+</div>
+<div class="paragraph">
+<p>You can configure the OpenVox agent on a host in one of the following ways:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>During host provisioning by including the <code>puppet_setup</code> snippet in your provisioning template</p>
+</li>
+<li>
+<p>During host registration using the registration templates</p>
+</li>
+<li>
+<p>Manually on an existing host</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Choose the method that best fits your deployment workflow.</p>
+</div>
+<div class="sect5">
+<h6 id="configuring-openvox-agent-on-a-host-during-provisioning"><a class="anchor" href="#configuring-openvox-agent-on-a-host-during-provisioning"></a>Configuring OpenVox agent on a host during provisioning</h6>
+<div class="paragraph _abstract">
+<p>If you prefer to install and configure the OpenVox agent on a host when provisioning the host through Satellite, add the <code>puppet_setup</code> snippet to your provisioning template.
+A configured OpenVox agent is required on the host for Puppet integration with your Satellite.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Red Hat Satellite Client 6 OpenVox repository is synchronized on Satellite&#160;Server and enabled in the activation key you use.</p>
+<div class="paragraph">
+<p>Choose from the following repositories, based on the operating system version and the architecture of the host you are registering:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>satellite-client-openvox-for-rhel-10-aarch64-rpms</p>
+</li>
+<li>
+<p>satellite-client-openvox-for-rhel-10-x86_64-rpms</p>
+</li>
+<li>
+<p>satellite-client-openvox-for-rhel-9-aarch64-rpms</p>
+</li>
+<li>
+<p>satellite-client-openvox-for-rhel-9-x86_64-rpms</p>
+</li>
+<li>
+<p>satellite-client-openvox-for-rhel-8-aarch64-rpms</p>
+</li>
+<li>
+<p>satellite-client-openvox-for-rhel-8-x86_64-rpms</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>You have an activation key.
+For more information, see <a href="#managing-activation-keys">Managing activation keys</a> in <em>Managing content</em>.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Hosts</strong> &gt; <strong>Templates</strong> &gt; <strong>Provisioning Templates</strong>.</p>
+</li>
+<li>
+<p>Select a provisioning template depending on your host provisioning method.
+For more information, see <a href="#kinds-of-provisioning-templates">Kinds of Provisioning Templates</a> in <em>Provisioning hosts</em>.</p>
+</li>
+<li>
+<p>Ensure the <code>puppet_setup</code> snippet is included as follows:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">&lt;%= snippet 'puppet_setup' %&gt;</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note that this snippet is already included in the templates shipped with Satellite, for example, in the <code>Kickstart default</code> template.</p>
+</div>
+</li>
+<li>
+<p>Enable the OpenVox agent using a host parameter in global parameters, a host group, or for a single host.
+Add a host parameter named <code>enable-puppet8</code>, select the <strong>boolean</strong> type, and set the value to <code>true</code>.</p>
+</li>
+<li>
+<p>Set configuration for the OpenVox agent.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>If you use an integrated OpenVox server, ensure that you select a Puppet Capsule, Puppet CA Capsule, and Puppet environment when you create a host.</p>
+</li>
+<li>
+<p>If you use a non-integrated OpenVox server, either set the following host parameters in global parameters, or a host group, or when you create a host:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Add a host parameter named <code>puppet_server</code>, select the <strong>string</strong> type, and set the value to the hostname of your OpenVox server, such as <code>openvox.example.com</code>.</p>
+</li>
+<li>
+<p>Optional: Add a host parameter named <code>puppet_ca_server</code>, select the <strong>string</strong> type, and set the value to the hostname of your Puppet CA server, such as <code>puppet-ca.example.com</code>.
+If <code>puppet_ca_server</code> is not set, the OpenVox agent will use the same server as <code>puppet_server</code>.</p>
+</li>
+<li>
+<p>Optional: Add a host parameter named <code>puppet_environment</code>, select the <strong>string</strong> type, and set the value to the Puppet environment you want the host to use.</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Ensure your host has access to the OpenVox agent packages from Satellite&#160;Server by using an appropriate activation key.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect5">
+<h6 id="configuring-openvox-agent-on-a-host-during-registration"><a class="anchor" href="#configuring-openvox-agent-on-a-host-during-registration"></a>Configuring OpenVox agent on a host during registration</h6>
+<div class="paragraph _abstract">
+<p>If you prefer to install and configure the OpenVox agent on a host when registering the host to Satellite, enable the OpenVox agent with host parameters in global parameters or a host group.
+A configured OpenVox agent is required on the host for Puppet integration with your Satellite.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Puppet must be enabled in your Satellite.
+For more information, see xref:[<em>Managing configurations by using Puppet integration</em>].</p>
+</li>
+<li>
+<p>Red Hat Satellite Client 6 OpenVox repository is synchronized on Satellite&#160;Server and enabled in the activation key you use:</p>
+<div class="paragraph">
+<p>Choose from the following repositories, based on the operating system version and the architecture of the host you are registering:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>satellite-client-openvox-for-rhel-10-aarch64-rpms</p>
+</li>
+<li>
+<p>satellite-client-openvox-for-rhel-10-x86_64-rpms</p>
+</li>
+<li>
+<p>satellite-client-openvox-for-rhel-9-aarch64-rpms</p>
+</li>
+<li>
+<p>satellite-client-openvox-for-rhel-9-x86_64-rpms</p>
+</li>
+<li>
+<p>satellite-client-openvox-for-rhel-8-aarch64-rpms</p>
+</li>
+<li>
+<p>satellite-client-openvox-for-rhel-8-x86_64-rpms</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>You have an activation key.
+For more information, see <a href="#managing-activation-keys">Managing activation keys</a> in <em>Managing content</em>.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Configure</strong> &gt; <strong>Global Parameters</strong> to add host parameters globally.
+Alternatively, you can navigate to <strong>Configure</strong> &gt; <strong>Host Groups</strong> and edit or create a host group to add host parameters only to a host group.</p>
+</li>
+<li>
+<p>Enable the OpenVox agent using a host parameter in global parameters or a host group.
+Add a host parameter named <code>enable-puppet8</code>, select the <strong>boolean</strong> type, and set the value to <code>true</code>.</p>
+</li>
+<li>
+<p>Specify configuration for the OpenVox agent using the following host parameters in global parameters or a host group:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Add a host parameter named <code>puppet_server</code>, select the <strong>string</strong> type, and set the value to the hostname of your OpenVox server, such as <code>openvox.example.com</code>.</p>
+</li>
+<li>
+<p>Optional: Add a host parameter named <code>puppet_ca_server</code>, select the <strong>string</strong> type, and set the value to the hostname of your Puppet CA server, such as <code>puppet-ca.example.com</code>.
+If <code>puppet_ca_server</code> is not set, the OpenVox agent will use the same server as <code>puppet_server</code>.</p>
+</li>
+<li>
+<p>Optional: Add a host parameter named <code>puppet_environment</code>, select the <strong>string</strong> type, and set the value to the Puppet environment you want the host to use.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Until the <a href="https://bugzilla.redhat.com/show_bug.cgi?id=2177730">BZ2177730</a> is resolved, you must use host parameters to specify the OpenVox agent configuration even in integrated setups where the OpenVox server is a Capsule&#160;Server.</p>
+</div>
+</li>
+<li>
+<p>Navigate to <strong>Hosts</strong> &gt; <strong>Register Host</strong> and register your host using an appropriate activation key.
+For more information, see <a href="#global-registration-of-hosts">Global registration of hosts</a> in <em>Managing hosts</em>.</p>
+</li>
+<li>
+<p>Navigate to <strong>Infrastructure</strong> &gt; <strong>Capsules</strong>.</p>
+</li>
+<li>
+<p>From the list in the <strong>Actions</strong> column for the required Capsule&#160;Server, select <strong>Certificates</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Sign</strong> to the right of the required host to sign the SSL certificate for the OpenVox agent.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect5">
+<h6 id="configuring-openvox-agent-on-a-host-manually"><a class="anchor" href="#configuring-openvox-agent-on-a-host-manually"></a>Configuring OpenVox agent on a host manually</h6>
+<div class="paragraph _abstract">
+<p>On hosts that are already registered to Satellite, you can install and configure the OpenVox agent manually.
+A configured OpenVox agent is required on the host for Puppet integration with your Satellite.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>Puppet must be enabled in your Satellite.
+For more information, see xref:[<em>Managing configurations by using Puppet integration</em>].</p>
+</li>
+<li>
+<p>The host must have a Puppet environment assigned to it.</p>
+</li>
+<li>
+<p>Red Hat Satellite Client 6 OpenVox repository is synchronized on Satellite&#160;Server, available in the content view and the lifecycle environment of the host, and enabled for the host.</p>
+<div class="paragraph">
+<p>Choose from the following repositories, based on the operating system version and the architecture of the host you are registering:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>satellite-client-openvox-for-rhel-10-aarch64-rpms</p>
+</li>
+<li>
+<p>satellite-client-openvox-for-rhel-10-x86_64-rpms</p>
+</li>
+<li>
+<p>satellite-client-openvox-for-rhel-9-aarch64-rpms</p>
+</li>
+<li>
+<p>satellite-client-openvox-for-rhel-9-x86_64-rpms</p>
+</li>
+<li>
+<p>satellite-client-openvox-for-rhel-8-aarch64-rpms</p>
+</li>
+<li>
+<p>satellite-client-openvox-for-rhel-8-x86_64-rpms</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Log in to the host as the <code>root</code> user.</p>
+</li>
+<li>
+<p>Install the OpenVox agent package:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>On hosts running Red&#160;Hat Enterprise Linux 8 and later:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># dnf install openvox-agent</pre>
+</div>
+</div>
+</li>
+<li>
+<p>On hosts running Red&#160;Hat Enterprise Linux 7:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># yum install openvox-agent</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Add the OpenVox agent to <code>PATH</code> in your current shell using the following script:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">. /etc/profile.d/puppet-agent.sh</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Configure the OpenVox agent.
+Set the <code>environment</code> parameter to the name of the Puppet environment to which the host belongs:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># puppet config set server <em>satellite.example.com</em> --section agent
+# puppet config set environment <em>My_Puppet_Environment</em> --section agent</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Start the OpenVox agent service:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># puppet resource service puppet ensure=running enable=true</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create a certificate for the host:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># puppet ssl bootstrap</pre>
+</div>
+</div>
+</li>
+<li>
+<p>In the Satellite web UI, navigate to <strong>Infrastructure</strong> &gt; <strong>Capsules</strong>.</p>
+</li>
+<li>
+<p>From the list in the <strong>Actions</strong> column for the required Capsule&#160;Server, select <strong>Certificates</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Sign</strong> to the right of the required host to sign the SSL certificate for the OpenVox agent.</p>
+</li>
+<li>
+<p>On the host, run the OpenVox agent again:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># puppet ssl bootstrap</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="configuring-puppet-smart-class-parameters"><a class="anchor" href="#configuring-puppet-smart-class-parameters"></a>Configuring Puppet smart class parameters</h5>
+<div class="paragraph _abstract">
+<p>When Puppet modules need different behavior for different parts of your infrastructure, you can configure smart class parameters in Satellite to override module defaults.
+You can set different values based on facts, the organization, location, host group, or individual host level without changing the module code.</p>
+</div>
+<div class="sect5">
+<h6 id="puppet-parameter-hierarchy"><a class="anchor" href="#puppet-parameter-hierarchy"></a>Puppet parameter hierarchy</h6>
+<div class="paragraph _abstract">
+<p>Puppet parameters follow a hierarchy so you can set defaults globally and override them per organization, location, host group, or host.</p>
+</div>
+<div class="paragraph">
+<p>Parameters at a lower level override parameters of the higher levels:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Global parameters</p>
+</li>
+<li>
+<p>Organization parameters</p>
+</li>
+<li>
+<p>Location parameters</p>
+</li>
+<li>
+<p>Host group parameters</p>
+</li>
+<li>
+<p>Host parameters</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>For example, host specific parameters override the parameter at any higher level, and location parameters only override parameters at the organization or global level.
+This feature is especially useful when you use locations or organizations to group hosts.</p>
+</div>
+</div>
+<div class="sect5">
+<h6 id="overriding-a-smart-class-parameter-globally"><a class="anchor" href="#overriding-a-smart-class-parameter-globally"></a>Overriding a smart class parameter globally</h6>
+<div class="paragraph _abstract">
+<p>You can configure a Puppet class after you have imported it to Satellite&#160;Server.
+This example overrides the default list of Network Time Protocol (NTP) servers.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Configure</strong> &gt; <strong>Puppet ENC</strong> &gt; <strong>Classes</strong>.</p>
+</li>
+<li>
+<p>Select the <strong>ntp</strong> Puppet class to change its configuration.</p>
+</li>
+<li>
+<p>Select the <strong>Smart Class Parameter</strong> tab and search for <strong>servers</strong>.</p>
+</li>
+<li>
+<p>Ensure the <strong>Override</strong> checkbox is selected.</p>
+</li>
+<li>
+<p>Set the <strong>Parameter Type</strong> drop down menu to <em>array</em>.</p>
+</li>
+<li>
+<p>Insert a list of ntp servers as <strong>Default Value</strong>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">["0.de.pool.ntp.org","1.de.pool.ntp.org","2.de.pool.ntp.org","3.de.pool.ntp.org"]</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>An alternative way to describe the array is the <code>yaml</code> syntax:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-yaml" data-lang="yaml">- 0.de.pool.ntp.org
+- 1.de.pool.ntp.org
+- 2.de.pool.ntp.org
+- 3.de.pool.ntp.org</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Click <strong>Submit</strong> to change the default configuration of the Puppet module <code>ntp</code>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect5">
+<h6 id="overriding-a-smart-class-parameter-for-an-organization"><a class="anchor" href="#overriding-a-smart-class-parameter-for-an-organization"></a>Overriding a smart class parameter for an organization</h6>
+<div class="paragraph _abstract">
+<p>You can use groups of hosts to override Puppet parameters for multiple hosts at once.
+The following example chooses the <em>organization</em> context to illustrate setting context based parameters.</p>
+</div>
+<div class="paragraph">
+<p>Note that <em>organization</em>-level Puppet parameters are overridden by <em>location</em>-level Puppet parameters.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Configure</strong> &gt; <strong>Puppet ENC</strong> &gt; <strong>Classes</strong>.</p>
+</li>
+<li>
+<p>Click a class name to select a class.</p>
+</li>
+<li>
+<p>On the <strong>Smart Class Parameter</strong> tab, select a parameter.</p>
+</li>
+<li>
+<p>Use the <strong>Order</strong> list to define the hierarchy of the Puppet parameters.
+The individual host (<code>fqdn</code>) marks the most and the organization context (<code>organization</code>) the least relevant.</p>
+</li>
+<li>
+<p>Check <strong>Merge Overrides</strong> if you want to add all further matched parameters after finding the first match.</p>
+</li>
+<li>
+<p>Check <strong>Merge Default</strong> if you want to also include the default value even if there are more specific values defined.</p>
+</li>
+<li>
+<p>Check <strong>Avoid Duplicates</strong> if you want to create a list of unique values for the selected parameter.</p>
+</li>
+<li>
+<p>The <strong>matcher</strong> field requires an <em>attribute type</em> from the <em>order</em> list.</p>
+</li>
+<li>
+<p>Optional: Click <strong>Add Matcher</strong> to add more matchers.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong> to save the changes.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect5">
+<h6 id="overriding-a-smart-class-parameter-for-a-location"><a class="anchor" href="#overriding-a-smart-class-parameter-for-a-location"></a>Overriding a smart class parameter for a location</h6>
+<div class="paragraph _abstract">
+<p>You can use groups of hosts to override Puppet parameters for multiple hosts at once.
+The following examples chooses the <em>location</em> context to illustrate setting context based parameters.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Configure</strong> &gt; <strong>Puppet ENC</strong> &gt; <strong>Classes</strong>.</p>
+</li>
+<li>
+<p>Click a class name to select a class.</p>
+</li>
+<li>
+<p>On the <strong>Smart Class Parameter</strong> tab, select a parameter.</p>
+</li>
+<li>
+<p>Use the <strong>Order</strong> list to define the hierarchy of the Puppet parameters.
+The individual host (<code>fqdn</code>) marks the most and the location context (<code>location</code>) the least relevant.</p>
+</li>
+<li>
+<p>Check <strong>Merge Overrides</strong> if you want to add all further matched parameters after finding the first match.</p>
+</li>
+<li>
+<p>Check <strong>Merge Default</strong> if you want to also include the default value even if there are more specific values defined.</p>
+</li>
+<li>
+<p>Check <strong>Avoid Duplicates</strong> if you want to create a list of unique values for the selected parameter.</p>
+</li>
+<li>
+<p>The <strong>matcher</strong> field requires an <em>attribute type</em> from the <em>order</em> list.
+For example, you can choose <code>Paris</code> as <em>location</em> context and set the value to French ntp servers.</p>
+</li>
+<li>
+<p>Optional: Click <strong>Add Matcher</strong> to add more matchers.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong> to save the changes.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect5">
+<h6 id="overriding-a-smart-class-parameter-on-an-individual-host"><a class="anchor" href="#overriding-a-smart-class-parameter-on-an-individual-host"></a>Overriding a smart class parameter on an individual host</h6>
+<div class="paragraph _abstract">
+<p>You can override parameters on individual hosts.
+This is recommended if you have multiple hosts and only want to make changes to a single one.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Hosts</strong> &gt; <strong>All Hosts</strong>.</p>
+</li>
+<li>
+<p>Click a host name to select a host.</p>
+</li>
+<li>
+<p>Click <strong>Edit</strong>.</p>
+</li>
+<li>
+<p>On the <strong>Host</strong> tab, select a Puppet <strong>Environment</strong>.</p>
+</li>
+<li>
+<p>Select the <strong>Puppet ENC</strong> tab.</p>
+</li>
+<li>
+<p>Click <strong>Override</strong> to edit the Puppet parameter.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong> to save the changes.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="assigning-a-puppet-class-to-a-host-group"><a class="anchor" href="#assigning-a-puppet-class-to-a-host-group"></a>Assigning a Puppet class to a host group</h5>
+<div class="paragraph _abstract">
+<p>Use a host group to assign the <em>ntp</em> Puppet class to multiple hosts at once.
+Every host you deploy based on this host group has this Puppet class installed.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Configure</strong> &gt; <strong>Host Groups</strong>.</p>
+</li>
+<li>
+<p>Create or edit a host group.</p>
+</li>
+<li>
+<p>On the <strong>Host Group</strong> tab, set the following:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>The <strong>Lifecycle Environment</strong> describes the stage in which certain versions of content are available to hosts.</p>
+</li>
+<li>
+<p>The <strong>Content View</strong> is comprised of products and allows for version control of content repositories.</p>
+</li>
+<li>
+<p>The <strong>Environment</strong> allows you to supply a group of hosts with their own dedicated configuration.</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>Navigate to the <strong>Puppet ENC</strong> tab.</p>
+</li>
+<li>
+<p>Add the Puppet class to the <em>Included Classes</em> or to the <em>Included Config Groups</em> if a Puppet config group is configured.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong> to save the changes.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect4">
+<h5 id="assigning-a-puppet-class-to-an-individual-host"><a class="anchor" href="#assigning-a-puppet-class-to-an-individual-host"></a>Assigning a Puppet class to an individual host</h5>
+<div class="paragraph _abstract">
+<p>Assigning a Puppet class to an individual host enables you to apply a specific configuration to that host, overriding any settings inherited from its host group.
+This is useful for custom configurations that you want to apply to a single host.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Hosts</strong> &gt; <strong>All Hosts</strong>.</p>
+</li>
+<li>
+<p>Locate the host you want to add the <code>ntp</code> Puppet class to and click <strong>Edit</strong>.</p>
+</li>
+<li>
+<p>Select the <strong>Puppet ENC</strong> tab and look for the ntp class.</p>
+</li>
+<li>
+<p>Click the <strong>+</strong> symbol next to <code>ntp</code> to add the <em>ntp submodule</em> to the list of <em>included classes</em>.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong> to save your changes.</p>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Tip</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If the <em>Puppet classes</em> tab of an individual host is empty, check if it is assigned to the proper Puppet environment.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</li>
+</ol>
+</div>
+<div class="olist arabic">
+<div class="title">Verification</div>
+<ol class="arabic">
+<li>
+<p>Verify the Puppet configuration.</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Navigate to <strong>Hosts</strong> &gt; <strong>All Hosts</strong> and select the host.</p>
+</li>
+<li>
+<p>From the top overflow menu, select <strong>Legacy UI</strong>.</p>
+</li>
+<li>
+<p>Under <strong>Details</strong>, click <strong>Puppet YAML</strong>.
+This produces output similar as follows:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-yaml" data-lang="yaml">---
+parameters:
+  // shortened YAML output
+classes:
+  ntp:
+    servers: '["0.de.pool.ntp.org","1.de.pool.ntp.org","2.de.pool.ntp.org","3.de.pool.ntp.org"]'
+environment: production
+...</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>Verify the ntp configuration.</p>
+<div class="paragraph">
+<p>Connect to your host using SSH and check the content of <code>/etc/ntp.conf</code>.</p>
+</div>
+<div class="paragraph">
+<p>This example assumes your host is running <em>CentOS 7</em>.
+Other operating systems may store the ntp config file in a different path.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Tip</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>You can rerun the OpenVox agent on your host:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># puppet agent -t</pre>
+</div>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Check which ntp servers are used for clock synchronization:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># cat /etc/ntp.conf</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This returns output similar as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-none" data-lang="none"># ntp.conf: Managed by puppet.
+server 0.de.pool.ntp.org
+server 1.de.pool.ntp.org
+server 2.de.pool.ntp.org
+server 3.de.pool.ntp.org</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You now have a working ntp module which you can add to a host or group of hosts to roll out your ntp configuration automatically.</p>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect4">
+<h5 id="running-puppet-once-using-ssh"><a class="anchor" href="#running-puppet-once-using-ssh"></a>Running Puppet once using SSH</h5>
+<div class="paragraph _abstract">
+<p>Assign the job template to the <em>Run Puppet Once</em> feature to apply Puppet configuration on selected hosts immediately without waiting for the next scheduled run.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Edit remote execution settings on Satellite:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Administer</strong> &gt; <strong>Remote Execution Features</strong>.</p>
+</li>
+<li>
+<p>Select the <code>puppet_run_host</code> remote execution feature.</p>
+</li>
+<li>
+<p>Assign the <code>Puppet Run Once &#8211; Script Default</code> job template.</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>To run Puppet on hosts, execute a remote job and select category <code>Puppet</code> and template <code>Puppet Run Once - Script Default</code>.
+Alternatively, click <strong>Run Puppet Once</strong> in the <strong>Schedule Remote Job</strong> drop down menu on the host details page.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect4">
+<h5 id="configuring-puppet-enforcement-intervals"><a class="anchor" href="#configuring-puppet-enforcement-intervals"></a>Configuring Puppet enforcement intervals</h5>
+<div class="paragraph _abstract">
+<p>Control when and how often Puppet enforces configuration on your hosts by configuring enforcement intervals.
+The OpenVox agent on your hosts runs on a regular schedule to apply Puppet configuration and report back to Satellite.</p>
+</div>
+<div class="paragraph">
+<p>You can configure enforcement intervals at different levels:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Globally for all hosts</p>
+</li>
+<li>
+<p>For specific host groups</p>
+</li>
+<li>
+<p>For individual hosts</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Satellite considers hosts to be out of sync if the last Puppet report is older than the combined values of the configured intervals.
+This allows you to monitor configuration drift and ensure your hosts remain in the desired state.</p>
+</div>
+<div class="sect5">
+<h6 id="configuring-puppet-intervals-of-automatic-enforcement"><a class="anchor" href="#configuring-puppet-intervals-of-automatic-enforcement"></a>Configuring Puppet intervals of automatic enforcement</h6>
+<div class="paragraph _abstract">
+<p>Tune enforcement frequency and reporting by configuring intervals of automatic enforcement for Puppet.</p>
+</div>
+<div class="paragraph">
+<p>Satellite considers hosts to be out of sync if the last Puppet report is older than the combined values of <code>outofsync_interval</code> and <code>puppet_interval</code> set in minutes.</p>
+</div>
+<div class="paragraph">
+<p>Default values for automatic enforcement are as follows:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The OpenVox agent on your hosts runs every 30 minutes</p>
+</li>
+<li>
+<p>The <code>puppet_interval</code> value is 35 minutes</p>
+</li>
+<li>
+<p>The global <code>outofsync_interval</code> value is 30 minutes</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Set the interval when the OpenVox agent runs and sends reports to Satellite:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Connect to your host using SSH.</p>
+</li>
+<li>
+<p>Add the OpenVox agent run interval to <code>/etc/puppetlabs/puppet/puppet.conf</code>, for example, <code>runinterval = 1h</code>:</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>Set the global out-of-sync interval:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Administer</strong> &gt; <strong>Settings</strong>.</p>
+</li>
+<li>
+<p>On the <strong>General</strong> tab, edit <strong>Out of sync interval</strong>.
+Set a duration, in minutes, after which hosts are considered to be out of sync.</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>Set the Puppet out-of-sync interval:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Administer</strong> &gt; <strong>Settings</strong>.</p>
+</li>
+<li>
+<p>Select the <strong>Config Management</strong> tab.</p>
+</li>
+<li>
+<p>In the <strong>Puppet interval</strong> field, set the value to the duration, in minutes, after which hosts reporting using Puppet are considered to be out of sync.</p>
+</li>
+</ol>
+</div>
+</li>
+</ol>
+</div>
+<div class="exampleblock">
+<div class="title">Example 13. Example automatic enforcement values</div>
+<div class="content">
+<div class="paragraph">
+<p>The effective time after which hosts are considered out of sync is the sum of <code>outofsync_interval</code> and <code>puppet_interval</code>.
+For example, setting the global <code>outofsync_interval</code> to 30 and the <code>puppet_interval</code> to 60 results in a total of 90 minutes after which the host status changes to <code>out of sync</code>.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect5">
+<h6 id="overriding-out-of-sync-interval-for-a-host-group"><a class="anchor" href="#overriding-out-of-sync-interval-for-a-host-group"></a>Overriding out-of-sync interval for a host group</h6>
+<div class="paragraph _abstract">
+<p>You can override the out-of-sync interval for a host group from the Satellite web UI.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Configure</strong> &gt; <strong>Host Groups</strong>.</p>
+</li>
+<li>
+<p>Select a host group.</p>
+</li>
+<li>
+<p>On the <strong>Parameters</strong> tab, click <strong>Add Parameter</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter <code>outofsync_interval</code>.</p>
+</li>
+<li>
+<p>From the <strong>Type</strong> dropdown menu, select <code>integer</code>.</p>
+</li>
+<li>
+<p>In the <strong>Value</strong> field, enter the new interval in minutes.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect5">
+<h6 id="overriding-out-of-sync-interval-for-an-individual-host"><a class="anchor" href="#overriding-out-of-sync-interval-for-an-individual-host"></a>Overriding out-of-sync interval for an individual host</h6>
+<div class="paragraph _abstract">
+<p>You can override the out-of-sync interval for an individual host from the Satellite web UI.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Hosts</strong> &gt; <strong>All Hosts</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Edit</strong> for a selected host.</p>
+</li>
+<li>
+<p>On the <strong>Parameters</strong> tab, click <strong>Add Parameter</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Name</strong> field, enter <code>outofsync_interval</code>.</p>
+</li>
+<li>
+<p>From the <strong>Type</strong> dropdown menu, select <code>integer</code>.</p>
+</li>
+<li>
+<p>In the <strong>Value</strong> field, enter the new interval in minutes.</p>
+</li>
+<li>
+<p>Click <strong>Submit</strong>.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
 </div>
 <div class="sect2">
 <h3 id="installing-flatpak-applications-on-hosts"><a class="anchor" href="#installing-flatpak-applications-on-hosts"></a>10.9. Installing Flatpak applications on hosts</h3>
@@ -27057,7 +28471,7 @@ It does not protect against a valid but incorrect configuration.</p>
 </ol>
 </div>
 <div class="exampleblock">
-<div class="title">Example 13. Example Ansible playbook: Ensure that domain <code>new.example.com</code> exists in Satellite</div>
+<div class="title">Example 14. Example Ansible playbook: Ensure that domain <code>new.example.com</code> exists in Satellite</div>
 <div class="content">
 <div class="paragraph">
 <p>The <code>redhat.satellite.domain</code> module can create, update, and delete domains.
@@ -27772,7 +29186,7 @@ You can determine what data are actually available with the <code>@payload</code
 </ol>
 </div>
 <div class="exampleblock">
-<div class="title">Example 14. Creating a webhook template</div>
+<div class="title">Example 15. Creating a webhook template</div>
 <div class="content">
 <div class="paragraph">
 <p>When creating a webhook template, you must follow the format of the target application for which the template is intended.
@@ -28370,7 +29784,7 @@ The MCP client fetches the data and returns it to the AI application, which then
 </ul>
 </div>
 <div class="exampleblock">
-<div class="title">Example 15. Prompt examples</div>
+<div class="title">Example 16. Prompt examples</div>
 <div class="content">
 <div class="dlist">
 <dl>
@@ -30017,7 +31431,7 @@ For example, setup a sync plan to synchronize content every day rather than only
 </ul>
 </div>
 <div class="exampleblock">
-<div class="title">Example 16. Custom Cron expressions</div>
+<div class="title">Example 17. Custom Cron expressions</div>
 <div class="content">
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
@@ -30395,7 +31809,7 @@ You can register a host to the <em>Library</em> environment on Satellite to cons
 </ul>
 </div>
 <div class="exampleblock">
-<div class="title">Example 17. Promoting a package from <em>Development</em> to <em>Testing</em></div>
+<div class="title">Example 18. Promoting a package from <em>Development</em> to <em>Testing</em></div>
 <div class="content">
 <div class="paragraph">
 <p>The repositories for <em>Testing</em> and <em>Production</em> contain the <code><em>my-software</em>-1.0-0.noarch.rpm</code> package:</p>
@@ -31111,7 +32525,7 @@ For example, if a content view publish task completes in a few minutes without f
 </table>
 </div>
 <div class="exampleblock">
-<div class="title">Example 18. Include a package group</div>
+<div class="title">Example 19. Include a package group</div>
 <div class="content">
 <div class="paragraph">
 <p>Create a repository with the base Red&#160;Hat Enterprise Linux packages.
@@ -31136,7 +32550,7 @@ This filter requires a Red&#160;Hat Enterprise Linux repository added to the con
 </div>
 </div>
 <div class="exampleblock">
-<div class="title">Example 19. Exclude errata</div>
+<div class="title">Example 20. Exclude errata</div>
 <div class="content">
 <div class="paragraph">
 <p>Create a repository that excludes all errata, except for security updates, after a certain date.
@@ -31165,7 +32579,7 @@ Leave the <strong>End Date</strong> blank to ensure any new non-security errata 
 </div>
 </div>
 <div class="exampleblock">
-<div class="title">Example 20. Exclude errata and include a package group</div>
+<div class="title">Example 21. Exclude errata and include a package group</div>
 <div class="content">
 <div class="paragraph">
 <p>A combination of Example 1 and Example 2 where you only require the operating system packages and want to exclude recent bug fix and enhancement errata.
@@ -31210,7 +32624,7 @@ Leave the <strong>End Date</strong> blank to ensure any new non-security errata 
 </div>
 </div>
 <div class="exampleblock">
-<div class="title">Example 21. Include a module stream</div>
+<div class="title">Example 22. Include a module stream</div>
 <div class="content">
 <div class="paragraph">
 <p>Filter a specific module stream in a content view.</p>
@@ -31483,7 +32897,7 @@ If dependency solving includes unwanted packages, manually identify the core bas
 </dl>
 </div>
 <div id="combining-exclusion-filters-with-dependency-solving" class="exampleblock">
-<div class="title">Example 22. Combining exclusion filters with dependency solving</div>
+<div class="title">Example 23. Combining exclusion filters with dependency solving</div>
 <div class="content">
 <div class="paragraph">
 <p>For example, you can recreate Red&#160;Hat Enterprise Linux&#160;9.3 by using content view filters and include selected errata from a later Red&#160;Hat Enterprise Linux&#160;9 minor release.
@@ -31501,7 +32915,7 @@ Instead, enable and use the Red&#160;Hat Enterprise Linux&#160;9.3 repository on
 </div>
 </div>
 <div id="excluding-packages-and-dependency-solving-with-DNF" class="exampleblock">
-<div class="title">Example 23. Excluding packages sometimes makes dependency solving impossible for DNF</div>
+<div class="title">Example 24. Excluding packages sometimes makes dependency solving impossible for DNF</div>
 <div class="content">
 <div class="paragraph">
 <p>If you create Red&#160;Hat Enterprise Linux&#160;9.3 repositories with a few excluded packages, <code>dnf upgrade</code> can sometimes fail.</p>
@@ -31817,7 +33231,7 @@ Removing content view versions is a tradeoff between disk space and possibly ban
 Use it when hosts need content from multiple content views, such as an operating system and an application, managed separately.</p>
 </div>
 <div class="exampleblock">
-<div class="title">Example 24. Application that supports different database servers</div>
+<div class="title">Example 25. Application that supports different database servers</div>
 <div class="content">
 <div class="paragraph">
 <p>You want to develop an application that supports different database servers.
@@ -33213,7 +34627,7 @@ For example, if development ends on a particular version of an application, you 
 Promotion updates repositories of the target environment so hosts registered to that environment can use the new versions.</p>
 </div>
 <div class="exampleblock">
-<div class="title">Example 25. Content promotion across Satellite lifecycle environments</div>
+<div class="title">Example 26. Content promotion across Satellite lifecycle environments</div>
 <div class="content">
 <div class="paragraph">
 <p>Each environment contains a set of systems registered to Red&#160;Hat Satellite.
@@ -34455,7 +35869,7 @@ If you disable <strong>Allow multiple content views</strong>, content view envir
 <p>When you enable <strong>Allow multiple content views</strong> and register a host with multiple activation keys, the host receives all content view environments from each activation key, in the order they are passed.</p>
 </div>
 <div class="exampleblock">
-<div class="title">Example 26. Example with <strong>Allow multiple content views</strong> enabled</div>
+<div class="title">Example 27. Example with <strong>Allow multiple content views</strong> enabled</div>
 <div class="content">
 <div class="paragraph">
 <p>Assuming that:</p>
@@ -34483,7 +35897,7 @@ If you disable <strong>Allow multiple content views</strong>, content view envir
 If any of the activation keys is a multi-environment activation key, registration fails with an error, regardless of the order.</p>
 </div>
 <div class="exampleblock">
-<div class="title">Example 27. Example with <strong>Allow multiple content views</strong> disabled</div>
+<div class="title">Example 28. Example with <strong>Allow multiple content views</strong> disabled</div>
 <div class="content">
 <div class="paragraph">
 <p>Assuming that:</p>
@@ -36795,7 +38209,35 @@ Red&#160;Hat repositories do not require this configuration.</p>
 <div class="sect2">
 <h3 id="enable-host-configuration-management-integrations"><a class="anchor" href="#enable-host-configuration-management-integrations"></a>12.3. Enable host configuration management integrations</h3>
 <div class="paragraph _abstract">
-<p>Enable configuration management integrations to define and maintain the desired state of your hosts using tools like Ansible.</p>
+<p>Before you can start using a configuration management framework to define the desired state of your hosts, you must enable the integration of your preferred framework with Satellite.</p>
+</div>
+<div class="paragraph">
+<p>To keep operational consistency across large deployments and prevent configuration drift, organizations rely on configuration management frameworks.
+Satellite supports integration with the following configuration management tools:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Ansible</p>
+</li>
+<li>
+<p>Puppet</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Satellite acts as the central orchestration hub for these tools, allowing you to organize, assign, and run configurations across large numbers of physical, virtual, and cloud-based hosts.</p>
+</div>
+<div class="paragraph">
+<p>Before you can import Ansible roles and playbooks or Puppet modules and enforce policies on systems, you must enable the integration on your Satellite&#160;Server.</p>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="#configuration-management-with-puppet-in-satellite">Configuration management with Puppet in Satellite</a></p>
+</li>
+</ul>
 </div>
 <div class="sect3">
 <h4 id="enable-the-ansible-plugin"><a class="anchor" href="#enable-the-ansible-plugin"></a>12.3.1. Enable the Ansible plugin</h4>
@@ -36814,6 +38256,93 @@ Red&#160;Hat repositories do not require this configuration.</p>
 </div>
 </li>
 </ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="enabling-puppet-integration-with-satellite"><a class="anchor" href="#enabling-puppet-integration-with-satellite"></a>12.3.2. Enabling Puppet integration with Satellite</h4>
+<div class="paragraph _abstract">
+<p>Before you can use Puppet for configuration management in Satellite, you need to deploy an OpenVox server on Satellite&#160;Server or Capsule&#160;Servers and install the OpenVox agent on your hosts.</p>
+</div>
+<div class="sect4">
+<h5 id="installing-openvox-server-on-satellite-server-and-capsule-servers"><a class="anchor" href="#installing-openvox-server-on-satellite-server-and-capsule-servers"></a>Installing OpenVox server on Satellite&#160;Server and Capsule&#160;Servers</h5>
+<div class="paragraph _abstract">
+<p>Use the <code>DO_NOT_USE_foreman-installer_IN_CONTAINERIZED_BUILDS</code> utility to install an OpenVox server on Satellite&#160;Server.
+Optionally, you can also install additional OpenVox servers on Capsule&#160;Servers.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Install OpenVox server on Satellite&#160;Server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># DO_NOT_USE_foreman-installer_IN_CONTAINERIZED_BUILDS \
+--enable-foreman-cli-puppet \
+--enable-foreman-plugin-puppet \
+--enable-puppet \
+--foreman-proxy-puppet true \
+--foreman-proxy-puppetca true \
+--puppet-server true</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Optional: If you want manage configuration with Puppet on Capsule&#160;Servers, install OpenVox server on Capsule&#160;Servers:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># DO_NOT_USE_foreman-installer_IN_CONTAINERIZED_BUILDS \
+--enable-puppet \
+--foreman-proxy-puppet true \
+--foreman-proxy-puppetca true \
+--puppet-server true</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="disabling-puppet-integration-with-satellite"><a class="anchor" href="#disabling-puppet-integration-with-satellite"></a>12.3.3. Disabling Puppet integration with Satellite</h4>
+<div class="paragraph _abstract">
+<p>Disable Puppet integration in Satellite when you no longer need configuration management or want to remove Puppet data from the database and server.
+Optionally remove all OpenVox server data, including environments, with the <code>--remove-all-data</code> argument.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Warning</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If you disable Puppet with the <code>--remove-all-data</code> argument, you will not be able to re-enable Puppet afterwards.
+This is a known issue, see the <a href="https://bugzilla.redhat.com/show_bug.cgi?id=2087067">Bug 2087067</a>.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>If you have used OpenVox server on any Capsules, disable OpenVox server on all Capsules:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># DO_NOT_USE_foreman-maintain_IN_CONTAINERIZED_BUILDS plugin purge-puppet --remove-all-data</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Disable OpenVox server on Satellite&#160;Server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># DO_NOT_USE_foreman-maintain_IN_CONTAINERIZED_BUILDS plugin purge-puppet --remove-all-data</pre>
+</div>
+</div>
+</li>
+</ol>
 </div>
 </div>
 </div>
@@ -40076,7 +41605,7 @@ You can edit the cloned role to customize permissions for your environment.</p>
 </ol>
 </div>
 <div class="exampleblock">
-<div class="title">Example 28. Creating an organization-specific manager role</div>
+<div class="title">Example 29. Creating an organization-specific manager role</div>
 <div class="content">
 <div class="paragraph">
 <p>Use the Satellite web UI to create an administrative role restricted to a single organization named <em>org-1</em>.</p>
@@ -42582,7 +44111,7 @@ If your generated report is larger than the <strong>Report auto gzip threshold (
 </ol>
 </div>
 <div class="exampleblock">
-<div class="title">Example 29. Generating a report based on the <strong>Subscription - General</strong> template</div>
+<div class="title">Example 30. Generating a report based on the <strong>Subscription - General</strong> template</div>
 <div class="content">
 <div class="paragraph">
 <p>To generate the <strong>Subscription - General</strong> report, add the <code>Days from Now</code> option to specify the latest expiration time of general subscriptions.</p>
@@ -43048,7 +44577,7 @@ In this context, Satellite distinguishes between two types of errata, <em>instal
 <p>Report templates allow access to all functionalities of the Satellite API and Satellite variables.</p>
 </div>
 <div class="exampleblock">
-<div class="title">Example 30. Report template to view applicable errata</div>
+<div class="title">Example 31. Report template to view applicable errata</div>
 <div class="content">
 <div class="paragraph">
 <p>You can create a custom report template to get a summary of all hosts that have applicable errata:</p>
@@ -43137,7 +44666,7 @@ The exact number of applicable errata is then summed up in the counter <code>@er
 </div>
 </div>
 <div class="exampleblock">
-<div class="title">Example 31. Report template to view errata types</div>
+<div class="title">Example 32. Report template to view errata types</div>
 <div class="content">
 <div class="paragraph">
 <p>You can extend the report template to allow users to restrict the report to a list of hosts instead of all hosts and to display the kind of errata in the report.
@@ -43247,7 +44776,7 @@ The template now distinguishes between security, bugfix, and enhancement errata.
 </div>
 </div>
 <div class="exampleblock">
-<div class="title">Example 32. Report template to view installable and available errata</div>
+<div class="title">Example 33. Report template to view installable and available errata</div>
 <div class="content">
 <div class="paragraph">
 <p>You can extend the report template to view errata that are installable on the host and how many packages are affected by available errata.</p>
@@ -44192,7 +45721,7 @@ Therefore, obfuscation and exclusion settings do not apply.</p>
 <p>Review and adjust these settings to control what data Satellite shares.</p>
 </div>
 <div class="exampleblock">
-<div class="title">Example 33. Example of data collected in a minimal report</div>
+<div class="title">Example 34. Example of data collected in a minimal report</div>
 <div class="content">
 <div class="listingblock">
 <div class="content">
@@ -45502,7 +47031,7 @@ For example, to check the <code>admin</code> user that Identity&#160;Management 
 </ul>
 </div>
 <div class="exampleblock">
-<div class="title">Example 34. Enrolling a Satellite&#160;Server system as a Identity&#160;Management client from the command line by using a one-time password</div>
+<div class="title">Example 35. Enrolling a Satellite&#160;Server system as a Identity&#160;Management client from the command line by using a one-time password</div>
 <div class="content">
 <div class="paragraph">
 <p>On the Identity&#160;Management server, a user named <em>admin</em> who has administrative privileges on the Identity&#160;Management server prepares a host entry for the Satellite&#160;Server system:</p>
@@ -45758,7 +47287,7 @@ For information about how to disable <code>allow_all</code> without disrupting o
 </ul>
 </div>
 <div class="exampleblock">
-<div class="title">Example 35. Configuring host-based access control to allow access to Satellite only for selected Identity&#160;Management users by using the command line</div>
+<div class="title">Example 36. Configuring host-based access control to allow access to Satellite only for selected Identity&#160;Management users by using the command line</div>
 <div class="content">
 <div class="paragraph">
 <p>On the Identity&#160;Management server, a user with administrative privileges configures a HBAC rule to allow selected users access to Satellite&#160;Server:</p>
@@ -46412,7 +47941,7 @@ For more information about assigning appropriate roles to user accounts, see <a 
 <p>Examples of settings for LDAP connections show how you can configure the necessary LDAP fields for user accounts from various external authentication sources.</p>
 </div>
 <div class="exampleblock">
-<div class="title">Example 36. Example settings for Active Directory LDAP connections</div>
+<div class="title">Example 37. Example settings for Active Directory LDAP connections</div>
 <div class="content">
 <div class="paragraph">
 <p>This example uses a dedicated service account called <em>redhat</em> that has bind, read, and search permissions on the user and group entries.</p>
@@ -46452,7 +47981,7 @@ The <code>sAMAccountName</code> attribute, which provides backwards compatibilit
 </div>
 </div>
 <div class="exampleblock">
-<div class="title">Example 37. Example settings for Identity&#160;Management LDAP connections</div>
+<div class="title">Example 38. Example settings for Identity&#160;Management LDAP connections</div>
 <div class="content">
 <div class="paragraph">
 <p>This example uses a dedicated service account called <em>redhat</em> that has bind, read, and search permissions on the user and group entries.</p>
@@ -46485,7 +48014,7 @@ The <code>sAMAccountName</code> attribute, which provides backwards compatibilit
 </div>
 </div>
 <div class="exampleblock">
-<div class="title">Example 38. Example settings for POSIX LDAP connections</div>
+<div class="title">Example 39. Example settings for POSIX LDAP connections</div>
 <div class="content">
 <div class="paragraph">
 <p>This example uses a dedicated service account called <em>redhat</em> that has bind, read, and search permissions on the user and group entries.</p>
@@ -46524,7 +48053,7 @@ The <code>sAMAccountName</code> attribute, which provides backwards compatibilit
 <p>Examples of LDAP filters show how you can set up appropriate search filters for connecting your LDAP server as an external authentication source for Satellite.</p>
 </div>
 <div class="exampleblock">
-<div class="title">Example 39. Example LDAP filters for allowing specific users to login</div>
+<div class="title">Example 40. Example LDAP filters for allowing specific users to login</div>
 <div class="content">
 <div class="paragraph">
 <p>You are using the following LDAP directory structure:</p>
@@ -51378,7 +52907,7 @@ For more information, see <a href="#configure-logging-type-and-layout">Configure
 <p>Increase Red&#160;Hat Lightspeed in Satellite logging to <code>DEBUG</code> to capture detailed diagnostic output when troubleshooting Red&#160;Hat Lightspeed operations on your Satellite&#160;Server.</p>
 </div>
 <div class="exampleblock">
-<div class="title">Example 40. Log entries of Red&#160;Hat Lightspeed in Satellite</div>
+<div class="title">Example 41. Log entries of Red&#160;Hat Lightspeed in Satellite</div>
 <div class="content">
 <div class="listingblock">
 <div class="content">
@@ -55415,7 +56944,7 @@ Satellite&#160;Server enables the safemode rendering option by default so harmfu
 </dd>
 <dt class="hdlist1">Smart Class Parameters</dt>
 <dd>
-<p>For more information, see <a href="#Configuring_Puppet_Smart_Class_Parameters_managing-configurations-puppet">Configuring Puppet smart class parameters</a> in <em>Managing configurations by using Puppet integration</em>.</p>
+<p>For more information, see <a href="#configuring-puppet-smart-class-parameters">Configuring Puppet smart class parameters</a> in <em>Managing configurations by using Puppet integration</em>.</p>
 </dd>
 </dl>
 </div>
@@ -56401,7 +57930,7 @@ In this example, a report template is used, but the steps are applicable to othe
 You can use these snippets as a starting point when writing your own templates.</p>
 </div>
 <div class="exampleblock">
-<div class="title">Example 41. Checking if a host has Puppet and Puppetlabs enabled</div>
+<div class="title">Example 42. Checking if a host has Puppet and Puppetlabs enabled</div>
 <div class="content">
 <div class="paragraph">
 <p>The following example checks if the host has the Puppet and Puppetlabs repositories enabled:</p>
@@ -56418,7 +57947,7 @@ puppetlabs_enabled = host_param_true?('enable-puppetlabs-repo')
 </div>
 </div>
 <div class="exampleblock">
-<div class="title">Example 42. Capturing major and minor versions of a host&#8217;s operating system</div>
+<div class="title">Example 43. Capturing major and minor versions of a host&#8217;s operating system</div>
 <div class="content">
 <div class="paragraph">
 <p>The following example shows how to capture the minor and major version of the host&#8217;s operating system, which can be used for package related decisions:</p>
@@ -56438,7 +57967,7 @@ os_minor = @host.operatingsystem.minor.to_i
 </div>
 </div>
 <div class="exampleblock">
-<div class="title">Example 43. Importing snippets to a template</div>
+<div class="title">Example 44. Importing snippets to a template</div>
 <div class="content">
 <div class="paragraph">
 <p>The following example imports the <strong>subscription_manager_registration</strong> snippet to the template and indents it by four spaces:</p>
@@ -56453,7 +57982,7 @@ end %&gt;</pre>
 </div>
 </div>
 <div class="exampleblock">
-<div class="title">Example 44. Conditionally importing a Kickstart snippet</div>
+<div class="title">Example 45. Conditionally importing a Kickstart snippet</div>
 <div class="content">
 <div class="paragraph">
 <p>The following example imports the <code>kickstart_networking_setup</code> snippet if the host&#8217;s subnet has the DHCP boot mode enabled:</p>
@@ -56469,7 +57998,7 @@ end %&gt;</pre>
 </div>
 </div>
 <div class="exampleblock">
-<div class="title">Example 45. Parsing values from host custom facts</div>
+<div class="title">Example 46. Parsing values from host custom facts</div>
 <div class="content">
 <div class="paragraph">
 <p>You can use the <code>host.facts</code> variable to parse values from a host&#8217;s facts and custom facts.
@@ -58359,7 +59888,62 @@ If set, it overrides <code>satellite_tasks_proxy_batch_size</code> setting for A
 </div>
 </div>
 <div class="sect2">
-<h3 id="technical-users-provided-and-required-by-satellite"><a class="anchor" href="#technical-users-provided-and-required-by-satellite"></a>19.5. Technical users provided and required by Satellite</h3>
+<h3 id="host-parameter-hierarchy"><a class="anchor" href="#host-parameter-hierarchy"></a>19.5. Host parameter hierarchy</h3>
+<div class="paragraph _abstract">
+<p>You can access host parameters when provisioning hosts.</p>
+</div>
+<div class="paragraph">
+<p>Hosts inherit their parameters from the following locations, in order of increasing precedence:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Parameter Level</th>
+<th class="tableblock halign-left valign-top">Set in Satellite web UI</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Globally defined parameters</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Configure</strong> &gt; <strong>Global parameters</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Organization-level parameters</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Administer</strong> &gt; <strong>Organizations</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Location-level parameters</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Administer</strong> &gt; <strong>Locations</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Domain-level parameters</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Infrastructure</strong> &gt; <strong>Domains</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Subnet-level parameters</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Infrastructure</strong> &gt; <strong>Subnets</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Operating system-level parameters</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Hosts</strong> &gt; <strong>Provisioning Setup</strong> &gt; <strong>Operating Systems</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Host group-level parameters</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Configure</strong> &gt; <strong>Host Groups</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Host parameters</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Hosts</strong> &gt; <strong>All Hosts</strong></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="technical-users-provided-and-required-by-satellite"><a class="anchor" href="#technical-users-provided-and-required-by-satellite"></a>19.6. Technical users provided and required by Satellite</h3>
 <div class="paragraph _abstract">
 <p>The Satellite installation process automatically creates system accounts.
 They manage files and process ownership of the components integrated into Satellite.
@@ -58487,7 +60071,7 @@ Because some of the accounts have hard-coded UIDs and GIDs, it is not possible t
 </table>
 </div>
 <div class="sect2">
-<h3 id="glossary-of-terms-used-in-satellite"><a class="anchor" href="#glossary-of-terms-used-in-satellite"></a>19.6. Glossary of terms used in Satellite</h3>
+<h3 id="glossary-of-terms-used-in-satellite"><a class="anchor" href="#glossary-of-terms-used-in-satellite"></a>19.7. Glossary of terms used in Satellite</h3>
 <div class="paragraph _abstract">
 <p>This alphabetically ordered glossary provides an overview of Satellite related technical terms.</p>
 </div>
@@ -59338,7 +60922,7 @@ An XCCDF file contains security configuration rules for lists of hosts.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="required-red-hat-repositories"><a class="anchor" href="#required-red-hat-repositories"></a>19.7. Required Red Hat repositories</h3>
+<h3 id="required-red-hat-repositories"><a class="anchor" href="#required-red-hat-repositories"></a>19.8. Required Red Hat repositories</h3>
 <div class="paragraph _abstract">
 <p>Enable the Red&#160;Hat repositories for your release and host architecture so Satellite can synchronize content from the Red&#160;Hat CDN to manage Red&#160;Hat Enterprise Linux hosts.
 Enable matching Kickstart repositories when you provision hosts with the Anaconda installer.</p>
@@ -59460,7 +61044,7 @@ Enable matching Kickstart repositories when you provision hosts with the Anacond
 </div>
 </div>
 <div class="sect2">
-<h3 id="ansible-versions-supported-for-integration-with-satellite"><a class="anchor" href="#ansible-versions-supported-for-integration-with-satellite"></a>19.8. Ansible versions supported for integration with Satellite</h3>
+<h3 id="ansible-versions-supported-for-integration-with-satellite"><a class="anchor" href="#ansible-versions-supported-for-integration-with-satellite"></a>19.9. Ansible versions supported for integration with Satellite</h3>
 <div class="paragraph _abstract">
 <p>Satellite repositories include <code>ansible-core</code> as a packaged dependency, which determines the version supported for integration with Satellite.</p>
 </div>
@@ -59471,7 +61055,7 @@ This version is shipped with Capsule&#160;Server container images.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="ansible-role-and-collection-paths-in-satellite"><a class="anchor" href="#ansible-role-and-collection-paths-in-satellite"></a>19.9. Ansible role and collection paths in Satellite</h3>
+<h3 id="ansible-role-and-collection-paths-in-satellite"><a class="anchor" href="#ansible-role-and-collection-paths-in-satellite"></a>19.10. Ansible role and collection paths in Satellite</h3>
 <div class="paragraph _abstract">
 <p>Satellite imports and runs Ansible roles and collections from specific system paths.</p>
 </div>
@@ -59511,7 +61095,7 @@ For more information on importing, see <a href="#import-ansible-roles-and-variab
 </div>
 </div>
 <div class="sect2">
-<h3 id="essential-ansible-configuration"><a class="anchor" href="#essential-ansible-configuration"></a>19.10. Essential Ansible configuration</h3>
+<h3 id="essential-ansible-configuration"><a class="anchor" href="#essential-ansible-configuration"></a>19.11. Essential Ansible configuration</h3>
 <div class="paragraph _abstract">
 <p>Satellite manages essential Ansible configuration that is required for Ansible integration with Satellite.
 However, you can customize other Ansible configuration options as usual.</p>
