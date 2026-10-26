@@ -1,0 +1,52 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="renew-a-custom-ssl-certificate-on-{project-context}-server"]
+= Renew a custom SSL certificate on {ProjectServer}
+[role="_abstract"]
+You can deploy a renewed custom SSL certificate on {ProjectServer} to replace an expiring certificate and maintain trusted access to the {ProjectWebUI} and API.
+
+.Prerequisites
+* You have created a new Certificate Signing Request (CSR) and sent it to the Certificate Authority to sign the certificate.
+Refer to the {InstallingServerDocURL}configure-{project-context}-server-with-a-custom-ssl-certificate[Configure {ProjectServer} with a custom SSL certificate] guide before creating a new CSR because the Server certificate must have X.509 v3 `Key Usage` and `Extended Key Usage` extensions with required values.
+In return, you will receive the {ProjectServer} certificate and CA bundle.
+
+.Procedure
+* Deploy the renewed CA certificates to {ProjectServer}:
++
+[options="nowrap" subs="+quotes,attributes"]
+ifdef::containerized[]
+----
+# {foremanctl} deploy \
+--certificate-source custom_server \
+--certificate-server-certificate "_/root/{project-context}_cert/{project-context}_cert.pem_" \
+--certificate-server-key "_/root/{project-context}_cert/{project-context}_cert_key.pem_" \
+--certificate-server-ca-certificate "_/root/{project-context}_cert/ca_cert_bundle.pem_"
+----
+endif::[]
+ifndef::containerized[]
+----
+# {installer-scenario} \
+--certs-server-cert "/root/_{project-context}_cert/{project-context}_cert.pem_" \
+--certs-server-key "/root/_{project-context}_cert/{project-context}_cert_key.pem_" \
+--certs-server-ca-cert "/root/_{project-context}_cert/ca_cert_bundle.pem_" \
+--certs-update-server \
+--certs-update-server-ca
+----
++
+[IMPORTANT]
+====
+Do not delete the certificate files after you deploy the certificate.
+They are required when upgrading {ProjectServer}.
+====
+endif::[]
+
+.Verification
+. Access the {ProjectWebUI} from your local machine.
+For example, `\https://{foreman-example-com}`.
+. In your browser, view the certificate details to verify the deployed certificate.
+ifndef::containerized[]
+
+.Next steps
+* If you have changed the CA certificate on {ProjectServer}, refresh the CA certificate on your hosts.
+For more information, see {ManagingHostsDocURL}refresh-the-self-signed-ca-certificate-on-hosts[Refresh the self-signed CA certificate on hosts] in _{ManagingHostsDocTitle}_.
+endif::[]

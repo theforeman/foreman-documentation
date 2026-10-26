@@ -1,0 +1,71 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="convert-a-host-to-rhel"]
+= Convert a host to {RHEL}
+[role="_abstract"]
+You can convert a host to {RHEL} by using the Convert2RHEL Ansible role and playbook in {Project}.
+The role prepares conversion data on {ProjectServer}, and the playbook runs the conversion on the host.
+
+.Prerequisites
+* You have reviewed the {RHELDocsBaseURL}8/html-single/converting_from_a_linux_distribution_to_rhel_using_the_convert2rhel_utility/index#con_supported-conversion-paths_converting-from-a-linux-distribution-to-rhel[supported conversion paths] in _{RHEL}{nbsp}8 Converting from a Linux distribution to RHEL using the Convert2RHEL utility_.
+* A subscription manifest is uploaded to your {Project} with sufficient {RHEL} entitlements allocated for the conversions you intend.
+Alternatively, you can use Ansible variables to tell the role to import the manifest from disk.
+The manifest must be imported to the organization to which you will register hosts for conversion.
++
+You can update your allocations and download the updated manifest from the https://access.redhat.com[Red Hat Customer Portal].
+For more information, see {RHDocsBaseURL}subscription_central/1-latest/html-single/creating_and_managing_manifests_for_a_connected_satellite_server/index#proc-exporting-downloading-manifest-satellite-connected[Exporting and downloading a manifest] in _Creating and managing manifests for a connected {ProjectServer}_.
+* Red Hat repositories are enabled and synchronized in {Project} for the minor {RHEL} version to which you convert your hosts.
+For more information, see {ContentManagementDocURL}enable-red-hat-repositories-by-using-web-ui[Enable Red{nbsp}Hat repositories by using {ProjectWebUI}] and {ContentManagementDocURL}synchronize-repositories-ad-hoc[Synchronize repositories ad hoc] in _{ContentManagementDocTitle}_.
+
+.Procedure
+. Import the `{ansible-namespace}.convert2rhel` Ansible role and variables.
+For more information, see {ManagingConfigurationsAnsibleDocURL}Importing_Ansible_Roles_and_Variables_ansible[Importing Ansible Roles and Variables] in _{ManagingConfigurationsAnsibleDocTitle}_.
+. Configure Ansible variables for generation of conversion data.
+For more information, see xref:ansible-variables-for-conversion_{context}[].
+. Assign the `{ansible-namespace}.convert2rhel` role to the host that represents {ProjectServer}.
+For more information, see {ManagingConfigurationsAnsibleDocURL}Assigning_Ansible_Roles_to_an_Existing_Host_ansible[Assigning Ansible Roles to an Existing Host] in _{ManagingConfigurationsAnsibleDocTitle}_.
+. Run the Ansible role on {ProjectServer}.
+For more information, see {ManagingConfigurationsAnsibleDocURL}run-ansible-roles-on-a-host[Run Ansible roles on a host] in _{ManagingConfigurationsAnsibleDocTitle}_.
++
+The Ansible role generates data required for host conversion, that is, repositories, certificates, activation keys, and host groups.
+The role enables the `{RepoRHEL7Server}` repository with the *7Server* release and *x86_64* architecture, or `{RepoRHEL8BaseOS}` and `{RepoRHEL8AppStream}`, or both, depending on which variables you have set in the previous steps.
+. Register a host for conversion by using a generated host group.
++
+Use the global registration template to register and subscribe your host before the conversion.
+Select the host group that was generated for the conversion you intend, such as `CentOS 7 converting` if you convert the host from CentOS{nbsp}7.
+ifdef::managing-hosts[]
+For more information, see xref:global-registration-of-hosts[].
+endif::[]
+ifndef::managing-hosts[]
+For more information, see {ManagingHostsDocURL}global-registration-of-hosts[Global registration of hosts] in _{ManagingHostsDocTitle}_.
+endif::[]
+. Run the pre-conversion analysis on the host group to verify if your hosts are ready for the conversion.
+Execute a remote job with the following settings:
+* **Job category**: `Convert 2 RHEL`
+* **Job template**: `Convert2RHEL analyze`
+* If you want to use an Extended Lifecycle Support add-on subscription, set the **ELS** option to `yes`.
+
++
+For more information, see xref:configure-and-set-up-remote-jobs[].
+
++
+Review pre-conversion analysis reports and resolve all issues that are blocking the conversion.
+Repeat this step until you resolve all blocking issues.
+For more information, see {RHELDocsBaseURL}8/html-single/converting_from_a_linux_distribution_to_rhel_using_the_convert2rhel_utility/index#reviewing-the-pre-conversion-analysis-report_converting-using-the-command-line[Reviewing the pre-conversion analysis report] in _{RHEL}{nbsp}8 Converting from a Linux distribution to RHEL using the Convert2RHEL utility_.
+. Run the Convert2RHEL playbook on the host group.
+Execute a remote job with the following settings:
+* **Job category**: `Convert 2 RHEL`
+* **Job template**: `Convert to RHEL`
+* **Activation key**:
+** `convert2rhel_rhel7` if you convert to {RHEL} 7
+** `convert2rhel_rhel8` if you convert to {RHEL} 8
+* If you want to use an Extended Lifecycle Support add-on subscription, set the **ELS** option to `yes`.
+
++
+For more information, see xref:configure-and-set-up-remote-jobs[].
+
+.Additional resources
+* https://access.redhat.com/articles/2360841[How to perform an unsupported conversion from a RHEL-derived Linux distribution to RHEL in the _Red{nbsp}Hat Knowledgebase_]
+ifndef::satellite[]
+* https://github.com/oamg/convert2rhel/[Convert2RHEL CLI tool on _GitHub_]
+endif::[]
