@@ -1,0 +1,77 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="configure-pcp-data-collection"]
+= Configure PCP data collection
+
+[role="_abstract"]
+Configure PCP to collect detailed performance data from {Project} processes and services, such as Apache HTTP Server, PostgreSQL, and Redis to enable complete monitoring.
+
+.Procedure
+. Symlink the {Project}-specific configuration to PMDA process monitoring:
++
+----
+# ln -s /etc/pcp/proc/foreman-hotproc.conf /var/lib/pcp/pmdas/proc/hotproc.conf
+----
++
+By default, PCP only collects basic system metrics.
+This step enables detailed metrics about the following {Project} processes:
++
+* Java
+* PostgreSQL
+* Redis
+* Dynflow
+* Puma
+ifndef::foreman-el,foreman-deb[]
+* Pulpcore
+endif::[]
+. Install the process monitoring PMDA:
++
+----
+# cd /var/lib/pcp/pmdas/proc
+# ./Install
+----
+. Configure PCP to collect metrics from Apache HTTP Server.
++
+.. Enable the Apache HTTP Server extended status module:
++
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+# {foreman-installer} --enable-apache-mod-status
+----
+.. Enable the Apache HTTP Server PMDA:
++
+----
+# cd /var/lib/pcp/pmdas/apache
+# ./Install
+----
+. Configure PCP to collect metrics from PostgreSQL:
++
+----
+# cd /var/lib/pcp/pmdas/postgresql
+# ./Install
+----
+. Configure PCP to collect metrics from Redis:
++
+----
+# cd /var/lib/pcp/pmdas/redis
+# ./Install
+----
+. Enable the telemetry feature in {Project}:
++
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+# {foreman-installer} --foreman-telemetry-prometheus-enabled true
+----
+. Configure PCP to collect data from {Project}:
++
+[options="nowrap", subs="verbatim,quotes,attributes"]
+----
+# cd /var/lib/pcp/pmdas/openmetrics
+# echo "https://_{foreman-example-com}_/metrics" > config.d/foreman.url
+# ./Install
+----
+. Restart PCP to begin data collection:
++
+----
+# systemctl restart pmcd pmlogger pmproxy
+----

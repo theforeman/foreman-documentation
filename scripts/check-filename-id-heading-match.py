@@ -12,6 +12,7 @@ GREEN = "\033[0;32m"
 NC = "\033[0m"
 
 ID_SUBSTITUTIONS = (
+    ("_{context}", ""),
     ("{project-context}", "project"),
     ("{smart-proxy-context}", "smart-proxy"),
     ("{smart-proxies-context}", "smart-proxies"),
@@ -47,7 +48,7 @@ HEADING_SUBSTITUTIONS = (
     ("{insights}", "insights"),
     ("{insights-iop}", "insights"),
     ("{iss}", "inter-server-synchronization"),
-    ("{nbsp}", ""),
+    ("{nbsp}", "-"),
     ("{customfiletype}", "custom-file-type"),
     ("{customrepo}", "repository"),
     ("{customrepos}", "repositories"),
@@ -66,6 +67,10 @@ HEADING_SUBSTITUTIONS = (
     ("{kubevirt}", "kubevirt"),
     ("{a-kubevirt}", "a-kubevirt"),
     ("{client-os}", "client-os"),
+    ("{customrpm}", "custom-rpm"),
+    ("{customgpg}", "custom-gpg"),
+    ("{pat}", "personal-access-token"),
+    ("{smartproxies}", "smart-proxies"),
     ("by-using-hammer-cli", "by-using-cli"),
     ("by-using-project-api", "by-using-api"),
     ("{projectwebui}", "web-ui"),

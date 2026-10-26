@@ -1,0 +1,157 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="create-a-custom-ssl-certificate-for-{project-context}_{context}"]
+= Create a custom SSL certificate for {ProductName}
+
+[role="_abstract"]
+ifdef::load-balancing[]
+On each {SmartProxyServer} you want to configure for load balancing, create a configuration file for the Certificate Signing Request and include the load balancer and {SmartProxyServer} as Subject Alternative Names (SAN).
+endif::[]
+ifndef::load-balancing[]
+ifeval::["{cert-name}" == "{project-context}"]
+Use this procedure to create a custom SSL certificate for {ProductName}.
+If you already have a custom SSL certificate for {ProductName}, skip this procedure.
+endif::[]
+ifeval::["{cert-name}" == "{smart-proxy-context}"]
+On {ProjectServer}, create a custom certificate for your {ProductName}.
+If you already have a custom SSL certificate for {ProductName}, skip this procedure.
+endif::[]
+endif::[]
+
+.Procedure
+. To store all the source certificate files, create a directory that is accessible only to the `root` user:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# mkdir /root/{cert-name}_cert
+----
+. Create a private key with which to sign the certificate signing request (CSR).
+The private key must be unencrypted:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# openssl genrsa -out /root/{cert-name}_cert/{cert-name}_cert_key.pem 4096
+----
++
+If you already have a private key, skip this step.
+. Optional: Verify that the key is unencrypted:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# openssl pkey -noout -in /root/{cert-name}_cert/{cert-name}_cert_key.pem
+----
++
+If the command does not ask for a password, the key is unencrypted.
+If your private key is password-protected, remove the password.
+ifndef::load-balancing[]
+. Create the `/root/{cert-name}_cert/openssl.cnf` configuration file for the CSR and include the following content:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+[ req ]
+req_extensions = v3_req
+distinguished_name = req_distinguished_name
+prompt = no
+
+[ req_distinguished_name ]
+commonName = _{ssl-common-name}_
+
+[ v3_req ]
+basicConstraints = CA:FALSE
+keyUsage = digitalSignature, keyEncipherment
+extendedKeyUsage = serverAuth, clientAuth
+subjectAltName = @alt_names
+
+[ alt_names ]
+DNS.1 = _{ssl-common-name}_
+----
+endif::[]
+
+ifdef::load-balancing[]
+. Create the `/root/{cert-name}_cert/openssl.cnf` configuration file for the CSR and include the following content:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+[ req ]
+req_extensions = v3_req
+distinguished_name = req_distinguished_name
+x509_extensions = usr_cert
+prompt = no
+
+[ req_distinguished_name ]
+commonName = _{ssl-common-name}_
+
+[ v3_req ]
+basicConstraints = CA:FALSE
+keyUsage = digitalSignature, keyEncipherment
+extendedKeyUsage = serverAuth, clientAuth
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = _{loadbalancer-example-com}_
+DNS.2 = _{smartproxy-example-com}_
+----
++
+The options used in the configuration file include the following:
++
+`commonName`::
+The certificate common name.
+It must match the FQDN of {SmartProxyServer}.
+Ensure to change this when running the command on each {SmartProxyServer} that you configure for load balancing.
+You can also set a wildcard value `*`.
+`[alt_names]`::
+The alternative names for the load balancer and {SmartProxyServer}.
+Include the FQDN of the load balancer as `DNS.1` and the FQDN of {SmartProxyServer} as `DNS.2`.
+endif::[]
++
+For more information about the `[ v3_req ]` parameters and their purpose, see link:https://www.rfc-editor.org/rfc/rfc5280[RFC 5280: Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List (CRL) Profile].
+. Optional: If you want to add Distinguished Name (DN) details to the CSR, add the following information to the `[ req_distinguished_name ]` section:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+[req_distinguished_name]
+commonName = _{ssl-common-name}_
+countryName = _My_Country_Name_
+stateOrProvinceName = _My_State_Or_Province_Name_
+localityName = _My_Locality_Name_
+organizationName = _My_Organization_Or_Company_Name_
+organizationalUnitName = _My_Organizational_Unit_Name_
+----
++
+The options used in the configuration file include the following:
++
+`countryName`::
+The country represented by a two-letter code
+`stateOrProvinceName`::
+Full name of the state or province
+`localityName`::
+Full name of the locality (example: New York)
+`organizationalUnitName`::
+Division responsible for the certificate (example: IT department)
+. Generate the CSR:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# openssl req -new \
+-key _/root/{cert-name}_cert/{cert-name}_cert_key.pem_ \
+-config _/root/{cert-name}_cert/openssl.cnf_ \
+-out _/root/{cert-name}_cert/{cert-name}_cert_csr.pem_
+----
++
+The options used in the configuration file include the following:
++
+`-key`::
+Path to the private key
+`-config`::
+Path to the configuration file
+`-out`::
+Path to the CSR to generate
+. Send the certificate signing request to the certificate authority (CA).
+The same CA must sign certificates for {ProjectServer} and {SmartProxyServer}.
++
+When you submit the request, specify the lifespan of the certificate.
+The method for sending the certificate request varies, so consult the CA for the preferred method.
+In response to the request, you can expect to receive a CA bundle and a signed certificate, in separate files.
+ifdef::load-balancing[]
+. Copy the Certificate Authority bundle and {SmartProxyServer} certificate file that you receive from the Certificate Authority, and {SmartProxyServer} private key to your {ProjectServer}.
+endif::[]

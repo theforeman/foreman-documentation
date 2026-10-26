@@ -1,0 +1,66 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="export-a-content-view-version"]
+= Export a content view version
+
+[role="_abstract"]
+You can export a content view version to an archive file and recreate the same version on another {ProjectServer}.
+{Project} exports composite content views as regular content views.
+
+The composite nature is not retained.
+On importing the exported archive, a regular content view is created or updated on your downstream {ProjectServer}.
+
+The exported archive file contains the following data:
+
+* A JSON file containing content view version metadata
+* An archive file containing all the repositories included into the content view version
+
+include::snip_content-types-export.adoc[]
+
+{Project} does not export content view definitions and metadata such as package filters.
+
+.Prerequisites
+* The export directory has enough free storage space to accommodate the export.
+* The `/var/lib/pulp/exports/` directory has enough free storage space equivalent to the size of the repositories being exported for temporary files created during the export process.
+* Download policy is set to *Immediate* for all repositories within the content view version you export.
+ifdef::managing-content[]
+For more information, see xref:Download_Policies_Overview_{context}[].
+endif::[]
+* Products that you export are synchronized to the required date.
+* The user exporting the content has the _Content Exporter_ role.
+
+.Procedure
+. List versions of the content view that are available for export:
++
+[subs="+quotes"]
+----
+$ hammer content-view version list \
+--content-view="_My_Content_View_" \
+--organization="_My_Organization_"
+----
++
+Note the version number that you want to export.
+In the following example, the version number is `1.0`.
+. Export the content view version:
++
+[options="nowrap" subs="+quotes"]
+----
+$ hammer content-export complete version \
+--content-view="_Content_View_Name_" \
+--version=1.0 \
+--organization="_My_Organization_"
+----
++
+In many cases, the exported archive might be several gigabytes in size.
+You might want to split it into smaller chunks of a smaller size.
+You can use the `--chunk-size-gb` option to export the content view version into smaller chunks, for example `--chunk-size-gb=2` to split the archives into 2 GB chunks.
+
+.Verification
+. Verify that the archive containing the exported version of a content view is located in the export directory:
++
+[options="nowrap" subs="+quotes"]
+----
+# ls -lh /var/lib/pulp/exports/_My_Organization_/_Content_View_Name_/1.0/2021-02-25T18-59-26-00-00/
+----
++
+You require all three files, the `tar.gz` archive file, the `toc.json` file, and the `metadata.json` file, to import the content successfully.

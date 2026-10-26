@@ -1,0 +1,95 @@
+:_mod-docs-content-type: REFERENCE
+
+[id="object-creation-with-ruby"]
+= Object creation with Ruby
+
+[role="_abstract"]
+You can use Ruby-based REST clients to create {Project} organizations and lifecycle environments programmatically, with built-in error handling for existing resources.
+
+This script connects to the {ProjectNameX} API, creates an organization, and then creates three lifecycle environments in the organization.
+If the organization already exists, the script uses that organization.
+If any of the lifecycle environments already exist in the organization, the script returns an error and exits.
+
+[source, ruby, subs="attributes"]
+----
+#!/usr/bin/ruby
+
+require 'rest-client'
+require 'json'
+
+url = 'https://{foreman-example-com}'
+katello_url = "#\{url}/katello/api/v2"
+
+$username = '_My_User_Name_'
+$password = '_My_Password_'
+
+org_name = "_My_Organization_"
+environments = [ "Development", "Testing", "Production" ]
+
+# Send a GET request to the specified API endpoint.
+def get_json(location)
+  response = RestClient::Request.new(
+    :method => :get,
+    :url => location,
+    :user => $username,
+    :password => $password,
+    :headers => { :accept => :json,
+    :content_type => :json }
+  ).execute
+  JSON.parse(response.to_str)
+end
+
+# Send JSON data in a POST request to the specified API endpoint.
+def post_json(location, json_data)
+  response = RestClient::Request.new(
+    :method => :post,
+    :url => location,
+    :user => $username,
+    :password => $password,
+    :headers => { :accept => :json,
+    :content_type => :json},
+    :payload => json_data
+  ).execute
+  JSON.parse(response.to_str)
+end
+
+# Map record IDs to record names.
+def id_name_map(records)
+  records.inject({}) do |map, record|
+    map.update(record['id'] => record['name'])
+  end
+end
+
+# Retrieve the existing organizations.
+orgs = get_json("#\{katello_url}/organizations")
+org_list = id_name_map(orgs['results'])
+
+if !org_list.has_value?(org_name)
+  # Create the organization if it does not exist.
+  puts "Creating organization: \t#\{org_name}"
+  org_id = post_json("#\{katello_url}/organizations", JSON.generate({"name"=> org_name}))["id"]
+else
+  # Reuse the existing organization ID.
+  org_id = org_list.key(org_name)
+  puts "Organization \"#\{org_name}\" exists"
+end
+
+# Retrieve the lifecycle environments in the organization.
+envs = get_json("#\{katello_url}/organizations/#\{org_id}/environments")
+env_list = id_name_map(envs['results'])
+prior_env_id = env_list.key("Library")
+
+# Exit if any requested lifecycle environment already exists.
+environments.each do |e|
+  if env_list.has_value?(e)
+    puts "ERROR: One of the Environments is not unique to organization"
+    exit
+  end
+end
+
+# Create the lifecycle environments in sequence.
+environments.each do |environment|
+  puts "Creating environment: \t#\{environment}"
+  prior_env_id = post_json("#\{katello_url}/organizations/#\{org_id}/environments", JSON.generate({"name" => environment, "organization_id" => org_id, "prior_id" => prior_env_id}))["id"]
+end
+----
