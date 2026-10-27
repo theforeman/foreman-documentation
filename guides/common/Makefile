@@ -7,7 +7,7 @@ ROOTDIR = $(realpath .)
 NAME = $(notdir $(ROOTDIR))
 DEST_DIR = $(BUILD_DIR)/$(subst doc-,,$(NAME))
 DEST_HTML = $(DEST_DIR)/index-$(BUILD).html
-IMAGES_TS = $(DEST_DIR)/.timestamp-images
+IMAGES_TS = $(BUILD_DIR)/images/.timestamp-images
 CSS_SOURCES = $(shell find $(COMMON_DIR)/css -type f)
 DOCINFO_SOURCES = $(shell find $(COMMON_DIR)/ -type f -name docinfo\*.html)
 SOURCES = master.adoc $(shell find . -type f -name \*.adoc)
@@ -75,7 +75,7 @@ css: prepare $(DEST_DIR)/style.css
 $(DEST_DIR)/style.css: $(CSS_SOURCES)
 	bundle exec sass --sourcemap=none --no-cache --style $(CSS_STYLE) -I $(COMMON_DIR)/css $(COMMON_DIR)/css/default.scss $@.tmp.$$$$ && mv $@.tmp.$$$$ $@
 
-$(IMAGES_TS): $(BUILD_DIR) $(IMAGES)
+$(IMAGES_TS): $(IMAGES) | $(BUILD_DIR)
 	cp -rf --update $(CP_ARGS) -t $(BUILD_DIR) common/images
 	@touch $(IMAGES_TS)
 
