@@ -1,0 +1,92 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="troubleshoot-smart-proxy-host-header-rejection"]
+= Troubleshoot host header rejection on {SmartProxyServer}
+
+[role="_abstract"]
+If you receive a `403 Forbidden` error when connecting to a {SmartProxyServer} by using a hostname, the request might be rejected by host header validation.
+If the hostname is legitimate, declare it as a server alias.
+
+Each {SmartProxy} validates the HTTP `Host` and `X-Forwarded-Host` headers on every incoming request.
+Only requests whose hostname matches the FQDN of the {SmartProxyServer} or a declared server alias are accepted.
+Requests that use an IP address, a short hostname, or any other undeclared name are rejected with a `403 Forbidden` error.
+When a request passes through a reverse proxy or a load balancer, the forwarded hostname must also be permitted.
+
+{ProjectServer} and each {SmartProxyServer} maintain their lists of permitted hostnames independently.
+Run the following commands on the {SmartProxyServer} that rejected the request.
+
+[IMPORTANT]
+====
+In the {SmartProxy} settings file, the `:permitted_hosts` setting governs this error, not the adjacent `:trusted_hosts` setting.
+Adding a hostname to `:trusted_hosts` does not make a {SmartProxy} accept that hostname in a host header.
+====
+
+.Procedure
+. Confirm that the error is a `403 Forbidden` response from your {SmartProxyServer}:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+$ curl --head --insecure https://_hostname.example.com_:{smartproxy_port}/features
+----
++
+[source, none, options="nowrap"]
+----
+HTTP/1.1 403 Forbidden
+----
++
+To inspect the response body, repeat the command without the `--head` option.
+The response body of a request that a {SmartProxy} rejects is `Host not permitted`.
+. Verify that host header validation caused the rejection by checking the {SmartProxyServer} journal for entries from `Rack::Protection::HostAuthorization`:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# journalctl --unit foreman-proxy --reverse --lines 50
+----
+. Confirm that the {SmartProxy} enforces its list of permitted hostnames:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# journalctl --unit foreman-proxy --no-pager --grep "permitted_hosts is configured but not enforced" _SYSTEMD_INVOCATION_ID="$(systemctl show foreman-proxy.service --property=InvocationID --value)"
+----
++
+The `systemctl show` command returns the ID of the current {SmartProxy} service invocation, which restricts the journal search to the time since the service last started.
+Without that restriction, a warning that an earlier version of the {SmartProxy} logged can still match, because an update restarts the {SmartProxy} without rebooting the host.
++
+If the output contains the warning, the {SmartProxy} accepts any hostname, host header validation is not the cause of the error, and you must look for another cause.
+. Retrieve the FQDN and any server aliases that the {SmartProxy} currently accepts:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# hostname --fqdn
+----
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# podman secret inspect foreman-proxy-settings-yml --showsecret --format "{{.SecretData}}" | grep ":permitted_hosts:"
+----
++
+The {SmartProxy} renders this list as a single-line JSON array, so the key and all of its values are on one line.
++
+If the list is empty or the key is missing, the {SmartProxy} accepts every hostname and host header validation is not the cause of the error.
+If the list is not empty and _hostname.example.com_ does not appear in either output, host header validation is rejecting the request.
+. Resolve the problem:
+* If _hostname.example.com_ is a legitimate alternate name for your {SmartProxyServer}, declare it as a server alias on that {SmartProxyServer}:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# {foremanctl} deploy-proxy --server-alias _hostname.example.com_
+----
+* If _hostname.example.com_ is not a name you expect your {SmartProxy} to answer, the request might indicate a misconfiguration in your network or a security concern.
+ifdef::satellite[]
+Open a Red{nbsp}Hat Support case for further investigation.
+endif::[]
+
+.Verification
+* After you configure a server alias, verify that the request succeeds:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+$ curl --head --insecure https://_hostname.example.com_:{smartproxy_port}/features
+----
++
+The response is no longer `403 Forbidden`.
