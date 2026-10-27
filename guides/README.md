@@ -144,7 +144,7 @@ In order to implement the same technique for the upstream documentation, there i
 
 To link from one guide to another, use the per-guide URL attribute defined in `guides/common/attributes-base.adoc` (overridden per product in `attributes-<product>.adoc`):
 
-    For more information, see {ManagingHostsDocURL}registering-hosts-by-using-global-registration[Registering hosts by using global registration].
+    For more information, see {ManagingHostsDocURL}registering-hosts-to-{project-context}[Registering hosts to {Project}].
 
 **Do not** append the target guide's title to the link (for example ``[Link text] in _{ManagingHostsDocTitle}_``).
 A working link is enough; the book title adds no value for the reader and renders as a dangling pointer in the Navigation Maps, where cross-guide links resolve internally.
