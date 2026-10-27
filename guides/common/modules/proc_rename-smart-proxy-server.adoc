@@ -1,0 +1,71 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="rename-{smart-proxy-context}-server_{context}"]
+= Rename {SmartProxyServer}
+
+[role="_abstract"]
+Rename {SmartProxyServer} when its hostname or domain changes so that {Project} components and registered hosts continue to communicate correctly.
+Use the `{project-change-hostname}` script and update certificates and references to the new hostname.
+
+[WARNING]
+====
+Renaming your {SmartProxyServer} host shuts down all {Project} services on that host.
+The services restart after the renaming is complete.
+====
+
+.Prerequisites
+* You have a backup of your {SmartProxyServer} before renaming.
+If you fail to successfully rename it, restore it from the backup.
+For more information, see xref:back-up-{project-context}[].
+* The `hostname` and `hostname -f` commands on {SmartProxyServer} both return the FQDN of {SmartProxyServer}.
+If both commands do not return the FQDN of {SmartProxyServer}, the `{project-change-hostname}` script will fail to complete.
++
+If the `hostname` command returns the shortname of {SmartProxyServer} instead of the FQDN, use `hostnamectl set-hostname _My_Old_FQDN_` to set the old FQDN correctly before attempting to use the `{project-change-hostname}` script.
+
+.Procedure
+. On your {ProjectServer}, generate a new certificates archive file for your {SmartProxyServer}.
++
+* If you are using the default SSL certificate, regenerate the default SSL certificates:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {certs-generate} \
+--certs-tar /root/_new-{smartproxy-example-com}-certs.tar_ \
+--foreman-proxy-fqdn _new-{smartproxy-example-com}_
+----
++
+Ensure that you enter the full path to the `.tar` file.
++
+* If you are using a custom SSL certificate, create a new SSL certificate for your {SmartProxyServer}.
+ifndef::orcharhino[]
+For more information, see {InstallingSmartProxyDocURL}configuring-{smart-proxy-context}-server-with-a-custom-ssl-certificate_connected[Configuring {SmartProxyServer} with a custom SSL certificate] in _{InstallingSmartProxyDocTitle}_.
+endif::[]
+. On your {ProjectServer}, copy the certificates archive file to your {SmartProxyServer}.
+For example, to copy the archive file to the `root` user's home directory:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# scp /root/_new-{smartproxy-example-com}-certs.tar_ root@_{smartproxy-example-com}_:
+----
+. On your {SmartProxyServer}, run the `{project-change-hostname}` script and provide the host's new name, {Project} credentials, and certificates archive file name.
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {project-change-hostname} _new-{smartproxy-example-com}_ \
+--certs-tar /root/_new-{smartproxy-example-com}-certs.tar_ \
+--password '_My_Password_' \
+--username _My_Username_
+----
++
+Ensure that you enter the full path to the `.tar` file.
+. If you have created a custom certificate for your {SmartProxyServer}, deploy the certificate to your {SmartProxyServer} by entering the `{foreman-installer}` command that the `{certs-generate}` command returned in a previous step.
+ifndef::orcharhino[]
+For more information, see {InstallingSmartProxyDocURL}deploy-a-custom-ssl-certificate-to-{smart-proxy-context}-server_{smart-proxy-context}[Deploy a Custom SSL Certificate to {SmartProxyServer}] in _{InstallingSmartProxyDocTitle}_.
+endif::[]
+. Reregister all hosts that are registered to your {SmartProxyServer}.
+For more information, see {ManagingHostsDocURL}registering-hosts-to-{project-context}[Registering hosts to {Project}] in _{ManagingHostsDocTitle}_.
+. Update the {SmartProxy} host name in the {ProjectWebUI}.
+.. In the {ProjectWebUI}, navigate to *Infrastructure* > *{SmartProxies}*.
+.. Locate {SmartProxyServer} in the list, and click *Edit*.
+.. Edit the *Name* and *URL* fields to match {SmartProxyServer}'s new host name, then click *Submit*.
+.. On your DNS server, add a record for the new hostname of your {SmartProxyServer}, and delete the record of the previous host name.
