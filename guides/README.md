@@ -140,6 +140,15 @@ File names that are missing from this JSON file would be omitted from the TOC.
 Currently the main use of the TOC file is for downstream links validation in [`foreman_theme_satellite`](https://github.com/RedHatSatellite/foreman_theme_satellite/commit/7fb213daa8929b1e5ceb7999a79dbc8eebd3500d).
 In order to implement the same technique for the upstream documentation, there is need to extract links from the code.
 
+## Linking to another guide
+
+To link from one guide to another, use the per-guide URL attribute defined in `guides/common/attributes-base.adoc` (overridden per product in `attributes-<product>.adoc`):
+
+    For more information, see {ManagingHostsDocURL}registering-hosts-to-{project-context}[Registering hosts to {Project}].
+
+**Do not** append the target guide's title to the link (for example ``[Link text] in _{ManagingHostsDocTitle}_``).
+A working link is enough; the book title adds no value for the reader and renders as a dangling pointer in the Navigation Maps, where cross-guide links resolve internally.
+
 ## Creating new guides
 
 Each guide must be in a separate directory in `guides/` prefixed with `doc-`.
