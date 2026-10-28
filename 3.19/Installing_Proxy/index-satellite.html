@@ -244,8 +244,9 @@ SOFTWARE.
 <li><a href="#operating-system-requirements">1.1. Operating system requirements</a></li>
 <li><a href="#system-requirements_capsule">1.2. System requirements</a></li>
 <li><a href="#capsule-storage-requirements">1.3. Capsule storage requirements</a></li>
-<li><a href="#best-practices-for-optimizing-storage">1.4. Best practices for optimizing storage</a></li>
-<li><a href="#opening-required-ports">1.5. Opening required ports</a></li>
+<li><a href="#opening-required-ports">1.4. Opening required ports</a></li>
+<li><a href="#verifying-dns-resolution_capsule">1.5. Verifying DNS resolution</a></li>
+<li><a href="#best-practices-for-optimizing-storage">1.6. Best practices for optimizing storage</a></li>
 </ul>
 </li>
 <li><a href="#installing-capsule-server">2. Installing Capsule&#160;Server</a>
@@ -511,45 +512,7 @@ In the largest Satellite environments, the size of <code>/var/lib/pgsql</code> o
 </div>
 </div>
 <div class="sect2">
-<h3 id="best-practices-for-optimizing-storage"><a class="anchor" href="#best-practices-for-optimizing-storage"></a>1.4. Best practices for optimizing storage</h3>
-<div class="paragraph _abstract">
-<p>You can optimize your storage by following the storage best practices.
-These include using LVM for <code>/var</code>, high-bandwidth storage for critical directories, and appropriate file systems to improve I/O performance and scalability.</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>The exact amount of storage you require for log messages depends on your installation and setup.
-You can manage the size of the log files by using <strong>logrotate</strong>.</p>
-</li>
-<li>
-<p>Consider mounting <code>/var</code> on LVM storage.
-This can help the system to scale because most Capsule&#160;Server data is stored in the <code>/var</code> directory.</p>
-</li>
-<li>
-<p>Use high-bandwidth, low-latency storage for the <code>/var/lib/pulp/</code> and <code>/var/lib/pgsql</code> directories.
-Using high latency, low-bandwidth storage causes performance degradation because Red&#160;Hat Satellite has many operations that are I/O intensive.</p>
-</li>
-<li>
-<p>Use a file system with low input-output latency.
-Do not use the GFS2 file system because the input-output latency is too high.</p>
-</li>
-</ul>
-</div>
-<div class="ulist">
-<div class="title">Additional resources</div>
-<ul>
-<li>
-<p><a href="https://access.redhat.com/solutions/1294">How to use logrotate utility to rotate log files</a></p>
-</li>
-<li>
-<p><a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.19/html-single/administering_red_hat_satellite/index#Logging_and_Reporting_Problems_admin">Logging and reporting problems in <em>Administering Red&#160;Hat Satellite</em></a></p>
-</li>
-</ul>
-</div>
-</div>
-<div class="sect2">
-<h3 id="opening-required-ports"><a class="anchor" href="#opening-required-ports"></a>1.5. Opening required ports</h3>
+<h3 id="opening-required-ports"><a class="anchor" href="#opening-required-ports"></a>1.4. Opening required ports</h3>
 <div class="paragraph _abstract">
 <p>Open the required network ports to enable communication between Satellite components across your infrastructure, including firewall configurations for both host-based and network-based firewalls.</p>
 </div>
@@ -635,6 +598,117 @@ If possible, disable the application checking and allow open port communication 
 </li>
 <li>
 <p><a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/configuring_firewalls_and_packet_filters/using-and-configuring-firewalld_firewall-packet-filters">Using and configuring firewalld in <em>Red&#160;Hat Enterprise Linux&#160;9 Configuring firewalls and packet filters</em></a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="verifying-dns-resolution_capsule"><a class="anchor" href="#verifying-dns-resolution_capsule"></a>1.5. Verifying DNS resolution</h3>
+<div class="paragraph _abstract">
+<p>Verify the full forward and reverse DNS resolution using a fully-qualified domain name to prevent issues while installing Satellite.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Ensure that the host name and local host resolve correctly:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ping -c1 localhost
+# ping -c1 `hostname -f` # my_system.domain.com</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Successful name resolution results in output similar to the following:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># ping -c1 localhost
+PING localhost (127.0.0.1) 56(84) bytes of data.
+64 bytes from localhost (127.0.0.1): icmp_seq=1 ttl=64 time=0.043 ms
+
+--- localhost ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.043/0.043/0.043/0.000 ms
+
+# ping -c1 `hostname -f`
+PING hostname.gateway (XX.XX.XX.XX) 56(84) bytes of data.
+64 bytes from hostname.gateway (XX.XX.XX.XX): icmp_seq=1 ttl=64 time=0.019 ms
+
+--- localhost.gateway ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.019/0.019/0.019/0.000 ms</pre>
+</div>
+</div>
+</li>
+<li>
+<p>To avoid discrepancies with static and transient host names, set all the host names on the system by entering the following command:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># hostnamectl set-hostname <em>name</em></pre>
+</div>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Warning</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Name resolution is critical to the operation of Satellite.
+If Satellite cannot properly resolve its fully qualified domain name, tasks such as content management, subscription management, and provisioning will fail.</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html-single/configuring_and_managing_networking/index#proc_changing-a-hostname-using-hostnamectl_assembly_changing-a-hostname">Changing a hostname using hostnamectl in <em>Red&#160;Hat Enterprise Linux&#160;9 Configuring and managing networking</em></a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="best-practices-for-optimizing-storage"><a class="anchor" href="#best-practices-for-optimizing-storage"></a>1.6. Best practices for optimizing storage</h3>
+<div class="paragraph _abstract">
+<p>You can optimize your storage by following the storage best practices.
+These include using LVM for <code>/var</code>, high-bandwidth storage for critical directories, and appropriate file systems to improve I/O performance and scalability.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The exact amount of storage you require for log messages depends on your installation and setup.
+You can manage the size of the log files by using <strong>logrotate</strong>.</p>
+</li>
+<li>
+<p>Consider mounting <code>/var</code> on LVM storage.
+This can help the system to scale because most Capsule&#160;Server data is stored in the <code>/var</code> directory.</p>
+</li>
+<li>
+<p>Use high-bandwidth, low-latency storage for the <code>/var/lib/pulp/</code> and <code>/var/lib/pgsql</code> directories.
+Using high latency, low-bandwidth storage causes performance degradation because Red&#160;Hat Satellite has many operations that are I/O intensive.</p>
+</li>
+<li>
+<p>Use a file system with low input-output latency.
+Do not use the GFS2 file system because the input-output latency is too high.</p>
+</li>
+</ul>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="https://access.redhat.com/solutions/1294">How to use logrotate utility to rotate log files</a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.19/html-single/administering_red_hat_satellite/index#Logging_and_Reporting_Problems_admin">Logging and reporting problems in <em>Administering Red&#160;Hat Satellite</em></a></p>
 </li>
 </ul>
 </div>
