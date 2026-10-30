@@ -1,0 +1,97 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="manually-uploading-a-host-inventory-report"]
+= Manually uploading a host inventory report
+
+[role="_abstract"]
+If your {ProjectServer} cannot connect to the {RHCloud}, you can generate and download a host inventory report for an organization without uploading it.
+You can then transfer the report to a system with internet access and upload it manually to report subscription usage to the Subscriptions service.
+
+.Prerequisites
+ifndef::satellite[]
+ifdef::containerized[]
+* The `rh-cloud` feature is enabled on your {ProjectServer}.
+endif::[]
+ifndef::containerized[]
+* The `foreman_rh_cloud` plugin is enabled on your {ProjectServer}.
+endif::[]
+* To generate and download the report by using Hammer, your Hammer installation includes the `hammer_cli_foreman_rh_cloud` plugin.
+endif::[]
+* You have a Red{nbsp}Hat account for the organization whose subscription usage you want to report.
+* You have a system with internet access and the `curl` and `jq` utilities installed.
+
+.Procedure
+. Generate and download a host inventory report by using one of the following methods:
+* Using the {ProjectWebUI}:
+.. Navigate to *{Insights}* > *Inventory Upload*.
+.. In the *Organization* dropdown menu, select the organization whose subscription usage you want to report.
+.. Click *Generate report* to generate the report without uploading it.
+.. Wait for report generation to complete, then click *Download report*.
+* Using Hammer:
+.. On your {ProjectServer}, list the organizations to find the ID of the organization that you want to report on:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# hammer organization list
+----
+.. Generate a host inventory report without uploading it:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# hammer insights inventory generate-report --no-upload --organization-id _My_Organization_ID_
+----
++
+Replace _My_Organization_ID_ with the organization ID.
+.. In the {ProjectWebUI}, navigate to *Monitor* > *{Project} Tasks* > *Tasks* and wait for the *Host inventory report job* task for your organization to complete successfully.
+.. Download the generated report:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# hammer insights inventory download-report \
+--organization-id _My_Organization_ID_ \
+--path _/path/to/report_directory_
+----
++
+Replace _/path/to/report_directory_ with the directory where you want to save the report.
+Use the same organization ID as in the generation command.
+. Optional: Extract the downloaded archive and review its contents before uploading it.
+The report archive contains data in JSON format that you can use in automated scripts or machine processing.
+Keep the original archive for upload.
+. Copy the report archive to a system with internet access.
+Perform the remaining steps on that system.
+. Obtain an offline token from the https://access.redhat.com/management/api[Red{nbsp}Hat API Tokens page] and save it in a shell variable:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+$ offline_token='_My_Offline_Token_'
+----
+. Generate an access token and save it in a shell variable:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+$ access_token=$(curl --silent --show-error --fail \
+--request POST \
+--data grant_type=refresh_token \
+--data client_id=rhsm-api \
+--data-urlencode "refresh_token=$offline_token" \
+https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token \
+| jq --exit-status --raw-output '.access_token')
+----
+. Upload the report archive:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+$ curl --silent --show-error --fail \
+--request POST \
+--header "Authorization: Bearer $access_token" \
+--form "upload=@_/path/to/report_for_1.tar.xz_;type=application/vnd.redhat.qpc.tar+tgz" \
+https://cert.cloud.redhat.com/api/ingress/v1/upload
+----
++
+Replace _/path/to/report_for_1.tar.xz_ with the path to the report archive on the connected system.
+
+.Verification
+. In the {RHCloud}, check that the systems in the report appear in the https://console.redhat.com/insights/inventory[Inventory service].
+Systems should appear shortly after the upload is processed.
+. Check the https://console.redhat.com/subscriptions/usage/rhel[Subscriptions service] for updated usage data.
+Allow approximately 24 hours for the data to appear.
