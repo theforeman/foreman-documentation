@@ -37,12 +37,14 @@ ID_SUBSTITUTIONS = (
     ("{a-KubeVirt-id}", "a-kubevirt"),
     ("{client-os-context}", "client-os"),
     ("{EL-id}", "enterprise-linux"),
+    ("{project-client-name-id}", "project-client-name"),
 )
 
 HEADING_SUBSTITUTIONS = (
     ("{projectname}", "project"),
     ("{project}", "project"),
     ("{projectserver}", "project-server"),
+    ("{project-client-name}", "project-client-name"),
     ("{smartproxy}", "smart-proxy"),
     ("{smartproxyserver}", "smart-proxy-server"),
     ("{smartproxyservers}", "smart-proxy-servers"),
