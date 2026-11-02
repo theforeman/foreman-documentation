@@ -1,7 +1,7 @@
 :_mod-docs-content-type: PROCEDURE
 
-[id="upload-content-smaller-than-2-mb"]
-= Upload content smaller than 2 MB
+[id="upload-content-smaller-than-2-mb-to-a-custom-file-type-repository-by-using-api"]
+= Upload content smaller than 2 MB to a custom file type repository by using {Project} API
 
 [role="_abstract"]
 You can upload and import files up to 2 MB to {customrepos} on {Project}, automate content management for packages, scripts, and other repository artifacts.
@@ -14,7 +14,7 @@ This process involves the following steps:
 . Delete the upload request.
 
 The maximum file size that you can upload is 2{nbsp}MB.
-For information about uploading larger content, see xref:upload-content-larger-than-2-mb[].
+For information about uploading larger content, see xref:upload-content-larger-than-2-mb-to-a-custom-file-type-repository-by-using-api[].
 
 .Procedure
 . Assign the package name to the variable `name`:
@@ -48,14 +48,12 @@ Example request:
 [options="nowrap", subs="+quotes,attributes"]
 ----
 $ curl \
---header 'Content-Type: application/json' \
+--data "{\"size\": \"$size\", \"checksum\":\"$checksum\"}" \
+--header "Content-Type: application/json" \
 --request POST \
 --user _My_User_Name_:__My_Password__ \
---data "{\"size\": \"$size\", \"checksum\":\"$checksum\"}" \
-https://_{foreman-example-com}_/katello/api/v2/repositories/76/content_uploads
+https://_{foreman-example-com}_/katello/api/v2/repositories/_My_Repository_ID_/content_uploads
 ----
-+
-where 76, in this case, is an example Repository ID.
 +
 Example request:
 +
@@ -85,14 +83,14 @@ Example request:
 [options="nowrap", subs="+quotes,attributes"]
 ----
 $ curl \
---user _My_User_Name_:__My_Password__ \
---header Accept:application/json \
---header Content-Type:multipart/form-data \
---request PUT \
---data-urlencode size=$size \
---data-urlencode offset=0 \
 --data-urlencode content@$\{path} \
-https://_{foreman-example-com}_/katello/api/v2/repositories/76/content_uploads/$upload_id
+--data-urlencode offset=0 \
+--data-urlencode size=$size \
+--header "Accept: application/json" \
+--header "Content-Type: multipart/form-data" \
+--request PUT \
+--user _My_User_Name_:__My_Password__ \
+https://_{foreman-example-com}_/katello/api/v2/repositories/_My_Repository_ID_/content_uploads/$upload_id
 ----
 . After you have uploaded the content to your {ProjectServer}, you need to import it into the appropriate repository.
 Until you complete this step, {ProjectServer} does not detect the new content.
@@ -102,11 +100,11 @@ Example request:
 [options="nowrap", subs="+quotes,attributes"]
 ----
 $ curl \
+--data "{\"uploads\":[{\"id\": \"$upload_id\", \"name\": \"$name\", \"checksum\": \"$checksum\" }]}" \
 --header "Content-Type: application/json" \
 --request PUT \
 --user _My_User_Name_:__My_Password__ \
---data "{\"uploads\":[{\"id\": \"$upload_id\", \"name\": \"$name\", \"checksum\": \"$checksum\" }]}" \
-https://_{foreman-example-com}_/katello/api/v2/repositories/76/import_uploads
+https://_{foreman-example-com}_/katello/api/v2/repositories/_My_Repository_ID_/import_uploads
 ----
 . After you have successfully uploaded and imported your content, you can delete the upload request.
 This frees any temporary disk space that data is using during the upload.
@@ -116,9 +114,9 @@ Example request:
 [options="nowrap", subs="+quotes,attributes"]
 ----
 $ curl \
---header 'Content-Type: application/json' \
+--data "{}" \
+--header "Content-Type: application/json" \
 --request DELETE \
 --user _My_User_Name_:__My_Password__ \
---data "{}" \
-https://_{foreman-example-com}_/katello/api/v2/repositories/76/content_uploads/$upload_id
+https://_{foreman-example-com}_/katello/api/v2/repositories/_My_Repository_ID_/content_uploads/$upload_id
 ----
