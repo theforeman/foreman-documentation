@@ -277,8 +277,7 @@ SOFTWARE.
 <li><a href="#store-content-on-an-nfs-share">3.2. Store content on an NFS share</a></li>
 <li><a href="#reduce-storage-use-on-satellite-server">3.3. Reduce storage use on Satellite&#160;Server</a>
 <ul class="sectlevel3">
-<li><a href="#cleaning-audit-records">3.3.1. Cleaning audit records</a></li>
-<li><a href="#cleaning-report-records">3.3.2. Cleaning report records</a></li>
+<li><a href="#cleaning-task-records">3.3.1. Cleaning task records</a></li>
 </ul>
 </li>
 </ul>
@@ -2006,91 +2005,80 @@ nfs.example.com:/Satellite/pulp 309506048 58632800 235128224  20% /var/lib/pulp
 <h3 id="reduce-storage-use-on-satellite-server"><a class="anchor" href="#reduce-storage-use-on-satellite-server"></a>3.3. Reduce storage use on Satellite&#160;Server</h3>
 <div class="paragraph _abstract">
 <p>Satellite&#160;Server can accumulate a large amount of data over time, which can use a significant amount of disk space.
-You can clean up database records or reclaim disk space to reduce storage use.</p>
+You can clean up task records to reduce storage use.</p>
 </div>
 <div class="sect3">
-<h4 id="cleaning-audit-records"><a class="anchor" href="#cleaning-audit-records"></a>3.3.1. Cleaning audit records</h4>
+<h4 id="cleaning-task-records"><a class="anchor" href="#cleaning-task-records"></a>3.3.1. Cleaning task records</h4>
 <div class="paragraph _abstract">
-<p>Audit records log changes that users make to Satellite resources, such as creating hosts or editing settings.
-You can clean up outdated audit records by deleting them.</p>
+<p>Task records track background jobs that Satellite executes, such as synchronizing repositories.
+Satellite cleans up outdated tasks automatically, and you can also clean them up manually to save database space.</p>
+</div>
+<div class="paragraph">
+<p>During the automatic task cleanup, Satellite removes the following tasks:
+* Tasks that have finished successfully and are older than thirty days
+* All tasks that are older than a year</p>
 </div>
 <div class="sect4">
-<h5 id="deleting-audit-records-manually"><a class="anchor" href="#deleting-audit-records-manually"></a>Deleting audit records manually</h5>
+<h5 id="deleting-task-records"><a class="anchor" href="#deleting-task-records"></a>Deleting task records</h5>
 <div class="paragraph _abstract">
-<p>You can use the <code>foreman-rake audits:expire</code> command to remove audit records at any time.</p>
+<p>Satellite creates task records automatically.
+To remove old and unnecessary task records, you can delete them.
+This helps maintain system performance and keeps your task history organized.</p>
 </div>
 <div class="ulist">
 <div class="title">Procedure</div>
 <ul>
 <li>
-<p>Delete the audit records using the <code>foreman-rake audits:expire</code> command:</p>
+<p>Use the <code>foreman-rake foreman_tasks:cleanup</code> command to remove tasks at any time.
+You can also use a cron job to schedule Task record deletions at the set interval that you want.</p>
+<div class="paragraph">
+<p>For example, you can delete task records from successful repository synchronizations:</p>
+</div>
 <div class="listingblock">
 <div class="content">
-<pre class="nowrap"># foreman-rake audits:expire days=<em>Number_Of_Days</em></pre>
+<pre># foreman-rake foreman_tasks:cleanup TASK_SEARCH='label = Actions::Katello::Repository::Sync' STATES='stopped'</pre>
 </div>
-</div>
-<div class="paragraph">
-<p>This command deletes all audit records older than <code><em>Number_Of_Days</em></code>.</p>
 </div>
 </li>
 </ul>
 </div>
 </div>
 <div class="sect4">
-<h5 id="deleting-audit-records-automatically"><a class="anchor" href="#deleting-audit-records-automatically"></a>Deleting audit records automatically</h5>
+<h5 id="deleting-a-task-by-id"><a class="anchor" href="#deleting-a-task-by-id"></a>Deleting a task by ID</h5>
 <div class="paragraph _abstract">
-<p>You can automatically delete audit records using the <code>Saved audits interval</code> setting.
-This setting is empty by default, meaning Satellite does not automatically delete the audit records.</p>
+<p>You can delete tasks by ID, for example if you have submitted confidential data by mistake.</p>
 </div>
 <div class="olist arabic">
 <div class="title">Procedure</div>
 <ol class="arabic">
 <li>
-<p>In the Satellite web UI, navigate to <strong>Administer</strong> &gt; <strong>Settings</strong>.</p>
-</li>
-<li>
-<p>On the <strong>General</strong> tab, find the <strong>Saved audits interval</strong> setting.</p>
-</li>
-<li>
-<p>Set the value of the setting to the number of days after which you want Satellite to delete the audit records.</p>
-</li>
-</ol>
-</div>
-</div>
-</div>
-<div class="sect3">
-<h4 id="cleaning-report-records"><a class="anchor" href="#cleaning-report-records"></a>3.3.2. Cleaning report records</h4>
-<div class="paragraph _abstract">
-<p>Report records are configuration reports that hosts send to Satellite after Puppet, Ansible, or Salt runs.
-Clean up outdated reports to reduce database growth and storage use.</p>
-</div>
-<div class="sect4">
-<h5 id="deleting-report-records"><a class="anchor" href="#deleting-report-records"></a>Deleting report records</h5>
-<div class="paragraph _abstract">
-<p>Satellite creates report records automatically.
-To remove old and unnecessary report records, you can delete them.
-This is useful for maintaining a clean and organized report history.</p>
-</div>
-<div class="ulist">
-<div class="title">Procedure</div>
-<ul>
-<li>
-<p>Use the <code>foreman-rake reports:expire</code> command to remove reports at any time.
-You can also use a cron job to schedule report record deletions at the set interval that you want.</p>
-<div class="paragraph">
-<p>By default, using the <code>foreman-rake reports:expire</code> command removes report records that are older than 90 days.
-You can specify the number of days to keep the report records by adding the <strong>days</strong> option and add the number of days.</p>
-</div>
-<div class="paragraph">
-<p>For example, you can delete report records that are older than seven days:</p>
-</div>
+<p>Optional: View the task:</p>
 <div class="listingblock">
 <div class="content">
-<pre># foreman-rake reports:expire days=7</pre>
+<pre class="nowrap">$ hammer task info --id <em>My_Task_ID</em></pre>
 </div>
 </div>
 </li>
-</ul>
+<li>
+<p>On your Satellite&#160;Server, delete the task:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-rake foreman_tasks:cleanup TASK_SEARCH="id=<em>My_Task_ID</em>"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Optional: Ensure the task has been removed from Satellite&#160;Server:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer task info --id <em>My_Task_ID</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note that because the task is deleted, this command returns a non-zero exit code.</p>
+</div>
+</li>
+</ol>
 </div>
 </div>
 </div>
@@ -2100,7 +2088,7 @@ You can specify the number of days to keep the report records by adding the <str
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated Oct 2026
+Last updated Nov 2026
 </div>
 </div>
 <script>
