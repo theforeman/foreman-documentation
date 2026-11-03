@@ -293,7 +293,8 @@ SOFTWARE.
 <li><a href="#compliance-email-notifications">7.2. Compliance email notifications</a></li>
 <li><a href="#viewing-compliance-policy-statistics">7.3. Viewing compliance policy statistics</a></li>
 <li><a href="#remediating-compliance-failures">7.4. Remediating compliance failures</a></li>
-<li><a href="#deleting-a-compliance-report">7.5. Deleting a compliance report</a></li>
+<li><a href="#delete-a-compliance-report-by-using-web-ui">7.5. Delete a compliance report by using Foreman web UI</a></li>
+<li><a href="#delete-a-compliance-report-by-using-api">7.6. Delete a compliance report by using Foreman API</a></li>
 </ul>
 </li>
 </ul>
@@ -1877,7 +1878,7 @@ Follow the wizard to remediate the compliance failure.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="deleting-a-compliance-report"><a class="anchor" href="#deleting-a-compliance-report"></a>7.5. Deleting a compliance report</h3>
+<h3 id="delete-a-compliance-report-by-using-web-ui"><a class="anchor" href="#delete-a-compliance-report-by-using-web-ui"></a>7.5. Delete a compliance report by using Foreman web UI</h3>
 <div class="paragraph _abstract">
 <p>Deleting a compliance report removes it from your Foreman&#160;server.
 You can also delete multiple compliance policies simultaneously.</p>
@@ -1921,26 +1922,168 @@ You can also delete multiple compliance policies simultaneously.</p>
 </li>
 <li>
 <p>Repeat these steps for as many pages as you want to delete.</p>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
 <div class="paragraph">
 <p>In the Foreman web UI, compliance policies are paginated, so you must delete one page of reports at a time.
-If you want to delete all OpenSCAP reports, use the script in <a href="https://docs.theforeman.org/nightly/Project_API/index-foreman-el.html#delete-openscap-reports">Delete OpenSCAP reports</a>.</p>
-</div>
-</td>
-</tr>
-</table>
+If you want to delete all OpenSCAP reports, use the script in <a href="#delete-a-compliance-report-by-using-api">Delete a compliance report by using Foreman API</a>.</p>
 </div>
 </li>
 </ol>
 </div>
 </li>
 </ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="delete-a-compliance-report-by-using-api"><a class="anchor" href="#delete-a-compliance-report-by-using-api"></a>7.6. Delete a compliance report by using Foreman API</h3>
+<div class="paragraph _abstract">
+<p>Delete OpenSCAP compliance reports to free up storage space or remove outdated scan results, either individually by ID or in bulk using a bash script for large-scale cleanup.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>List all OpenSCAP reports.
+Note the IDs of the reports that you want to delete.</p>
+<div class="paragraph">
+<p>Example request:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ curl \
+--user <em>My_User_Name</em>:<em>My_Password</em> \
+https://<em>foreman.example.com</em>/api/v2/compliance/arf_reports/ \
+| python3 -m json.tool</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example response:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-none" data-lang="none">{
+    "page": 1,
+    "per_page": 20,
+    "results": [
+        {
+            "created_at": "2024-05-16 13:27:09 UTC",
+            "failed": 0,
+            "host": "<em>host1.example.com</em>",
+            "id": 404,
+            "othered": 0,
+            "passed": 0,
+            "updated_at": "2024-05-16 13:27:09 UTC"
+        },
+        {
+            "created_at": "2024-05-16 13:26:07 UTC",
+            "failed": 0,
+            "host": "<em>host2.example.com</em>,
+            "id": 405,
+            "othered": 0,
+            "passed": 0,
+            "updated_at": "2024-05-16 13:26:07 UTC"
+        },
+        {
+            "created_at": "2024-05-16 13:25:07 UTC",
+            "failed": 0,
+            "host": "<em>host3.example.com</em>",
+            "id": 406,
+            "othered": 0,
+            "passed": 0,
+            "updated_at": "2024-05-16 13:25:07 UTC"
+        },
+        {
+            "created_at": "2024-05-16 13:24:07 UTC",
+            "failed": 0,
+            "host": "<em>host4.example.com</em>",
+            "id": 407,
+            "othered": 0,
+            "passed": 0,
+            "updated_at": "2024-05-16 13:24:07 UTC"
+        },
+    ],
+    "search": null,
+    "sort": {
+        "by": null,
+        "order": null
+    },
+    "subtotal": 29,
+    "total": 29</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Using an ID from the previous step, delete the OpenSCAP report.
+Repeat for each ID that you want to delete.</p>
+<div class="paragraph">
+<p>Example request:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ curl \
+--user <em>My_User_Name</em>:<em>My_Password</em> \
+--header "Content-Type: application/json" \
+--request DELETE \
+https://<em>foreman.example.com</em>/api/v2/compliance/arf_reports/405</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example response:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-none" data-lang="none">HTTP/1.1 200 OK
+Date: Thu, 18 May 2024 07:14:36 GMT
+Server: Apache/2.4.6 (Enterprise Linux)
+X-Frame-Options: SAMEORIGIN
+X-XSS-Protection: 1; mode=block
+X-Content-Type-Options: nosniff
+Foreman_version: 3.11.0.76
+Foreman_api_version: 2
+Apipie-Checksum: 2d39dc59aed19120d2359f7515e10d76
+Cache-Control: max-age=0, private, must-revalidate
+X-Request-Id: f47eb877-35c7-41fe-b866-34274b56c506
+X-Runtime: 0.661831
+X-Powered-By: Phusion Passenger 4.0.18
+Set-Cookie: request_method=DELETE; path=/
+Set-Cookie: _session_id=d58fe2649e6788b87f46eabf8a461edd; path=/; secure; HttpOnly
+ETag: "2574955fc0afc47cb5394ce95553f428"
+Status: 200 OK
+Vary: Accept-Encoding
+Transfer-Encoding: chunked
+Content-Type: application/json; charset=utf-8</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="exampleblock">
+<div class="title">Example 2. Example BASH script to delete all OpenSCAP reports</div>
+<div class="content">
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-bash" data-lang="bash">#!/bin/bash
+
+# Remove all ARF reports from your Foreman&#160;server.
+
+# Set the connection parameters.
+USER="<em>My_User_Name</em>"
+PASS="<em>My_Password</em>"
+URI="https://<em>foreman.example.com</em>"
+
+# Continue while reports exist.
+ while [ $(curl --user $USER:$PASS $URI/api/v2/compliance/arf_reports/ | python3 -m json.tool | grep \"\total\": | cut --fields=2 --delimiter":" | cut --fields=1 --delimiter"," | sed "s/ //g") -gt 0 ]; do
+
+# Retrieve the report IDs.
+ for i in $(curl --user $USER:$PASS $URI/api/v2/compliance/arf_reports/ | python3 -m json.tool | grep \"\id\": | cut --fields=2 --delimiter":" | cut --fields=1 --delimiter"," | sed "s/ //g")
+
+# Delete each report.
+  do
+  curl --user $USER:$PASS --header "Content-Type: application/json" --request DELETE $URI/api/v2/compliance/arf_reports/$i
+  done
+done</code></pre>
+</div>
+</div>
+</div>
 </div>
 <!-- "Fork me on GitHub" CSS ribbon v0.2.3 | MIT License -->
 <!-- https://github.com/simonwhitaker/github-fork-ribbon-css -->

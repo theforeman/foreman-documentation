@@ -275,6 +275,8 @@ SOFTWARE.
 <li><a href="#override-a-smart-class-parameter-for-an-organization">8.3. Override a smart class parameter for an organization</a></li>
 <li><a href="#override-a-smart-class-parameter-for-a-location">8.4. Override a smart class parameter for a location</a></li>
 <li><a href="#override-a-smart-class-parameter-on-an-individual-host">8.5. Override a smart class parameter on an individual host</a></li>
+<li><a href="#override-a-smart-class-parameter-by-using-api">8.6. Override a smart class parameter by using Foreman API</a></li>
+<li><a href="#change-a-smart-class-parameter-by-using-api">8.7. Change a smart class parameter by using Foreman API</a></li>
 </ul>
 </li>
 <li><a href="#assign-a-puppet-class-to-a-host-group">9. Assign a Puppet class to a host group</a></li>
@@ -1288,6 +1290,316 @@ This is recommended if you have multiple hosts and only want to make changes to 
 </li>
 <li>
 <p>Click <strong>Submit</strong> to save the changes.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="override-a-smart-class-parameter-by-using-api"><a class="anchor" href="#override-a-smart-class-parameter-by-using-api"></a>8.6. Override a smart class parameter by using Foreman API</h3>
+<div class="paragraph _abstract">
+<p>You can override Smart Class parameters to customize Puppet configuration values for specific hosts or host groups.
+This way you customize different environments without changing the original Puppet classes.</p>
+</div>
+<div class="paragraph">
+<p>You can find the full list of attributes that you can modify in the built-in API reference at <code>https://<em>foreman.example.com</em>/apidoc/v2/smart_class_parameters/update.html</code>.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Find the ID of the Smart Class parameter you want to change:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>List all Smart Class Parameters.</p>
+<div class="paragraph">
+<p>Example request:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ curl \
+--request GET \
+--user <em>My_User_Name</em>:<em>My_Password</em> \
+https://<em>foreman.example.com</em>/api/smart_class_parameters</pre>
+</div>
+</div>
+</li>
+<li>
+<p>If you know the Puppet class ID, for example 5, you can restrict the scope:
+Example request:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ curl \
+--request GET \
+--user <em>My_User_Name</em>:<em>My_Password</em> \
+https://<em>foreman.example.com</em>/api/puppetclasses/5/smart_class_parameters</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Both calls accept a search parameter.
+You can view the full list of searchable fields in the Foreman web UI.
+Navigate to <strong>Configure</strong> &gt; <strong>Smart variables</strong> and click in the search query box to reveal the list of fields.</p>
+</div>
+<div class="paragraph">
+<p>Two particularly useful search parameters are <code>puppetclass_name</code> and <code>key</code>, which you can use to search for a specific parameter.
+For example, use the <code>--data</code> option to pass URL encoded data.</p>
+</div>
+<div class="paragraph">
+<p>Example request:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ curl \
+--request GET \
+--user <em>My_User_Name</em>:<em>My_Password</em> \
+--data 'search=puppetclass_name = access_insights_client and key = authmethod' \
+https://<em>foreman.example.com</em>/api/smart_class_parameters</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Foreman supports standard scoped-search syntax.</p>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>When you find the ID of the parameter, list the full details including current override values.</p>
+<div class="paragraph">
+<p>Example request:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ curl \
+--request GET \
+--user <em>My_User_Name</em>:<em>My_Password</em> \
+https://<em>foreman.example.com</em>/api/smart_class_parameters/<em>63</em></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Enable overriding of parameter values.</p>
+<div class="paragraph">
+<p>Example request:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ curl \
+--header "Accept: application/json" \
+--header "Content-Type: application/json" \
+--request PUT \
+--user <em>My_User_Name</em>:<em>My_Password</em> \
+--data '{"smart_class_parameter":{"override":true}}' \
+https://<em>foreman.example.com</em>/api/smart_class_parameters/63</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note that you cannot create or delete the parameters manually.
+You can only modify their attributes.
+Foreman creates and deletes parameters only upon class import from Smart&#160;Proxies.</p>
+</div>
+</li>
+<li>
+<p>Add custom override matchers.</p>
+<div class="paragraph">
+<p>Example request:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ curl \
+--header "Accept: application/json" \
+--header "Content-Type: application/json" \
+--request PUT \
+--user <em>My_User_Name</em>:<em>My_Password</em> \
+--data '{"smart_class_parameter":{"override_value":{"match":"hostgroup=Test","value":"2.4.6"}}}' \
+https://<em>foreman.example.com</em>/api/smart_class_parameters/63</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For more information about override values, see <code>https://<em>foreman.example.com</em>/apidoc/v2/override_values.html</code>.</p>
+</div>
+</li>
+<li>
+<p>You can delete override values.</p>
+<div class="paragraph">
+<p>Example request:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ curl \
+--request DELETE \
+--user <em>My_User_Name</em>:<em>My_Password</em> \
+https://<em>foreman.example.com</em>/api/smart_class_parameters/63/override_values/3</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="change-a-smart-class-parameter-by-using-api"><a class="anchor" href="#change-a-smart-class-parameter-by-using-api"></a>8.7. Change a smart class parameter by using Foreman API</h3>
+<div class="paragraph _abstract">
+<p>You can modify Puppet Smart Class parameters by using external JSON files to simplify working with complex parameter values.
+That way, you can enable syntax highlighting and error detection in your editor.</p>
+</div>
+<div class="paragraph">
+<p>This example uses a MOTD Puppet manifest.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Search for the Puppet Class by name, <code>motd</code> in this case.</p>
+<div class="paragraph">
+<p>Example request:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ curl \
+--header "Accept: application/json" \
+--header "Content-Type: application/json" \
+--request GET \
+--user <em>My_User_Name</em>:<em>My_Password</em> \
+https://<em>foreman.example.com</em>/api/smart_class_parameters?search=puppetclass_name=motd \
+| python3 -m json.tool</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Examine the following output.
+Each Smart Class Parameter has an ID that is global for the same Foreman instance.
+The <code>content</code> parameter of the <code>motd</code> class has <code>id=3</code>.
+Do not confuse this with the Puppet Class ID that displays before the Puppet Class name.</p>
+<div class="paragraph">
+<p>Example response:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-none" data-lang="none">{
+	"avoid_duplicates": false,
+		<strong>"created_at": "2024-02-06 12:37:48 UTC",</strong> # Remove this line.
+			<strong>"default_value": "",</strong> # Add a new value here.
+			"description": "",
+		"hidden_value": "",
+		"hidden_value?": false,
+		"id": 3,
+		"merge_default": false,
+		"merge_overrides": false,
+		<strong>"override": false,</strong> # Set the override value to <code>true</code>.
+			"override_value_order": "fqdn\nhostgroup\nos\ndomain",
+		<strong>"override_values": [],</strong> # Remove this line.
+			"override_values_count": 0,
+		"parameter": "content",
+		"parameter_type": "string",
+		"puppetclass_id": 3,
+		"puppetclass_name": "motd",
+		"required": false,
+		<strong>"updated_at": "2024-02-07 11:56:55 UTC",</strong> # Remove this line.
+			"use_puppet_default": false,
+		"validator_rule": null,
+		"validator_type": ""
+}</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Use the parameter ID <code>3</code> to get the information specific to the <code>motd</code> parameter and redirect the output to a file, for example, <strong>output_file.json</strong>.</p>
+<div class="paragraph">
+<p>Example request:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ curl \
+--header "Accept: application/json" \
+--header "Content-Type: application/json" \
+--request GET \
+--user <em>My_User_Name</em>:<em>My_Password</em> \
+https://<em>foreman.example.com</em>/api/smart_class_parameters/3 \
+| python3 -m json.tool &gt; output_file.json</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Copy the file created in the previous step to a new file for editing, for example, <code>changed_file.json</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre>$ cp output_file.json changed_file.json</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Modify the required values in the file.
+In this example, change the content parameter of the <code>motd</code> module, which requires changing the <code>override</code> option from <code>false</code> to <code>true</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-none" data-lang="none">{
+	"avoid_duplicates": false,
+		<strong>"created_at": "2024-02-06 12:37:48 UTC",</strong> # Remove this line.
+			<strong>"default_value": "",</strong> # Add a new value here.
+			"description": "",
+		"hidden_value": "",
+		"hidden_value?": false,
+		"id": 3,
+		"merge_default": false,
+		"merge_overrides": false,
+		<strong>"override": false,</strong> # Set the override value to <code>true</code>.
+			"override_value_order": "fqdn\nhostgroup\nos\ndomain",
+		<strong>"override_values": [],</strong> # Remove this line.
+			"override_values_count": 0,
+		"parameter": "content",
+		"parameter_type": "string",
+		"puppetclass_id": 3,
+		"puppetclass_name": "motd",
+		"required": false,
+		<strong>"updated_at": "2024-02-07 11:56:55 UTC",</strong> # Remove this line.
+			"use_puppet_default": false,
+		"validator_rule": null,
+		"validator_type": ""
+}</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>After editing the file, verify that it looks as follows and then save the changes:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-none" data-lang="none">{
+	"avoid_duplicates": false,
+		<strong>"default_value": "<em>No Unauthorized Access Allowed</em>",</strong>
+			"description": "",
+		"hidden_value": "",
+		"hidden_value?": false,
+		"id": 3,
+		"merge_default": false,
+		"merge_overrides": false,
+		<strong>"override": true,</strong>
+			"override_value_order": "fqdn\nhostgroup\nos\ndomain",
+		"override_values_count": 0,
+		"parameter": "content",
+		"parameter_type": "string",
+		"puppetclass_id": 3,
+		"puppetclass_name": "motd",
+		"required": false,
+		"use_puppet_default": false,
+		"validator_rule": null,
+		"validator_type": ""
+}</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Submit the file to Foreman:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ curl \
+--header "Accept: application/json" \
+--header "Content-Type: application/json" \
+--request PUT \
+--user <em>My_User_Name</em>:<em>My_Password</em> \
+--data @changed_file.json \
+https://<em>foreman.example.com</em>/api/smart_class_parameters/3</pre>
+</div>
+</div>
 </li>
 </ol>
 </div>
