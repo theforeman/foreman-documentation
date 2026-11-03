@@ -15,11 +15,12 @@ Headings should be clear, concise, and use familiar keywords that help users und
 - Do not use gerunds (-ing verb forms) in headings
 
 **Module-type-specific principles:**
-- **Concepts** (con_*.adoc): Do not start with a gerund or verb. Use a noun phrase and include nouns that appear in the body text. If the concept is the first file in an assembly that contains procedures, it might need a verb-based heading.
+- **Concepts** (con_*.adoc): Do not start with a verb. Use a noun phrase and include nouns that appear in the body text.
+NOTE: If the concept is the first file in an assembly that contains procedures, it might need a verb-based heading.
 - **Procedures** (proc_*.adoc): Start the heading with an imperative verb (e.g., "Configure...", "Create..."). Do not use gerunds.
-- **References** (ref_*.adoc): Do not start with a gerund. Use a noun phrase and include nouns that appear in the body text.
+- **References** (ref_*.adoc): Do not start with a verb. Use a noun phrase and include nouns that appear in the body text.
 - **Assemblies** containing procedures: Start the heading with an imperative verb.
-- **Assemblies** containing only concepts or references: Do not start with a gerund. Use a noun phrase.
+- **Assemblies** containing only concepts or references: Do not start with a verb. Use a noun phrase.
 
 #### Examples
 
@@ -58,5 +59,3 @@ After renaming, verify that the module ID, heading, and filename all match by ru
 ```bash
 ./scripts/check-filename-id-heading-match.sh path/to/file.adoc
 ```
-
-This check also runs automatically in GitHub Actions on every PR that modifies modules.
