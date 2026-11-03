@@ -12,13 +12,14 @@ Headings should be clear, concise, and use familiar keywords that help users und
 - Use familiar terms that users are likely to search for and reuse key nouns from the content
 - Avoid generic headings such as "Overview", "Additional configuration", or "Other options"
 - Ensure the heading summarizes the contents of the part of the documentation it introduces
+- Do not use gerunds (-ing verb forms) in headings
 
 **Module-type-specific principles:**
-- **Concepts** (con_*.adoc): Do not start with a gerund or verb. Use a noun phrase and include nouns that appear in the body text.
-- **Procedures** (proc_*.adoc): Start the heading with a gerund (e.g., "Configuring...", "Creating...").
-- **References** (ref_*.adoc): Do not start with a gerund or verb. Include nouns that appear in the body text.
-- **Assemblies** containing procedures: Start the heading with a gerund.
-- **Assemblies** containing only concepts or references: Do not start with a gerund or verb. Use a noun phrase.
+- **Concepts** (con_*.adoc): Do not start with a gerund or verb. Use a noun phrase and include nouns that appear in the body text. If the concept is the first file in an assembly that contains procedures, it might need a verb-based heading.
+- **Procedures** (proc_*.adoc): Start the heading with an imperative verb (e.g., "Configure...", "Create..."). Do not use gerunds.
+- **References** (ref_*.adoc): Do not start with a gerund. Use a noun phrase and include nouns that appear in the body text.
+- **Assemblies** containing procedures: Start the heading with an imperative verb.
+- **Assemblies** containing only concepts or references: Do not start with a gerund. Use a noun phrase.
 
 #### Examples
 
@@ -28,9 +29,9 @@ Headings should be clear, concise, and use familiar keywords that help users und
 - Host groups overview
 
 **Procedure headings:**
-- Deploying SSH keys during provisioning
-- Opening required ports
-- Configuring pull-based transport for remote execution
+- Deploy SSH keys during provisioning
+- Open required ports
+- Configure pull-based transport for remote execution
 
 **Reference headings:**
 - Job template examples and extensions
@@ -38,8 +39,8 @@ Headings should be clear, concise, and use familiar keywords that help users und
 - Operating system requirements
 
 **Assembly headings:**
-- Connecting AI applications to the MCP server for {Project}
-- Configuring {SmartProxy} and hosts to authenticate with SSH certificates during remote execution
+- Connect AI applications to the MCP server for {Project}
+- Configure {SmartProxy} and hosts to authenticate with SSH certificates during remote execution
 - Content and patch management with {Project}
 
 #### Instructions
@@ -51,3 +52,11 @@ Follow the principles outlined in the Overview section above.
 #### Post-command cleanup
 
 If you rename a heading, use the `/refactor-adoc` command to update the anchor, and filename of the module and all references and links to the module in the repository.
+
+After renaming, verify that the module ID, heading, and filename all match by running:
+
+```bash
+./scripts/check-filename-id-heading-match.sh path/to/file.adoc
+```
+
+This check also runs automatically in GitHub Actions on every PR that modifies modules.
