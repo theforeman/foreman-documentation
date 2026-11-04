@@ -249,6 +249,8 @@ SOFTWARE.
 <li><a href="#create-products">1.1.5. Create custom products</a></li>
 <li><a href="#create-custom-repositories-in-satellite">1.1.6. Create custom repositories in Satellite</a></li>
 <li><a href="#upload-content-to-custom-repositories">1.1.7. Upload content to custom repositories</a></li>
+<li><a href="#upload-content-to-a-custom-file-type-repository-by-using-api">1.1.8. Upload content to a custom file type repository by using Satellite API</a></li>
+<li><a href="#upload-duplicate-content-by-using-api">1.1.9. Upload duplicate content by using Satellite API</a></li>
 </ul>
 </li>
 <li><a href="#schedule-and-execute-content-synchronization">1.2. Schedule and execute content synchronization</a>
@@ -296,19 +298,23 @@ SOFTWARE.
 <li><a href="#remove-lifecycle-environments-from-capsule-server-by-using-cli">1.4.12. Remove lifecycle environments from Capsule&#160;Server by using Hammer CLI</a></li>
 </ul>
 </li>
-<li><a href="#distribute-content-to-hosts">1.5. Distribute content to hosts</a>
+<li><a href="#retrieve-lifecycle-environments-by-using-api">1.5. Retrieve lifecycle environments by using Satellite API</a></li>
+<li><a href="#create-a-lifecycle-environment-path-by-using-api">1.6. Create a lifecycle environment path by using Satellite API</a></li>
+<li><a href="#change-a-lifecycle-environment-by-using-api">1.7. Change a lifecycle environment by using Satellite API</a></li>
+<li><a href="#remove-lifecycle-environments-from-satellite-server-by-using-api">1.8. Remove lifecycle environments from Satellite&#160;Server by using Satellite API</a></li>
+<li><a href="#distribute-content-to-hosts">1.9. Distribute content to hosts</a>
 <ul class="sectlevel3">
-<li><a href="#content-access-control-for-hosts">1.5.1. Content access control for hosts</a></li>
-<li><a href="#manage-activation-keys">1.5.2. Manage activation keys</a></li>
+<li><a href="#content-access-control-for-hosts">1.9.1. Content access control for hosts</a></li>
+<li><a href="#manage-activation-keys">1.9.2. Manage activation keys</a></li>
 </ul>
 </li>
-<li><a href="#manage-non-rpm-software-content-types">1.6. Manage non-RPM software content types</a>
+<li><a href="#manage-non-rpm-software-content-types">1.10. Manage non-RPM software content types</a>
 <ul class="sectlevel3">
-<li><a href="#manage-container-images">1.6.1. Manage container images</a></li>
-<li><a href="#manage-flatpak-repositories-in-project">1.6.2. Manage Flatpak repositories in Satellite</a></li>
-<li><a href="#manage-iso-images">1.6.3. Manage ISO images</a></li>
-<li><a href="#manage-ansible-content">1.6.4. Manage Ansible content</a></li>
-<li><a href="#manage-custom-file-type-content-in-satellite">1.6.5. Manage custom file type content in Satellite</a></li>
+<li><a href="#manage-container-images">1.10.1. Manage container images</a></li>
+<li><a href="#manage-flatpak-repositories-in-project">1.10.2. Manage Flatpak repositories in Satellite</a></li>
+<li><a href="#manage-iso-images">1.10.3. Manage ISO images</a></li>
+<li><a href="#manage-ansible-content">1.10.4. Manage Ansible content</a></li>
+<li><a href="#manage-custom-file-type-content-in-satellite">1.10.5. Manage custom file type content in Satellite</a></li>
 </ul>
 </li>
 </ul>
@@ -1044,6 +1050,393 @@ Globs must be escaped by single or double quotes.</p>
 </li>
 </ul>
 </div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="upload-content-to-a-custom-file-type-repository-by-using-api"><a class="anchor" href="#upload-content-to-a-custom-file-type-repository-by-using-api"></a>1.1.8. Upload content to a custom file type repository by using Satellite API</h4>
+<div class="paragraph _abstract">
+<p>You can upload files to custom repositories on Satellite, automate content management for packages, scripts, and other repository artifacts.
+To upload packages and ISO images that are larger than 2 MB, split them into smaller chunks before uploading each piece to repositories in Satellite sequentially.</p>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>If you want to upload content smaller than 2&#160;MB:</p>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Assign the package name to the variable <code>name</code>:</p>
+<div class="paragraph">
+<p>Example request:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ export name=jq-1.6-2.el7.x86_64.rpm</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Assign the checksum of the file to the variable <code>checksum</code>:</p>
+<div class="paragraph">
+<p>Example request:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ export checksum=$(sha256sum $name|cut -c 1-65)</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Assign the file size to the variable <code>size</code>:</p>
+<div class="paragraph">
+<p>Example request:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ export size=$(du -bs $name|cut -f 1)</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create an upload request that returns the upload ID of the request by using <code>size</code> and <code>checksum</code>.</p>
+<div class="paragraph">
+<p>Example request:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ curl \
+--data "{\"size\": \"$size\", \"checksum\":\"$checksum\"}" \
+--header "Content-Type: application/json" \
+--request POST \
+--user <em>My_User_Name</em>:<em>My_Password</em> \
+https://<em>satellite.example.com</em>/katello/api/v2/repositories/<em>My_Repository_ID</em>/content_uploads</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example request:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-none" data-lang="none">{"upload_id":"37eb5900-597e-4ac3-9bc5-2250c302fdc4"}</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Assign the upload ID to the variable <code>upload_id</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ export upload_id=37eb5900-597e-4ac3-9bc5-2250c302fdc4</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Assign the path of the package you want to upload to the variable <code>path</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ export path=/root/jq/jq-1.6-2.el7.x86_64.rpm</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Upload your content.
+Ensure you use the correct MIME type when you upload data.
+The API uses the <code>application/json</code> MIME type for the requests to Satellite unless stated otherwise.
+Combine the upload ID, MIME type, and other parameters to upload content.</p>
+<div class="paragraph">
+<p>Example request:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ curl \
+--data-urlencode content@${path} \
+--data-urlencode offset=0 \
+--data-urlencode size=$size \
+--header "Accept: application/json" \
+--header "Content-Type: multipart/form-data" \
+--request PUT \
+--user <em>My_User_Name</em>:<em>My_Password</em> \
+https://<em>satellite.example.com</em>/katello/api/v2/repositories/<em>My_Repository_ID</em>/content_uploads/$upload_id</pre>
+</div>
+</div>
+</li>
+<li>
+<p>After you have uploaded the content to your Satellite&#160;Server, you need to import it into the appropriate repository.
+Until you complete this step, Satellite&#160;Server does not detect the new content.</p>
+<div class="paragraph">
+<p>Example request:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ curl \
+--data "{\"uploads\":[{\"id\": \"$upload_id\", \"name\": \"$name\", \"checksum\": \"$checksum\" }]}" \
+--header "Content-Type: application/json" \
+--request PUT \
+--user <em>My_User_Name</em>:<em>My_Password</em> \
+https://<em>satellite.example.com</em>/katello/api/v2/repositories/<em>My_Repository_ID</em>/import_uploads</pre>
+</div>
+</div>
+</li>
+<li>
+<p>After you have successfully uploaded and imported your content, you can delete the upload request.
+This frees any temporary disk space that data is using during the upload.</p>
+<div class="paragraph">
+<p>Example request:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ curl \
+--data "{}" \
+--header "Content-Type: application/json" \
+--request DELETE \
+--user <em>My_User_Name</em>:<em>My_Password</em> \
+https://<em>satellite.example.com</em>/katello/api/v2/repositories/<em>My_Repository_ID</em>/content_uploads/$upload_id</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>If you want to upload content larger than 2&#160;MB:</p>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Assign the package name to the variable <code>name</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ export name=bpftool-3.10.0-1160.2.1.el7.centos.plus.x86_64.rpm</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Assign the checksum of the file to the variable <code>checksum</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ export checksum=$(sha256sum $name|cut -c 1-65)</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Assign the file size to the variable <code>size</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ export size=$(du -bs $name|cut -f 1)</pre>
+</div>
+</div>
+</li>
+<li>
+<p>The following command creates a new upload request and returns the upload ID of the request using <code>size</code> and <code>checksum</code>.</p>
+<div class="paragraph">
+<p>Example request:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ curl \
+--data "{\"size\": \"$size\", \"checksum\":\"$checksum\"}" \
+--header "Content-Type: application/json" \
+--request POST \
+--user <em>My_User_Name</em>:<em>My_Password</em> \
+https://<em>satellite.example.com</em>/katello/api/v2/repositories/<em>My_Repository_ID</em>/content_uploads</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-none" data-lang="none">{"upload_id":"37eb5900-597e-4ac3-9bc5-2250c302fdc4"}</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Assign the upload ID to the variable <code>upload_id</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ export upload_id=37eb5900-597e-4ac3-9bc5-2250c302fdc4</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Split the file in 2MB chunks:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ split \
+--bytes 2MB \
+--numeric-suffixes \
+--suffix-length=1 \
+bpftool-3.10.0-1160.2.1.el7.centos.plus.x86_64.rpm bpftool</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>View the file chunks:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ ls -l bpftool[0-9]</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example output:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-none" data-lang="none">-rw-r--r--. 1 root root 2000000 Mar 31 14:15 bpftool0
+-rw-r--r--. 1 root root 2000000 Mar 31 14:15 bpftool1
+-rw-r--r--. 1 root root 2000000 Mar 31 14:15 bpftool2
+-rw-r--r--. 1 root root 2000000 Mar 31 14:15 bpftool3
+-rw-r--r--. 1 root root  868648 Mar 31 14:15 bpftool4</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Assign the prefix of the split files to the variable path.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ export path=/root/tmp/bpftool</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Upload the file chunks.
+The offset starts at 0 bytes for the first chunk and increases by 2000000 bytes for each file.
+Note the use of the offset parameter and how it relates to the file size.
+Note also that the indexes are used after the path variable, for example, ${path}0, ${path}1.</p>
+<div class="paragraph">
+<p>Example requests:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-none" data-lang="none">$ curl \
+--form content=@${path}0 \
+--form offset=0 \
+--form size=$size \
+--header "Accept: application/json" \
+--request PUT \
+--user <em>My_User_Name</em>:<em>My_Password</em> \
+https://<em>satellite.example.com</em>/katello/api/v2/repositories/<em>My_Repository_ID</em>/content_uploads/$upload_id
+
+$ curl \
+--form content=@${path}1 \
+--form offset=2000000 \
+--form size=$size \
+--header "Accept: application/json" \
+--request PUT \
+--user <em>My_User_Name</em>:<em>My_Password</em> \
+https://<em>satellite.example.com</em>/katello/api/v2/repositories/<em>My_Repository_ID</em>/content_uploads/$upload_id
+
+$ curl \
+--form content=@${path}2 \
+--form offset=4000000 \
+--form size=$size \
+--header "Accept: application/json" \
+--request PUT \
+--user <em>My_User_Name</em>:<em>My_Password</em> \
+https://<em>satellite.example.com</em>/katello/api/v2/repositories/<em>My_Repository_ID</em>/content_uploads/$upload_id
+
+$ curl \
+--form content=@${path}3 \
+--form offset=6000000 \
+--form size=$size \
+--header "Accept: application/json" \
+--request PUT \
+--user <em>My_User_Name</em>:<em>My_Password</em> \
+https://<em>satellite.example.com</em>/katello/api/v2/repositories/<em>My_Repository_ID</em>/content_uploads/$upload_id
+
+$ curl \
+--form content=@${path}4 \
+--form offset=8000000 \
+--form size=$size \
+--header "Accept: application/json" \
+--request PUT \
+--user <em>My_User_Name</em>:<em>My_Password</em> \
+https://<em>satellite.example.com</em>/katello/api/v2/repositories/<em>My_Repository_ID</em>/content_uploads/$upload_id</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Import the complete upload to the repository:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ curl \
+--data "{\"uploads\":[{\"id\": \"$upload_id\", \"name\": \"$name\", \"checksum\": \"$checksum\" }]}" \
+--header "Content-Type: application/json" \
+--request PUT \
+--user <em>My_User_Name</em>:<em>My_Password</em> \
+https://<em>satellite.example.com</em>/katello/api/v2/repositories/<em>My_Repository_ID</em>/import_uploads</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Delete the upload request:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ curl \
+--data "{}" \
+--header "Content-Type: application/json" \
+--request DELETE \
+--user <em>My_User_Name</em>:<em>My_Password</em> \
+https://<em>satellite.example.com</em>/katello/api/v2/repositories/<em>My_Repository_ID</em>/content_uploads/$upload_id</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="upload-duplicate-content-by-using-api"><a class="anchor" href="#upload-duplicate-content-by-using-api"></a>1.1.9. Upload duplicate content by using Satellite API</h4>
+<div class="paragraph _abstract">
+<p>Reuse existing content when uploading files with matching checksums to save storage space and transfer time.</p>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>Upload content to Satellite:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ curl \
+--data "{\"size\": \"$size\", \"checksum\":\"$checksum\"}" \
+--header "Content-Type: application/json" \
+--request POST \
+--user <em>My_User_Name</em>:<em>My_Password</em> \
+https://<em>satellite.example.com</em>/katello/api/v2/repositories/<em>My_Repository_ID</em>/content_uploads</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The call will return a content unit ID instead of an upload ID, similar to this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-json" data-lang="json">{
+  "content_unit_href": "/pulp/api/v3/content/file/files/c1bcdfb8-d840-4604-845e-86e82454c747/"
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can copy this output and call import uploads directly to add the content to a repository.</p>
+</div>
+<div class="paragraph">
+<p>Example API response:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ curl \
+--data "{\"uploads\":[{\"content_unit_id\": \"/pulp/api/v3/content/file/files/c1bcdfb8-d840-4604-845e-86e82454c747/\", \"name\": \"$name\", \"checksum\": \"$checksum\" }]}" \
+--header "Content-Type: application/json" \
+--request PUT \
+--user <em>My_User_Name</em>:<em>My_Password</em> \
+https://<em>satellite.example.com</em>/katello/api/v2/repositories/<em>My_Repository_ID</em>/import_uploads</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note that the call changes from using <code>upload_id</code> to using <code>content_unit_id</code>.</p>
+</div>
+</li>
+</ul>
 </div>
 </div>
 </div>
@@ -5516,13 +5909,499 @@ That way, your Capsule&#160;Server only stores content your hosts still need.</p
 </div>
 </div>
 <div class="sect2">
-<h3 id="distribute-content-to-hosts"><a class="anchor" href="#distribute-content-to-hosts"></a>1.5. Distribute content to hosts</h3>
+<h3 id="retrieve-lifecycle-environments-by-using-api"><a class="anchor" href="#retrieve-lifecycle-environments-by-using-api"></a>1.5. Retrieve lifecycle environments by using Satellite API</h3>
+<div class="paragraph _abstract">
+<p>You can retrieve all lifecycle environments for an organization to view your content promotion paths.</p>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>Get a list of lifecycle environments:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ curl \
+--header "Accept: application/json" \
+--header "Content-Type: application/json" \
+--request GET \
+--user <em>My_User_Name</em>:<em>My_Password</em> \
+https://<em>satellite.example.com</em>/katello/api/organizations/<em>My_Organization_ID</em>/environments \
+| python3 -m json.tool</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The Satellite API response looks similar to the following:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-json" data-lang="json">{
+  "total": 2,
+  "subtotal": 2,
+  "selectable": 2,
+  "page": 1,
+  "per_page": 20,
+  "error": null,
+  "search": null,
+  "sort": {
+    "by": "name",
+    "order": "asc"
+  },
+  "results": [
+    {
+      "library": false,
+      "registry_name_pattern": null,
+      "registry_unauthenticated_pull": false,
+      "id": 7,
+      "name": "development",
+      "label": "development",
+      "description": null,
+      "organization_id": 5,
+      "organization": {
+        "name": "<em>My_Organization_Name</em>",
+        "label": "<em>My_Organization_Label</em>",
+        "id": 5
+      },
+      "created_at": "2026-11-02 07:34:49 UTC",
+      "updated_at": "2026-11-02 07:34:49 UTC",
+      "prior": {
+        "name": "Library",
+        "id": 6
+      },
+      "successor": null,
+      "counts": {
+        "content_hosts": 0,
+        "content_views": 1
+      },
+      "permissions": {
+        "create_lifecycle_environments": true,
+        "view_lifecycle_environments": true,
+        "edit_lifecycle_environments": true,
+        "destroy_lifecycle_environments": true,
+        "promote_or_remove_content_views_to_environments": true
+      },
+      "content_views": [
+        {
+          "name": "my-content-view",
+          "id": 3
+        }
+      ],
+      "capsules": [
+        {
+          "id": 1,
+          "name": "satellite.example.com",
+          "lifecycle_environments": [
+            {
+              "id": 1
+            },
+            {
+              "id": 2
+            },
+            {
+              "id": 3
+            },
+            {
+              "id": 4
+            },
+            {
+              "id": 5
+            },
+            {
+              "id": 6
+            },
+            {
+              "id": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "library": true,
+      "registry_name_pattern": null,
+      "registry_unauthenticated_pull": false,
+      "id": 6,
+      "name": "Library",
+      "label": "Library",
+      "description": null,
+      "organization_id": 5,
+      "organization": {
+        "name": "<em>My_Organization_Name</em>",
+        "label": "<em>My_Organization_Label</em>",
+        "id": 5
+      },
+      "created_at": "2026-11-02 07:31:46 UTC",
+      "updated_at": "2026-11-02 07:31:46 UTC",
+      "prior": null,
+      "successor": null,
+      "counts": {
+        "content_hosts": 0,
+        "content_views": 1,
+        "packages": 7,
+        "module_streams": 0,
+        "errata": {
+          "security": 0,
+          "bugfix": 0,
+          "enhancement": 0,
+          "total": 0
+        },
+        "yum_repositories": 1,
+        "docker_repositories": 0,
+        "ostree_repositories": 0,
+        "products": 2,
+        "debs": 0,
+        "deb_repositories": 0
+      },
+      "permissions": {
+        "create_lifecycle_environments": true,
+        "view_lifecycle_environments": true,
+        "edit_lifecycle_environments": true,
+        "destroy_lifecycle_environments": false,
+        "promote_or_remove_content_views_to_environments": true
+      },
+      "content_views": [
+        {
+          "name": "my-content-view",
+          "id": 3
+        }
+      ],
+      "capsules": [
+        {
+          "id": 1,
+          "name": "satellite.example.com",
+          "lifecycle_environments": [
+            {
+              "id": 1
+            },
+            {
+              "id": 2
+            },
+            {
+              "id": 3
+            },
+            {
+              "id": 4
+            },
+            {
+              "id": 5
+            },
+            {
+              "id": 6
+            },
+            {
+              "id": 7
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}</code></pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="create-a-lifecycle-environment-path-by-using-api"><a class="anchor" href="#create-a-lifecycle-environment-path-by-using-api"></a>1.6. Create a lifecycle environment path by using Satellite API</h3>
+<div class="paragraph _abstract">
+<p>Create a lifecycle environment path starting from the Library environment to stage content from development through release.
+Optionally chain additional environments for testing, beta, or production stages.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Choose an existing lifecycle environment that you want to use as a starting point.
+List the environment by using its ID.
+In this case, the environment with ID <code>1</code>:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ curl \
+--header "Accept: application/json" \
+--header "Content-Type: application/json" \
+--request GET \
+--user <em>My_User_Name</em>:<em>My_Password</em> \
+https://<em>satellite.example.com</em>/katello/api/environments/<em>My_Lifecycle_Environment_ID</em>/ \
+| python3 -m json.tool</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example response:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-none" data-lang="none">  <em>output omitted</em>
+   <strong>"id": 1,</strong>
+   <strong>"label": "Library",</strong>
+	<em>output omitted</em>
+    <strong>"prior": null,</strong>
+    <strong>"successor": null,</strong>
+  <em>output truncated</em></code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create a JSON file, for example, <code>life-cycle.json</code>, with the following content:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-json" data-lang="json">{
+  "organization_id": 1,
+  "label": "api-dev",
+  "name": "API Development",
+  "prior": 1
+}</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create a lifecycle environment by using the <code>prior</code> option set to <code>1</code>.</p>
+<div class="paragraph">
+<p>Example request:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ curl \
+--data @life-cycle.json \
+--header "Accept: application/json" \
+--header "Content-Type: application/json" \
+--request POST \
+--user <em>My_User_Name</em>:<em>My_Password</em> \
+https://<em>satellite.example.com</em>/katello/api/environments \
+| python3 -m json.tool</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example response:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-none" data-lang="none">      <em>output omitted</em>
+    "description": null,
+    <strong>"id": 2,</strong>
+    "label": "api-dev",
+    "library": false,
+    "name": "API Development",
+    "organization": {
+        "id": 1,
+        "label": "Default_Organization",
+        "name": "Default Organization"
+    },
+    "permissions": {
+        "destroy_lifecycle_environments": true,
+        "edit_lifecycle_environments": true,
+        "promote_or_remove_content_views_to_environments": true,
+        "view_lifecycle_environments": true
+    },
+   <strong>"prior":</strong> {
+        <strong>"id": 1,</strong>
+        "name": "Library"
+    },
+    <em>output truncated</em></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In the command output, you can see the ID for this lifecycle environment is <code>2</code>, and the lifecycle environment before this one is <code>1</code>.
+Use the lifecycle environment with ID <code>2</code> to create a successor to this environment.</p>
+</div>
+</li>
+<li>
+<p>Edit the previously created <code>life-cycle.json</code> file to update the <code>label</code>, <code>name</code>, and <code>prior</code> values.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-json" data-lang="json">{
+  "organization_id": 1,
+  "label": "api-qa",
+  "name": "API QA",
+  "prior": 2
+}</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create a lifecycle environment using the <code>prior</code> option set to <code>2</code>.</p>
+<div class="paragraph">
+<p>Example request:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ curl \
+--data @life-cycle.json \
+--header "Accept: application/json" \
+--header "Content-Type: application/json" \
+--request POST \
+--user <em>My_User_Name</em>:<em>My_Password</em> \
+https://<em>satellite.example.com</em>/katello/api/environments \
+| python3 -m json.tool</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Example response:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-none" data-lang="none">      <em>output omitted</em>
+   "description": null,
+   <strong>"id": 3,</strong>
+    "label": "api-qa",
+    "library": false,
+    "name": "API QA",
+    "organization": {
+        "id": 1,
+        "label": "Default_Organization",
+        "name": "Default Organization"
+    },
+    "permissions": {
+        "destroy_lifecycle_environments": true,
+        "edit_lifecycle_environments": true,
+        "promote_or_remove_content_views_to_environments": true,
+        "view_lifecycle_environments": true
+    },
+   <strong>"prior":</strong> {
+        <strong>"id": 2,</strong>
+        "name": "API Development"
+    },
+    "successor": null,
+    <em>output truncated</em></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In the command output, you can see the ID for this lifecycle environment is <code>3</code>, and the lifecycle environment before this one is <code>2</code>.</p>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="change-a-lifecycle-environment-by-using-api"><a class="anchor" href="#change-a-lifecycle-environment-by-using-api"></a>1.7. Change a lifecycle environment by using Satellite API</h3>
+<div class="paragraph _abstract">
+<p>You can modify lifecycle environment attributes such as name or description using a PUT request.</p>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>Change your lifecycle environment:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ curl \
+--data '{"description":"Quality Acceptance Testing"}' \
+--header "Accept: application/json" \
+--header "Content-Type: application/json" \
+--request PUT \
+--user <em>My_User_Name</em>:<em>My_Password</em> \
+https://<em>satellite.example.com</em>/katello/api/environments/<em>My_Lifecycle_Environment_ID</em>/ \
+| python3 -m json.tool</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The Satellite API response looks similar to the following:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-none" data-lang="none">      <em>output omitted</em>
+    <strong>"description": "Quality Acceptance Testing",</strong>
+    "id": 3,
+    "label": "api-qa",
+    "library": false,
+    "name": "API QA",
+    "organization": {
+        "id": 1,
+        "label": "Default_Organization",
+        "name": "Default Organization"
+    },
+    "permissions": {
+        "destroy_lifecycle_environments": true,
+        "edit_lifecycle_environments": true,
+        "promote_or_remove_content_views_to_environments": true,
+        "view_lifecycle_environments": true
+    },
+    "prior": {
+        "id": 2,
+        "name": "API Development"
+    },
+    <em>output truncated</em></code></pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="remove-lifecycle-environments-from-satellite-server-by-using-api"><a class="anchor" href="#remove-lifecycle-environments-from-satellite-server-by-using-api"></a>1.8. Remove lifecycle environments from Satellite&#160;Server by using Satellite API</h3>
+<div class="paragraph _abstract">
+<p>You can remove lifecycle environments that have no successors to clear unused promotion paths.</p>
+</div>
+<div class="paragraph">
+<p>When deleting lifecycle environments, delete them in reverse order.</p>
+</div>
+<div class="ulist">
+<div class="title">Procedure</div>
+<ul>
+<li>
+<p>Remove a lifecycle environment:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ curl \
+--header "Accept: application/json" \
+--header "Content-Type: application/json" \
+--request DELETE \
+--user <em>My_User_Name</em>:<em>My_Password</em> \
+https://<em>satellite.example.com</em>/katello/api/environments/<em>My_Lifecycle_Environment_ID</em>/ \
+| python3 -m json.tool</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The Satellite API response looks similar to the following:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-json" data-lang="json">{
+  "library": false,
+  "registry_name_pattern": null,
+  "registry_unauthenticated_pull": false,
+  "id": <em>My_Lifecycle_Environment_ID</em>,
+  "name": "<em>My_Lifecycle_Environment_Name</em>",
+  "label": "<em>My_Lifecycle_Environment_Label</em>",
+  "description": null,
+  "organization_id": <em>My_Organization_ID</em>,
+  "organization": {
+    "name": "<em>My_Organization_Name</em>",
+    "label": "<em>My_Organization_Label</em>",
+    "id": 5
+  },
+  "created_at": "2026-11-02 07:34:49 UTC",
+  "updated_at": "2026-11-02 07:34:49 UTC",
+  "prior": null,
+  "successor": null,
+  "counts": {
+    "content_hosts": 0,
+    "content_views": 0
+  },
+  "permissions": {
+    "create_lifecycle_environments": true,
+    "view_lifecycle_environments": true,
+    "edit_lifecycle_environments": true,
+    "destroy_lifecycle_environments": true,
+    "promote_or_remove_content_views_to_environments": true
+  },
+  "content_views": [],
+  "capsules": []
+}</code></pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="distribute-content-to-hosts"><a class="anchor" href="#distribute-content-to-hosts"></a>1.9. Distribute content to hosts</h3>
 <div class="paragraph _abstract">
 <p>When delivering curated software packages to hosts, configure activation keys, repository overrides, and content access rules.
 This way, you can ensure hosts consume only authorized, tested software versions.</p>
 </div>
 <div class="sect3">
-<h4 id="content-access-control-for-hosts"><a class="anchor" href="#content-access-control-for-hosts"></a>1.5.1. Content access control for hosts</h4>
+<h4 id="content-access-control-for-hosts"><a class="anchor" href="#content-access-control-for-hosts"></a>1.9.1. Content access control for hosts</h4>
 <div class="paragraph _abstract">
 <p>You can cap host access to repositories and packages with content view environments, overrides, composite content views, and strict architecture or release rules that you evaluate in a deliberate order.
 Use activation keys at registration time and optional operating system or architecture limits on custom repositories to keep hosts on the intended content.</p>
@@ -5711,7 +6590,7 @@ Satellite applies these restrictions automatically for Red&#160;Hat repositories
 </div>
 </div>
 <div class="sect3">
-<h4 id="manage-activation-keys"><a class="anchor" href="#manage-activation-keys"></a>1.5.2. Manage activation keys</h4>
+<h4 id="manage-activation-keys"><a class="anchor" href="#manage-activation-keys"></a>1.9.2. Manage activation keys</h4>
 <div class="paragraph _abstract">
 <p>Activation keys automate host configuration during registration to Satellite by assigning content view environments and enabling repositories.
 Create and configure your activation keys to scale consistent content access across many hosts.</p>
@@ -6354,13 +7233,13 @@ If any of the activation keys is a multi-environment activation key, registratio
 </div>
 </div>
 <div class="sect2">
-<h3 id="manage-non-rpm-software-content-types"><a class="anchor" href="#manage-non-rpm-software-content-types"></a>1.6. Manage non-RPM software content types</h3>
+<h3 id="manage-non-rpm-software-content-types"><a class="anchor" href="#manage-non-rpm-software-content-types"></a>1.10. Manage non-RPM software content types</h3>
 <div class="paragraph _abstract">
 <p>Import and manage container images, Ansible collections, Python packages, and file repositories.
 By managing these content types in Satellite, you can organize all content your hosts require through a unified platform.</p>
 </div>
 <div class="sect3">
-<h4 id="manage-container-images"><a class="anchor" href="#manage-container-images"></a>1.6.1. Manage container images</h4>
+<h4 id="manage-container-images"><a class="anchor" href="#manage-container-images"></a>1.10.1. Manage container images</h4>
 <div class="paragraph _abstract">
 <p>Import container image repositories, configure registry access and naming, and push or pull images to manage container content across lifecycle environments in Satellite.</p>
 </div>
@@ -6991,7 +7870,7 @@ If you do not specify a tag, <code>podman</code> pulls the latest tag.</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="manage-flatpak-repositories-in-project"><a class="anchor" href="#manage-flatpak-repositories-in-project"></a>1.6.2. Manage Flatpak repositories in Satellite</h4>
+<h4 id="manage-flatpak-repositories-in-project"><a class="anchor" href="#manage-flatpak-repositories-in-project"></a>1.10.2. Manage Flatpak repositories in Satellite</h4>
 <div class="paragraph _abstract">
 <p>Flatpak remotes in Satellite connect to external application indexes so you can scan available repositories, mirror them into products, and distribute desktop application content to hosts.</p>
 </div>
@@ -7340,7 +8219,7 @@ Flatpak applications, such as <code>rhel9/firefox-flatpak</code>, depend on the 
 </div>
 </div>
 <div class="sect3">
-<h4 id="manage-iso-images"><a class="anchor" href="#manage-iso-images"></a>1.6.3. Manage ISO images</h4>
+<h4 id="manage-iso-images"><a class="anchor" href="#manage-iso-images"></a>1.10.3. Manage ISO images</h4>
 <div class="paragraph _abstract">
 <p>You can use Satellite to store ISO images from the Red&#160;Hat Content Delivery Network or other sources for host provisioning and creating installation media.
 You can also upload other files, such as virtual machine images, and publish them in repositories.</p>
@@ -7548,7 +8427,7 @@ You must use the Hammer CLI to upload files larger than 15 MB to a repository.</
 </div>
 </div>
 <div class="sect3">
-<h4 id="manage-ansible-content"><a class="anchor" href="#manage-ansible-content"></a>1.6.4. Manage Ansible content</h4>
+<h4 id="manage-ansible-content"><a class="anchor" href="#manage-ansible-content"></a>1.10.4. Manage Ansible content</h4>
 <div class="paragraph _abstract">
 <p>Managing Ansible content in Satellite includes importing Ansible collections from different sources, synchronizing them, and distributing them to your hosts.
 This enables maintaining consistent automation across your infrastructure.</p>
@@ -7752,7 +8631,7 @@ For example:</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="manage-custom-file-type-content-in-satellite"><a class="anchor" href="#manage-custom-file-type-content-in-satellite"></a>1.6.5. Manage custom file type content in Satellite</h4>
+<h4 id="manage-custom-file-type-content-in-satellite"><a class="anchor" href="#manage-custom-file-type-content-in-satellite"></a>1.10.5. Manage custom file type content in Satellite</h4>
 <div class="paragraph _abstract">
 <p>You can use custom file type repositories in custom products to store and distribute arbitrary files such as SSH keys, source code, or ISO images in Satellite.</p>
 </div>
