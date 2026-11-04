@@ -276,7 +276,9 @@ SOFTWARE.
 <li><a href="#create-a-custom-ssl-certificate-for-satellite_capsule">1.6. Create a custom SSL certificate for Red&#160;Hat Satellite</a></li>
 <li><a href="#deploy-a-custom-ssl-certificate-to-capsule-server_capsule">1.7. Deploy a custom SSL certificate to Capsule&#160;Server</a></li>
 <li><a href="#reset-custom-ssl-certificate-to-default-self-signed-certificate-on-capsule-server_capsule">1.8. Reset custom SSL certificate to default self-signed certificate on Capsule&#160;Server</a></li>
-<li><a href="#add-a-passphrase-to-ssh-key-used-for-remote-execution">1.9. Add a passphrase to SSH key used for remote execution</a></li>
+<li><a href="#ssl-authentication-overview">1.9. SSL authentication overview</a></li>
+<li><a href="#configure-ssl-authentication">1.10. Configure SSL authentication</a></li>
+<li><a href="#add-a-passphrase-to-ssh-key-used-for-remote-execution">1.11. Add a passphrase to SSH key used for remote execution</a></li>
 </ul>
 </li>
 <li><a href="#refresh-the-self-signed-ca-certificate-on-hosts">2. Refresh the self-signed CA certificate on hosts</a>
@@ -1435,7 +1437,92 @@ For more information, see <a href="https://docs.redhat.com/en/documentation/red_
 </div>
 </div>
 <div class="sect2">
-<h3 id="add-a-passphrase-to-ssh-key-used-for-remote-execution"><a class="anchor" href="#add-a-passphrase-to-ssh-key-used-for-remote-execution"></a>1.9. Add a passphrase to SSH key used for remote execution</h3>
+<h3 id="ssl-authentication-overview"><a class="anchor" href="#ssl-authentication-overview"></a>1.9. SSL authentication overview</h3>
+<div class="paragraph _abstract">
+<p>Red&#160;Hat Satellite requires HTTPS for all API communications to provide encryption and identity verification.
+You can use either self-signed certificates or custom SSL certificates you configure.</p>
+</div>
+<div class="paragraph">
+<p>Satellite 6.20 does not support non-SSL communications.</p>
+</div>
+<div class="paragraph">
+<p>By default, Satellite&#160;Server uses a self-signed certificate.
+This certificate acts as both the server certificate to verify the encryption key and the certificate authority (CA) to trust the identity of Satellite&#160;Server.</p>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/installing_satellite_server_in_a_connected_network_environment/index#configure-satellite-server-with-a-custom-ssl-certificate">Configure Satellite&#160;Server with a custom SSL certificate</a></p>
+</li>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html-single/installing_satellite_server_in_a_disconnected_network_environment/index#configure-satellite-server-with-a-custom-ssl-certificate">Configure Satellite&#160;Server with a custom SSL certificate</a></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="configure-ssl-authentication"><a class="anchor" href="#configure-ssl-authentication"></a>1.10. Configure SSL authentication</h3>
+<div class="paragraph _abstract">
+<p>Configure SSL authentication to enable secure API requests to Satellite by installing and trusting the CA certificate.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Obtain a certificate from your Satellite&#160;Server by using one of the following options:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>If you plan to call the API from a remote server, download the CA certificate:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ curl \
+--output /etc/pki/ca-trust/source/anchors/<em>satellite.example.com</em>-katello-server-ca.crt \
+http://satellite.example.com/pub/katello-server-ca.crt</pre>
+</div>
+</div>
+</li>
+<li>
+<p>If you plan to call the API directly on your Satellite&#160;Server, copy the certificate to the <code>/etc/pki/ca-trust/source/anchors</code> directory:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># cp /var/www/html/pub/katello-server-ca.crt /etc/pki/ca-trust/source/anchors/<em>satellite.example.com</em>-katello-server-ca.crt</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Add the certificate to the list of trusted CAs:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ update-ca-trust extract</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+<div class="ulist">
+<div class="title">Verification</div>
+<ul>
+<li>
+<p>Verify that your client trusts the Satellite SSL certificate by entering the API request without the <code>--cacert</code> option:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ curl \
+--request GET \
+--user <em>My_User_Name</em>:<em>My_Password</em> \
+https://<em>satellite.example.com</em>/api/v2/hosts</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="add-a-passphrase-to-ssh-key-used-for-remote-execution"><a class="anchor" href="#add-a-passphrase-to-ssh-key-used-for-remote-execution"></a>1.11. Add a passphrase to SSH key used for remote execution</h3>
 <div class="paragraph _abstract">
 <p>By default, Capsule uses a non-passphrase protected SSH key to execute remote jobs on hosts.
 You can protect the SSH key with a passphrase by following this procedure.</p>
@@ -2081,7 +2168,7 @@ You can create pseudo-random strings on your console:</p>
 </li>
 <li>
 <p>Create a Personal Access Token for the user.
-For more information, see <a href="#create-a-personal-access-token_admin">Create a Personal Access Token</a>.</p>
+For more information, see <a href="#create-a-personal-access-token">Create a Personal Access Token</a>.</p>
 </li>
 </ol>
 </div>
@@ -2250,7 +2337,7 @@ For more information, see <a href="#create-a-personal-access-token_admin">Create
 You can set an expiration date for your Personal Access Token and you can revoke it if you decide it should expire before the expiration date.</p>
 </div>
 <div class="sect4">
-<h5 id="create-a-personal-access-token_admin"><a class="anchor" href="#create-a-personal-access-token_admin"></a>Create a Personal Access Token</h5>
+<h5 id="create-a-personal-access-token"><a class="anchor" href="#create-a-personal-access-token"></a>Create a Personal Access Token</h5>
 <div class="paragraph _abstract">
 <p>Create a Personal Access Token to authenticate API requests without sharing your password.</p>
 </div>
@@ -2330,7 +2417,7 @@ https://<em>satellite.example.com</em>/api/status</pre>
 </div>
 </div>
 <div class="sect4">
-<h5 id="revoke-a-personal-access-token_admin"><a class="anchor" href="#revoke-a-personal-access-token_admin"></a>Revoke a Personal Access Token</h5>
+<h5 id="revoke-a-personal-access-token"><a class="anchor" href="#revoke-a-personal-access-token"></a>Revoke a Personal Access Token</h5>
 <div class="paragraph _abstract">
 <p>Revoke a Personal Access Token before its expiration date when a token is compromised or no longer needed for API access.</p>
 </div>
