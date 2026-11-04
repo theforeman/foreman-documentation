@@ -1,7 +1,7 @@
 :_mod-docs-content-type: PROCEDURE
 
-[id="Configuring_{smart-proxy-context}_Server_with_Default_SSL_Certificates_to_Generate_and_Sign_Puppet_Certificates_{context}"]
-= Configuring {SmartProxyServer} with default SSL certificates to generate and sign Puppet certificates
+[id="configure-{smart-proxy-context}-server-with-custom-ssl-certificates-to-generate-and-sign-puppet-certificates_{context}"]
+= Configure {SmartProxyServer} with custom SSL certificates to generate and sign Puppet certificates
 
 [role="_abstract"]
 On the {SmartProxyServer} that will generate Puppet certificates for all other load-balancing {SmartProxyServers}, configure Puppet certificate generation and signing.
@@ -10,28 +10,25 @@ On the {SmartProxyServer} that will generate Puppet certificates for all other l
 include::snip_prerequisites-configuring-smart-proxy-servers-for-load-balancing.adoc[]
 
 .Procedure
-. On {ProjectServer}, generate Katello certificates for the system where you configure {SmartProxyServer} to generate and sign Puppet certificates:
+. On {ProjectServer}, enter the `{certs-generate}` command to generate {SmartProxy} certificates:
 +
-[options="nowrap", subs="+quotes,verbatim,attributes"]
+[options="nowrap", subs="+quotes,attributes"]
 ----
 # {certs-generate} \
---certs-tar "/root/_{smart-proxy-context}-ca.example.com_-certs.tar" \
+--certs-tar /root/{smart-proxy-context}_cert/{smart-proxy-context}-ca.tar \
 --foreman-proxy-cname _{loadbalancer-example-com}_ \
---foreman-proxy-fqdn _{smart-proxy-context}-ca.example.com_
+--foreman-proxy-fqdn _{smart-proxy-context}-ca.example.com_ \
+--server-ca-cert /root/{smart-proxy-context}_cert/ca_cert_bundle.pem \
+--server-cert /root/{smart-proxy-context}_cert/{smart-proxy-context}-ca.pem \
+--server-key /root/{smart-proxy-context}_cert/{smart-proxy-context}-ca.pem
 ----
 +
-Retain a copy of the example `{foreman-installer}` command that is output by the `{certs-generate}` command for installing {SmartProxyServer} certificate.
-. Copy the certificate archive file from {ProjectServer} to {SmartProxyServer}:
-+
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
-# scp /root/_{smart-proxy-context}-ca.example.com_-certs.tar root@_{smart-proxy-context}-ca.example.com_:__{smart-proxy-context}-ca.example.com__-certs.tar
-----
+Retain a copy of the example `{foreman-installer}` command from the output for installing {SmartProxyServer} certificates.
+. Copy the certificate archive file from {ProjectServer} to {SmartProxyServer}.
 . Append the following options to the `{foreman-installer}` command that you obtain from the output of the `{certs-generate}` command:
 +
-[options="nowrap", subs="+quotes,verbatim,attributes"]
+[options="nowrap", subs="+quotes,attributes"]
 ----
---certs-cname "_{loadbalancer-example-com}_" \
 --enable-foreman-proxy-plugin-remote-execution-script \
 --foreman-proxy-puppetca "true" \
 --puppet-ca-server "_{smart-proxy-context}-ca.example.com_" \
@@ -40,16 +37,16 @@ Retain a copy of the example `{foreman-installer}` command that is output by the
 ----
 . On {SmartProxyServer}, enter the `{foreman-installer}` command:
 +
-[options="nowrap", subs="+quotes,verbatim,attributes"]
+[options="nowrap", subs="+quotes,attributes"]
 ----
 # {installer-scenario-smartproxy} \
 --certs-cname "_{loadbalancer-example-com}_" \
---certs-tar-file "_{smart-proxy-context}-ca.example.com-certs.tar_" \
+--certs-tar-file "_certs.tgz_" \
 --enable-foreman-proxy-plugin-remote-execution-script \
 --enable-puppet \
 --foreman-proxy-foreman-base-url "_https://{foreman-example-com}_" \
---foreman-proxy-oauth-consumer-key "_oauth key_" \
---foreman-proxy-oauth-consumer-secret "_oauth secret_" \
+--foreman-proxy-oauth-consumer-key "oauth key" \
+--foreman-proxy-oauth-consumer-secret "oauth secret" \
 --foreman-proxy-puppetca "true" \
 --foreman-proxy-trusted-hosts "_{foreman-example-com}_" \
 --foreman-proxy-trusted-hosts "_{smart-proxy-context}-ca.example.com_" \
@@ -58,7 +55,7 @@ Retain a copy of the example `{foreman-installer}` command that is output by the
 --puppet-server true \
 --puppet-server-ca "true"
 ----
-. On {SmartProxyServer} that is the Puppet Certificate Authority, stop the OpenVox server:
+. On {SmartProxyServer} that is the Puppetserver Certificate Authority, stop the OpenVox server:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
