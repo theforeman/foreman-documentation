@@ -1401,6 +1401,7 @@ SOFTWARE.
 <li><a href="#reduce-storage-use-on-satellite-server">16.4.3. Reduce storage use on Satellite&#160;Server</a>
 <ul class="sectlevel4">
 <li><a href="#cleaning-task-records">Cleaning task records</a></li>
+<li><a href="#reclaiming-disk-space">Reclaiming disk space</a></li>
 </ul>
 </li>
 </ul>
@@ -51091,7 +51092,7 @@ nfs.example.com:/Satellite/pulp 309506048 58632800 235128224  20% /var/lib/pulp
 <h4 id="reduce-storage-use-on-satellite-server"><a class="anchor" href="#reduce-storage-use-on-satellite-server"></a>16.4.3. Reduce storage use on Satellite&#160;Server</h4>
 <div class="paragraph _abstract">
 <p>Satellite&#160;Server can accumulate a large amount of data over time, which can use a significant amount of disk space.
-You can clean up task records to reduce storage use.</p>
+You can clean up task records or reclaim disk space to reduce storage use.</p>
 </div>
 <div class="sect4">
 <h5 id="cleaning-task-records"><a class="anchor" href="#cleaning-task-records"></a>Cleaning task records</h5>
@@ -51162,6 +51163,219 @@ You can also use a cron job to schedule Task record deletions at the set interva
 </div>
 <div class="paragraph">
 <p>Note that because the task is deleted, this command returns a non-zero exit code.</p>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="reclaiming-disk-space"><a class="anchor" href="#reclaiming-disk-space"></a>Reclaiming disk space</h5>
+<div class="paragraph _abstract">
+<p>Satellite can consume a significant amount of disk space, especially in large deployments.
+By reclaiming disk space, you can reduce the amount of disk space used by Satellite.</p>
+</div>
+<div class="sect5">
+<h6 id="recovering-from-a-full-disk"><a class="anchor" href="#recovering-from-a-full-disk"></a>Recovering from a full disk</h6>
+<div class="paragraph _abstract">
+<p>If a logical volume (LV) with the Pulp database on it is full, Pulp tasks can fail due to insufficient space.
+You can recover from the situation by increasing the amount of free space available on the LV.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Let running Pulp tasks finish but do not trigger any new ones as they can fail due to the full disk.</p>
+</li>
+<li>
+<p>Ensure that the LV with the <code>/var/lib/pulp</code> directory on it has sufficient free space.
+Here are some ways to achieve that:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Remove orphaned content:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># foreman-rake katello:delete_orphaned_content RAILS_ENV=production</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This is run weekly so it will not free much space.</p>
+</div>
+</li>
+<li>
+<p>Change the download policy from <strong>Immediate</strong> to <strong>On Demand</strong> for as many repositories as possible and remove already downloaded packages.
+See the Red&#160;Hat Knowledgebase solution <a href="https://access.redhat.com/solutions/2785021">How to change syncing policy for Repositories on Satellite from "Immediate" to "On-Demand"</a> on the Red&#160;Hat Customer Portal for instructions.</p>
+</li>
+<li>
+<p>Grow the file system on the LV with the <code>/var/lib/pulp</code> directory on it.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html-single/configuring_and_managing_logical_volumes/index#growing-a-logical-volume-and-file-system_modifying-the-size-of-a-logical-volume">Growing a logical volume and file system</a> in <em>Red&#160;Hat Enterprise Linux&#160;9 Configuring and managing logical volumes</em>.</p>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If you use an untypical file system (other than for example ext3, ext4, or xfs), you might need to unmount the file system so that it is not in use.
+In that case, complete the following steps:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Stop Satellite services:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl stop foreman.target</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Grow the file system on the LV.</p>
+</li>
+<li>
+<p>Start Satellite services:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl start foreman.target</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>If some Pulp tasks failed due to the full disk, run them again.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect5">
+<h6 id="reclaiming-postgresql-space"><a class="anchor" href="#reclaiming-postgresql-space"></a>Reclaiming PostgreSQL space</h6>
+<div class="paragraph _abstract">
+<p>If the PostgreSQL database is using a large amount of disk space, you can reclaim space by vacuuming the database.
+By reclaiming PostgreSQL space, you can reduce the amount of disk space used by Satellite.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Stop all services, except for the <code>postgresql</code> service:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl stop foreman.target
+# systemctl start postgresql.service</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Reclaim space on the database:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># podman exec postgresql vacuumdb --full --all -U postgres</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Start the other services when the vacuum completes:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl start foreman.target</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect5">
+<h6 id="reclaiming-space-from-on-demand-repositories"><a class="anchor" href="#reclaiming-space-from-on-demand-repositories"></a>Reclaiming space from on-demand repositories</h6>
+<div class="paragraph _abstract">
+<p>If you set the <em>download policy</em> to on demand, Satellite downloads packages only when the clients request them.
+You can clean up these packages to reclaim space.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>Space reclamation requires an existing repository.
+For deleted repositories, wait for the next scheduled orphan cleanup or remove orphaned content manually:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre># foreman-rake katello:delete_orphaned_content</pre>
+</div>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>If you want to reclaim space for a single repository:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Content</strong> &gt; <strong>Products</strong>.</p>
+</li>
+<li>
+<p>Select a product.</p>
+</li>
+<li>
+<p>On the <strong>Repositories</strong> tab, click the repository name.</p>
+</li>
+<li>
+<p>From the <strong>Select Actions</strong> list, select <strong>Reclaim Space</strong>.</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>If you want to reclaim space for multiple repositories:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Content</strong> &gt; <strong>Products</strong>.</p>
+</li>
+<li>
+<p>Select the product name.</p>
+</li>
+<li>
+<p>On the <strong>Repositories</strong> tab, select the checkbox of the repositories.</p>
+</li>
+<li>
+<p>Click <strong>Reclaim Space</strong> at the top right corner.</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>If you want to reclaim space for Capsules:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>In the Satellite web UI, navigate to <strong>Infrastructure</strong> &gt; <strong>Capsules</strong>.</p>
+</li>
+<li>
+<p>Select the Capsule&#160;Server.</p>
+</li>
+<li>
+<p>Click <strong>Reclaim space</strong>.</p>
+</li>
+</ol>
 </div>
 </li>
 </ol>
