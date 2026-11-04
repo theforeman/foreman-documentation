@@ -35,6 +35,7 @@ ID_SUBSTITUTIONS = (
     ("{KubeVirt-id}", "kubevirt"),
     ("{a-KubeVirt-id}", "a-kubevirt"),
     ("{client-os-context}", "client-os"),
+    ("{EL-id}", "enterprise-linux"),
 )
 
 HEADING_SUBSTITUTIONS = (
@@ -67,6 +68,7 @@ HEADING_SUBSTITUTIONS = (
     ("{kubevirt}", "kubevirt"),
     ("{a-kubevirt}", "a-kubevirt"),
     ("{client-os}", "client-os"),
+    ("{el}", "enterprise-linux"),
     ("{customrpm}", "custom-rpm"),
     ("{customgpg}", "custom-gpg"),
     ("{pat}", "personal-access-token"),
