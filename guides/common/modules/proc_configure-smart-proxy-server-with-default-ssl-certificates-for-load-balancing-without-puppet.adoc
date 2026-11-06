@@ -1,0 +1,50 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="configure-{smart-proxy-context}-server-with-default-ssl-certificates-for-load-balancing-without-puppet_{context}"]
+= Configure {SmartProxyServer} with default SSL certificates for load balancing without Puppet
+
+[role="_abstract"]
+On each {SmartProxyServer} that you want to configure for load balancing, install Katello certificates.
+
+.Prerequisites
+include::snip_prerequisites-configuring-smart-proxy-servers-for-load-balancing.adoc[]
+
+.Procedure
+. On {ProjectServer}, generate Katello certificates for {SmartProxyServer}:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {certs-generate} \
+--certs-tar "/root/_{smartproxy-example-com}_-certs.tar" \
+--foreman-proxy-cname _{loadbalancer-example-com}_ \
+--foreman-proxy-fqdn _{smartproxy-example-com}_
+----
++
+Retain a copy of the example `{foreman-installer}` command that is output by the `{certs-generate}` command for installing {SmartProxyServer} certificate.
+. Copy the certificate archive file from {ProjectServer} to {SmartProxyServer}.
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# scp /root/_{smartproxy-example-com}_-certs.tar root@_{smartproxy-example-com}_:/root/__{smartproxy-example-com}__-certs.tar
+----
+. Append the following options to the `{foreman-installer}` command that you obtain from the output of the `{certs-generate}` command:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+--certs-cname "_{loadbalancer-example-com}_" \
+--enable-foreman-proxy-plugin-remote-execution-script
+----
+. On {SmartProxyServer}, enter the `{foreman-installer}` command:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {installer-scenario-smartproxy} \
+--certs-cname "_{loadbalancer-example-com}_" \
+--certs-tar-file "_{smartproxy-example-com}-certs.tar_" \
+--enable-foreman-proxy-plugin-remote-execution-script \
+--foreman-proxy-foreman-base-url "_https://{foreman-example-com}_" \
+--foreman-proxy-oauth-consumer-key "_oauth key_" \
+--foreman-proxy-oauth-consumer-secret "_oauth secret_" \
+--foreman-proxy-trusted-hosts "_{foreman-example-com}_" \
+--foreman-proxy-trusted-hosts "_{smartproxy-example-com}_"
+----
