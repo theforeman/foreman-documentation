@@ -14,6 +14,7 @@ NC = "\033[0m"
 ID_SUBSTITUTIONS = (
     ("_{context}", ""),
     ("{project-context}", "project"),
+    ("{smart-proxy-context}s", "smart-proxies"),
     ("{smart-proxy-context}", "smart-proxy"),
     ("{smart-proxies-context}", "smart-proxies"),
     ("{smart-proxy-context-titlecase}", "smart-proxy"),
