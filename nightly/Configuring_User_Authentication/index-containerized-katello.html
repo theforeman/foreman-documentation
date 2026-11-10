@@ -266,27 +266,21 @@ SOFTWARE.
 <li><a href="#allow-active-directory-users-to-log-in-through-the-trust">3.8. Allow Active Directory users to log in through the trust</a></li>
 </ul>
 </li>
-<li><a href="#configure-kerberos-sso-for-active-directory-users-in-foreman">4. Configure Kerberos SSO for Active Directory users in Foreman</a>
+<li><a href="#configure-an-ldap-server-as-an-external-identity-provider-for-foreman">4. Configure an LDAP server as an external identity provider for Foreman</a>
 <ul class="sectlevel2">
-<li><a href="#join-the-foreman-server-to-an-ad-domain">4.1. Join the Foreman&#160;server to an AD domain</a></li>
-<li><a href="#configure-the-active-directory-authentication-source-on-foreman-server">4.2. Configure the Active Directory authentication source on Foreman&#160;server</a></li>
+<li><a href="#obtain-a-ca-certificate-for-ldaps">4.1. Obtain a CA certificate for LDAPS</a></li>
+<li><a href="#configure-foreman-to-use-ldap">4.2. Configure Foreman to use LDAP</a></li>
+<li><a href="#example-settings-for-ldap-connections">4.3. Example settings for LDAP connections</a></li>
+<li><a href="#example-ldap-filters">4.4. Example LDAP filters</a></li>
 </ul>
 </li>
-<li><a href="#configure-an-ldap-server-as-an-external-identity-provider-for-foreman">5. Configure an LDAP server as an external identity provider for Foreman</a>
+<li><a href="#managing-external-user-groups">5. Managing external user groups</a>
 <ul class="sectlevel2">
-<li><a href="#obtain-a-ca-certificate-for-ldaps">5.1. Obtain a CA certificate for LDAPS</a></li>
-<li><a href="#configure-foreman-to-use-ldap">5.2. Configure Foreman to use LDAP</a></li>
-<li><a href="#example-settings-for-ldap-connections">5.3. Example settings for LDAP connections</a></li>
-<li><a href="#example-ldap-filters">5.4. Example LDAP filters</a></li>
+<li><a href="#associate-external-users-with-user-groups">5.1. Associate external users with user groups</a></li>
+<li><a href="#refresh-external-user-groups-for-ldap-using-web-ui">5.2. Refresh external user groups for LDAP using Foreman web UI</a></li>
 </ul>
 </li>
-<li><a href="#managing-external-user-groups">6. Managing external user groups</a>
-<ul class="sectlevel2">
-<li><a href="#associate-external-users-with-user-groups">6.1. Associate external users with user groups</a></li>
-<li><a href="#refresh-external-user-groups-for-ldap-using-web-ui">6.2. Refresh external user groups for LDAP using Foreman web UI</a></li>
-</ul>
-</li>
-<li><a href="#reset-external-authentication-configuration-for-kerberos-sso">7. Reset external authentication configuration for Kerberos SSO</a></li>
+<li><a href="#reset-external-authentication-configuration-for-kerberos-sso">6. Reset external authentication configuration for Kerberos SSO</a></li>
 </ul>
 </div>
 </div>
@@ -326,15 +320,6 @@ If you require additional methods of authentication, configure your Foreman&#160
 </thead>
 <tbody>
 <tr>
-<th class="tableblock halign-left valign-top"><p class="tableblock">Active&#160;Directory (direct integration)</p></th>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#configure-kerberos-sso-for-active-directory-users-in-foreman">Configure Kerberos SSO for Active Directory users in Foreman</a></p></td>
-</tr>
-<tr>
 <th class="tableblock halign-left valign-top"><p class="tableblock">FreeIPA</p></th>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Yes (Linux and Active Directory users)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Yes (Linux users only)</p></td>
@@ -342,6 +327,15 @@ If you require additional methods of authentication, configure your Foreman&#160
 <td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#configure-kerberos-sso-with-freeipa-in-foreman">Configure Kerberos SSO with FreeIPA in Foreman</a></p></td>
+</tr>
+<tr>
+<th class="tableblock halign-left valign-top"><p class="tableblock">LDAP</p></th>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Yes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#configure-an-ldap-server-as-an-external-identity-provider-for-foreman">Configure an LDAP server as an external identity provider for Foreman</a></p></td>
 </tr>
 </tbody>
 </table>
@@ -1444,294 +1438,14 @@ Make sure that both outputs match.</p>
 </div>
 </div>
 <div class="sect1">
-<h2 id="configure-kerberos-sso-for-active-directory-users-in-foreman"><a class="anchor" href="#configure-kerberos-sso-for-active-directory-users-in-foreman"></a>4. Configure Kerberos SSO for Active Directory users in Foreman</h2>
-<div class="sectionbody">
-<div class="paragraph _abstract">
-<p>If the base system of your Foreman&#160;server is connected directly to Active Directory (AD), you can configure AD as an external authentication source for Foreman.
-Direct AD integration means that a Linux system is joined directly to the AD domain where the identity is stored.</p>
-</div>
-<div class="paragraph">
-<p>AD users can log in using the following methods:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Username and password</p>
-</li>
-<li>
-<p>Kerberos single sign-on</p>
-</li>
-</ul>
-</div>
-<div class="sect2">
-<h3 id="join-the-foreman-server-to-an-ad-domain"><a class="anchor" href="#join-the-foreman-server-to-an-ad-domain"></a>4.1. Join the Foreman&#160;server to an AD domain</h3>
-<div class="paragraph _abstract">
-<p>The base system of your Foreman&#160;server must be joined to an Active Directory (AD) domain before you can configure the AD authentication source on your Foreman&#160;server.
-Use the System Security Services Daemon (SSSD) and Samba services to join the base system to the AD domain.</p>
-</div>
-<div class="olist arabic">
-<div class="title">Procedure</div>
-<ol class="arabic">
-<li>
-<p>Install the following packages on Foreman&#160;server:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># dnf install adcli krb5-workstation oddjob-mkhomedir oddjob realmd samba-winbind-clients samba-winbind samba-common-tools samba-winbind-krb5-locator sssd</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Join the system to the AD domain, specifying the required software:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># realm join <em>AD.EXAMPLE.COM</em> --membership-software=samba --client-software=sssd</pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
-<div class="ulist">
-<div class="title">Additional resources</div>
-<ul>
-<li>
-<p><a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html-single/integrating_rhel_systems_directly_with_windows_active_directory/index#connecting-rhel-systems-directly-to-ad-using-samba-winbind">Connecting RHEL systems directly to AD using Samba Winbind in <em>Red&#160;Hat Enterprise Linux&#160;9 Integrating RHEL systems directly with Windows Active Directory</em></a></p>
-</li>
-<li>
-<p><a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html-single/integrating_rhel_systems_directly_with_windows_active_directory/index#connecting-rhel-systems-directly-to-ad-using-samba-winbind">Connecting RHEL systems directly to AD using Samba Winbind in <em>Red&#160;Hat Enterprise Linux&#160;10 Integrating RHEL systems directly with Windows Active Directory</em></a></p>
-</li>
-</ul>
-</div>
-</div>
-<div class="sect2">
-<h3 id="configure-the-active-directory-authentication-source-on-foreman-server"><a class="anchor" href="#configure-the-active-directory-authentication-source-on-foreman-server"></a>4.2. Configure the Active Directory authentication source on Foreman&#160;server</h3>
-<div class="paragraph _abstract">
-<p>Enable Active Directory (AD) users to access Foreman by configuring the corresponding authentication provider on your Foreman&#160;server.</p>
-</div>
-<div class="olist arabic">
-<div class="title">Procedure</div>
-<ol class="arabic">
-<li>
-<p>Define AD realm configuration in a location where Foreman expects it:</p>
-<div class="olist loweralpha">
-<ol class="loweralpha" type="a">
-<li>
-<p>Create a directory named <code>/etc/ipa/</code>:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># mkdir /etc/ipa/</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Create the <code>/etc/ipa/default.conf</code> file with the following contents to configure the Kerberos realm for the AD domain:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight nowrap"><code class="language-ini" data-lang="ini">[global]
-realm = <em>AD.EXAMPLE.COM</em></code></pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
-</li>
-<li>
-<p>Configure the Apache keytab for Kerberos connections:</p>
-<div class="olist loweralpha">
-<ol class="loweralpha" type="a">
-<li>
-<p>Update the <code>/etc/samba/smb.conf</code> file with the following settings to configure how Samba interacts with AD:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight nowrap"><code class="language-ini" data-lang="ini">[global]
-workgroup = <em>AD.EXAMPLE</em>
-realm = <em>AD.EXAMPLE.COM</em>
-kerberos method = system keytab
-security = ads</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Add the Kerberos service principal to the keytab file at <code>/etc/httpd/conf/http.keytab</code>:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># KRB5_KTNAME=FILE:/etc/httpd/conf/http.keytab net ads keytab create HTTP -U Administrator -s /etc/samba/smb.conf</pre>
-</div>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>The <code>net ads keytab create</code> command was introduced in Samba version 4.21.1.
-If your system uses an earlier version of Samba, use the <code>net ads keytab add</code> command.</p>
-</div>
-</td>
-</tr>
-</table>
-</div>
-</li>
-</ol>
-</div>
-</li>
-<li>
-<p>Configure the System Security Services Daemon (SSSD) on your Foreman&#160;server:</p>
-<div class="olist loweralpha">
-<ol class="loweralpha" type="a">
-<li>
-<p>Configure the AD access control provider to evaluate and enforce Group Policy Object (GPO) access control rules for the <code>foreman</code> PAM service.
-In the <code>[domain/<em>ad.example.com</em>]</code> section of your <code>/etc/sssd/sssd.conf</code> file, set the <code>ad_gpo_access_control</code> and <code>ad_gpo_map_service</code> options as follows:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight nowrap"><code class="language-ini" data-lang="ini">[domain/<em>ad.example.com</em>]
-ad_gpo_access_control = enforcing
-ad_gpo_map_service = +foreman</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>For more information on GPOs, see <a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/integrating_rhel_systems_directly_with_windows_active_directory/managing-direct-connections-to-ad_integrating-rhel-systems-directly-with-active-directory#how-sssd-interprets-gpo-access-control-rules_applying-group-policy-object-access-control-in-rhel">How SSSD interprets GPO access control rules</a> in <em>Integrating RHEL systems directly with Windows Active Directory (RHEL&#160;9)</em>.</p>
-</div>
-<div class="paragraph">
-<p>For more information on GPOs, see <a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html/integrating_rhel_systems_directly_with_windows_active_directory/managing-direct-connections-to-ad#how-sssd-interprets-gpo-access-control-rules">How SSSD interprets GPO access control rules</a> in <em>RHEL&#160;10 Integrating RHEL systems directly with Windows Active Directory</em>.</p>
-</div>
-</li>
-<li>
-<p>If your Foreman&#160;server runs in an IPv6-only network and also runs on RHEL&#160;9.6 and earlier or RHEL&#160;10.0, set the <code>lookup_family_order</code> option in the <code>[domain/<em>ad.example.com</em>]</code> section of the <code>/etc/sssd/sssd.conf</code> file:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight nowrap"><code class="language-ini" data-lang="ini">[domain/<em>ad.example.com</em>]
-lookup_family_order = ipv6_only</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>If the DNS name of the AD server can be translated to both an IPv4 and IPv6 address but the IPv4 address is not accessible, SSSD requires <code>lookup_family_order</code> to translate the DNS name correctly.
-Without the option, AD users are unable to use <code>kinit</code> to authenticate to Foreman.</p>
-</div>
-</li>
-<li>
-<p>Restart SSSD:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># systemctl restart sssd</pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
-</li>
-<li>
-<p>Enable the authentication source:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># foremanctl deploy --external-authentication ipa</pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
-<div class="ulist">
-<div class="title">Verification</div>
-<ul>
-<li>
-<p>To verify that AD users can log in to Foreman by entering their credentials, log in to Foreman web UI at https://foreman.example.com.
-Enter the user name in the user principal name (UPN) format, for example: <code><em>ad_user</em>@<em>AD.EXAMPLE.COM</em></code>.</p>
-</li>
-<li>
-<p>To verify that AD users can authenticate by using Kerberos single sign-on:</p>
-<div class="ulist">
-<ul>
-<li>
-<p>Obtain a Kerberos ticket-granting ticket (TGT) on behalf of an AD user:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">$ kinit <em>ad_user</em>@<em>AD.EXAMPLE.COM</em></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Verify user authentication by using your TGT:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">$ curl \
---negotiate \
---user : \
-https://<em>foreman.example.com</em>/users/extlogin</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>If external authentication is configured correctly, the <code>curl</code> command redirects you to <code>https://foreman.example.com/hosts</code>:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap">&lt;html&gt;&lt;body&gt;You are being &lt;a href="<em>foreman.example.com</em>/hosts"&gt;redirected&lt;/a&gt;.&lt;/body&gt;&lt;/html&gt;</pre>
-</div>
-</div>
-</li>
-</ul>
-</div>
-</li>
-</ul>
-</div>
-<div class="ulist">
-<div class="title">Troubleshooting</div>
-<ul>
-<li>
-<p>Connecting to the AD LDAP can sometimes fail with an error such as the following appearing in the logs:</p>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight nowrap"><code class="language-none" data-lang="none">Authentication failed with status code: {
-  "error": { "message": "ERF77-7629 [Foreman::LdapException]: Error while connecting to 'server.com' LDAP server at 'ldap.example.com' during authentication ([Net::LDAP::Error]: Connection reset by peer - SSL_connect)" } }</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>If you see this error, verify which cipher is used for the connection:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="nowrap"># openssl s_client -connect <em>ldap.example.com</em>:636</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>If the <code>TLS_DHE_RSA_WITH_AES_256_GCM_SHA384</code> cipher is used, disable it on either the Foreman&#160;server side or on the AD side.
-The <code>TLS_DHE_RSA_WITH_AES_256_GCM_SHA384</code> cipher is known to cause incompatibilities.</p>
-</div>
-<div class="paragraph">
-<p>For information on configuring system-wide cryptographic policies, see <a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/security_hardening/using-the-system-wide-cryptographic-policies_security-hardening">Using system-wide cryptographic policies</a> in <em>Red&#160;Hat Enterprise Linux&#160;9 Security hardening</em>.</p>
-</div>
-<div class="paragraph">
-<p>For information on configuring system-wide cryptographic policies, see <a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html/security_hardening/using-system-wide-cryptographic-policies">Using system-wide cryptographic policies</a> in <em>Red&#160;Hat Enterprise Linux&#160;10 Security hardening</em>.</p>
-</div>
-</li>
-</ul>
-</div>
-<div class="ulist">
-<div class="title">Additional resources</div>
-<ul>
-<li>
-<p><a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/configuring_authentication_and_authorization_in_rhel/configuring_applications_for_sso#Configuring_Firefox_to_use_Kerberos_for_SSO">Configuring Firefox to use Kerberos for single sign-on in <em>Red&#160;Hat Enterprise Linux&#160;9 Configuring authentication and authorization in RHEL</em></a></p>
-</li>
-<li>
-<p><a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html/configuring_authentication_and_authorization_in_rhel/configuring_applications_for_sso#Configuring_Firefox_to_use_Kerberos_for_SSO">Configuring Firefox to use Kerberos for single sign-on in <em>Red&#160;Hat Enterprise Linux&#160;10 Configuring authentication and authorization in RHEL</em></a></p>
-</li>
-<li>
-<p><a href="#reset-external-authentication-configuration-for-kerberos-sso">Reset external authentication configuration for Kerberos SSO</a></p>
-</li>
-</ul>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="configure-an-ldap-server-as-an-external-identity-provider-for-foreman"><a class="anchor" href="#configure-an-ldap-server-as-an-external-identity-provider-for-foreman"></a>5. Configure an LDAP server as an external identity provider for Foreman</h2>
+<h2 id="configure-an-ldap-server-as-an-external-identity-provider-for-foreman"><a class="anchor" href="#configure-an-ldap-server-as-an-external-identity-provider-for-foreman"></a>4. Configure an LDAP server as an external identity provider for Foreman</h2>
 <div class="sectionbody">
 <div class="paragraph _abstract">
 <p>Lightweight Directory Access Protocol (LDAP) is a set of open protocols used to access centrally stored information over a network.
 With Foreman, you can use one or multiple LDAP directories for external authentication.</p>
 </div>
 <div class="sect2">
-<h3 id="obtain-a-ca-certificate-for-ldaps"><a class="anchor" href="#obtain-a-ca-certificate-for-ldaps"></a>5.1. Obtain a CA certificate for LDAPS</h3>
+<h3 id="obtain-a-ca-certificate-for-ldaps"><a class="anchor" href="#obtain-a-ca-certificate-for-ldaps"></a>4.1. Obtain a CA certificate for LDAPS</h3>
 <div class="paragraph _abstract">
 <p>If Foreman uses TLS to establish a secure LDAP connection (LDAPS), the CA certificates of your LDAP server must be trusted by Foreman.</p>
 </div>
@@ -1757,7 +1471,7 @@ Foreman does not accept binary formats.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="configure-foreman-to-use-ldap"><a class="anchor" href="#configure-foreman-to-use-ldap"></a>5.2. Configure Foreman to use LDAP</h3>
+<h3 id="configure-foreman-to-use-ldap"><a class="anchor" href="#configure-foreman-to-use-ldap"></a>4.2. Configure Foreman to use LDAP</h3>
 <div class="paragraph _abstract">
 <p>Configure an LDAP authentication source to enable users to log in to Foreman with their existing LDAP credentials.</p>
 </div>
@@ -1891,7 +1605,7 @@ For more information about assigning appropriate roles to user accounts, see <a 
 </div>
 </div>
 <div class="sect2">
-<h3 id="example-settings-for-ldap-connections"><a class="anchor" href="#example-settings-for-ldap-connections"></a>5.3. Example settings for LDAP connections</h3>
+<h3 id="example-settings-for-ldap-connections"><a class="anchor" href="#example-settings-for-ldap-connections"></a>4.3. Example settings for LDAP connections</h3>
 <div class="paragraph _abstract">
 <p>Examples of settings for LDAP connections show how you can configure the necessary LDAP fields for user accounts from various external authentication sources.</p>
 </div>
@@ -2003,7 +1717,7 @@ The <code>sAMAccountName</code> attribute, which provides backwards compatibilit
 </div>
 </div>
 <div class="sect2">
-<h3 id="example-ldap-filters"><a class="anchor" href="#example-ldap-filters"></a>5.4. Example LDAP filters</h3>
+<h3 id="example-ldap-filters"><a class="anchor" href="#example-ldap-filters"></a>4.4. Example LDAP filters</h3>
 <div class="paragraph _abstract">
 <p>Examples of LDAP filters show how you can set up appropriate search filters for connecting your LDAP server as an external authentication source for Foreman.</p>
 </div>
@@ -2086,7 +1800,7 @@ This enables you to filter all users from the nested group.</p>
 </div>
 </div>
 <div class="sect1">
-<h2 id="managing-external-user-groups"><a class="anchor" href="#managing-external-user-groups"></a>6. Managing external user groups</h2>
+<h2 id="managing-external-user-groups"><a class="anchor" href="#managing-external-user-groups"></a>5. Managing external user groups</h2>
 <div class="sectionbody">
 <div class="paragraph _abstract">
 <p>When using external authentication sources, such as FreeIPA or Active&#160;Directory, you can configure group membership to control user access and permissions in Foreman.
@@ -2108,7 +1822,7 @@ It is not possible to alter user membership of external user groups in the Forem
 </table>
 </div>
 <div class="sect2">
-<h3 id="associate-external-users-with-user-groups"><a class="anchor" href="#associate-external-users-with-user-groups"></a>6.1. Associate external users with user groups</h3>
+<h3 id="associate-external-users-with-user-groups"><a class="anchor" href="#associate-external-users-with-user-groups"></a>5.1. Associate external users with user groups</h3>
 <div class="paragraph _abstract">
 <p>Foreman does not associate external users with their user group automatically.
 To associate these external users with their user group, you must create the user group on your Foreman&#160;server.</p>
@@ -2169,7 +1883,7 @@ Alternatively, select the <strong>Administrator</strong> checkbox to assign all 
 </div>
 </div>
 <div class="sect2">
-<h3 id="refresh-external-user-groups-for-ldap-using-web-ui"><a class="anchor" href="#refresh-external-user-groups-for-ldap-using-web-ui"></a>6.2. Refresh external user groups for LDAP using Foreman web UI</h3>
+<h3 id="refresh-external-user-groups-for-ldap-using-web-ui"><a class="anchor" href="#refresh-external-user-groups-for-ldap-using-web-ui"></a>5.2. Refresh external user groups for LDAP using Foreman web UI</h3>
 <div class="paragraph _abstract">
 <p>You can refresh external user groups manually if you want to immediately update membership changes from your LDAP source.</p>
 </div>
@@ -2196,10 +1910,10 @@ This is corrected automatically when the scheduled task runs.</p>
 </div>
 </div>
 <div class="sect1">
-<h2 id="reset-external-authentication-configuration-for-kerberos-sso"><a class="anchor" href="#reset-external-authentication-configuration-for-kerberos-sso"></a>7. Reset external authentication configuration for Kerberos SSO</h2>
+<h2 id="reset-external-authentication-configuration-for-kerberos-sso"><a class="anchor" href="#reset-external-authentication-configuration-for-kerberos-sso"></a>6. Reset external authentication configuration for Kerberos SSO</h2>
 <div class="sectionbody">
 <div class="paragraph _abstract">
-<p>You can disable external authentication with FreeIPA or Active Directory (AD) by resetting the configuration for the <code>IPA</code> authentication type.
+<p>You can disable external authentication with FreeIPA by resetting the configuration for the <code>IPA</code> authentication type.
 This prevents user accounts defined in the external authentication source from accessing Foreman.</p>
 </div>
 <div class="admonitionblock important">
