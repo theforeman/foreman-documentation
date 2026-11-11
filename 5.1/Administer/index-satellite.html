@@ -428,6 +428,7 @@ SOFTWARE.
 <li><a href="#edit-the-system-purpose-of-a-host-by-using-web-ui">5.2. Edit the system purpose of a host by using Satellite web UI</a></li>
 <li><a href="#edit-the-system-purpose-of-a-host-by-using-cli">5.3. Edit the system purpose of a host by using Hammer CLI</a></li>
 <li><a href="#edit-the-system-purpose-of-multiple-hosts">5.4. Edit the system purpose of multiple hosts</a></li>
+<li><a href="#manually-uploading-a-host-inventory-report">5.5. Manually uploading a host inventory report</a></li>
 </ul>
 </li>
 <li><a href="#enable-virtual-machine-subscription-reporting">6. Enable virtual machine subscription reporting</a>
@@ -6371,6 +6372,157 @@ You can select one of the following values:</p>
 <p><a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html/automatically_installing_rhel/configuring-system-purpose-with-subscription-manager-cli">Configuring System Purpose with subscription-manager CLI in <em>Automatically installing RHEL&#160;10</em></a></p>
 </li>
 </ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="manually-uploading-a-host-inventory-report"><a class="anchor" href="#manually-uploading-a-host-inventory-report"></a>5.5. Manually uploading a host inventory report</h3>
+<div class="paragraph _abstract">
+<p>If your Satellite&#160;Server cannot connect to the Red&#160;Hat Hybrid Cloud Console, you can generate and download a host inventory report for an organization without uploading it.
+You can then transfer the report to a system with internet access and upload it manually to report subscription usage to the Subscriptions service.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>You have a Red&#160;Hat account for the organization whose subscription usage you want to report.</p>
+</li>
+<li>
+<p>You have a system with internet access and the <code>curl</code> and <code>jq</code> utilities installed.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Generate and download a host inventory report by using one of the following methods:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Using the Satellite web UI:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>Navigate to <strong>Red&#160;Hat Lightspeed</strong> &gt; <strong>Inventory Upload</strong>.</p>
+</li>
+<li>
+<p>In the <strong>Organization</strong> dropdown menu, select the organization whose subscription usage you want to report.</p>
+</li>
+<li>
+<p>Click <strong>Generate report</strong> to generate the report without uploading it.</p>
+</li>
+<li>
+<p>Wait for report generation to complete, then click <strong>Download report</strong>.</p>
+</li>
+</ol>
+</div>
+</li>
+<li>
+<p>Using Hammer:</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>On your Satellite&#160;Server, list the organizations to find the ID of the organization that you want to report on:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer organization list</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Generate a host inventory report without uploading it:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer insights inventory generate-report --no-upload --organization-id <em>My_Organization_ID</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Replace <em>My_Organization_ID</em> with the organization ID.</p>
+</div>
+</li>
+<li>
+<p>In the Satellite web UI, navigate to <strong>Monitor</strong> &gt; <strong>Satellite Tasks</strong> &gt; <strong>Tasks</strong> and wait for the <strong>Host inventory report job</strong> task for your organization to complete successfully.</p>
+</li>
+<li>
+<p>Download the generated report:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ hammer insights inventory download-report \
+--organization-id <em>My_Organization_ID</em> \
+--path <em>/path/to/report_directory</em></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Replace <em>/path/to/report_directory</em> with the directory where you want to save the report.
+Use the same organization ID as in the generation command.</p>
+</div>
+</li>
+</ol>
+</div>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Optional: Extract the downloaded archive and review its contents before uploading it.
+The report archive contains data in JSON format that you can use in automated scripts or machine processing.
+Keep the original archive for upload.</p>
+</li>
+<li>
+<p>Copy the report archive to a system with internet access.
+Perform the remaining steps on that system.</p>
+</li>
+<li>
+<p>Obtain an offline token from the <a href="https://access.redhat.com/management/api">Red&#160;Hat API Tokens page</a> and save it in a shell variable:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ offline_token='<em>My_Offline_Token</em>'</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Generate an access token and save it in a shell variable:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ access_token=$(curl --silent --show-error --fail \
+--request POST \
+--data grant_type=refresh_token \
+--data client_id=rhsm-api \
+--data-urlencode "refresh_token=$offline_token" \
+https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token \
+| jq --exit-status --raw-output '.access_token')</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Upload the report archive:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap">$ curl --silent --show-error --fail \
+--request POST \
+--header "Authorization: Bearer $access_token" \
+--form "upload=@<em>/path/to/report_for_1.tar.xz</em>;type=application/vnd.redhat.qpc.tar+tgz" \
+https://cert.cloud.redhat.com/api/ingress/v1/upload</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Replace <em>/path/to/report_for_1.tar.xz</em> with the path to the report archive on the connected system.</p>
+</div>
+</li>
+</ol>
+</div>
+<div class="olist arabic">
+<div class="title">Verification</div>
+<ol class="arabic">
+<li>
+<p>In the Red&#160;Hat Hybrid Cloud Console, check that the systems in the report appear in the <a href="https://console.redhat.com/insights/inventory">Inventory service</a>.
+Systems should appear shortly after the upload is processed.</p>
+</li>
+<li>
+<p>Check the <a href="https://console.redhat.com/subscriptions/usage/rhel">Subscriptions service</a> for updated usage data.
+Allow approximately 24 hours for the data to appear.</p>
+</li>
+</ol>
 </div>
 </div>
 </div>
