@@ -7,7 +7,7 @@ ROOTDIR = $(realpath .)
 NAME = $(notdir $(ROOTDIR))
 DEST_DIR = $(BUILD_DIR)/$(subst doc-,,$(NAME))
 DEST_HTML = $(DEST_DIR)/index-$(BUILD).html
-IMAGES_TS = $(DEST_DIR)/.timestamp-images
+IMAGES_TS = $(BUILD_DIR)/images/.timestamp-images
 CSS_SOURCES = $(shell find $(COMMON_DIR)/css -type f)
 DOCINFO_SOURCES = $(shell find $(COMMON_DIR)/ -type f -name docinfo\*.html)
 SOURCES = master.adoc $(shell find . -type f -name \*.adoc)
@@ -75,7 +75,7 @@ css: prepare $(DEST_DIR)/style.css
 $(DEST_DIR)/style.css: $(CSS_SOURCES)
 	bundle exec sass --sourcemap=none --no-cache --style $(CSS_STYLE) -I $(COMMON_DIR)/css $(COMMON_DIR)/css/default.scss $@.tmp.$$$$ && mv $@.tmp.$$$$ $@
 
-$(IMAGES_TS): $(BUILD_DIR) $(IMAGES)
+$(IMAGES_TS): $(IMAGES) | $(BUILD_DIR)
 	cp -rf --update $(CP_ARGS) -t $(BUILD_DIR) common/images
 	@touch $(IMAGES_TS)
 
@@ -83,5 +83,6 @@ $(DEST_HTML): $(SOURCES) $(DEPENDENCIES) $(DOCINFO_SOURCES) $(DEST_DIR)/style.cs
 	bundle exec asciidoctor -r asciidoctor-tabs -a build=$(BUILD) $(BASEURL_ATTR) -a docinfo=shared -a docinfodir=common -a imagesdir=../images -a date_mdy="$(DATE_MDY)" -a date_my="$(DATE_MY)" -a docdatetime="$(DATE_MY)" -a stylesheet=$(DEST_DIR)/style.css -a attribute-missing=warn -b html5 -d book --trace -o $@ $< 2>&1 | tee $@.log 1>&2
 	@echo CHECKING FOR ASCIIDOCTOR ERRORS AND WARNINGS
 	@! grep -Eq "^asciidoctor: (ERROR|WARNING)" $@.log
+	@rm --force $@.log
 	@echo CHECKING FOR ORPHAN XREFS HTML LINKS
 	@! grep -RE '<a href="#[a-zA-Z0-9_-]+">\[[a-zA-Z0-9_-]+\]</a>' $@

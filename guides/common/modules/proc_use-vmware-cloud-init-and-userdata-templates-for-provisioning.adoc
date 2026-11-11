@@ -1,0 +1,175 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="use-vmware-cloud-init-and-userdata-templates-for-provisioning"]
+= Use VMware cloud-init and userdata templates for provisioning
+
+[role="_abstract"]
+You can use VMware with the `Cloud-init` and `Userdata` templates to insert user data into the new virtual machine, to make further VMware customization, and to enable the VMware-hosted virtual machine to call back to {Project}.
+
+You can use the same procedures to set up a VMware compute resource within {Project}, with a few modifications to the workflow.
+
+.Prerequisites
+* The templates are associated with your operating system.
+For more information, see xref:associate-the-userdata-and-cloud-init-templates-with-the-operating-system[].
+* An image is prepared.
+For more information, see xref:prepare-an-image-to-use-the-cloud-init-template[].
+* Port and firewall settings are configured to open any necessary connections.
+Because of the `cloud-init` service, the virtual machine always calls back to {Project} even if you register the virtual machine to {SmartProxy}.
+ifndef::orcharhino[]
+For more information, see {PlanningDocURL}{project-context}-port-and-firewall-requirements[{ProjectServer} port and firewall requirements] and {PlanningDocURL}{smart-proxy-context}-port-and-firewall-requirements[{SmartProxy} port and firewall requirements].
+endif::[]
++
+include::snip_prerequisite-configured-smart-proxy-registration-provisioning.adoc[]
+* You have backups of the following configuration files:
+** `/etc/cloud/cloud.cfg.d/01_network.cfg`
+** `/etc/cloud/cloud.cfg.d/10_datasource.cfg`
+** `/etc/cloud/cloud.cfg`
+
+.Procedure
+. On the virtual machine that you use to create the image, install the required packages:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {client-package-install-el8} cloud-init open-vm-tools perl-interpreter perl-File-Temp
+----
+ifdef::foreman-el,foreman-deb,katello,satellite,almalinux,centos,oracle_linux,red_hat_enterprise_linux,rocky_linux[]
++
+On {EL} 9, you also require the `dbus-tools` package for network connectivity.
+endif::[]
+. Disable network configuration by `cloud-init`:
++
+[options="nowrap" subs="+quotes"]
+----
+# cat << EOM > /etc/cloud/cloud.cfg.d/01_network.cfg
+network:
+  config: disabled
+EOM
+----
+. Configure `cloud-init` to fetch data from {Project}:
++
+[options="nowrap" subs="+attributes"]
+----
+# cat << EOM > /etc/cloud/cloud.cfg.d/10_datasource.cfg
+datasource_list: [NoCloud]
+datasource:
+  NoCloud:
+    seedfrom: https://{foreman-example-com}/userdata/
+EOM
+----
++
+If you intend to provision through {SmartProxyServer}, use the URL of your {SmartProxyServer} in the `seedfrom` option, such as `https://_{smartproxy-example-com}_:{smartproxy_port}/userdata/`.
+. Configure modules to use in `cloud-init`:
++
+[options="nowrap" subs="+quotes"]
+----
+# cat << EOM > /etc/cloud/cloud.cfg
+cloud_init_modules:
+ - bootcmd
+ - ssh
+
+cloud_config_modules:
+ - set_passwords
+ - runcmd
+
+cloud_final_modules:
+ - scripts-per-once
+ - scripts-per-boot
+ - scripts-per-instance
+ - scripts-user
+ - phone-home
+
+system_info:
+  distro: rhel
+  paths:
+    cloud_dir: /var/lib/cloud
+    templates_dir: /etc/cloud/templates
+  ssh_svcname: sshd
+EOM
+----
+ifdef::katello,satellite,orcharhino[]
+. Download the `katello-server-ca.crt` file from {ProjectServer}:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# wget -O /etc/pki/ca-trust/source/anchors/cloud-init-ca.crt https://_{foreman-example-com}_/pub/katello-server-ca.crt
+----
++
+If you intend to provision through {SmartProxyServer}, download the file from your {SmartProxyServer}, such as `https://_{smartproxy-example-com}_/pub/katello-server-ca.crt`.
+endif::[]
+ifndef::katello,satellite,orcharhino[]
+. Copy the CA certificate from the Apache configuration to `/etc/pki/ca-trust/source/anchors/cloud-init-ca.crt`.
+endif::[]
+. Update the record of certificates:
++
+[options="nowrap" subs="+quotes"]
+----
+# update-ca-trust extract
+----
+. Stop the `rsyslog` and `auditd` services:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# systemctl stop rsyslog
+# systemctl stop auditd
+----
+. Clean packages on the image:
+* On {EL} 8 and later:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# dnf remove --oldinstallonly
+----
+* On {EL} 7 and earlier:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# package-cleanup --oldkernels --count=1
+# dnf clean all
+----
+. Reduce logspace, remove old logs, and truncate logs:
++
+----
+# logrotate -f /etc/logrotate.conf
+# rm -f /var/log/*-???????? /var/log/*.gz
+# rm -f /var/log/dmesg.old
+# rm -rf /var/log/anaconda
+# cat /dev/null > /var/log/audit/audit.log
+# cat /dev/null > /var/log/wtmp
+# cat /dev/null > /var/log/lastlog
+# cat /dev/null > /var/log/grubby
+----
+. Remove `udev` hardware rules:
++
+[options="nowrap" subs="+quotes"]
+----
+# rm -f /etc/udev/rules.d/70*
+----
+. Remove the `ifcfg` scripts related to existing network configurations:
++
+----
+# rm -f /etc/sysconfig/network-scripts/ifcfg-ens*
+# rm -f /etc/sysconfig/network-scripts/ifcfg-eth*
+----
+. Remove the SSH host keys:
++
+[options="nowrap" subs="+quotes"]
+----
+# rm -f /etc/ssh/ssh_host_*
+----
+. Remove root user's SSH history:
++
+[options="nowrap" subs="+quotes"]
+----
+# rm -rf ~root/.ssh/known_hosts
+----
+. Remove root user's shell history:
++
+[options="nowrap" subs="+quotes"]
+----
+# rm -f ~root/.bash_history
+# unset HISTFILE
+----
+. Create an image from this virtual machine.
+
+.Next steps
+* xref:add-vmware-images-to-{project-context}-server-by-using-cli[]
