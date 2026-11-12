@@ -26,7 +26,7 @@ clean:
 	$(MAKE) -C guides/ clean
 	rm -rf $(DEST) web/output/
 
-html: build-foreman-el build-foreman-deb build-containerized-katello build-containerized-orcharhino build-katello build-orcharhino
+html: build-foreman-el build-foreman-deb build-containerized-katello build-containerized-orcharhino build-katello build-orcharhino build-satellite
 
 # Built once, up front, and shared by every build-% below: the compiled CSS
 # does not vary by BUILD, and compiling it redundantly from N parallel
