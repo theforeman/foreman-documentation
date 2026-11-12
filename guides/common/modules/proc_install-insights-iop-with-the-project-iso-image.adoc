@@ -4,28 +4,63 @@
 = Install {insights-iop} with the {Project} ISO image
 
 [role="_abstract"]
-You can use the {Project} installation ISO image to access the required container content.
+If you intend to install {insights-iop} on a disconnected {ProjectServer}, prepare the required vulnerability metadata files before the installation and enable the feature during the installation.
+The required container images are installed from the {Project} ISO image.
 
 .Prerequisites
-* `skopeo` is installed on your {ProjectServer}.
-ifdef::satellite[]
-For more information, see {RHELDocsBaseURL}10/html/building_running_and_managing_containers/introduction-to-containers#installing-container-tools[Installing container tools] in _{RHEL}{nbsp}10 Building, running, and managing containers_.
-endif::[]
-ifndef::satellite[]
-+
-[options="nowrap", subs="+quotes,verbatim,attributes"]
-----
-# {project-package-install} skopeo
-----
-endif::[]
+* You have access to a connected system with access to `https://security.access.redhat.com` to download the vulnerability metadata files.
 
 .Procedure
-. Download and mount the {Project} ISO image:
-For more information, see xref:prepare-the-system-for-{project-context}-deployment-from-the-offline-repositories_{context}[].
-. Set up the local repositories and containers for disconnected environments:
+. On the connected system, download the vulnerability metadata files that {insights-iop} requires:
 +
-[options="nowrap", subs="+quotes,verbatim,attributes"]
+--
+`cvemap.xml`:: The CVE map that {Project} serves locally for VMAAS vulnerability correlation.
+`cpe-dictionary.xml`:: Common Platform Enumeration (CPE) data for vulnerability assessment.
+`repository-to-cpe.json`:: The mapping of repositories to CPE identifiers.
+`vex-latest.tar.zst`:: CSAF VEX (Vulnerability Exploitability eXchange) data.
+--
++
+[options="nowrap", subs="+quotes,attributes"]
 ----
-# /media/satellite/prepare_system
+$ curl -o cvemap.xml https://security.access.redhat.com/data/meta/v1/cvemap.xml \
+       -o cpe-dictionary.xml https://security.access.redhat.com/data/meta/v1/cpe-dictionary.xml \
+       -o repository-to-cpe.json https://security.access.redhat.com/data/metrics/repository-to-cpe.json
 ----
-include::snip_steps-adding-iop-vulnerability-metadata-files.adoc[]
++
+When downloading `vex-latest.tar.zst`, retrieve the name of the latest archive:
+
+.. Retrieve the name of the latest archive from `archive_latest.txt`:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+$ curl https://security.access.redhat.com/data/csaf/v2/vex/archive_latest.txt
+----
+.. Download the archive and save it as `vex-latest.tar.zst`:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+$ curl -o vex-latest.tar.zst https://security.access.redhat.com/data/csaf/v2/vex/_My_Archive_Name_
+----
++
+Replace _My_Archive_Name_ with the file name that the previous command returns.
+. Transfer the `cvemap.xml`, `cpe-dictionary.xml`, `repository-to-cpe.json`, and `vex-latest.tar.zst` files to your disconnected {ProjectServer}.
+. Start the {ProjectServer} installation from the ISO image.
+For more information, see xref:install-disconnected-{project-context}-server[].
+. When you run the final `{foremanctl} deploy` command, add the `--add-feature iop` option:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foremanctl} deploy{foremanctl_initial_deploy_opts} --add-feature iop \
+--initial-admin-username _My_Admin_User_Name_ \
+--initial-admin-password _My_Admin_Password_ \
+--initial-organization _"My_Organization"_ \
+--initial-location _"My_Location"_
+----
++
+For more information about the `{foremanctl} deploy` command, see xref:deploy-{project-context}-server-configuration-with-the-default-database_{context}[].
+. Copy the files to `/var/lib/foreman/`:
++
+[options="nowrap", subs="+quotes"]
+----
+# cp cvemap.xml cpe-dictionary.xml repository-to-cpe.json vex-latest.tar.zst /var/lib/foreman/
+----
