@@ -149,6 +149,24 @@ To link from one guide to another, use the per-guide URL attribute defined in `g
 **Do not** append the target guide's title to the link (for example ``[Link text] in _{ManagingHostsDocTitle}_``).
 A working link is enough; the book title adds no value for the reader and renders as a dangling pointer in the Navigation Maps, where cross-guide links resolve internally.
 
+To link to another guide as a whole, use the parallel `*DocGuideURL` attribute instead:
+
+    For more information, see {ManagingHostsDocGuideURL}[_{ManagingHostsDocTitle}_].
+
+Each guide defines a pair of attributes: `FooDocGuideURL` (the whole-guide URL, no trailing `#`) and `FooDocURL` (the anchor prefix for section links, with a trailing `#`, derived as `{FooDocGuideURL}#`).
+When overriding them in a product attributes file, define `FooDocGuideURL` first and derive `FooDocURL` from it, keeping the pair consistent.
+The whole-guide link resolves as follows:
+
+* Foreman, Katello, and orcharhino builds: a link to the guide on the documentation site.
+* Satellite builds: a link to the guide's landing page in the single Red Hat Satellite book on the Red Hat portal (`html/<category>/<page>`), mirroring the Navigation Maps landing; see `attributes-satellite.adoc` for details.
+* Navigation Maps: an internal `xref` to the guide's landing map, defined in `attributes-map-overrides.adoc`; guides without a landing map fall back to the Red Hat portal URL.
+
+**Do not** use the anchor-prefix attribute for whole-guide links (`{FooDocURL}[_{FooDocTitle}_]`): in the Navigation Maps, `FooDocURL` is rewritten to a bare `xref:` and such a link degenerates to literal text without any build warning.
+
+Note that in Satellite builds an anchor link (`{FooDocURL}anchor`) only resolves if the anchor is on the guide's landing page; the single book splits most guides across several pages.
+
+When adding a new guide, add its `FooDocGuideURL` and the derived `FooDocURL` to `attributes-base.adoc`, override both in `attributes-satellite.adoc` if the guide has a landing page in the single Satellite book (or undefine `FooDocGuideURL!` if it does not), and optionally add an `xref:` landing override in `attributes-map-overrides.adoc` if the Navigation Maps contain a landing map for it.
+
 ## Creating new guides
 
 Each guide must be in a separate directory in `guides/` prefixed with `doc-`.
