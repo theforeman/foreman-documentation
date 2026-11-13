@@ -38,6 +38,7 @@ ID_SUBSTITUTIONS = (
     ("{client-os-context}", "client-os"),
     ("{client-os-major-context}", "client-os-major"),
     ("{EL-id}", "enterprise-linux"),
+    ("{opentofu-target-id}", "opentofu-target"),
     ("{project-client-name-id}", "project-client-name"),
 )
 
@@ -60,6 +61,7 @@ HEADING_SUBSTITUTIONS = (
     ("{customrepos}", "repositories"),
     ("{customproduct}", "product"),
     ("{openstack}", "openstack"),
+    ("{opentofu-target}", "opentofu-target"),
     ("{keycloak}", "keycloak"),
     ("{rhel}", "rhel"),
     ("{the-cockpit}", "cockpit"),
