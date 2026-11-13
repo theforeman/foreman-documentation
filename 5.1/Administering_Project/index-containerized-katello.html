@@ -343,12 +343,14 @@ SOFTWARE.
 <li><a href="#perform-an-incremental-backup_admin">6.4. Perform an incremental backup</a></li>
 <li><a href="#example-of-a-weekly-full-backup">6.5. Example of a weekly full backup</a></li>
 <li><a href="#Example_of_a_Weekly_Full_Backup_Followed_by_Daily_Incremental_Backups_admin">6.6. Example of a weekly full backup followed by daily incremental backups</a></li>
+<li><a href="#create-a-conventional-backup">6.7. Create a conventional backup</a></li>
 </ul>
 </li>
 <li><a href="#restore-foreman-from-backup">7. Restore Foreman from backup</a>
 <ul class="sectlevel2">
 <li><a href="#restore-from-a-full-backup_admin">7.1. Restore from a full backup</a></li>
 <li><a href="#restore-from-incremental-backups_admin">7.2. Restore from incremental backups</a></li>
+<li><a href="#restore-smart-proxy-server-by-using-a-virtual-machine-snapshot">7.3. Restore Smart&#160;Proxy&#160;server by using a virtual machine snapshot</a></li>
 </ul>
 </li>
 <li><a href="#configure-foreman-for-insights-analytics">8. Configure Foreman for Insights analytics</a>
@@ -2988,7 +2990,7 @@ If your deployment uses custom configurations, you must consider how to handle t
 <div class="sect3">
 <h4 id="available-backup-methods"><a class="anchor" href="#available-backup-methods"></a>6.1.1. Available backup methods</h4>
 <div class="paragraph _abstract">
-<p>You can create an offline backup of your Foreman&#160;server and Smart&#160;Proxy&#160;server.</p>
+<p>Choose a backup method based on how long you can keep Foreman services unavailable and how much time you can allocate for the backup.</p>
 </div>
 <div class="dlist">
 <dl>
@@ -3028,6 +3030,14 @@ They require less time and storage than a full offline backup.</p>
 <div class="paragraph">
 <p>The backup process creates snapshot files that track changes, allowing you to chain incremental backups.
 All backups in the chain are required for restore.</p>
+</div>
+</dd>
+<dt class="hdlist1">Conventional backup</dt>
+<dd>
+<p>Conventional backup methods, such as virtual machine snapshots or file system backups, operate outside of Foreman.
+You must stop all Foreman services for the duration of the backup.</p>
+<div class="paragraph">
+<p>For more information, see <a href="#create-a-conventional-backup">Create a conventional backup</a>.</p>
 </div>
 </dd>
 </dl>
@@ -3467,6 +3477,38 @@ exit 0</code></pre>
 <p>Note that the <code>foremanctl backup</code> command requires <code>/sbin</code> and <code>/usr/sbin</code> directories to be in <code>PATH</code>.</p>
 </div>
 </div>
+<div class="sect2">
+<h3 id="create-a-conventional-backup"><a class="anchor" href="#create-a-conventional-backup"></a>6.7. Create a conventional backup</h3>
+<div class="paragraph _abstract">
+<p>You can use conventional backup methods to back up your Foreman&#160;server or Smart&#160;Proxy&#160;server.
+Unlike Foreman backup methods, conventional backup methods require you to stop Foreman services.</p>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>Stop all Foreman services:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl stop foreman.target</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create the snapshot or conventional backup.
+For more information, see <a href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html-single/configuring_basic_system_settings/index#assembly_recovering-and-restoring-a-system_configuring-basic-system-settings">Recovering and restoring a system in <em>Red&#160;Hat Enterprise Linux&#160;10 Configuring basic system settings</em></a>.</p>
+</li>
+<li>
+<p>Start Foreman services:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="nowrap"># systemctl start foreman.target</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -3633,6 +3675,60 @@ Cloned instances are not supposed to run in parallel in a production environment
 </div>
 </li>
 </ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="restore-smart-proxy-server-by-using-a-virtual-machine-snapshot"><a class="anchor" href="#restore-smart-proxy-server-by-using-a-virtual-machine-snapshot"></a>7.3. Restore Smart&#160;Proxy&#160;server by using a virtual machine snapshot</h3>
+<div class="paragraph _abstract">
+<p>Restore Smart&#160;Proxy&#160;server from a virtual machine snapshot to return the system to the state at the time of the snapshot.
+You can use virtual machine snapshots to back up and restore your Smart&#160;Proxy&#160;server for quick recovery after server failure or configuration issues.</p>
+</div>
+<div class="ulist">
+<div class="title">Prerequisites</div>
+<ul>
+<li>
+<p>If the backed up system had FIPS enabled, the system on which you are restoring must also have FIPS enabled.</p>
+</li>
+<li>
+<p>You have selected the relevant organization and location context of your Smart&#160;Proxy&#160;server, or chosen <strong>Any Organization</strong> and <strong>Any Location</strong>.</p>
+</li>
+</ul>
+</div>
+<div class="olist arabic">
+<div class="title">Procedure</div>
+<ol class="arabic">
+<li>
+<p>If your Smart&#160;Proxy&#160;server is a virtual machine, include it in your backup strategy by using VM snapshots.
+Creating weekly snapshots that you can restore from is recommended.</p>
+</li>
+<li>
+<p>After a failure, either restore your Smart&#160;Proxy&#160;server from a snapshot by using your hypervisor tools, or deploy a new Smart&#160;Proxy&#160;server and ensure that the host name is the same as before, and then install the Smart&#160;Proxy certificates.
+You can reuse the existing authentication bundle from the <code>/var/lib/foremanctl/certs/bundles/</code> directory on your Foreman&#160;server.
+If the bundle is no longer available, regenerate it by adding the <code>--certificate-renew</code> option to the <code>foremanctl auth-bundle</code> command.</p>
+</li>
+<li>
+<p>Follow the procedures in <a href="https://docs.theforeman.org/5.1/Installing_Proxy/index-containerized-katello.html#">Installing Smart&#160;Proxy&#160;server</a> until you can confirm, in the Foreman web UI, that Smart&#160;Proxy&#160;server is connected to Foreman&#160;server.</p>
+</li>
+<li>
+<p>In the Foreman web UI, navigate to <strong>Infrastructure</strong> &gt; <strong>Smart&#160;Proxies</strong>.</p>
+</li>
+<li>
+<p>Select your Smart&#160;Proxy&#160;server.</p>
+</li>
+<li>
+<p>On the <strong>Overview</strong> tab, click <strong>Synchronize</strong>.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Select <strong>Optimized Sync</strong> to synchronize content from your Foreman&#160;server to your Smart&#160;Proxy&#160;server that bypasses unnecessary steps to speed up performance.</p>
+</li>
+<li>
+<p>Select <strong>Complete Sync</strong> to perform a complete sync from your Foreman&#160;server to your Smart&#160;Proxy&#160;server that synchronizes content even if the metadata has not changed.</p>
+</li>
+</ul>
+</div>
+</li>
+</ol>
 </div>
 </div>
 </div>
