@@ -1,0 +1,53 @@
+---
+config:
+    theme: default
+---
+architecture-beta
+
+    group sources(mdi:cloud-download)[External content sources]
+
+        service rhcp(mdi:redhat)[Red Hat Customer Portal] in sources
+        service yum(mdi:package-variant-closed)[Yum repositories] in sources
+        service deb(mdi:debian)[Deb repositories] in sources
+        service containers(mdi:docker)[Container registries] in sources
+        service other(mdi:dots-horizontal)[Other sources] in sources
+
+rhcp:B -- T:yum
+yum:B -- T:deb
+deb:B -- T:containers
+containers:B -- T:other
+
+    group server(mdi:server)[Foreman server]
+        service sync(mdi:sync)[Synchronize content] in server
+        service cv(mdi:filter-variant)[Content views] in server
+        service lce(mdi:arrow-right-bold)[Lifecycle environments] in server
+
+sync:R -- L:cv
+cv:R -- L:lce
+
+    service proxy1(mdi:server)[Smart Proxy 1]
+    service proxy2(mdi:server)[Smart Proxy 2]
+
+    service hosts1(mdi:monitor)[Hosts]
+    service hosts2(mdi:monitor)[Hosts]
+    service hosts3(mdi:monitor)[Hosts]
+
+junction j-sources
+junction j-proxy
+junction j-proxy-top
+junction j-proxy-bottom
+junction j-proxy-no
+
+deb{group}:R -- L:j-sources
+j-sources:R --> L:sync{group}
+lce{group}:R -- L:j-proxy
+j-proxy:T -- B:j-proxy-top
+j-proxy:B -- T:j-proxy-bottom
+
+j-proxy-top:R --> L:proxy1
+j-proxy:R --> L:proxy2
+j-proxy-bottom:R -- L:j-proxy-no
+
+proxy1:R --> L:hosts1
+proxy2:R --> L:hosts2
+j-proxy-no:R --> L:hosts3
