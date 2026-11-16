@@ -1,0 +1,82 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="configure-salt-on-{project-context}-server"]
+= Configure Salt on {ProjectServer}
+
+[role="_abstract"]
+You need to configure {ProjectServer} to use the Salt plugin.
+
+.Procedure
+. On your {ProjectServer}, extend the `/etc/sudoers` file to allow the `foreman-proxy` user to run Salt:
++
+[options="nowrap" subs="attributes"]
+----
+Cmd_Alias SALT = /usr/bin/salt, /usr/bin/salt-key
+foreman-proxy ALL = NOPASSWD: SALT
+Defaults:foreman-proxy !requiretty
+----
+. On your {ProjectServer}, add a user called `saltuser` to access the Salt API:
++
+[options="nowrap" subs="attributes"]
+----
+# adduser --no-create-home --shell /bin/false --home-dir / saltuser
+# passwd saltuser
+----
++
+Enter the password for the Salt user twice.
++
+ifdef::orcharhino[]
+[WARNING]
+endif::[]
+ifndef::orcharhino[]
+[NOTE]
+endif::[]
+====
+The command `adduser saltuser -p password` does not work.
+Using it prevents you from importing Salt States.
+====
+. Create a directory for a `systemd` service for Salt:
++
+[options="nowrap" subs="attributes"]
+----
+# mkdir /etc/systemd/system/salt-master.service.d
+----
+// the "sleep 10" is necessary to ensure that the "salt-master" service does not overwrite the permissions
+// this is due to a bug in Salt: https://github.com/saltstack/salt/issues/65317
+. Create the `systemd` service `/etc/systemd/system/salt-master.service.d/foreman_override.conf`:
++
+[source, ini, options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+[Service]
+ExecStartPost=/bin/bash -c 'sleep 10'
+ExecStartPost=/bin/bash -c 'chmod o+rx /var/run/salt/master/'
+ExecStartPost=/bin/bash -c 'chmod o+rw /var/run/salt/master/publish_pull.ipc'
+ExecStartPost=/bin/bash -c 'chmod o+rw /var/run/salt/master/master_event_pub.ipc'
+ExecStartPost=/bin/bash -c 'chmod o+rw /var/run/salt/master/master_event_pull.ipc'
+ExecStartPost=/bin/bash -c 'chmod o+rw /var/run/salt/master/workers.ipc'
+----
+. Reload the service files and restart the `salt-master` service:
++
+[options="nowrap" subs="attributes"]
+----
+# systemctl daemon-reload
+# systemctl restart salt-master
+----
++
+The restart takes at least 10 seconds and applies the correct directory and file permissions.
+. Allow the `foreman-proxy` user to write Salt logs:
++
+[options="nowrap" subs="attributes"]
+----
+# chmod g+w /var/log/foreman-proxy/salt.log
+----
+. Open the required ports for Salt:
++
+[options="nowrap" subs="attributes"]
+----
+# firewall-cmd \
+--add-port="4505/tcp" \
+--add-port="4506/tcp" \
+--add-port="9191/tcp"
+----
+include::snip_make-firewall-settings-persistent.adoc[]
