@@ -4,7 +4,7 @@
 = Troubleshoot host header rejection on {SmartProxy}
 
 [role="_abstract"]
-If you receive a `403 Forbidden` error when connecting to a {SmartProxyServer} by using a hostname, the request might be rejected by host header validation.
+If you receive a `403 Forbidden` error when connecting to a {SmartProxyServer}, the request might be rejected by host header validation.
 If the hostname is legitimate, declare it as a server alias.
 
 {ProjectServer} and each {SmartProxyServer} maintain their lists of permitted hostnames independently.
@@ -58,12 +58,28 @@ The {SmartProxy} renders this list as a single-line JSON array, so the key and a
 If the list is empty or the key is missing, the {SmartProxy} accepts every hostname and host header validation is not the cause of the error.
 If the list is not empty and _hostname.example.com_ does not appear in either output, host header validation is rejecting the request.
 . Resolve the problem:
-* If _hostname.example.com_ is a legitimate alternate name for your {SmartProxyServer}, declare it as a server alias on that {SmartProxyServer}:
+* If _hostname.example.com_ is a legitimate alternate name for your {SmartProxyServer}, declare it as a server alias.
++
+On {ProjectServer}, add the name to the Subject Alternative Name (SAN) of the {SmartProxy} certificate by regenerating the authentication bundle for that {SmartProxyServer}:
 +
 [options="nowrap", subs="+quotes,attributes"]
 ----
-# {foremanctl} deploy-proxy --server-alias _hostname.example.com_
+# {foremanctl} auth-bundle _{smartproxy-example-com}_ \
+--certificate-renew \
+--proxy-alias _hostname.example.com_
 ----
++
+Copy the authentication bundle to the {SmartProxyServer}, then add the name to the list of hostnames that the {SmartProxy} accepts:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# {foremanctl} deploy-proxy \
+--auth-bundle /root/_{smartproxy-example-com}_.tar.gz \
+--server-alias _hostname.example.com_
+----
++
+For more information, see {InstallingServerDocURL}configure-{smart-proxy-context}-with-an-alternate-cname[Configure {SmartProxy} with an alternate CNAME].
++
 * If _hostname.example.com_ is not a name you expect your {SmartProxy} to answer, the request might indicate a misconfiguration in your network or a security concern.
 ifdef::satellite[]
 Open a Red{nbsp}Hat Support case for further investigation.
