@@ -15,10 +15,11 @@ Do not use your production {ProjectServer} nor {SmartProxyServer} to perform thi
 Use either a dedicated environment or copy the repositories and Kickstart file to a separate system.
 ====
 
-The following procedure demonstrates the building process on {EL} 8 and uses CentOS Stream 8 repositories.
+The following procedure demonstrates the building process on CentOS Stream 9.
 
 .Prerequisites
-* Hardware virtualization is available on your system.
+* A dedicated CentOS Stream 9 system, for example a virtual machine.
+* Hardware virtualization is available on your system, unless you build in the `novirt` mode.
 * The following packages are installed:
 ** `anaconda`
 ** `git-core`
@@ -35,24 +36,14 @@ $ cd foreman-discovery-image
 ----
 
 .Procedure
-. Replace the contents of the `00-repos-centos8.ks` file with the following:
+. Prepare the Kickstart file with the repositories of {Project} {ProjectVersion}:
 +
-[options="nowrap" subs="quotes,attributes"]
+[options="nowrap" subs="+quotes,attributes"]
 ----
-url --mirrorlist=http://mirrorlist.centos.org/?release=8&arch=$basearch&repo=baseos
-repo --name="AppStream" --mirrorlist=http://mirrorlist.centos.org/?release=8&arch=$basearch&repo=appstream
-repo --name="foreman-el8" --baseurl=http://yum.theforeman.org/releases/{ProjectVersion}/el8/$basearch/
-repo --name="foreman-plugins-el8" --baseurl=http://yum.theforeman.org/plugins/{ProjectVersion}/el8/$basearch/
-module --name=ruby --stream=2.7
-module --name=postgresql --stream=12
-module --name=foreman --stream=el8
+$ ./build-kickstart fdi-stream9.ks {ProjectVersion}
 ----
-. Prepare the Kickstart file:
 +
-[options="nowrap" subs="+quotes"]
-----
-$ ./build-livecd fdi-centos8.ks
-----
+The second argument replaces `nightly` in the URLs of the {Project} repositories.
 . Build the ISO image:
 +
 [options="nowrap" subs="+quotes"]
@@ -60,8 +51,11 @@ $ ./build-livecd fdi-centos8.ks
 $ sudo ./build-livecd-root _custom_ ./result "nomodeset nokaslr"
 ----
 +
-`nomodeset` disables mode setting. 
+`nomodeset` disables mode setting.
 `nokaslr` disables address space layout randomization.
++
+By default, the build runs the installer in a virtual machine.
+To build on the dedicated system itself, for example in a virtual machine without nested virtualization, add `novirt` as the fourth argument.
 +
 For example, you can build a fully automated Discovery image with a static network configuration:
 +
@@ -98,5 +92,8 @@ If you have `grub2` packages installed, you can also use the following command t
 +
 [options="nowrap" subs="+quotes"]
 ----
-# implantisomd5 fdi.iso
+# implantisomd5 --force fdi.iso
 ----
++
+The build already embeds a checksum, and `isohybrid` changes the file.
+Without `--force`, `implantisomd5` does not replace the checksum and the default boot entry of the ISO fails its media check.
