@@ -1,0 +1,74 @@
+:_mod-docs-content-type: PROCEDURE
+
+[id="enable-the-installer-managed-dhcp-service"]
+= Enable the installer-managed DHCP service
+
+[role="_abstract"]
+If you do not have a DHCP server available in your network, you can use the installer-managed DHCP service.
+Therefore, you can run a DHCP service with a lower maintenance overhead.
+
+.Prerequisites
+* You know the following network information:
+** The range of IP addresses the DHCP should manage
+** The IP address of the default gateway in the subnet
+** The IP addresses of the name servers for the subnet
+
+.Procedure
+. Configure {ProjectServer} or {SmartProxyServer} as DHCP server:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+# {foreman-installer} \
+--foreman-proxy-dhcp true \
+--foreman-proxy-dhcp-provider isc \
+--foreman-proxy-dhcp-managed true \
+--foreman-proxy-dhcp-range "192.0.2.100 192.0.2.150" \
+--foreman-proxy-dhcp-gateway 192.0.2.1 \
+--foreman-proxy-dhcp-nameservers 192.0.2.2,192.0.2.3
+----
+. For each affected {SmartProxy}, update the configuration of that {SmartProxy} in the {ProjectWebUI}.
+For more information, see xref:associate-the-dhcp-service-with-a-subnet[].
+. Optional: Secure the `dhcpd` API on the {SmartProxy} by using an Object Management Application Programming Interface (OMAPI) key:
+.. Install the required package:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {project-package-install} {bind-package}
+----
+.. Generate an OMAPI key:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# tsig-keygen -a _Algorithm_Name_ _My_Key_Name_
+----
++
+--
+Use the following values in the command:
+
+`_Algorithm_Name_`:: Specifies the algorithm to be used to generate the key.
+You can use any of the values specified in the `tsig-keygen(8)` man page on your system.
+The default algorithm is HMAC-SHA256.
+`_My_Key_Name_`:: Specifies the name of the OMAPI key.
+The default name is `tsig-key`.
+--
++
+The command outputs key information in the following format:
++
+[source, none, options="nowrap" subs="+quotes"]
+----
+key "_My_Key_Name_" {
+	algorithm _Algorithm_Name_;
+	secret "_Key_Secret_";
+};
+----
+. Add the information about the key from the command output to the {SmartProxy} configuration:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+# {foreman-installer} \
+--foreman-proxy-dhcp-key-name "_My_Key_Name_" \
+--foreman-proxy-dhcp-key-algorithm "_Algorithm_Name_" \
+--foreman-proxy-dhcp-key-secret "_Key_Secret_"
+----
++
+If you use the default algorithm, which is HMAC-SHA256, you can omit the algorithm line from the configuration.
