@@ -288,7 +288,7 @@ SOFTWARE.
 <li><a href="#provision-ubuntu-autoinstall-through-smart-proxies">3.7. Provision Ubuntu Autoinstall through Smart&#160;Proxies</a></li>
 <li><a href="#foreman-provisioning-from-a-lorax-compose-image">3.8. Foreman provisioning from a Lorax Composer image</a>
 <ul class="sectlevel3">
-<li><a href="#provision-from-a-lorax-compose-image-on-smart-proxy">3.8.1. Provision from a Lorax Composer image on Smart&#160;Proxy</a></li>
+<li><a href="#provision-from-a-lorax-compose-image-on-foreman">3.8.1. Provision from a Lorax Composer image on Foreman</a></li>
 <li><a href="#provision-from-a-lorax-compose-image-on-an-http-server">3.8.2. Provision from a Lorax Composer image on an HTTP server</a></li>
 <li><a href="#packages-required-in-a-lorax-compose-image">3.8.3. Packages required in a Lorax Composer image</a></li>
 </ul>
@@ -2305,7 +2305,7 @@ For more information, see <a href="#create-an-installation-medium-for-ubuntu">Cr
 </ul>
 </div>
 <div class="sect3">
-<h4 id="provision-from-a-lorax-compose-image-on-smart-proxy"><a class="anchor" href="#provision-from-a-lorax-compose-image-on-smart-proxy"></a>3.8.1. Provision from a Lorax Composer image on Smart&#160;Proxy</h4>
+<h4 id="provision-from-a-lorax-compose-image-on-foreman"><a class="anchor" href="#provision-from-a-lorax-compose-image-on-foreman"></a>3.8.1. Provision from a Lorax Composer image on Foreman</h4>
 <div class="paragraph _abstract">
 <p>You can upload a Lorax Composer image to Foreman and use this image to provision hosts by using network boot.</p>
 </div>
@@ -2334,7 +2334,7 @@ For more information, see <a href="#create-an-installation-medium-for-ubuntu">Cr
 Ensure that your blueprint to build the image includes the <a href="#packages-required-in-a-lorax-compose-image">required packages</a>.</p>
 </li>
 <li>
-<p>If you want to use Smart&#160;Proxy&#160;server URL, then the referenced lifecycle environment, such as Library, must be synchronized to that Smart&#160;Proxy&#160;server.
+<p>If you want hosts to consume the image from a Smart&#160;Proxy&#160;server, the referenced lifecycle environment, such as Library, must be synchronized to that Smart&#160;Proxy&#160;server.
 For more information, see <a href="https://docs.theforeman.org/5.1/Installing_Proxy/index-katello.html#add-lifecycle-environments-to-smart-proxy-servers-by-using-web-ui">Add lifecycle environments to Smart&#160;Proxy&#160;servers by using Foreman web UI</a>.</p>
 </li>
 </ul>
@@ -2347,6 +2347,9 @@ For more information, see <a href="https://docs.theforeman.org/5.1/Installing_Pr
 For more information, see <a href="https://docs.theforeman.org/5.1/Managing_Content/index-katello.html#import-an-iso-image-by-using-web-ui">Import an ISO image by using Foreman web UI</a>.</p>
 </li>
 <li>
+<p>Create and publish a content view that contains your file type.</p>
+</li>
+<li>
 <p>In the Foreman web UI, navigate to <strong>Configure</strong> &gt; <strong>Host Groups</strong>.</p>
 </li>
 <li>
@@ -2356,21 +2359,41 @@ For more information, see <a href="https://docs.theforeman.org/5.1/Managing_Cont
 <p>Click the <strong>Parameters</strong> tab, and then click <strong>Add Parameter</strong>.</p>
 </li>
 <li>
-<p>Create a parameter named <code>kickstart_liveimg</code> with type <strong>string</strong> and set the value to the full URL of the image location or the file name of the image inside a published content view, for example:</p>
+<p>Create a parameter named <code>kickstart_liveimg</code> with type <strong>string</strong> and set the value to the full URL of the image location or the file name of the image inside a published content view.
+The URL depends on whether hosts retrieve the image from Foreman&#160;server or from a Smart&#160;Proxy&#160;server:</p>
 <div class="ulist">
 <ul>
 <li>
-<p>Full URL: <code>https://<em>smartproxy.example.com</em>/pulp/content/<em>My_Organization_Label</em>/Library/custom/<em>My_Product_Label</em>/<em>My_Repository_Label</em>/<em>My_Image_Name</em>.tar</code></p>
+<p>Full URL on Foreman&#160;server: <code>\https://<em>foreman.example.com</em>/pulp/content/<em>My_Organization_Label</em>/<em>My_Lifecycle_Environment</em>/custom/<em>My_Product_Label</em>/<em>My_Repository_Label</em>/<em>My_Image_Name</em>.tar</code></p>
+</li>
+<li>
+<p>Full URL on a Smart&#160;Proxy&#160;server: <code>\https://<em>smartproxy.example.com</em>/pulp/content/<em>My_Organization_Label</em>/<em>My_Lifecycle_Environment</em>/custom/<em>My_Product_Label</em>/<em>My_Repository_Label</em>/<em>My_Image_Name</em>.tar</code></p>
 </li>
 <li>
 <p>Image file name: <code><em>My_Image_Name</em>.tar</code></p>
 <div class="paragraph">
-<p>You can use the image file name only if the host is subscribed to a single content view and lifecycle environment, and the <code>kt_activation_keys</code> parameter is defined for the host.
-The content view must be published.</p>
+<p>You can use the image file name only if the <code>kt_activation_keys</code> parameter is defined for the host.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Warning</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If a host is assigned to multiple content view environments, Foreman uses the first assigned content view environment to locate the image.
+If you change the order of the content view environments assigned to the host, rebuilding the host might use a different environment from the one that you intended.
+To ensure Foreman uses the correct image, ensure that the desired boot image exists in the first content view environment assigned to the host.
+For more information, see <a href="https://docs.theforeman.org/5.1/Managing_Content/index-katello.html#content-view-environment-ordering-and-priority">Content view environment ordering and priority</a>.</p>
+</div>
+</td>
+</tr>
+</table>
 </div>
 <div class="paragraph">
-<p>If a content source is assigned to the host, Foreman will use the content source Smart&#160;Proxy of the host.
-If a content source is not assigned, Foreman will use Foreman&#160;server.</p>
+<p>If a content source is assigned to the host, Foreman uses the content source Smart&#160;Proxy of the host.
+If a content source is not assigned, Foreman uses Foreman&#160;server.</p>
 </div>
 </li>
 </ul>
