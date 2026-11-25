@@ -14,7 +14,9 @@ To provision and manage virtual machines on {Kubernetes}, add {KubeVirt} as a co
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
-# {foreman-installer} --enable-foreman-plugin-kubevirt
+# {foreman-installer} \
+--enable-foreman-cli-kubevirt \
+--enable-foreman-plugin-kubevirt
 ----
 . Obtain a token to use for HTTP and HTTPs authentication:
 .. Create a service account:
@@ -27,19 +29,83 @@ $ {kubevirt-command} create serviceaccount __My_Service_Account__ --namespace __
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
-$ {kubevirt-command} create rolebinding __My_Service_Account__-kubevirt-edit --clusterrole=kubevirt.io:edit --serviceaccount=__My_Namespace__:__My_Service_Account__
+$ {kubevirt-command} create rolebinding __My_Service_Account__-kubevirt-edit --clusterrole=kubevirt.io:edit --serviceaccount=__My_Namespace__:__My_Service_Account__ --namespace __My_Namespace__
 ----
 .. Add the `view` role to the service account:
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
-$ {kubevirt-command} create rolebinding __My_Service_Account__-view --clusterrole=view --serviceaccount=__My_Namespace__:__My_Service_Account__
+$ {kubevirt-command} create rolebinding __My_Service_Account__-view --clusterrole=view --serviceaccount=__My_Namespace__:__My_Service_Account__ --namespace __My_Namespace__
+----
+.. Grant the service account the other permissions that {Project} needs:
++
+[options="nowrap" subs="+quotes,attributes"]
+----
+$ {kubevirt-command} apply --filename=- <<EOF
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: __My_Service_Account__-hosts
+  namespace: __My_Namespace__
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["create", "get", "update", "patch", "delete"]
+- apiGroups: [""]
+  resources: ["persistentvolumeclaims"]
+  verbs: ["create", "get", "list", "delete"]
+- apiGroups: ["cdi.kubevirt.io"]
+  resources: ["datavolumes", "datasources"]
+  verbs: ["create", "get", "list", "delete"]
+- apiGroups: ["cdi.kubevirt.io"]
+  resources: ["datavolumes/source"]
+  verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: __My_Service_Account__-hosts
+  namespace: __My_Namespace__
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: __My_Service_Account__-hosts
+subjects:
+- kind: ServiceAccount
+  name: __My_Service_Account__
+  namespace: __My_Namespace__
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: __My_Service_Account__-lists
+rules:
+- apiGroups: ["storage.k8s.io"]
+  resources: ["storageclasses"]
+  verbs: ["get", "list"]
+- apiGroups: ["k8s.cni.cncf.io"]
+  resources: ["network-attachment-definitions"]
+  verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: __My_Service_Account__-lists
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: __My_Service_Account__-lists
+subjects:
+- kind: ServiceAccount
+  name: __My_Service_Account__
+  namespace: __My_Namespace__
+EOF
 ----
 .. Create a persistent token for the account:
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
-$ {kubevirt-command} create --filename=- <<EOF
+$ {kubevirt-command} create --namespace __My_Namespace__ --filename=- <<EOF
 apiVersion: v1
 kind: Secret
 metadata:
@@ -53,7 +119,7 @@ EOF
 +
 [options="nowrap" subs="+quotes,attributes"]
 ----
-$ {kubevirt-command} get secrets __My_SA_Token__ --template='{{.data.token | base64decode}}'
+$ {kubevirt-command} get secrets __My_SA_Token__ --namespace __My_Namespace__ --template='{{.data.token | base64decode}}'
 ----
 . In the {ProjectWebUI}, navigate to *Infrastructure* > *Compute Resources*, and click *Create Compute Resource*.
 . In the *Name* field, enter a name for the new compute resource.
