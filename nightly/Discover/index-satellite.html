@@ -243,7 +243,7 @@ SOFTWARE.
 <li><a href="#satellite-capabilities-and-use-cases">1. Satellite capabilities and use cases</a>
 <ul class="sectlevel2">
 <li><a href="#satellite-use-cases">1.1. Satellite use cases</a></li>
-<li><a href="#content-flow-in-satellite">1.2. Content flow in Satellite</a></li>
+<li><a href="#remote-execution-in-satellite">1.2. Remote execution in Satellite</a></li>
 <li><a href="#configuration-management-with-ansible-in-satellite">1.3. Configuration management with Ansible in Satellite</a>
 <ul class="sectlevel3">
 <li><a href="#high-level-steps-for-configuration-management-with-ansible">1.3.1. High-level steps for configuration management with Ansible</a></li>
@@ -262,10 +262,11 @@ SOFTWARE.
 </li>
 <li><a href="#satellite-architecture-and-components">2. Satellite architecture and components</a>
 <ul class="sectlevel2">
-<li><a href="#major-satellite-components">2.1. Major Satellite components</a></li>
-<li><a href="#capsule-server-features">2.2. Capsule&#160;Server features</a></li>
-<li><a href="#remote-execution-in-satellite">2.3. Remote execution in Satellite</a></li>
-<li><a href="#key-open-source-components-of-satellite">2.4. Key open source components of Satellite</a></li>
+<li><a href="#satellite-deployment-components">2.1. Satellite deployment components</a></li>
+<li><a href="#services-provided-by-satellite-server">2.2. Services provided by Satellite&#160;Server</a></li>
+<li><a href="#services-provided-by-capsule">2.3. Services provided by Capsule</a></li>
+<li><a href="#content-flow-in-satellite">2.4. Content flow in Satellite</a></li>
+<li><a href="#key-open-source-components-of-satellite">2.5. Key open source components of Satellite</a></li>
 </ul>
 </li>
 <li><a href="#satellite-security-capabilities">3. Satellite security capabilities</a>
@@ -404,43 +405,46 @@ For example, you can manage configurations as code, version control your infrast
 </div>
 </div>
 <div class="sect2">
-<h3 id="content-flow-in-satellite"><a class="anchor" href="#content-flow-in-satellite"></a>1.2. Content flow in Satellite</h3>
+<h3 id="remote-execution-in-satellite"><a class="anchor" href="#remote-execution-in-satellite"></a>1.2. Remote execution in Satellite</h3>
 <div class="paragraph _abstract">
-<p>Content flow in Red&#160;Hat Satellite involves management and distribution of content from external sources to hosts.</p>
+<p>With remote execution, you can run jobs on hosts from Capsules by using shell scripts or Ansible roles and playbooks.</p>
 </div>
 <div class="paragraph">
-<p>Content in Satellite flows from <em>external content sources</em> to <em>Satellite&#160;Server</em>.
-<em>Capsule&#160;Servers</em> mirror the content from Satellite&#160;Server to <em>hosts</em>.</p>
+<p>Use remote execution for the following benefits in Satellite:</p>
 </div>
-<div class="dlist">
-<dl>
-<dt class="hdlist1">External content sources</dt>
-<dd>
-<p>You can configure many content sources with Satellite.
-The supported content sources include the Red&#160;Hat Customer Portal,
-custom Yum repositories,
-Git repositories, Ansible collections, container registries, SCAP repositories, or internal data stores of your organization.</p>
-</dd>
-<dt class="hdlist1"><strong>Satellite&#160;Server</strong></dt>
-<dd>
-<p>On your Satellite&#160;Server, you plan and manage the content lifecycle.</p>
-</dd>
-<dt class="hdlist1"><strong>Capsule&#160;Servers</strong></dt>
-<dd>
-<p>By creating Capsule&#160;Servers, you can establish content sources in various locations based on your needs.
-For example, you can establish a content source for each geographical location or multiple content sources for a data center with separate networks.</p>
-</dd>
-<dt class="hdlist1"><strong>Hosts</strong></dt>
-<dd>
-<p>By assigning a host system to a Capsule&#160;Server or directly to your Satellite&#160;Server, you ensure the host receives the content they provide.
-Hosts can be physical or virtual.</p>
-</dd>
-</dl>
+<div class="ulist">
+<ul>
+<li>
+<p>Run jobs on multiple hosts at once.</p>
+</li>
+<li>
+<p>Use variables in your commands for more granular control over the jobs you run.</p>
+</li>
+<li>
+<p>Use host facts and parameters to populate the variable values.</p>
+</li>
+<li>
+<p>Specify custom values for templates when you run the command.</p>
+</li>
+</ul>
 </div>
-<div class="imageblock">
-<div class="content">
-<img src="../images/system-architecture-satellite.png" alt="Content flow in Red&#160;Hat Satellite">
+<div class="paragraph">
+<p>Communication for remote execution occurs through Capsule&#160;Server, which means that Satellite&#160;Server does not require direct access to the target host, and can scale to manage many hosts.</p>
 </div>
+<div class="paragraph">
+<p>To use remote execution, you must define a job template.
+A job template is a command that you want to apply to remote hosts.
+You can execute a job template multiple times.
+Satellite uses ERB syntax job templates.
+By default, Satellite includes several job templates for shell scripts and Ansible.</p>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html/configure/index#run-automated-workflows-on-hosts">Run automated workflows on hosts</a></p>
+</li>
+</ul>
 </div>
 </div>
 <div class="sect2">
@@ -746,124 +750,101 @@ You can install RHOKP to access Red&#160;Hat documentation and search the Red&#1
 <p>As you are evaluating Satellite for your organization, understanding the roles and relationships of major components helps you determine what infrastructure to deploy and how components interact.</p>
 </div>
 <div class="sect2">
-<h3 id="major-satellite-components"><a class="anchor" href="#major-satellite-components"></a>2.1. Major Satellite components</h3>
+<h3 id="satellite-deployment-components"><a class="anchor" href="#satellite-deployment-components"></a>2.1. Satellite deployment components</h3>
 <div class="paragraph _abstract">
 <p>A typical Satellite deployment consists of the following components: a Satellite&#160;Server, Capsule&#160;Servers, and hosts that receive
 content and
 configuration from Satellite&#160;Server and Capsule&#160;Servers.</p>
 </div>
+<div class="paragraph">
+<p>Satellite uses Podman, a container engine, to run Satellite application services in containers.
+<code>systemd</code> generates service units from declarative Podman configuration files, integrating container lifecycle management with <code>systemd</code> service control.</p>
+</div>
+<div class="paragraph">
+<p>You do not need container expertise to install and operate Satellite.
+Podman is a standard component of Red&#160;Hat Enterprise Linux.
+To install, configure, and maintain Satellite, you use the <code>satellitectl</code> utility which deploys the Podman containers.</p>
+</div>
 <div class="dlist">
 <dl>
 <dt class="hdlist1">Satellite&#160;Server</dt>
 <dd>
-<p>Satellite&#160;Server is the central component of your Satellite deployment.</p>
-<div class="paragraph">
-<p>A typical Satellite deployment includes one Satellite&#160;Server on which you perform the following operations:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Content lifecycle management</p>
-</li>
-<li>
-<p>Configuration of Capsule&#160;Servers</p>
-</li>
-<li>
-<p>Configuration of hosts</p>
-</li>
-<li>
-<p>Host provisioning</p>
-</li>
-<li>
-<p>Patch management</p>
-</li>
-<li>
-<p>Subscription management</p>
-<div class="paragraph">
-<p>Satellite&#160;Server delegates content distribution, host provisioning, and communication to Capsule&#160;Servers.
-Satellite&#160;Server itself also includes a Capsule.</p>
-</div>
-<div class="paragraph">
-<p>Satellite&#160;Server also contains a fine-grained authentication system.
-You can grant Satellite users permissions to access precisely the parts of the infrastructure for which they are responsible.</p>
-</div>
-</li>
-</ul>
-</div>
+<p>Satellite&#160;Server is the central component of your Satellite deployment.
+A typical Satellite deployment includes one Satellite&#160;Server.
+Satellite&#160;Server can include a built-in Capsule
+and can delegate content distribution, host provisioning, and communication to Capsule&#160;Servers.</p>
 </dd>
 <dt class="hdlist1">Capsule&#160;Server</dt>
 <dd>
-<p>With Capsule&#160;Servers, you can extend the reach and scalability of your Satellite deployment.
-Capsule&#160;Servers provide the following functionalities in a Red&#160;Hat Satellite deployment:</p>
-<div class="ulist">
-<ul>
-<li>
-<p>Running localized services to discover, provision, control, and configure hosts.</p>
-</li>
-<li>
-<p>Mirroring content from Satellite&#160;Server to establish content sources in various geographical or logical locations.
-By registering a host to a Capsule&#160;Server, you can configure this host to receive content and configuration from the Capsule in their location instead of from the central Satellite&#160;Server.</p>
-<div class="paragraph">
-<p>By using content views, you can specify the exact subset of content that Capsule&#160;Server makes available to hosts.</p>
-</div>
-</li>
-</ul>
-</div>
+<p>With Capsule&#160;Servers, you can extend the reach and scalability of your Satellite deployment by running localized services closer to your hosts.</p>
 </dd>
 <dt class="hdlist1">Hosts in Satellite</dt>
 <dd>
-<p>A host is any Linux client that Red&#160;Hat Satellite manages.
-Hosts can be physical or virtual.</p>
+<p>A host is any Linux client that Red&#160;Hat Satellite manages.</p>
 <div class="paragraph">
-<p>You can deploy virtual hosts on any platform supported by Red&#160;Hat Satellite,
-such as Amazon EC2, Google Compute Engine, KVM, libvirt, Microsoft Azure, OpenStack, Rackspace Cloud Services, or VMware vSphere.</p>
+<p>Hosts can be physical or virtual.
+You can deploy virtual hosts on any platform supported by Red&#160;Hat Satellite.</p>
+</div>
+</dd>
+</dl>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="../images/major-project-components.png" alt="Major Satellite components">
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="services-provided-by-satellite-server"><a class="anchor" href="#services-provided-by-satellite-server"></a>2.2. Services provided by Satellite&#160;Server</h3>
+<div class="paragraph _abstract">
+<p>Satellite&#160;Server provides centralized management services for your Satellite deployment.</p>
 </div>
 <div class="paragraph">
-<p>With Satellite, you can manage hosts at scale, including monitoring, provisioning, remote execution,
-subscription management, content management,
-and configuration management.
-You can also group hosts by using features such as host groups and host collections.</p>
+<p>Satellite&#160;Server provides the following functionality in Satellite:</p>
 </div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Content lifecycle management</dt>
+<dd>
+<p>Satellite&#160;Server manages the content lifecycle, including synchronizing, managing, and publishing content to hosts through content views and lifecycle environments.</p>
+</dd>
+<dt class="hdlist1">Patch management</dt>
+<dd>
+<p>Satellite&#160;Server manages errata and package updates for hosts.</p>
+</dd>
+<dt class="hdlist1">Subscription management</dt>
+<dd>
+<p>Satellite&#160;Server manages subscriptions and entitlements for hosts.</p>
+</dd>
+<dt class="hdlist1">Host configuration</dt>
+<dd>
+<p>Satellite&#160;Server manages configuration of hosts and Capsule&#160;Servers.</p>
+</dd>
+<dt class="hdlist1">Host provisioning</dt>
+<dd>
+<p>Satellite&#160;Server manages provisioning of bare-metal and virtual hosts.</p>
+</dd>
+<dt class="hdlist1">Fine-grained authentication</dt>
+<dd>
+<p>Satellite&#160;Server provides role-based access control to grant users access to only the parts of the infrastructure they are responsible for.</p>
 </dd>
 </dl>
 </div>
 </div>
 <div class="sect2">
-<h3 id="capsule-server-features"><a class="anchor" href="#capsule-server-features"></a>2.2. Capsule&#160;Server features</h3>
+<h3 id="services-provided-by-capsule"><a class="anchor" href="#services-provided-by-capsule"></a>2.3. Services provided by Capsule</h3>
 <div class="paragraph _abstract">
 <p>Capsule&#160;Servers provide local host management services and can mirror content from Satellite&#160;Server.</p>
 </div>
 <div class="paragraph">
-<p>To mirror content from Satellite&#160;Server, Capsule&#160;Servers provide the following functionalities:</p>
-</div>
-<div class="dlist">
-<dl>
-<dt class="hdlist1">Repository synchronization</dt>
-<dd>
-<p>Capsule&#160;Servers pull content for selected lifecycle environments from Satellite&#160;Server and make this content available to the hosts they manage.</p>
-</dd>
-<dt class="hdlist1">Content delivery</dt>
-<dd>
-<p>Hosts configured to use Capsule&#160;Server download content from that Capsule rather than from Satellite&#160;Server.</p>
-</dd>
-<dt class="hdlist1">Host action delivery</dt>
-<dd>
-<p>Capsule&#160;Server executes scheduled actions on hosts.</p>
-</dd>
-<dt class="hdlist1">Red Hat Subscription Management (RHSM) proxy</dt>
-<dd>
-<p>Hosts are registered to their associated Capsule&#160;Servers rather than to the central Satellite&#160;Server or the Red&#160;Hat Customer Portal.</p>
-</dd>
-</dl>
-</div>
-<div class="paragraph">
-<p>You can use Capsule to run the following services for infrastructure and host management:</p>
+<p>Capsules provide the following functionality in Satellite:</p>
 </div>
 <div class="dlist">
 <dl>
 <dt class="hdlist1">DHCP</dt>
 <dd>
-<p>Capsule can manage a DHCP server, including integration with an existing solution, such as ISC DHCP servers, Active Directory, and Libvirt instances.</p>
+<p>Capsule can integrate with a DHCP server.
+Infoblox appliances are supported for this integration.</p>
 </dd>
 <dt class="hdlist1">DNS</dt>
 <dd>
@@ -925,56 +906,63 @@ By configuring a Capsule with all these features, you can isolate hosts assigned
 </dd>
 </dl>
 </div>
+<div class="paragraph">
+<p>To mirror content from Satellite&#160;Server, Capsule&#160;Servers provide the following functionalities:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Repository synchronization</dt>
+<dd>
+<p>Capsule&#160;Servers pull content for selected lifecycle environments from Satellite&#160;Server and make this content available to the hosts they manage.</p>
+</dd>
+<dt class="hdlist1">Content delivery</dt>
+<dd>
+<p>Hosts configured to use Capsule&#160;Server download content from that Capsule rather than from Satellite&#160;Server.</p>
+</dd>
+<dt class="hdlist1">Host action delivery</dt>
+<dd>
+<p>Capsule&#160;Server executes scheduled actions on hosts.</p>
+</dd>
+<dt class="hdlist1">Red Hat Subscription Management (RHSM) proxy</dt>
+<dd>
+<p>Hosts are registered to their associated Capsule&#160;Servers rather than to the central Satellite&#160;Server or the Red&#160;Hat Customer Portal.</p>
+</dd>
+</dl>
+</div>
 </div>
 <div class="sect2">
-<h3 id="remote-execution-in-satellite"><a class="anchor" href="#remote-execution-in-satellite"></a>2.3. Remote execution in Satellite</h3>
+<h3 id="content-flow-in-satellite"><a class="anchor" href="#content-flow-in-satellite"></a>2.4. Content flow in Satellite</h3>
 <div class="paragraph _abstract">
-<p>With remote execution, you can run jobs on hosts from Capsules by using shell scripts or Ansible roles and playbooks.</p>
+<p>Content in Red&#160;Hat Satellite flows from external sources through Satellite&#160;Server and Capsule&#160;Servers to reach hosts.</p>
 </div>
 <div class="paragraph">
-<p>Use remote execution for the following benefits in Satellite:</p>
+<p>The content flow follows these stages in Satellite:</p>
 </div>
-<div class="ulist">
-<ul>
+<div class="olist arabic">
+<ol class="arabic">
 <li>
-<p>Run jobs on multiple hosts at once.</p>
+<p><strong>Sourcing</strong>: Satellite&#160;Server synchronizes content from external sources such as the Red&#160;Hat Customer Portal,
+custom Yum repositories,
+Git repositories, Ansible collections, container registries, SCAP repositories, and internal data stores.</p>
 </li>
 <li>
-<p>Use variables in your commands for more granular control over the jobs you run.</p>
+<p><strong>Organization</strong>: On Satellite&#160;Server, you organize the synchronized content into content views and promote them through lifecycle environments.
+With content views, you can curate a specific subset of content versions, while lifecycle environments represent stages such as Development, Testing, and Production.</p>
 </li>
 <li>
-<p>Use host facts and parameters to populate the variable values.</p>
+<p><strong>Distribution</strong>: Capsule&#160;Servers mirror the content that Satellite&#160;Server has organized.
+Each host retrieves content from its assigned Capsule&#160;Server or, for hosts without a Capsule, directly from Satellite&#160;Server.</p>
 </li>
-<li>
-<p>Specify custom values for templates when you run the command.</p>
-</li>
-</ul>
+</ol>
 </div>
-<div class="paragraph">
-<p>Communication for remote execution occurs through Capsule&#160;Server, which means that Satellite&#160;Server does not require direct access to the target host, and can scale to manage many hosts.</p>
+<div class="imageblock">
+<div class="content">
+<img src="../images/content-flow.png" alt="Content flow in Red&#160;Hat Satellite">
 </div>
-<div class="paragraph">
-<p>To use remote execution, you must define a job template.
-A job template is a command that you want to apply to remote hosts.
-You can execute a job template multiple times.</p>
-</div>
-<div class="paragraph">
-<p>Satellite uses ERB syntax job templates.</p>
-</div>
-<div class="paragraph">
-<p>By default, Satellite includes several job templates for shell scripts and Ansible.</p>
-</div>
-<div class="ulist">
-<div class="title">Additional resources</div>
-<ul>
-<li>
-<p><a href="https://docs.redhat.com/en/documentation/red_hat_satellite/6.20/html/administer/register-hosts-to-satellite#template-writing-reference">Template writing reference</a></p>
-</li>
-</ul>
 </div>
 </div>
 <div class="sect2">
-<h3 id="key-open-source-components-of-satellite"><a class="anchor" href="#key-open-source-components-of-satellite"></a>2.4. Key open source components of Satellite</h3>
+<h3 id="key-open-source-components-of-satellite"><a class="anchor" href="#key-open-source-components-of-satellite"></a>2.5. Key open source components of Satellite</h3>
 <div class="paragraph _abstract">
 <p>Satellite consists of several open source projects integrated with each other.</p>
 </div>

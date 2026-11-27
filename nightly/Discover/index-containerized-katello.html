@@ -247,7 +247,7 @@ SOFTWARE.
 <li><a href="#foreman-capabilities-and-use-cases">1. Foreman capabilities and use cases</a>
 <ul class="sectlevel2">
 <li><a href="#foreman-use-cases">1.1. Foreman use cases</a></li>
-<li><a href="#content-flow-in-foreman">1.2. Content flow in Foreman</a></li>
+<li><a href="#remote-execution-in-foreman">1.2. Remote execution in Foreman</a></li>
 <li><a href="#configuration-management-with-ansible-in-foreman">1.3. Configuration management with Ansible in Foreman</a>
 <ul class="sectlevel3">
 <li><a href="#high-level-steps-for-configuration-management-with-ansible">1.3.1. High-level steps for configuration management with Ansible</a></li>
@@ -266,10 +266,11 @@ SOFTWARE.
 </li>
 <li><a href="#foreman-architecture-and-components">2. Foreman architecture and components</a>
 <ul class="sectlevel2">
-<li><a href="#major-foreman-components">2.1. Major Foreman components</a></li>
-<li><a href="#smart-proxy-server-features">2.2. Smart&#160;Proxy&#160;server features</a></li>
-<li><a href="#remote-execution-in-foreman">2.3. Remote execution in Foreman</a></li>
-<li><a href="#key-open-source-components-of-foreman">2.4. Key open source components of Foreman</a></li>
+<li><a href="#foreman-deployment-components">2.1. Foreman deployment components</a></li>
+<li><a href="#services-provided-by-foreman-server">2.2. Services provided by Foreman&#160;server</a></li>
+<li><a href="#services-provided-by-smart-proxy">2.3. Services provided by Smart&#160;Proxy</a></li>
+<li><a href="#content-flow-in-foreman">2.4. Content flow in Foreman</a></li>
+<li><a href="#key-open-source-components-of-foreman">2.5. Key open source components of Foreman</a></li>
 </ul>
 </li>
 <li><a href="#foreman-security-capabilities">3. Foreman security capabilities</a>
@@ -416,43 +417,46 @@ For example, you can manage configurations as code, version control your infrast
 </div>
 </div>
 <div class="sect2">
-<h3 id="content-flow-in-foreman"><a class="anchor" href="#content-flow-in-foreman"></a>1.2. Content flow in Foreman</h3>
+<h3 id="remote-execution-in-foreman"><a class="anchor" href="#remote-execution-in-foreman"></a>1.2. Remote execution in Foreman</h3>
 <div class="paragraph _abstract">
-<p>Content flow in Foreman involves management and distribution of content from external sources to hosts.</p>
+<p>With remote execution, you can run jobs on hosts from Smart&#160;Proxies by using shell scripts or Ansible roles and playbooks.</p>
 </div>
 <div class="paragraph">
-<p>Content in Foreman flows from <em>external content sources</em> to <em>Foreman&#160;server</em>.
-<em>Smart&#160;Proxy&#160;servers</em> mirror the content from Foreman&#160;server to <em>hosts</em>.</p>
+<p>Use remote execution for the following benefits in Foreman:</p>
 </div>
-<div class="dlist">
-<dl>
-<dt class="hdlist1">External content sources</dt>
-<dd>
-<p>You can configure many content sources with Foreman.
-The supported content sources include the Red&#160;Hat Customer Portal,
-custom Deb and Yum repositories, PyPI,
-Git repositories, Ansible collections, container registries, SCAP repositories, or internal data stores of your organization.</p>
-</dd>
-<dt class="hdlist1"><strong>Foreman&#160;server</strong></dt>
-<dd>
-<p>On your Foreman&#160;server, you plan and manage the content lifecycle.</p>
-</dd>
-<dt class="hdlist1"><strong>Smart&#160;Proxy&#160;servers</strong></dt>
-<dd>
-<p>By creating Smart&#160;Proxy&#160;servers, you can establish content sources in various locations based on your needs.
-For example, you can establish a content source for each geographical location or multiple content sources for a data center with separate networks.</p>
-</dd>
-<dt class="hdlist1"><strong>Hosts</strong></dt>
-<dd>
-<p>By assigning a host system to a Smart&#160;Proxy&#160;server or directly to your Foreman&#160;server, you ensure the host receives the content they provide.
-Hosts can be physical or virtual.</p>
-</dd>
-</dl>
+<div class="ulist">
+<ul>
+<li>
+<p>Run jobs on multiple hosts at once.</p>
+</li>
+<li>
+<p>Use variables in your commands for more granular control over the jobs you run.</p>
+</li>
+<li>
+<p>Use host facts and parameters to populate the variable values.</p>
+</li>
+<li>
+<p>Specify custom values for templates when you run the command.</p>
+</li>
+</ul>
 </div>
-<div class="imageblock">
-<div class="content">
-<img src="../images/planning-for-foreman-system-architecture.svg" alt="Content flow in Foreman">
+<div class="paragraph">
+<p>Communication for remote execution occurs through Smart&#160;Proxy&#160;server, which means that Foreman&#160;server does not require direct access to the target host, and can scale to manage many hosts.</p>
 </div>
+<div class="paragraph">
+<p>To use remote execution, you must define a job template.
+A job template is a command that you want to apply to remote hosts.
+You can execute a job template multiple times.
+Foreman uses ERB syntax job templates.
+By default, Foreman includes several job templates for shell scripts and Ansible.</p>
+</div>
+<div class="ulist">
+<div class="title">Additional resources</div>
+<ul>
+<li>
+<p><a href="https://docs.theforeman.org/nightly/Configure/index-containerized-katello.html#run-automated-workflows-on-hosts">Run automated workflows on hosts</a></p>
+</li>
+</ul>
 </div>
 </div>
 <div class="sect2">
@@ -758,124 +762,103 @@ You can install RHOKP to access Red&#160;Hat documentation and search the Red&#1
 <p>As you are evaluating Foreman for your organization, understanding the roles and relationships of major components helps you determine what infrastructure to deploy and how components interact.</p>
 </div>
 <div class="sect2">
-<h3 id="major-foreman-components"><a class="anchor" href="#major-foreman-components"></a>2.1. Major Foreman components</h3>
+<h3 id="foreman-deployment-components"><a class="anchor" href="#foreman-deployment-components"></a>2.1. Foreman deployment components</h3>
 <div class="paragraph _abstract">
 <p>A typical Foreman deployment consists of the following components: a Foreman&#160;server, Smart&#160;Proxy&#160;servers, and hosts that receive
 content and
 configuration from Foreman&#160;server and Smart&#160;Proxy&#160;servers.</p>
 </div>
+<div class="paragraph">
+<p>Foreman uses Podman, a container engine, to run Foreman application services in containers.
+<code>systemd</code> generates service units from declarative Podman configuration files, integrating container lifecycle management with <code>systemd</code> service control.</p>
+</div>
+<div class="paragraph">
+<p>You do not need container expertise to install and operate Foreman.
+Podman is a standard component of Enterprise Linux.
+To install, configure, and maintain Foreman, you use the <code>foremanctl</code> utility which deploys the Podman containers.</p>
+</div>
 <div class="dlist">
 <dl>
 <dt class="hdlist1">Foreman&#160;server</dt>
 <dd>
-<p>Foreman&#160;server is the central component of your Foreman deployment.</p>
-<div class="paragraph">
-<p>A typical Foreman deployment includes one Foreman&#160;server on which you perform the following operations:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Content lifecycle management</p>
-</li>
-<li>
-<p>Configuration of Smart&#160;Proxy&#160;servers</p>
-</li>
-<li>
-<p>Configuration of hosts</p>
-</li>
-<li>
-<p>Host provisioning</p>
-</li>
-<li>
-<p>Patch management</p>
-</li>
-<li>
-<p>Subscription management</p>
-<div class="paragraph">
-<p>Foreman&#160;server delegates content distribution, host provisioning, and communication to Smart&#160;Proxy&#160;servers.
-Foreman&#160;server itself also includes a Smart&#160;Proxy.</p>
-</div>
-<div class="paragraph">
-<p>Foreman&#160;server also contains a fine-grained authentication system.
-You can grant Foreman users permissions to access precisely the parts of the infrastructure for which they are responsible.</p>
-</div>
-</li>
-</ul>
-</div>
+<p>Foreman&#160;server is the central component of your Foreman deployment.
+A typical Foreman deployment includes one Foreman&#160;server.
+Foreman&#160;server can include a built-in Smart&#160;Proxy
+and can delegate content distribution, host provisioning, and communication to Smart&#160;Proxy&#160;servers.</p>
 </dd>
 <dt class="hdlist1">Smart&#160;Proxy&#160;server</dt>
 <dd>
-<p>With Smart&#160;Proxy&#160;servers, you can extend the reach and scalability of your Foreman deployment.
-Smart&#160;Proxy&#160;servers provide the following functionalities in a Foreman deployment:</p>
-<div class="ulist">
-<ul>
-<li>
-<p>Running localized services to discover, provision, control, and configure hosts.</p>
-</li>
-<li>
-<p>Mirroring content from Foreman&#160;server to establish content sources in various geographical or logical locations.
-By registering a host to a Smart&#160;Proxy&#160;server, you can configure this host to receive content and configuration from the Smart&#160;Proxy in their location instead of from the central Foreman&#160;server.</p>
-<div class="paragraph">
-<p>By using content views, you can specify the exact subset of content that Smart&#160;Proxy&#160;server makes available to hosts.</p>
-</div>
-</li>
-</ul>
-</div>
+<p>With Smart&#160;Proxy&#160;servers, you can extend the reach and scalability of your Foreman deployment by running localized services closer to your hosts.</p>
 </dd>
 <dt class="hdlist1">Hosts in Foreman</dt>
 <dd>
 <p>A host is any Linux client that Foreman manages.
-Hosts can be physical or virtual.</p>
+Foreman can also manage some non-Linux clients, such as Windows, BSD, and Solaris.
+Note that not all Foreman functionality might be available on these hosts.</p>
 <div class="paragraph">
-<p>You can deploy virtual hosts on any platform supported by Foreman,
-such as Amazon EC2, Google Compute Engine, KVM, libvirt, Microsoft Azure, OpenStack, oVirt, Proxmox, Rackspace Cloud Services, or VMware vSphere.</p>
+<p>Hosts can be physical or virtual.
+You can deploy virtual hosts on any platform supported by Foreman.</p>
+</div>
+</dd>
+</dl>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="../images/major-project-components.png" alt="Major Foreman components">
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="services-provided-by-foreman-server"><a class="anchor" href="#services-provided-by-foreman-server"></a>2.2. Services provided by Foreman&#160;server</h3>
+<div class="paragraph _abstract">
+<p>Foreman&#160;server provides centralized management services for your Foreman deployment.</p>
 </div>
 <div class="paragraph">
-<p>With Foreman, you can manage hosts at scale, including monitoring, provisioning, remote execution,
-subscription management, content management,
-and configuration management.
-You can also group hosts by using features such as host groups and host collections.</p>
+<p>Foreman&#160;server provides the following functionality in Foreman:</p>
 </div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Content lifecycle management</dt>
+<dd>
+<p>Foreman&#160;server manages the content lifecycle, including synchronizing, managing, and publishing content to hosts through content views and lifecycle environments.</p>
+</dd>
+<dt class="hdlist1">Patch management</dt>
+<dd>
+<p>Foreman&#160;server manages errata and package updates for hosts.</p>
+</dd>
+<dt class="hdlist1">Subscription management</dt>
+<dd>
+<p>Foreman&#160;server manages subscriptions and entitlements for hosts.</p>
+</dd>
+<dt class="hdlist1">Host configuration</dt>
+<dd>
+<p>Foreman&#160;server manages configuration of hosts and Smart&#160;Proxy&#160;servers.</p>
+</dd>
+<dt class="hdlist1">Host provisioning</dt>
+<dd>
+<p>Foreman&#160;server manages provisioning of bare-metal and virtual hosts.</p>
+</dd>
+<dt class="hdlist1">Fine-grained authentication</dt>
+<dd>
+<p>Foreman&#160;server provides role-based access control to grant users access to only the parts of the infrastructure they are responsible for.</p>
 </dd>
 </dl>
 </div>
 </div>
 <div class="sect2">
-<h3 id="smart-proxy-server-features"><a class="anchor" href="#smart-proxy-server-features"></a>2.2. Smart&#160;Proxy&#160;server features</h3>
+<h3 id="services-provided-by-smart-proxy"><a class="anchor" href="#services-provided-by-smart-proxy"></a>2.3. Services provided by Smart&#160;Proxy</h3>
 <div class="paragraph _abstract">
 <p>Smart&#160;Proxy&#160;servers provide local host management services and can mirror content from Foreman&#160;server.</p>
 </div>
 <div class="paragraph">
-<p>To mirror content from Foreman&#160;server, Smart&#160;Proxy&#160;servers provide the following functionalities:</p>
-</div>
-<div class="dlist">
-<dl>
-<dt class="hdlist1">Repository synchronization</dt>
-<dd>
-<p>Smart&#160;Proxy&#160;servers pull content for selected lifecycle environments from Foreman&#160;server and make this content available to the hosts they manage.</p>
-</dd>
-<dt class="hdlist1">Content delivery</dt>
-<dd>
-<p>Hosts configured to use Smart&#160;Proxy&#160;server download content from that Smart&#160;Proxy rather than from Foreman&#160;server.</p>
-</dd>
-<dt class="hdlist1">Host action delivery</dt>
-<dd>
-<p>Smart&#160;Proxy&#160;server executes scheduled actions on hosts.</p>
-</dd>
-<dt class="hdlist1">Red Hat Subscription Management (RHSM) proxy</dt>
-<dd>
-<p>Hosts are registered to their associated Smart&#160;Proxy&#160;servers rather than to the central Foreman&#160;server or the Red&#160;Hat Customer Portal.</p>
-</dd>
-</dl>
-</div>
-<div class="paragraph">
-<p>You can use Smart&#160;Proxy to run the following services for infrastructure and host management:</p>
+<p>Smart&#160;Proxies provide the following functionality in Foreman:</p>
 </div>
 <div class="dlist">
 <dl>
 <dt class="hdlist1">DHCP</dt>
 <dd>
-<p>Smart&#160;Proxy can manage a DHCP server, including integration with an existing solution, such as ISC DHCP servers, Active Directory, and Libvirt instances.</p>
+<p>Smart&#160;Proxy can integrate with a DHCP server.
+Infoblox appliances are supported for this integration.</p>
 </dd>
 <dt class="hdlist1">DNS</dt>
 <dd>
@@ -937,56 +920,63 @@ By configuring a Smart&#160;Proxy with all these features, you can isolate hosts
 </dd>
 </dl>
 </div>
+<div class="paragraph">
+<p>To mirror content from Foreman&#160;server, Smart&#160;Proxy&#160;servers provide the following functionalities:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Repository synchronization</dt>
+<dd>
+<p>Smart&#160;Proxy&#160;servers pull content for selected lifecycle environments from Foreman&#160;server and make this content available to the hosts they manage.</p>
+</dd>
+<dt class="hdlist1">Content delivery</dt>
+<dd>
+<p>Hosts configured to use Smart&#160;Proxy&#160;server download content from that Smart&#160;Proxy rather than from Foreman&#160;server.</p>
+</dd>
+<dt class="hdlist1">Host action delivery</dt>
+<dd>
+<p>Smart&#160;Proxy&#160;server executes scheduled actions on hosts.</p>
+</dd>
+<dt class="hdlist1">Red Hat Subscription Management (RHSM) proxy</dt>
+<dd>
+<p>Hosts are registered to their associated Smart&#160;Proxy&#160;servers rather than to the central Foreman&#160;server or the Red&#160;Hat Customer Portal.</p>
+</dd>
+</dl>
+</div>
 </div>
 <div class="sect2">
-<h3 id="remote-execution-in-foreman"><a class="anchor" href="#remote-execution-in-foreman"></a>2.3. Remote execution in Foreman</h3>
+<h3 id="content-flow-in-foreman"><a class="anchor" href="#content-flow-in-foreman"></a>2.4. Content flow in Foreman</h3>
 <div class="paragraph _abstract">
-<p>With remote execution, you can run jobs on hosts from Smart&#160;Proxies by using shell scripts or Ansible roles and playbooks.</p>
+<p>Content in Foreman flows from external sources through Foreman&#160;server and Smart&#160;Proxy&#160;servers to reach hosts.</p>
 </div>
 <div class="paragraph">
-<p>Use remote execution for the following benefits in Foreman:</p>
+<p>The content flow follows these stages in Foreman:</p>
 </div>
-<div class="ulist">
-<ul>
+<div class="olist arabic">
+<ol class="arabic">
 <li>
-<p>Run jobs on multiple hosts at once.</p>
+<p><strong>Sourcing</strong>: Foreman&#160;server synchronizes content from external sources such as the Red&#160;Hat Customer Portal,
+custom Deb and Yum repositories, PyPI,
+Git repositories, Ansible collections, container registries, SCAP repositories, and internal data stores.</p>
 </li>
 <li>
-<p>Use variables in your commands for more granular control over the jobs you run.</p>
+<p><strong>Organization</strong>: On Foreman&#160;server, you organize the synchronized content into content views and promote them through lifecycle environments.
+With content views, you can curate a specific subset of content versions, while lifecycle environments represent stages such as Development, Testing, and Production.</p>
 </li>
 <li>
-<p>Use host facts and parameters to populate the variable values.</p>
+<p><strong>Distribution</strong>: Smart&#160;Proxy&#160;servers mirror the content that Foreman&#160;server has organized.
+Each host retrieves content from its assigned Smart&#160;Proxy&#160;server or, for hosts without a Smart&#160;Proxy, directly from Foreman&#160;server.</p>
 </li>
-<li>
-<p>Specify custom values for templates when you run the command.</p>
-</li>
-</ul>
+</ol>
 </div>
-<div class="paragraph">
-<p>Communication for remote execution occurs through Smart&#160;Proxy&#160;server, which means that Foreman&#160;server does not require direct access to the target host, and can scale to manage many hosts.</p>
+<div class="imageblock">
+<div class="content">
+<img src="../images/content-flow.png" alt="Content flow in Foreman">
 </div>
-<div class="paragraph">
-<p>To use remote execution, you must define a job template.
-A job template is a command that you want to apply to remote hosts.
-You can execute a job template multiple times.</p>
-</div>
-<div class="paragraph">
-<p>Foreman uses ERB syntax job templates.</p>
-</div>
-<div class="paragraph">
-<p>By default, Foreman includes several job templates for shell scripts and Ansible.</p>
-</div>
-<div class="ulist">
-<div class="title">Additional resources</div>
-<ul>
-<li>
-<p><a href="https://docs.theforeman.org/nightly/Managing_Hosts/index-containerized-katello.html#template-writing-reference">Template writing reference</a></p>
-</li>
-</ul>
 </div>
 </div>
 <div class="sect2">
-<h3 id="key-open-source-components-of-foreman"><a class="anchor" href="#key-open-source-components-of-foreman"></a>2.4. Key open source components of Foreman</h3>
+<h3 id="key-open-source-components-of-foreman"><a class="anchor" href="#key-open-source-components-of-foreman"></a>2.5. Key open source components of Foreman</h3>
 <div class="paragraph _abstract">
 <p>Foreman consists of several open source projects integrated with each other.</p>
 </div>
