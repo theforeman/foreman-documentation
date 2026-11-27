@@ -33,14 +33,23 @@ endif::[]
 . Select a provisioning template depending on your host provisioning method.
 For more information, see {ProvisioningDocURL}kinds-of-provisioning-templates[Kinds of provisioning templates].
 ifdef::foreman-el,foreman-deb[]
-. Ensure the `puppetlabs_repo` snippet is included as follows:
+. For shell-based provisioning templates, ensure the `voxpupuli_repo` snippet runs before `puppet_setup` as follows:
 +
 [options="nowrap", subs="+quotes,verbatim,attributes"]
 ----
-<%= snippet 'puppetlabs_repo' %>
+<%= snippet 'voxpupuli_repo' %>
 ----
 +
-Note that this snippet is already included in the templates shipped with {Project}, for example, in `Kickstart default` and `Preseed default finish` templates.
+The `Kickstart default` and `Preseed default finish` templates already include this snippet when Puppet setup and an OpenVox repository are enabled.
+The `AutoYaST SLES default` template configures the repository in its AutoYaST settings instead.
+The `Agama sles default` template does not configure this repository.
+For Agama on SLES using the official repository, create a snippet named `Agama sles default custom finish pre` with the following content.
+Mark it as a snippet; the default template includes it before `puppet_setup`:
++
+[options="nowrap", subs="+quotes,verbatim,attributes"]
+----
+<%= snippet 'voxpupuli_repo' %>
+----
 endif::[]
 . Ensure the `puppet_setup` snippet is included as follows:
 +
@@ -60,18 +69,26 @@ ifdef::katello,orcharhino,satellite[]
 Add a host parameter named `enable-puppet8`, select the *boolean* type, and set the value to `true`.
 endif::[]
 ifndef::katello,orcharhino,satellite[]
-. Enable the OpenVox agent from the official OpenVox repository using one of the following host parameters in global parameters, a host group, or for a single host:
+. Enable the official OpenVox repository using one of the following host parameters in global parameters, a host group, or for a single host:
 
-* Add a host parameter named `enable-puppetlabs-repo` for the latest stable Puppet release in the unversioned repository.
-* Add a host parameter named `enable-official-puppet8-repo` for the Puppet 8 release repository.
+* Add `enable-openvox8-repo` for OpenVox 8.
+* Add `enable-openvox9-repo` for OpenVox 9.
 
 +
 Select the *boolean* type and set the value to `true`.
+Enable only one OpenVox version.
+Do not set `enable-puppetlabs-repo`, `enable-official-puppet8-repo`, or `enable-puppet8` to `true` at the same time.
++
+The official SUSE repository is for SLES, not openSUSE.
+For openSUSE, provide a compatible OpenVox repository separately and set either `enable-openvox8` or `enable-openvox9` to `true` instead of an `-repo` parameter.
 endif::[]
 . Set configuration for the OpenVox agent.
 * If you use an integrated OpenVox server, ensure that you select a Puppet {SmartProxy}, Puppet CA {SmartProxy}, and Puppet environment when you create a host.
 * If you use a non-integrated OpenVox server, either set the following host parameters in global parameters, or a host group, or when you create a host:
 ** Add a host parameter named `puppet_server`, select the *string* type, and set the value to the hostname of your OpenVox server, such as `openvox.example.com`.
+ifdef::foreman-el,foreman-deb[]
+** If you use `Agama sles default`, add the `force-puppet` host parameter, select the *boolean* type, and set it to `true`.
+endif::[]
 ** Optional: Add a host parameter named `puppet_ca_server`, select the *string* type, and set the value to the hostname of your Puppet CA server, such as `puppet-ca.example.com`.
 If `puppet_ca_server` is not set, the OpenVox agent will use the same server as `puppet_server`.
 ** Optional: Add a host parameter named `puppet_environment`, select the *string* type, and set the value to the Puppet environment you want the host to use.
