@@ -1,0 +1,47 @@
+:_mod-docs-content-type: CONCEPT
+ifdef::containerized[]
+
+[id="generate-{project-context}-certificates-with-a-non-rsa-key-algorithm"]
+= Generate {ProjectName} certificates with a non-RSA key algorithm
+
+[role="_abstract"]
+By default, {ProjectName} generates a self-signed certificate set that uses RSA keys.
+You can instead generate this set with an elliptic-curve (ECC) algorithm or post-quantum module-lattice digital signature algorithm (ML-DSA).
+
+Non-RSA algorithms apply only when {ProjectName} generates its own certificates (`certificate-source=default`).
+They do not apply to custom certificates that you provide.
+
+A single algorithm applies to the entire certificate set that {ProjectName} generates: the certificate authority (CA), and the server and client certificates of every hostname.
+You select one algorithm at a time.
+
+{ProjectName} supports the following key algorithms:
+
+`RSA`::
+The default algorithm.
+Uses the key size set by `certificates_algorithm_rsa_size` (default 4096).
+`ECC`::
+An elliptic-curve algorithm.
+Uses the curve set by `certificates_algorithm_ecc_curve` (default `secp384r1`).
+`ML-DSA-87`::
+A post-quantum algorithm.
+Uses a fixed parameter set, so no key size or curve is configurable.
+
+The key algorithm determines which key usages the certificates can carry:
+
+* RSA server and client certificates carry both `Digital Signature` and `Key Encipherment`.
+* ECC and ML-DSA server and client certificates carry `Digital Signature` only, because these keys cannot perform key encipherment.
+* The CA certificate carries `Certificate Sign`, `CRL Sign`, and `Digital Signature` for every algorithm.
+
+The certificate validation that runs automatically during deployment accepts the key usage that each algorithm produces.
+
+[NOTE]
+====
+To generate the keys and to sign certificates, `ML-DSA-87` keys require OpenSSL 3.5 or later, `community.crypto` 3.3.0 or later, and `python-cryptography` 49.0.0 or later.
+On operating systems that ship an older version of `python-cryptography`, selecting `ML-DSA-87` fails during key generation.
+Use `ECC` where a non-RSA algorithm is required but your operating system does not yet support `ML-DSA-87`.
+====
+
+[role="_additional-resources"]
+.Additional resources
+* xref:configure-{project-context}-server-with-a-custom-ssl-certificate[]
+endif::[]
