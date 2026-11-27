@@ -25,13 +25,31 @@ endif::[]
 ----
 # mkdir /root/{cert-name}_cert
 ----
-. Create a private key with which to sign the certificate signing request (CSR).
-The private key must be unencrypted:
+. Create an unencrypted private key that you will use to sign the certificate signing request (CSR).
+Use the same key algorithm that your {ProjectName} deployment uses:
++
+--
+* For an RSA key:
 +
 [options="nowrap", subs="+quotes,attributes"]
 ----
 # openssl genrsa -out /root/{cert-name}_cert/{cert-name}_cert_key.pem 4096
 ----
+* For an elliptic-curve (EC) key:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:secp384r1 -out /root/{cert-name}_cert/{cert-name}_cert_key.pem
+----
+* For an ML-DSA key:
++
+[options="nowrap", subs="+quotes,attributes"]
+----
+# openssl genpkey -algorithm ML-DSA-87 -out /root/{cert-name}_cert/{cert-name}_cert_key.pem
+----
++
+Generating an ML-DSA key requires OpenSSL 3.5 or later.
+--
 +
 If you already have a private key, skip this step.
 . Optional: Verify that the key is unencrypted:
@@ -105,6 +123,12 @@ Include the FQDN of the load balancer as `DNS.1` and the FQDN of {SmartProxyServ
 endif::[]
 +
 For more information about the `[ v3_req ]` parameters and their purpose, see link:https://www.rfc-editor.org/rfc/rfc5280[RFC 5280: Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List (CRL) Profile].
++
+[NOTE]
+====
+The `keyUsage = digitalSignature, keyEncipherment` value applies to RSA keys.
+If you created an elliptic-curve (EC) or ML-DSA private key, only set `keyUsage = digitalSignature` because EC and ML-DSA keys cannot perform key encipherment.
+====
 . Optional: If you want to add Distinguished Name (DN) details to the CSR, add the following information to the `[ req_distinguished_name ]` section:
 +
 [options="nowrap", subs="+quotes,attributes"]
